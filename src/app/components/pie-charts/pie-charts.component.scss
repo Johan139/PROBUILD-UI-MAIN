@@ -1,0 +1,10 @@
+#chart-container {
+    display: flex;
+    width: fit-content !important;
+    justify-content: center;
+    align-items: center;
+  }
+  svg {
+    max-width: fit-content;
+    height: auto;
+  }

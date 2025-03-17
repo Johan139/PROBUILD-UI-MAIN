@@ -1,0 +1,146 @@
+.alert-button{
+  background: #FBD008 !important;
+}
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.alert-modal {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 300px;
+}
+.add-btn{
+  color: #083D77;
+  margin-right: .3rem;
+}
+.alert-modal p {
+  margin-bottom: 20px;
+}
+
+.alert-modal button {
+  color: white;
+}
+.sb-t2{
+  margin-top: 1.5rem;
+}
+.sb-text{
+  background: #FBD008 !important;
+  border-radius: 5px !important;
+ margin-left : 1.5rem;
+}
+.sb-btn-edit {
+  color: #083D77 !important;
+}
+.sb-btn-pub{
+  color: #61A0AF !important;
+}
+.sb-btn-danger {
+  color: #DA4167 !important;
+}
+.no-border{
+  border: none;
+  outline: none;
+  width: auto;
+  background: none;
+}
+.icon {
+  width: 1em;
+  height: auto;
+}
+mat-card{
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
+  0 6px 20px rgba(0, 0, 0, 0.19);
+  background: #fff !important;
+  margin-top: 20px;
+  width: 80vw;
+}
+div h2{
+  margin-top: 2rem;
+  color: #FBD008;
+}
+mat-card h2{
+  color: #FBD008;
+  margin-top: 2.5rem;
+  margin-left: 2rem;
+}
+mat-card h3{
+  margin-top: 1.5rem;
+  margin-left: 2rem;
+}
+mat-card div{
+  margin-left: 2rem;
+  margin-right: 2rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 80px;
+}
+thead{
+  border: none !important;
+  background-color: #FBD008;
+  tr:first-child th:first-child {
+    border-top-left-radius: 20px;
+  }
+  tr:last-child th:last-child{
+    border-top-right-radius: 20px;
+  }
+}
+
+td {
+  border: 3px solid #D9D9D9;
+  stroke-width: 20px;
+  padding: 8px;
+}
+
+th {
+  background-color: #FBD008;
+  text-align: left;
+  padding: 8px;
+}
+.table-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.subtask-table{
+  width: 80vw;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.subtask-table2{
+  width: 80vw;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  height: 5rem;
+}
+tbody {
+  tr {
+    &:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    &:hover {
+      background-color: #f1f1f1;
+    }
+  }
+  td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+}

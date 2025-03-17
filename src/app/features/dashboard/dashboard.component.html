@@ -1,0 +1,44 @@
+<mat-sidenav-container autosize>
+  <mat-sidenav >
+    <button mat-button class="menu-button" routerLink="">
+      <mat-icon>work</mat-icon>
+      <span class="menu-item">Projects</span>
+    </button>
+    <br>
+    <button mat-button class="menu-button" routerLink="">
+      <mat-icon>list</mat-icon>
+      <span class="menu-item">Tasks</span>
+    </button>
+    <br>
+    <button mat-button class="menu-button" routerLink="">
+      <mat-icon>calendar_today</mat-icon>
+      <span class="menu-item">Work Calendar</span>
+    </button>
+    <br>
+    <button mat-button class="menu-button" routerLink="/dashboard/notifications">
+      <mat-icon>update</mat-icon>
+      <span class="menu-item">Updates</span>
+    </button>
+
+    <footer>
+      <mat-icon routerLink="/dashboard">home</mat-icon>
+      <mat-icon>settings</mat-icon>
+    </footer>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <div>
+      <div *ngIf="nrProjects ===0">
+        <app-new-user-dashboard></app-new-user-dashboard>
+      </div>
+      <div *ngIf="nrProjects > 0">
+        <app-new-user-dashboard></app-new-user-dashboard>
+      </div>
+    </div>  
+    <footer class="main-footer">
+      <mat-icon>copyright</mat-icon>
+      2024 ProBuild AI. ALL RIGHTS RESERVED
+    </footer>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+

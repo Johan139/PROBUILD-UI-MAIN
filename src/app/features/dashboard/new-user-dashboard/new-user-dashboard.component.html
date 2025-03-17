@@ -1,0 +1,14 @@
+<div class="main-container">
+  <div class="carousel-container">
+    <h2>Welcome To ProBuildAI</h2>
+    <br>
+    <img ngSrc='assets/info1.jpeg' height="450" width="800">
+  </div>
+  <br>
+  <div class="nav-buttons">
+    <button mat-raised-button *ngIf="!isSubContractor" routerLink="/job-quote"> Create New Quote</button>
+    <button mat-raised-button *ngIf="isSubContractor" routerLink="/job-quote"> View Active Bids</button>
+    <button mat-raised-button routerLink=""> Visit Main Website</button>
+    <button mat-raised-button routerLink=""> Help and FAQ</button>
+  </div>
+</div>

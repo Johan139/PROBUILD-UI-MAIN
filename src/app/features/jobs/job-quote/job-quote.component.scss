@@ -1,0 +1,315 @@
+/* Retain original color scheme */
+body {
+  overflow-y: auto; /* Replaced hidden for usability */
+  background-color: #fff; /* White background */
+}
+
+mat-card {
+  background-color: white;
+  border: 1px solid #61A0AF; /* Retain cyan border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  border-radius: 8px; /* Rounded corners */
+  padding: 16px; /* Inner padding */
+}
+
+.job-quote-container {
+  width: 80vw !important; /* Retain original width */
+  margin-top: 2rem;
+  display: flex; /* Ensure flexbox for side-by-side */
+  gap: 24px; /* Space between columns */
+}
+
+.form-col {
+  flex: 1; /* Left column takes equal space */
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Space between cards */
+}
+
+.col-md-8 {
+  flex: 2; /* Right column slightly wider */
+  display: flex;
+  justify-content: center; /* Center the card */
+}
+
+/* Card Heights */
+.project-card {
+  width: 100%;
+  height: auto;
+  min-height: 300px; /* Consistent minimum */
+}
+
+.project-card-bids {
+  height: auto;
+  min-height: 150px; /* Minimum for balance */
+}
+
+.job-quote-card {
+  width: 100%;
+  max-width: 1000px;
+  height: auto;
+  min-height: 600px; /* Ensure form fits */
+}
+
+/* Typography Improvements */
+mat-card-title {
+  font-size: 1.5rem; /* Larger for prominence */
+  font-weight: 700; /* Bolder */
+  color: #333; /* Darker text */
+  text-transform: uppercase; /* Professional */
+  margin-bottom: 12px; /* Space below */
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 16px; /* Space above table */
+}
+
+thead {
+  font: 1rem sans-serif;
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+th {
+  padding: 12px 16px; /* More padding */
+  text-align: left;
+  font-weight: 600; /* Bolder */
+}
+
+tr {
+  font: 0.9rem sans-serif; /* Readable */
+  transition: background-color 0.3s ease;
+}
+
+td {
+  padding: 12px 16px; /* More padding */
+  border-bottom: 1px solid #61A0AF; /* Retain cyan */
+  text-align: left;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9; /* Softer alternate */
+}
+
+tr:hover {
+  background-color: #f1f1f1; /* Subtle hover */
+}
+
+.published {
+  color: #083d77 !important; /* Retain blue */
+}
+
+.discarded {
+  color: #da4167 !important; /* Retain red */
+}
+
+.draft {
+  color: #61a0af !important; /* Retain cyan */
+}
+
+/* Remove redundant border classes */
+.data-row-1, .data-row-2 {
+  border: none; /* Rely on table borders */
+}
+
+/* Pagination Buttons */
+.table-button {
+  padding: 10px;
+  background-color: #FBD008; /* Retain yellow */
+  border-radius: 6px; /* Rounded */
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.table-button:disabled {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+}
+
+.table-button:hover:not(:disabled) {
+  background-color: #e6bf00; /* Darker yellow */
+}
+
+.icon {
+  width: 24px; /* Larger */
+  height: 24px;
+}
+
+/* Form Styling */
+.form-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px; /* More space */
+  gap: 20px; /* Increased gap */
+}
+
+mat-form-field {
+  flex: 1;
+  width: 100%;
+}
+
+/* House Options */
+.house-options {
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* More space */
+  margin-bottom: 16px;
+}
+
+.house-options button {
+  background: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  border-radius: 8px; /* Rounded */
+  padding: 10px 20px; /* Larger padding */
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.house-options button:hover {
+  background: #e6bf00; /* Darker yellow */
+}
+
+/* General Button Styling */
+button[mat-raised-button] {
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded */
+  padding: 10px 20px; /* Larger padding */
+  transition: background-color 0.3s ease;
+}
+
+button[mat-raised-button]:hover {
+  background-color: #e6bf00; /* Darker yellow */
+}
+
+.submit-btn {
+  width: 200px; /* Fixed width */
+  margin-top: 10px;
+}
+
+/* File Upload */
+.custom-file-upload {
+  position: relative;
+  display: inline-block;
+  text-align: center;
+}
+
+.custom-file-upload input[type="file"] {
+  display: none; /* Ensure input is hidden */
+  opacity: 0; /* Additional layer of hiding */
+  width: 0; /* Prevent any residual space */
+  height: 0; /* Prevent any residual space */
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between icon and text */
+  padding: 10px 20px; /* Larger padding */
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%; /* Ensure it takes full width if needed */
+  box-sizing: border-box; /* Include padding in width */
+}
+
+.upload-label:hover {
+  background-color: #e6bf00; /* Darker yellow */
+}
+
+.upload-icon {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+
+/* Alert Modal */
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.alert-modal {
+  background-color: white;
+  padding: 24px; /* More padding */
+  border-radius: 8px; /* Rounded */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 300px;
+}
+
+.alert-modal p {
+  margin-bottom: 20px;
+  color: #333; /* Darker text */
+}
+
+.alert-modal button {
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+}
+
+/* Divider */
+mat-divider {
+  background-color: #FCD02D; /* Retain yellow variant */
+  border: none;
+  height: 2px;
+  margin: 16px 0; /* More spacing */
+}
+
+/* Material Overrides */
+::ng-deep .mdc-floating-label {
+  position: static !important;
+  font-size: 0.9rem; /* Smaller label */
+  color: #333; /* Darker text */
+}
+
+::ng-deep .mdc-text-field .mdc-floating-label {
+  transform: translateY(-60%) !important;
+}
+
+::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: white !important;
+  border-radius: 6px;
+  border: 1px solid #61A0AF; /* Retain cyan */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .job-quote-container {
+      width: 95vw;
+      flex-direction: column; /* Stack on mobile */
+      gap: 16px; /* Reduced gap */
+  }
+  .form-row {
+      flex-direction: column;
+      gap: 12px;
+  }
+  mat-form-field {
+      flex: none;
+      width: 100%;
+  }
+  .project-card, .project-card-bids, .job-quote-card {
+      max-width: 100%;
+  }
+}

@@ -1,0 +1,47 @@
+<div *ngIf="isLoading">
+  <app-loader></app-loader>
+</div>
+<mat-toolbar class="form-row">
+  <img ngSrc='assets/logo.png' alt="" height="75" width="250" routerLink="/dashboard">
+  <button *ngIf="shouldShowLogoutButton()"  class="logout-btn" (click)="logout()">
+    <img src="assets/custom-svg/logout-svgrepo-com.svg" alt="" class="icon">
+  </button>
+</mat-toolbar>
+<mat-sidenav-container *ngIf="shouldShowSidenav()">
+  <mat-sidenav #sidenav mode="side" opened>
+    <mat-nav-list>
+      <button mat-raised-button class="menu-button" routerLink="/projects">
+        <mat-icon>work</mat-icon>
+        <span class="menu-item">Projects</span>
+      </button>
+
+      <button mat-raised-button class="menu-button" routerLink="/job-quote">
+        <mat-icon>list</mat-icon>
+        <span class="menu-item">Jobs</span>
+      </button>
+
+      <button mat-raised-button class="menu-button" routerLink="/dashboard">
+        <mat-icon>calendar_today</mat-icon>
+        <span class="menu-item">Work Calendar</span>
+      </button>
+
+      <button mat-raised-button class="menu-button" routerLink="/dashboard/notifications">
+        <mat-icon>update</mat-icon>
+        <span class="menu-item">Updates</span>
+      </button>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+<div *ngIf="showAlert" class="alert-overlay">
+  <div class="alert-modal">
+    <p>{{ alertMessage }}</p>
+    <div class="form-row">
+      <button class="no-btn" mat-raised-button (click)="cancelalert()">No</button>
+      <button mat-raised-button (click)="closeAlert()">Yes</button>
+    </div>
+  </div>
+</div>
+<router-outlet *ngIf="!shouldShowSidenav()"></router-outlet>
