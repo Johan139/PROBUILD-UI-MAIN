@@ -1,5 +1,5 @@
-# Stage 1: Build the Angular app
-FROM node:22 AS build
+# Stage 1: Build and Serve Angular App
+FROM node:22 AS build-and-serve
 WORKDIR /app
 
 # Install Angular CLI globally
@@ -12,16 +12,11 @@ RUN npm install --legacy-peer-deps
 # Copy the rest of the application code
 COPY . .
 
-# Build the Angular app for production
-ARG BACKEND_URL
-ARG API_KEY
-ENV BACKEND_URL=$BACKEND_URL
-ENV API_KEY=$API_KEY
-RUN npm run set-env && ng build --configuration production
+# Generate runtime config
+RUN node set-env.js
 
-# Stage 2: Serve the app with Nginx
-FROM nginx:alpine
-COPY --from=build /app/dist/probuildai-ui /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Expose port 80 for the development server
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+# Run the Angular development server on port 80
+CMD ["ng", "serve", "--host", "0.0.0.0", "--port", "80", "--disable-host-check"]

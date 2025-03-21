@@ -4,10 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "set-env": "node set-env.ts",
+"set-env": "node set-env.ts",
+  "build": "npm run set-env && ng build --configuration production",
     "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs"
   },
   "private": true,
