@@ -3,7 +3,7 @@ name: Build and Deploy probuildai-ui to Azure Container Apps (Development)
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   build-and-deploy:
