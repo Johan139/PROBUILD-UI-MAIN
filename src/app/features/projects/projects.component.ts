@@ -18,7 +18,7 @@ import { PieChartsComponent } from '../../components/pie-charts/pie-charts.compo
 import { SortedBarChartComponent } from '../../components/sorted-bar-chart/sorted-bar-chart.component';
 
 
-const BASE_URL = environment.BACKEND_URL;
+ 
 @Component({
   selector: 'app-job-quote',
   standalone: true,

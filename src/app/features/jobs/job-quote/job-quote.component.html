@@ -197,14 +197,23 @@
               </mat-error>
             </mat-form-field>
           </div>
-          <div class="form-row">
+          <div class="form-row button-row">
             <button mat-raised-button type="submit" class="submit-btn">Generate Quote</button>
-            <div class="custom-file-upload">
-              <label for="file-upload" class="upload-label">
-                <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                Upload File
-              </label>
-              <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+            <div class="upload-container">
+              <div *ngIf="isUploading" class="upload-progress">
+                <p>Upload Progress: {{ progress }}%</p>
+                <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+              </div>
+              <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
+                <p>{{ uploadedFilesCount }} file(s) uploaded successfully</p>
+              </div>
+              <div class="custom-file-upload">
+                <label for="file-upload" class="upload-label submit-btn">
+                  <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                  Upload File
+                </label>
+                <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+              </div>
             </div>
           </div>
         </form>

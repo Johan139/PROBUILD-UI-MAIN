@@ -140,6 +140,55 @@ tr:hover {
   height: 24px;
 }
 
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #f9f9f9; /* Light background for contrast */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0 0 5px 0; /* Space below the text */
+    font-size: 12px; /* Smaller text */
+    color: #333; /* Darker text */
+  }
+
+  mat-progress-bar {
+    width: 150px; /* Slightly smaller for better fit */
+    height: 8px; /* Thinner bar */
+    border-radius: 4px; /* Rounded edges */
+  }
+
+  /* Customize the progress bar color */
+  ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
+    background-color: #FBD008 !important; /* Retain yellow */
+  }
+
+  ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
+    background-color: #e0e0e0 !important; /* Light gray buffer */
+  }
+}
+
+.upload-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #e6ffe6; /* Light green background for success */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0; /* Remove default margin */
+    font-size: 12px; /* Smaller text */
+    color: #2e7d32; /* Dark green text for success */
+  }
+}
+
 /* Form Styling */
 .form-row {
   display: flex;
@@ -148,6 +197,19 @@ tr:hover {
   align-items: flex-start;
   margin-bottom: 20px; /* More space */
   gap: 20px; /* Increased gap */
+}
+
+/* Specific styling for the button row */
+.button-row {
+  display: flex;
+  align-items: center; /* Align items vertically */
+  gap: 20px; /* Consistent spacing */
+}
+
+.upload-container {
+  display: flex;
+  align-items: center; /* Align progress bar and upload button */
+  gap: 15px; /* Space between progress bar and upload button */
 }
 
 mat-form-field {
@@ -185,22 +247,26 @@ button[mat-raised-button] {
   border-radius: 8px; /* Rounded */
   padding: 10px 20px; /* Larger padding */
   transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
 }
 
 button[mat-raised-button]:hover {
   background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
 }
 
 .submit-btn {
   width: 200px; /* Fixed width */
-  margin-top: 10px;
+  height: 48px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* File Upload */
 .custom-file-upload {
   position: relative;
   display: inline-block;
-  text-align: center;
 }
 
 .custom-file-upload input[type="file"] {
@@ -220,13 +286,14 @@ button[mat-raised-button]:hover {
   font-weight: 500;
   border-radius: 8px; /* Rounded corners */
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  width: 100%; /* Ensure it takes full width if needed */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
   box-sizing: border-box; /* Include padding in width */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 .upload-label:hover {
   background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
 }
 
 .upload-icon {
@@ -297,19 +364,35 @@ mat-divider {
 /* Responsive Design */
 @media (max-width: 768px) {
   .job-quote-container {
-      width: 95vw;
-      flex-direction: column; /* Stack on mobile */
-      gap: 16px; /* Reduced gap */
+    width: 95vw;
+    flex-direction: column; /* Stack on mobile */
+    gap: 16px; /* Reduced gap */
   }
   .form-row {
-      flex-direction: column;
-      gap: 12px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .button-row {
+    flex-direction: column; /* Stack buttons vertically on mobile */
+    align-items: flex-start; /* Align to the left */
+  }
+  .upload-container {
+    flex-direction: row; /* Keep progress bar and upload button in a row */
+    width: 100%; /* Full width on mobile */
+    justify-content: flex-start; /* Align to the left */
+  }
+  .upload-progress, .upload-complete {
+    margin-right: 10px; /* Adjust spacing for mobile */
+  }
+  .submit-btn {
+    width: 100%; /* Full width on mobile */
+    max-width: 200px; /* Keep max width */
   }
   mat-form-field {
-      flex: none;
-      width: 100%;
+    flex: none;
+    width: 100%;
   }
   .project-card, .project-card-bids, .job-quote-card {
-      max-width: 100%;
+    max-width: 100%;
   }
 }
