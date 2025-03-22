@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
-  BACKEND_URL: process.env['BACKEND_URL'] || 'http://localhost:5000/api',
-  API_KEY: process.env['API_KEY'] || 'ef306472fbed4ca9835115255241412'
+  BACKEND_URL: 'https://default-backend-url.com/api', // Placeholder, will be overridden at runtime
+  API_KEY: 'default-api-key', // Placeholder, will be overridden at runtime
+  production: true
 };
