@@ -12,6 +12,9 @@ RUN npm install --legacy-peer-deps
 # Copy the rest of the application code
 COPY . .
 
+# Create the src/assets directory if it doesn't exist
+RUN mkdir -p src/assets
+
 # Generate runtime config
 RUN node set-env.js
 
