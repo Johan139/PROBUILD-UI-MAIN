@@ -42,12 +42,12 @@ jobs:
         with:
           context: .
           push: true
-          tags: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
+          tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
 
-      # Deploy to Azure App Service
+      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: probuildai-backend
-          images: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
-          slot-name: production  # Optional: Remove if not using slots
+          app-name: probuildai-ui
+          images: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
+          slot-name: production
