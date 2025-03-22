@@ -42,7 +42,15 @@ jobs:
         with:
           context: .
           push: true
-          tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
+          tags: probuild.azurecr.io/probuildai-ui:recovery
+        env:
+          BACKEND_URL: "https://probuildai-backend.internal.wonderfulgrass-0f331a8e.centralus.azurecontainerapps.io/api"
+          API_KEY: "ef306472fbed4ca9835115255241412"
+
+      # Debug: Verify the image exists in ACR
+      - name: Debug ACR image
+        run: |
+          az acr repository show-tags --name probuild --repository probuildai-ui --output table
 
       # Deploy to Azure Container App
       - name: Deploy to Azure Container App
@@ -50,4 +58,10 @@ jobs:
           az containerapp update \
             --name probuildai-ui \
             --resource-group rg-Probuild \
-            --image probuild.azurecr.io/probuildai-ui:${{ github.sha }}
+            --image probuild.azurecr.io/probuildai-ui:recovery \
+            --set "properties.environmentId=/subscriptions/0e6dc202-bcae-4b8b-b1de-a8f3a04341d6/resourceGroups/rg-Probuild/providers/Microsoft.App/managedEnvironments/managedEnvironment-rgProbuild-ae27" \
+            --set "properties.configuration.activeRevisionsMode=Single" \
+            --cpu 0.5 \
+            --memory 1.0Gi \
+            --min-replicas 1 \
+            --max-replicas 1
