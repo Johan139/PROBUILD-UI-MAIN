@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
-  BACKEND_URL: process.env['BACKEND_URL'] || 'http://localhost:5000/api',
-  API_KEY: process.env['API_KEY'] || 'ef306472fbed4ca9835115255241412'
+  BACKEND_URL: 'https://probuildai-backend.wonderfulgrass-0f331a8e.centralus.azurecontainerapps.io/api',
+  API_KEY: 'ef306472fbed4ca9835115255241412',
+  production: true
 };
