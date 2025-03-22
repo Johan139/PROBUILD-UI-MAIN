@@ -1,9 +1,9 @@
-name: Build and Deploy probuildai-ui to Azure Container Apps (Development)
+name: Build and Deploy to Azure App Service
 
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   build-and-deploy:
@@ -14,16 +14,18 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      # Debug: Print the creds JSON (values will be masked)
-      - name: Debug creds
+      # Debug: Print the Service Principal credentials (values will be masked)
+      - name: Debug Service Principal credentials
         run: |
-          echo "CREDS_JSON=${{ secrets.AZURE_CREDENTIALS }}"
+          echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
+          echo "AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}"
+          echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
 
       # Log in to Azure using Service Principal
       - name: Log in to Azure
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"0e6dc202-bcae-4b8b-b1de-a8f3a04341d6"}'
 
       # Log in to Azure Container Registry
       - name: Log in to ACR
@@ -40,20 +42,12 @@ jobs:
         with:
           context: .
           push: true
-          tags: probuild.azurecr.io/probuildai-ui:dev-${{ github.sha }}
+          tags: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
 
-      # Deploy to Azure Container Apps
-      - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
+      # Deploy to Azure App Service
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
         with:
-          appSourcePath: .
-          acrName: probuild
-          containerAppName: probuildai-ui
-          resourceGroup: rg-Probuild
-          containerAppEnvironment: managedEnvironment-rgProbuild-ae27
-          imageToDeploy: probuild.azurecr.io/probuildai-ui:dev-${{ github.sha }}
-          ingress: internal
-          targetPort: 80
-          environmentVariables: |
-            BACKEND_URL=https://probuildai-backend.wonderful-grass-0f331ae8.centralus.azurecontainerapps.io/api
-            API_KEY=${{ secrets.API_KEY }}
+          app-name: probuildai-backend
+          images: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
+          slot-name: production  # Optional: Remove if not using slots
