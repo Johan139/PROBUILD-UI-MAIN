@@ -44,7 +44,7 @@ jobs:
           push: true
           tags: probuild.azurecr.io/probuildai-ui:recovery-v3
         env:
-          BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331a8e.centralus.azurecontainerapps.io/api"
+          BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
           API_KEY: "ef306472fbed4ca9835115255241412"
 
       # Debug: Verify the image exists in ACR
