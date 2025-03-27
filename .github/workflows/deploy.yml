@@ -48,7 +48,7 @@ jobs:
               --resource-group rg-Probuild \
               --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
               --set-env-vars \
-                "PORT=8080" \
+                "PORT=80" \
                 "FORCE_NEW_REVISION=true"
           else
             echo "Container app does not exist, creating..."
@@ -62,15 +62,10 @@ jobs:
               --min-replicas 1 \
               --max-replicas 1 \
               --ingress external \
-              --target-port 8080 \
+              --target-port 80 \
               --set-env-vars \
-                "PORT=8080" \
+                "PORT=80" \
                 "FORCE_NEW_REVISION=true" \
               --startup-probe "tcp port=8080 failure-threshold=10 interval=5 timeout=30"
           fi
 
-      # Check logs to diagnose issues
-      - name: Check Container App Logs
-        run: |
-          az containerapp logs show --name probuildai-ui --resource-group rg-Probuild --follow --tail 100
-        continue-on-error: true
