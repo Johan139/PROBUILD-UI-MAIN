@@ -1,9 +1,9 @@
-name: Build and Deploy Frontend to Azure Container Apps
+name: Build and Deploy to Azure Container App
 
 on:
   push:
     branches:
-      - master
+      - dev
 
 jobs:
   build-and-deploy:
@@ -13,6 +13,13 @@ jobs:
       # Checkout the repository
       - name: Check out code
         uses: actions/checkout@v4
+
+      # Debug: Print the Service Principal credentials (values will be masked)
+      - name: Debug Service Principal credentials
+        run: |
+          echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
+          echo "AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}"
+          echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
 
       # Log in to Azure using Service Principal
       - name: Log in to Azure
@@ -37,35 +44,10 @@ jobs:
           push: true
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
 
-      # Deploy to Azure Container Apps
-      - name: Deploy to Azure Container Apps
-        run: |
-          # Check if the app already exists
-          if az containerapp show --name probuildai-ui --resource-group rg-Probuild > /dev/null 2>&1; then
-            echo "Container app exists, updating..."
-            az containerapp update \
-              --name probuildai-ui \
-              --resource-group rg-Probuild \
-              --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
-              --set-env-vars \
-                "PORT=80" \
-                "FORCE_NEW_REVISION=true"
-          else
-            echo "Container app does not exist, creating..."
-            az containerapp create \
-              --name probuildai-ui \
-              --resource-group rg-Probuild \
-              --environment managedEnvironment-rgProbuild-ae27 \
-              --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
-              --cpu 0.5 \
-              --memory 1Gi \
-              --min-replicas 1 \
-              --max-replicas 1 \
-              --ingress external \
-              --target-port 80 \
-              --set-env-vars \
-                "PORT=80" \
-                "FORCE_NEW_REVISION=true" \
-              --startup-probe "tcp port=8080 failure-threshold=10 interval=5 timeout=30"
-          fi
-
+      # Deploy to Azure App Service
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: probuildai-backend
+          images: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
+          slot-name: production  # Optional: Remove if not using slots
