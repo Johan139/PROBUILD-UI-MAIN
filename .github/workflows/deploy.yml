@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure Container App
+name: Build and Deploy Frontend to Azure Container Apps
 
 on:
   push:
@@ -13,13 +13,6 @@ jobs:
       # Checkout the repository
       - name: Check out code
         uses: actions/checkout@v4
-
-      # Debug: Print the Service Principal credentials (values will be masked)
-      - name: Debug Service Principal credentials
-        run: |
-          echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
-          echo "AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}"
-          echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
 
       # Log in to Azure using Service Principal
       - name: Log in to Azure
@@ -42,26 +35,22 @@ jobs:
         with:
           context: .
           push: true
-          tags: probuild.azurecr.io/probuildai-ui:recovery-v3
-        env:
-          BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331a8e.centralus.azurecontainerapps.io/api"
-          API_KEY: "ef306472fbed4ca9835115255241412"
+          tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
 
-      # Debug: Verify the image exists in ACR
-      - name: Debug ACR image
-        run: |
-          az acr repository show-tags --name probuild --repository probuildai-ui --output table
-
-      # Deploy to Azure Container App
-      - name: Deploy to Azure Container App
+      # Deploy to Azure Container Apps
+      - name: Deploy to Azure Container Apps
         run: |
           az containerapp update \
             --name probuildai-ui \
             --resource-group rg-Probuild \
-            --image probuild.azurecr.io/probuildai-ui:recovery-v3 \
-            --set "properties.environmentId=/subscriptions/0e6dc202-bcae-4b8b-b1de-a8f3a04341d6/resourceGroups/rg-Probuild/providers/Microsoft.App/managedEnvironments/managedEnvironment-rgProbuild-ae27" \
-            --set "properties.configuration.activeRevisionsMode=Single" \
-            --cpu 0.5 \
-            --memory 1.0Gi \
-            --min-replicas 1 \
-            --max-replicas 1
+            --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
+            --set-env-vars \
+              "PORT=8080" \
+              "FORCE_NEW_REVISION=true" \
+            --set ingress.targetPort=8080
+
+      # Check logs to diagnose issues
+      - name: Check Container App Logs
+        run: |
+          az containerapp logs show --name probuildai-ui --resource-group rg-Probuild --follow --tail 100
+        continue-on-error: true
