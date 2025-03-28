@@ -337,7 +337,7 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
     console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
 
     this.httpClient
-      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
+      .post<any>({BASE_URL} +'/Jobs/UploadImage', formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ 'Accept': 'application/json' })
