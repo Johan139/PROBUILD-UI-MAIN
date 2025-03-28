@@ -10,6 +10,8 @@ import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatInput } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { environment } from '../../../../environments/environment';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobResponse } from '../../../models/jobdetails.response';
@@ -22,6 +24,8 @@ import { formatDate } from '@angular/common';
 import { DatePipe } from '@angular/common';
 import { UploadDocument } from '../../../models/UploadDocument';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { v4 as uuidv4 } from 'uuid';
+import { ConfirmationDialogComponent } from './confirmation-dialog.component'; // Import the new dialog component
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -41,6 +45,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatInput,
     MatButton,
     MatProgressBarModule,
+    MatTooltipModule,
+    MatDialogModule,
     LoaderComponent
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
@@ -61,7 +67,10 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
   selectedUnit: string = 'sq ft';
   progress: number = 0;
   isUploading: boolean = false;
-  uploadedFilesCount: number = 0; // Track uploaded files count
+  uploadedFilesCount: number = 0;
+  uploadedFileNames: string[] = [];
+  uploadedFileUrls: string[] = [];
+  sessionId: string = '';
   private hubConnection!: HubConnection;
 
   constructor(
@@ -70,13 +79,17 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
     private httpClient: HttpClient,
     private datePipe: DatePipe,
     @Inject(PLATFORM_ID) private platformId: Object,
-    private router: Router
+    private router: Router,
+    private dialog: MatDialog
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
   ngOnInit(): void {
+    this.sessionId = uuidv4();
+    console.log('Generated sessionId:', this.sessionId);
+
     this.jobCardForm = this.formBuilder.group({
       projectName: ['', Validators.required],
       date: ['', Validators.required],
@@ -96,21 +109,21 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
     });
 
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
-      .configureLogging(LogLevel.Debug) // Add verbose logging
+    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+      .configureLogging(LogLevel.Debug)
       .build();
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
-      this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100)); // Scale 0-100% to 50-100%
+      this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
       console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
     });
 
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
-      this.uploadedFilesCount = fileCount; // Update the count of uploaded files
-      this.resetFileInput(); // Reset the file input after upload completes
-      console.log(`Server-to-Azure upload complete. ${fileCount} file(s) uploaded.`);
+      this.resetFileInput();
+      console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
+      console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
     });
 
     this.hubConnection
@@ -146,6 +159,7 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
         .then(() => console.log('SignalR connection stopped'))
         .catch(err => console.error('Error stopping SignalR:', err));
     }
+    this.deleteTemporaryFiles();
   }
 
   loadJobs(): void {
@@ -211,10 +225,8 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
     formData.append('UserId', userId ?? '');
     formData.append('status', 'NEW');
     formData.append('address', formValue.address);
-
-    if (formValue.blueprint) {
-      formData.append('blueprint', formValue.blueprint);
-    }
+    formData.append('sessionId', this.sessionId);
+    formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileUrls));
 
     this.progress = 0;
 
@@ -243,6 +255,7 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
             };
             this.alertMessage = 'Job Quote Creation Successful';
             this.showAlert = true;
+            this.uploadedFileUrls = [];
             this.router.navigate(['view-quote'], { queryParams: responseParams });
           }
         }
@@ -252,6 +265,7 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
         this.isUploading = false;
         console.error('Upload error:', error);
         this.progress = 0;
+        this.deleteTemporaryFiles();
       },
       complete: () => console.log('Client-to-API upload complete')
     });
@@ -324,20 +338,24 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const newFileNames = Array.from(input.files).map(file => file.name);
+    this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
+
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
     });
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    formData.append('connectionId', this.hubConnection.connectionId || ''); // Pass SignalR connectionId
+    formData.append('connectionId', this.hubConnection.connectionId || '');
+    formData.append('sessionId', this.sessionId);
 
     this.progress = 0;
     this.isUploading = true;
     console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
 
     this.httpClient
-      .post<any>(BASE_URL +'/Jobs/UploadImage', formData, {
+      .post<any>(BASE_URL + '/Jobs/UploadImage', formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ 'Accept': 'application/json' })
@@ -349,28 +367,84 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
             this.progress = Math.round((50 * event.loaded) / event.total);
             console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
           } else if (event.type === HttpEventType.Response) {
-            console.log('Upload to API complete:', event.body);
-            this.uploadedFilesCount = event.body?.fileNames?.length || this.uploadedFilesCount;
-            this.resetFileInput(); // Reset the file input after HTTP response
+            console.log('Upload response:', event.body);
+            const newFilesCount = newFileNames.length;
+            this.uploadedFilesCount += newFilesCount;
+            if (event.body?.fileUrls) {
+              this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
+              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
+            } else {
+              console.error('No fileUrls returned in response:', event.body);
+            }
+            this.resetFileInput();
           }
         },
         error: (error) => {
           console.error('Upload error:', error);
           this.progress = 0;
           this.isUploading = false;
-          this.resetFileInput(); // Reset on error too
+          this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
+          this.resetFileInput();
         },
         complete: () => console.log('Client-to-API upload complete')
       });
   }
 
-  // Method to reset the file input
   resetFileInput(): void {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ''; // Clear the file input value
+      fileInput.value = '';
       console.log('File input reset');
     }
+  }
+
+  onCancel(): void {
+    // Open the confirmation dialog
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '400px',
+      panelClass: 'custom-dialog-container',
+      disableClose: true // Prevent closing by clicking outside
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        // User confirmed cancellation
+        console.log('Cancel clicked. uploadedFileUrls before deletion:', this.uploadedFileUrls);
+        this.deleteTemporaryFiles();
+        this.jobCardForm.reset();
+        this.uploadedFilesCount = 0;
+        this.uploadedFileNames = [];
+        this.uploadedFileUrls = [];
+        this.sessionId = uuidv4();
+        this.router.navigate(['/dashboard']);
+      }
+      // If result is false, the user clicked "Return to Work", so do nothing
+    });
+  }
+
+  deleteTemporaryFiles(): void {
+    console.log('Deleting temporary files. uploadedFileUrls:', this.uploadedFileUrls);
+    if (this.uploadedFileUrls.length === 0) {
+      console.log('No temporary files to delete.');
+      return;
+    }
+
+    this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: this.uploadedFileUrls
+    }).subscribe({
+      next: () => {
+        console.log('Temporary files deleted successfully');
+        this.uploadedFileUrls = [];
+        this.uploadedFilesCount = 0;
+        this.uploadedFileNames = [];
+      },
+      error: (error) => {
+        console.error('Error deleting temporary files:', error);
+        this.uploadedFileUrls = [];
+        this.uploadedFilesCount = 0;
+        this.uploadedFileNames = [];
+      }
+    });
   }
 
   closeAlert(): void {

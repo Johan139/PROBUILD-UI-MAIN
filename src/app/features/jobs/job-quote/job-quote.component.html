@@ -198,14 +198,19 @@
             </mat-form-field>
           </div>
           <div class="form-row button-row">
-            <button mat-raised-button type="submit" class="submit-btn">Generate Quote</button>
+            <div class="button-group">
+              <button mat-raised-button type="submit" class="submit-btn">Generate Quote</button>
+              <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
+            </div>
             <div class="upload-container">
               <div *ngIf="isUploading" class="upload-progress">
                 <p>Upload Progress: {{ progress }}%</p>
                 <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
               </div>
               <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-                <p>{{ uploadedFilesCount }} file(s) uploaded successfully</p>
+                <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
+                  {{ uploadedFilesCount }} file(s) uploaded successfully
+                </p>
               </div>
               <div class="custom-file-upload">
                 <label for="file-upload" class="upload-label submit-btn">

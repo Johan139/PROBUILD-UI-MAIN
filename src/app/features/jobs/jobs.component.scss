@@ -1,6 +1,322 @@
-.alert-button{
-  background: #FBD008 !important;
+/* Retain original color scheme */
+body {
+  overflow-y: auto; /* Replaced hidden for usability */
+  background-color: #fff; /* White background */
 }
+
+mat-card {
+  background-color: white;
+  border: 1px solid #61A0AF; /* Retain cyan border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  border-radius: 8px; /* Rounded corners */
+  padding: 16px; /* Inner padding */
+}
+
+.job-quote-container {
+  width: 80vw !important; /* Retain original width */
+  margin-top: 2rem;
+  display: flex; /* Ensure flexbox for side-by-side */
+  gap: 24px; /* Space between columns */
+}
+
+.form-col {
+  flex: 1; /* Left column takes equal space */
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Space between cards */
+}
+
+.col-md-8 {
+  flex: 2; /* Right column slightly wider */
+  display: flex;
+  justify-content: center; /* Center the card */
+}
+
+/* Card Heights */
+.project-card {
+  width: 100%;
+  height: auto;
+  min-height: 300px; /* Consistent minimum */
+}
+
+.project-card-bids {
+  height: auto;
+  min-height: 150px; /* Minimum for balance */
+}
+
+.job-quote-card {
+  width: 100%;
+  max-width: 1000px;
+  height: auto;
+  min-height: 600px; /* Ensure form fits */
+}
+
+/* Typography Improvements */
+mat-card-title {
+  font-size: 1.5rem; /* Larger for prominence */
+  font-weight: 700; /* Bolder */
+  color: #333; /* Darker text */
+  text-transform: uppercase; /* Professional */
+  margin-bottom: 12px; /* Space below */
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 16px; /* Space above table */
+}
+
+thead {
+  font: 1rem sans-serif;
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+th {
+  padding: 12px 16px; /* More padding */
+  text-align: left;
+  font-weight: 600; /* Bolder */
+}
+
+tr {
+  font: 0.9rem sans-serif; /* Readable */
+  transition: background-color 0.3s ease;
+}
+
+td {
+  padding: 12px 16px; /* More padding */
+  border-bottom: 1px solid #61A0AF; /* Retain cyan */
+  text-align: left;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9; /* Softer alternate */
+}
+
+tr:hover {
+  background-color: #f1f1f1; /* Subtle hover */
+}
+
+.published {
+  color: #083d77 !important; /* Retain blue */
+}
+
+.discarded {
+  color: #da4167 !important; /* Retain red */
+}
+
+.draft {
+  color: #61a0af !important; /* Retain cyan */
+}
+
+/* Remove redundant border classes */
+.data-row-1, .data-row-2 {
+  border: none; /* Rely on table borders */
+}
+
+/* Pagination Buttons */
+.table-button {
+  padding: 10px;
+  background-color: #FBD008; /* Retain yellow */
+  border-radius: 6px; /* Rounded */
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.table-button:disabled {
+  background-color: #e0e0e0;
+  cursor: not-allowed;
+}
+
+.table-button:hover:not(:disabled) {
+  background-color: #e6bf00; /* Darker yellow */
+}
+
+.icon {
+  width: 24px; /* Larger */
+  height: 24px;
+}
+
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #f9f9f9; /* Light background for contrast */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0 0 5px 0; /* Space below the text */
+    font-size: 12px; /* Smaller text */
+    color: #333; /* Darker text */
+  }
+
+  mat-progress-bar {
+    width: 150px; /* Slightly smaller for better fit */
+    height: 8px; /* Thinner bar */
+    border-radius: 4px; /* Rounded edges */
+  }
+
+  /* Customize the progress bar color */
+  ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
+    background-color: #FBD008 !important; /* Retain yellow */
+  }
+
+  ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
+    background-color: #e0e0e0 !important; /* Light gray buffer */
+  }
+}
+
+.upload-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #e6ffe6; /* Light green background for success */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0; /* Remove default margin */
+    font-size: 12px; /* Smaller text */
+    color: #2e7d32; /* Dark green text for success */
+  }
+}
+
+/* Form Styling */
+.form-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px; /* More space */
+  gap: 20px; /* Increased gap */
+}
+
+/* Specific styling for the button row */
+.button-row {
+  display: flex;
+  align-items: center; /* Align items vertically */
+  gap: 20px; /* Consistent spacing */
+}
+
+.upload-container {
+  display: flex;
+  align-items: center; /* Align progress bar and upload button */
+  gap: 15px; /* Space between progress bar and upload button */
+}
+
+mat-form-field {
+  flex: 1;
+  width: 100%;
+}
+
+/* House Options */
+.house-options {
+  padding-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* More space */
+  margin-bottom: 16px;
+}
+
+.house-options button {
+  background: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  border-radius: 8px; /* Rounded */
+  padding: 10px 20px; /* Larger padding */
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.house-options button:hover {
+  background: #e6bf00; /* Darker yellow */
+}
+
+/* General Button Styling */
+button[mat-raised-button] {
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded */
+  padding: 10px 20px; /* Larger padding */
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+button[mat-raised-button]:hover {
+  background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
+
+.submit-btn {
+  width: 200px; /* Fixed width */
+  height: 48px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn {
+  width: 200px; /* Fixed width */
+  height: 48px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #da4167; /* Red for cancel */
+  color: white; /* White text for contrast */
+}
+
+.cancel-btn:hover {
+  background-color: #c0395a; /* Darker red on hover */
+}
+
+/* File Upload */
+.custom-file-upload {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-file-upload input[type="file"] {
+  display: none; /* Ensure input is hidden */
+  opacity: 0; /* Additional layer of hiding */
+  width: 0; /* Prevent any residual space */
+  height: 0; /* Prevent any residual space */
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between icon and text */
+  padding: 10px 20px; /* Larger padding */
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box; /* Include padding in width */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.upload-label:hover {
+  background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
+
+.upload-icon {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+
+/* Alert Modal */
 .alert-overlay {
   position: fixed;
   top: 0;
@@ -17,130 +333,90 @@
 
 .alert-modal {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
+  padding: 24px; /* More padding */
+  border-radius: 8px; /* Rounded */
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
   width: 300px;
 }
-.add-btn{
-  color: #083D77;
-  margin-right: .3rem;
-}
+
 .alert-modal p {
   margin-bottom: 20px;
+  color: #333; /* Darker text */
 }
 
 .alert-modal button {
-  color: white;
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
 }
-.sb-t2{
-  margin-top: 1.5rem;
-}
-.sb-text{
-  background: #FBD008 !important;
-  border-radius: 5px !important;
- margin-left : 1.5rem;
-}
-.sb-btn-edit {
-  color: #083D77 !important;
-}
-.sb-btn-pub{
-  color: #61A0AF !important;
-}
-.sb-btn-danger {
-  color: #DA4167 !important;
-}
-.no-border{
+
+/* Divider */
+mat-divider {
+  background-color: #FCD02D; /* Retain yellow variant */
   border: none;
-  outline: none;
-  width: auto;
-  background: none;
-}
-.icon {
-  width: 1em;
-  height: auto;
-}
-mat-card{
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
-  0 6px 20px rgba(0, 0, 0, 0.19);
-  background: #fff !important;
-  margin-top: 20px;
-  width: 80vw;
-}
-div h2{
-  margin-top: 2rem;
-  color: #FBD008;
-}
-mat-card h2{
-  color: #FBD008;
-  margin-top: 2.5rem;
-  margin-left: 2rem;
-}
-mat-card h3{
-  margin-top: 1.5rem;
-  margin-left: 2rem;
-}
-mat-card div{
-  margin-left: 2rem;
-  margin-right: 2rem;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-radius: 80px;
-}
-thead{
-  border: none !important;
-  background-color: #FBD008;
-  tr:first-child th:first-child {
-    border-top-left-radius: 20px;
-  }
-  tr:last-child th:last-child{
-    border-top-right-radius: 20px;
-  }
+  height: 2px;
+  margin: 16px 0; /* More spacing */
 }
 
-td {
-  border: 3px solid #D9D9D9;
-  stroke-width: 20px;
+/* Material Overrides */
+::ng-deep .mdc-floating-label {
+  position: static !important;
+  font-size: 0.9rem; /* Smaller label */
+  color: #333; /* Darker text */
+}
+
+::ng-deep .mdc-text-field .mdc-floating-label {
+  transform: translateY(-60%) !important;
+}
+
+::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: white !important;
+  border-radius: 6px;
+  border: 1px solid #61A0AF; /* Retain cyan */
+}
+
+/* Tooltip Styling for Uploaded File Names */
+::ng-deep .mat-tooltip {
+  background-color: #333;
+  color: white;
+  font-size: 12px;
   padding: 8px;
+  max-width: 300px;
+  white-space: pre-wrap;
 }
 
-th {
-  background-color: #FBD008;
-  text-align: left;
-  padding: 8px;
-}
-.table-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.subtask-table{
-  width: 80vw;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-.subtask-table2{
-  width: 80vw;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  height: 5rem;
-}
-tbody {
-  tr {
-    &:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    &:hover {
-      background-color: #f1f1f1;
-    }
+/* Responsive Design */
+@media (max-width: 768px) {
+  .job-quote-container {
+    width: 95vw;
+    flex-direction: column; /* Stack on mobile */
+    gap: 16px; /* Reduced gap */
   }
-  td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .button-row {
+    flex-direction: column; /* Stack buttons vertically on mobile */
+    align-items: flex-start; /* Align to the left */
+  }
+  .upload-container {
+    flex-direction: row; /* Keep progress bar and upload button in a row */
+    width: 100%; /* Full width on mobile */
+    justify-content: flex-start; /* Align to the left */
+  }
+  .upload-progress, .upload-complete {
+    margin-right: 10px; /* Adjust spacing for mobile */
+  }
+  .submit-btn, .cancel-btn {
+    width: 100%; /* Full width on mobile */
+    max-width: 200px; /* Keep max width */
+  }
+  mat-form-field {
+    flex: none;
+    width: 100%;
+  }
+  .project-card, .project-card-bids, .job-quote-card {
+    max-width: 100%;
   }
 }
