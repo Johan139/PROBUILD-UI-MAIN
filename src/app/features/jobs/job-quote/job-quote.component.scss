@@ -60,56 +60,55 @@ mat-card-title {
   margin-bottom: 12px; /* Space below */
 }
 
+/* Updated Table Styles to Match Projects */
 table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-top: 16px; /* Space above table */
+  border-collapse: collapse; /* Matches projects */
 }
 
 thead {
-  font: 1rem sans-serif;
-  background-color: #FBD008; /* Retain yellow */
-  color: #333; /* Darker text */
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  background-color: #FBD008; /* Matches projects */
+  color: #000000; /* Matches projects $black */
 }
 
 th {
-  padding: 12px 16px; /* More padding */
-  text-align: left;
-  font-weight: 600; /* Bolder */
+  background-color: #FBD008; /* Matches projects */
+  color: #000000; /* Matches projects $black */
+  font-weight: 500; /* Matches projects */
+  padding: 8px; /* Matches projects */
+  text-align: left; /* Matches projects */
+  border-bottom: 2px solid #d9d9d9; /* Matches projects $light-gray */
 }
 
 tr {
-  font: 0.9rem sans-serif; /* Readable */
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease; /* Already matches projects */
 }
 
 td {
-  padding: 12px 16px; /* More padding */
-  border-bottom: 1px solid #61A0AF; /* Retain cyan */
-  text-align: left;
-}
-
-tr:nth-child(even) {
-  background-color: #f9f9f9; /* Softer alternate */
+  padding: 8px; /* Matches projects */
+  border: 1px solid #d9d9d9; /* Matches projects $light-gray */
+  color: #000000; /* Matches projects $black */
 }
 
 tr:hover {
-  background-color: #f1f1f1; /* Subtle hover */
+  background-color: #d9d9d9; /* Matches projects $light-gray */
+}
+
+/* Removed or Adjusted Classes/Pseudo-classes Not in Projects */
+tr:nth-child(even) {
+  /* Removed background-color: #f9f9f9; as it’s not in projects */
 }
 
 .published {
-  color: #083d77 !important; /* Retain blue */
+  color: #083d77 !important; /* Retained as specific to this context */
 }
 
 .discarded {
-  color: #da4167 !important; /* Retain red */
+  color: #da4167 !important; /* Retained as specific to this context */
 }
 
 .draft {
-  color: #61a0af !important; /* Retain cyan */
+  color: #61a0af !important; /* Retained as specific to this context */
 }
 
 /* Remove redundant border classes */
@@ -149,7 +148,6 @@ tr:hover {
   padding: 8px; /* Add padding for better appearance */
   border-radius: 6px; /* Rounded corners */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  width: 150px; /* Fixed width to prevent layout shift */
 
   p {
     margin: 0 0 5px 0; /* Space below the text */
@@ -158,7 +156,7 @@ tr:hover {
   }
 
   mat-progress-bar {
-    width: 100%; /* Full width of the container */
+    width: 150px; /* Slightly smaller for better fit */
     height: 8px; /* Thinner bar */
     border-radius: 4px; /* Rounded edges */
   }
@@ -182,7 +180,6 @@ tr:hover {
   padding: 8px; /* Add padding for better appearance */
   border-radius: 6px; /* Rounded corners */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  width: 150px; /* Fixed width to prevent layout shift */
 
   p {
     margin: 0; /* Remove default margin */
@@ -205,21 +202,20 @@ tr:hover {
 .button-row {
   display: flex;
   align-items: center; /* Align items vertically */
-  justify-content: space-between; /* Space out the button group and upload container */
-  gap: 20px; /* Consistent spacing */
+  gap: 10px; /* Smaller gap between Generate Quote and Cancel buttons */
+  margin-right: 20px; /* Space between the button group and the upload container */
 }
 
 .button-group {
   display: flex;
-  gap: 20px; /* Space between Generate Quote and Cancel buttons */
-  width: 420px; /* Fixed width to prevent layout shift (200px per button + 20px gap) */
+  gap: 10px; /* Small space between Generate Quote and Cancel buttons */
 }
 
+/* Ensure the upload container aligns with the button row */
 .upload-container {
   display: flex;
-  align-items: center; /* Align progress bar and upload button */
-  gap: 15px; /* Space between elements */
-  flex-wrap: nowrap; /* Prevent wrapping */
+  align-items: center; /* Align progress bar and upload button vertically */
+  gap: 15px; /* Space between progress bar and upload button */
 }
 
 mat-form-field {
@@ -407,17 +403,17 @@ mat-divider {
     gap: 12px;
   }
   .button-row {
-    flex-direction: column; /* Stack buttons vertically on mobile */
-    align-items: flex-start; /* Align to the left */
+    flex-direction: row; /* Keep buttons in a row on mobile */
+    align-items: center; /* Align to the center */
+    flex-wrap: wrap; /* Allow wrapping if needed */
   }
   .button-group {
-    width: 100%;
     display: flex;
-    gap: 20px;
+    gap: 10px; /* Maintain small gap on mobile */
   }
   .upload-container {
     flex-direction: row; /* Keep progress bar and upload button in a row */
-    width: 100%; /* Full width on mobile */
+    width: auto; /* Adjust width on mobile */
     justify-content: flex-start; /* Align to the left */
   }
   .upload-progress, .upload-complete {
