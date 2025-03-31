@@ -1,80 +1,89 @@
-<div class="container mt-4">
-    <div class="row">
-      <!-- Column 4 -->
-      <div class="col-4  p-3">
-        <mat-card class="project-card">
-            <mat-card-header>
-              <mat-card-title>Your Projects</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <mat-divider></mat-divider>
-              <div *ngIf="jobList.length > 0" class="job-list-container">
-                <table>
-                  <thead>
-                    <tr>  
-                      <th>Project</th>
-                      <th>Project Type</th>
-                      <th>Project Status</th>
-                      <th>Start Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let job of jobList">
-                      <td>{{ job.projectName }}</td>
-                      <td>{{ job.jobType }}</td>
-                      <td>{{ job.status }}</td>
-                      <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div *ngIf="jobList.length == 0" class="no-more-jobs">
-                No more Projects to display.
-              </div>        
-            </mat-card-content>
-        </mat-card>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>Your Top Five Projects</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <app-sorted-bar-chart [data]="chartData1"></app-sorted-bar-chart>
-            <button  class="submit-btn" style="margin-right: 20px" (click)="sortByFrequency()">Sort by Frequency</button>
-            <button   class="submit-btn" (click)="sortByLetter()">Sort Alphabetically</button>
-          </mat-card-content>
-        </mat-card>
-      </div>
-      <!-- Column 8 -->
-      <div class="col-8  text-white p-3">
-
-        
-        <mat-card>
-          <div class="row">
-            <div class="col-4">
-              <h2> Job Quote</h2>
+<div class="container">
+  <div class="row">
+    <div class="column">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Your Projects</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <div class="job-list-container mat-elevation-z8" style="box-shadow: none;">
+            <table mat-table [dataSource]="dataSource" class="themed-table">
+              <!-- Project Name Column -->
+              <ng-container matColumnDef="projectName">
+                <th mat-header-cell *matHeaderCellDef>Project</th>
+                <td mat-cell *matCellDef="let element">{{element.projectName}}</td>
+              </ng-container>
+          
+              <!-- Job Type Column -->
+              <ng-container matColumnDef="jobType">
+                <th mat-header-cell *matHeaderCellDef>Project Type</th>
+                <td mat-cell *matCellDef="let element">{{element.jobType}}</td>
+              </ng-container>
+          
+              <!-- Status Column -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Project Status</th>
+                <td mat-cell *matCellDef="let element">{{element.status}}</td>
+              </ng-container>
+          
+              <!-- Start Date Column -->
+              <ng-container matColumnDef="desiredStartDate">
+                <th mat-header-cell *matHeaderCellDef>Start Date</th>
+                <td mat-cell *matCellDef="let element">{{element.desiredStartDate | date: 'yyyy-MM-dd'}}</td>
+              </ng-container>
+          
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+            
+            <mat-paginator [pageSizeOptions]="[5]" [pageSize]="5" showFirstLastButtons
+                           aria-label="Select page of periodic elements">
+            </mat-paginator>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    <div class="column">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Your Top Five Projects</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <app-sorted-bar-chart [data]="chartData1"></app-sorted-bar-chart>
+          <div>
+            <button class="submit-btn" (click)="sortByFrequency()">Sort by Frequency</button>
+            <button class="submit-btn" (click)="sortByLetter()">Sort Alphabetically</button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    <div class="fullcolumn">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Job Quote</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <div>
+            <div>
               <div>
-                <h3>Project: Pike Extension Office Park</h3>
-                <p><strong>Start Date:</strong>  2024-05-16</p>
-                <p><strong>Electrical Capacity:</strong>  2300 kW</p>
-                <p><strong>House Size:</strong>  2300 sq ft</p>
-                <p><strong>Weather Condition:</strong>  Dry Sunny </p>
+                <h4>Project: Pike Extension Office Park</h4>
+                <p><strong>Start Date:</strong> 2024-05-16</p>
+                <p><strong>Electrical Capacity:</strong> 2300 kW</p>
+                <p><strong>House Size:</strong> 2300 sq ft</p>
+                <p><strong>Weather Condition:</strong> Dry Sunny</p>
               </div>
-            </div>
-            <div class="col-4">
-              <app-pie-charts [data]="chartData" [width]="100"></app-pie-charts>
+              <p style="color: red;">**app-pie-charts** NOT WORKING</p>
+              <!--<app-pie-charts [data]="chartData"></app-pie-charts>-->
             </div>
           </div>
-          <br>
-          <br>
-          <br>
-          <h3> Estimated Timeline</h3>
+          <mat-card-title>Estimated Timeline</mat-card-title>
+          <mat-divider></mat-divider>
           <app-gantt-chart [tasks]="taskData"></app-gantt-chart>
-        </mat-card>
-      </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
+</div>

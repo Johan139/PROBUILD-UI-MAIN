@@ -2,12 +2,14 @@ import { Component, OnInit, Inject, OnDestroy, PLATFORM_ID } from '@angular/core
 import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
-import { MatSidenavModule } from "@angular/material/sidenav";
+import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
 import { NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatListItem, MatNavList } from "@angular/material/list";
-import { MatIconModule } from "@angular/material/icon";
+import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { LoaderComponent } from './loader/loader.component';
+import { MatMenuModule} from '@angular/material/menu';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-root',
@@ -22,6 +24,8 @@ import { LoaderComponent } from './loader/loader.component';
     LoaderComponent,
     MatIconModule,
     MatListItem,
+    MatMenuModule,
+    MatSidenav,
     RouterLink,
     MatButtonModule,
     NgOptimizedImage,
@@ -38,16 +42,29 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'ProBuildAI';
   loggedIn = false;
   isBrowser: boolean = typeof window !== 'undefined';
+  isSidenavOpen = false;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router) {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer) {
     this.isBrowser = isPlatformBrowser(this.platformId);
+
+    matIconRegistry.addSvgIcon(
+      'icons8-settings',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/icons8-settings.svg')
+    );
+    matIconRegistry.addSvgIcon(
+      'profile-circle',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/profile-circle-svgrepo-com.svg')
+    );
+    matIconRegistry.addSvgIcon(
+      'logout',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/logout-svgrepo-com.svg')
+    );
   }
 
   ngOnInit() {
     if (this.isBrowser) {
       this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
     }
-    
   }
 
   ngOnDestroy() {
@@ -94,5 +111,8 @@ export class AppComponent implements OnInit, OnDestroy {
     localStorage.setItem('userType', '');
     localStorage.setItem('firstName', '');
     localStorage.setItem('Subtasks', '')
+  }
+  toggleSidenav(): void {
+    this.isSidenavOpen = !this.isSidenavOpen;
   }
 }

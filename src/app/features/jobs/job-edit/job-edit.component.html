@@ -1,117 +1,104 @@
 <div *ngIf="isLoading">
   <app-loader></app-loader>
 </div>
-<div>
-  <div class="table-container">
-    <mat-card>
-      <h2> Job Quote</h2>
-      <div>
-        <h1>Project: {{ this.projectDetails.projectName }}</h1>
-        <p><strong>Start Date:</strong> {{ this.startDateDisplay }}</p>
-        <p><strong>Electrical Capacity:</strong>{{ this.projectDetails.electricalSupply }} kW</p>
-        <p><strong>House Size:</strong> {{ this.projectDetails.buildingSize }} sq ft</p>
-        <p><strong>Weather Condition:</strong> {{this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text}}</p>
-      </div>
-      <h3> Estimated Timeline</h3>
-      <div id="graph-display">
-        <app-gantt-chart [tasks]="this.taskData"></app-gantt-chart>
-      </div>
-    </mat-card> 
-  </div>
-  <div class="table-container">
-    <div class="subtask-section">
-      <h2>Tasks and Subtasks</h2>
-      <br>
-      <div class="subtask-table sb-t2" *ngFor="let table of store.getState().subtaskGroups">
-        <div class="row">
-          <div class="col-4">
-            <h3>{{ table.title }}</h3>
+<div class="container">
+  <div class="row">
+    <div class="fullcolumn">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Job Quote</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <!-- Project Details -->
+          <div>
+            <h4>Project: {{ this.projectDetails.projectName }}</h4>
+            <p><strong>Start Date:</strong> {{ this.startDateDisplay }}</p>
+            <p><strong>Electrical Capacity:</strong> {{ this.projectDetails.electricalSupply }} kW</p>
+            <p><strong>House Size:</strong> {{ this.projectDetails.buildingSize }} sq ft</p>
+            <p><strong>Weather Condition:</strong> {{ this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text }}</p>
           </div>
-          <div class="col-2">
-            <button (click)="addSubtask(table)" class="btn">
-              <strong class="add-btn">Add Subtask</strong>
-              <img src="assets/custom-svg/add-icon-svgrepo-com.svg" class="icon" alt="">
-            </button>
+          <!-- Estimated Timeline -->
+          <mat-card-title>Estimated Timeline</mat-card-title>
+          <mat-divider></mat-divider>
+          <div>
+            <app-gantt-chart [tasks]="this.taskData"></app-gantt-chart>
           </div>
-        </div>
-        <table>
-          <thead>
-          <tr>
-            <th>Task</th>
-            <th>Days</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th>Cost</th>
-            <th>Actions</th>
-          </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let subtask of table.subtasks; let i = index">
-              <td>
-                <input 
-                  type="text" 
-                  [(ngModel)]="subtask.task" 
-                  class="no-border" 
-                />
-              </td>
-              <td>
-                <input 
-                  type="number" 
-                  [(ngModel)]="subtask.days" 
-                  class="no-border" 
-                  (change)="updateSubtaskDates(table, i)" 
-                />
-              </td>
-              <td>
-                <input 
-                  type="date" 
-                  [(ngModel)]="subtask.startDate" 
-                  class="no-border" 
-                  (change)="updateSubtaskDates(table, i)" 
-                />
-              </td>
-              <td>
-                <input 
-                  type="date" 
-                  [(ngModel)]="subtask.endDate" 
-                  class="no-border"
-                />
-              </td>
-              <td>
-                <input 
-                  type="number" 
-                  [(ngModel)]="subtask.cost" 
-                  class="no-border" 
-                  (change)="updateSubtaskDates(table, i)" 
-                />
-              </td>
-              <td>
-                <button (click)="deleteSubtask(table, i)" class="btn ">
-                  <img src="assets/custom-svg/delete-recycle-bin-trash-can-svgrepo-com.svg" class="icon" alt="">
+          <!-- Tasks and Subtasks -->
+          <mat-card-title>Tasks and Subtasks</mat-card-title>
+          <mat-divider></mat-divider>
+          <div class="job-list-container mat-elevation-z8" style="box-shadow: none;">
+            <div *ngFor="let table of store.getState().subtaskGroups">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h4>{{ table.title }}</h4>
+                <button class="submit-btn" (click)="addSubtask(table)">
+                  <img src="assets/custom-svg/add-icon-svgrepo-com.svg" style="height: 16px; width: 16px; margin-right: 8px;" alt="Add Icon" />
+                  Add Subtask
                 </button>
-              </td>
-            </tr>          
-          </tbody>
-        </table>
-      </div>
-      <div class="subtask-table2 sb-t2">
-        <button class="sb-text sb-btn-pub" mat-raised-button (click)="publish()">
-          Publish Job
-        </button>
-        <button class="sb-text sb-btn-edit" mat-raised-button (click)="saveOnly()">
-          Save Job
-        </button>
-        <button class="sb-text sb-btn-danger" mat-raised-button (click)="discard()">
-          Discard Job Quote
-        </button>
-      </div>
-      <br>
+              </div>
+              <table mat-table [dataSource]="table.subtasks" class="themed-table">
+                <!-- Task Column -->
+                <ng-container matColumnDef="task">
+                  <th mat-header-cell *matHeaderCellDef>Task</th>
+                  <td mat-cell *matCellDef="let subtask">
+                    <input type="text" [(ngModel)]="subtask.task" style="border: none; outline: none; width: 100%;" />
+                  </td>
+                </ng-container>
+                <!-- Days Column -->
+                <ng-container matColumnDef="days">
+                  <th mat-header-cell *matHeaderCellDef>Days</th>
+                  <td mat-cell *matCellDef="let subtask; let i = index">
+                    <input type="number" [(ngModel)]="subtask.days" style="border: none; outline: none; width: 100%;" (change)="updateSubtaskDates(table, i)" />
+                  </td>
+                </ng-container>
+                <!-- Start Date Column -->
+                <ng-container matColumnDef="startDate">
+                  <th mat-header-cell *matHeaderCellDef>Start Date</th>
+                  <td mat-cell *matCellDef="let subtask; let i = index">
+                    <input type="date" [(ngModel)]="subtask.startDate" style="border: none; outline: none; width: 100%;" (change)="updateSubtaskDates(table, i)" />
+                  </td>
+                </ng-container>
+                <!-- End Date Column -->
+                <ng-container matColumnDef="endDate">
+                  <th mat-header-cell *matHeaderCellDef>End Date</th>
+                  <td mat-cell *matCellDef="let subtask">
+                    <input type="date" [(ngModel)]="subtask.endDate" style="border: none; outline: none; width: 100%;" />
+                  </td>
+                </ng-container>
+                <!-- Cost Column -->
+                <ng-container matColumnDef="cost">
+                  <th mat-header-cell *matHeaderCellDef>Cost</th>
+                  <td mat-cell *matCellDef="let subtask; let i = index">
+                    <input type="number" [(ngModel)]="subtask.cost" style="border: none; outline: none; width: 100%;" (change)="updateSubtaskDates(table, i)" />
+                  </td>
+                </ng-container>
+                <!-- Actions Column -->
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef>Actions</th>
+                  <td mat-cell *matCellDef="let subtask; let i = index">
+                    <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
+                      <img src="assets/custom-svg/delete-recycle-bin-trash-can-svgrepo-com.svg" style="height: 16px; width: 16px;" alt="Delete Icon" />
+                    </button>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="subtaskColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: subtaskColumns;"></tr>
+              </table>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+              <button class="submit-btn" (click)="publish()">Publish Job</button>
+              <button class="submit-btn" (click)="saveOnly()">Save Job</button>
+              <button class="submit-btn delete-btn" (click)="discard()">Discard Job Quote</button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 </div>
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button class="alert-button" mat-raised-button (click)="closeAlert()">OK</button>
+    <button class="submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
   </div>
 </div>

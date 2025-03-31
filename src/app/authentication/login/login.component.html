@@ -1,69 +1,57 @@
 <div *ngIf="isLoading">
   <app-loader></app-loader>
 </div>
-<div class="d-flex align-items-center justify-content-center vh-100">
-  <div class="container w-100">
-    <div class="row justify-content-center align-items-center login-container">
-      <!-- Center the card in the row -->
-      <div class="col-lg-12 d-flex justify-content-center">
-        <mat-card class="login-card">
-          <mat-card-header class="text-center">
-            <!-- Center header content -->
-            <mat-card-title class="title-header text-bold">Sign In</mat-card-title>
-            <mat-card-subtitle class="title-header text-color-cus">
-              Don't have an account? <a href="register">Sign up</a>
-            </mat-card-subtitle>
-            <br>
-          </mat-card-header>
-          <mat-card-content>
-            <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
-              <div class="row">
-                <div class="col-12">
-                  <!-- Full width column -->
-                  <mat-form-field floatLabel="always" class="w-100">
-                    <!-- Full width form field -->
-                    <mat-label>Email*</mat-label>
-                    <input matInput formControlName="email" required />
-                  </mat-form-field>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-12">
-                  <mat-form-field floatLabel="always" class="w-100">
-                    <mat-label>Password*</mat-label>
-                    <input
-                      type="password"
-                      matInput
-                      formControlName="password"
-                      required
-                    />
-                    <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
-                      Password is required.
-                    </mat-error>
-                    <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
-                      Password must be at least 10 characters long.
-                    </mat-error>
-                    <mat-error *ngIf="loginForm.get('password')?.hasError('pattern')">
-                      Password must contain at least one uppercase letter, one lowercase letter, and one special character.
-                    </mat-error>
-                  </mat-form-field>
-                </div>
-              </div>
-              <div style="margin-top: 2.5rem;">
-                <mat-card-actions>
-                  <button class="w-100" mat-raised-button (click)="onLogin()">Login</button>
-                </mat-card-actions>
-              </div>
-            </form>
-          </mat-card-content>
-        </mat-card>
-      </div>
+<div class="container">
+  <div class="row justify-content-center align-items-center">
+    <div class="fullcolumn">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Sign In</mat-card-title>
+          <mat-card-subtitle>
+            Don't have an account? <a href="register">Sign up</a>
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+            <div class="form-field">
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Email*</mat-label>
+                <input matInput formControlName="email" required />
+              </mat-form-field>
+            </div>
+            <div class="form-field">
+              <mat-form-field appearance="fill" class="w-100">
+                <mat-label>Password*</mat-label>
+                <input
+                  type="password"
+                  matInput
+                  formControlName="password"
+                  required
+                />
+                <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+                  Password is required.
+                </mat-error>
+                <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+                  Password must be at least 10 characters long.
+                </mat-error>
+                <mat-error *ngIf="loginForm.get('password')?.hasError('pattern')">
+                  Password must contain at least one uppercase letter, one lowercase letter, and one special character.
+                </mat-error>
+              </mat-form-field>
+            </div>
+            <div class="action-buttons">
+              <button class="submit-btn" mat-raised-button (click)="onLogin()">Login</button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 </div>
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button mat-raised-button (click)="closeAlert()">OK</button>
+    <button class="submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
   </div>
 </div>
