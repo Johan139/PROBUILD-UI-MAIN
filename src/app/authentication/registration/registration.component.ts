@@ -13,6 +13,7 @@ import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
+import {MatDivider} from "@angular/material/divider";
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -30,7 +31,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatInputModule,
     MatFormFieldModule,
     MatButton,
-    LoaderComponent
+    LoaderComponent,
+    MatDivider
 ],
   templateUrl: './registration.component.html',
   styleUrl: './registration.component.scss'

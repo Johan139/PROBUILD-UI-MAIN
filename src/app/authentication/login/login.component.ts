@@ -14,6 +14,8 @@ import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Inject, PLATFORM_ID } from '@angular/core';
 import { LoginService } from "../../services/login.service";
+import { MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-login',
@@ -27,6 +29,7 @@ import { LoginService } from "../../services/login.service";
     NgIf,
     LoaderComponent,
     MatButtonModule,
+    MatDividerModule,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],

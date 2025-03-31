@@ -227,7 +227,6 @@ export class JobQuoteComponent implements OnInit, OnDestroy {
     formData.append('address', formValue.address);
     formData.append('sessionId', this.sessionId);
     formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileUrls));
-
     this.progress = 0;
 
     this.httpClient.post<JobResponse>(`${BASE_URL}/Jobs`, formData, {

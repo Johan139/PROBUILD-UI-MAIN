@@ -1,16 +1,18 @@
-import {Component, OnInit,  Inject, PLATFORM_ID } from '@angular/core';
-import {SubTasks} from'./../../models/sub-tasks';
-import {ActivatedRoute, Router} from "@angular/router";
-import {NgForOf, NgIf, isPlatformBrowser} from "@angular/common";
-import {MatButton} from "@angular/material/button";
-import { MatCard } from '@angular/material/card';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { SubTasks } from './../../models/sub-tasks';
+import { ActivatedRoute, Router } from "@angular/router";
+import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
+import { MatButton } from "@angular/material/button";
+import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card'; // Added Material Card components
+import { MatDivider } from '@angular/material/divider'; // Added Material Divider
 import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
-import {SubtasksState} from '../../state/subtasks.state';
-import {Store} from '../../store/store.service';
+import { SubtasksState } from '../../state/subtasks.state';
+import { Store } from '../../store/store.service';
 import { WeatherService } from '../../services/weather.service';
 import { JobsService } from '../../services/jobs.service';
 import { LoaderComponent } from '../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-jobs',
   standalone: true,
@@ -19,6 +21,11 @@ import { FormsModule } from '@angular/forms';
     NgIf,
     NgForOf,
     MatButton,
+    MatCard,           // Added
+    MatCardHeader,     // Added
+    MatCardTitle,      // Added
+    MatCardContent,    // Added
+    MatDivider,        // Added
     LoaderComponent,
     GanttChartComponent,
     MatCard,
