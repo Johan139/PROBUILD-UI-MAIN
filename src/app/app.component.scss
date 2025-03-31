@@ -1,5 +1,67 @@
+$primary-yellow: #fbd008;
+$lightgray: lightgray;
+$black: #000000;
+$dark-gray: #3b3b3b;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+$red: #DA4167;
+
+// Style the mat-menu to match the theme
+.mat-mdc-menu-panel {
+  border-radius: 5px; // Match the border-radius of other elements
+  box-shadow: $shadow; // Add a subtle shadow for depth
+  background-color: $dark-gray !important;
+  color: $dark-gray !important;
+  --mat-menu-container-color: $dark-gray !important;
+  --mat-app-surface-container : $dark-gray !important;
+}
+
+// Style the menu items for readability
+.mat-mdc-menu-item {
+  font-family: 'Orbitron', sans-serif; // Match the font of the sidenav
+  padding: 10px 16px; // Match the padding of the sidenav buttons
+  display: flex;
+  align-items: center; // Align icon and text vertically
+  
+}
+
+// Style the icons inside the menu items
+.mat-mdc-menu-item .mat-icon {
+  color: $dark-gray !important; // Match the icon color of other elements
+  margin-right: 8px; // Add spacing between icon and text
+}
+
+// Add a hover effect for menu items
+.mat-mdc-menu-item:hover {
+  background-color: darken($lightgray, 10%) !important; // Slightly darker yellow on hover
+}
+
+.sidenav {
+  min-width: 200px;
+  background-color: $dark-gray;
+}
+
+.custom-button {
+  background-color: $primary-yellow !important;
+  color: $dark-gray !important;
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+  margin: 8px 0;
+  padding: 10px;
+  box-sizing: border-box;
+  background: $primary-yellow;
+  box-shadow: 0 0 0 3px $primary-yellow,
+                inset 0 0 0 3px $dark-gray;
+  border-radius: 5px;
+}
+
+.custom-button .menu-item {
+  font-size: 16px;
+}
+
 mat-toolbar {
-  background-color: rgb(251,208,8);
+  background-color: $primary-yellow;
 }
 mat-sidenav-container {
   //height: 100%;
@@ -7,7 +69,7 @@ mat-sidenav-container {
 }
 .mat-sidenav, mat-sidenav {
   width: 150px;
-  background-color: black !important;
+  background-color: $dark-gray !important;
   border-radius: 0px;
   font-family: Orbitron, sans-serif ;
 }
@@ -23,7 +85,7 @@ mat-sidenav-content{
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: $black;
   backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
@@ -32,10 +94,10 @@ mat-sidenav-content{
 }
 
 .alert-modal {
-  background-color: white;
+  background-color: $white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 4px 8px $black;
   text-align: center;
   width: 300px;
 }
@@ -45,12 +107,14 @@ mat-sidenav-content{
 }
 
 .alert-modal button {
-  background: #DA4167;
-  color: white;
+  background: $red;
+  color: $white;
 }
-.no-btn{
-  background: rgb(251,208,8) !important;
+
+.mat-mdc-menu-panel {
+  background-color: $dark-gray;
 }
+
 .content {
   height: calc(100vh - 98px);
   border-radius: 10px;
@@ -62,13 +126,13 @@ mat-sidenav-content{
   align-items: center;
 
   font-size: 2rem;
-  color: lightgray;
+  color: $lightgray;
 }
 img:hover{
   cursor: pointer;
 }
 mat-icon, .menu-item {
-  color: black !important;
+  color: $dark-gray !important;
 }
 footer {
   position: fixed;
@@ -83,16 +147,15 @@ footer {
  .menu-button{
   display: flex;
   align-items: center; /* Vertically align icon and text */
-  justify-content: flex-start; /* Align content to the left */
+  //justify-content: flex-start; /* Align content to the left */
   margin-top: 10px !important;
-  border-radius: 10px !important;
-  width: 100% !important;
-  background-color: rgb(251, 208, 8) !important;
-  color: black !important;
+  border-radius: 5px !important;
+  width: 90% !important;
+  background-color: $primary-yellow !important;
+  color: $dark-gray !important;
   padding: 10px 16px; /* Padding inside the button */
   border: none; /* Remove default button border */
-  text-align: left; /* Align text to the left */
-  margin: 4px 0; /* Reduced vertical spacing between buttons */
+  margin: 10px 10px 10px 10px; /* Reduced vertical spacing between buttons */
   transition: background-color 0.3s; /* Smooth hover effect */
  }
  .form-row {
@@ -111,11 +174,35 @@ footer {
 }
 .main-footer {
   padding-left: 155px;
-  background-color: black;
-  color: rgb(251,208,8);
+  background-color: $dark-gray;
+  color: $primary-yellow;
   mat-icon {
       height:20px;
       width:20px;
     padding-right:0 ;
+  }
+}
+.sidenav {
+  width: 200px;
+  background-color: var(--black);
+  color: var(--white);
+  font-family: 'Orbitron', sans-serif;
+}
+.nav-container {
+  height: calc(100vh - 64px); /* Adjust based on toolbar height */
+  width: 100%; // Full width
+}
+.spacer {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 768px) {
+  .sidenav {
+    width: 150px;
+  }
+  
+  .logo-link img {
+    width: 120px;
+    height: 40px;
   }
 }

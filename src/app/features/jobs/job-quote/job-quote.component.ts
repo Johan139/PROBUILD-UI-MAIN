@@ -173,7 +173,7 @@ export class JobQuoteComponent {
     }
   
     // Perform the HTTP request
-    this.httpClient.post<JobResponse>(`${BASE_URL}/Jobs`, formData, {
+    this.httpClient.post<JobResponse>(`${BASE_URL}/Jobs/PostJob`, formData, {
       headers: new HttpHeaders(),
       reportProgress: true,
       observe: 'response',

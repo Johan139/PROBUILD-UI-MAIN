@@ -1,40 +1,52 @@
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
+<div *ngIf="isLoading" class="loading-container">
+  <app-loader aria-label="Loading content"></app-loader>
 </div>
-<mat-toolbar class="form-row">
-  <img ngSrc='assets/logo.png' alt="" height="75" width="250" routerLink="/dashboard">
-  <button *ngIf="shouldShowLogoutButton()"  class="logout-btn" (click)="logout()">
-    <img src="assets/custom-svg/logout-svgrepo-com.svg" alt="" class="icon">
+
+<!-- Header -->
+<mat-toolbar color="primary" class="header">
+  <button *ngIf="shouldShowSidenav()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <a routerLink="/dashboard" class="logo-link">
+    <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
+  </a>
+  <span class="spacer"></span>
+  <button *ngIf="shouldShowLogoutButton()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
+    <mat-icon svgIcon="icons8-settings"></mat-icon>
   </button>
 </mat-toolbar>
-<mat-sidenav-container *ngIf="shouldShowSidenav()">
-  <mat-sidenav #sidenav mode="side" opened>
+
+<!-- Side Navigation and Content -->
+<mat-sidenav-container class="nav-container">
+  <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation" >
     <mat-nav-list>
-      <button mat-raised-button class="menu-button" routerLink="/projects">
-        <mat-icon>work</mat-icon>
-        <span class="menu-item">Projects</span>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/projects" (click)="sidenav.close()">
+        <span class="menu-item">PROJECTS</span>
       </button>
 
-      <button mat-raised-button class="menu-button" routerLink="/job-quote">
-        <mat-icon>list</mat-icon>
-        <span class="menu-item">Jobs</span>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
+        <span class="menu-item">JOBS</span>
       </button>
 
-      <button mat-raised-button class="menu-button" routerLink="/dashboard">
-        <mat-icon>calendar_today</mat-icon>
-        <span class="menu-item">Work Calendar</span>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
+        <span class="menu-item">WORK CALENDAR</span>
       </button>
 
-      <button mat-raised-button class="menu-button" routerLink="/dashboard/notifications">
-        <mat-icon>update</mat-icon>
-        <span class="menu-item">Updates</span>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard/notifications" (click)="sidenav.close()">
+        <span class="menu-item">UPDATES</span>
+      </button>
+
+      <button mat-flat-button class="menu-button custom-button" routerLink="/open-work" (click)="sidenav.close()">
+        <span class="menu-item">OPEN WORK</span>
       </button>
     </mat-nav-list>
   </mat-sidenav>
+
   <mat-sidenav-content>
     <router-outlet></router-outlet>
   </mat-sidenav-content>
 </mat-sidenav-container>
+
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
@@ -44,4 +56,14 @@
     </div>
   </div>
 </div>
-<router-outlet *ngIf="!shouldShowSidenav()"></router-outlet>
+
+<mat-menu #menu="matMenu" class="no-btn">
+  <button mat-menu-item routerLink="/register">
+    <mat-icon svgIcon="profile-circle"></mat-icon>
+    Profile
+  </button>
+  <button mat-menu-item (click)="logout()">
+    <mat-icon svgIcon="logout"></mat-icon>
+    Logout
+  </button>
+</mat-menu>

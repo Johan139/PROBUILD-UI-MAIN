@@ -1,241 +1,194 @@
+/* Variables for reusable values */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow-y: auto;
+  font-family: 'Arial', sans-serif;
+  background-color: $white;
+}
+
+/* Layout */
 .container {
-    width: 100vw !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    .row {
-        width: 80vw !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding: 0 !important;
-    }
+  width: 80vw;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 65px);
+}
+
+.row {
+  width: 98vw;
+  display: flex;
+  gap: 1rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 49%;
+  background-color: $white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid $cyan;
+}
+
+.fullcolumn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  background-color: $white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid $cyan;
+}
+
+/* Typography */
+h1, h2, h3, p, .header-txt {
+  color: $black;
+}
+
+mat-card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: $dark-gray;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Material Card */
+mat-card {
+  background-color: $white;
+  border-radius: 8px;
+  box-shadow: none;
+  padding: 1rem;
+  height: 60vh;
+
+  mat-card-content {
+    padding-top: 1rem;
   }
-  h1,h2,h3,p,.header-txt{
-    color: #000000;
-  }
-  body{
-    overflow-y: hidden !important;
-    }
-    mat-card{
-      background-color:white;
-      height: fit-content;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    thead{
-      font: 1em sans-serif;
-      border: none !important;
-      height: auto;
-      background-color: #FBD008;
-      tr:first-child th:first-child {
-        border-top-left-radius: 8px;
-      }
-      tr:last-child th:last-child{
-        border-top-right-radius: 8px;
-      }
-    }
-    tr{
-      font: 0.5em sans-serif;
-    }
-    td {
-      border: 1px solid #D9D9D9;
-      stroke-width: 5px;
-      padding: 2px;
-    }
-    
-    th {
-      background-color: #FBD008;
-      text-align: left;
-      padding: 8px;
-    }
-    .job-list-container{
-      margin-top: .7rem;
-    }
-    .icon {
-      width: 1em;
-      height: auto;
-    }
-    .table-button{
-      height: auto;
-      padding: 0;
-      border: none;
-      background: none;
-    }
-    .table-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    tbody {
-      tr {
-        &:nth-child(even) {
-          background-color: #f9f9f9;
-        }
-    
-        &:hover {
-          background-color: #f1f1f1;
-        }
-      }
-      td {
-        padding: 2px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-      }
-    }
-    
-    mat-divider {
-      background-color: #FCD02D;
-      border: none;
-      height:2px;
-    }
-    
-    .alert-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(5px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    
-    .alert-modal {
-      background-color: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      width: 300px;
-    }
-    
-    .alert-modal p {
-      margin-bottom: 20px;
-    }
-    
-    .alert-modal button {
-      color: white;
-    }
-    
-    ::ng-deep .mdc-floating-label{
-      position: static !important
-    }
-    
-    ::ng-deep .mdc-text-field .mdc-floating-label{
-      transform: translateY(-60%) !important;
-    }
-    .house-options{
-      padding-top: 10px;
-    }
-    .house-options button{
-      margin-left: 1.5rem;
-      background: #FBD008;
-      border-radius: 10px;
-    }
-    
-    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled){
-      background-color:white !important;
-    }
-    
-    ::ng-deep .mdc-filled-text-field-container-color{
-      background-color:white !important;
-    }
-    
-    ::ng-deep .mdc-text-field--filled mat-form-field{
-      background-color: white !important;
-    
-    }
-    
-    ::ng-deep .mdc-text-field--filled .mat-mdc-text-field-wrapper:hover .mat-mdc-form-field-focus-overlay {
-      background-color: white !important
-    }
-    
-    .job-quote-container{
-      margin-top: 2rem;
-      width: 100%;
-    }
-    .project-card {
-      width: 100%;
-      height: fit-content;
-      max-width: 600px;
-    }
-    
-    .project-card-bids{
-      height: 36vh;
-    }
-    .job-quote-card {
-      width: 100%;
-      max-width: 1000px;
-    }
-    
-    .form-row {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      gap: 20px;
-    }
-    
-    .form-col {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-evenly;
-      gap: 3rem;
-    }
-    .upload-file{
-      background: #D9D9D9;
-    }
-    
-    .upload-label {
-      padding-right: 5px;
-    }
-    
-    .submit-btn {
-      background: #FBD008;
-      margin-top: 10px;
-      border-radius: 10px;
-    }
-    
-    /* Container for the upload */
-    .custom-file-upload {
-      position: relative;
-      display: inline-block;
-      text-align: center;
-    }
-    
-    /* Hide the default input field */
-    .custom-file-upload input[type="file"] {
-      display: none;
-    }
-    
-    /* Style the label as the upload button */
-    .upload-label {
-      display: inline-block;
-      padding: 10px 20px;
-      background-color: #FBD008; /* Bootstrap primary color */
-      color: #0056b3;
-      font-size: 16px;
-      font-weight: 500;
-      border-radius: 5px;
-      cursor: pointer;
-      text-align: center;
-      transition: background-color 0.3s ease;
-    }
-    
-    .upload-label:hover {
-      background-color: #0056b3; /* Darker shade of blue */
-    }
-    
-    /* Optional: Add an icon */
-    .upload-icon {
-      height: 20px;
-      width: 20px;
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-    
+}
+
+/* Divider */
+mat-divider {
+  background-color: $secondary-yellow;
+  height: 2px;
+  margin: 1rem 0;
+  border-top-style: none;
+}
+
+/* Table Styles (Copied from JobsComponent) */
+.job-list-container {
+  width: 100%;
+  background-color: $white;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-top: 0.7rem;
+  max-height: calc(60vh - 120px); /* Adjust for header, divider, and padding */
+  overflow-y: auto; /* Allow vertical scrolling if needed */
+}
+
+.themed-table {
+  width: 100%;
+  border-collapse: collapse;
   
+  th {
+    background-color: $primary-yellow;
+    color: $black;
+    font-weight: 500;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 2px solid $light-gray;
+  }
+  
+  td {
+    padding: 8px;
+    border: 1px solid $light-gray;
+    color: $black;
+  }
+  
+  tr:hover {
+    background-color: $light-gray;
+  }
+}
+
+.mat-mdc-table {
+  background-color: $white;
+}
+
+mat-paginator {
+  font-family: 'Arial', sans-serif;
+  background-color: $white;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid $light-gray;
+}
+
+/* Buttons */
+.submit-btn {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  width: 200px;
+  margin-top: 10px;
+
+  &:hover {
+    background: $darker-yellow;
+  }
+}
+
+/* Job Quote Section */
+.job-quote-container {
+  width: 80vw;
+  margin-top: 2rem;
+  display: flex;
+  gap: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .column, .fullcolumn {
+    width: 100%;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .job-list-container {
+    padding: 0.5rem;
+  }
+
+  .themed-table {
+    th, td {
+      font-size: 0.8rem;
+      padding: 6px;
+    }
+  }
+
+  .job-quote-container {
+    width: 95vw;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
