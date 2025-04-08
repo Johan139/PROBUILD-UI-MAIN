@@ -30,6 +30,7 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
+
 @Component({
   selector: 'app-job-quote',
   standalone: true,
