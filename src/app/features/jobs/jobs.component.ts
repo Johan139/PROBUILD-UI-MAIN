@@ -1,10 +1,10 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild } from '@angular/core';
 import { SubTasks } from './../../models/sub-tasks';
 import { ActivatedRoute, Router } from "@angular/router";
 import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
 import { MatButton } from "@angular/material/button";
-import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card'; // Added Material Card components
-import { MatDivider } from '@angular/material/divider'; // Added Material Divider
+import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
+import { MatDivider } from '@angular/material/divider';
 import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
@@ -12,6 +12,10 @@ import { WeatherService } from '../../services/weather.service';
 import { JobsService } from '../../services/jobs.service';
 import { LoaderComponent } from '../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { FileSizePipe } from '../Documents/filesize.pipe';
 
 @Component({
   selector: 'app-jobs',
@@ -21,44 +25,58 @@ import { FormsModule } from '@angular/forms';
     NgIf,
     NgForOf,
     MatButton,
-    MatCard,           // Added
-    MatCardHeader,     // Added
-    MatCardTitle,      // Added
-    MatCardContent,    // Added
-    MatDivider,        // Added
+    MatCard,
+    MatCardHeader,
+    MatCardTitle,
+    MatCardContent,
+    MatDivider,
     LoaderComponent,
     GanttChartComponent,
-    MatCard,
+    MatDialogModule,
+    MatListModule,
+    MatIconModule,
+    FileSizePipe
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss'
 })
-export class JobsComponent implements OnInit{
+export class JobsComponent implements OnInit {
+  @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
+
   taskData: any;
   subtasks: SubTasks = new SubTasks();
   calculatedSubtasks: { task: string; days: number; startDate: string; endDate: string }[] = [];
-  projectDetails: any;RoofStructure
+  projectDetails: any;
   startDateDisplay: any;
-  initialStartDate:any;
+  initialStartDate: any;
   subTasksObtained: any;
   calculatedTables: { title: string; subtasks: any[] }[] = [];
-  calculatedChainedTables: { title: string; startDate: Date; endDate: Date ; subtasks: any[] }[] = [];
+  calculatedChainedTables: { title: string; startDate: Date; endDate: Date; subtasks: any[] }[] = [];
+  documents: any[] = [];
+  documentsError: string | null = null; // New property to store document fetch error
 
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
   isLoading: boolean = false;
+  isDocumentsLoading: boolean = false; // New flag for document loading state
   isBrowser: boolean;
   weatherData: any;
-  
-  constructor(private route: ActivatedRoute,
-              private jobsService: JobsService,
-              private weatherService: WeatherService,
-              public store: Store<SubtasksState>,
-              private router: Router,
-              @Inject(PLATFORM_ID) private platformId: Object
-            ) {
-              this.isBrowser = isPlatformBrowser(this.platformId);
+
+  constructor(
+    private route: ActivatedRoute,
+    private jobsService: JobsService,
+    private weatherService: WeatherService,
+    public store: Store<SubtasksState>,
+    private router: Router,
+    private dialog: MatDialog,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
+
+  get isDialogOpen(): boolean {
+    return this.dialog.openDialogs.length > 0;
   }
 
   ngOnInit() {
@@ -67,7 +85,7 @@ export class JobsComponent implements OnInit{
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
     this.initialStartDate = this.projectDetails.date;
-  
+
     const state = this.store.getState();
     if (!state.subtaskGroups) {
       this.store.setState({
@@ -76,11 +94,9 @@ export class JobsComponent implements OnInit{
         ]
       });
     }
-    
-    this.fetchWeather();
-    
-    this.createTables();
 
+    this.fetchWeather();
+    this.createTables();
     if (this.calculatedTables && state.subtaskGroups) {
       const updatedSubtaskGroups = this.calculatedTables.map((group) => {
         const updatedSubtasks = group.subtasks.map((existingSubtask) => {
@@ -103,10 +119,106 @@ export class JobsComponent implements OnInit{
         subtaskGroups: updatedSubtaskGroups,
       });
     }
+
+    // Note: We’ll fetch documents when the dialog opens, not here
   }
+
+  fetchDocuments(): void {
+    this.isDocumentsLoading = true; // Set loading state to true
+    this.documentsError = null; // Reset error state
+    const jobId = this.projectDetails.jobId;
+    this.jobsService.getJobDocuments(jobId).subscribe({
+      next: (docs: any[]) => {
+        this.documents = docs.map(doc => ({
+          id: doc.id,
+          name: doc.fileName,
+          type: this.getFileType(doc.fileName),
+          size: doc.size
+        }));
+        this.isDocumentsLoading = false; // Set loading state to false on success
+      },
+      error: (err) => {
+        console.error('Error fetching documents:', err);
+        this.documentsError = 'Failed to load documents.'; // Set error message
+        this.isDocumentsLoading = false; // Set loading state to false on error
+      }
+    });
+  }
+
+  openDocumentsDialog() {
+    const activeElement = document.activeElement as HTMLElement;
+    // Fetch documents when the dialog opens
+    this.fetchDocuments();
+    const dialogRef = this.dialog.open(this.documentsDialog, {
+      width: '500px',
+      maxHeight: '80vh',
+      autoFocus: true
+    });
+    dialogRef.afterClosed().subscribe(() => {
+      if (activeElement) {
+        activeElement.focus();
+      }
+    });
+  }
+
+  closeDocumentsDialog() {
+    this.dialog.closeAll();
+  }
+
+  viewDocument(document: any) {
+    this.jobsService.downloadJobDocument(document.id).subscribe({
+      next: (response: Blob) => {
+        const blob = new Blob([response], { type: document.type });
+        const url = window.URL.createObjectURL(blob);
+        const newTab = window.open(url, '_blank');
+        if (!newTab) {
+          this.alertMessage = 'Failed to open document. Please allow pop-ups for this site.';
+          this.showAlert = true;
+        }
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: (err) => {
+        console.error('Error viewing document:', err);
+        this.alertMessage = 'Failed to view document.';
+        this.showAlert = true;
+      }
+    });
+  }
+
+  getFileType(fileName: string): string {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
+  fetchWeather(): void {
+    const location = this.projectDetails.address;
+    const date = this.startDateDisplay;
+    this.weatherService.getFutureWeather(location, date).subscribe({
+      next: (data) => {
+        this.weatherData = data;
+        console.log(this.weatherData);
+        console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
+      },
+      error: (err) => {
+        this.weatherData = "No Weather Data as Data should be more the two weeks from now";
+        console.error('Error:', err);
+      },
+    });
+  }
+
   createTables(): void {
     const tables = [
-      { title: 'Foundation Subtasks' , type: 'foundation',status: 'NEW' , subtasks: this.subtasks.foundationSubtasks },
+      { title: 'Foundation Subtasks', type: 'foundation', status: 'NEW', subtasks: this.subtasks.foundationSubtasks },
       { title: 'WallInsulation Subtasks', type: 'wallInsulation', status: 'NEW', subtasks: this.subtasks.wallInsulationSubtasks },
       { title: 'WallStructure Subtasks', type: 'wallStructure', status: 'NEW', subtasks: this.subtasks.wallSubtasks },
       { title: 'Electrical Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
@@ -125,23 +237,21 @@ export class JobsComponent implements OnInit{
       currentStartDate.setDate(currentStartDate.getDate() + 1);
 
       return {
-          title: table.title,
-          startDate: new Date(AgggregatedstartDate),
-          endDate: new Date(AggregatedendDate),
-          subtasks: chainedSubtasks
+        title: table.title,
+        startDate: new Date(AgggregatedstartDate),
+        endDate: new Date(AggregatedendDate),
+        subtasks: chainedSubtasks
       };
-  });
-
-    console.log(this.calculatedChainedTables);
+    });
 
     this.taskData = [
-      { id: '1',name: 'RoofStructure', start:  this.calculatedChainedTables[5].startDate, end: this.calculatedChainedTables[5].endDate, progress: 0, dependencies: null, },
-      { id: '2',name: 'WallInsulation', start: this.calculatedChainedTables[1].startDate, end: this.calculatedChainedTables[1].endDate, progress: 0, dependencies: null,},
-      { id: '3',name: 'WallStructure', start: this.calculatedChainedTables[2].startDate, end: this.calculatedChainedTables[2].endDate, progress: 0, dependencies: null, },
-      { id: '4',name: 'RoofInsulation', start: this.calculatedChainedTables[4].startDate, end: this.calculatedChainedTables[4].endDate, progress: 0, dependencies: null, },
-      { id: '5',name: 'Foundation', start: this.calculatedChainedTables[0].startDate, end: this.calculatedChainedTables[0].endDate, progress: 0, dependencies: null, },
-      { id: '6',name: 'Finishes', start: this.calculatedChainedTables[6].startDate, end: this.calculatedChainedTables[6].endDate,progress: 0, dependencies: null, },
-      { id: '7',name: 'ElectricalSupplyNeeds', start: this.calculatedChainedTables[3].startDate, end:this.calculatedChainedTables[3].endDate, progress: 0, dependencies: null,}
+      { id: '1', name: 'RoofStructure', start: this.calculatedChainedTables[5].startDate, end: this.calculatedChainedTables[5].endDate, progress: 0, dependencies: null },
+      { id: '2', name: 'WallInsulation', start: this.calculatedChainedTables[1].startDate, end: this.calculatedChainedTables[1].endDate, progress: 0, dependencies: null },
+      { id: '3', name: 'WallStructure', start: this.calculatedChainedTables[2].startDate, end: this.calculatedChainedTables[2].endDate, progress: 0, dependencies: null },
+      { id: '4', name: 'RoofInsulation', start: this.calculatedChainedTables[4].startDate, end: this.calculatedChainedTables[4].endDate, progress: 0, dependencies: null },
+      { id: '5', name: 'Foundation', start: this.calculatedChainedTables[0].startDate, end: this.calculatedChainedTables[0].endDate, progress: 0, dependencies: null },
+      { id: '6', name: 'Finishes', start: this.calculatedChainedTables[6].startDate, end: this.calculatedChainedTables[6].endDate, progress: 0, dependencies: null },
+      { id: '7', name: 'ElectricalSupplyNeeds', start: this.calculatedChainedTables[3].startDate, end: this.calculatedChainedTables[3].endDate, progress: 0, dependencies: null }
     ];
     this.calculatedTables = tables.map(table => {
       const calculatedSubtasks = this.calculateSubtaskDates(table.subtasks, currentStartDate);
@@ -155,6 +265,7 @@ export class JobsComponent implements OnInit{
       };
     });
   }
+
   calculateSubtaskDates(subtasks: any[], startDate: Date): any[] {
     let currentDate = new Date(startDate);
 
@@ -195,21 +306,20 @@ export class JobsComponent implements OnInit{
     let currentDate = new Date(initialStartDate);
 
     return subtasks.map(subtask => {
-        const subtaskStartDate = new Date(currentDate);
-        const subtaskEndDate = new Date(currentDate);
-        subtaskEndDate.setDate(subtaskStartDate.getDate() + subtask.days - 1);
-        currentDate.setDate(subtaskEndDate.getDate() + 1);
+      const subtaskStartDate = new Date(currentDate);
+      const subtaskEndDate = new Date(currentDate);
+      subtaskEndDate.setDate(subtaskStartDate.getDate() + subtask.days - 1);
+      currentDate.setDate(subtaskEndDate.getDate() + 1);
 
-        return {
-            ...subtask,
-            startDate: subtaskStartDate,
-            endDate: subtaskEndDate
-        };
+      return {
+        ...subtask,
+        startDate: subtaskStartDate,
+        endDate: subtaskEndDate
+      };
     });
-}
+  }
 
   deleteSubtask(table: any, index: number): void {
-    // Update the state directly to ensure consistency
     const updatedState = this.store.getState().subtaskGroups.map(group => {
       if (group.title === table.title) {
         return {
@@ -220,10 +330,7 @@ export class JobsComponent implements OnInit{
       return group;
     });
   
-    // Update the state
     this.store.setState({ subtaskGroups: updatedState });
-  
-    // Optionally, reassign the updated subtasks back to the table for local consistency
     table.subtasks = updatedState.find(group => group.title === table.title)?.subtasks || [];
   }
   
@@ -266,21 +373,112 @@ export class JobsComponent implements OnInit{
       }
     }
   }
-  
-  fetchWeather(): void {
-    const location = this.projectDetails.address;
-    const date = this.startDateDisplay;
 
-    this.weatherService.getFutureWeather(location, date).subscribe({
-      next: (data) => {
-        this.weatherData = data;
-        console.log(this.weatherData)
-        console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
+  closeAlert(): void {
+    const activeElement = document.activeElement as HTMLElement;
+    if (this.routeURL) {
+      this.router.navigateByUrl(this.routeURL);
+    }
+    this.showAlert = false;
+    setTimeout(() => {
+      if (activeElement) {
+        activeElement.focus();
+      } else {
+        const firstActionButton = document.querySelector('.action-buttons button') as HTMLElement;
+        if (firstActionButton) {
+          firstActionButton.focus();
+        }
+      }
+    }, 0);
+  }
+
+  publish() { 
+    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
+      ...group,
+      subtasks: group.subtasks.map(subtask => ({
+        ...subtask,
+      }))
+    }));
+  
+    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
+
+    const dataInput = this.store.getState().subtaskGroups;
+    console.log('Tasks in store for Published:', dataInput[0]);
+    console.log('UserId :: ', localStorage.getItem("userId"));
+    const projectData = this.prepareProjectData("PUBLISHED");
+
+    this.isLoading = true;
+    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
+      next: response => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = "Published Job Successfully";
       },
-      error: (err) => {
-        this.weatherData = "No Weather Data as Data should be more the two weeks from now";
+      error: err => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = 'An unexpected error occurred. Contact support';
         console.error('Error:', err);
+      }
+    });
+  }
+
+  saveOnly() {
+    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
+      ...group,
+      subtasks: group.subtasks.map(subtask => ({
+        ...subtask,
+      }))
+    }));
+  
+    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
+
+    const dataInput = this.store.getState().subtaskGroups;
+    console.log('Tasks in store for Saved:', dataInput[0]);
+    console.log('UserId :: ', localStorage.getItem("userId"));
+    const projectData = this.prepareProjectData("DRAFT");
+
+    this.isLoading = true;
+    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
+      next: response => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = "Saved Job Successfully";
       },
+      error: err => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = 'An unexpected error occurred. Contact support';
+        console.error('Error:', err);
+      }
+    });
+  }
+
+  discard() {
+    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
+      ...group,
+      subtasks: group.subtasks.map(subtask => ({
+        ...subtask,
+      }))
+    }));
+  
+    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
+    console.log('UserId :: ', localStorage.getItem("userId"));
+    const projectData = this.prepareProjectData("DISCARD");
+
+    this.isLoading = true;
+    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
+      next: response => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = "Discarded Job Successfully";
+      },
+      error: err => {
+        this.isLoading = false;
+        this.showAlert = true;
+        this.alertMessage = 'An unexpected error occurred. Contact support';
+        console.error('Error:', err);
+      }
     });
   }
 
@@ -329,102 +527,5 @@ export class JobsComponent implements OnInit{
       Address: this.projectDetails.address,
       UserId: localStorage.getItem("userId")
     };
-  }
-  
-  publish() { 
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
-  
-    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-
-    const dataInput = this.store.getState().subtaskGroups
-    console.log('Tasks in store for Published:', dataInput[0]);
-    console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("PUBLISHED");
-
-    this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "Published Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
-  }
-  
-  closeAlert(): void {
-    if (this.routeURL) {
-      this.router.navigateByUrl(this.routeURL);
-    }
-    this.showAlert = false;
-  }
-  
-  saveOnly(){
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
-  
-    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-
-    const dataInput = this.store.getState().subtaskGroups
-    console.log('Tasks in store for Saved:', dataInput[0]);
-    console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("DRAFT");
-
-    this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "SavedS Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
-  }
-
-  discard() {
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
-  
-    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-    console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("DISCARD");
-
-    this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "Discarded Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
   }
 }

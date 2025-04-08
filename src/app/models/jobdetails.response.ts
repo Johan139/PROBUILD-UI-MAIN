@@ -1,3 +1,5 @@
+import { JobDocument } from "./JobDocument";
+
 export interface JobResponse {
     id: number;
     projectName: string;
@@ -28,5 +30,6 @@ export interface JobResponse {
     address: string;
     user: any | null;
     bids: any | null;
+    documents?: JobDocument[]; // Add the list of associated documents
   }
   
