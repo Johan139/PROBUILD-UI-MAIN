@@ -42,8 +42,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}  # Use commit SHA as tag
-          no-cache: true  # Force rebuild to avoid caching issues
+          tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
+          no-cache: true
         env:
           BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
           API_KEY: "ef306472fbed4ca9835115255241412"
@@ -56,21 +56,46 @@ jobs:
       # Deploy to Azure Container App with retry mechanism
       - name: Deploy to Azure Container App
         run: |
-          # Attempt to update the container app with retries
           for i in {1..3}; do
             echo "Attempt $i: Updating Azure Container App..."
-            az containerapp update \
+            if az containerapp update \
               --name probuildai-ui \
               --resource-group rg-Probuild \
               --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
               --set "properties.environmentId=/subscriptions/0e6dc202-bcae-4b8b-b1de-a8f3a04341d6/resourceGroups/rg-Probuild/providers/Microsoft.App/managedEnvironments/managedEnvironment-rgProbuild-ae27" \
               --set "properties.configuration.activeRevisionsMode=Single" \
-              --cpu 0.5 \
-              --memory 1.0Gi \
+              --set "properties.template.containers[0].image=probuild.azurecr.io/probuildai-ui:${{ github.sha }}" \
+              --set "properties.template.containers[0].name=probuildai-ui" \
+              --set "properties.template.containers[0].ports[0].containerPort=80" \
+              --set "properties.configuration.ingress.targetPort=80" \
+              --set "properties.configuration.ingress.external=true" \
+              --set "properties.template.containers[0].env[0].name=BACKEND_URL" \
+              --set "properties.template.containers[0].env[0].value=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
+              --set "properties.template.containers[0].env[1].name=API_KEY" \
+              --set "properties.template.containers[0].env[1].value=ef306472fbed4ca9835115255241412" \
+              --set "properties.template.containers[0].env[1].name=Google_API" \
+              --set "properties.template.containers[0].env[1].value=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww" \
+              --cpu 1.0 \
+              --memory 2.0Gi \
               --min-replicas 1 \
-              --max-replicas 1 \
-              && break || echo "Update failed, retrying in 30 seconds..."
-            sleep 30
+              --max-replicas 1; then
+              break
+            else
+              echo "Update failed, retrying in 30 seconds..."
+              if [ $i -eq 3 ]; then
+                echo "All retries failed. Exiting..."
+                exit 1
+              fi
+              sleep 30
+            fi
+          done
+
+      # Clean up old revisions
+      - name: Clean up old revisions
+        run: |
+          az containerapp revision list --name probuildai-ui --resource-group rg-Probuild --query "[?active==false].name" -o tsv | while read revision; do
+            echo "Deactivating old revision: $revision"
+            az containerapp revision deactivate --name probuildai-ui --resource-group rg-Probuild --revision $revision
           done
 
       # Debug: Verify the container app revision
@@ -78,7 +103,7 @@ jobs:
         run: |
           az containerapp revision list --name probuildai-ui --resource-group rg-Probuild --output table
 
-      # Debug: Check container app logs (optional, requires log analytics setup)
+      # Debug: Check container app logs
       - name: Check Container App Logs
         run: |
           az containerapp logs show \
