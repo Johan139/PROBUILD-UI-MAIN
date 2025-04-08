@@ -265,6 +265,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key='${Google_API}'&libraries=places`;
+      console.log(script.src)
       script.async = true;
       script.defer = true;
       script.onload = () => {
