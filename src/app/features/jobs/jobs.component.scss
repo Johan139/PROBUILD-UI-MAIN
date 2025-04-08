@@ -62,9 +62,152 @@ mat-divider {
   }
 }
 
+/* Timeline Section */
+.timeline-section {
+  padding: 2rem;
+  background-color: $white;
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: $shadow;
+  border: 1px solid $light-gray;
+}
+
+.timeline-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: $dark-gray;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.timeline-divider {
+  background-color: $primary-yellow;
+  height: 4px;
+  margin: 0 auto 2rem;
+  width: 120px;
+  border-radius: 2px;
+}
+
 /* Chart Container */
 .chart-container {
-  padding: 1rem 0;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border: 2px solid $secondary-yellow;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03), $shadow;
+  margin: 0 auto;
+  max-width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
+.timeline-wrapper {
+  background: linear-gradient(135deg, $white 0%, #f9f9f9 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid $light-gray;
+}
+
+/* Gantt Chart Styling */
+.gantt-chart {
+  font-family: Arial, sans-serif;
+  width: 100%;
+  min-height: 200px;
+  position: relative;
+  display: flex;
+}
+
+/* Style for the task labels (left side) */
+.gantt-chart .task-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 200px; /* Increased width to prevent overlap */
+  padding: 0.5rem 1rem;
+  background-color: $white;
+  border-right: 2px solid $light-gray;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.gantt-chart .task-label {
+  font-size: 0.9rem;
+  color: $dark-gray;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Style for the timeline grid */
+.gantt-chart .timeline-grid {
+  margin-left: 200px; /* Match the task-labels width to prevent overlap */
+  position: relative;
+  flex-grow: 1;
+  background: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent 1px,
+    $light-gray 1px,
+    $light-gray 2px
+  );
+  background-size: 40px 100%;
+}
+
+/* Style for the date labels (bottom) */
+.gantt-chart .date-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 200px; /* Match the task-labels width */
+  padding: 0.5rem 0;
+  border-top: 1px solid $light-gray;
+}
+
+.gantt-chart .date-label {
+  font-size: 0.85rem;
+  color: $dark-gray;
+  text-align: center;
+  flex: 1;
+}
+
+/* Style for the task bars */
+.gantt-chart .task-bar {
+  position: absolute;
+  height: 20px;
+  background-color: $cyan;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-left: 200px; /* Ensure bars start after the labels */
+  box-sizing: border-box;
+}
+
+.gantt-chart .task-bar:hover {
+  background-color: $primary-yellow;
+  cursor: pointer;
+}
+
+/* Style for the tooltip (on hover) */
+.gantt-chart .task-bar:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: $dark-gray;
+  color: $white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 10;
 }
 
 /* Subtask Section */
@@ -193,6 +336,146 @@ mat-divider {
   }
 }
 
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timeline-section {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Documents Dialog */
+.documents-dialog {
+  padding: 1rem;
+
+  h2[mat-dialog-title] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    margin-bottom: 1rem;
+  }
+}
+
+.no-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+}
+
+.loading-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+  }
+}
+
+.documents-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $light-gray;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $cyan;
+    border-radius: 3px;
+  }
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #f9f9f9;
+    border-color: $cyan;
+    box-shadow: $shadow;
+  }
+}
+
+.document-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: $black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+
+.document-meta {
+  font-size: 0.85rem;
+  color: $dark-gray;
+}
+
+.view-btn {
+  background-color: $primary-yellow;
+  color: $black; /* Changed to black text */
+  padding: 0.25rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-left: 1rem;
+
+  &:hover {
+    background-color: $darker-yellow; /* Match the hover color of .submit-btn */
+    color: $dark-gray; /* Match the text color of .submit-btn on hover */
+  }
+}
+
+mat-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+
+  .submit-btn {
+    background: $primary-yellow;
+    color: $dark-gray;
+
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
@@ -214,4 +497,95 @@ mat-divider {
       padding: 6px;
     }
   }
+
+  .timeline-section {
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .timeline-title {
+    font-size: 1.5rem;
+  }
+
+  .chart-container {
+    padding: 1rem;
+  }
+
+  .timeline-divider {
+    width: 80px;
+    margin-bottom: 1.5rem;
+  }
+
+  .gantt-chart .task-labels {
+    width: 120px; /* Reduced width for mobile */
+  }
+
+  .gantt-chart .timeline-grid {
+    margin-left: 120px; /* Match the reduced width */
+  }
+
+  .gantt-chart .date-labels {
+    margin-left: 120px; /* Match the reduced width */
+  }
+
+  .gantt-chart .task-bar {
+    margin-left: 120px; /* Match the reduced width */
+    height: 16px;
+  }
+
+  .gantt-chart .task-label {
+    font-size: 0.8rem;
+  }
+
+  .gantt-chart .date-label {
+    font-size: 0.75rem;
+  }
+
+  /* Responsive styles for the documents dialog */
+  .documents-dialog {
+    padding: 0.5rem;
+  }
+
+  .document-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
+  .document-info {
+    margin-bottom: 0.5rem;
+  }
+
+  .view-btn {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .document-name {
+    font-size: 0.9rem;
+  }
+
+  .document-meta {
+    font-size: 0.75rem;
+  }
+
+  /* Add to existing styles */
+.no-documents {
+  /* Existing styles already applied */
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  /* New style for error message differentiation */
+  &[error] {
+    color: #da4167; /* Using the same red as your delete button for error indication */
+    font-weight: 500; /* Slightly bolder to draw attention */
+  }
+}
 }

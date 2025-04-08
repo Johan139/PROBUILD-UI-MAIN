@@ -13,8 +13,8 @@ export class JobsService {
 
   constructor(private httpClient: HttpClient) { }
 
-  createJob(jobForm:any) {
-      this.httpClient.post(BASE_URL, jobForm);
+  createJob(jobForm: any, addressModel: any) {
+    this.httpClient.post(`${BASE_URL}/Jobs`, { job: jobForm, address: addressModel });
   }
 
   updateJob(jobData: any, id: any): Observable<any> {
@@ -25,6 +25,13 @@ export class JobsService {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
 
+// Updated to use documentId instead of blobUrl
+downloadJobDocument(documentId: number): Observable<Blob> {
+  return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
+}
+  getJobDocuments(jobId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
+  }
   getAllJobs() {
     this.httpClient.get(BASE_URL)
   }
