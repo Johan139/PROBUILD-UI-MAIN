@@ -73,8 +73,8 @@ jobs:
               --set "properties.template.containers[0].env[0].value=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
               --set "properties.template.containers[0].env[1].name=API_KEY" \
               --set "properties.template.containers[0].env[1].value=ef306472fbed4ca9835115255241412" \
-              --set "properties.template.containers[0].env[1].name=Google_API" \
-              --set "properties.template.containers[0].env[1].value=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww" \
+              --set "properties.template.containers[0].env[2].name=Google_API" \
+              --set "properties.template.containers[0].env[2].value=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww" \
               --cpu 1.0 \
               --memory 2.0Gi \
               --min-replicas 1 \
