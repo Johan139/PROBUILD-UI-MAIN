@@ -263,7 +263,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       }
   
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key='${BASE_URL}'&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -468,7 +468,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   
               // Fallback to Geocoding API
               console.log('Falling back to Geocoding API for address:', formValue.address);
-              this.httpClient.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww`)
+              this.httpClient.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='${BASE_URL}'`)
                 .subscribe({
                   next: (response: any) => {
                     if (response.status === 'OK' && response.results && response.results.length > 0) {
