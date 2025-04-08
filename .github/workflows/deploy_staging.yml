@@ -3,51 +3,61 @@ name: Build and Deploy to Azure Container App
 on:
   push:
     branches:
-      - dev
+      - master
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
       - name: Check out code
         uses: actions/checkout@v4
 
-      # Debug: Print the Service Principal credentials (values will be masked)
-      - name: Debug Service Principal credentials
-        run: |
-          echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
-          echo "AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}"
-          echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
-
-      # Log in to Azure using Service Principal
       - name: Log in to Azure
         uses: azure/login@v1
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"0e6dc202-bcae-4b8b-b1de-a8f3a04341d6"}'
 
-      # Log in to Azure Container Registry
       - name: Log in to ACR
         run: |
           az acr login --name probuild
 
-      # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build and push Docker image to ACR
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
+          no-cache: true
 
-      # Deploy to Azure App Service
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: probuildai-backend
-          images: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
-          slot-name: production  # Optional: Remove if not using slots
+      - name: Deploy to Azure Container App
+        run: |
+          # Delete the existing Container App to start fresh
+          az containerapp delete --name probuildai-ui --resource-group rg-Probuild --yes || echo "No app to delete, proceeding..."
+
+          # Create a new Container App with the desired configuration
+          az containerapp create \
+            --name probuildai-ui \
+            --resource-group rg-Probuild \
+            --environment managedEnvironment-rgProbuild-ae27 \
+            --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
+            --registry-server probuild.azurecr.io \
+            --cpu 0.5 \
+            --memory 1.0Gi \
+            --min-replicas 1 \
+            --max-replicas 1 \
+            --ingress external \
+            --target-port 80 \
+            --env-vars "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" "API_KEY=ef306472fbed4ca9835115255241412" "Google_API=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww"
+
+      - name: Check Container App Status
+        run: |
+          az containerapp show --name probuildai-ui --resource-group rg-Probuild --query "properties.runningStatus" -o tsv
+
+      - name: Verify App Accessibility
+        run: |
+          sleep 30 # Wait for the app to be fully ready
+          curl -f https://probuildai-ui.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/ || echo "App is not accessible. Check the container logs in Azure Portal."
