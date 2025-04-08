@@ -47,7 +47,6 @@ jobs:
         env:
           BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
           API_KEY: "ef306472fbed4ca9835115255241412"
-          Google_API: "AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww"
 
       # Debug: Verify the image exists in ACR
       - name: Debug ACR image
@@ -65,17 +64,11 @@ jobs:
               --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
               --set "properties.environmentId=/subscriptions/0e6dc202-bcae-4b8b-b1de-a8f3a04341d6/resourceGroups/rg-Probuild/providers/Microsoft.App/managedEnvironments/managedEnvironment-rgProbuild-ae27" \
               --set "properties.configuration.activeRevisionsMode=Single" \
-              --set "properties.template.containers[0].image=probuild.azurecr.io/probuildai-ui:${{ github.sha }}" \
-              --set "properties.template.containers[0].name=probuildai-ui" \
-              --set "properties.template.containers[0].ports[0].containerPort=80" \
               --set "properties.configuration.ingress.targetPort=80" \
               --set "properties.configuration.ingress.external=true" \
-              --set "properties.template.containers[0].env[0].name=BACKEND_URL" \
-              --set "properties.template.containers[0].env[0].value=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
-              --set "properties.template.containers[0].env[1].name=API_KEY" \
-              --set "properties.template.containers[0].env[1].value=ef306472fbed4ca9835115255241412" \
-              --set "properties.template.containers[0].env[2].name=Google_API" \
-              --set "properties.template.containers[0].env[2].value=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww" \
+              --set-env-vars "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
+              --set-env-vars "API_KEY=ef306472fbed4ca9835115255241412" \
+              --set-env-vars "Google_API=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww" \
               --cpu 1.0 \
               --memory 2.0Gi \
               --min-replicas 1 \
