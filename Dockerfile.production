@@ -1,25 +1,19 @@
-# Stage 1: Build and Serve Angular App
-FROM node:22 AS build-and-serve
+# Stage 1: Build the Angular app
+FROM node:18 AS build
 WORKDIR /app
-
-# Install Angular CLI globally
-RUN npm install -g @angular/cli
-
-# Copy package.json and install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-
-# Copy the rest of the application code
 COPY . .
-
-# Create the src/assets directory if it doesn't exist
-RUN mkdir -p src/assets
-
-# Generate runtime config
+# Set environment variables during build (if needed by set-env.js)
+ENV BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api
+ENV API_KEY=ef306472fbed4ca9835115255241412
+ENV Google_API=AIzaSyBVEXpDDbV96oeuydmvV9F6Ew1Hq-6Psww
 RUN node set-env.js
+RUN npm run build -- --configuration production
 
-# Expose port 80 for the development server
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist/probuildai-ui /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
-
-# Run the Angular development server on port 80
-CMD ["ng", "serve", "--host", "0.0.0.0", "--port", "80", "--disable-host-check"]
+CMD ["nginx", "-g", "daemon off;"]
