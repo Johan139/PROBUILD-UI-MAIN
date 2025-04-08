@@ -29,6 +29,7 @@ import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 
 const BASE_URL = environment.BACKEND_URL;
+const Google_API = environment.Google_API;
 
 @Component({
   selector: 'app-job-quote',
@@ -263,7 +264,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       }
   
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key='${BASE_URL}'&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key='${Google_API}'&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -468,7 +469,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   
               // Fallback to Geocoding API
               console.log('Falling back to Geocoding API for address:', formValue.address);
-              this.httpClient.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='${BASE_URL}'`)
+              this.httpClient.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='${Google_API}'`)
                 .subscribe({
                   next: (response: any) => {
                     if (response.status === 'OK' && response.results && response.results.length > 0) {
