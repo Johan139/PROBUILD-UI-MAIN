@@ -11,13 +11,14 @@ ENV BACKEND_URL=$BACKEND_URL
 ENV API_KEY=$API_KEY
 RUN npm run set-env
 RUN npm run build
-RUN ls -la /app/dist/pro-build-ai # Debug: Confirm files exist
-RUN ls -la /app/dist/pro-build-ai/browser # Debug: Confirm browser folder
+RUN ls -la /app/dist/pro-build-ai
+RUN ls -la /app/dist/pro-build-ai/browser
+RUN tar -cf /tmp/dist.tar -C /app/dist/pro-build-ai . && tar -xf /tmp/dist.tar -C /app/dist/pro-build-ai # Force layer commit
 
 # Stage 2: Serve the static files
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=build /app/dist/pro-build-ai/browser ./dist # Copy the browser subfolder
+COPY --from=build /app/dist/pro-build-ai/browser ./dist
 RUN npm install -g serve
 EXPOSE 80
 CMD ["serve", "-s", "dist", "-l", "80"]
