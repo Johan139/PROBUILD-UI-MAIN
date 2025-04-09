@@ -28,15 +28,14 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: . # Adjust to ./frontend if your app is in a subdirectory
+          context: .
           file: Dockerfile
           push: true
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
           no-cache: true
-        env:
-          BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
-          API_KEY: "${{ secrets.API_KEY }}"
-          GOOGLE_API: "${{ secrets.GOOGLE_API }}" # Optional, not used in set-env.js
+          build-args: |
+            BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api
+            API_KEY=${{ secrets.API_KEY }}
 
       - name: Deploy to Azure Container App
         run: |

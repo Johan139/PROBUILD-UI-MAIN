@@ -4,14 +4,19 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
-RUN mkdir -p src/assets # Create assets directory if needed
-RUN npm run set-env # Use the script instead of node set-env.js directly
-RUN npm run build # Use the defined build script
+RUN mkdir -p src/assets
+ARG BACKEND_URL="https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
+ARG API_KEY="ef306472fbed4ca9835115255241412"
+ENV BACKEND_URL=$BACKEND_URL
+ENV API_KEY=$API_KEY
+RUN npm run set-env
+RUN npm run build
+RUN ls -la /app/dist/pro-build-ai # Debug: Verify files exist
 
 # Stage 2: Serve the static files
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=build /app/dist/pro-build-ai ./dist # Adjust based on your app name
+COPY --from=build /app/dist/pro-build-ai ./dist
 RUN npm install -g serve
 EXPOSE 80
 CMD ["serve", "-s", "dist", "-l", "80"]
