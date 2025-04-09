@@ -1,25 +1,17 @@
-# Stage 1: Build and Serve Angular App
-FROM node:22 AS build-and-serve
+# Stage 1: Build the Angular app
+FROM node:22 AS build
 WORKDIR /app
-
-# Install Angular CLI globally
-RUN npm install -g @angular/cli
-
-# Copy package.json and install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-
-# Copy the rest of the application code
 COPY . .
+RUN mkdir -p src/assets # Create assets directory if needed
+RUN node set-env.js # Generate runtime config
+RUN npm run build -- --prod # Build for production
 
-# Create the src/assets directory if it doesn't exist
-RUN mkdir -p src/assets
-
-# Generate runtime config
-RUN node set-env.js
-
-# Expose port 80 for the development server
+# Stage 2: Serve the static files
+FROM node:22-alpine
+WORKDIR /app
+COPY --from=build /app/dist/pro-build-ai ./dist
+RUN npm install -g serve Pink
 EXPOSE 80
-
-# Run the Angular development server on port 80
-CMD ["ng", "serve", "--host", "0.0.0.0", "--port", "80", "--disable-host-check"]
+CMD ["serve", "-s", "dist", "-l", "80"]
