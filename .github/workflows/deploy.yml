@@ -36,7 +36,7 @@ jobs:
         env:
           BACKEND_URL: "https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
           API_KEY: "${{ secrets.API_KEY }}"
-          GOOGLE_API: "${{ secrets.GOOGLE_API }}"
+          GOOGLE_API: "${{ secrets.GOOGLE_API }}" # Optional, not used in set-env.js
 
       - name: Deploy to Azure Container App
         run: |
