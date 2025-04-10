@@ -3,7 +3,7 @@ import {HttpClient} from "@angular/common/http";
 import {environment} from "../../environments/environment";
 import {LoginForm} from "../models/auth";
 
-const BASE_URL = `${environment.BACKEND_URL}/Account/login`;
+const BASE_URL = `${environment.apiUrl}/Account/login`;
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +12,7 @@ export class LoginService {
   userType:string = '';
   userId: string = ''
   userFirstName: string = '';
+  userToken: string = '';
 
   constructor(private httpClient: HttpClient) { }
 
@@ -27,6 +28,9 @@ export class LoginService {
   setFirstName(firstName: string){
     this.userFirstName = firstName;
   }
+  setToken(token: string){
+    this.userToken = token;
+  }
 
   getUserType() {
     return this.userType;
@@ -36,6 +40,9 @@ export class LoginService {
   }
   getFirstName(){
     return this.userFirstName;
+  }
+  getToken(){
+    return this.userToken;
   }
 
 }
