@@ -39,6 +39,12 @@ downloadJobDocument(documentId: number): Observable<Blob> {
   getSpecificJob(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/Id/' +jobId)
   }
+  GetBillOfMaterials(jobId: any):  Observable<any>  {
+    return this.httpClient.get(BASE_URL+'/processing-results/' +jobId)
+  }
+  GetBillOfMaterialsStatus(jobId: any):  Observable<any>  {
+    return this.httpClient.get(BASE_URL+'processing-results/' +jobId)
+  }
 
   setJobCard(jobForm:any){
     this.jobQuote = jobForm;

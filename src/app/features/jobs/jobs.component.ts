@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy } from '@angular/core';
 import { SubTasks } from './../../models/sub-tasks';
 import { ActivatedRoute, Router } from "@angular/router";
 import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
@@ -16,6 +16,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { FileSizePipe } from '../Documents/filesize.pipe';
+import { interval, Subscription } from 'rxjs';
+import { DeleteDialogComponent } from './job-edit/delete-dialog.component';
 
 @Component({
   selector: 'app-jobs',
@@ -40,8 +42,9 @@ import { FileSizePipe } from '../Documents/filesize.pipe';
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss'
 })
-export class JobsComponent implements OnInit {
+export class JobsComponent implements OnInit, OnDestroy {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
+  @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
 
   taskData: any;
   subtasks: SubTasks = new SubTasks();
@@ -53,15 +56,23 @@ export class JobsComponent implements OnInit {
   calculatedTables: { title: string; subtasks: any[] }[] = [];
   calculatedChainedTables: { title: string; startDate: Date; endDate: Date; subtasks: any[] }[] = [];
   documents: any[] = [];
-  documentsError: string | null = null; // New property to store document fetch error
-
-  showAlert: boolean = false;
+  documentsError: string | null = null;
   alertMessage: string = '';
+  isDialogOpened: boolean = false;
+  isBomLoading: boolean = false;
+  isBomProcessing: boolean = false;
+  bomError: string | null = null;
+  bom: any = null;
+  processingResults: any[] = [];
+  showAlert: boolean = false;
   routeURL: string = '';
   isLoading: boolean = false;
-  isDocumentsLoading: boolean = false; // New flag for document loading state
+  isDocumentsLoading: boolean = false;
   isBrowser: boolean;
   weatherData: any;
+  IsAIProcessed: boolean = false;
+
+  private pollingSubscription: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -119,13 +130,154 @@ export class JobsComponent implements OnInit {
         subtaskGroups: updatedSubtaskGroups,
       });
     }
+  }
 
-    // Note: We’ll fetch documents when the dialog opens, not here
+  ngOnDestroy(): void {
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+    }
+  }
+
+  openBillOfMaterialsDialog(): void {
+    this.isBomLoading = true;
+    this.isBomProcessing = false;
+    this.bomError = null;
+    this.bom = null;
+    this.isDialogOpened = true;
+
+    this.jobsService.GetBillOfMaterials(`${this.projectDetails.jobId}`).subscribe({
+      next: (status: any) => {
+        this.isBomProcessing = !status.isProcessingComplete;
+
+        if (status.length > 0) {
+          this.processingResults = status.map(doc => ({
+            id: doc.id,
+            jobId: doc.jobId,
+            documentId: doc.DocumentId,
+            bomJson: "",
+            materialsEstimateJson: doc.materialsEstimateJson,
+            fullResponse: doc.fullResponse,
+            createdAt: doc.createdAt,
+            parsedReport: this.parseReport(doc.fullResponse)
+          }));
+          this.IsAIProcessed = true;
+          this.isBomLoading = false;
+          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100vh', maxWidth: '150vw' });
+        } else {
+          this.bomError = status.message;
+          this.IsAIProcessed = false;
+          this.isBomLoading = false;
+          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100h', maxWidth: '150vw'  });
+        }
+      },
+      error: (error) => {
+        this.bomError = error.error?.error || 'Failed to check AI processing status.';
+        this.isBomLoading = false;
+        this.dialog.open(this.billOfMaterialsDialog, { width: '1400px', maxHeight: '80vh' });
+      }
+    });
+  }
+
+  parseReport(fullResponse: string): any {
+    const lines = fullResponse.split('\n').filter(line => line.trim());
+    const sections: any[] = [];
+    let currentSection: any = null;
+    let inTable = false;
+    let tableHeaders: string[] = [];
+    let tableContent: any[] = [];
+
+    for (const line of lines) {
+      // Detect section headers (##)
+      if (line.startsWith('##')) {
+        if (currentSection) {
+          if (inTable) {
+            currentSection.content = tableContent;
+            inTable = false;
+            tableHeaders = [];
+            tableContent = [];
+          }
+          sections.push(currentSection);
+        }
+        currentSection = {
+          title: line.replace('##', '').trim(),
+          type: 'text',
+          content: []
+        };
+      }
+      // Detect table start (|)
+      else if (line.includes('|') && currentSection) {
+        if (!inTable) {
+          inTable = true;
+          currentSection.type = 'table';
+          currentSection.content = [];
+          // Parse headers
+          tableHeaders = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          currentSection.headers = tableHeaders;
+        } else if (line.includes('---')) {
+          // Skip separator line
+          continue;
+        } else {
+          // Parse table row
+          const row = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          tableContent.push(row);
+        }
+      }
+      // Detect list items (-)
+      else if (line.startsWith('-') && currentSection) {
+        if (inTable) {
+          currentSection.content = tableContent;
+          inTable = false;
+          tableHeaders = [];
+          tableContent = [];
+          sections.push(currentSection);
+          currentSection = {
+            title: currentSection.title + ' (List)',
+            type: 'list',
+            content: []
+          };
+        } else if (currentSection.type !== 'list') {
+          currentSection.type = 'list';
+          currentSection.content = [];
+        }
+        currentSection.content.push(line.replace('-', '').trim());
+      }
+      // Regular text
+      else if (currentSection) {
+        if (inTable) {
+          currentSection.content = tableContent;
+          inTable = false;
+          tableHeaders = [];
+          tableContent = [];
+          sections.push(currentSection);
+          currentSection = {
+            title: currentSection.title + ' (Text)',
+            type: 'text',
+            content: []
+          };
+        }
+        currentSection.content.push(line.trim());
+      }
+    }
+
+    // Push the last section
+    if (currentSection) {
+      if (inTable) {
+        currentSection.content = tableContent;
+      }
+      sections.push(currentSection);
+    }
+
+    return { sections };
+  }
+
+  closeBillOfMaterialsDialog(): void {
+    this.isDialogOpened = false;
+    this.dialog.closeAll();
   }
 
   fetchDocuments(): void {
-    this.isDocumentsLoading = true; // Set loading state to true
-    this.documentsError = null; // Reset error state
+    this.isDocumentsLoading = true;
+    this.documentsError = null;
     const jobId = this.projectDetails.jobId;
     this.jobsService.getJobDocuments(jobId).subscribe({
       next: (docs: any[]) => {
@@ -135,19 +287,18 @@ export class JobsComponent implements OnInit {
           type: this.getFileType(doc.fileName),
           size: doc.size
         }));
-        this.isDocumentsLoading = false; // Set loading state to false on success
+        this.isDocumentsLoading = false;
       },
       error: (err) => {
         console.error('Error fetching documents:', err);
-        this.documentsError = 'Failed to load documents.'; // Set error message
-        this.isDocumentsLoading = false; // Set loading state to false on error
+        this.documentsError = 'Failed to load documents.';
+        this.isDocumentsLoading = false;
       }
     });
   }
 
   openDocumentsDialog() {
     const activeElement = document.activeElement as HTMLElement;
-    // Fetch documents when the dialog opens
     this.fetchDocuments();
     const dialogRef = this.dialog.open(this.documentsDialog, {
       width: '500px',
@@ -210,7 +361,7 @@ export class JobsComponent implements OnInit {
         console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
       },
       error: (err) => {
-        this.weatherData = "No Weather Data as Data should be more the two weeks from now";
+        this.weatherData = "No Weather Data as Data should be more than two weeks from now";
         console.error('Error:', err);
       },
     });
@@ -221,7 +372,7 @@ export class JobsComponent implements OnInit {
       { title: 'Foundation Subtasks', type: 'foundation', status: 'NEW', subtasks: this.subtasks.foundationSubtasks },
       { title: 'WallInsulation Subtasks', type: 'wallInsulation', status: 'NEW', subtasks: this.subtasks.wallInsulationSubtasks },
       { title: 'WallStructure Subtasks', type: 'wallStructure', status: 'NEW', subtasks: this.subtasks.wallSubtasks },
-      { title: 'Electrical Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
+      { title: 'Electrical & Plumbing Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
       { title: 'RoofInsulation Subtasks', type: 'roofInsulation', status: 'NEW', subtasks: this.subtasks.roofInsulationSubtasks },
       { title: 'Roofing Subtasks', type: 'roofType', status: 'NEW', subtasks: this.subtasks.roofStructureSubtasks },
       { title: 'Finishes Subtasks', type: 'finishes', status: 'NEW', subtasks: this.subtasks.finishesSubtasks },
@@ -319,20 +470,7 @@ export class JobsComponent implements OnInit {
     });
   }
 
-  deleteSubtask(table: any, index: number): void {
-    const updatedState = this.store.getState().subtaskGroups.map(group => {
-      if (group.title === table.title) {
-        return {
-          ...group,
-          subtasks: group.subtasks.filter((_, i) => i !== index)
-        };
-      }
-      return group;
-    });
-  
-    this.store.setState({ subtaskGroups: updatedState });
-    table.subtasks = updatedState.find(group => group.title === table.title)?.subtasks || [];
-  }
+
   
   addSubtask(table: any): void {
     const newSubtask = {
@@ -437,7 +575,7 @@ export class JobsComponent implements OnInit {
     console.log('Tasks in store for Saved:', dataInput[0]);
     console.log('UserId :: ', localStorage.getItem("userId"));
     const projectData = this.prepareProjectData("DRAFT");
-
+    console.log(projectData);
     this.isLoading = true;
     this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
       next: response => {
@@ -489,43 +627,67 @@ export class JobsComponent implements OnInit {
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-  
+
     const dataInput = this.store.getState().subtaskGroups;
   
     return {
-      Id: this.projectDetails.jobId,
-      ProjectName: this.projectDetails.projectName,
-      JobType: this.projectDetails.jobType,
-      Stories: Number(this.projectDetails.stories),
-      Status: status,
-      Qty: Number(this.projectDetails.quantity),
-      BuildingSize: Number(this.projectDetails.buildingSize),
-      DesiredStartDate: formattedDate,
-      WallStructure: this.projectDetails.wallStructure,
-      WallStructureSubtask: JSON.stringify(dataInput[2].subtasks),
-      WallStructureStatus: "NEW",
-      WallInsulation: this.projectDetails.wallInsulation,
-      WallInsulationSubtask: JSON.stringify(dataInput[1].subtasks),
-      WallInsulationStatus: "NEW",
-      RoofStructure: this.projectDetails.roofStructure,
-      RoofStructureSubtask: JSON.stringify(dataInput[5].subtasks),
-      RoofStructureStatus: "NEW",
-      RoofInsulation: this.projectDetails.roofInsulation,
-      RoofInsulationSubtask: JSON.stringify(dataInput[4].subtasks),
-      RoofInsulationStatus: "NEW",
-      ElectricalSupplyNeeds: this.projectDetails.electricalSupply,
-      ElectricalSupplyNeedsSubtask: JSON.stringify(dataInput[3].subtasks),
-      ElectricalStatus: "NEW",
-      Finishes: this.projectDetails.finishes,
-      FinishesSubtask: JSON.stringify(dataInput[6].subtasks),
-      FinishesStatus: "NEW",
-      Foundation: this.projectDetails.foundation,
-      FoundationSubtask: JSON.stringify(dataInput[0].subtasks),
-      FoundationStatus: "NEW",
-      BlueprintPath: this.projectDetails.blueprintPath,
+      Id: this.projectDetails.jobId || 0, // Ensure valid ID
+      ProjectName: this.projectDetails.projectName || "", // Required
+      JobType: this.projectDetails.jobType || "", // Required
+      Qty: Number(this.projectDetails.quantity) || 1, // Required
+      DesiredStartDate: formattedDate(
+          this.projectDetails.desiredStartDate 
+              ? new Date(this.projectDetails.desiredStartDate) 
+              : new Date()
+      ), // Required, ISO format
+      WallStructure: this.projectDetails.wallStructure || "", // Required
+      WallStructureSubtask: JSON.stringify(dataInput[2]?.subtasks || []),
+      WallInsulation: this.projectDetails.wallInsulation || "", // Required
+      WallInsulationSubtask: JSON.stringify(dataInput[1]?.subtasks || []),
+      RoofStructure: this.projectDetails.roofStructure || "", // Required
+      RoofStructureSubtask: JSON.stringify(dataInput[5]?.subtasks || []),
+      RoofTypeSubtask: "", // Missing in original; provide default
+      RoofInsulation: this.projectDetails.roofInsulation || "",
+      RoofInsulationSubtask: JSON.stringify(dataInput[4]?.subtasks || []),
+      Foundation: this.projectDetails.foundation || "",
+      FoundationSubtask: JSON.stringify(dataInput[0]?.subtasks || []),
+      Finishes: this.projectDetails.finishes || "",
+      FinishesSubtask: JSON.stringify(dataInput[6]?.subtasks || []),
+      ElectricalSupplyNeeds: this.projectDetails.electricalSupply || "",
+      ElectricalSupplyNeedsSubtask: JSON.stringify(dataInput[3]?.subtasks || []),
+      Stories: Number(this.projectDetails.stories) || 0,
+      BuildingSize: Number(this.projectDetails.buildingSize) || 0,
+      Status: status || "DRAFT",
       OperatingArea: "GreenField",
-      Address: this.projectDetails.address,
-      UserId: localStorage.getItem("userId")
-    };
+      Address: this.projectDetails.address || "",
+      UserId: localStorage.getItem("userId"), // Required
+      Blueprint: this.projectDetails.blueprintPath || ""
+      // Exclude navigation properties: User, Bids, Documents
+  };
   }
+
+   deleteSubtask(table: any, index: number): void {
+      const dialogRef = this.dialog.open(DeleteDialogComponent, {
+        width: '400px',
+        panelClass: 'custom-dialog-container',
+        disableClose: true,
+      });
+  
+      dialogRef.afterClosed().subscribe(result => {
+        if (result === true) {
+          const updatedState = this.store.getState().subtaskGroups.map(group => {
+            if (group.title === table.title) {
+              return {
+                ...group,
+                subtasks: group.subtasks.filter((_, i) => i !== index)
+              };
+            }
+            return group;
+          });
+        
+          this.store.setState({ subtaskGroups: updatedState });
+          table.subtasks = updatedState.find(group => group.title === table.title)?.subtasks || [];
+        }
+      });
+    }
 }

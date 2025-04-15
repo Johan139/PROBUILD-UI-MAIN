@@ -268,7 +268,7 @@ mat-divider {
 .submit-btn {
   background: $primary-yellow;
   border-radius: 10px;
-  padding: 8px 16px;
+  padding: 0px 16px;
   font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
@@ -292,10 +292,10 @@ mat-divider {
   }
   
   &.delete-btn {
-    background: #da4167;
-    color: $white;
+    background: #fbd008;
+    color: $dark-gray;
     &:hover {
-      background: darken(#da4167, 10%);
+      background: $darker-yellow;
     }
   }
 }
@@ -373,6 +373,11 @@ mat-divider {
     margin: 0;
     font-size: 1rem;
   }
+
+  &[error] {
+    color: #da4167;
+    font-weight: 500;
+  }
 }
 
 .loading-documents {
@@ -449,15 +454,15 @@ mat-divider {
 
 .view-btn {
   background-color: $primary-yellow;
-  color: $black; /* Changed to black text */
+  color: $black;
   padding: 0.25rem 1rem;
   font-size: 0.9rem;
   line-height: 1.5;
   margin-left: 1rem;
 
   &:hover {
-    background-color: $darker-yellow; /* Match the hover color of .submit-btn */
-    color: $dark-gray; /* Match the text color of .submit-btn on hover */
+    background-color: $darker-yellow;
+    color: $dark-gray;
   }
 }
 
@@ -472,6 +477,96 @@ mat-dialog-actions {
 
     &:hover {
       background: $darker-yellow;
+    }
+  }
+}
+
+/* Report Dialog */
+.report-dialog {
+  padding: 1.5rem;
+
+  .report-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 1rem;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $light-gray;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $cyan;
+      border-radius: 3px;
+    }
+  }
+
+  .report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .report-item {
+    border: 1px solid $light-gray;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: $white;
+    box-shadow: $shadow;
+  }
+
+  .report-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .report-section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: $dark-gray;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid $secondary-yellow;
+    padding-bottom: 0.25rem;
+  }
+
+  .report-section-content {
+    padding-left: 0.5rem;
+  }
+
+  .report-text {
+    p {
+      margin: 0.5rem 0;
+      color: $black;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+  }
+
+  .report-list-items {
+    ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    li {
+      color: $black;
+      margin-bottom: 0.25rem;
+      line-height: 1.5;
+    }
+  }
+
+  .report-table {
+    margin: 0.5rem 0;
+
+    .themed-table {
+      th, td {
+        padding: 10px;
+        word-wrap: break-word;
+      }
     }
   }
 }
@@ -570,22 +665,48 @@ mat-dialog-actions {
     font-size: 0.75rem;
   }
 
-  /* Add to existing styles */
-.no-documents {
-  /* Existing styles already applied */
-  text-align: center;
-  padding: 1rem;
-  color: $dark-gray;
+  /* Responsive styles for the report dialog */
+  .report-dialog {
+    padding: 1rem;
 
-  p {
-    margin: 0;
-    font-size: 1rem;
-  }
+    .report-content {
+      padding-right: 0.5rem;
+    }
 
-  /* New style for error message differentiation */
-  &[error] {
-    color: #da4167; /* Using the same red as your delete button for error indication */
-    font-weight: 500; /* Slightly bolder to draw attention */
+    .report-section-title {
+      font-size: 1.1rem;
+    }
+
+    .report-text {
+      p {
+        font-size: 0.9rem;
+      }
+    }
+
+    .report-list-items {
+      ul {
+        padding-left: 1rem;
+      }
+
+      li {
+        font-size: 0.9rem;
+      }
+    }
+
+    .report-table {
+      .themed-table {
+        th, td {
+          font-size: 0.8rem;
+          padding: 6px;
+        }
+      }
+    }
   }
 }
+
+@media (max-width: 1400px) {
+  .report-dialog {
+    width: 100vw;
+    margin: 0 auto;
+  }
 }

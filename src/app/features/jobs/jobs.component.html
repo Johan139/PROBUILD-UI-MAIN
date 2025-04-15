@@ -49,7 +49,6 @@
                     <th>Days</th>
                     <th>Start Date</th>
                     <th>End Date</th>
-                    <th>Cost</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -70,10 +69,7 @@
                       <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
                     </td>
                     <td>
-                      <input type="number" [(ngModel)]="subtask.cost" class="no-border" />
-                    </td>
-                    <td>
-                      <button class="delete-btn" (click)="deleteSubtask(table, i)">
+                      <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
                         Delete
                       </button>
                     </td>
@@ -96,6 +92,9 @@
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
               View Documents
+            </button>
+            <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
+              View Bill of Materials
             </button>
           </div>
         </mat-card-content>
@@ -137,6 +136,61 @@
     </mat-dialog-content>
     <mat-dialog-actions>
       <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+<!-- Bill of Materials Dialog -->
+<ng-template #billOfMaterialsDialog>
+  <div class="documents-dialog report-dialog">
+    <h2 mat-dialog-title>Document Processing Results</h2>
+    <mat-dialog-content class="report-content">
+      <div *ngIf="isBomLoading" class="loading-documents">
+        <app-loader></app-loader>
+        <p>Loading processing results...</p>
+      </div>
+      <div *ngIf="!isBomLoading">
+        <div *ngIf="processingResults.length === 0 || bomError" class="no-documents" [attr.error]="bomError ? '' : null">
+          <p>{{bomError || 'No document processing results available.'}}</p>
+        </div>
+        <div *ngIf="processingResults.length > 0 && !bomError" class="report-list">
+          <div class="report-item" *ngFor="let result of processingResults; let i = index">
+            <div class="report-section" *ngFor="let section of result.parsedReport.sections">
+              <h3 class="report-section-title">{{section.title}}</h3>
+              <div class="report-section-content">
+                <!-- Handle text content -->
+                <div *ngIf="section.type === 'text'" class="report-text">
+                  <p *ngFor="let item of section.content" [innerHTML]="item"></p>
+                </div>
+                <!-- Handle list content -->
+                <div *ngIf="section.type === 'list'" class="report-list-items">
+                  <ul>
+                    <li *ngFor="let item of section.content">{{item}}</li>
+                  </ul>
+                </div>
+                <!-- Handle table content (Materials List) -->
+                <div *ngIf="section.type === 'table'" class="report-table">
+                  <table class="themed-table">
+                    <thead>
+                      <tr>
+                        <th *ngFor="let header of section.headers">{{header}}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let row of section.content">
+                        <td *ngFor="let cell of row">{{cell}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
     </mat-dialog-actions>
   </div>
 </ng-template>

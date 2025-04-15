@@ -6,13 +6,10 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
   standalone: true,
   imports: [MatDialogModule], // Add MatDialogModule to imports
   template: `
-    <h2 mat-dialog-title>Are You Sure You Want to Cancel?</h2>
+    <h2 mat-dialog-title>Are You Sure You Want to delete?</h2>
     <mat-dialog-content>
       <p>
-        You are about to cancel the creation of this job quote. Any progress, including uploaded documents, will be permanently discarded. This action cannot be undone.
-      </p>
-      <p>
-        Please confirm if you wish to proceed with the cancellation, or return to your work to preserve your efforts.
+       Are you sure you want to delete a subtask line?
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -59,7 +56,7 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
 
     .confirm-btn {
       background-color: #FBD008; /* Red */
-      color: white;
+      color: 333;
     }
 
     .confirm-btn:hover {
@@ -67,8 +64,8 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
     }
   `]
 })
-export class ConfirmationDialogComponent {
-  constructor(public dialogRef: MatDialogRef<ConfirmationDialogComponent>) {}
+export class DeleteDialogComponent {
+  constructor(public dialogRef: MatDialogRef<DeleteDialogComponent>) {}
 
   onReturn(): void {
     this.dialogRef.close(false); // Return false to indicate cancellation was not confirmed

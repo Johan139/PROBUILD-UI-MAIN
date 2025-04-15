@@ -102,7 +102,7 @@ export class JobEditComponent implements OnInit{
       { title: 'Foundation Subtasks' , type: 'foundation',status: 'NEW' , subtasks: this.subtasks.foundationSubtasks },
       { title: 'WallInsulation Subtasks', type: 'wallInsulation', status: 'NEW', subtasks: this.subtasks.wallInsulationSubtasks },
       { title: 'WallStructure Subtasks', type: 'wallStructure', status: 'NEW', subtasks: this.subtasks.wallSubtasks },
-      { title: 'Electrical Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
+      { title: 'Electrical & Plumbing Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
       { title: 'RoofInsulation Subtasks', type: 'roofInsulation', status: 'NEW', subtasks: this.subtasks.roofInsulationSubtasks },
       { title: 'Roofing Subtasks', type: 'roofType', status: 'NEW', subtasks: this.subtasks.roofStructureSubtasks },
       { title: 'Finishes Subtasks', type: 'finishes', status: 'NEW', subtasks: this.subtasks.finishesSubtasks },
