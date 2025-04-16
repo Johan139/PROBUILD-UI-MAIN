@@ -76,9 +76,9 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   uploadedFileUrls: string[] = [];
   sessionId: string = '';
   private hubConnection!: HubConnection;
-  predictions: any[] = [];
+  //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
-  autocomplete: google.maps.places.Autocomplete | undefined;
+  //autocomplete: google.maps.places.Autocomplete | undefined;
   options: { description: string; place_id: string }[] = [];
   addressControl = new FormControl<string>('');
   selectedPlace: { description: string; place_id: string } | null = null;
@@ -151,11 +151,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         this.autocompleteService = new google.maps.places.AutocompleteService();
         console.log('Google Maps API loaded successfully');
 
-        this.jobCardForm.get('address')?.valueChanges
-          .pipe(debounceTime(300), switchMap(value => this.getPlacePredictions(value)))
-          .subscribe(predictions => {
-            this.predictions = predictions || [];
-          });
+        // this.jobCardForm.get('address')?.valueChanges
+        //   .pipe(debounceTime(300), switchMap(value => this.getPlacePredictions(value)))
+        //   .subscribe(predictions => {
+        //     this.predictions = predictions || [];
+        //   });
       } catch (error) {
         console.error('Error loading Google Maps API:', error);
         this.isGoogleMapsLoaded = false;
@@ -204,29 +204,29 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.autocomplete = new google.maps.places.Autocomplete(this.addressInput.nativeElement, {
-      fields: ['place_id', 'formatted_address'],
-    });
+    // this.autocomplete = new google.maps.places.Autocomplete(this.addressInput.nativeElement, {
+    //   fields: ['place_id', 'formatted_address'],
+    // });
 
-    const autocompleteInstance = this.autocomplete;
+    // const autocompleteInstance = this.autocomplete;
 
-    autocompleteInstance.addListener('place_changed', () => {
-      if (!autocompleteInstance) {
-        console.error('Autocomplete instance is not initialized');
-        return;
-      }
-      const place = autocompleteInstance.getPlace();
-      if (place.place_id && place.formatted_address) {
-        this.selectedPlace = {
-          description: place.formatted_address,
-          place_id: place.place_id,
-        };
-        this.addressControl.setValue(place.formatted_address);
-        this.jobCardForm.get('address')?.setValue(place.formatted_address);
-      } else {
-        console.warn('No place_id or formatted_address found for selected place:', place);
-      }
-    });
+    // autocompleteInstance.addListener('place_changed', () => {
+    //   if (!autocompleteInstance) {
+    //     console.error('Autocomplete instance is not initialized');
+    //     return;
+    //   }
+    //   const place = autocompleteInstance.getPlace();
+    //   if (place.place_id && place.formatted_address) {
+    //     this.selectedPlace = {
+    //       description: place.formatted_address,
+    //       place_id: place.place_id,
+    //     };
+    //     this.addressControl.setValue(place.formatted_address);
+    //     this.jobCardForm.get('address')?.setValue(place.formatted_address);
+    //   } else {
+    //     console.warn('No place_id or formatted_address found for selected place:', place);
+    //   }
+    // });
 
     this.addressControl.valueChanges.subscribe((value) => {
       if (typeof value === 'string' && value.trim()) {
