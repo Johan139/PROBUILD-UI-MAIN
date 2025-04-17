@@ -11,9 +11,10 @@ import { isPlatformBrowser } from '@angular/common';
 export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
-  private apiUrl = `${environment.apiUrl}/api/Account`; // Match your backend
+  private apiUrl = `${environment.BACKEND_URL}/Account`; // Match your backend
   public currentUserSubject = new BehaviorSubject<any>(null); // Store user info
   public currentUser$ = this.currentUserSubject.asObservable();
+  public userRole = null;
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
@@ -24,7 +25,7 @@ export class AuthService {
     }
   }
 
-  login(credentials: { email: string; password: string }): Observable<any> {
+  login(credentials: { email: string; password: string;}): Observable<any> {
     return this.http
       .post(`${this.apiUrl}/login`, credentials, {
         headers: { 'Content-Type': 'application/json' },
@@ -47,6 +48,11 @@ export class AuthService {
       );
   }
 
+  changeUserRole(userType: string): void {
+    localStorage.removeItem('userType');
+    localStorage.setItem('userType', userType);
+  }
+
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('token');
@@ -64,6 +70,11 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  // New method to get role
+  getUserRole(): string | null {
+    return localStorage.getItem('userType') || null;
   }
 
   private loadUserFromToken(token: string): void {

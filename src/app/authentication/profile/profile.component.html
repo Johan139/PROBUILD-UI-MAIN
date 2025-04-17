@@ -1,7 +1,6 @@
-<!-- src/app/features/profile/profile.component.html -->
 <div class="container">
-  <div class="row">
-    <div class="fullcolumn">
+<div class="row">
+  <div class="fullcolumn">
       <mat-card class="profile-card">
         <mat-card-header>
           <mat-card-title>User Profile</mat-card-title>
@@ -16,202 +15,207 @@
               {{ errorMessage }}
             </div>
 
-            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
-              <!-- Personal Information -->
-              <div class="section">
-                <h3>Personal Information</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>First Name</mat-label>
-                    <input matInput formControlName="firstName" placeholder=" " />
-                    <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Last Name</mat-label>
-                    <input matInput formControlName="lastName" placeholder=" " />
-                    <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Phone Number</mat-label>
-                    <input matInput formControlName="phoneNumber" placeholder=" " />
-                    <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>User Type</mat-label>
-                    <mat-select formControlName="userType">
-                      <mat-option value="BUILDER">Builder</mat-option>
-                      <mat-option value="CONSTRUCTION">Construction</mat-option>
-                      <mat-option value="FOREMAN">Foreman</mat-option>
-                      <mat-option value="PERSONAL_USE">Personal Use</mat-option>
-                      <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
-                      <mat-option value="SUPPLIER">Supplier</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <!-- Company Details -->
-              <div class="section">
-                <h3>Company Details</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Company Name</mat-label>
-                    <input matInput formControlName="companyName" placeholder=" " />
-                    <mat-error *ngIf="profileForm.get('companyName')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>No. of Employees</mat-label>
-                    <input matInput formControlName="nrEmployees" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Years of Operation</mat-label>
-                    <input matInput formControlName="yearsOfOperation" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Construction Type</mat-label>
-                    <mat-select formControlName="constructionType">
-                      <mat-option value="RESIDENTIAL">Residential</mat-option>
-                      <mat-option value="COMMERCIAL">Commercial</mat-option>
-                      <mat-option value="INDUSTRIAL">Industrial</mat-option>
-                      <mat-option value="INFRASTRUCTURE">Infrastructure</mat-option>
-                      <mat-option value="RENOVATION">Renovation/Remodeling</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Company Registration No</mat-label>
-                    <input matInput formControlName="companyRegNo" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>VAT No</mat-label>
-                    <input matInput formControlName="vatNo" placeholder=" " />
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <!-- Certification & Availability -->
-              <div class="section">
-                <h3>Certification & Availability</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Availability</mat-label>
-                    <mat-select formControlName="availability">
-                      <mat-option value="Full-time">Full-time</mat-option>
-                      <mat-option value="Part-time">Part-time</mat-option>
-                      <mat-option value="On-demand">On-demand</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Certification Status</mat-label>
-                    <mat-select formControlName="certificationStatus">
-                      <mat-option value="Certified">Certified</mat-option>
-                      <mat-option value="Pending">Pending</mat-option>
-                      <mat-option value="Not Certified">Not Certified</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <div class="custom-file-upload">
-                    <label for="cert-upload" class="upload-label">
-                      <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon" style="height: 16px; width: 16px;" />
-                      Upload Certification
-                    </label>
-                    <input id="cert-upload" type="file" (change)="onFileSelected($event)" />
-                    <span *ngIf="profileForm.get('certificationDocumentPath')?.value" class="file-info">
-                      Current: <a [href]="profileForm.get('certificationDocumentPath')?.value" target="_blank">View Document</a>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Trade & Supplier Info -->
-              <div class="section">
-                <h3>Trade & Supplier Info</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Trade</mat-label>
-                    <input matInput formControlName="trade" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Supplier Type</mat-label>
-                    <input matInput formControlName="supplierType" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Products Offered</mat-label>
-                    <input matInput formControlName="productsOffered" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Project Preferences</mat-label>
-                    <input matInput formControlName="projectPreferences" placeholder=" " />
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <!-- Delivery & Location -->
-              <div class="section">
-                <h3>Delivery & Location</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Delivery Area</mat-label>
-                    <input matInput formControlName="deliveryArea" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Delivery Time</mat-label>
-                    <input matInput formControlName="deliveryTime" placeholder=" " />
-                  </mat-form-field>
-                </div>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Country</mat-label>
-                    <input matInput formControlName="country" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>State</mat-label>
-                    <input matInput formControlName="state" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>City</mat-label>
-                    <input matInput formControlName="city" placeholder=" " />
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <!-- Subscription & Verification -->
-              <div class="section">
-                <h3>Subscription & Verification</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Subscription Package</mat-label>
-                    <input matInput formControlName="subscriptionPackage" placeholder=" " readonly />
-                  </mat-form-field>
-                  <mat-checkbox formControlName="isVerified">Verified</mat-checkbox>
-                </div>
-              </div>
-
-              <!-- Submit Button -->
-              <div class="form-row">
-                <button mat-raised-button 
-                        type="submit" 
-                        class="submit-btn" 
-                        [disabled]="isSaving || profileForm.invalid">
-                  {{ isSaving ? 'Saving...' : 'Save Profile' }}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <ng-template #loadingTemplate>
-            <div class="loading-container">
-              <p>Loading profile...</p>
+            <!-- Role Switcher Dropdown (For Dev Testing) -->
+            <div class="form-row role-switcher">
+              <mat-form-field appearance="fill">
+                <mat-label>Switch Role (Dev Mode)</mat-label>
+                <mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)">
+                  <mat-option *ngFor="let role of availableRoles" [value]="role">
+                    {{ role }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
             </div>
-          </ng-template>
+                <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+                  <!-- Personal Information -->
+                  <div class="section" *ngIf="canViewPersonalInfo()">
+                    <h3>Personal Information</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>First Name</mat-label>
+                        <input matInput formControlName="firstName" placeholder=" " />
+                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Last Name</mat-label>
+                        <input matInput formControlName="lastName" placeholder=" " />
+                        <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Phone Number</mat-label>
+                        <input matInput formControlName="phoneNumber" placeholder=" " />
+                        <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>User Type</mat-label>
+                        <mat-select formControlName="userType">
+                          <mat-option value="BUILDER">Builder</mat-option>
+                          <mat-option value="CONSTRUCTION">Construction</mat-option>
+                          <mat-option value="FOREMAN">Foreman</mat-option>
+                          <mat-option value="PERSONAL_USE">Personal Use</mat-option>
+                          <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
+                          <mat-option value="SUPPLIER">Supplier</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <!-- Company Details -->
+                  <div class="section" *ngIf="canViewCompanyDetails()">
+                    <h3>Company Details</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Company Name</mat-label>
+                        <input matInput formControlName="companyName" placeholder=" " />
+                        <mat-error *ngIf="profileForm.get('companyName')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>No. of Employees</mat-label>
+                        <input matInput formControlName="nrEmployees" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Years of Operation</mat-label>
+                        <input matInput formControlName="yearsOfOperation" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Construction Type</mat-label>
+                        <mat-select formControlName="constructionType">
+                          <mat-option value="RESIDENTIAL">Residential</mat-option>
+                          <mat-option value="COMMERCIAL">Commercial</mat-option>
+                          <mat-option value="INDUSTRIAL">Industrial</mat-option>
+                          <mat-option value="INFRASTRUCTURE">Infrastructure</mat-option>
+                          <mat-option value="RENOVATION">Renovation/Remodeling</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Company Registration No</mat-label>
+                        <input matInput formControlName="companyRegNo" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>VAT No</mat-label>
+                        <input matInput formControlName="vatNo" placeholder=" " />
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <!-- Certification & Availability -->
+                  <div class="section" *ngIf="canViewCertification()">
+                    <h3>Certification & Availability</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Availability</mat-label>
+                        <mat-select formControlName="availability">
+                          <mat-option value="Full-time">Full-time</mat-option>
+                          <mat-option value="Part-time">Part-time</mat-option>
+                          <mat-option value="On-demand">On-demand</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Certification Status</mat-label>
+                        <mat-select formControlName="certificationStatus">
+                          <mat-option value="Certified">Certified</mat-option>
+                          <mat-option value="Pending">Pending</mat-option>
+                          <mat-option value="Not Certified">Not Certified</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <div class="custom-file-upload">
+                        <label for="cert-upload" class="upload-label">
+                          <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon" style="height: 16px; width: 16px;" />
+                          Upload Certification
+                        </label>
+                        <input id="cert-upload" type="file" (change)="onFileSelected($event)" />
+                        <span *ngIf="profileForm.get('certificationDocumentPath')?.value" class="file-info">
+                          Current: <a [href]="profileForm.get('certificationDocumentPath')?.value" target="_blank">View Document</a>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Trade & Supplier Info -->
+                  <div class="section" *ngIf="canViewTradeSupplier()">
+                    <h3>Trade & Supplier Info</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Trade</mat-label>
+                        <input matInput formControlName="trade" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Supplier Type</mat-label>
+                        <input matInput formControlName="supplierType" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Products Offered</mat-label>
+                        <input matInput formControlName="productsOffered" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Project Preferences</mat-label>
+                        <input matInput formControlName="projectPreferences" placeholder=" " />
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <!-- Delivery & Location -->
+                  <div class="section" *ngIf="canViewDeliveryLocation()">
+                    <h3>Delivery & Location</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Delivery Area</mat-label>
+                        <input matInput formControlName="deliveryArea" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Delivery Time</mat-label>
+                        <input matInput formControlName="deliveryTime" placeholder=" " />
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Country</mat-label>
+                        <input matInput formControlName="country" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>State</mat-label>
+                        <input matInput formControlName="state" placeholder=" " />
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>City</mat-label>
+                        <input matInput formControlName="city" placeholder=" " />
+                      </mat-form-field>
+                    </div>
+                  </div>
+
+                  <!-- Subscription & Verification -->
+                  <div class="section" *ngIf="canViewSubscription()">
+                    <h3>Subscription & Verification</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Subscription Package</mat-label>
+                        <input matInput formControlName="subscriptionPackage" placeholder=" " readonly />
+                      </mat-form-field>
+                      <mat-checkbox formControlName="isVerified">Verified</mat-checkbox>
+                    </div>
+                  </div>
+
+                  <!-- Submit Button -->
+                  <div class="form-row">
+                    <button mat-raised-button 
+                            type="submit" 
+                            class="submit-btn" 
+                            [disabled]="isSaving || profileForm.invalid">
+                      {{ isSaving ? 'Saving...' : 'Save Profile' }}
+                    </button>
+                  </div>
+                </form>
+          </div>
         </mat-card-content>
       </mat-card>
     </div>

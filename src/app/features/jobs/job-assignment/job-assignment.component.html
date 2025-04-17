@@ -1,0 +1,126 @@
+<div class="container">
+  <app-loader *ngIf="isLoading"></app-loader>
+
+  <div class="alert-overlay" *ngIf="showAlert">
+    <div class="alert-modal">
+      <h3>{{ alertMessage }}</h3>
+      <button mat-button class="submit-btn" (click)="closeAlert()">OK</button>
+    </div>
+  </div>
+
+  <mat-card class="profile-card">
+    <mat-card-title>Job Assignments</mat-card-title>
+    <mat-divider></mat-divider>
+
+    <!-- Form Section -->
+    <div class="section">
+      <h3>Assign Job</h3>
+      <form class="form-row" (ngSubmit)="submitAssignment()">
+        <mat-form-field class="job-selection">
+          <mat-label>Select Job</mat-label>
+          <mat-select [(ngModel)]="selectedJob" name="jobSelection">
+            <mat-option *ngIf="!jobAssignmentList?.length" disabled>
+              No jobs available
+            </mat-option>
+            <mat-option *ngFor="let element of jobAssignmentList" [value]="element">
+              {{ element.projectName}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="job-selection">
+          <mat-label>Select Job</mat-label>
+          <mat-select [(ngModel)]="selectedUser" name="userSelection">
+            <mat-option *ngIf="!jobAssignmentList[0].jobUser.length" disabled>
+              No jobs available
+            </mat-option>
+            <mat-option *ngFor="let element of jobAssignmentList[0].jobUser" [value]="element">
+              {{ element.firstName || '' }}
+              {{ element.lastName || 'N/A' }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Job Role</mat-label>
+          <mat-select [(ngModel)]="newAssignment.jobRole" name="jobRole" required>
+            <mat-option value="BUILDER">Builder</mat-option>
+            <mat-option value="CONSTRUCTION">Construction</mat-option>
+            <mat-option value="FOREMAN">Foreman</mat-option>
+            <mat-option value="PERSONAL_USE">Personal Use</mat-option>
+            <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
+            <mat-option value="SUPPLIER">Supplier</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+
+      <div class="button-container">
+        <button mat-button class="submit-btn" (click)="submitAssignment()" [disabled]="isSaving">
+          {{ isSaving ? 'Saving...' : 'Assign' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="section table-container">
+      <h3>Assignment List</h3>
+      <table mat-table [dataSource]="jobAssignmentList || []" class="themed-table">
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef>id</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element?.id || 'N/A' }}
+          </td>
+        </ng-container>
+          
+        <!-- Project Name Column -->
+        <ng-container matColumnDef="projectName">
+          <th mat-header-cell *matHeaderCellDef>Project Name</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element?.projectName || 'N/A' }}
+          </td>
+        </ng-container>
+
+        <!-- Assigned User Column -->
+        <ng-container matColumnDef="assignedUser">
+          <th mat-header-cell *matHeaderCellDef>Assigned User</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.jobUser?.[0]?.firstName || '' }}
+            {{ element.jobUser?.[0]?.lastName || 'N/A' }}
+          </td>
+        </ng-container>
+
+        <!-- Job Role Column -->
+        <ng-container matColumnDef="jobRole">
+          <th mat-header-cell *matHeaderCellDef>Job Role</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.jobUser?.[0]?.jobRole || 'N/A' }}
+          </td>
+        </ng-container>
+
+        <!-- Phone Number Column -->
+        <ng-container matColumnDef="phoneNumber">
+          <th mat-header-cell *matHeaderCellDef>Phone Number</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.jobUser?.[0]?.phoneNumber || 'N/A' }}
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-button class="submit-btn delete-btn" 
+                    (click)="deleteAssignment(element)"
+                    [disabled]="isLoading">
+              Delete
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="assignmentColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: assignmentColumns;"></tr>
+      </table>
+    </div>
+  </mat-card>
+</div>

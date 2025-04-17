@@ -4,6 +4,21 @@ import { ProfileService } from './profile.service';
 import { Profile } from './profile.model';
 import { AuthService } from '../../authentication/auth.service';
 
+interface Job {
+  id: string;
+  jobTitle: string;
+  status: string;
+  location: string;
+  startDate: string;
+  staffAssignments: StaffAssignment[];
+}
+
+interface StaffAssignment {
+  staffId: string;
+  staffName: string;
+  role: string;
+}
+
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.component.html',
@@ -18,6 +33,14 @@ export class ProfileComponent implements OnInit {
   currentUser: any;
   successMessage: string | null = null;
   certified = false;
+  userRole: string | null = null;
+
+  // Job Management Properties
+  jobs: Job[] = [];
+  isLoadingJobs = true;
+
+  // Available roles for testing
+  availableRoles: string[] = ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'];
 
   constructor(
     private profileService: ProfileService,
@@ -25,7 +48,7 @@ export class ProfileComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.profileForm = this.fb.group({
-      id:[''],
+      id: [''],
       email: [''],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -49,16 +72,18 @@ export class ProfileComponent implements OnInit {
       country: [''],
       state: [''],
       city: [''],
-      subscriptionPackage: [''], // Added
-      isVerified: [false] // Added
+      subscriptionPackage: [''],
+      isVerified: [false]
     });
   }
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
+      this.userRole = this.authService.getUserRole() || 'PROJECT_MANAGER'; // Default to PM for testing
       if (user) {
         this.loadProfile();
+        this.loadJobs();
       }
     });
   }
@@ -93,7 +118,7 @@ export class ProfileComponent implements OnInit {
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
-          this.profileForm.patchValue(response); // Sync form with response
+          this.profileForm.patchValue(response);
           this.successMessage = 'Profile updated successfully';
           this.isSaving = false;
         },
@@ -108,8 +133,8 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  certificationChange(selectedOption:any) {
-    if(selectedOption === "FULLY_LICENSED")
+  certificationChange(selectedOption: any) {
+    if (selectedOption === "FULLY_LICENSED")
       this.certified = true;
     else
       this.certified = false;
@@ -137,5 +162,90 @@ export class ProfileComponent implements OnInit {
         }
       });
     }
+  }
+
+  loadJobs(): void {
+    this.isLoadingJobs = true;
+    this.jobs = [
+      {
+        id: 'job1',
+        jobTitle: 'Residential House Build',
+        status: 'In Progress',
+        location: 'Austin, TX',
+        startDate: '2025-03-15',
+        staffAssignments: [
+          { staffId: 's1', staffName: 'John Doe', role: 'FOREMAN' },
+          { staffId: 's2', staffName: 'Jane Smith', role: 'BUILDER' },
+          { staffId: 's3', staffName: 'Mike Johnson', role: 'CONSTRUCTION' }
+        ]
+      },
+      {
+        id: 'job2',
+        jobTitle: 'Commercial Office Renovation',
+        status: 'Pending',
+        location: 'Houston, TX',
+        startDate: '2025-04-01',
+        staffAssignments: [
+          { staffId: 's4', staffName: 'Emily Brown', role: 'SUPPLIER' },
+          { staffId: 's5', staffName: 'Tom Wilson', role: 'BUILDER' }
+        ]
+      },
+      {
+        id: 'job3',
+        jobTitle: 'Industrial Warehouse Expansion',
+        status: 'Completed',
+        location: 'Dallas, TX',
+        startDate: '2025-01-10',
+        staffAssignments: []
+      }
+    ];
+    this.isLoadingJobs = false;
+  }
+
+  updateStaffRole(jobId: string, staffId: string, newRole: string): void {
+    const job = this.jobs.find(j => j.id === jobId);
+    if (job) {
+      const assignment = job.staffAssignments.find(s => s.staffId === staffId);
+      if (assignment) {
+        assignment.role = newRole;
+        this.successMessage = 'Staff role updated successfully';
+      }
+    }
+  }
+
+  // Role-based visibility methods
+  canViewPersonalInfo(): boolean {
+    return ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'].includes(this.userRole || '');
+  }
+
+  canViewCompanyDetails(): boolean {
+    return ['CONSTRUCTION', 'PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+  }
+
+  canViewCertification(): boolean {
+    return ['FOREMAN', 'CONSTRUCTION', 'BUILDER'].includes(this.userRole || '');
+  }
+
+  canViewTradeSupplier(): boolean {
+    return ['FOREMAN', 'CONSTRUCTION', 'PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+  }
+
+  canViewDeliveryLocation(): boolean {
+    return ['PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+  }
+
+  canViewSubscription(): boolean {
+    return ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'].includes(this.userRole || '');
+  }
+
+  canViewJobManagement(): boolean {
+    return ['FOREMAN', 'CONSTRUCTION', 'PROJECT_OWNER'].includes(this.userRole || '');
+  }
+
+  // New method to handle role change from dropdown
+  changeUserRole(newRole: string): void {
+    this.userRole = newRole;
+    this.authService.changeUserRole(newRole); // Simulate login to update AuthService
+    this.successMessage = `Switched to ${newRole} role`; // Optional feedback
   }
 }

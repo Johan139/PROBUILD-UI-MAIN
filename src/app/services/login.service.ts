@@ -3,7 +3,7 @@ import {HttpClient} from "@angular/common/http";
 import {environment} from "../../environments/environment";
 import {LoginForm} from "../models/auth";
 
-const BASE_URL = `${environment.apiUrl}/Account/login`;
+const BASE_URL = `${environment.BACKEND_URL}/Account/login`;
 
 @Injectable({
   providedIn: 'root'

@@ -11,7 +11,7 @@ import { AuthService } from '../auth.service';
 })
 export class ProfileService {
   
-  private apiUrl = `${environment.apiUrl}/api/profile`;
+  private apiUrl = `${environment.BACKEND_URL}/profile`;
   
   constructor(private http: HttpClient,
     private authService: AuthService) {}
@@ -30,10 +30,7 @@ export class ProfileService {
       console.error('No userId available');
       return throwError(() => new Error('User not authenticated'));
     }
-
     const url = `${this.apiUrl}/GetProfile/${userId}`;
-
-
     return this.http.get<Profile>(url, { headers: this.getHeaders() })
       .pipe(
         catchError(error => {
@@ -45,8 +42,6 @@ export class ProfileService {
 
   updateProfile(profile: Profile): Observable<Profile> {
     const url = `${this.apiUrl}/update`;
-
-
     return this.http.put<Profile>(url, profile, { headers: this.getHeaders() })
       .pipe(
         catchError(error => {
