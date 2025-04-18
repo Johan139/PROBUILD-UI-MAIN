@@ -18,23 +18,24 @@
       <form class="form-row" (ngSubmit)="submitAssignment()">
         <mat-form-field class="job-selection">
           <mat-label>Select Job</mat-label>
-          <mat-select [(ngModel)]="selectedJob" name="jobSelection">
+          <mat-select [(ngModel)]="selectedJob" name="jobSelection" (ngModelChange)="onJobSelectionChange()">
             <mat-option *ngIf="!jobAssignmentList?.length" disabled>
               No jobs available
             </mat-option>
+            <mat-option [value]="null">--All Jobs--</mat-option>
             <mat-option *ngFor="let element of jobAssignmentList" [value]="element">
-              {{ element.projectName}}
+              {{ element?.projectName}}
             </mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field class="job-selection">
-          <mat-label>Select Job</mat-label>
+          <mat-label>Select User</mat-label>
           <mat-select [(ngModel)]="selectedUser" name="userSelection">
-            <mat-option *ngIf="!jobAssignmentList[0].jobUser.length" disabled>
-              No jobs available
+            <mat-option *ngIf="!userList.length" disabled>
+              No users available
             </mat-option>
-            <mat-option *ngFor="let element of jobAssignmentList[0].jobUser" [value]="element">
+            <mat-option *ngFor="let element of userList" [value]="element">
               {{ element.firstName || '' }}
               {{ element.lastName || 'N/A' }}
             </mat-option>
@@ -64,12 +65,12 @@
     <!-- Table Section -->
     <div class="section table-container">
       <h3>Assignment List</h3>
-      <table mat-table [dataSource]="jobAssignmentList || []" class="themed-table">
+      <table mat-table [dataSource]="filteredJobAssignment" class="themed-table">
         <!-- ID Column -->
         <ng-container matColumnDef="id">
           <th mat-header-cell *matHeaderCellDef>id</th>
           <td mat-cell *matCellDef="let element">
-            {{ element?.id || 'N/A' }}
+            {{ element.job.id || 'N/A' }}
           </td>
         </ng-container>
           
@@ -77,7 +78,7 @@
         <ng-container matColumnDef="projectName">
           <th mat-header-cell *matHeaderCellDef>Project Name</th>
           <td mat-cell *matCellDef="let element">
-            {{ element?.projectName || 'N/A' }}
+            {{ element.job.projectName || 'N/A' }}
           </td>
         </ng-container>
 
@@ -85,8 +86,7 @@
         <ng-container matColumnDef="assignedUser">
           <th mat-header-cell *matHeaderCellDef>Assigned User</th>
           <td mat-cell *matCellDef="let element">
-            {{ element.jobUser?.[0]?.firstName || '' }}
-            {{ element.jobUser?.[0]?.lastName || 'N/A' }}
+            {{ element.user.firstName || '' }} {{ element.user.lastName || 'N/A' }}
           </td>
         </ng-container>
 
@@ -94,7 +94,7 @@
         <ng-container matColumnDef="jobRole">
           <th mat-header-cell *matHeaderCellDef>Job Role</th>
           <td mat-cell *matCellDef="let element">
-            {{ element.jobUser?.[0]?.jobRole || 'N/A' }}
+            {{ element.user.jobRole || 'N/A' }}
           </td>
         </ng-container>
 
@@ -102,7 +102,7 @@
         <ng-container matColumnDef="phoneNumber">
           <th mat-header-cell *matHeaderCellDef>Phone Number</th>
           <td mat-cell *matCellDef="let element">
-            {{ element.jobUser?.[0]?.phoneNumber || 'N/A' }}
+            {{ element.user.phoneNumber || 'N/A' }}
           </td>
         </ng-container>
 
@@ -111,7 +111,7 @@
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let element">
             <button mat-button class="submit-btn delete-btn" 
-                    (click)="deleteAssignment(element)"
+                    (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">
               Delete
             </button>

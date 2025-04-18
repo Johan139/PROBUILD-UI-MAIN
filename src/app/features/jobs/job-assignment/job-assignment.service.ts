@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { JobAssignment, JobAssignmentLink } from './job-assignment.model';
+import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../authentication/auth.service';
 
@@ -37,6 +37,17 @@ export class JobAssignmentService {
         );
   }
 
+  getAvailableUser(): Observable<JobUser[]>  {
+    const url = `${this.apiUrl}/GetUsers`;
+    return this.http.get<JobUser[]>(url, { headers: this.getHeaders() })
+        .pipe(
+          catchError(error => {
+            console.error('Error fetching profile:', error);
+            return throwError(() => new Error('Failed to load profile'));
+          })
+        );
+  }
+
   createJobAssignment(assignmentData: JobAssignmentLink): Observable<JobAssignment> {
     return this.http.post<JobAssignment>(this.apiUrl, assignmentData, { headers: this.getHeaders() })
       .pipe(
@@ -47,15 +58,14 @@ export class JobAssignmentService {
       );
   }
 
-  deleteJobAssignment(jobAssignment: JobAssignment): Observable<void> {
-    const url = `${this.apiUrl}`;
-    return this.http.put<void>(url, jobAssignment, { headers: this.getHeaders() })
-      .pipe(
-        catchError(error => {
-          console.error('Error deleting job assignment:', error);
-          return throwError(() => new Error('Failed to delete job assignment'));
-        })
-      );
+  deleteUserAssignment(assignmentLink: JobAssignmentLink): Observable<void> {
+    const url = `${this.apiUrl}`; // Adjust endpoint
+    return this.http.put<void>(url, assignmentLink, { headers: this.getHeaders() }).pipe(
+      catchError(error => {
+        console.error('Error deleting user assignment:', error);
+        return throwError(() => new Error('Failed to delete user assignment'));
+      })
+    );
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {

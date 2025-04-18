@@ -176,3 +176,21 @@ mat-divider {
   text-align: center;
   width: 300px;
 }
+
+/* Inside job-assignment.component.scss */
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  span {
+    font-size: 0.9rem;
+    color: $dark-gray;
+  }
+
+  .delete-btn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+}

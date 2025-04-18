@@ -1,7 +1,7 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { JobAssignmentService } from './job-assignment.service';
 import { MatTableModule } from '@angular/material/table';
-import { JobAssignment, JobUser } from './job-assignment.model'; // Import JobAssignmentList
+import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
 import { NgForOf, NgIf } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardModule } from '@angular/material/card';
@@ -39,14 +39,19 @@ export class JobAssignmentComponent implements OnInit {
   errorMessage: string | null = null;
   showAlert = false;
   alertMessage = '';
-  jobAssignmentList: JobAssignment[] = []; // Simplified type to JobAssignment[]
+  jobAssignmentList: JobAssignment[] = [];
   assignmentColumns: string[] = ['id', 'projectName', 'assignedUser', 'jobRole', 'phoneNumber', 'actions'];
   isSaving = false;
-  selectedJob: JobAssignment | null = null; // Changed to single JobAssignment or null
+  selectedJob: JobAssignment | null = null;
   selectedUser: JobUser | null = null;
+  userList: JobUser[] = [];
   newAssignment: { email: string; jobRole: string } = { email: '', jobRole: '' };
+  filteredJobAssignment: { job: JobAssignment; user: JobUser }[] = [];
 
-  constructor(private jobAssignmentService: JobAssignmentService) {}
+  constructor(
+    private jobAssignmentService: JobAssignmentService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     console.log('ngOnInit called');
@@ -57,9 +62,21 @@ export class JobAssignmentComponent implements OnInit {
     this.isLoading = true;
     try {
       this.jobAssignmentService.getJobAssignment().subscribe({
-        next: (data: JobAssignment[]) => { // Correct type: JobAssignmentList
-          this.jobAssignmentList = data || []; // Access jobAssignment property
+        next: (data: JobAssignment[]) => {
+          this.jobAssignmentList = data;
+          this.jobAssignmentService.getAvailableUser().subscribe({
+            next: (data: JobUser[]) => {
+              this.userList = data;
+            },
+            error: (error) => {
+              console.error('Error getting assigned users', error);
+              this.showError('Failed to get assigned users');
+              this.isLoading = false;
+            }
+          });
+          this.filterAssignments();
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (error) => {
           console.error('Error loading data:', error);
@@ -74,6 +91,23 @@ export class JobAssignmentComponent implements OnInit {
     }
   }
 
+  private flattenAssignments(assignments: JobAssignment[]): { job: JobAssignment; user: JobUser }[] {
+    return assignments.flatMap(job =>
+      job.jobUser.map(user => ({ job, user }))
+    );
+  }
+
+  private filterAssignments(): void {
+    if (this.selectedJob && this.selectedJob.id !== 0) {
+      this.filteredJobAssignment = this.flattenAssignments(
+        this.jobAssignmentList.filter(job => job.id === this.selectedJob!.id)
+      );
+    } else {
+      this.filteredJobAssignment = this.flattenAssignments(this.jobAssignmentList);
+    }
+    this.cdr.detectChanges();
+  }
+
   submitAssignment(): void {
     if (!this.selectedJob || !this.selectedUser || !this.newAssignment.jobRole) {
       this.showError('Please fill in all required fields');
@@ -81,7 +115,7 @@ export class JobAssignmentComponent implements OnInit {
     }
 
     this.isSaving = true;
-    const assignmentData = {
+    const assignmentData: JobAssignmentLink = {
       userId: this.selectedUser.id,
       jobId: this.selectedJob.id,
       jobRole: this.newAssignment.jobRole
@@ -89,10 +123,35 @@ export class JobAssignmentComponent implements OnInit {
 
     this.jobAssignmentService.createJobAssignment(assignmentData).subscribe({
       next: (response: JobAssignment) => {
-        this.jobAssignmentList.push(response);
+        // Find the existing job in the list
+        const jobIndex = this.jobAssignmentList.findIndex(job => job.id === this.selectedJob!.id);
+        if (jobIndex !== -1) {
+          // Update the jobUser array with the new user
+          const updatedJob = {
+            ...this.jobAssignmentList[jobIndex],
+            jobUser: [
+              ...this.jobAssignmentList[jobIndex].jobUser,
+              {
+                id: this.selectedUser!.id,
+                firstName: this.selectedUser!.firstName,
+                lastName: this.selectedUser!.lastName,
+                phoneNumber: this.selectedUser!.phoneNumber,
+                userType: this.selectedUser!.userType,
+                jobRole: this.newAssignment.jobRole
+              }
+            ]
+          };
+          this.jobAssignmentList[jobIndex] = updatedJob;
+        } else {
+          // If the job doesn't exist (unlikely), add it
+          this.jobAssignmentList = [...this.jobAssignmentList, response];
+        }
+
+        this.filterAssignments();
         this.showSuccess('Job assignment created successfully');
         this.resetForm();
         this.isSaving = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error creating assignment:', error);
@@ -102,19 +161,30 @@ export class JobAssignmentComponent implements OnInit {
     });
   }
 
-  deleteAssignment(jobAssignment: JobAssignment): void {
-    if (!jobAssignment.jobUser) {
-      this.showError('No user are assigned to this project');
+  deleteUserAssignment(job: JobAssignment, user: JobUser): void {
+    if (!job || !user) {
+      this.showError('Invalid job assignment or user');
       return;
     }
     this.isLoading = true;
-    this.jobAssignmentService.deleteJobAssignment(jobAssignment).subscribe({
+    const assignmentLink: JobAssignmentLink = {
+      userId: user.id,
+      jobId: job.id,
+      jobRole: user.jobRole || ''
+    };
+    this.jobAssignmentService.deleteUserAssignment(assignmentLink).subscribe({
       next: () => {
-        this.jobAssignmentList = this.jobAssignmentList.filter(
-          assignment => assignment.id !== jobAssignment.id
+        const updatedAssignment = {
+          ...job,
+          jobUser: job.jobUser.filter(u => u.id !== user.id)
+        };
+        this.jobAssignmentList = this.jobAssignmentList.map(assignment =>
+          assignment.id === job.id ? updatedAssignment : assignment
         );
+        this.filterAssignments();
         this.showSuccess('Job assignment deleted successfully');
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error deleting assignment:', error);
@@ -122,6 +192,15 @@ export class JobAssignmentComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  private resetForm(): void {
+    this.selectedUser = null;
+    this.newAssignment = { email: '', jobRole: '' };
+  }
+
+  onJobSelectionChange(): void {
+    this.filterAssignments();
   }
 
   private showError(message: string): void {
@@ -136,11 +215,6 @@ export class JobAssignmentComponent implements OnInit {
     this.errorMessage = null;
     this.alertMessage = message;
     this.showAlert = true;
-  }
-
-  private resetForm(): void {
-    this.selectedJob = null;
-    this.newAssignment = { email: '', jobRole: '' };
   }
 
   closeAlert(): void {

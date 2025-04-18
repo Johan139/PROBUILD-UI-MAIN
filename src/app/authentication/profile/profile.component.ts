@@ -3,26 +3,37 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProfileService } from './profile.service';
 import { Profile } from './profile.model';
 import { AuthService } from '../../authentication/auth.service';
+import { DomSanitizer } from '@angular/platform-browser';
+import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTabsModule } from '@angular/material/tabs';
 
-interface Job {
-  id: string;
-  jobTitle: string;
-  status: string;
-  location: string;
-  startDate: string;
-  staffAssignments: StaffAssignment[];
-}
-
-interface StaffAssignment {
-  staffId: string;
-  staffName: string;
-  role: string;
-}
 
 @Component({
-  selector: 'app-profile',
+  selector: 'app-root',
+  standalone: true,
+  imports: [
+    MatIconModule,
+    BrowserModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatTabsModule
+  ],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+  styleUrls: ['./profile.component.scss'] 
 })
 export class ProfileComponent implements OnInit {
   profile: Profile | null = null;
@@ -34,9 +45,7 @@ export class ProfileComponent implements OnInit {
   successMessage: string | null = null;
   certified = false;
   userRole: string | null = null;
-
-  // Job Management Properties
-  jobs: Job[] = [];
+  isVerified = false;
   isLoadingJobs = true;
 
   // Available roles for testing
@@ -45,7 +54,9 @@ export class ProfileComponent implements OnInit {
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    matIconRegistry: MatIconRegistry, 
+    domSanitizer: DomSanitizer
   ) {
     this.profileForm = this.fb.group({
       id: [''],
@@ -75,6 +86,17 @@ export class ProfileComponent implements OnInit {
       subscriptionPackage: [''],
       isVerified: [false]
     });
+
+    matIconRegistry.addSvgIcon(
+      'verified',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/verification-symbol-svgrepo-com.svg')
+    );
+    matIconRegistry.addSvgIcon(
+      'notVerified',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
+    );
+
+    
   }
 
   ngOnInit(): void {
@@ -83,7 +105,6 @@ export class ProfileComponent implements OnInit {
       this.userRole = this.authService.getUserRole() || 'PROJECT_MANAGER'; // Default to PM for testing
       if (user) {
         this.loadProfile();
-        this.loadJobs();
       }
     });
   }
@@ -98,6 +119,7 @@ export class ProfileComponent implements OnInit {
         this.profileForm.patchValue(data[0]);
         this.successMessage = 'Profile loaded successfully';
         this.isLoading = false;
+        this.isVerified = data.isVerified;
       },
       error: (error) => {
         console.error('Error fetching profile:', error.message, error.status, error.statusText);
@@ -161,55 +183,6 @@ export class ProfileComponent implements OnInit {
           this.isLoading = false;
         }
       });
-    }
-  }
-
-  loadJobs(): void {
-    this.isLoadingJobs = true;
-    this.jobs = [
-      {
-        id: 'job1',
-        jobTitle: 'Residential House Build',
-        status: 'In Progress',
-        location: 'Austin, TX',
-        startDate: '2025-03-15',
-        staffAssignments: [
-          { staffId: 's1', staffName: 'John Doe', role: 'FOREMAN' },
-          { staffId: 's2', staffName: 'Jane Smith', role: 'BUILDER' },
-          { staffId: 's3', staffName: 'Mike Johnson', role: 'CONSTRUCTION' }
-        ]
-      },
-      {
-        id: 'job2',
-        jobTitle: 'Commercial Office Renovation',
-        status: 'Pending',
-        location: 'Houston, TX',
-        startDate: '2025-04-01',
-        staffAssignments: [
-          { staffId: 's4', staffName: 'Emily Brown', role: 'SUPPLIER' },
-          { staffId: 's5', staffName: 'Tom Wilson', role: 'BUILDER' }
-        ]
-      },
-      {
-        id: 'job3',
-        jobTitle: 'Industrial Warehouse Expansion',
-        status: 'Completed',
-        location: 'Dallas, TX',
-        startDate: '2025-01-10',
-        staffAssignments: []
-      }
-    ];
-    this.isLoadingJobs = false;
-  }
-
-  updateStaffRole(jobId: string, staffId: string, newRole: string): void {
-    const job = this.jobs.find(j => j.id === jobId);
-    if (job) {
-      const assignment = job.staffAssignments.find(s => s.staffId === staffId);
-      if (assignment) {
-        assignment.role = newRole;
-        this.successMessage = 'Staff role updated successfully';
-      }
     }
   }
 
