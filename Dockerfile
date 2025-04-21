@@ -1,25 +1,20 @@
-# Stage 1: Build and Serve Angular App
-FROM node:22 AS build-and-serve
+# Stage 1: Build Angular App
+FROM node:20 AS builder
 WORKDIR /app
 
-# Install Angular CLI globally
-RUN npm install -g @angular/cli
-
-# Copy package.json and install dependencies
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application code
 COPY . .
+RUN npm run set-env
+RUN npm run build -- --configuration production
 
-# Create the src/assets directory if it doesn't exist
-RUN mkdir -p src/assets
+# Stage 2: Serve Angular App via NGINX
+FROM nginx:alpine
+COPY --from=builder /app/dist/pro-build-ai /usr/share/nginx/html
 
-# Generate runtime config
-RUN node set-env.js
+# Optional: copy a custom NGINX config if needed
+# COPY nginx.conf /etc/nginx/nginx.conf
 
-# Expose port 80 for the development server
 EXPOSE 80
-
-# Run the Angular development server on port 80
-CMD ["ng", "serve", "--host", "0.0.0.0", "--port", "80", "--disable-host-check"]
+CMD ["nginx", "-g", "daemon off;"]
