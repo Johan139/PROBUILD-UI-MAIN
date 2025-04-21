@@ -1,0 +1,209 @@
+/* Variables from the primary SCSS */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$cyan: #61a0af;
+$dark-gray: #333;
+$white: #fff;
+$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+$darker-yellow: #e6bf00;
+
+.container {
+    width: 95vw !important; /* Retain original width */
+    margin-top: 2rem;
+    //display: flex; /* Ensure flexbox for side-by-side */
+    //gap: 24px; /* Space between columns */
+  }
+
+/* Profile card matches mat-card from primary */
+.profile-card {
+  background-color: $white;
+  border: 1px solid $cyan; /* Matches primary mat-card */
+  box-shadow: $shadow; /* Matches primary mat-card */
+  border-radius: 8px; /* Matches primary mat-card */
+  padding: 16px; /* Matches primary mat-card */
+  height: auto; /* Matches primary project-card/job-quote-card */
+
+  /* Explicitly style mat-card-title to match primary */
+  mat-card-title {
+    font-size: 1.5rem; /* Matches primary mat-card-title */
+    font-weight: 700; /* Matches primary mat-card-title */
+    color: $dark-gray; /* Matches primary mat-card-title */
+    text-transform: uppercase; /* Matches primary mat-card-title */
+    margin-bottom: 12px; /* Matches primary mat-card-title */
+  }
+
+  /* Ensure mat-divider matches primary at the card level */
+  mat-divider {
+    background-color: $secondary-yellow; /* Matches primary mat-divider */
+    border: none; /* Matches primary mat-divider */
+    height: 2px; /* Matches primary mat-divider */
+    margin: 16px 0; /* Matches primary mat-divider */
+  }
+}
+
+/* Content layout */
+.profile-content {
+  margin-top: 16px; /* Matches table margin-top in primary */
+}
+
+/* Section headers */
+.section {
+  h3 {
+    font-size: 1.5rem; /* Matches mat-card-title in primary */
+    font-weight: 700; /* Matches mat-card-title */
+    color: $dark-gray; /* Matches mat-card-title */
+    text-transform: uppercase; /* Matches mat-card-title */
+    margin-bottom: 12px; /* Matches mat-card-title */
+  }
+}
+
+/* Form row styling to match primary */
+.form-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between; /* Matches primary form-row */
+  align-items: flex-start; /* Matches primary form-row */
+  margin-bottom: 20px; /* Matches primary form-row */
+  gap: 20px; /* Matches primary form-row */
+
+  mat-form-field {
+    flex: 1; /* Matches primary mat-form-field */
+    width: 100%; /* Matches primary mat-form-field */
+
+    /* Match primary Material overrides */
+    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+      background-color: $white !important;
+      border-radius: 6px; /* Matches primary */
+      border: 1px solid $cyan; /* Matches primary */
+    }
+    ::ng-deep .mdc-floating-label {
+      position: static !important;
+      font-size: 0.9rem; /* Matches primary */
+      color: $dark-gray; /* Matches primary */
+    }
+    ::ng-deep .mdc-text-field .mdc-floating-label {
+      transform: translateY(-60%) !important;
+    }
+  }
+
+  /* File upload styling */
+  .custom-file-upload {
+    position: relative;
+    display: inline-block;
+    text-align: center; /* Matches primary */
+
+    .upload-label {
+      display: flex;
+      align-items: center;
+      gap: 10px; /* Matches primary */
+      padding: 10px 20px; /* Matches primary */
+      background-color: $primary-yellow; /* Matches primary */
+      color: $dark-gray; /* Matches primary */
+      font-weight: 500; /* Matches primary */
+      border-radius: 8px; /* Matches primary */
+      cursor: pointer;
+      transition: background-color 0.3s ease; /* Matches primary */
+      width: 100%; /* Matches primary */
+      box-sizing: border-box; /* Matches primary */
+
+      &:hover {
+        background-color: $darker-yellow; /* Matches primary upload-label hover */
+      }
+    }
+
+    input[type="file"] {
+      display: none; /* Matches primary */
+      opacity: 0; /* Matches primary */
+      width: 0; /* Matches primary */
+      height: 0; /* Matches primary */
+    }
+
+    .file-info {
+      font: 0.9rem sans-serif; /* Matches primary tr */
+      color: $dark-gray;
+      margin-top: 0.5rem;
+
+      a {
+        color: $cyan; /* Matches primary draft class */
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  /* Submit button */
+  .submit-btn {
+    background-color: $primary-yellow; /* Matches primary */
+    color: $dark-gray; /* Matches primary */
+    font-weight: 500; /* Matches primary */
+    border-radius: 8px; /* Matches primary */
+    padding: 10px 20px; /* Matches primary */
+    transition: background-color 0.3s ease; /* Matches primary */
+    width: 200px; /* Matches primary */
+    margin-top: 10px; /* Matches primary */
+
+    &:hover {
+      background-color: $darker-yellow; /* Matches primary button hover */
+    }
+  }
+
+  .success-message {
+    color: #4caf50;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+    background-color: #e8f5e9;
+  }
+
+  .error-message {
+    color: #f44336;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #f44336;
+    border-radius: 4px;
+    background-color: #ffebee;
+  }
+
+  .loading-container {
+    text-align: center;
+    padding: 20px;
+  }
+
+  button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  mat-checkbox {
+    margin-left: 10px;
+  }
+  
+}
+
+/* Responsive adjustments to match primary */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column; /* Matches primary */
+    gap: 12px; /* Matches primary */
+
+    mat-form-field {
+      flex: none; /* Matches primary */
+      width: 100%; /* Matches primary */
+    }
+
+    .custom-file-upload .upload-label {
+      padding: 8px 16px; /* Slightly smaller for mobile, consistent with primary */
+    }
+
+    .submit-btn {
+      padding: 8px 16px; /* Slightly smaller for mobile */
+    }
+  }
+
+  .section h3 {
+    font-size: 1.2rem; /* Slightly smaller for mobile, adjusted from primary */
+  }
+}

@@ -1,4 +1,4 @@
-import {Component, OnInit,  Inject, PLATFORM_ID } from '@angular/core';
+import {Component, OnInit,  Inject, PLATFORM_ID, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import {SubTasks} from'../../../models/sub-tasks';
 import {ActivatedRoute, Router} from "@angular/router";
 import {NgForOf, NgIf, isPlatformBrowser} from "@angular/common";
@@ -11,6 +11,7 @@ import { WeatherService } from '../../../services/weather.service';
 import { JobsService } from '../../../services/jobs.service';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-jobs',
   standalone: true,
@@ -23,6 +24,7 @@ import { FormsModule } from '@angular/forms';
     GanttChartComponent,
     MatCard,
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './job-edit.component.html',
   styleUrl: './job-edit.component.scss'
 })

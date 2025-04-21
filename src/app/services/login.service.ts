@@ -12,6 +12,7 @@ export class LoginService {
   userType:string = '';
   userId: string = ''
   userFirstName: string = '';
+  userToken: string = '';
 
   constructor(private httpClient: HttpClient) { }
 
@@ -27,6 +28,9 @@ export class LoginService {
   setFirstName(firstName: string){
     this.userFirstName = firstName;
   }
+  setToken(token: string){
+    this.userToken = token;
+  }
 
   getUserType() {
     return this.userType;
@@ -36,6 +40,9 @@ export class LoginService {
   }
   getFirstName(){
     return this.userFirstName;
+  }
+  getToken(){
+    return this.userToken;
   }
 
 }
