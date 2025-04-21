@@ -39,7 +39,8 @@ WORKDIR /app
 COPY --from=build /app/dist/pro-build-ai/browser ./dist
 
 # Install lightweight static server
-RUN npm install -g serve
+RUN npm install --legacy-peer-deps \
+  && npm i @rollup/rollup-linux-x64-gnu --save-optional
 
 EXPOSE 80
 
