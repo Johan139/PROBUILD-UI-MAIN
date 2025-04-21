@@ -20,6 +20,10 @@
 <mat-sidenav-container class="nav-container">
   <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation" >
     <mat-nav-list>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
+        <span class="menu-item">HOME</span>
+      </button>
+
       <button mat-flat-button class="menu-button custom-button" routerLink="/projects" (click)="sidenav.close()">
         <span class="menu-item">PROJECTS</span>
       </button>
@@ -27,18 +31,24 @@
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
         <span class="menu-item">JOBS</span>
       </button>
+      
+      <button mat-flat-button class="menu-button custom-button" routerLink="/job-assignment" (click)="sidenav.close()">
+        <span class="menu-item">JOB ASSIGNMENT</span>
+      </button>
 
-      <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
-        <span class="menu-item">WORK CALENDAR</span>
+      <button mat-flat-button class="menu-button custom-button" routerLink="/calendar" (click)="sidenav.close()">
+        <span class="menu-item">CALENDAR</span>
       </button>
 
       <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard/notifications" (click)="sidenav.close()">
-        <span class="menu-item">UPDATES</span>
+        <span class="menu-item">UPDATES??</span>
       </button>
 
       <button mat-flat-button class="menu-button custom-button" routerLink="/open-work" (click)="sidenav.close()">
-        <span class="menu-item">OPEN WORK</span>
+        <span class="menu-item">OPEN WORK??</span>
       </button>
+
+      
     </mat-nav-list>
   </mat-sidenav>
 
@@ -58,7 +68,7 @@
 </div>
 
 <mat-menu #menu="matMenu" class="no-btn">
-  <button mat-menu-item routerLink="/register">
+  <button mat-menu-item routerLink="/profile">
     <mat-icon svgIcon="profile-circle"></mat-icon>
     Profile
   </button>

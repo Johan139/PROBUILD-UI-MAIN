@@ -4,7 +4,7 @@ import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
 import { NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
-import { MatListItem, MatNavList } from "@angular/material/list";
+import { MatNavList } from "@angular/material/list";
 import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { LoaderComponent } from './loader/loader.component';
@@ -23,13 +23,13 @@ import { DomSanitizer } from '@angular/platform-browser';
     MatNavList,
     LoaderComponent,
     MatIconModule,
-    MatListItem,
     MatMenuModule,
     MatSidenav,
     RouterLink,
     MatButtonModule,
     NgOptimizedImage,
-    RouterModule
+    RouterModule,
+    MatIconModule
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'] // Fixed typo from `styleUrl` to `styleUrls`

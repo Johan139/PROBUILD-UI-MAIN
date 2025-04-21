@@ -120,7 +120,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.hubConnection = new HubConnectionBuilder()
-    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+    .withUrl('http://localhost:5000/progressHub')
       .configureLogging(LogLevel.Debug)
       .build();
 

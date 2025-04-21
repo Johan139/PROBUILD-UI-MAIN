@@ -1,0 +1,127 @@
+/* Variables from profile.component.scss */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$cyan: #61a0af;
+$dark-gray: #333;
+$white: #fff;
+$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+$darker-yellow: #e6bf00;
+
+.container {
+  width: 95vw !important;
+  margin-top: 2rem;
+}
+
+.calendar-card {
+  background-color: $white;
+  border: 1px solid $cyan;
+  box-shadow: $shadow;
+  border-radius: 8px;
+  padding: 16px;
+  height: auto;
+
+  mat-card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  mat-divider {
+    background-color: $secondary-yellow;
+    border: none;
+    height: 2px;
+    margin: 16px 0;
+  }
+}
+
+.calendar-content {
+  margin-top: 16px;
+}
+
+.calendar-controls {
+  margin-bottom: 20px;
+}
+
+.add-event-btn {
+  background-color: $primary-yellow;
+  color: $dark-gray;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: background-color 0.3s ease;
+  width: 200px;
+
+  &:hover {
+    background-color: $darker-yellow;
+  }
+}
+
+.success-message {
+  color: #4caf50;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  background-color: #e8f5e9;
+}
+
+.error-message {
+  color: #f44336;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  background-color: #ffebee;
+}
+
+::ng-deep .fc {
+  .fc-toolbar {
+    background-color: $white;
+    border: 1px solid $cyan;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .fc-button {
+    background-color: $primary-yellow !important;
+    color: $dark-gray !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+
+    &:hover {
+      background-color: $darker-yellow !important;
+    }
+  }
+
+  .fc-daygrid-day {
+    background-color: $white;
+    border: 1px solid $cyan;
+  }
+
+  .fc-event {
+    background-color: $cyan;
+    color: $white;
+    border-radius: 4px;
+    padding: 4px;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-controls {
+    .add-event-btn {
+      padding: 8px 16px;
+      width: 100%;
+    }
+  }
+
+  ::ng-deep .fc {
+    .fc-toolbar {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+}
