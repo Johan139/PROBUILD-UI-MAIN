@@ -1,15 +1,15 @@
 {
   "name": "pro-build-ai",
   "version": "0.0.0",
- "scripts": {
-  "ng": "ng",
-  "start": "ng serve",
-  "watch": "ng build --watch --configuration development",
-  "test": "ng test",
-  "set-env": "node set-env.js", 
-  "build": "npm run set-env && ng build --configuration production",
-  "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs"
-},
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "set-env": "node set-env.js",
+    "build": "npm run set-env && ng build --configuration production",
+    "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs"
+  },
   "private": true,
   "dependencies": {
     "@angular/animations": "^18.2.0",
