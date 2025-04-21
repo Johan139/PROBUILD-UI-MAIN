@@ -59,7 +59,7 @@ export class JobAssignmentService {
   }
 
   deleteUserAssignment(assignmentLink: JobAssignmentLink): Observable<void> {
-    const url = `${this.apiUrl}`; // Adjust endpoint
+    const url = `${this.apiUrl}/DeleteAssignment`; // Adjust endpoint
     return this.http.put<void>(url, assignmentLink, { headers: this.getHeaders() }).pipe(
       catchError(error => {
         console.error('Error deleting user assignment:', error);
