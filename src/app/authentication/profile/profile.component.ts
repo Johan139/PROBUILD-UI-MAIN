@@ -1,39 +1,37 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ProfileService } from './profile.service';
-import { Profile } from './profile.model';
-import { AuthService } from '../../authentication/auth.service';
+import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ProfileService } from './profile.service';
+import { AuthService } from '../../authentication/auth.service';
+import { Profile } from './profile.model';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTabsModule } from '@angular/material/tabs';
-
+import { MatIconModule } from '@angular/material/icon';
+import { NgForOf, NgIf} from "@angular/common";
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-profile',
   standalone: true,
   imports: [
-    MatIconModule,
-    BrowserModule,
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatDividerModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatTabsModule
+    MatIconModule,
+    NgForOf, NgIf
   ],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss'] 
+  styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
   profile: Profile | null = null;
@@ -41,70 +39,67 @@ export class ProfileComponent implements OnInit {
   isLoading = true;
   isSaving = false;
   errorMessage: string | null = null;
-  currentUser: any;
   successMessage: string | null = null;
-  certified = false;
   userRole: string | null = null;
   isVerified = false;
-  isLoadingJobs = true;
-
-  // Available roles for testing
   availableRoles: string[] = ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'];
 
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
     private fb: FormBuilder,
-    matIconRegistry: MatIconRegistry, 
-    domSanitizer: DomSanitizer
+    private matIconRegistry: MatIconRegistry,
+    private domSanitizer: DomSanitizer
   ) {
     this.profileForm = this.fb.group({
-      id: [''],
-      email: [''],
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
-      phoneNumber: ['', Validators.required],
-      userType: [''],
-      companyName: ['', Validators.required],
-      companyRegNo: [''],
-      vatNo: [''],
-      constructionType: [''],
-      nrEmployees: [''],
-      yearsOfOperation: [''],
-      certificationStatus: [''],
-      certificationDocumentPath: [''],
-      availability: [''],
-      trade: [''],
-      supplierType: [''],
-      productsOffered: [''],
-      projectPreferences: [''],
-      deliveryArea: [''],
-      deliveryTime: [''],
-      country: [''],
-      state: [''],
-      city: [''],
-      subscriptionPackage: [''],
-      isVerified: [false]
+        id: [null],
+        email: [null],
+        firstName: [null, Validators.required],
+        lastName: [null, Validators.required],
+        phoneNumber: [null, Validators.required],
+        userType: [null],
+        companyName: [null, Validators.required],
+        companyRegNo: [null],
+        vatNo: [null],
+        constructionType: [null],
+        nrEmployees: [null],
+        yearsOfOperation: [null],
+        certificationStatus: [null],
+        certificationDocumentPath: [null],
+        availability: [null],
+        trade: [null],
+        supplierType: [null],
+        productsOffered: [null],
+        projectPreferences: [null],
+        deliveryArea: [null],
+        deliveryTime: [null],
+        country: [null],
+        state: [null],
+        city: [null],
+        subscriptionPackage: [null],
+        isVerified: [false]
     });
 
-    matIconRegistry.addSvgIcon(
+    this.matIconRegistry.addSvgIcon(
       'verified',
-      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/verification-symbol-svgrepo-com.svg')
+      this.domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/verification-symbol-svgrepo-com.svg')
     );
-    matIconRegistry.addSvgIcon(
+    this.matIconRegistry.addSvgIcon(
       'notVerified',
-      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
+      this.domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
     );
-
-    
   }
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      this.userRole = this.authService.getUserRole() || 'PROJECT_MANAGER'; // Default to PM for testing
+      this.userRole = this.authService.getUserRole();
+      console.log('User Role:', this.userRole); // Debug: Check user role
+      console.log('User Data:', user); // Debug: Check user data
       if (user) {
         this.loadProfile();
+      } else {
+        this.isLoading = false;
+        this.errorMessage = 'Please log in to view your profile.';
       }
     });
   }
@@ -115,14 +110,14 @@ export class ProfileComponent implements OnInit {
     this.successMessage = null;
     this.profileService.getProfile().subscribe({
       next: (data: Profile) => {
+        console.log('Profile Data:', data); // Debug: Check profile data
         this.profile = data;
         this.profileForm.patchValue(data[0]);
         this.successMessage = 'Profile loaded successfully';
         this.isLoading = false;
-        this.isVerified = data.isVerified;
+        this.isVerified = data.isVerified ?? false;
       },
       error: (error) => {
-        console.error('Error fetching profile:', error.message, error.status, error.statusText);
         this.errorMessage = error.message === 'User not authenticated'
           ? 'Please log in to view your profile.'
           : 'Failed to load profile. Please try again.';
@@ -155,13 +150,6 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  certificationChange(selectedOption: any) {
-    if (selectedOption === "FULLY_LICENSED")
-      this.certified = true;
-    else
-      this.certified = false;
-  }
-
   onFileSelected(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
@@ -171,14 +159,13 @@ export class ProfileComponent implements OnInit {
       this.profileService.uploadCertification(file).subscribe({
         next: (response: any) => {
           this.profileForm.patchValue({
-            certificationDocumentPath: response.path ?? ''
+            certification: { certificationDocumentPath: response.path ?? null }
           });
-          this.profile = { ...this.profile!, certificationDocumentPath: response.path };
+          this.profile = { ...this.profile!, certificationDocumentPath: response.path ?? null };
           this.successMessage = 'Certification uploaded successfully';
           this.isLoading = false;
         },
-        error: (error) => {
-          console.error('Error uploading certification:', error);
+        error: () => {
           this.errorMessage = 'Failed to upload certification.';
           this.isLoading = false;
         }
@@ -186,9 +173,21 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  // Role-based visibility methods
+  changeUserRole(newRole: string): void {
+    this.userRole = newRole;
+    this.authService.changeUserRole(newRole);
+    this.successMessage = `Switched to ${newRole} role`;
+    console.log('Role switched to:', newRole); // Debug: Check role switch
+    console.log('Visibility - Personal:', this.canViewPersonalInfo());
+    console.log('Visibility - Company:', this.canViewCompanyDetails());
+    console.log('Visibility - Certification:', this.canViewCertification());
+    console.log('Visibility - Trade:', this.canViewTradeSupplier());
+    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
+    console.log('Visibility - Subscription:', this.canViewSubscription());
+  }
+
   canViewPersonalInfo(): boolean {
-    return ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'].includes(this.userRole || '');
+    return this.availableRoles.includes(this.userRole || '');
   }
 
   canViewCompanyDetails(): boolean {
@@ -208,17 +207,6 @@ export class ProfileComponent implements OnInit {
   }
 
   canViewSubscription(): boolean {
-    return ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'].includes(this.userRole || '');
-  }
-
-  canViewJobManagement(): boolean {
-    return ['FOREMAN', 'CONSTRUCTION', 'PROJECT_OWNER'].includes(this.userRole || '');
-  }
-
-  // New method to handle role change from dropdown
-  changeUserRole(newRole: string): void {
-    this.userRole = newRole;
-    this.authService.changeUserRole(newRole); // Simulate login to update AuthService
-    this.successMessage = `Switched to ${newRole} role`; // Optional feedback
+    return this.availableRoles.includes(this.userRole || '');
   }
 }
