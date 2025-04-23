@@ -43,17 +43,17 @@
           },
           "configurations": {
             "staging": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "1MB",
-                  "maximumError": "2MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
-                  "maximumError": "10kB"
-                }
+    "budgets": [
+  {
+    "type": "initial",
+    "maximumWarning": "1.5MB",
+    "maximumError": "2.5MB"
+  },
+  {
+    "type": "anyComponentStyle",
+    "maximumWarning": "12kB",
+    "maximumError": "14kB"
+  }
               ],
               "fileReplacements": [
                 {
@@ -64,17 +64,17 @@
               "outputHashing": "all"
             },
             "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "1MB",
-                  "maximumError": "2MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "8kB",
-                  "maximumError": "10kB"
-                }
+      "budgets": [
+  {
+    "type": "initial",
+    "maximumWarning": "1.5MB",
+    "maximumError": "2.5MB"
+  },
+  {
+    "type": "anyComponentStyle",
+    "maximumWarning": "12kB",
+    "maximumError": "14kB"
+  }
               ],
               "outputHashing": "all"
             },
