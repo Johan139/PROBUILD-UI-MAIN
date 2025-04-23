@@ -31,12 +31,34 @@
     <div class="column">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Upcoming Tasks</mat-card-title>
+          <mat-card-title>Action Points</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
-          <div class="chart-container">
-            <app-gantt-chart [tasks]="taskData"></app-gantt-chart>
+        
+          <div *ngIf="notes.length === 0">
+            <p>No notes assigned to you yet.</p>
+          </div>
+        
+          <div class="action-points-wrapper">
+            <table class="themed-table action-points-table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Note</th>
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let note of notes">
+                  <td>{{note.projectName}}</td>
+                  <td>{{note.noteText}}</td>
+                  <td>{{note.createdAt | date:'short'}}</td>
+                  <td><button class="submit-btn delete-btn" mat-raised-button>View</button></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </mat-card-content>
       </mat-card>

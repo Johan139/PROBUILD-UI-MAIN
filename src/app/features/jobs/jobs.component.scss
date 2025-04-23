@@ -96,6 +96,7 @@ mat-divider {
 /* Chart Container */
 .chart-container {
   padding: 1.5rem;
+  max-width: 1200px;
   background-color: #f9f9f9;
   border: 2px solid $secondary-yellow;
   border-radius: 12px;
@@ -105,7 +106,143 @@ mat-divider {
   overflow-x: auto;
   position: relative;
 }
+.ng-deep .subtask-note-dialog .mat-dialog-container {
+  padding: 2rem !important;
+  border-radius: 20px;
+  background-color: #fefef6;
+  height: 80vh; // ensure dialog uses height
+  display: flex;
+  flex-direction: column;
+}
 
+.subtask-note-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.upload-icon {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+/* File Upload */
+.custom-file-upload {
+  position: relative;
+  display: inline-block;
+}
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between icon and text */
+  padding: 10px 20px; /* Larger padding */
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box; /* Include padding in width */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.upload-label:hover {
+  background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
+.custom-file-upload input[type="file"] {
+  display: none; /* Ensure input is hidden */
+  opacity: 0; /* Additional layer of hiding */
+  width: 0; /* Prevent any residual space */
+  height: 0; /* Prevent any residual space */
+}
+.note-content {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.note-field {
+  width: 100%;
+  height: 100%;
+}
+
+textarea[matInput] {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  font-size: 1rem;
+  padding: 1rem;
+  background-color: #fffdf5;
+  border-radius: 8px;
+}
+.btn-primary {
+  background-color: $primary-yellow;
+  color: $primary-yellow;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  transition: background 0.2s ease;
+  &:hover {
+    background-color: #0d5f17;
+  }
+}
+.subtask-note-modal {
+  background-color: #fefef6;
+  padding: 2rem;
+  border-radius: 20px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  height: 90vh; // modal height
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.subtask-note-modal {
+  width: 200vw;
+  max-width: 100%;
+  height: 75vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 2rem 1rem;
+  background-color: #fefef6;
+  border-radius: 20px;
+}
+
+.note-content {
+  flex-grow: 1;
+  overflow: auto;
+  margin-top: 1rem;
+}
+
+.note-field {
+  width: 100%;
+  height: 100%;
+}
+
+textarea[matInput] {
+  min-height: 300px;
+  height: 100%;
+  font-size: 1rem;
+  padding: 1rem;
+  background-color: #fffdf5;
+  border-radius: 8px;
+  resize: none;
+}
+.btn-outline {
+  background: transparent;
+  color: $primary-yellow;
+  border: 1px solid #127c20;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.2s ease;
+  &:hover {
+    background-color: rgba(18, 124, 32, 0.1);
+  }
+}
 .timeline-wrapper {
   background: linear-gradient(135deg, $white 0%, #f9f9f9 100%);
   padding: 1rem;
@@ -261,6 +398,30 @@ mat-divider {
   
   tr:hover {
     background-color: $light-gray;
+  }
+}
+.imgBtn {
+  width: 200px; /* Fixed width */
+  height: 40px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+&:hover {
+  background: $darker-yellow;
+}
+}
+
+.submit-btn-note {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  
+  &:hover {
+    background: $darker-yellow;
   }
 }
 

@@ -31,53 +31,64 @@
             </div>
           </div>
 
-          <!-- Subtasks Section -->
-          <mat-card-title>Tasks and Subtasks</mat-card-title>
-          <mat-divider></mat-divider>
-          <div class="subtask-section">
-            <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
-              <div class="table-header">
-                <h3>{{table.title}}</h3>
-                <button class="submit-btn" (click)="addSubtask(table)">
-                  Add Subtask
-                </button>
-              </div>
-              <table class="themed-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Days</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let subtask of table.subtasks; let i = index">
-                    <td>
-                      <input type="text" [(ngModel)]="subtask.task" class="no-border" />
-                    </td>
-                    <td>
-                      <input type="number" [(ngModel)]="subtask.days" class="no-border" 
-                             (change)="updateSubtaskDates(table, i)" />
-                    </td>
-                    <td>
-                      <input type="date" [(ngModel)]="subtask.startDate" class="no-border" 
-                             (change)="updateSubtaskDates(table, i)" />
-                    </td>
-                    <td>
-                      <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
-                    </td>
-                    <td>
-                      <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+<!-- Subtasks Section -->
+<mat-card-title>Tasks and Subtasks</mat-card-title>
+<mat-divider></mat-divider>
+<div class="subtask-section">
+  <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
+    <div class="table-header">
+      <h3>{{table.title}}</h3>
+      <button class="submit-btn" (click)="addSubtask(table)">
+        Add Subtask
+      </button>
+    </div>
+    <table class="themed-table">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Days</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Task Status</th> <!-- ✅ New Static Column -->
+          <th>Actions</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let subtask of getVisibleSubtasks(table); let i = index">
+          <td>
+            <input type="text" [(ngModel)]="subtask.task" class="no-border" />
+          </td>
+          <td>
+            <input type="number" [(ngModel)]="subtask.days" class="no-border" 
+                   (change)="updateSubtaskDates(table, i)" />
+          </td>
+          <td>
+            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" 
+                   (change)="updateSubtaskDates(table, i)" />
+          </td>
+          <td>
+            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
+          </td>
+          <td>
+            {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
+          </td>
+          <td>
+            <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
+              Delete
+            </button>
+        
+          </td>
+          <td>
+            <button class="submit-btn delete-btn" (click)="openNoteDialog(subtask)">
+              Update
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
           <!-- Action Buttons -->
           <div class="action-buttons">
@@ -194,7 +205,46 @@
     </mat-dialog-actions>
   </div>
 </ng-template>
+<ng-template #noteDialog let-data>
+  <div class="subtask-note-modal">
+    <h2 mat-dialog-title>Subtask Note</h2>
 
+    <mat-dialog-content class="note-content">
+      <mat-form-field appearance="fill" class="note-field" floatLabel="always">
+        <textarea
+          matInput
+          [(ngModel)]="noteText"
+          placeholder="Enter note here..."
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="16"
+          cdkAutosizeMaxRows="30"
+        ></textarea>
+      </mat-form-field>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="note-actions">
+      <div class="custom-file-upload">
+        <div *ngIf="isUploading" class="upload-progress">
+          <p>Upload Progress: {{ progress }}%</p>
+          <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+        </div>
+        <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
+          <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
+            {{ uploadedFilesCount }} file(s) uploaded successfully
+          </p>
+        </div>
+        <label for="file-upload" class="upload-label imgBtn">
+          <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+          Upload File
+        </label>
+        <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+      </div>
+
+        <button class="submit-btn-note" mat-raised-button (click)="closeNoteDialog()">Cancel</button>
+        <button class="submit-btn-note" mat-raised-button (click)="saveNoteDialog()">Save</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
 <!-- Alert Modal -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">

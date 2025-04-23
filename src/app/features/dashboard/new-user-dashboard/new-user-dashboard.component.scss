@@ -59,7 +59,79 @@ mat-card-title {
   text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
+.action-points-wrapper {
+  max-height: 400px; // or whatever fits your layout cleanly
+  overflow-y: auto;
+  border-radius: 4px;
+  border: 1px solid $light-gray;
+}
+.submit-btn {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  
+  &:hover {
+    background: $darker-yellow;
+  }
+  
+  &.publish-btn {
+    background: $primary-yellow;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+  
+  &.save-btn {
+    background: $secondary-yellow;
+    &:hover {
+      background: darken($secondary-yellow, 10%);
+    }
+  }
+  
+  &.delete-btn {
+    background: #fbd008;
+    color: $dark-gray;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+}
 
+
+.action-points-table {
+  width: auto;
+  min-width: 70px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin: 0;
+
+  th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid $light-gray;
+    word-wrap: break-word;
+  }
+
+  th {
+    background-color: $secondary-yellow;
+    color: $dark-gray;
+    font-weight: bold;
+  }
+
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  button {
+    padding: 4px 12px;
+    font-size: 0.85rem;
+  }
+}
 mat-card-content {
   padding-top: 1rem;
   
