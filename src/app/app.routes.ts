@@ -13,6 +13,7 @@ import { ProfileComponent } from './authentication/profile/profile.component';
 import { JobAssignmentComponent } from './features/jobs/job-assignment/job-assignment.component';
 import { ForgotPasswordComponent} from "./authentication/forgot-password/forgot-password.component";
 import { CalendarComponent } from './features/calendar/calendar.component';
+import { QuoteComponent} from "./features/quote/quote.component";
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -26,15 +27,17 @@ export const routes: Routes = [
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
+  {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
   {path:'dashboard', component: DashboardComponent,
     canActivate: [AuthGuard],
     children: [
       {path:'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
-      { path:'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
+      {path:'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
       {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
       {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
       {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },
       {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
+      {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
     ]
   },
   { path:'profile', component: ProfileComponent, canActivate: [AuthGuard] }

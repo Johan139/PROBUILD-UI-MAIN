@@ -1,4 +1,5 @@
 export class AppModule {}
+
 export interface Profile {
   id: string | null;
   email: string | null;
@@ -26,4 +27,17 @@ export interface Profile {
   city: string | null;
   subscriptionPackage: string | null;
   isVerified: boolean;
+}
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  email: string;
+}
+
+export interface Document {
+  name: string;
+  type: string;
+  path: string;
+  uploadedDate: Date;
 }

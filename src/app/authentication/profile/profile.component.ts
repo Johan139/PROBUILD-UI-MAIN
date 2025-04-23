@@ -4,7 +4,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
-import { Profile } from './profile.model';
+import { Profile, TeamMember, Document } from './profile.model';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -13,7 +13,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { NgForOf, NgIf} from "@angular/common";
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatTableModule } from '@angular/material/table';
+import { MatDialogModule } from '@angular/material/dialog';
+import { NgForOf, NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-profile',
@@ -28,7 +31,11 @@ import { NgForOf, NgIf} from "@angular/common";
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
-    NgForOf, NgIf
+    MatTabsModule,
+    MatTableModule,
+    MatDialogModule,
+    NgForOf,
+    NgIf
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
@@ -36,6 +43,7 @@ import { NgForOf, NgIf} from "@angular/common";
 export class ProfileComponent implements OnInit {
   profile: Profile | null = null;
   profileForm: FormGroup;
+  teamForm: FormGroup;
   isLoading = true;
   isSaving = false;
   errorMessage: string | null = null;
@@ -43,6 +51,10 @@ export class ProfileComponent implements OnInit {
   userRole: string | null = null;
   isVerified = false;
   availableRoles: string[] = ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'];
+  teamMembers: TeamMember[] = [];
+  documents: Document[] = [];
+  displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
+  documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
 
   constructor(
     private profileService: ProfileService,
@@ -52,32 +64,38 @@ export class ProfileComponent implements OnInit {
     private domSanitizer: DomSanitizer
   ) {
     this.profileForm = this.fb.group({
-        id: [null],
-        email: [null],
-        firstName: [null, Validators.required],
-        lastName: [null, Validators.required],
-        phoneNumber: [null, Validators.required],
-        userType: [null],
-        companyName: [null, Validators.required],
-        companyRegNo: [null],
-        vatNo: [null],
-        constructionType: [null],
-        nrEmployees: [null],
-        yearsOfOperation: [null],
-        certificationStatus: [null],
-        certificationDocumentPath: [null],
-        availability: [null],
-        trade: [null],
-        supplierType: [null],
-        productsOffered: [null],
-        projectPreferences: [null],
-        deliveryArea: [null],
-        deliveryTime: [null],
-        country: [null],
-        state: [null],
-        city: [null],
-        subscriptionPackage: [null],
-        isVerified: [false]
+      id: [null],
+      email: [null],
+      firstName: [null, Validators.required],
+      lastName: [null, Validators.required],
+      phoneNumber: [null, Validators.required],
+      userType: [null],
+      companyName: [null, Validators.required],
+      companyRegNo: [null],
+      vatNo: [null],
+      constructionType: [null],
+      nrEmployees: [null],
+      yearsOfOperation: [null],
+      certificationStatus: [null],
+      certificationDocumentPath: [null],
+      availability: [null],
+      trade: [null],
+      supplierType: [null],
+      productsOffered: [null],
+      projectPreferences: [null],
+      deliveryArea: [null],
+      deliveryTime: [null],
+      country: [null],
+      state: [null],
+      city: [null],
+      subscriptionPackage: [null],
+      isVerified: [false]
+    });
+
+    this.teamForm = this.fb.group({
+      name: ['', Validators.required],
+      role: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]]
     });
 
     this.matIconRegistry.addSvgIcon(
@@ -93,10 +111,12 @@ export class ProfileComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
-      console.log('User Role:', this.userRole); // Debug: Check user role
-      console.log('User Data:', user); // Debug: Check user data
+      console.log('User Role:', this.userRole);
+      console.log('User Data:', user);
       if (user) {
         this.loadProfile();
+        this.loadTeamMembers();
+        this.loadDocuments();
       } else {
         this.isLoading = false;
         this.errorMessage = 'Please log in to view your profile.';
@@ -110,7 +130,7 @@ export class ProfileComponent implements OnInit {
     this.successMessage = null;
     this.profileService.getProfile().subscribe({
       next: (data: Profile) => {
-        console.log('Profile Data:', data); // Debug: Check profile data
+        console.log('Profile Data:', data);
         this.profile = data;
         this.profileForm.patchValue(data[0]);
         this.successMessage = 'Profile loaded successfully';
@@ -122,6 +142,28 @@ export class ProfileComponent implements OnInit {
           ? 'Please log in to view your profile.'
           : 'Failed to load profile. Please try again.';
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadTeamMembers(): void {
+    this.profileService.getTeamMembers().subscribe({
+      next: (members: TeamMember[]) => {
+        this.teamMembers = members;
+      },
+      error: (error) => {
+        this.errorMessage = 'Failed to load team members.';
+      }
+    });
+  }
+
+  loadDocuments(): void {
+    this.profileService.getDocuments().subscribe({
+      next: (docs: Document[]) => {
+        this.documents = docs;
+      },
+      error: (error) => {
+        this.errorMessage = 'Failed to load documents.';
       }
     });
   }
@@ -164,6 +206,7 @@ export class ProfileComponent implements OnInit {
           this.profile = { ...this.profile!, certificationDocumentPath: response.path ?? null };
           this.successMessage = 'Certification uploaded successfully';
           this.isLoading = false;
+          this.loadDocuments(); // Refresh documents list
         },
         error: () => {
           this.errorMessage = 'Failed to upload certification.';
@@ -173,11 +216,41 @@ export class ProfileComponent implements OnInit {
     }
   }
 
+  addTeamMember(): void {
+    if (this.teamForm.valid) {
+      const newMember: TeamMember = this.teamForm.value;
+      this.profileService.addTeamMember(newMember).subscribe({
+        next: (member: TeamMember) => {
+          this.teamMembers.push(member);
+          this.teamForm.reset();
+          this.successMessage = 'Team member added successfully';
+        },
+        error: () => {
+          this.errorMessage = 'Failed to add team member.';
+        }
+      });
+    } else {
+      this.errorMessage = 'Please fill all required fields correctly.';
+    }
+  }
+
+  removeTeamMember(email: string): void {
+    this.profileService.removeTeamMember(email).subscribe({
+      next: () => {
+        this.teamMembers = this.teamMembers.filter(member => member.email !== email);
+        this.successMessage = 'Team member removed successfully';
+      },
+      error: () => {
+        this.errorMessage = 'Failed to remove team member.';
+      }
+    });
+  }
+
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
     this.successMessage = `Switched to ${newRole} role`;
-    console.log('Role switched to:', newRole); // Debug: Check role switch
+    console.log('Role switched to:', newRole);
     console.log('Visibility - Personal:', this.canViewPersonalInfo());
     console.log('Visibility - Company:', this.canViewCompanyDetails());
     console.log('Visibility - Certification:', this.canViewCertification());

@@ -1,10 +1,9 @@
-/* Variables from the primary SCSS */
+/* Reuse variables from profile.component.scss */
 $primary-yellow: #fbd008;
 $secondary-yellow: #fcd02d;
 $cyan: #61a0af;
 $dark-gray: #333;
 $white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 $darker-yellow: #e6bf00;
 
 .container {
@@ -12,10 +11,10 @@ $darker-yellow: #e6bf00;
   margin-top: 2rem;
 }
 
-.profile-card {
+.quote-card {
   background-color: $white;
   border: 1px solid $cyan;
-  box-shadow: $shadow;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
   padding: 16px;
   height: auto;
@@ -27,16 +26,9 @@ $darker-yellow: #e6bf00;
     text-transform: uppercase;
     margin-bottom: 12px;
   }
-
-  mat-divider {
-    background-color: $secondary-yellow;
-    border: none;
-    height: 2px;
-    margin: 16px 0;
-  }
 }
 
-.profile-content {
+.quote-content {
   margin-top: 16px;
 }
 
@@ -77,7 +69,6 @@ $darker-yellow: #e6bf00;
     }
   }
 
-  /* Fix for mat-select dropdown positioning */
   ::ng-deep .mat-mdc-select-panel {
     max-height: 256px;
     overflow-y: auto;
@@ -87,55 +78,10 @@ $darker-yellow: #e6bf00;
     z-index: 1000;
   }
 
-  .custom-file-upload {
-    position: relative;
-    display: inline-block;
-    text-align: center;
-
-    .upload-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 20px;
-      background-color: $primary-yellow;
-      color: $dark-gray;
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-      box-sizing: border-box;
-
-      &:hover {
-        background-color: $darker-yellow;
-      }
-    }
-
-    input[type="file"] {
-      display: none;
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .file-info {
-      font: 0.9rem sans-serif;
-      color: $dark-gray;
-      margin-top: 0.5rem;
-
-      a {
-        color: $cyan;
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-  }
-
   .submit-btn {
     background-color: $primary-yellow;
     color: $dark-gray;
+    font-weight: 500;
     border-radius: 8px;
     padding: 10px 20px;
     transition: background-color 0.3s ease;
@@ -169,14 +115,14 @@ $darker-yellow: #e6bf00;
     opacity: 0.6;
     cursor: not-allowed;
   }
-
-  mat-checkbox {
-    margin-left: 10px;
-  }
 }
 
-.mat-elevation-z8 {
-  margin-top: 20px;
+.extra-cost-section {
+  margin-bottom: 20px;
+}
+
+.extra-cost-table {
+  margin-top: 10px;
   border: 1px solid $cyan;
   border-radius: 8px;
   overflow: hidden;
@@ -202,6 +148,44 @@ $darker-yellow: #e6bf00;
       color: $cyan;
     }
   }
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.mat-elevation-z8 {
+  margin-top: 20px;
+  border: 1px solid $cyan;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+
+  mat-header-cell, mat-cell {
+    padding: 10px;
+    color: $dark-gray;
+  }
+
+  mat-header-cell {
+    background-color: $secondary-yellow;
+    font-weight: 700;
+  }
+
+  mat-row:hover {
+    background-color: lighten($cyan, 40%);
+  }
+
+  mat-icon-button {
+    color: $dark-gray;
+
+    &:hover {
+      color: $cyan;
+    }
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
@@ -214,12 +198,17 @@ $darker-yellow: #e6bf00;
       width: 100%;
     }
 
-    .custom-file-upload .upload-label {
-      padding: 8px 16px;
-    }
-
     .submit-btn {
       padding: 8px 16px;
+    }
+  }
+
+  .extra-cost-section {
+    .extra-cost-table {
+      mat-header-cell, mat-cell {
+        padding: 8px;
+        font-size: 0.9rem;
+      }
     }
   }
 
