@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild } from '@angular/core';
 import { Router, RouterLink } from "@angular/router";
 import { CommonModule, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -9,7 +9,12 @@ import { LoaderComponent } from '../../../loader/loader.component';
 import { LoginService } from "../../../services/login.service";
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { JobsService } from '../../../services/jobs.service';
 const BASE_URL = environment.BACKEND_URL;
+
+
+
 @Component({
   selector: 'app-new-user-dashboard',
   standalone: true,
@@ -22,16 +27,20 @@ const BASE_URL = environment.BACKEND_URL;
     MatDividerModule,
     GanttChartComponent,
     LoaderComponent,
-    RouterLink
+    RouterLink,
+    MatDialogModule // ✅ THIS LINE
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss']
 })
 export class NewUserDashboardComponent implements OnInit {
+  @ViewChild('noteDetailDialog') noteDetailDialog!: TemplateRef<any>;
   userType: string = '';
   isSubContractor: boolean = false;
   isLoading: boolean = false;
   isBrowser: boolean;
+  alertMessage: string = '';
+  showAlert: boolean = false;
   notes: any[] = [];
   taskData: any[] = [
     { id: '1', name: 'Roof Structure', start: new Date(2025, 2, 1), end: new Date(2025, 2, 15), progress: 0, dependencies: null },
@@ -42,6 +51,8 @@ export class NewUserDashboardComponent implements OnInit {
   constructor(
     private userService: LoginService,
     private router: Router,
+    private dialog: MatDialog,
+    private jobsService: JobsService,
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -76,6 +87,75 @@ export class NewUserDashboardComponent implements OnInit {
     }, 1000); // Simulate loading
   }
 
+  openNoteDialog(note: any) {
+    console.log(note.jobSubtaskId.toString())
+    this.dialog.open(this.noteDetailDialog, {
+      width: '500px',
+      data: note
+      
+    });
+  }
+  
+  approveNote(note: any) {
+    console.log(note.jobSubtaskId.toString())
+    const formData = new FormData();
+    formData.append('Id', note.id.toString());
+    formData.append('jobSubtaskId', note.jobSubtaskId.toString()); // ✅ fix here
+    formData.append('Approved', 'true');
+    formData.append('Rejected', 'false');
+  
+    this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
+      next: () => {
+        console.log('✅ Note approved');
+        this.dialog.closeAll();
+      },
+      error: (err) => {
+        console.error('Error approving note:', err);
+      }
+    });
+  }
+  
+  rejectNote(note: any) {
+
+    const formData = new FormData();
+    formData.append('Id', note.id.toString());
+    formData.append('Approved', 'false');
+    formData.append('jobSubtaskId', note.jobSubtaskId.toString()); // ✅ fix here
+    formData.append('Rejected', 'true');
+  
+    this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
+      next: () => {
+        console.log('❌ Note rejected');
+        this.dialog.closeAll();
+      },
+      error: (err) => {
+        console.error('Error rejecting note:', err);
+      }
+    });
+  }
+  viewDocument(document: any) {
+    this.jobsService.downloadJobDocument(document.id).subscribe({
+      next: (response: Blob) => {
+        const blob = new Blob([response], { type: document.type });
+        const url = window.URL.createObjectURL(blob);
+        const newTab = window.open(url, '_blank');
+        if (!newTab) {
+          this.alertMessage = 'Failed to open document. Please allow pop-ups for this site.';
+          this.showAlert = true;
+        }
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: (err) => {
+        console.error('Error viewing document:', err);
+        this.alertMessage = 'Failed to view document.';
+        this.showAlert = true;
+      }
+    });
+  }
+  Close() {
+    // You can make an API call here
+    this.dialog.closeAll();
+  }
   navigateToProjects() {
     this.router.navigateByUrl('/projects');
   }

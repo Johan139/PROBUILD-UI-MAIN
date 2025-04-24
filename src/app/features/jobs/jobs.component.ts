@@ -117,11 +117,11 @@ export class JobsComponent implements OnInit, OnDestroy {
   get isDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
   }
-
+sq
   ngOnInit() {
  this.sessionId = uuidv4();
    this.hubConnection = new HubConnectionBuilder()
-   .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+   .withUrl('http://localhost:5000/progressHub')
       .configureLogging(LogLevel.Debug)
       .build();
 

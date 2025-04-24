@@ -62,6 +62,7 @@ mat-card-title {
 .action-points-wrapper {
   max-height: 400px; // or whatever fits your layout cleanly
   overflow-y: auto;
+  overflow-x: hidden; // ✅ stops horizontal scrolling
   border-radius: 4px;
   border: 1px solid $light-gray;
 }
@@ -99,10 +100,18 @@ mat-card-title {
     }
   }
 }
-
+.action-points-table .submit-btn.delete-btn {
+  width: 80px;         // ✅ much slimmer
+  padding: 4px 0;       // ✅ vertical center, no overflow
+  font-size: 0.85rem;
+  margin: 0 auto;       // ✅ center it inside the cell
+  display: block;       // ✅ ensures the margin applies
+  border-radius: 6px;   // optional: a bit tighter
+}
 
 .action-points-table {
-  width: auto;
+  width: 100%;            // ✅ takes full card width
+  table-layout: fixed;    // ✅ equal distribution
   min-width: 70px;
   padding: 4px 12px;
   font-size: 0.85rem;
@@ -111,7 +120,7 @@ mat-card-title {
   margin: 0;
 
   th, td {
-    padding: 0.75rem;
+    padding: 0.75rem 1rem; // ✅ more horizontal breathing room
     text-align: left;
     border-bottom: 1px solid $light-gray;
     word-wrap: break-word;
@@ -141,7 +150,18 @@ mat-card-content {
     text-align: center;
   }
 }
+.dialog-action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: nowrap; // ✅ Prevent wrapping
+  margin-top: 1rem;
 
+  button {
+    flex: 1;
+    white-space: nowrap;
+  }
+}
 /* Divider */
 mat-divider {
   background-color: $secondary-yellow;

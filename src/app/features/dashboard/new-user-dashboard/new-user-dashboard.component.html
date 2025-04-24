@@ -45,7 +45,6 @@
               <thead>
                 <tr>
                   <th>Project</th>
-                  <th>Note</th>
                   <th>Created</th>
                   <th>Action</th>
                 </tr>
@@ -53,9 +52,8 @@
               <tbody>
                 <tr *ngFor="let note of notes">
                   <td>{{note.projectName}}</td>
-                  <td>{{note.noteText}}</td>
                   <td>{{note.createdAt | date:'short'}}</td>
-                  <td><button class="submit-btn delete-btn" mat-raised-button>View</button></td>
+                  <td><button class="submit-btn delete-btn" (click)="openNoteDialog(note)" mat-raised-button>View</button></td>
                 </tr>
               </tbody>
             </table>
@@ -65,5 +63,60 @@
     </div>
   </div>
 </div>
+<ng-template #noteDetailDialog let-data>
+  <div class="note-detail-dialog">
+    <h2 mat-dialog-title>Note Details</h2>
 
+    <mat-dialog-content>
+      <p><strong>Project:</strong> {{ data.projectName }}</p>
+      <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
+      <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
+      <p><strong>Note:</strong></p>
+      <p>{{ data.noteText }}</p>
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="dialog-action-buttons" align="end">
+      <button mat-raised-button class="submit-btn delete-btn" (click)="approveNote(data)">Approve</button>
+      <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data)">Reject</button>
+      <button mat-raised-button class="submit-btn delete-btn" >View Image</button>
+      <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+<!-- Documents Dialog -->
+<!--<ng-template #documentsDialog>
+  <div class="documents-dialog">
+    <h2 mat-dialog-title>Quote Documents</h2>
+    <mat-dialog-content>
+       Show loading indicator while fetching documents -->
+      <!--<div *ngIf="isDocumentsLoading" class="loading-documents">
+        <app-loader></app-loader>
+        <p>Loading documents...</p>
+      </div>
+
+      <div *ngIf="!isDocumentsLoading">
+        <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
+          <p>No documents available for this quote.</p>
+        </div>
+        <div *ngIf="documentsError" class="no-documents">
+          <p>{{documentsError}}</p>
+        </div>
+        <div *ngIf="documents.length > 0" class="documents-list">
+          <div class="document-item" *ngFor="let doc of documents; let i = index">
+            <div class="document-info">
+              <span class="document-name">{{doc.name}}</span>
+              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
+            </div>
+            <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+              View
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>-->
 <!--<img ngSrc='assets/info1.jpeg' height="450" width="800">-->
