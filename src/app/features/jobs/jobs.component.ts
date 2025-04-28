@@ -121,7 +121,7 @@ sq
   ngOnInit() {
  this.sessionId = uuidv4();
    this.hubConnection = new HubConnectionBuilder()
-   .withUrl('http://localhost:5000/progressHub')
+   .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
       .configureLogging(LogLevel.Debug)
       .build();
 
@@ -490,7 +490,7 @@ sq
     this.currentNoteTarget = subtask;
   
     this.noteDialogRef = this.dialog.open(this.noteDialog, {
-      width: '200vw',
+      width: '250vw',
       height: '60vh',
       panelClass: 'subtask-note-dialog',
       data: {

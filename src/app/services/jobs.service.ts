@@ -31,6 +31,9 @@ export class JobsService {
 downloadJobDocument(documentId: number): Observable<Blob> {
   return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
 }
+downloadNoteDocument(documentId: number): Observable<Blob> {
+  return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
+}
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
