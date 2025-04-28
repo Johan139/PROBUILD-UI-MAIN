@@ -62,6 +62,7 @@ mat-card-title {
 .action-points-wrapper {
   max-height: 400px; // or whatever fits your layout cleanly
   overflow-y: auto;
+  overflow-x: hidden; // ✅ stops horizontal scrolling
   border-radius: 4px;
   border: 1px solid $light-gray;
 }
@@ -99,10 +100,18 @@ mat-card-title {
     }
   }
 }
-
+.action-points-table .submit-btn.delete-btn {
+  width: 80px;         // ✅ much slimmer
+  padding: 4px 0;       // ✅ vertical center, no overflow
+  font-size: 0.85rem;
+  margin: 0 auto;       // ✅ center it inside the cell
+  display: block;       // ✅ ensures the margin applies
+  border-radius: 6px;   // optional: a bit tighter
+}
 
 .action-points-table {
-  width: auto;
+  width: 100%;            // ✅ takes full card width
+  table-layout: fixed;    // ✅ equal distribution
   min-width: 70px;
   padding: 4px 12px;
   font-size: 0.85rem;
@@ -111,7 +120,7 @@ mat-card-title {
   margin: 0;
 
   th, td {
-    padding: 0.75rem;
+    padding: 0.75rem 1rem; // ✅ more horizontal breathing room
     text-align: left;
     border-bottom: 1px solid $light-gray;
     word-wrap: break-word;
@@ -141,7 +150,219 @@ mat-card-content {
     text-align: center;
   }
 }
+.dialog-action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem; /* Increase gap for better spacing in a wider dialog */
+  flex-wrap: nowrap;
+  margin-top: 1rem;
 
+  button {
+    flex: 1;
+    white-space: nowrap;
+    padding: 0.5rem 1rem; /* Adjust padding for better appearance */
+  }
+}
+.loading-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+  }
+}
+.no-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  &[error] {
+    color: #da4167;
+    font-weight: 500;
+  }
+}
+.documents-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $light-gray;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $cyan;
+    border-radius: 3px;
+  }
+}
+.chat-box-inside-dialog {
+  max-height: 300px;
+  overflow-y: auto;
+  background: white;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.chat-message {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.chat-bubble {
+  background-color: #f1f0f0;
+  border-radius: 8px;
+  padding: 10px;
+  max-width: 100%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  word-break: break-word;
+}
+
+.note-text {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.note-time {
+  font-size: 11px;
+  color: #777;
+  text-align: right;
+}
+
+.note-textarea {
+  width: 100%;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #f9f9f9;
+    border-color: $cyan;
+    box-shadow: $shadow;
+  }
+}
+.document-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.document-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: $black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+.note-detail-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 100%;
+  overflow: visible;
+  min-height: 400px; /* Keep this to ensure a minimum dialog height */
+  max-height: 85vh; /* Match the container's max-height */
+  h2 {
+    margin-top: 0;
+  }
+
+  mat-dialog-content {
+    overflow: hidden; /* Prevent internal scrollbars on the content itself */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    padding-bottom: 1rem;
+    flex-grow: 0; /* Prevent the content from growing to fill the dialog */
+    flex-shrink: 0; /* Prevent the content from shrinking */
+  }
+
+  mat-dialog-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+}
+.note-text-box {
+  background-color: $white;       // Or #fff
+  padding: 1rem;
+  border: 1px solid $light-gray;  // Use your existing variable or `#ccc`
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: $dark-gray;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+mat-dialog-content {
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  padding-bottom: 1rem;
+  flex-grow: 1; /* Allow the content area to grow and fill the dialog height */
+
+  p {
+    margin: 0.5rem 0;
+  }
+}
+.view-btn {
+  background-color: $primary-yellow !important;
+  color: $black !important;
+  padding: 0.25rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-left: 1rem;
+
+  &:hover {
+    background-color: $darker-yellow;
+    color: $dark-gray;
+  }
+}
+/* Documents Dialog */
+.documents-dialog {
+  padding: 1rem;
+
+  h2[mat-dialog-title] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    margin-bottom: 1rem;
+  }
+}
+.document-meta {
+  font-size: 0.85rem;
+  color: $dark-gray;
+}
 /* Divider */
 mat-divider {
   background-color: $secondary-yellow;
@@ -181,7 +402,9 @@ mat-divider {
   .column {
     width: 100%;
   }
-  
+  .documents-dialog {
+    padding: 0.5rem;
+  }
   .row {
     flex-direction: column;
     align-items: center;
@@ -199,4 +422,69 @@ mat-divider {
   mat-card {
     height: auto;
   }
+}
+::ng-deep .custom-note-dialog .mat-dialog-container {
+  width: 800px !important;
+  max-height: 90vh !important;
+  overflow: visible !important;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background-color: #fefefe;
+}
+::ng-deep .note-popup-panel .mat-dialog-container {
+  width: 750px !important;
+  max-width: 90vw !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 24px;
+  border-radius: 10px;
+  background: #fefefe;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+}
+.note-text-box {
+  background-color: $white;
+  padding: 1rem;
+  border: 1px solid $light-gray;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: $dark-gray;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  width: 100%;
+  box-sizing: border-box;
+  height: 200px; /* Fixed height for the textbox */
+  overflow-y: auto; /* Scrollbar for overflow */
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $light-gray;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $cyan;
+    border-radius: 3px;
+  }
+}
+::ng-deep .custom-dialog-container .mat-mdc-dialog-surface {
+  width: 900px !important;
+  max-height: 100vh !important; /* Match the new maxHeight */
+  overflow-y: auto !important;
+}
+
+::ng-deep .note-detail-dialog p.note-content {
+  background-color: white;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: none;
 }

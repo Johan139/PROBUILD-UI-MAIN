@@ -117,7 +117,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   get isDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
   }
-
+sq
   ngOnInit() {
  this.sessionId = uuidv4();
    this.hubConnection = new HubConnectionBuilder()
@@ -490,7 +490,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     this.currentNoteTarget = subtask;
   
     this.noteDialogRef = this.dialog.open(this.noteDialog, {
-      width: '200vw',
+      width: '250vw',
       height: '60vh',
       panelClass: 'subtask-note-dialog',
       data: {
