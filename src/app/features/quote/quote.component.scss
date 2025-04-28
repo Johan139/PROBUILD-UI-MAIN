@@ -124,37 +124,74 @@ input.form-control-sm {
   }
 }
 
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .items-table-container {
   width: 100%;
+  max-width: 100%;
   background-color: $white;
   border-radius: 8px;
   padding: 1rem;
-  overflow-x: auto;
-  max-height: 300px;
   overflow-y: auto;
 }
 
 .themed-table {
   width: 100%;
   border-collapse: collapse;
-  
-  th {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    font-weight: 500;
-    padding: 8px;
-    text-align: left;
-    border-bottom: 2px solid $light-gray;
-  }
-  
-  td {
+  table-layout: auto;
+
+  th, td {
     padding: 8px;
     border: 1px solid $light-gray;
     color: $dark-gray;
+    box-sizing: border-box;
   }
-  
+
+  th {
+    background-color: $primary-yellow;
+    font-weight: 500;
+    text-align: left;
+    border-bottom: 2px solid $light-gray;
+  }
+
+  td {
+    vertical-align: middle;
+  }
+
   tr:hover {
     background-color: $light-gray;
+  }
+
+  /* Column-specific widths */
+  th[mat-header-cell], td[mat-cell] {
+    &[matColumnDef="description"] {
+      width: 40%;
+      min-width: 200px;
+    }
+    &[matColumnDef="quantity"] {
+      width: 15%;
+      min-width: 100px;
+    }
+    &[matColumnDef="unitPrice"] {
+      width: 15%;
+      min-width: 100px;
+    }
+    &[matColumnDef="total"] {
+      width: 20%;
+      min-width: 120px;
+    }
+    &[matColumnDef="remove"] {
+      width: 10%;
+      min-width: 50px;
+    }
+  }
+
+  input.form-control-sm, textarea.form-control-sm {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -162,7 +199,7 @@ input.form-control-sm {
   background-color: $white;
 }
 
-.totals-summary {
+.totals-section {
   background: lighten($cyan, 45%);
   padding: 16px;
   border-radius: 8px;
@@ -177,6 +214,11 @@ input.form-control-sm {
   mat-form-field {
     margin-right: 10px;
   }
+}
+
+.extra-cost-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .action-section {
@@ -220,6 +262,25 @@ button[mat-icon-button] {
   width: 36px;
   height: 36px;
   line-height: 36px;
+
+  &:hover {
+    color: $cyan;
+  }
+}
+
+button.icon-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: $dark-gray;
+  cursor: pointer;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
 
   &:hover {
     color: $cyan;
@@ -282,7 +343,8 @@ button[mat-icon-button] {
   button.mat-raised-button,
   button.btn,
   button.btn-outline-primary,
-  button[mat-icon-button] {
+  button[mat-icon-button],
+  button.icon-btn {
     display: none;
   }
 }
@@ -313,6 +375,29 @@ button[mat-icon-button] {
       font-size: 0.8rem;
       padding: 6px;
     }
+
+    th[mat-header-cell], td[mat-cell] {
+      &[matColumnDef="description"] {
+        width: 100%;
+        min-width: 150px;
+      }
+      &[matColumnDef="quantity"] {
+        width: 100%;
+        min-width: 80px;
+      }
+      &[matColumnDef="unitPrice"] {
+        width: 100%;
+        min-width: 80px;
+      }
+      &[matColumnDef="total"] {
+        width: 100%;
+        min-width: 100px;
+      }
+      &[matColumnDef="remove"] {
+        width: 100%;
+        min-width: 40px;
+      }
+    }
   }
 
   button.mat-raised-button,
@@ -331,5 +416,10 @@ button[mat-icon-button] {
 
   .logo-container {
     align-items: center;
+  }
+
+  .extra-cost-buttons {
+    flex-direction: column;
+    gap: 4px;
   }
 }
