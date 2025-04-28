@@ -18,7 +18,7 @@ export class JobsService {
   }
 
   updateJob(jobData: any, id: any): Observable<any> {
-    return this.httpClient.put<any>(BASE_URL+'/'+id, jobData,{headers:{'Content-Type': 'application/json'}});
+    return this.httpClient.post<any>(BASE_URL+'/'+id, jobData,{headers:{'Content-Type': 'application/json'}});
   }
 
 
