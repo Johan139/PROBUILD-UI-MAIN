@@ -1,6 +1,7 @@
 <div *ngIf="isLoading">
   <app-loader></app-loader>
 </div>
+
 <div class="container">
   <div class="row">
     <div class="column">
@@ -10,6 +11,7 @@
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
+
           <p *ngIf="isSubContractor">
             As a {{userType}}, manage your construction projects efficiently with our comprehensive tools.
             Track progress, create job quotes, and stay organized all in one place.
@@ -17,31 +19,144 @@
           <p *ngIf="!isSubContractor">
             Welcome to ProBuildAI! Explore our tools to streamline your project management needs.
           </p>
+
           <div class="action-buttons">
-            <button class="submit-btn" mat-raised-button (click)="navigateToProjects()">
-              View Projects
-            </button>
-            <button class="submit-btn" mat-raised-button (click)="navigateToJobs()">
-              Create Job Quote
-            </button>
+            <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToProjects()">View Projects</button>
+            <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToJobs()">Create Job Quote</button>
           </div>
+
         </mat-card-content>
       </mat-card>
     </div>
+
     <div class="column">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Upcoming Tasks</mat-card-title>
+          <mat-card-title>Action Points</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
-          <div class="chart-container">
-            <app-gantt-chart [tasks]="taskData"></app-gantt-chart>
+
+          <div *ngIf="notes.length === 0">
+            <p>No notes assigned to you yet.</p>
           </div>
+
+          <div class="action-points-wrapper">
+            <table class="themed-table action-points-table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let group of notes">
+                  <td>{{group.projectName}}</td>
+                  <td>{{group.createdAt | date:'short'}}</td>
+                  <td>
+                    <button class="submit-btn delete-btn" (click)="openNoteDialog(group)" mat-raised-button>View</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
         </mat-card-content>
       </mat-card>
     </div>
   </div>
 </div>
 
-<!--<img ngSrc='assets/info1.jpeg' height="450" width="800">-->
+<ng-template #noteDetailDialog let-data>
+  <div class="note-detail-dialog">
+    <h2 mat-dialog-title>Note Details</h2>
+
+    <mat-dialog-content>
+
+      <p><strong>Project:</strong> {{ data.projectName }}</p>
+      <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
+      <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
+
+      <p><strong>Messages:</strong></p>
+      <div class="chat-box-inside-dialog">
+        <div *ngFor="let note of data.notes" class="chat-message">
+          <div class="chat-bubble">
+            <div class="note-text">{{ note.noteText }}</div>
+            <div class="note-time">{{ note.createdAt | date:'short' }}</div>
+          </div>
+        </div>
+      </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="dialog-action-buttons" align="end">
+      <button mat-raised-button class="submit-btn delete-btn" (click)="startApproval(data)">Approve</button>
+      <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data)">Reject</button>
+      <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
+      <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+
+<!-- Documents Dialog -->
+<ng-template #documentsDialog>
+  <div class="documents-dialog">
+    <h2 mat-dialog-title>Quote Documents</h2>
+    <mat-dialog-content>
+      <!-- Show loading indicator while fetching documents -->
+      <div *ngIf="isDocumentsLoading" class="loading-documents">
+        <app-loader></app-loader>
+        <p>Loading documents...</p>
+      </div>
+      <!-- Show content only when not loading -->
+      <div *ngIf="!isDocumentsLoading">
+        <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
+          <p>No documents available for this quote.</p>
+        </div>
+        <div *ngIf="documentsError" class="no-documents">
+          <p>{{documentsError}}</p>
+        </div>
+        <div *ngIf="documents.length > 0" class="documents-list">
+          <div class="document-item" *ngFor="let doc of documents; let i = index">
+            <div class="document-info">
+              <span class="document-name">{{doc.name}}</span>
+              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
+            </div>
+            <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+              View
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+<!-- Approval Reason Dialog -->
+<ng-template #approvalReasonDialog>
+  <div class="note-detail-dialog">
+    <h2 mat-dialog-title>Approval Reason</h2>
+
+    <mat-dialog-content>
+      <div 
+        class="note-text-box" 
+        contenteditable="true"
+        (input)="onApprovalReasonChanged($event)"
+        placeholder="Enter your approval reason here...">
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-raised-button color="primary" class="submit-btn delete-btn" (click)="submitApproval()">Submit</button>
+      <button mat-raised-button color="warn" class="submit-btn delete-btn" (click)="cancelApproval()">Cancel</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+<!-- <img ngSrc='assets/info1.jpeg' height="450" width="800"> -->

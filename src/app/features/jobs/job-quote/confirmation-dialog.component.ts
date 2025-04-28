@@ -16,8 +16,8 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button class="dialog-btn return-btn" (click)="onReturn()">Return to Work</button>
-      <button mat-button class="dialog-btn confirm-btn" (click)="onConfirm()">Yes, Cancel</button>
+      <button mat-button class="dialog-btn return-btn" (click)="onReturn()">No</button>
+      <button mat-button class="dialog-btn confirm-btn" (click)="onConfirm()">Yes</button>
     </mat-dialog-actions>
   `,
   styles: [`
@@ -58,12 +58,12 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
     }
 
     .confirm-btn {
-      background-color: #da4167; /* Red */
+      background-color: #FBD008; /* Red */
       color: white;
     }
 
     .confirm-btn:hover {
-      background-color: #c0395a; /* Darker red */
+      background-color: #FBD008; /* Darker red */
     }
   `]
 })

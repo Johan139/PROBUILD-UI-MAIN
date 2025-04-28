@@ -13,24 +13,50 @@ export class JobsService {
 
   constructor(private httpClient: HttpClient) { }
 
-  createJob(jobForm:any) {
-      this.httpClient.post(BASE_URL, jobForm);
+  createJob(jobForm: any, addressModel: any) {
+    this.httpClient.post(`${BASE_URL}/Jobs`, { job: jobForm, address: addressModel });
   }
 
   updateJob(jobData: any, id: any): Observable<any> {
     return this.httpClient.put<any>(BASE_URL+'/'+id, jobData,{headers:{'Content-Type': 'application/json'}});
   }
 
+
+  
   getAllJobsByUserId(userId: string): Observable<any> {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
 
+// Updated to use documentId instead of blobUrl
+downloadJobDocument(documentId: number): Observable<Blob> {
+  return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
+}
+downloadNoteDocument(documentId: number): Observable<Blob> {
+  return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
+}
+  getJobDocuments(jobId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
+  }
   getAllJobs() {
     this.httpClient.get(BASE_URL)
   }
 
+  saveSubtasks(subtaskList: any[]): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/subtask`, subtaskList, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  getJobSubtasks(jobId: number): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
+  }
   getSpecificJob(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/Id/' +jobId)
+  }
+  GetBillOfMaterials(jobId: any):  Observable<any>  {
+    return this.httpClient.get(BASE_URL+'/processing-results/' +jobId)
+  }
+  GetBillOfMaterialsStatus(jobId: any):  Observable<any>  {
+    return this.httpClient.get(BASE_URL+'processing-results/' +jobId)
   }
 
   setJobCard(jobForm:any){

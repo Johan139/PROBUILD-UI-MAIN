@@ -6,7 +6,7 @@
     "start": "ng serve",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "set-env": "node set-env.ts",
+    "set-env": "node set-env.js",
     "build": "npm run set-env && ng build --configuration production",
     "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs"
   },
@@ -57,6 +57,7 @@
     "@types/body-parser": "^1.19.5",
     "@types/estree": "^1.0.6",
     "@types/express": "^4.17.17",
+    "@types/google.maps": "^3.58.1",
     "@types/jasmine": "~5.1.0",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^18.18.0",

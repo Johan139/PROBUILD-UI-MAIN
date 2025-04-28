@@ -62,9 +62,310 @@ mat-divider {
   }
 }
 
+/* Timeline Section */
+.timeline-section {
+  padding: 2rem;
+  background-color: $white;
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: $shadow;
+  border: 1px solid $light-gray;
+}
+
+.timeline-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: $dark-gray;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.timeline-divider {
+  background-color: $primary-yellow;
+  height: 4px;
+  margin: 0 auto 2rem;
+  width: 120px;
+  border-radius: 2px;
+}
+
 /* Chart Container */
 .chart-container {
-  padding: 1rem 0;
+  padding: 1.5rem;
+  max-width: 1200px;
+  background-color: #f9f9f9;
+  border: 2px solid $secondary-yellow;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03), $shadow;
+  margin: 0 auto;
+  max-width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+::ng-deep .subtask-note-dialog .mat-mdc-dialog-surface {
+  width: 50vw !important;
+  max-width: 90vw !important;
+  margin: auto !important; /* ✅ CENTER horizontally and vertically */
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important; /* ✅ PERFECT center */
+  position: absolute !important; /* ✅ Needed for translate to work */
+}
+.ng-deep .subtask-note-dialog .mat-dialog-container {
+  padding: 2rem !important;
+  border-radius: 20px;
+  background-color: #fefef6;
+  height: 80vh; // ensure dialog uses height
+  display: flex;
+  flex-direction: column;
+}
+
+.subtask-note-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.upload-icon {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+/* File Upload */
+.custom-file-upload {
+  position: relative;
+  display: inline-block;
+}
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between icon and text */
+  padding: 10px 20px; /* Larger padding */
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box; /* Include padding in width */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.upload-label:hover {
+  background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
+.custom-file-upload input[type="file"] {
+  display: none; /* Ensure input is hidden */
+  opacity: 0; /* Additional layer of hiding */
+  width: 0; /* Prevent any residual space */
+  height: 0; /* Prevent any residual space */
+}
+.note-content {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.note-field {
+  width: 100%;
+  height: 100%;
+}
+
+textarea[matInput] {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  font-size: 1rem;
+  padding: 1rem;
+  background-color: #fffdf5;
+  border-radius: 8px;
+}
+.btn-primary {
+  background-color: $primary-yellow;
+  color: $primary-yellow;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  transition: background 0.2s ease;
+  &:hover {
+    background-color: #0d5f17;
+  }
+}
+.subtask-note-modal {
+  background-color: #fefef6;
+  padding: 2rem;
+  border-radius: 20px;
+  max-width: 2000vw;
+  max-height: 90vh;
+  width: 100%;
+  height: auto; /* ✅ allow natural grow/shrink */
+  max-height: 90vh; /* ✅ cap it nicely */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.subtask-note-modal {
+  width: 200vw !important;
+  max-width: 100%;
+  height: 75vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem 2rem 1rem;
+  background-color: #fefef6;
+  border-radius: 20px;
+}
+::ng-deep .super-wide-dialog .mat-mdc-dialog-surface {
+  width: 90vw !important;
+  max-width: 90vw !important;
+}
+
+::ng-deep .super-wide-dialog .mat-mdc-dialog-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  background: #fefef6;
+  border-radius: 20px;
+  padding: 2rem;
+}
+.note-content {
+  flex-grow: 1;
+  overflow: auto;
+  margin-top: 1rem;
+}
+
+.note-field {
+  width: 100%;
+  height: 100%;
+}
+
+textarea[matInput] {
+  min-height: 300px;
+  height: 100%;
+  font-size: 1rem;
+  padding: 1rem;
+  background-color: #fffdf5;
+  border-radius: 8px;
+  resize: none;
+}
+.btn-outline {
+  background: transparent;
+  color: $primary-yellow;
+  border: 1px solid #127c20;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background 0.2s ease;
+  &:hover {
+    background-color: rgba(18, 124, 32, 0.1);
+  }
+}
+.timeline-wrapper {
+  background: linear-gradient(135deg, $white 0%, #f9f9f9 100%);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid $light-gray;
+}
+
+/* Gantt Chart Styling */
+.gantt-chart {
+  font-family: Arial, sans-serif;
+  width: 100%;
+  min-height: 200px;
+  position: relative;
+  display: flex;
+}
+
+/* Style for the task labels (left side) */
+.gantt-chart .task-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 200px; /* Increased width to prevent overlap */
+  padding: 0.5rem 1rem;
+  background-color: $white;
+  border-right: 2px solid $light-gray;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.gantt-chart .task-label {
+  font-size: 0.9rem;
+  color: $dark-gray;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Style for the timeline grid */
+.gantt-chart .timeline-grid {
+  margin-left: 200px; /* Match the task-labels width to prevent overlap */
+  position: relative;
+  flex-grow: 1;
+  background: repeating-linear-gradient(
+    to right,
+    transparent,
+    transparent 1px,
+    $light-gray 1px,
+    $light-gray 2px
+  );
+  background-size: 40px 100%;
+}
+
+/* Style for the date labels (bottom) */
+.gantt-chart .date-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 200px; /* Match the task-labels width */
+  padding: 0.5rem 0;
+  border-top: 1px solid $light-gray;
+}
+
+.gantt-chart .date-label {
+  font-size: 0.85rem;
+  color: $dark-gray;
+  text-align: center;
+  flex: 1;
+}
+
+/* Style for the task bars */
+.gantt-chart .task-bar {
+  position: absolute;
+  height: 20px;
+  background-color: $cyan;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-left: 200px; /* Ensure bars start after the labels */
+  box-sizing: border-box;
+}
+
+.gantt-chart .task-bar:hover {
+  background-color: $primary-yellow;
+  cursor: pointer;
+}
+
+/* Style for the tooltip (on hover) */
+.gantt-chart .task-bar:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: $dark-gray;
+  color: $white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 10;
 }
 
 /* Subtask Section */
@@ -120,12 +421,36 @@ mat-divider {
     background-color: $light-gray;
   }
 }
+.imgBtn {
+  width: 200px; /* Fixed width */
+  height: 40px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+&:hover {
+  background: $darker-yellow;
+}
+}
+
+.submit-btn-note {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  
+  &:hover {
+    background: $darker-yellow;
+  }
+}
 
 /* Buttons */
 .submit-btn {
   background: $primary-yellow;
   border-radius: 10px;
-  padding: 8px 16px;
+  padding: 0px 16px;
   font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
@@ -149,10 +474,10 @@ mat-divider {
   }
   
   &.delete-btn {
-    background: #da4167;
-    color: $white;
+    background: #fbd008;
+    color: $dark-gray;
     &:hover {
-      background: darken(#da4167, 10%);
+      background: $darker-yellow;
     }
   }
 }
@@ -193,6 +518,347 @@ mat-divider {
   }
 }
 
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timeline-section {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Documents Dialog */
+.documents-dialog {
+  padding: 1rem;
+
+  h2[mat-dialog-title] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    margin-bottom: 1rem;
+  }
+}
+
+.no-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  &[error] {
+    color: #da4167;
+    font-weight: 500;
+  }
+}
+
+.loading-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+  }
+}
+
+.documents-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $light-gray;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $cyan;
+    border-radius: 3px;
+  }
+}
+/* Form Styling */
+.form-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px; /* More space */
+  gap: 20px; /* Increased gap */
+}
+.button-row {
+  display: flex;
+  align-items: center; /* Align items vertically */
+  gap: 10px; /* Smaller gap between Generate Quote and Cancel buttons */
+  margin-right: 20px; /* Space between the button group and the upload container */
+}
+.upload-container {
+  display: flex;
+  align-items: center; /* Align progress bar and upload button vertically */
+  gap: 15px; /* Space between progress bar and upload button */
+}
+.button-group {
+  display: flex;
+  gap: 10px; /* Small space between Generate Quote and Cancel buttons */
+}
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #f9f9f9; /* Light background for contrast */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0 0 5px 0; /* Space below the text */
+    font-size: 12px; /* Smaller text */
+    color: #333; /* Darker text */
+  }
+
+  mat-progress-bar {
+    width: 150px; /* Slightly smaller for better fit */
+    height: 8px; /* Thinner bar */
+    border-radius: 4px; /* Rounded edges */
+  }
+
+  /* Customize the progress bar color */
+  ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
+    background-color: #FBD008 !important; /* Retain yellow */
+  }
+
+  ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
+    background-color: #e0e0e0 !important; /* Light gray buffer */
+  }
+}
+.upload-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 15px; /* Space to the left of the upload button */
+  background-color: #e6ffe6; /* Light green background for success */
+  padding: 8px; /* Add padding for better appearance */
+  border-radius: 6px; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+
+  p {
+    margin: 0; /* Remove default margin */
+    font-size: 12px; /* Smaller text */
+    color: #2e7d32; /* Dark green text for success */
+  }
+}
+/* File Upload */
+.custom-file-upload {
+  position: relative;
+  display: inline-block;
+}
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between icon and text */
+  padding: 10px 20px; /* Larger padding */
+  background-color: #FBD008; /* Retain yellow */
+  color: #333; /* Darker text */
+  font-weight: 500;
+  border-radius: 8px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box; /* Include padding in width */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.upload-label:hover {
+  background-color: #e6bf00; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
+
+.upload-icon {
+  height: 24px;
+  width: 24px;
+  vertical-align: middle;
+}
+.custom-file-upload input[type="file"] {
+  display: none; /* Ensure input is hidden */
+  opacity: 0; /* Additional layer of hiding */
+  width: 0; /* Prevent any residual space */
+  height: 0; /* Prevent any residual space */
+}
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #f9f9f9;
+    border-color: $cyan;
+    box-shadow: $shadow;
+  }
+}
+
+.document-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: $black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+
+.document-meta {
+  font-size: 0.85rem;
+  color: $dark-gray;
+}
+
+.view-btn {
+  background-color: $primary-yellow;
+  color: $black;
+  padding: 0.25rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-left: 1rem;
+
+  &:hover {
+    background-color: $darker-yellow;
+    color: $dark-gray;
+  }
+}
+
+mat-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+
+  .submit-btn {
+    background: $primary-yellow;
+    color: $dark-gray;
+
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+}
+
+/* Report Dialog */
+.report-dialog {
+  padding: 1.5rem;
+
+  .report-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 1rem;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $light-gray;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $cyan;
+      border-radius: 3px;
+    }
+  }
+
+  .report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .report-item {
+    border: 1px solid $light-gray;
+    border-radius: 8px;
+    padding: 1rem;
+    background-color: $white;
+    box-shadow: $shadow;
+  }
+
+  .report-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .report-section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: $dark-gray;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid $secondary-yellow;
+    padding-bottom: 0.25rem;
+  }
+
+  .report-section-content {
+    padding-left: 0.5rem;
+  }
+
+  .report-text {
+    p {
+      margin: 0.5rem 0;
+      color: $black;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+  }
+
+  .report-list-items {
+    ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    li {
+      color: $black;
+      margin-bottom: 0.25rem;
+      line-height: 1.5;
+    }
+  }
+
+  .report-table {
+    margin: 0.5rem 0;
+
+    .themed-table {
+      th, td {
+        padding: 10px;
+        word-wrap: break-word;
+      }
+    }
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
@@ -213,5 +879,122 @@ mat-divider {
       font-size: 0.8rem;
       padding: 6px;
     }
+  }
+
+  .timeline-section {
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .timeline-title {
+    font-size: 1.5rem;
+  }
+
+  .chart-container {
+    padding: 1rem;
+  }
+
+  .timeline-divider {
+    width: 80px;
+    margin-bottom: 1.5rem;
+  }
+
+  .gantt-chart .task-labels {
+    width: 120px; /* Reduced width for mobile */
+  }
+
+  .gantt-chart .timeline-grid {
+    margin-left: 120px; /* Match the reduced width */
+  }
+
+  .gantt-chart .date-labels {
+    margin-left: 120px; /* Match the reduced width */
+  }
+
+  .gantt-chart .task-bar {
+    margin-left: 120px; /* Match the reduced width */
+    height: 16px;
+  }
+
+  .gantt-chart .task-label {
+    font-size: 0.8rem;
+  }
+
+  .gantt-chart .date-label {
+    font-size: 0.75rem;
+  }
+
+  /* Responsive styles for the documents dialog */
+  .documents-dialog {
+    padding: 0.5rem;
+  }
+
+  .document-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
+  .document-info {
+    margin-bottom: 0.5rem;
+  }
+
+  .view-btn {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .document-name {
+    font-size: 0.9rem;
+  }
+
+  .document-meta {
+    font-size: 0.75rem;
+  }
+
+  /* Responsive styles for the report dialog */
+  .report-dialog {
+    padding: 1rem;
+
+    .report-content {
+      padding-right: 0.5rem;
+    }
+
+    .report-section-title {
+      font-size: 1.1rem;
+    }
+
+    .report-text {
+      p {
+        font-size: 0.9rem;
+      }
+    }
+
+    .report-list-items {
+      ul {
+        padding-left: 1rem;
+      }
+
+      li {
+        font-size: 0.9rem;
+      }
+    }
+
+    .report-table {
+      .themed-table {
+        th, td {
+          font-size: 0.8rem;
+          padding: 6px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 1400px) {
+  .report-dialog {
+    width: 100vw;
+    margin: 0 auto;
   }
 }
