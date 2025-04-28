@@ -8,123 +8,123 @@ $shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 $darker-yellow: #e6bf00;
 
 .container {
-    width: 95vw !important; /* Retain original width */
-    margin-top: 2rem;
-    //display: flex; /* Ensure flexbox for side-by-side */
-    //gap: 24px; /* Space between columns */
-  }
+  width: 95vw !important;
+  margin-top: 2rem;
+}
 
-/* Profile card matches mat-card from primary */
 .profile-card {
   background-color: $white;
-  border: 1px solid $cyan; /* Matches primary mat-card */
-  box-shadow: $shadow; /* Matches primary mat-card */
-  border-radius: 8px; /* Matches primary mat-card */
-  padding: 16px; /* Matches primary mat-card */
-  height: auto; /* Matches primary project-card/job-quote-card */
+  border: 1px solid $cyan;
+  box-shadow: $shadow;
+  border-radius: 8px;
+  padding: 16px;
+  height: auto;
 
-  /* Explicitly style mat-card-title to match primary */
   mat-card-title {
-    font-size: 1.5rem; /* Matches primary mat-card-title */
-    font-weight: 700; /* Matches primary mat-card-title */
-    color: $dark-gray; /* Matches primary mat-card-title */
-    text-transform: uppercase; /* Matches primary mat-card-title */
-    margin-bottom: 12px; /* Matches primary mat-card-title */
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    text-transform: uppercase;
+    margin-bottom: 12px;
   }
 
-  /* Ensure mat-divider matches primary at the card level */
   mat-divider {
-    background-color: $secondary-yellow; /* Matches primary mat-divider */
-    border: none; /* Matches primary mat-divider */
-    height: 2px; /* Matches primary mat-divider */
-    margin: 16px 0; /* Matches primary mat-divider */
+    background-color: $secondary-yellow;
+    border: none;
+    height: 2px;
+    margin: 16px 0;
   }
 }
 
-/* Content layout */
 .profile-content {
-  margin-top: 16px; /* Matches table margin-top in primary */
+  margin-top: 16px;
 }
 
-/* Section headers */
 .section {
   h3 {
-    font-size: 1.5rem; /* Matches mat-card-title in primary */
-    font-weight: 700; /* Matches mat-card-title */
-    color: $dark-gray; /* Matches mat-card-title */
-    text-transform: uppercase; /* Matches mat-card-title */
-    margin-bottom: 12px; /* Matches mat-card-title */
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    text-transform: uppercase;
+    margin-bottom: 12px;
   }
 }
 
-/* Form row styling to match primary */
 .form-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between; /* Matches primary form-row */
-  align-items: flex-start; /* Matches primary form-row */
-  margin-bottom: 20px; /* Matches primary form-row */
-  gap: 20px; /* Matches primary form-row */
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
 
   mat-form-field {
-    flex: 1; /* Matches primary mat-form-field */
-    width: 100%; /* Matches primary mat-form-field */
+    flex: 1;
+    width: 100%;
 
-    /* Match primary Material overrides */
     ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
       background-color: $white !important;
-      border-radius: 6px; /* Matches primary */
-      border: 1px solid $cyan; /* Matches primary */
+      border-radius: 6px;
+      border: 1px solid $cyan;
     }
     ::ng-deep .mdc-floating-label {
       position: static !important;
-      font-size: 0.9rem; /* Matches primary */
-      color: $dark-gray; /* Matches primary */
+      font-size: 0.9rem;
+      color: $dark-gray;
     }
     ::ng-deep .mdc-text-field .mdc-floating-label {
       transform: translateY(-60%) !important;
     }
   }
 
-  /* File upload styling */
+  /* Fix for mat-select dropdown positioning */
+  ::ng-deep .mat-mdc-select-panel {
+    max-height: 256px;
+    overflow-y: auto;
+    margin-top: 4px;
+    transform: translateY(0) !important;
+    position: absolute !important;
+    z-index: 1000;
+  }
+
   .custom-file-upload {
     position: relative;
     display: inline-block;
-    text-align: center; /* Matches primary */
+    text-align: center;
 
     .upload-label {
       display: flex;
       align-items: center;
-      gap: 10px; /* Matches primary */
-      padding: 10px 20px; /* Matches primary */
-      background-color: $primary-yellow; /* Matches primary */
-      color: $dark-gray; /* Matches primary */
-      font-weight: 500; /* Matches primary */
-      border-radius: 8px; /* Matches primary */
+      gap: 10px;
+      padding: 10px 20px;
+      background-color: $primary-yellow;
+      color: $dark-gray;
+      font-weight: 500;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s ease; /* Matches primary */
-      width: 100%; /* Matches primary */
-      box-sizing: border-box; /* Matches primary */
+      transition: background-color 0.3s ease;
+      width: 100%;
+      box-sizing: border-box;
 
       &:hover {
-        background-color: $darker-yellow; /* Matches primary upload-label hover */
+        background-color: $darker-yellow;
       }
     }
 
     input[type="file"] {
-      display: none; /* Matches primary */
-      opacity: 0; /* Matches primary */
-      width: 0; /* Matches primary */
-      height: 0; /* Matches primary */
+      display: none;
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
 
     .file-info {
-      font: 0.9rem sans-serif; /* Matches primary tr */
+      font: 0.9rem sans-serif;
       color: $dark-gray;
       margin-top: 0.5rem;
 
       a {
-        color: $cyan; /* Matches primary draft class */
+        color: $cyan;
         text-decoration: none;
         &:hover {
           text-decoration: underline;
@@ -133,19 +133,17 @@ $darker-yellow: #e6bf00;
     }
   }
 
-  /* Submit button */
   .submit-btn {
-    background-color: $primary-yellow; /* Matches primary */
-    color: $dark-gray; /* Matches primary */
-    font-weight: 500; /* Matches primary */
-    border-radius: 8px; /* Matches primary */
-    padding: 10px 20px; /* Matches primary */
-    transition: background-color 0.3s ease; /* Matches primary */
-    width: 200px; /* Matches primary */
-    margin-top: 10px; /* Matches primary */
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+    width: 200px;
+    margin-top: 10px;
 
     &:hover {
-      background-color: $darker-yellow; /* Matches primary button hover */
+      background-color: $darker-yellow;
     }
   }
 
@@ -167,11 +165,6 @@ $darker-yellow: #e6bf00;
     background-color: #ffebee;
   }
 
-  .loading-container {
-    text-align: center;
-    padding: 20px;
-  }
-
   button[disabled] {
     opacity: 0.6;
     cursor: not-allowed;
@@ -180,30 +173,64 @@ $darker-yellow: #e6bf00;
   mat-checkbox {
     margin-left: 10px;
   }
-  
 }
 
-/* Responsive adjustments to match primary */
+.mat-elevation-z8 {
+  margin-top: 20px;
+  border: 1px solid $cyan;
+  border-radius: 8px;
+  overflow: hidden;
+
+  mat-header-cell, mat-cell {
+    padding: 10px;
+    color: $dark-gray;
+  }
+
+  mat-header-cell {
+    background-color: $secondary-yellow;
+    font-weight: 700;
+  }
+
+  mat-row:hover {
+    background-color: lighten($cyan, 40%);
+  }
+
+  mat-icon-button {
+    color: $dark-gray;
+
+    &:hover {
+      color: $cyan;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .form-row {
-    flex-direction: column; /* Matches primary */
-    gap: 12px; /* Matches primary */
+    flex-direction: column;
+    gap: 12px;
 
     mat-form-field {
-      flex: none; /* Matches primary */
-      width: 100%; /* Matches primary */
+      flex: none;
+      width: 100%;
     }
 
     .custom-file-upload .upload-label {
-      padding: 8px 16px; /* Slightly smaller for mobile, consistent with primary */
+      padding: 8px 16px;
     }
 
     .submit-btn {
-      padding: 8px 16px; /* Slightly smaller for mobile */
+      padding: 8px 16px;
     }
   }
 
   .section h3 {
-    font-size: 1.2rem; /* Slightly smaller for mobile, adjusted from primary */
+    font-size: 1.2rem;
+  }
+
+  .mat-elevation-z8 {
+    mat-header-cell, mat-cell {
+      padding: 8px;
+      font-size: 0.9rem;
+    }
   }
 }

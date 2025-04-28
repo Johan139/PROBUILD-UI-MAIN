@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError,of } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Profile } from './profile.model';
+import { Profile, TeamMember, Document } from './profile.model';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth.service';
 
@@ -10,22 +10,35 @@ import { AuthService } from '../auth.service';
   providedIn: 'root'
 })
 export class ProfileService {
-  
   private apiUrl = `${environment.BACKEND_URL}/profile`;
-  
-  constructor(private http: HttpClient,
-    private authService: AuthService) {}
 
-    private getHeaders(): HttpHeaders {
-      const token = this.authService.getToken();
-      return new HttpHeaders({
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      });
-    }
+  // Dummy data for team members
+  private dummyTeamMembers: TeamMember[] = [
+    { name: 'John Doe', role: 'BUILDER', email: 'john.doe@example.com' },
+    { name: 'Jane Smith', role: 'FOREMAN', email: 'jane.smith@example.com' }
+  ];
+
+  // Dummy data for documents
+  private dummyDocuments: Document[] = [
+    { name: 'Certification.pdf', type: 'Certification', path: 'https://example.com/cert.pdf', uploadedDate: new Date('2025-01-15') },
+    { name: 'License.docx', type: 'License', path: 'https://example.com/license.docx', uploadedDate: new Date('2025-02-20') }
+  ];
+
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    });
+  }
 
   getProfile(): Observable<Profile> {
-    const userId = this.authService.currentUserSubject.value?.id; // Get userId from AuthService
+    const userId = this.authService.currentUserSubject.value?.id;
     if (!userId) {
       console.error('No userId available');
       return throwError(() => new Error('User not authenticated'));
@@ -61,5 +74,27 @@ export class ProfileService {
           return throwError(() => new Error('Failed to upload certification'));
         })
       );
+  }
+
+  getTeamMembers(): Observable<TeamMember[]> {
+    // Simulate API call with dummy data
+    return of(this.dummyTeamMembers);
+  }
+
+  addTeamMember(member: TeamMember): Observable<TeamMember> {
+    // Simulate adding to dummy data
+    this.dummyTeamMembers.push(member);
+    return of(member);
+  }
+
+  removeTeamMember(email: string): Observable<void> {
+    // Simulate removing from dummy data
+    this.dummyTeamMembers = this.dummyTeamMembers.filter(member => member.email !== email);
+    return of(void 0);
+  }
+
+  getDocuments(): Observable<Document[]> {
+    // Simulate API call with dummy data
+    return of(this.dummyDocuments);
   }
 }
