@@ -1,34 +1,38 @@
 <div class="container">
-<div class="row">
-  <div class="fullcolumn">
+  <div class="row">
+    <div class="fullcolumn">
       <mat-card class="profile-card">
         <mat-card-header>
-          <mat-card-title>User Profile</mat-card-title>&nbsp;&nbsp;&nbsp;&nbsp;
-          <mat-icon *ngIf="!isVerified" svgIcon="verified" aria-placeholder="Account has been verified."></mat-icon>
-          <mat-icon *ngIf="isVerified" svgIcon="notVerified" aria-placeholder="Account has not been verified."></mat-icon>
+          <mat-card-title>User Profile</mat-card-title>    
+          <mat-icon *ngIf="!isVerified" svgIcon="verified" aria-label="Account has been verified."></mat-icon>
+          <mat-icon *ngIf="isVerified" svgIcon="notVerified" aria-label="Account has not been verified."></mat-icon>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
           <div class="profile-content">
-            <div *ngIf="successMessage" class="success-message">
-              {{ successMessage }}
-            </div>
-            <div *ngIf="errorMessage" class="error-message">
-              {{ errorMessage }}
-            </div>
+            <mat-tab-group>
+              <!-- Profile Tab -->
+              <mat-tab label="Profile">
+                <div *ngIf="successMessage" class="success-message">
+                  {{ successMessage }}
+                </div>
+                <div *ngIf="errorMessage" class="error-message">
+                  {{ errorMessage }}
+                </div>
 
-            <!-- Role Switcher Dropdown (For Dev Testing) -->
-            <div class="form-row role-switcher">
-              <mat-form-field appearance="fill">
-                <mat-label>Switch Role (Dev Mode)</mat-label>
-                <mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)">
-                  <mat-option *ngFor="let role of availableRoles" [value]="role">
-                    {{ role }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-                <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+                <!-- Role Switcher Dropdown (For Dev Testing) -->
+                <div class="form-row role-switcher" *ngIf="profileForm">
+                  <mat-form-field appearance="fill">
+                    <mat-label>Switch Role (Dev Mode)</mat-label>
+                    <mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel">
+                      <mat-option *ngFor="let role of availableRoles" [value]="role">
+                        {{ role }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm">
                   <!-- Personal Information -->
                   <div class="section" *ngIf="canViewPersonalInfo()">
                     <h3>Personal Information</h3>
@@ -56,7 +60,7 @@
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>User Type</mat-label>
-                        <mat-select formControlName="userType" readonly>
+                        <mat-select formControlName="userType" panelClass="custom-select-panel">
                           <mat-option value="BUILDER">Builder</mat-option>
                           <mat-option value="CONSTRUCTION">Construction</mat-option>
                           <mat-option value="FOREMAN">Foreman</mat-option>
@@ -89,7 +93,7 @@
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Construction Type</mat-label>
-                        <mat-select formControlName="constructionType">
+                        <mat-select formControlName="constructionType" panelClass="custom-select-panel">
                           <mat-option value="RESIDENTIAL">Residential</mat-option>
                           <mat-option value="COMMERCIAL">Commercial</mat-option>
                           <mat-option value="INDUSTRIAL">Industrial</mat-option>
@@ -116,7 +120,7 @@
                     <div class="form-row">
                       <mat-form-field appearance="fill">
                         <mat-label>Availability</mat-label>
-                        <mat-select formControlName="availability">
+                        <mat-select formControlName="availability" panelClass="custom-select-panel">
                           <mat-option value="Full-time">Full-time</mat-option>
                           <mat-option value="Part-time">Part-time</mat-option>
                           <mat-option value="On-demand">On-demand</mat-option>
@@ -124,7 +128,7 @@
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Certification Status</mat-label>
-                        <mat-select formControlName="certificationStatus">
+                        <mat-select formControlName="certificationStatus" panelClass="custom-select-panel">
                           <mat-option value="Certified">Certified</mat-option>
                           <mat-option value="Pending">Pending</mat-option>
                           <mat-option value="Not Certified">Not Certified</mat-option>
@@ -175,7 +179,7 @@
                         <input matInput formControlName="deliveryArea" placeholder=" " />
                       </mat-form-field>
                       <mat-form-field appearance="fill">
-                        <mat-label>Delivery Time</mat-label>
+                        <mat-label>Lead Time</mat-label>
                         <input matInput formControlName="deliveryTime" placeholder=" " />
                       </mat-form-field>
                     </div>
@@ -201,7 +205,7 @@
                     <div class="form-row">
                       <mat-form-field appearance="fill">
                         <mat-label>Subscription Package</mat-label>
-                        <input matInput formControlName="subscriptionPackage" placeholder=" " readonly />
+                        <input matInput formControlName="subscriptionPackage" placeholder=" " />
                       </mat-form-field>
                     </div>
                   </div>
@@ -216,6 +220,111 @@
                     </button>
                   </div>
                 </form>
+              </mat-tab>
+
+              <!-- Team Management Tab -->
+              <mat-tab label="Team Management">
+                <div class="section">
+                  <h3>Add Team Member</h3>
+                  <form [formGroup]="teamForm" (ngSubmit)="addTeamMember()">
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Name</mat-label>
+                        <input matInput formControlName="name" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('name')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Role</mat-label>
+                        <mat-select formControlName="role" panelClass="custom-select-panel">
+                          <mat-option *ngFor="let role of availableRoles" [value]="role">
+                            {{ role }}
+                          </mat-option>
+                        </mat-select>
+                        <mat-error *ngIf="teamForm.get('role')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Email</mat-label>
+                        <input matInput formControlName="email" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('email')?.hasError('required')">
+                          Mandatory Field: Input Required.
+                        </mat-error>
+                        <mat-error *ngIf="teamForm.get('email')?.hasError('email')">
+                          Invalid email format.
+                        </mat-error>
+                      </mat-form-field>
+                      <button mat-raised-button 
+                              type="submit" 
+                              class="submit-btn" 
+                              [disabled]="teamForm.invalid">
+                        Add Member
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                <div class="section">
+                  <h3>Team Members</h3>
+                  <mat-table [dataSource]="teamMembers" class="mat-elevation-z8">
+                    <ng-container matColumnDef="name">
+                      <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+                      <mat-cell *matCellDef="let member">{{ member.name }}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="role">
+                      <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
+                      <mat-cell *matCellDef="let member">{{ member.role }}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="email">
+                      <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
+                      <mat-cell *matCellDef="let member">{{ member.email }}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="actions">
+                      <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                      <mat-cell *matCellDef="let member">
+                        <button mat-icon-button color="warn" (click)="removeTeamMember(member.email)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </mat-cell>
+                    </ng-container>
+                    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+                    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+                  </mat-table>
+                </div>
+              </mat-tab>
+
+              <!-- Documents Tab -->
+              <mat-tab label="Documents">
+                <div class="section">
+                  <h3>Profile Documents</h3>
+                  <mat-table [dataSource]="documents" class="mat-elevation-z8">
+                    <ng-container matColumnDef="name">
+                      <mat-header-cell *matHeaderCellDef>Document Name</mat-header-cell>
+                      <mat-cell *matCellDef="let doc">{{ doc.name }}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="type">
+                      <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
+                      <mat-cell *matCellDef="let doc">{{ doc.type }}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="uploadedDate">
+                      <mat-header-cell *matHeaderCellDef>Uploaded Date</mat-header-cell>
+                      <mat-cell *matCellDef="let doc">{{ doc.uploadedDate}}</mat-cell>
+                    </ng-container>
+                    <ng-container matColumnDef="actions">
+                      <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                      <mat-cell *matCellDef="let doc">
+                        <a [href]="doc.path" target="_blank" mat-icon-button>
+                          <mat-icon>visibility</mat-icon>
+                        </a>
+                      </mat-cell>
+                    </ng-container>
+                    <mat-header-row *matHeaderRowDef="documentColumns"></mat-header-row>
+                    <mat-row *matRowDef="let row; columns: documentColumns;"></mat-row>
+                  </mat-table>
+                </div>
+              </mat-tab>
+            </mat-tab-group>
           </div>
         </mat-card-content>
       </mat-card>

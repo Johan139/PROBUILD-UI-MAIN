@@ -1,0 +1,190 @@
+<div class="container">
+  <div class="fullcolumn">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title class="professional-title">Job Quote</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-divider class="section-divider"></mat-divider>
+        <form [formGroup]="quoteForm" #quoteContent>
+          
+          <!-- Header Section -->
+          <div class="row header-section">
+            <div class="col-md-8">
+              <div class="logo noselect">
+                <div class="placeholder" *ngIf="!logoUrl">
+                  <div class="main">
+                    <span class="material-icons">add</span> Add Your Logo
+                  </div>
+                </div>
+                <img *ngIf="logoUrl" [src]="logoUrl" alt="Your Logo" class="logo-image">
+                <input type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)" tabindex="12">
+                <button *ngIf="logoUrl" mat-icon-button class="remove-logo" (click)="removeLogo()" tabindex="13">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="title">
+                <input type="text" class="form-control input-label text-dark" formControlName="header" placeholder="INVOICE" tabindex="10">
+                <div class="subtitle">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">#</span>
+                    <input class="form-control border-start-0 ps-0" type="text" formControlName="number" tabindex="11">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Section -->
+          <div class="row contact-details-section">
+            <div class="col-md-7">
+              <textarea class="form-control form-control-sm" formControlName="from" placeholder="Who is this from?" rows="3"></textarea>
+              <div class="row mt-2">
+                <div class="col-md-6">
+                  <input type="text" class="form-control form-control-sm mb-1" formControlName="toTitle" placeholder="Bill To">
+                  <textarea class="form-control form-control-sm" formControlName="to" placeholder="Who is this to?" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" class="form-control form-control-sm mb-1" formControlName="shipToTitle" placeholder="Ship To">
+                  <textarea class="form-control form-control-sm" formControlName="shipTo" placeholder="(optional)" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div class="invoice-details">
+                <label>Date</label>
+                <input class="form-control form-control-sm mb-2" type="date" formControlName="date">
+                <label>Payment Terms</label>
+                <input class="form-control form-control-sm mb-2" type="text" formControlName="paymentTerms">
+                <label>Due Date</label>
+                <input class="form-control form-control-sm mb-2" type="date" formControlName="dueDate">
+                <label>PO Number</label>
+                <input class="form-control form-control-sm" type="text" formControlName="poNumber">
+              </div>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="items-holder mt-4">
+            <div class="items-table-container mat-elevation-z8" style="box-shadow: none;">
+              <table mat-table [dataSource]="dataSource" class="themed-table">
+                <!-- Item Column -->
+                <ng-container matColumnDef="description">
+                  <th mat-header-cell *matHeaderCellDef>
+                    <input type="text" class="form-control form-control-sm" formControlName="itemHeader" placeholder="Item">
+                  </th>
+                  <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+                    <textarea class="form-control form-control-sm" formControlName="description" placeholder="Description of item/service..." rows="2"></textarea>
+                  </td>
+                </ng-container>
+
+                <!-- Quantity Column -->
+                <ng-container matColumnDef="quantity">
+                  <th mat-header-cell *matHeaderCellDef>
+                    <input type="text" class="form-control form-control-sm" formControlName="quantityHeader" placeholder="Quantity">
+                  </th>
+                  <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+                    <input type="number" class="form-control form-control-sm" formControlName="quantity" min="1">
+                  </td>
+                </ng-container>
+
+                <!-- Rate Column -->
+                <ng-container matColumnDef="unitPrice">
+                  <th mat-header-cell *matHeaderCellDef>
+                    <input type="text" class="form-control form-control-sm" formControlName="unitCostHeader" placeholder="Rate">
+                  </th>
+                  <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+                    <input type="number" class="form-control form-control-sm" formControlName="unitPrice" min="0" step="any">
+                  </td>
+                </ng-container>
+
+                <!-- Amount Column -->
+                <ng-container matColumnDef="total">
+                  <th mat-header-cell *matHeaderCellDef>
+                    <input type="text" class="form-control form-control-sm" formControlName="amountHeader" placeholder="Amount">
+                  </th>
+                  <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+                    ${{ element.get('total')?.value || '0.00' }}
+                  </td>
+                </ng-container>
+
+                <!-- Remove Column -->
+                <ng-container matColumnDef="remove">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let element; let i = index">
+                    <button *ngIf="quoteRows.length > 1" type="button" class="btn btn-link text-danger" (click)="removeRow(i)">
+                      <span class="material-icons">close</span>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" (click)="addRow()">
+              <span class="material-icons">add</span> Line Item
+            </button>
+          </div>
+
+          <!-- Footer Section -->
+          <div class="row footer-section mt-4">
+            <div class="col-md-6">
+              <div class="notes-holder">
+                <input type="text" class="form-control form-control-sm mb-1" formControlName="notesTitle" placeholder="Notes">
+                <textarea class="form-control form-control-sm" formControlName="notes" placeholder="Additional notes..." rows="3"></textarea>
+              </div>
+              <div class="terms-holder mt-2">
+                <input type="text" class="form-control form-control-sm mb-1" formControlName="termsTitle" placeholder="Terms">
+                <textarea class="form-control form-control-sm" formControlName="terms" placeholder="Terms and conditions..." rows="3"></textarea>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="totals-section">
+                <div class="d-flex justify-content-between">
+                  <label>Subtotal</label>
+                  <div>${{ getSubtotal() }}</div>
+                </div>
+                <div *ngFor="let extraCost of extraCosts.controls; let i = index" class="d-flex justify-content-between mt-2">
+                  <label>{{ extraCost.get('title')?.value || (extraCost.get('type')?.value === 'multiplyPercent' ? 'Tax' : extraCost.get('type')?.value === 'addFixedValue' ? 'Shipping' : 'Discount') }}</label>
+                  <div>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="value" type="number" min="0" step="any">
+                    <button type="button" class="btn btn-link text-danger" (click)="removeExtraCost(i)">
+                      <span class="material-icons">close</span>
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-link btn-sm mt-2" (click)="addExtraCost('multiplyPercent')">+ Tax</button>
+                <button type="button" class="btn btn-link btn-sm" (click)="addExtraCost('addFixedValue')">+ Shipping</button>
+                <button type="button" class="btn btn-link btn-sm" (click)="addExtraCost('multiplyPercent')">+ Discount</button>
+                <div class="d-flex justify-content-between mt-3">
+                  <label>Total</label>
+                  <div>${{ getGrandTotal() }}</div>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                  <label>Amount Paid</label>
+                  <input class="form-control form-control-sm w-50" type="number" formControlName="amountPaid" min="0" step="any">
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                  <label>Balance Due</label>
+                  <div>${{ (getGrandTotal() - (quoteForm.get('amountPaid')?.value || 0)) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons mt-4">
+            <button class="btn btn-success" type="button" (click)="onSubmit()" [disabled]="isSaving">
+              Save Quote
+            </button>
+          </div>
+
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
