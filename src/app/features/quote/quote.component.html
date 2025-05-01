@@ -12,13 +12,13 @@
           <div class="row header-section">
             <div class="col-md-8">
               <div class="logo noselect">
-                <div class="placeholder" *ngIf="!logoUrl">
+                <div class="placeholder" *ngIf="!logoUrl" (click)="triggerFileInput()">
                   <div class="main">
                     <span class="material-icons">add</span> Add Your Logo
                   </div>
                 </div>
                 <img *ngIf="logoUrl" [src]="logoUrl" alt="Your Logo" class="logo-image">
-                <input type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)" tabindex="12">
+                <input #fileInput type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)" tabindex="12">
                 <button *ngIf="logoUrl" mat-icon-button class="remove-logo" (click)="removeLogo()" tabindex="13">
                   <mat-icon>close</mat-icon>
                 </button>
@@ -148,38 +148,79 @@
               <div class="totals-section">
                 <div class="d-flex justify-content-between">
                   <label>Subtotal</label>
-                  <div>${{ getSubtotal() }}</div>
+                  <div>${{ getSubtotal().toFixed(2) }}</div>
                 </div>
-                <div *ngFor="let extraCost of extraCosts.controls; let i = index" class="d-flex justify-content-between mt-2">
-                  <label>{{ extraCost.get('title')?.value || (extraCost.get('type')?.value === 'multiplyPercent' ? 'Tax' : extraCost.get('type')?.value === 'addFixedValue' ? 'Shipping' : 'Discount') }}</label>
+                <!-- Extra Costs -->
+                <div *ngIf="hasExtraCost" class="d-flex justify-content-between mt-2">
+                  <label>Extra Costs</label>
                   <div>
-                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="value" type="number" min="0" step="any">
-                    <button type="button" class="icon-btn" (click)="removeExtraCost(i)">
-                      <mat-icon>delete</mat-icon>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="extraCostValue" type="number" step="any">
+                    <button type="button" class="icon-btn" (click)="removeExtraCost()">
+                      <mat-icon svgIcon="trash"></mat-icon>
                     </button>
                   </div>
                 </div>
-                <div class="extra-cost-buttons mt-2">
-                  <button type="button" class="btn btn-link btn-sm" (click)="addExtraCost('multiplyPercent')">+ Tax</button>
-                  <button type="button" class="btn btn-link btn-sm" (click)="addExtraCost('addFixedValue')">+ Shipping</button>
-                  <button type="button" class="btn btn-link btn-sm" (click)="addExtraCost('multiplyPercent')">+ Discount</button>
+                <!-- Tax -->
+                <div *ngIf="hasTax" class="d-flex justify-content-between mt-2">
+                  <label>Tax %</label>
+                  <div>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="taxValue" type="number" step="any">
+                    <button type="button" class="icon-btn" (click)="removeTax()">
+                      <mat-icon svgIcon="trash"></mat-icon>
+                    </button>
+                  </div>
                 </div>
+                <!-- Discount -->
+                <div *ngIf="hasDiscount" class="d-flex justify-content-between mt-2">
+                  <label>Discount %</label>
+                  <div>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="discountValue" type="number" step="any">
+                    <button type="button" class="icon-btn" (click)="removeDiscount()">
+                      <mat-icon svgIcon="trash"></mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <!-- Flat Total -->
+                <div *ngIf="hasFlatTotal" class="d-flex justify-content-between mt-2">
+                  <label>Flat Total</label>
+                  <div>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="flatTotalValue" type="number" step="any">
+                    <button type="button" class="icon-btn" (click)="removeFlatTotal()">
+                      <mat-icon svgIcon="trash"></mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <!-- Extra Cost Buttons -->
+                <div class="extra-cost-buttons mt-2">
+                  <button *ngIf="!hasExtraCost" type="button" class="btn btn-link btn-sm" (click)="addExtraCost()">+- Extra Costs</button>
+                  <button *ngIf="!hasTax" type="button" class="btn btn-link btn-sm" (click)="addTax()">% Tax</button>
+                  <button *ngIf="!hasDiscount" type="button" class="btn btn-link btn-sm" (click)="addDiscount()">% Discount</button>
+                  <button *ngIf="!hasFlatTotal" type="button" class="btn btn-link btn-sm" (click)="addFlatTotal()">Flat Total</button>
+                </div>
+                <!-- Total -->
                 <div class="d-flex justify-content-between mt-3">
                   <label>Total</label>
-                  <div>${{ getGrandTotal() }}</div>
+                  <div>${{ getGrandTotal().toFixed(2) }}</div>
                 </div>
-                <div class="d-flex justify-content-between mt-2">
+                <!--<div class="extra-cost-buttons mt-2">
+                  <button *ngIf="!hasAmountPaid" type="button" class="btn btn-link btn-sm" (click)="addAmountPaid()">Already Paid?</button>
+                </div>
+                <div *ngIf="hasAmountPaid" class="d-flex justify-content-between mt-2">
                   <label>Amount Paid</label>
-                  <input class="form-control form-control-sm w-50" type="number" formControlName="amountPaid" min="0" step="any">
-                </div>
-                <div class="d-flex justify-content-between mt-2">
-                  <label>Balance Due</label>
-                  <div>${{ (getGrandTotal() - (quoteForm.get('amountPaid')?.value || 0)) }}</div>
-                </div>
+                  <div>
+                    <input class="form-control form-control-sm d-inline-block w-auto" formControlName="amountPaid" type="number" min="0" step="any">
+                    <button type="button" class="icon-btn" (click)="removeAmountPaid()">
+                      <mat-icon svgIcon="trash"></mat-icon>
+                    </button>
+                  </div>
+                  <div class="d-flex justify-content-between mt-2">
+                    <label>Balance Due</label>
+                    <div>${{ (getGrandTotal() - (quoteForm.get('amountPaid')?.value || 0)).toFixed(2) }}</div>
+                  </div>
+                </div>-->
               </div>
             </div>
           </div>
-
           <!-- Action Buttons -->
           <div class="action-buttons mt-4">
             <button class="btn btn-success" type="button" (click)="onSubmit()" [disabled]="isSaving">

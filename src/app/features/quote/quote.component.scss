@@ -218,7 +218,22 @@ input.form-control-sm {
 
 .extra-cost-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.extra-cost-buttons .btn-link {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  background-color: $primary-yellow;
+  color: $dark-gray;
+  border-radius: 4px;
+  line-height: 1.2;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: $darker-yellow;
+  }
 }
 
 .action-section {
@@ -310,6 +325,7 @@ button.icon-btn {
 
 .logo-image {
   max-height: 100px;
+  max-width: 200px;
   margin-bottom: 8px;
   border-radius: 6px;
 }
