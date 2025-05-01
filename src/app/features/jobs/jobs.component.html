@@ -3,7 +3,7 @@
     <div class="fullcolumn">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Job Quote: {{projectDetails.projectName}}</mat-card-title>
+          <mat-card-title>Job: {{projectDetails.projectName}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
@@ -13,11 +13,26 @@
           
           <!-- Project Details Section -->
           <div class="job-details">
-            <h4>Project: {{projectDetails.projectName}}</h4>
             <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
-            <p><strong>Electrical Capacity:</strong> {{projectDetails.electricalSupply}} kW</p>
-            <p><strong>House Size:</strong> {{projectDetails.buildingSize}} sq ft</p>
-            <p><strong>Weather Condition:</strong> {{weatherData?.forecast?.forecastday[0]?.day?.condition?.text || 'Loading...'}}</p>
+            <p><strong>Address:</strong> {{projectDetails.address}}</p>
+            <div *ngIf="forecast.length" class="weather-scroll-container">
+              <div *ngFor="let day of forecast" class="forecast-card">
+                <div class="date">{{ day.date }}</div>
+                <img [src]="day.iconUrl" alt="Weather Icon" />
+                <div class="condition">{{ day.condition }}</div>
+                <div class="temp">
+                  <span class="high">{{ day.highTemp }}°</span>
+                  <span class="low">{{ day.lowTemp }}°</span>
+                </div>
+                <div class="precip">
+                  {{ day.precipitationProbability }}%
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="weatherError" class="weather-error">
+              {{ weatherError }}
+            </div>
           </div>
 
           <!-- Timeline Section -->

@@ -21,12 +21,12 @@ export class JobsService {
     return this.httpClient.post<any>(BASE_URL+'/'+id, jobData,{headers:{'Content-Type': 'application/json'}});
   }
 
-
-  
   getAllJobsByUserId(userId: string): Observable<any> {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
-
+getSubtasks(jobId: number) {
+  return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
+}
 // Updated to use documentId instead of blobUrl
 downloadJobDocument(documentId: number): Observable<Blob> {
   return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });

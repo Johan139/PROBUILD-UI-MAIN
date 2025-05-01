@@ -8,11 +8,12 @@ import { MatDivider } from '@angular/material/divider';
 import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
-import { WeatherService } from '../../services/weather.service';
+import { WeatherService, ForecastDay } from '../../services/weather.service';
 import { JobsService } from '../../services/jobs.service';
 import { LoaderComponent } from '../../loader/loader.component';
 import { FormGroup, FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { FileSizePipe } from '../Documents/filesize.pipe';
@@ -27,7 +28,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './job-quote/confirmation-dialog.component';
+import { CancellationDialogComponent } from './Cancellation-Dialog.component';
+
 const BASE_URL = environment.BACKEND_URL;
+
 @Component({
   selector: 'app-jobs',
   standalone: true,
@@ -48,8 +52,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatListModule,
     MatIconModule,
     MatProgressBarModule,
-    MatFormFieldModule, // ✅ ADDED HERE
-    MatInputModule,     // ✅ ADDED HERE
+    MatFormFieldModule,
+    MatInputModule,
     FileSizePipe
   ],
   templateUrl: './jobs.component.html',
@@ -72,6 +76,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   calculatedChainedTables: { title: string; startDate: Date; endDate: Date; subtasks: any[] }[] = [];
   documents: any[] = [];
   documentsError: string | null = null;
+  weatherDescription: string = 'Loading...';
+  forecast: ForecastDay[] = []; // Added for 10-day forecast
+  weatherError: string | null = null; // Added for error handling
   alertMessage: string = '';
   isDialogOpened: boolean = false;
   isBomLoading: boolean = false;
@@ -95,8 +102,13 @@ export class JobsComponent implements OnInit, OnDestroy {
   uploadedFileUrls: string[] = [];
   jobCardForm: FormGroup;
   sessionId: string = '';
+  date: string = '';
+  iconUrl: string = '';
+  condition: string = '';
+  highTemp: number = 0;
+  lowTemp: number = 0;
+  precipitationProbability: number = 0;
   private hubConnection!: HubConnection;
-
   private pollingSubscription: Subscription | null = null;
 
   constructor(
@@ -105,9 +117,9 @@ export class JobsComponent implements OnInit, OnDestroy {
     private weatherService: WeatherService,
     public store: Store<SubtasksState>,
     private router: Router,
+    private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private httpClient: HttpClient,
-
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.jobCardForm = new FormGroup({});
@@ -117,11 +129,11 @@ export class JobsComponent implements OnInit, OnDestroy {
   get isDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
   }
-sq
+
   ngOnInit() {
- this.sessionId = uuidv4();
-   this.hubConnection = new HubConnectionBuilder()
-   .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+    this.sessionId = uuidv4();
+    this.hubConnection = new HubConnectionBuilder()
+    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
       .configureLogging(LogLevel.Debug)
       .build();
 
@@ -143,13 +155,13 @@ sq
       .then(() => console.log('SignalR connection established successfully'))
       .catch(err => console.error('SignalR Connection Error:', err));
 
-    console.log(this.hubConnection.connectionId);
 
     this.route.queryParams.subscribe(params => {
+      console.log(params);
       this.projectDetails = params;
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
-
+  
     this.jobsService.getJobSubtasks(this.projectDetails.jobId).subscribe({
       next: (data) => {
         const grouped = this.groupSubtasksByTitle(data);
@@ -163,17 +175,15 @@ sq
       },
       error: (err) => {
         if (err.status === 404) {
-          // fallback to AI-parsed data
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
               const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              console.log(parsedGroups)
-              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown); // 👈 Here
-          
+              console.log(parsedGroups);
+              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
               this.store.setState({ subtaskGroups: parsedGroups });
-              this.taskData = parsedMainTasks; // 👈 This populates your Gantt chart
-              this.createTables(); // You can call this too if you still want subtables
+              this.taskData = parsedMainTasks;
+              this.createTables();
             }
           });
         } else {
@@ -184,17 +194,14 @@ sq
     });
 
     this.initialStartDate = this.projectDetails.date;
-
     const state = this.store.getState();
     if (!state.subtaskGroups) {
       this.store.setState({
-        subtaskGroups: [
-          { title: 'Default Group', subtasks: [] }
-        ]
+        subtaskGroups: [{ title: 'Default Group', subtasks: [] }]
       });
     }
 
-    this.fetchWeather();
+    this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
     this.createTables();
     if (this.calculatedTables && state.subtaskGroups) {
       const updatedSubtaskGroups = this.calculatedTables.map((group) => {
@@ -208,32 +215,47 @@ sq
             ? { ...existingSubtask, ...matchingSubtask }
             : existingSubtask;
         });
-    
-        return {
-          ...group,
-          subtasks: updatedSubtasks,
-        };
+        return { ...group, subtasks: updatedSubtasks };
       });
-      this.store.setState({
-        subtaskGroups: updatedSubtaskGroups,
-      });
+      this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     }
+    console.log(this.projectDetails.address);
+  }
+
+  getWeatherCondition(lat: number, lon: number): void {
+    this.weatherService.getWeatherForecast(lat, lon).subscribe({
+      next: (data) => {
+        this.forecast = data;
+        this.weatherDescription = data[0]?.condition || 'Unavailable';
+        this.weatherError = null;
+      },
+      error: (err) => {
+        console.error('Failed to fetch forecast:', err);
+        this.weatherDescription = 'Unavailable';
+        this.forecast = [];
+        this.weatherError = 'Failed to load weather forecast';
+      }
+    });
+  }
+
+  capitalize(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   extractMainTasksFromGroups(groups: { title: string, subtasks: any[] }[]): any[] {
     return groups.map((group, index) => {
-      const subtasks = group.subtasks;
-      if (!subtasks || subtasks.length === 0) return null;
-  
+      const subtasks = group.subtasks?.filter(st => !st.deleted) || [];
+      if (subtasks.length === 0) return null;
       const start = new Date(subtasks[0].startDate);
       const end = new Date(subtasks[subtasks.length - 1].endDate);
-  
+      const completed = subtasks.filter(st => st.status?.toLowerCase() === 'completed').length;
+      const percentDone = Math.round((completed / subtasks.length) * 100);
       return {
         id: (index + 1).toString(),
         name: group.title,
         start,
         end,
-        progress: 0,
+        progress: percentDone,
         dependencies: null
       };
     }).filter(Boolean);
@@ -242,14 +264,12 @@ sq
   parseMarkdownToMainTasks(report: string): any[] {
     const lines = report.split('\n');
     const mainTasks: any[] = [];
-  
     const parseDate = (line: string): string => {
       const match = line.match(/(\w+ \d{1,2}, \d{4})/);
       if (!match) return '';
       const parsed = new Date(match[1]);
       return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
     };
-  
     const parseDuration = (line: string): number => {
       const match = line.match(/(\d+)\s*(day|week|month)/i);
       if (!match) return 0;
@@ -262,15 +282,11 @@ sq
         default: return value;
       }
     };
-  
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-  
-      // Match headings like "# 1. Title" or "## # 2. Title"
       if (/^#+\s?#?\s?\d+[\.\)]?/.test(line)) {
         const title = line.replace(/^#+\s?#?\s?\d+[\.\)]?\s*/, '').trim();
         let start = '', end = '', days = 0;
-  
         for (let j = i + 1; j < lines.length; j++) {
           const nextLine = lines[j].trim().toLowerCase();
           if (nextLine.includes('duration')) {
@@ -279,10 +295,9 @@ sq
             start = parseDate(lines[j]);
           } else if (nextLine.includes('end')) {
             end = parseDate(lines[j]);
-            break; // assume last line for the task section
+            break;
           }
         }
-  
         if (start && end) {
           mainTasks.push({
             id: (mainTasks.length + 1).toString(),
@@ -295,25 +310,21 @@ sq
         }
       }
     }
-  
     console.log('✅ Parsed main tasks for Gantt:', mainTasks);
     return mainTasks;
   }
-  
+
   parseMarkdownToSubtasks(report: string): { title: string; subtasks: any[] }[] {
     const lines = report.split('\n');
     const subtasksGroups: { title: string; subtasks: any[] }[] = [];
-  
     let currentGroup = '';
     let currentTasks: any[] = [];
-  
     const parseDate = (text: string): string => {
       const match = text.match(/(\w+ \d{1,2}, \d{4})/);
       if (!match) return '';
       const parsed = new Date(match[1]);
       return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0];
     };
-  
     const parseDuration = (text: string): number => {
       const match = text.match(/(\d+)\s*(day|week|month)/i);
       if (!match) return 0;
@@ -326,17 +337,13 @@ sq
         default: return value;
       }
     };
-  
     const isSubtaskHeader = (line: string) =>
       line.startsWith('**') && line.endsWith('**') &&
       !line.toLowerCase().includes('duration') &&
       !line.toLowerCase().includes('start') &&
       !line.toLowerCase().includes('end');
-  
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-  
-      // Detect group title
       if (line.startsWith('#')) {
         if (currentGroup && currentTasks.length > 0) {
           subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
@@ -344,12 +351,10 @@ sq
         currentGroup = line.replace(/^#+/, '').trim();
         currentTasks = [];
       }
-  
       if (isSubtaskHeader(line)) {
         const task = line.replace(/\*\*/g, '').trim();
         let days = 0;
         let start = '', end = '';
-  
         for (let j = i + 1; j < lines.length; j++) {
           const lookahead = lines[j].trim().toLowerCase();
           if (lookahead.includes('duration')) {
@@ -358,10 +363,9 @@ sq
             start = parseDate(lines[j]);
           } else if (lookahead.includes('end')) {
             end = parseDate(lines[j]);
-            break; // assume end date is last entry for this task
+            break;
           }
         }
-  
         if (start && end) {
           currentTasks.push({
             task,
@@ -377,24 +381,20 @@ sq
         }
       }
     }
-  
     if (currentGroup && currentTasks.length > 0) {
       subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
     }
-  
     return subtasksGroups;
   }
- 
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input?.files?.length) {
       console.error('No files selected');
       return;
     }
-
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
@@ -403,11 +403,9 @@ sq
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
     formData.append('connectionId', this.hubConnection.connectionId || '');
     formData.append('sessionId', this.sessionId);
-
     this.progress = 0;
     this.isUploading = true;
     console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
-
     this.httpClient
       .post<any>(BASE_URL + '/Jobs/UploadNoteImage', formData, {
         reportProgress: true,
@@ -443,6 +441,7 @@ sq
         complete: () => console.log('Client-to-API upload complete'),
       });
   }
+
   resetFileInput(): void {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
@@ -450,19 +449,17 @@ sq
       console.log('File input reset');
     }
   }
+
   private groupSubtasksByTitle(subtasks: any[]): { title: string; subtasks: any[] }[] {
     const groupedMap = new Map<string, any[]>();
-  
     for (const st of subtasks) {
       const group = groupedMap.get(st.groupTitle) || [];
-  
       const formatDate = (date: string) => {
         if (!date) return '';
-        return new Date(date).toISOString().split('T')[0]; // format as yyyy-MM-dd
+        return new Date(date).toISOString().split('T')[0];
       };
-  
       group.push({
-        id: st.id, // ✅ lowercase 'id' (JS-native) instead of 'Id'
+        id: st.id,
         task: st.task ?? st.taskName,
         days: st.days,
         startDate: formatDate(st.startDate),
@@ -471,30 +468,28 @@ sq
         cost: st.cost ?? 0,
         deleted: st.deleted ?? false
       });
-  
       groupedMap.set(st.groupTitle, group);
     }
-  
     return Array.from(groupedMap.entries()).map(([title, subtasks]) => ({
       title,
       subtasks
     }));
   }
-  
+
   ngOnDestroy(): void {
     if (this.pollingSubscription) {
       this.pollingSubscription.unsubscribe();
     }
   }
+
   openNoteDialog(subtask: any): void {
     this.currentNoteTarget = subtask;
-  
     this.noteDialogRef = this.dialog.open(this.noteDialog, {
       width: '250vw',
       height: '60vh',
       panelClass: 'subtask-note-dialog',
       data: {
-        note: subtask?.note || '',  // ✅ supply a default value
+        note: subtask?.note || '',
         jobId: this.projectDetails?.jobId,
         subtaskId: subtask?.id,
         createdByUserId: localStorage.getItem('userId'),
@@ -502,42 +497,47 @@ sq
       }
     });
   }
+
   saveNoteDialog(): void {
-
     const userId: string | null = localStorage.getItem('userId');
-
     const formData = new FormData();
     formData.append("JobId", this.projectDetails.jobId);
-    formData.append("UserIds", this.projectDetails.userId)
+    formData.append("UserIds", this.projectDetails.userId);
     formData.append("JobSubtaskId", this.currentNoteTarget.id);
     formData.append("NoteText", this.noteText);
-    formData.append("CreatedByUserId", localStorage.getItem("userId") || "");
+    formData.append("CreatedByUserId", userId || "");
     formData.append("SessionId", this.sessionId);
-
     this.httpClient
-    .post(BASE_URL + '/Jobs/SaveSubtaskNote', formData)
-    .subscribe({
-      next: () => {
-        this.noteDialogRef.close();
-      },
-      error: (err) => {
-        console.error('Failed to save subtask note:', err);
-      }
-    });
-    this.jobCardForm.reset();
-    this.uploadedFilesCount = 0;
-    this.uploadedFileNames = [];
-    this.uploadedFileUrls = [];
-    this.noteText = '';
-    this.noteDialogRef.close();
+      .post(BASE_URL + '/Jobs/SaveSubtaskNote', formData)
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Note saved successfully!', 'Close', {
+            duration: 3000,
+            panelClass: ['custom-snackbar']
+          });
+          this.jobCardForm.reset();
+          this.uploadedFilesCount = 0;
+          this.uploadedFileNames = [];
+          this.uploadedFileUrls = [];
+          this.noteText = '';
+          this.noteDialogRef.close();
+        },
+        error: (err) => {
+          console.error('Failed to save subtask note:', err);
+          this.snackBar.open('Failed to save note. Try again.', 'Close', {
+            duration: 4000,
+            panelClass: ['custom-snackbar']
+          });
+        }
+      });
   }
+
   closeNoteDialog(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+    const dialogRef = this.dialog.open(CancellationDialogComponent, {
       width: '400px',
       panelClass: 'custom-dialog-container',
       disableClose: true,
     });
-
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
         console.log('Cancel clicked. uploadedFileUrls before deletion:', this.uploadedFileUrls);
@@ -551,41 +551,40 @@ sq
       }
     });
   }
-deleteTemporaryFiles(): void {
- console.log('Deleting temporary files. uploadedFileUrls:', this.uploadedFileUrls);
- if (this.uploadedFileUrls.length === 0) {
-   console.log('No temporary files to delete.');
-   return;
- }
 
- this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
-   blobUrls: this.uploadedFileUrls,
- }).subscribe({
-   next: () => {
-     console.log('Temporary files deleted successfully');
-     this.uploadedFileUrls = [];
-     this.uploadedFilesCount = 0;
-     this.uploadedFileNames = [];
-   },
-   error: (error) => {
-     console.error('Error deleting temporary files:', error);
-     this.uploadedFileUrls = [];
-     this.uploadedFilesCount = 0;
-     this.uploadedFileNames = [];
-   },
- });
-}
+  deleteTemporaryFiles(): void {
+    console.log('Deleting temporary files. uploadedFileUrls:', this.uploadedFileUrls);
+    if (this.uploadedFileUrls.length === 0) {
+      console.log('No temporary files to delete.');
+      return;
+    }
+    this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: this.uploadedFileUrls,
+    }).subscribe({
+      next: () => {
+        console.log('Temporary files deleted successfully');
+        this.uploadedFileUrls = [];
+        this.uploadedFilesCount = 0;
+        this.uploadedFileNames = [];
+      },
+      error: (error) => {
+        console.error('Error deleting temporary files:', error);
+        this.uploadedFileUrls = [];
+        this.uploadedFilesCount = 0;
+        this.uploadedFileNames = [];
+      },
+    });
+  }
+
   openBillOfMaterialsDialog(): void {
     this.isBomLoading = true;
     this.isBomProcessing = false;
     this.bomError = null;
     this.bom = null;
     this.isDialogOpened = true;
-
     this.jobsService.GetBillOfMaterials(`${this.projectDetails.jobId}`).subscribe({
       next: (status: any) => {
         this.isBomProcessing = !status.isProcessingComplete;
-
         if (status.length > 0) {
           this.processingResults = status.map(doc => ({
             id: doc.id,
@@ -604,7 +603,7 @@ deleteTemporaryFiles(): void {
           this.bomError = status.message;
           this.IsAIProcessed = false;
           this.isBomLoading = false;
-          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100h', maxWidth: '150vw'  });
+          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100h', maxWidth: '150vw' });
         }
       },
       error: (error) => {
@@ -622,9 +621,7 @@ deleteTemporaryFiles(): void {
     let inTable = false;
     let tableHeaders: string[] = [];
     let tableContent: any[] = [];
-
     for (const line of lines) {
-      // Detect section headers (##)
       if (line.startsWith('##')) {
         if (currentSection) {
           if (inTable) {
@@ -640,27 +637,20 @@ deleteTemporaryFiles(): void {
           type: 'text',
           content: []
         };
-      }
-      // Detect table start (|)
-      else if (line.includes('|') && currentSection) {
+      } else if (line.includes('|') && currentSection) {
         if (!inTable) {
           inTable = true;
           currentSection.type = 'table';
           currentSection.content = [];
-          // Parse headers
           tableHeaders = line.split('|').map(cell => cell.trim()).filter(cell => cell);
           currentSection.headers = tableHeaders;
         } else if (line.includes('---')) {
-          // Skip separator line
           continue;
         } else {
-          // Parse table row
           const row = line.split('|').map(cell => cell.trim()).filter(cell => cell);
           tableContent.push(row);
         }
-      }
-      // Detect list items (-)
-      else if (line.startsWith('-') && currentSection) {
+      } else if (line.startsWith('-') && currentSection) {
         if (inTable) {
           currentSection.content = tableContent;
           inTable = false;
@@ -677,9 +667,7 @@ deleteTemporaryFiles(): void {
           currentSection.content = [];
         }
         currentSection.content.push(line.replace('-', '').trim());
-      }
-      // Regular text
-      else if (currentSection) {
+      } else if (currentSection) {
         if (inTable) {
           currentSection.content = tableContent;
           inTable = false;
@@ -695,15 +683,12 @@ deleteTemporaryFiles(): void {
         currentSection.content.push(line.trim());
       }
     }
-
-    // Push the last section
     if (currentSection) {
       if (inTable) {
         currentSection.content = tableContent;
       }
       sections.push(currentSection);
     }
-
     return { sections };
   }
 
@@ -776,15 +761,11 @@ deleteTemporaryFiles(): void {
   getFileType(fileName: string): string {
     const extension = fileName.split('.').pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'png':
-        return 'image/png';
+      case 'pdf': return 'application/pdf';
+      case 'png': return 'image/png';
       case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      default:
-        return 'application/octet-stream';
+      case 'jpeg': return 'image/jpeg';
+      default: return 'application/octet-stream';
     }
   }
 
@@ -806,7 +787,6 @@ deleteTemporaryFiles(): void {
 
   createTables(): void {
     const stateGroups = this.store.getState().subtaskGroups;
-  
     const tables = [
       'Foundation Subtasks',
       'WallInsulation Subtasks',
@@ -819,9 +799,7 @@ deleteTemporaryFiles(): void {
       title,
       subtasks: stateGroups.find(g => g.title === title)?.subtasks || []
     }));
-  
     let currentStartDate = new Date(this.initialStartDate);
-  
     this.calculatedChainedTables = tables.map(table => {
       const chainedSubtasks = this.chainSubtaskDates(table.subtasks, currentStartDate);
       const startDate = chainedSubtasks[0]?.startDate;
@@ -829,7 +807,6 @@ deleteTemporaryFiles(): void {
       const lastSubtaskEndDate = new Date(endDate);
       currentStartDate = new Date(lastSubtaskEndDate);
       currentStartDate.setDate(currentStartDate.getDate() + 1);
-  
       return {
         title: table.title,
         startDate: new Date(startDate),
@@ -837,22 +814,11 @@ deleteTemporaryFiles(): void {
         subtasks: chainedSubtasks
       };
     });
-  
-    // this.taskData = this.calculatedChainedTables.map((table, index) => ({
-    //   id: (index + 1).toString(),
-    //   name: table.title,
-    //   start: table.startDate,
-    //   end: table.endDate,
-    //   progress: 0,
-    //   dependencies: null
-    // }));
-  
     this.calculatedTables = tables.map(table => {
       const calculatedSubtasks = this.calculateSubtaskDates(table.subtasks, currentStartDate);
       const lastSubtaskEndDate = new Date(calculatedSubtasks[calculatedSubtasks.length - 1]?.endDate);
       currentStartDate = new Date(lastSubtaskEndDate);
       currentStartDate.setDate(currentStartDate.getDate() + 1);
-  
       return {
         title: table.title,
         subtasks: calculatedSubtasks
@@ -862,14 +828,11 @@ deleteTemporaryFiles(): void {
 
   calculateSubtaskDates(subtasks: any[], startDate: Date): any[] {
     let currentDate = new Date(startDate);
-
     return subtasks.map(subtask => {
       const startDate = new Date(currentDate);
       const endDate = new Date(currentDate);
       endDate.setDate(startDate.getDate() + subtask.days - 1);
-
       currentDate.setDate(endDate.getDate() + 1);
-
       return {
         ...subtask,
         startDate: startDate.toISOString().split('T')[0],
@@ -880,14 +843,11 @@ deleteTemporaryFiles(): void {
 
   calculateDates(subtasks: any[]): any[] {
     let currentDate = new Date(this.initialStartDate);
-
     return subtasks.map(subtask => {
       const startDate = new Date(currentDate);
       const endDate = new Date(currentDate);
       endDate.setDate(startDate.getDate() + subtask.days - 1);
-
       currentDate.setDate(endDate.getDate() + 1);
-
       return {
         ...subtask,
         startDate: startDate.toISOString().split('T')[0],
@@ -898,13 +858,11 @@ deleteTemporaryFiles(): void {
 
   chainSubtaskDates(subtasks: any[], initialStartDate: Date): any[] {
     let currentDate = new Date(initialStartDate);
-
     return subtasks.map(subtask => {
       const subtaskStartDate = new Date(currentDate);
       const subtaskEndDate = new Date(currentDate);
       subtaskEndDate.setDate(subtaskStartDate.getDate() + subtask.days - 1);
       currentDate.setDate(subtaskEndDate.getDate() + 1);
-
       return {
         ...subtask,
         startDate: subtaskStartDate,
@@ -913,22 +871,20 @@ deleteTemporaryFiles(): void {
     });
   }
 
-
   updateSubtaskStatus(subtask: any) {
     if (!subtask.status) {
       subtask.status = 'Pending';
     }
   }
-  
+
   addSubtask(table: any): void {
     const newSubtask = {
       task: '',
       days: 0,
       startDate: '',
       endDate: '',
-      status: 'Pending' // Set it here, or call the method below
+      status: 'Pending'
     };
-
     table.subtasks.push(newSubtask);
     const updatedState = this.store.getState().subtaskGroups.map(group => {
       if (group.title === table.title) {
@@ -936,10 +892,9 @@ deleteTemporaryFiles(): void {
       }
       return group;
     });
-  
     this.store.setState({ subtaskGroups: updatedState });
-  }  
-  
+  }
+
   updateSubtaskDates(table: any, index: number): void {
     const subtask = table.subtasks[index];
     if (subtask.days && subtask.startDate) {
@@ -952,7 +907,6 @@ deleteTemporaryFiles(): void {
         const nextStartDate = new Date(endDate);
         nextStartDate.setDate(nextStartDate.getDate() + 1);
         nextSubtask.startDate = nextStartDate.toISOString().split('T')[0];
-  
         const nextEndDate = new Date(nextStartDate);
         nextEndDate.setDate(nextStartDate.getDate() + nextSubtask.days - 1);
         nextSubtask.endDate = nextEndDate.toISOString().split('T')[0];
@@ -979,21 +933,18 @@ deleteTemporaryFiles(): void {
     }, 0);
   }
 
-  publish() { 
+  publish() {
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
       subtasks: group.subtasks.map(subtask => ({
         ...subtask,
       }))
     }));
-  
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-
     const dataInput = this.store.getState().subtaskGroups;
     console.log('Tasks in store for Published:', dataInput[0]);
     console.log('UserId :: ', localStorage.getItem("userId"));
     const projectData = this.prepareProjectData("PUBLISHED");
-
     this.isLoading = true;
     this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
       next: response => {
@@ -1009,14 +960,16 @@ deleteTemporaryFiles(): void {
       }
     });
   }
+
   getVisibleSubtasks(table: any): any[] {
     return table.subtasks?.filter(s => !s.deleted) || [];
   }
+
   saveOnly() {
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
       subtasks: group.subtasks.map(({ id, task, days, startDate, endDate, cost, status, deleted }) => ({
-        id, // 🟡 Required for update vs insert
+        id,
         task,
         days,
         startDate,
@@ -1027,28 +980,21 @@ deleteTemporaryFiles(): void {
         deleted
       }))
     }));
-  
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-  
     const jobData = this.prepareProjectData("DRAFT");
     const subtaskList = updatedSubtaskGroups.flatMap(group =>
       group.subtasks.map(subtask => ({
         ...subtask,
         groupTitle: group.title,
         jobId: this.projectDetails.jobId,
-        deleted: subtask.deleted ?? false // ✅ default false if undefined
+        deleted: subtask.deleted ?? false
       }))
     );
-  
     console.log('Job Data:', jobData);
     console.log('Subtasks:', subtaskList);
-  
     this.isLoading = true;
-  
-    // First save job
     this.jobsService.updateJob(jobData, this.projectDetails.jobId).subscribe({
       next: response => {
-        // Then save subtasks
         this.jobsService.saveSubtasks(subtaskList).subscribe({
           next: () => {
             this.isLoading = false;
@@ -1079,11 +1025,9 @@ deleteTemporaryFiles(): void {
         ...subtask,
       }))
     }));
-  
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     console.log('UserId :: ', localStorage.getItem("userId"));
     const projectData = this.prepareProjectData("DISCARD");
-
     this.isLoading = true;
     this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
       next: response => {
@@ -1107,26 +1051,24 @@ deleteTemporaryFiles(): void {
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-
     const dataInput = this.store.getState().subtaskGroups;
-  
     return {
-      Id: this.projectDetails.jobId || 0, // Ensure valid ID
-      ProjectName: this.projectDetails.projectName || "", // Required
-      JobType: this.projectDetails.jobType || "", // Required
-      Qty: Number(this.projectDetails.quantity) || 1, // Required
+      Id: this.projectDetails.jobId || 0,
+      ProjectName: this.projectDetails.projectName || "",
+      JobType: this.projectDetails.jobType || "",
+      Qty: Number(this.projectDetails.quantity) || 1,
       DesiredStartDate: formattedDate(
-          this.projectDetails.desiredStartDate 
-              ? new Date(this.projectDetails.desiredStartDate) 
-              : new Date()
-      ), // Required, ISO format
-      WallStructure: this.projectDetails.wallStructure || "", // Required
+        this.projectDetails.desiredStartDate
+          ? new Date(this.projectDetails.desiredStartDate)
+          : new Date()
+      ),
+      WallStructure: this.projectDetails.wallStructure || "",
       WallStructureSubtask: JSON.stringify(dataInput[2]?.subtasks || []),
-      WallInsulation: this.projectDetails.wallInsulation || "", // Required
+      WallInsulation: this.projectDetails.wallInsulation || "",
       WallInsulationSubtask: JSON.stringify(dataInput[1]?.subtasks || []),
-      RoofStructure: this.projectDetails.roofStructure || "", // Required
+      RoofStructure: this.projectDetails.roofStructure || "",
       RoofStructureSubtask: JSON.stringify(dataInput[5]?.subtasks || []),
-      RoofTypeSubtask: "", // Missing in original; provide default
+      RoofTypeSubtask: "",
       RoofInsulation: this.projectDetails.roofInsulation || "",
       RoofInsulationSubtask: JSON.stringify(dataInput[4]?.subtasks || []),
       Foundation: this.projectDetails.foundation || "",
@@ -1140,10 +1082,9 @@ deleteTemporaryFiles(): void {
       Status: status || "DRAFT",
       OperatingArea: "GreenField",
       Address: this.projectDetails.address || "",
-      UserId: localStorage.getItem("userId"), // Required
+      UserId: localStorage.getItem("userId"),
       Blueprint: this.projectDetails.blueprintPath || ""
-      // Exclude navigation properties: User, Bids, Documents
-  };
+    };
   }
 
   deleteSubtask(table: any, index: number): void {
@@ -1152,23 +1093,15 @@ deleteTemporaryFiles(): void {
       panelClass: 'custom-dialog-container',
       disableClose: true,
     });
-  
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        // Mark subtask as deleted in the table object
         table.subtasks[index].deleted = true;
-  
-        // 🟡 Also reflect it in the store
         const updatedState = this.store.getState().subtaskGroups.map(group => {
           if (group.title === table.title) {
-            return {
-              ...group,
-              subtasks: [...table.subtasks]  // include the marked-deleted one
-            };
+            return { ...group, subtasks: [...table.subtasks] };
           }
           return group;
         });
-  
         this.store.setState({ subtaskGroups: updatedState });
       }
     });

@@ -553,7 +553,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       const parsedDate = new Date(res.desiredStartDate);
       const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
       const responseParams = {
-        jobId: res.id,
+        jobId: res.jobId,
         operatingArea: res.operatingArea,
         address: res.address,
         projectName: res.projectName,
@@ -568,6 +568,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         foundation: res.foundation,
         date: formattedDate,
         documents: res.documents,
+        latitude : res.latitude,
+        longitude: res.longitude,
       };
       this.router.navigate(['view-quote'], { queryParams: responseParams });
     });

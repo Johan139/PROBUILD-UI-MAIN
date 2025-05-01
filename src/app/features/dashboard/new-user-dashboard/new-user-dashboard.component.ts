@@ -14,7 +14,9 @@ import { JobsService } from '../../../services/jobs.service';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 const BASE_URL = environment.BACKEND_URL;
 
 
@@ -28,6 +30,7 @@ const BASE_URL = environment.BACKEND_URL;
     NgOptimizedImage,
     MatButtonModule,
     MatCardModule,
+    MatProgressBarModule,   // ✅ ADD THIS HERE
     MatDividerModule,
     GanttChartComponent,
     LoaderComponent,
@@ -36,7 +39,7 @@ const BASE_URL = environment.BACKEND_URL;
     FileSizePipe,
     MatFormFieldModule,  // ✅ added
     MatInputModule,      // ✅ added
-    FormsModule     
+    FormsModule,     
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
@@ -49,6 +52,7 @@ export class NewUserDashboardComponent implements OnInit {
 
   userType: string = '';
   isSubContractor: boolean = false;
+  userJobs: { projectName: string, createdAt: string, progress: number }[] = [];
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
   projectDetails: any;
@@ -76,7 +80,9 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     
     private router: Router,
     private dialog: MatDialog,
+    private jobService: JobsService,
     private jobsService: JobsService,
+    private snackBar: MatSnackBar,
     private http: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -99,12 +105,13 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         console.log('Notes loaded:', this.notes);
       },
       error: (err) => {
-        console.error('Error loading notes:', err);
         this.isLoading = false;
       }
     });
  
-    console.log(this.userType);
+
+      // 🛠️ ADD THIS LINE:
+  this.loadUserJobs();
     this.isSubContractor = this.userType === 'BUILDER' || this.userType === 'CONSTRUCTION';
     console.log(this.isSubContractor);
     setTimeout(() => {
@@ -131,6 +138,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   onApprovalReasonChanged(event: any) {
     this.approvalReason = event.target.innerText.trim();
   }
+
   submitApproval() {
     if (!this.approvalReason.trim()) {
       alert('Please enter an approval reason.');
@@ -149,11 +157,19 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
       next: () => {
         console.log('✅ Note approved with reason');
+        this.snackBar.open('Note saved successfully!', 'Close', {
+          duration: 3000,
+          panelClass: ['custom-snackbar']
+        });
         this.approvalReasonDialogRef?.close(); // Close the dialog
         this.dialog.closeAll(); // Also close the note details if needed
         this.resetApproval();
       },
       error: (err) => {
+        this.snackBar.open('Failed to save note. Try again.', 'Close', {
+          duration: 4000,
+          panelClass: ['custom-snackbar']
+        });
         console.error('Error approving note:', err);
       }
     });
@@ -188,6 +204,61 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.noteBeingApproved = null;
     this.approvalReason = '';
   }
+
+  calculateJobProgress(subtasks: any[]): number {
+    const completedDays = subtasks
+      .filter(st => st.status?.toLowerCase() === 'completed')
+      .reduce((sum, st) => sum + st.days, 0);
+  
+    const totalDays = subtasks.reduce((sum, st) => sum + st.days, 0);
+  
+    return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
+  }
+
+  loadUserJobs() {
+    const userId = localStorage.getItem('userId') || '';
+  
+    this.jobService.getAllJobsByUserId(userId).subscribe(jobs => {
+      if (!jobs) {
+        this.userJobs = [];
+        return;
+      }
+  
+      const uniqueProjectsMap = new Map<string, any>();
+  
+      jobs.forEach(job => {
+        if (!uniqueProjectsMap.has(job.projectName)) {
+          uniqueProjectsMap.set(job.projectName, job);
+        }
+      });
+  
+      const uniqueJobs = Array.from(uniqueProjectsMap.values());
+  
+      // Now for each unique job, fetch its subtasks separately:
+      const jobProgressPromises = uniqueJobs.map(job => 
+        this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
+          const progress = this.calculateJobProgress(subtasks || []);
+          return {
+            projectName: job.projectName,
+            createdAt: job.createdAt,
+            progress
+          };
+        }).catch(err => {
+          console.error('Failed to fetch subtasks for job', job.id, err);
+          return {
+            projectName: job.projectName,
+            createdAt: job.createdAt,
+            progress: 0
+          };
+        })
+      );
+  
+  Promise.all(jobProgressPromises).then(results => {
+  this.userJobs = results.sort((a, b) => b.progress - a.progress);
+});
+    });
+  }
+
   startApproval(note: any) {
     this.noteBeingApproved = note;
     this.approvalReason = ''; // Clear previous reason if any

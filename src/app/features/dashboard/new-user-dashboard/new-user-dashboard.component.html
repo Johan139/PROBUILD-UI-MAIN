@@ -30,7 +30,7 @@
     </div>
 
     <div class="column">
-      <mat-card>
+      <mat-card class="mat-card-custom">
         <mat-card-header>
           <mat-card-title>Action Points</mat-card-title>
         </mat-card-header>
@@ -63,6 +63,44 @@
             </table>
           </div>
 
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="job-progress-panel">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Job Progress</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <div *ngIf="userJobs.length === 0">
+            <p>No jobs assigned to you yet.</p>
+          </div>
+          <div class="job-scroll-container" *ngIf="userJobs.length > 0">
+            <table class="themed-table action-points-table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Created</th>
+                  <th>Progress</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let job of userJobs">
+                  <td>{{ job.projectName }}</td>
+                  <td>{{ job.createdAt | date: 'short' }}</td>
+                  <td>
+                    <div class="job-progress-bar">
+                      <div class="progress-fill" [style.width.%]="job.progress"></div>
+                    </div>
+                    <span class="progress-percent">{{ job.progress }}%</span>
+                  </td>
+                  
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </mat-card-content>
       </mat-card>
     </div>
@@ -157,6 +195,11 @@
       <button mat-raised-button color="warn" class="submit-btn delete-btn" (click)="cancelApproval()">Cancel</button>
     </mat-dialog-actions>
   </div>
+
 </ng-template>
+
+
+
+
 
 <!-- <img ngSrc='assets/info1.jpeg' height="450" width="800"> -->

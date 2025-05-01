@@ -33,9 +33,23 @@ $ProBuildAI-theme: mat.define-theme((
   font-optical-sizing: auto;
   font-style: normal;
 }
-
+mat-mdc-card{
+  background-color: white !important;
+}
 html, body { 
   height: 100%;
   overflow-x: hidden !important; 
 }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/* Force Material snack-bar to use yellow theme for .snack-success */
+.mat-mdc-snack-bar-container.snack-success {
+  background-color: #fbd008 !important; /* Yellow background */
+  color: #333 !important;               /* Dark text */
+
+  font-weight: 600;
+}
+
+.mat-mdc-snack-bar-container.snack-success .mat-simple-snackbar-action {
+  color: #333 !important;               /* Close button text */
+  font-weight: 600;
+}

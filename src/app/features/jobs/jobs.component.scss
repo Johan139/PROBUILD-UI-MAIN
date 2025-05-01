@@ -195,6 +195,92 @@ textarea[matInput] {
     background-color: #0d5f17;
   }
 }
+::ng-deep .mat-mdc-snack-bar-container.snack-success {
+  background-color: #fbd008 !important; /* your yellow */
+  color: #333 !important;
+  font-weight: 600;
+}
+.weather-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.forecast-card {
+  flex: 0 0 auto;
+  width: 95px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  padding: 0.75rem;
+  font-size: 12px;
+
+  .date {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  img {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 4px;
+  }
+
+  .condition {
+    font-size: 11px;
+    margin-bottom: 4px;
+    text-transform: capitalize;
+  }
+
+  .temp {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+
+    .high {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    .low {
+      color: #3498db;
+    }
+  }
+
+  .precip {
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #555;
+  }
+}
+
+.weather-error {
+  color: red;
+  font-size: 13px;
+  padding: 0.5rem;
+}
+::ng-deep .mat-mdc-snack-bar-container.snack-success .mat-simple-snackbar-action {
+  color: #333 !important; /* button text */
+  font-weight: 600;
+}
+::ng-deep .custom-snackbar {
+  background-color: #333 !important; // dark background
+  color: white !important;           // text color
+
+  .mat-mdc-snack-bar-action {
+    color: #fbd008 !important;       // yellow Close button
+    font-weight: 600;
+  }
+}
 .subtask-note-modal {
   background-color: #fefef6;
   padding: 2rem;
