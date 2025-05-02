@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
 import { QuoteService } from './quote.service';
+import { ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,7 +11,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { NgIf } from '@angular/common';
+import { NgForOf, NgIf } from '@angular/common';
 import jsPDF from 'jspdf';
 
 @Component({
@@ -27,11 +28,12 @@ import jsPDF from 'jspdf';
     MatSelectModule,
     MatIconModule,
     MatDividerModule,
-    NgIf
+    NgForOf,
+    NgIf,
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
-  providers: [QuoteService]
+  providers: [QuoteService],
 })
 export class QuoteComponent implements OnInit {
   quoteForm: FormGroup;
@@ -51,7 +53,8 @@ export class QuoteComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -78,10 +81,10 @@ export class QuoteComponent implements OnInit {
       notes: [''],
       termsTitle: ['Terms'],
       terms: [''],
-      quoteRows: this.fb.array([])
+      quoteRows: this.fb.array([]),
     });
 
-    // Initialize dataSource with the initial row
+    // Initialize dataSource with an empty row if no query params
     const initialRow = this.createQuoteRow();
     this.quoteRows.push(initialRow);
     this.dataSource.data = [initialRow];
@@ -109,14 +112,31 @@ export class QuoteComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      if (params['quoteItems']) {
+        const quoteItems = JSON.parse(params['quoteItems']);
+        this.quoteRows.clear();
+        quoteItems.forEach((item: any) => {
+          const row = this.createQuoteRow();
+          row.patchValue(item);
+          this.quoteRows.push(row);
+        });
+        this.dataSource.data = this.quoteRows.controls as FormGroup[];
+        this.cdr.detectChanges();
+      }
+      if (params['projectName']) {
+        this.quoteForm.get('header')?.setValue(`Quote for ${params['projectName']}`);
+      }
+    });
+  }
 
   createQuoteRow(): FormGroup {
     const row = this.fb.group({
       description: [''],
       quantity: [1],
       unitPrice: [0],
-      total: [0]
+      total: [0],
     });
 
     // Update total when quantity or unitPrice changes
@@ -255,7 +275,7 @@ export class QuoteComponent implements OnInit {
     const file = (event.target as HTMLInputElement)?.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         this.logoUrl = reader.result as string;
       };
       reader.readAsDataURL(file);
@@ -345,10 +365,10 @@ export class QuoteComponent implements OnInit {
     pdf.setFontSize(10);
     pdf.text(this.quoteForm.get('from')?.value || '', margin, currentY, { maxWidth: contentWidth / 2 });
     currentY += 15;
-    pdf.text(`${this.quoteForm.get('toTitle')?.value}: ${this.quoteForm.get('to')?.value || ''}`, margin, currentY, { maxWidth: contentWidth / 2 });
+    pdf.text(`${this.quoteForm.get('toTitle')?.value || 'Bill To'}: ${this.quoteForm.get('to')?.value || ''}`, margin, currentY, { maxWidth: contentWidth / 2 });
     currentY += 15;
     if (this.quoteForm.get('shipTo')?.value) {
-      pdf.text(`${this.quoteForm.get('shipToTitle')?.value}: ${this.quoteForm.get('shipTo')?.value}`, margin, currentY, { maxWidth: contentWidth / 2 });
+      pdf.text(`${this.quoteForm.get('shipToTitle')?.value || 'Ship To'}: ${this.quoteForm.get('shipTo')?.value}`, margin, currentY, { maxWidth: contentWidth / 2 });
       currentY += 15;
     }
 
@@ -380,17 +400,17 @@ export class QuoteComponent implements OnInit {
     // Table Header
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(this.quoteForm.get('itemHeader')?.value, margin, currentY, { maxWidth: 80 });
-    pdf.text(this.quoteForm.get('quantityHeader')?.value, margin + 90, currentY);
-    pdf.text(this.quoteForm.get('unitCostHeader')?.value, margin + 110, currentY);
-    pdf.text(this.quoteForm.get('amountHeader')?.value, margin + 140, currentY);
+    pdf.text(this.quoteForm.get('itemHeader')?.value || 'Item', margin, currentY, { maxWidth: 80 });
+    pdf.text(this.quoteForm.get('quantityHeader')?.value || 'Quantity', margin + 90, currentY);
+    pdf.text(this.quoteForm.get('unitCostHeader')?.value || 'Rate', margin + 110, currentY);
+    pdf.text(this.quoteForm.get('amountHeader')?.value || 'Amount', margin + 140, currentY);
     currentY += 5;
     pdf.line(margin, currentY, margin + contentWidth, currentY);
     currentY += 5;
 
     // Table Rows with distributed Extra Costs
     pdf.setFont('helvetica', 'normal');
-    this.quoteRows.controls.forEach(row => {
+    this.quoteRows.controls.forEach((row) => {
       checkNewPage(10);
       const description = row.get('description')?.value || '';
       const quantity = row.get('quantity')?.value || 0;
@@ -445,48 +465,29 @@ export class QuoteComponent implements OnInit {
       currentY += 7;
     }
 
+    // Total
     pdf.setFont('helvetica', 'bold');
     pdf.text('Total', margin, currentY);
     pdf.text(`$${grandTotal.toFixed(2)}`, margin + 140, currentY);
     currentY += 7;
-
-    // Commented out Amount Paid and Balance Due sections
-    /*
-    // Only include Amount Paid and Balance Due in PDF if hasAmountPaid is true
-    if (this.hasAmountPaid) {
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Amount Paid', margin, currentY);
-      pdf.text(`$${(this.quoteForm.get('amountPaid')?.value || 0).toFixed(2)}`, margin + 140, currentY);
-      currentY += 7;
-      pdf.text('Balance Due', margin, currentY);
-      pdf.text(`$${(this.getGrandTotal() - (this.quoteForm.get('amountPaid')?.value || 0)).toFixed(2)}`, margin + 140, currentY);
-      currentY += 7;
-    } else {
-      // If no Amount Paid, still show Balance Due as the full total
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Balance Due', margin, currentY);
-      pdf.text(`$${this.getGrandTotal().toFixed(2)}`, margin + 140, currentY);
-      currentY += 7;
-    }
-    */
 
     // Notes and Terms
     checkNewPage(30);
     currentY += 10;
     if (this.quoteForm.get('notes')?.value) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text(this.quoteForm.get('notesTitle')?.value, margin, currentY);
+      pdf.text(this.quoteForm.get('notesTitle')?.value || 'Notes', margin, currentY);
       currentY += 7;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(this.quoteForm.get('notes')?.value, margin, currentY, { maxWidth: contentWidth });
+      pdf.text(this.quoteForm.get('notes')?.value || '', margin, currentY, { maxWidth: contentWidth });
       currentY += 15;
     }
     if (this.quoteForm.get('terms')?.value) {
       pdf.setFont('helvetica', 'bold');
-      pdf.text(this.quoteForm.get('termsTitle')?.value, margin, currentY);
+      pdf.text(this.quoteForm.get('termsTitle')?.value || 'Terms', margin, currentY);
       currentY += 7;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(this.quoteForm.get('terms')?.value, margin, currentY, { maxWidth: contentWidth });
+      pdf.text(this.quoteForm.get('terms')?.value || '', margin, currentY, { maxWidth: contentWidth });
     }
 
     // Page Numbers

@@ -1,0 +1,59 @@
+<div class="container">
+    <div class="fullcolumn">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Select a Job to Quote</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          
+          <!-- Loading Spinner -->
+          <div *ngIf="isLoading" class="loading-container">
+            <mat-spinner></mat-spinner>
+          </div>
+  
+          <!-- Error Message -->
+          <div *ngIf="errorMessage" class="alert alert-danger">
+            {{ errorMessage }}
+          </div>
+  
+          <!-- Jobs List -->
+          <div class="jobs-list" *ngIf="!isLoading && jobs.length > 0">
+            <mat-list>
+              <mat-list-item *ngFor="let job of jobs" (click)="selectJob(job)" [class.selected]="job === selectedJob">
+                <span>{{ job.ProjectName }} (ID: {{ job.Id }})</span>
+              </mat-list-item>
+            </mat-list>
+          </div>
+  
+          <!-- No Jobs Message -->
+          <div *ngIf="!isLoading && jobs.length === 0" class="no-jobs">
+            No jobs available.
+          </div>
+  
+          <!-- Subtasks Section -->
+          <div class="subtasks-section" *ngIf="selectedJob">
+            <mat-divider></mat-divider>
+            <h3>Quotable Subtasks for {{ selectedJob.ProjectName }}</h3>
+            <div class="subtask-group" *ngFor="let group of subtaskGroups">
+              <h4>{{ group.title }}</h4>
+              <mat-list>
+                <mat-list-item *ngFor="let subtask of group.subtasks">
+                  <mat-checkbox [(ngModel)]="subtask.selected" (change)="toggleSubtaskSelection(subtask)">
+                    {{ subtask.task }} (Cost: ${{ subtask.cost || 0 }})
+                  </mat-checkbox>
+                </mat-list-item>
+              </mat-list>
+            </div>
+          </div>
+  
+          <!-- Action Buttons -->
+          <div class="action-buttons" *ngIf="selectedJob">
+            <button class="submit-btn" mat-raised-button (click)="proceedToQuote()" [disabled]="selectedSubtasks.length === 0">
+              Create Quote
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
