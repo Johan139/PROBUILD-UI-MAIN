@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Profile, TeamMember, Document } from './profile.model';
+import { Profile, TeamMember, Document, ProfileDocument } from './profile.model';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth.service';
 
@@ -52,7 +52,9 @@ export class ProfileService {
         })
       );
   }
-
+downloadJobDocument(documentId: number): Observable<Blob> {
+  return this.http.get(`${this.apiUrl}/download/${documentId}`, { responseType: 'blob' });
+}
   updateProfile(profile: Profile): Observable<Profile> {
     const url = `${this.apiUrl}/update`;
     return this.http.put<Profile>(url, profile, { headers: this.getHeaders() })
@@ -75,7 +77,9 @@ export class ProfileService {
         })
       );
   }
-
+  getUserDocuments(userId: string): Observable<ProfileDocument []> {
+    return this.http.get<ProfileDocument []>(`${this.apiUrl}/GetDocuments/${userId}`);
+  }
   getTeamMembers(): Observable<TeamMember[]> {
     // Simulate API call with dummy data
     return of(this.dummyTeamMembers);

@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, ElementRef, Inject, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
@@ -16,8 +16,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialogModule } from '@angular/material/dialog';
-import { NgForOf, NgIf } from '@angular/common';
-
+import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { timeout } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { v4 as uuidv4 } from 'uuid';
+import { JobsService } from '../../services/jobs.service';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -28,6 +38,9 @@ import { NgForOf, NgIf } from '@angular/common';
     MatDividerModule,
     MatFormFieldModule,
     MatInputModule,
+    MatProgressBarModule,
+    MatAutocompleteModule,
+    MatTooltipModule,
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
@@ -41,28 +54,52 @@ import { NgForOf, NgIf } from '@angular/common';
   styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
+  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  addressControl = new FormControl<string>('');
+  options: { description: string; place_id: string }[] = [];
+selectedPlace: { description: string; place_id: string } | null = null;
+autocompleteService: google.maps.places.AutocompleteService | undefined;
+isGoogleMapsLoaded: boolean = false;
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
   isLoading = true;
   isSaving = false;
+  isBrowser: boolean;
+  progress: number = 0;
+  isUploading: boolean = false;
+  uploadedFilesCount: number = 0;
+  uploadedFileNames: string[] = [];
+  uploadedFileUrls: string[] = [];
+  sessionId: string = '';
+  jobCardForm: FormGroup;
   errorMessage: string | null = null;
   successMessage: string | null = null;
   userRole: string | null = null;
   isVerified = false;
+  
   availableRoles: string[] = ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'];
   teamMembers: TeamMember[] = [];
-  documents: Document[] = [];
+  documents: ProfileDocument[] = [];
   displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
+    private hubConnection!: HubConnection;
+
+  alertMessage: string | undefined;
+  showAlert: boolean | undefined;
 
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
     private fb: FormBuilder,
+     private httpClient: HttpClient,
     private matIconRegistry: MatIconRegistry,
-    private domSanitizer: DomSanitizer
+    private domSanitizer: DomSanitizer,
+        private jobsService: JobsService,
+      @Inject(PLATFORM_ID) private platformId: Object
   ) {
+       this.jobCardForm = new FormGroup({});
+        this.isBrowser = isPlatformBrowser(this.platformId);
     this.profileForm = this.fb.group({
       id: [null],
       email: [null],
@@ -70,7 +107,7 @@ export class ProfileComponent implements OnInit {
       lastName: [null, Validators.required],
       phoneNumber: [null, Validators.required],
       userType: [null],
-      companyName: [null, Validators.required],
+      companyName: [null],
       companyRegNo: [null],
       vatNo: [null],
       constructionType: [null],
@@ -80,6 +117,7 @@ export class ProfileComponent implements OnInit {
       certificationDocumentPath: [null],
       availability: [null],
       trade: [null],
+      SessionId :[null],
       supplierType: [null],
       productsOffered: [null],
       projectPreferences: [null],
@@ -89,7 +127,15 @@ export class ProfileComponent implements OnInit {
       state: [null],
       city: [null],
       subscriptionPackage: [null],
-      isVerified: [false]
+      isVerified: [false],
+      address: [null, Validators.required],
+      formattedAddress: [''],
+      streetNumber: [''],
+      streetName: [''],
+      postalCode: [''],
+      latitude: [null],
+      longitude: [null],
+      googlePlaceId: [''],
     });
 
     this.teamForm = this.fb.group({
@@ -107,7 +153,24 @@ export class ProfileComponent implements OnInit {
       this.domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
     );
   }
-
+  ngAfterViewInit(): void {
+    this.addressControl.valueChanges.subscribe(value => {
+      if (typeof value === 'string' && value.trim()) {
+        this.autocompleteService?.getPlacePredictions({ input: value }, (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            this.options = predictions.map(pred => ({
+              description: pred.description,
+              place_id: pred.place_id,
+            }));
+          } else {
+            this.options = [];
+          }
+        });
+      } else {
+        this.options = [];
+      }
+    });
+  }
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
@@ -122,6 +185,37 @@ export class ProfileComponent implements OnInit {
         this.errorMessage = 'Please log in to view your profile.';
       }
     });
+
+        this.sessionId = uuidv4();
+        this.hubConnection = new HubConnectionBuilder()
+        .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+          .configureLogging(LogLevel.Debug)
+          .build();
+    
+        this.hubConnection.on('ReceiveProgress', (progress: number) => {
+          const cappedProgress = Math.min(100, progress);
+          this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
+          console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
+        });
+    
+        this.hubConnection.on('UploadComplete', (fileCount: number) => {
+          this.isUploading = false;
+          this.resetFileInput();
+          console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
+          console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
+        });
+    
+        this.hubConnection
+          .start()
+          .then(() => console.log('SignalR connection established successfully'))
+          .catch(err => console.error('SignalR Connection Error:', err));
+
+          if (this.isBrowser) {
+            this.loadGoogleMapsScript().then(() => {
+              this.isGoogleMapsLoaded = true;
+              this.autocompleteService = new google.maps.places.AutocompleteService();
+            });
+          }
   }
 
   loadProfile(): void {
@@ -145,7 +239,72 @@ export class ProfileComponent implements OnInit {
       }
     });
   }
+  onAddressSelected(event: MatAutocompleteSelectedEvent): void {
+    const selectedAddress = event.option.value;
+    this.selectedPlace = selectedAddress;
+  
+    const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
+    placesService.getDetails(
+      {
+        placeId: selectedAddress.place_id,
+        fields: [
+          'place_id',
+          'geometry',
+          'formatted_address',
+          'address_components'
+        ]
+      },
+      (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+          const components = place.address_components || [];
+          const getComponent = (type: string) =>
+            components.find(c => c.types.includes(type))?.long_name || '';
+    
+          const patchObj = {
+            address: selectedAddress.description,
+            formattedAddress: place.formatted_address || selectedAddress.description,
+            streetNumber: getComponent('street_number'),
+            streetName: getComponent('route'),
+            city: getComponent('locality'),
+            state: getComponent('administrative_area_level_1'),
+            postalCode: getComponent('postal_code'),
+            country: getComponent('country'),
+            latitude: place.geometry?.location?.lat() ?? null,
+            longitude: place.geometry?.location?.lng() ?? null,
+            googlePlaceId: place.place_id || selectedAddress.place_id,  // fallback if needed
+          };
+    
+          this.profileForm.patchValue(patchObj);
+          this.addressControl.setValue(patchObj.address);
+          console.log('🔄 Google Place data patched:', patchObj);
+        }
+      }
+    );
+    
+  }
+  
 
+  loadGoogleMapsScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (typeof google !== 'undefined' && google.maps) {
+          resolve();
+        } else {
+          reject('Google Maps API not available after load');
+        }
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
   loadTeamMembers(): void {
     this.profileService.getTeamMembers().subscribe({
       next: (members: TeamMember[]) => {
@@ -158,22 +317,70 @@ export class ProfileComponent implements OnInit {
   }
 
   loadDocuments(): void {
-    this.profileService.getDocuments().subscribe({
-      next: (docs: Document[]) => {
-        this.documents = docs;
+    const userId = this.authService.currentUserSubject.value?.id;
+    if (!userId) {
+      console.warn('UserId not found for document fetch');
+      return;
+    }
+  
+    this.profileService.getUserDocuments(userId).subscribe({
+      next: (docs: ProfileDocument[]) => {
+        this.documents = docs.map(doc => ({
+          ...doc,
+          name: doc.fileName,
+          type: 'Uploaded', // Placeholder until backend sends a real type
+          uploadedDate: new Date(), // Or parse if available
+          path: doc.blobUrl
+        }));
       },
-      error: (error) => {
-        this.errorMessage = 'Failed to load documents.';
+      error: (err) => {
+        console.error('Failed to fetch documents:', err);
       }
     });
   }
-
+  viewDocument(document: any): void {
+    this.profileService.downloadJobDocument(document.id).subscribe({
+      next: (response: Blob) => {
+        // Infer MIME type based on extension
+        const extension = document.name?.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream'; // fallback
+  
+        if (extension === 'pdf') mimeType = 'application/pdf';
+        else if (['png', 'jpg', 'jpeg'].includes(extension)) mimeType = `image/${extension}`;
+        else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        else if (extension === 'doc') mimeType = 'application/msword';
+  
+        const blob = new Blob([response], { type: mimeType });
+        const url = window.URL.createObjectURL(blob);
+        const newTab = window.open(url, '_blank');
+  
+        if (!newTab) {
+          this.alertMessage = 'Failed to open document. Please allow pop-ups for this site.';
+          this.showAlert = true;
+        }
+  
+        // Cleanup after 10 seconds
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: (err) => {
+        console.error('Error viewing document:', err);
+        this.alertMessage = 'Failed to view document.';
+        this.showAlert = true;
+      }
+    });
+  }
+  
   onSubmit(): void {
+    console.log(this.profileForm)
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
       this.errorMessage = null;
       this.successMessage = null;
+      this.profileForm.patchValue({
+        SessionId: this.sessionId
+      });
       const updatedProfile: Profile = this.profileForm.value;
+      
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
@@ -192,28 +399,59 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  onFileSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      this.isLoading = true;
-      this.errorMessage = null;
-      this.successMessage = null;
-      this.profileService.uploadCertification(file).subscribe({
-        next: (response: any) => {
-          this.profileForm.patchValue({
-            certification: { certificationDocumentPath: response.path ?? null }
-          });
-          this.profile = { ...this.profile!, certificationDocumentPath: response.path ?? null };
-          this.successMessage = 'Certification uploaded successfully';
-          this.isLoading = false;
-          this.loadDocuments(); // Refresh documents list
-        },
-        error: () => {
-          this.errorMessage = 'Failed to upload certification.';
-          this.isLoading = false;
-        }
-      });
+onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files?.length) {
+      console.error('No files selected');
+      return;
     }
+    const newFileNames = Array.from(input.files).map(file => file.name);
+    this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
+    const formData = new FormData();
+    Array.from(input.files).forEach(file => {
+      formData.append('Blueprint', file);
+    });
+    formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
+    formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
+    formData.append('connectionId', this.hubConnection.connectionId || '');
+    formData.append('sessionId', this.sessionId);
+    this.progress = 0;
+    this.isUploading = true;
+    console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
+    this.httpClient
+      .post<any>(BASE_URL + '/profile/UploadImage', formData, {
+        reportProgress: true,
+        observe: 'events',
+        headers: new HttpHeaders({ Accept: 'application/json' }),
+      })
+      .pipe(timeout(300000))
+      .subscribe({
+        next: (event) => {
+          if (event.type === HttpEventType.UploadProgress && event.total) {
+            this.progress = Math.round((50 * event.loaded) / event.total);
+            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
+          } else if (event.type === HttpEventType.Response) {
+            console.log('Upload response:', event.body);
+            const newFilesCount = newFileNames.length;
+            this.uploadedFilesCount += newFilesCount;
+            if (event.body?.fileUrls) {
+              this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
+              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
+            } else {
+              console.error('No fileUrls returned in response:', event.body);
+            }
+            this.resetFileInput();
+          }
+        },
+        error: (error) => {
+          console.error('Upload error:', error);
+          this.progress = 0;
+          this.isUploading = false;
+          this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
+          this.resetFileInput();
+        },
+        complete: () => console.log('Client-to-API upload complete'),
+      });
   }
 
   addTeamMember(): void {
@@ -233,7 +471,13 @@ export class ProfileComponent implements OnInit {
       this.errorMessage = 'Please fill all required fields correctly.';
     }
   }
-
+  resetFileInput(): void {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+      console.log('File input reset');
+    }
+  }
   removeTeamMember(email: string): void {
     this.profileService.removeTeamMember(email).subscribe({
       next: () => {
@@ -276,10 +520,19 @@ export class ProfileComponent implements OnInit {
   }
 
   canViewDeliveryLocation(): boolean {
-    return ['PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+    return true;
   }
 
   canViewSubscription(): boolean {
     return this.availableRoles.includes(this.userRole || '');
   }
+  
+}
+// To this:
+export interface ProfileDocument {
+  id: number;
+  userId: string;
+  fileName: string;
+  size: number;
+  blobUrl: string;
 }

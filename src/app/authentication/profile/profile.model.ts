@@ -41,3 +41,10 @@ export interface Document {
   path: string;
   uploadedDate: Date;
 }
+export interface ProfileDocument {
+  id: number;
+  userId: string;
+  fileName: string;
+  size: number;
+  blobUrl: string;
+}

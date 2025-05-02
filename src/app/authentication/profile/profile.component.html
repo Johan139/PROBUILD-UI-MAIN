@@ -3,9 +3,8 @@
     <div class="fullcolumn">
       <mat-card class="profile-card">
         <mat-card-header>
-          <mat-card-title>User Profile</mat-card-title>    
-          <mat-icon *ngIf="!isVerified" svgIcon="verified" aria-label="Account has been verified."></mat-icon>
-          <mat-icon *ngIf="isVerified" svgIcon="notVerified" aria-label="Account has not been verified."></mat-icon>
+          <mat-card-title>User Profile</mat-card-title>
+
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
@@ -69,6 +68,7 @@
                           <mat-option value="SUPPLIER">Supplier</mat-option>
                         </mat-select>
                       </mat-form-field>
+     
                     </div>
                   </div>
 
@@ -134,15 +134,23 @@
                           <mat-option value="Not Certified">Not Certified</mat-option>
                         </mat-select>
                       </mat-form-field>
-                      <div class="custom-file-upload">
-                        <label for="cert-upload" class="upload-label">
-                          <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon" style="height: 16px; width: 16px;" />
-                          Upload Certification
-                        </label>
-                        <input id="cert-upload" type="file" (change)="onFileSelected($event)" />
-                        <span *ngIf="profileForm.get('certificationDocumentPath')?.value" class="file-info">
-                          Current: <a [href]="profileForm.get('certificationDocumentPath')?.value" target="_blank">View Document</a>
-                        </span>
+                      <div class="upload-container">
+                        <div *ngIf="isUploading" class="upload-progress">
+                          <p>Upload Progress: {{ progress }}%</p>
+                          <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+                        </div>
+                        <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
+                          <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
+                            {{ uploadedFilesCount }} file(s) uploaded successfully
+                          </p>
+                        </div>
+                        <div class="custom-file-upload">
+                          <label for="file-upload" class="upload-label submit-btn">
+                            <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                            Upload File
+                          </label>
+                          <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -172,12 +180,24 @@
 
                   <!-- Delivery & Location -->
                   <div class="section" *ngIf="canViewDeliveryLocation()">
-                    <h3>Delivery & Location</h3>
+                    <h3>Operating area and Location</h3>
                     <div class="form-row">
-                      <mat-form-field appearance="fill">
-                        <mat-label>Delivery Area</mat-label>
-                        <input matInput formControlName="deliveryArea" placeholder=" " />
-                      </mat-form-field>
+                                  <!-- ✅ New Address Field -->
+                                  <mat-form-field appearance="fill">
+                                    <mat-label>Address</mat-label>
+                                    <input
+                                      #addressInput
+                                      matInput
+                                      [formControl]="addressControl"
+                                      [matAutocomplete]="auto"
+                                      placeholder="Enter an address"
+                                    />
+                                    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                                      <mat-option *ngFor="let option of options" [value]="option">
+                                        {{ option.description }}
+                                      </mat-option>
+                                    </mat-autocomplete>
+                                  </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Lead Time</mat-label>
                         <input matInput formControlName="deliveryTime" placeholder=" " />
@@ -215,7 +235,7 @@
                     <button mat-raised-button 
                             type="submit" 
                             class="submit-btn" 
-                            [disabled]="isSaving || profileForm.invalid">
+                          >
                       {{ isSaving ? 'Saving...' : 'Save Profile' }}
                     </button>
                   </div>
@@ -314,9 +334,9 @@
                     <ng-container matColumnDef="actions">
                       <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
                       <mat-cell *matCellDef="let doc">
-                        <a [href]="doc.path" target="_blank" mat-icon-button>
+                        <button mat-icon-button (click)="viewDocument(doc)">
                           <mat-icon>visibility</mat-icon>
-                        </a>
+                        </button>
                       </mat-cell>
                     </ng-container>
                     <mat-header-row *matHeaderRowDef="documentColumns"></mat-header-row>
