@@ -489,7 +489,13 @@ onFileSelected(event: Event): void {
       }
     });
   }
-
+  ngOnDestroy(): void {
+    if (this.hubConnection) {
+      this.hubConnection.stop()
+        .then(() => console.log('SignalR connection stopped'))
+        .catch(err => console.error('Error stopping SignalR:', err));
+    }
+  }
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
