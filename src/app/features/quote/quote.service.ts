@@ -8,7 +8,8 @@ import { AuthService } from '../../authentication/auth.service';
   providedIn: 'root'
 })
 export class QuoteService {
-  private apiUrl = 'http://localhost:5000/api/quotes';
+  
+  private apiUrl = `${environment.BACKEND_URL}/quotes`;
 
   constructor(private http: HttpClient,
     private authService: AuthService) { }
