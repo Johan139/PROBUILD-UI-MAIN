@@ -59,6 +59,10 @@ export class AppComponent implements OnInit, OnDestroy {
       'logout',
       domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/logout-svgrepo-com.svg')
     );
+    matIconRegistry.addSvgIcon(
+      'trash',
+      domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/icons8-trash.svg')
+    );
   }
 
   ngOnInit() {

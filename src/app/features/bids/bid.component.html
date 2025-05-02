@@ -1,0 +1,90 @@
+<div class="container">
+    <div class="fullcolumn">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title class="professional-title">Bid on Job</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider class="section-divider"></mat-divider>
+  
+          <!-- Job Details Section -->
+          <div class="job-details-section">
+            <h3>Job Details</h3>
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Title:</strong> {{ jobDetails?.title }}</p>
+                <p><strong>Description:</strong> {{ jobDetails?.description }}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Budget:</strong> ${{ jobDetails?.budget.toFixed(2) }}</p>
+                <p><strong>Deadline:</strong> {{ jobDetails?.deadline }}</p>
+              </div>
+            </div>
+          </div>
+  
+          <mat-divider class="section-divider"></mat-divider>
+  
+          <!-- Bid Submission Form -->
+          <form [formGroup]="bidForm" (ngSubmit)="onSubmit()">
+            <h3>Submit Your Bid</h3>
+            <div class="row">
+              <div class="col-md-4">
+                <mat-form-field appearance="fill" class="w-100">
+                  <mat-label>Bid Amount ($)</mat-label>
+                  <input matInput type="number" formControlName="amount" min="0" step="any" required>
+                  <mat-error *ngIf="bidForm.get('amount')?.hasError('required')">
+                    Bid amount is required
+                  </mat-error>
+                  <mat-error *ngIf="bidForm.get('amount')?.hasError('min')">
+                    Bid amount must be non-negative
+                  </mat-error>
+                </mat-form-field>
+              </div>
+              <div class="col-md-8">
+                <mat-form-field appearance="fill" class="w-100">
+                  <mat-label>Notes (Optional)</mat-label>
+                  <textarea matInput formControlName="notes" rows="2" placeholder="Additional notes about your bid..."></textarea>
+                </mat-form-field>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button mat-raised-button color="primary" type="submit" [disabled]="isSubmitting || bidForm.invalid">
+                Submit Bid
+              </button>
+            </div>
+          </form>
+  
+          <mat-divider class="section-divider"></mat-divider>
+  
+          <!-- User's Bids Table -->
+          <div class="bids-table-section" *ngIf="dataSource.data.length > 0">
+            <h3>Your Bids</h3>
+            <div class="table-wrapper">
+              <table mat-table [dataSource]="dataSource" class="themed-table">
+                <!-- Amount Column -->
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef>Amount</th>
+                  <td mat-cell *matCellDef="let bid">${{ bid.amount.toFixed(2) }}</td>
+                </ng-container>
+  
+                <!-- Notes Column -->
+                <ng-container matColumnDef="notes">
+                  <th mat-header-cell *matHeaderCellDef>Notes</th>
+                  <td mat-cell *matCellDef="let bid">{{ bid.notes || '-' }}</td>
+                </ng-container>
+  
+                <!-- Submitted At Column -->
+                <ng-container matColumnDef="submittedAt">
+                  <th mat-header-cell *matHeaderCellDef>Submitted At</th>
+                  <td mat-cell *matCellDef="let bid">{{ bid.submittedAt }}</td>
+                </ng-container>
+  
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>

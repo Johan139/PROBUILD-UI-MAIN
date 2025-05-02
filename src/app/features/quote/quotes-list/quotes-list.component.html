@@ -1,0 +1,47 @@
+<div class="container">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>My Quotes</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+          <!-- Quote Number Column -->
+          <ng-container matColumnDef="number">
+            <th mat-header-cell *matHeaderCellDef>Quote Number</th>
+            <td mat-cell *matCellDef="let quote">{{ quote.number || 'N/A' }}</td>
+          </ng-container>
+  
+          <!-- Created By Column -->
+          <ng-container matColumnDef="createdBy">
+            <th mat-header-cell *matHeaderCellDef>Created By</th>
+            <td mat-cell *matCellDef="let quote">{{ quote.createdBy || 'Unknown' }}</td>
+          </ng-container>
+  
+          <!-- Created Date Column -->
+          <ng-container matColumnDef="createdDate">
+            <th mat-header-cell *matHeaderCellDef>Date Created</th>
+            <td mat-cell *matCellDef="let quote">{{ quote.createdDate }}</td>
+          </ng-container>
+  
+          <!-- Total Column -->
+          <ng-container matColumnDef="total">
+            <th mat-header-cell *matHeaderCellDef>Total</th>
+            <td mat-cell *matCellDef="let quote">${{ quote.total.toFixed(2) }}</td>
+          </ng-container>
+  
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let quote">
+              <button mat-icon-button color="primary" (click)="openQuote(quote.id)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+  
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>

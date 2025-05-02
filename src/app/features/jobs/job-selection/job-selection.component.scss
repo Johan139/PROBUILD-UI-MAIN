@@ -1,0 +1,100 @@
+$primary-yellow: #FFC107;
+$secondary-yellow: #FFA000;
+$cyan: #00ACC1;
+$dark-gray: #333333;
+$white: #FFFFFF;
+$shadow: rgba(0, 0, 0, 0.2);
+
+// Ensure the container matches the layout of other components
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+// Style the card to match the professional look of quote.component
+mat-card {
+  background-color: $white;
+  box-shadow: 0 4px 8px $shadow;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+mat-card-title {
+  color: $dark-gray;
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+// Ensure the table is styled consistently with the items table in quote.component
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; // Ensure the table doesn't collapse too narrowly
+
+  th, td {
+    padding: 12px 8px; // Consistent padding with quote.component
+    text-align: left;
+    border-bottom: 1px solid $dark-gray;
+    color: $dark-gray;
+    font-size: 14px;
+  }
+
+  th {
+    background-color: $primary-yellow; // Match the header background
+    color: $dark-gray;
+    font-weight: 500;
+    text-transform: uppercase; // Match the professional look
+  }
+
+  td {
+    vertical-align: middle; // Ensure content alignment
+  }
+
+  // Style for the actions column to ensure buttons are visible and styled
+  .mat-column-actions {
+    width: 100px; // Fixed width to prevent overlap
+    text-align: center;
+  }
+
+  // Style for the button in the actions column
+  .mat-icon-button {
+    color: $cyan;
+
+    &:hover {
+      background-color: lighten($cyan, 40%);
+    }
+
+    mat-icon {
+      font-size: 20px; // Match icon size with other components
+    }
+  }
+}
+
+/* Pagination Buttons */
+.table-button {
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.icon {
+  width: 24px; /* Larger */
+  height: 24px;
+}
+
+// Ensure the table container is visible and handles overflow correctly
+.mat-elevation-z8 {
+  box-shadow: none; // Match the items table in quote.component
+  overflow: visible;
+}
