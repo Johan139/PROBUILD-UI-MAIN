@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { catchError, Observable, throwError } from 'rxjs';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
+import {environment} from "../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
