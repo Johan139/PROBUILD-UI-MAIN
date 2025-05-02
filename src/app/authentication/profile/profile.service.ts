@@ -57,7 +57,7 @@ downloadJobDocument(documentId: number): Observable<Blob> {
 }
   updateProfile(profile: Profile): Observable<Profile> {
     const url = `${this.apiUrl}/update`;
-    return this.http.put<Profile>(url, profile, { headers: this.getHeaders() })
+    return this.http.post<Profile>(url, profile, { headers: this.getHeaders() })
       .pipe(
         catchError(error => {
           console.error('Error updating profile:', error);
