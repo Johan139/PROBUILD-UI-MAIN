@@ -399,25 +399,29 @@ isGoogleMapsLoaded: boolean = false;
     }
   }
 
-onFileSelected(event: Event): void {
+  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input?.files?.length) {
       console.error('No files selected');
       return;
     }
+  
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
+  
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
     });
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    formData.append('connectionId', this.hubConnection.connectionId || '');
+    // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
+  
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
+    console.log('Starting file upload without SignalR');
+  
     this.httpClient
       .post<any>(BASE_URL + '/profile/UploadImage', formData, {
         reportProgress: true,
@@ -428,7 +432,8 @@ onFileSelected(event: Event): void {
       .subscribe({
         next: (event) => {
           if (event.type === HttpEventType.UploadProgress && event.total) {
-            this.progress = Math.round((50 * event.loaded) / event.total);
+            // Use full 0-100% range since SignalR is disabled
+            this.progress = Math.round((100 * event.loaded) / event.total);
             console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
           } else if (event.type === HttpEventType.Response) {
             console.log('Upload response:', event.body);
@@ -440,6 +445,7 @@ onFileSelected(event: Event): void {
             } else {
               console.error('No fileUrls returned in response:', event.body);
             }
+            this.isUploading = false;
             this.resetFileInput();
           }
         },

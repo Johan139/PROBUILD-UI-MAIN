@@ -120,9 +120,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.hubConnection = new HubConnectionBuilder()
-    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
-      .configureLogging(LogLevel.Debug)
-      .build();
+    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub', {
+      accessTokenFactory: () => localStorage.getItem('authToken') || ''
+    })
+    .withAutomaticReconnect()
+    .configureLogging(LogLevel.Debug)
+    .build();
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
@@ -137,10 +140,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
     });
 
-    this.hubConnection
-      .start()
-      .then(() => console.log('SignalR connection established successfully'))
-      .catch(err => console.error('SignalR Connection Error:', err));
+    // this.hubConnection
+    //   .start()
+    //   .then(() => console.log('SignalR connection established successfully'))
+    //   .catch(err => console.error('SignalR Connection Error:', err));
 
     console.log(this.hubConnection.connectionId);
 
@@ -617,23 +620,24 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       console.error('No files selected');
       return;
     }
-
+  
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-
+  
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
     });
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    formData.append('connectionId', this.hubConnection.connectionId || '');
     formData.append('sessionId', this.sessionId);
-
+    // Remove connectionId since SignalR is disabled
+    // formData.append('connectionId', this.hubConnection?.connectionId || '');
+  
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload. Connection ID:', this.hubConnection.connectionId);
-
+    console.log('Starting file upload without SignalR');
+  
     this.httpClient
       .post<any>(BASE_URL + '/Jobs/UploadImage', formData, {
         reportProgress: true,
@@ -644,18 +648,20 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: (event) => {
           if (event.type === HttpEventType.UploadProgress && event.total) {
-            this.progress = Math.round((50 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
+            // Use full 0-100% range since SignalR is disabled
+            this.progress = Math.round((100 * event.loaded) / event.total);
+            console.log(`Client-to-API Progress: ${this.progress}%`);
           } else if (event.type === HttpEventType.Response) {
             console.log('Upload response:', event.body);
             const newFilesCount = newFileNames.length;
             this.uploadedFilesCount += newFilesCount;
             if (event.body?.fileUrls) {
               this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
+              console.log('Updated uploadedFileUrls:', this.uploadedFileUrls);
             } else {
               console.error('No fileUrls returned in response:', event.body);
             }
+            this.isUploading = false;
             this.resetFileInput();
           }
         },
