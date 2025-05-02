@@ -13,7 +13,8 @@ import { ProfileComponent } from './authentication/profile/profile.component';
 import { JobAssignmentComponent } from './features/jobs/job-assignment/job-assignment.component';
 import { ForgotPasswordComponent} from "./authentication/forgot-password/forgot-password.component";
 import { CalendarComponent } from './features/calendar/calendar.component';
-import { QuoteComponent} from "./features/quote/quote.component";
+import { QuoteComponent } from './features/quote/quote.component';
+import { QuotesListComponent } from './features/quote/quotes-list/quotes-list.component';
 import { BidComponent } from './features/bids/bid.component';
 import { JobSelectionComponent } from './features/jobs/job-selection/job-selection.component';
 
@@ -30,7 +31,9 @@ export const routes: Routes = [
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
   {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
+  {path:'quotes', component: QuotesListComponent, canActivate: [AuthGuard]  },
   {path:'bids', component:BidComponent, canActivate: [AuthGuard] },
+  {path:'quote/:id', component: QuoteComponent, canActivate: [AuthGuard] },
   {path:'jobselection', component:JobSelectionComponent, canActivate: [AuthGuard] },
   {path:'dashboard', component: DashboardComponent,
     canActivate: [AuthGuard],
@@ -42,6 +45,7 @@ export const routes: Routes = [
       {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },
       {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
       {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
+      {path:'quotes', component: QuotesListComponent, canActivate: [AuthGuard]  },
       {path:'bids', component:BidComponent, canActivate: [AuthGuard] },
       {path:'jobselection', component:JobSelectionComponent, canActivate: [AuthGuard] },
     ]

@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { NgForOf, NgIf } from '@angular/common';
+import { NgForOf, NgIf, CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -8,6 +8,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FormsModule } from '@angular/forms';
+import { JobsService } from '../../../services/jobs.service';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-job-selection',
@@ -15,6 +17,7 @@ import { FormsModule } from '@angular/forms';
   imports: [
     NgForOf,
     NgIf,
+    CommonModule,
     MatCardModule,
     MatButtonModule,
     MatCheckboxModule,
@@ -22,6 +25,7 @@ import { FormsModule } from '@angular/forms';
     MatListModule,
     MatProgressSpinnerModule,
     FormsModule,
+    MatIconModule
   ],
   templateUrl: './job-selection.component.html',
   styleUrls: ['./job-selection.component.scss'],
@@ -33,6 +37,10 @@ export class JobSelectionComponent implements OnInit {
   selectedSubtasks: any[] = [];
   isLoading: boolean = false;
   errorMessage: string = '';
+  jobListFull: any[] = [];
+  jobList: any[] = [];
+  pageSize = 10;
+  currentPage = 1;
 
   // Dummy data for jobs
   private dummyJobs = [
@@ -92,11 +100,13 @@ export class JobSelectionComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private jobService: JobsService
   ) {}
 
   ngOnInit(): void {
     this.fetchJobs();
+    this.fetchUserJobs();
   }
 
   fetchJobs(): void {
@@ -105,7 +115,50 @@ export class JobSelectionComponent implements OnInit {
     setTimeout(() => {
       this.jobs = this.dummyJobs;
       this.isLoading = false;
+      this.cdr.detectChanges();
     }, 500); // Simulate network delay
+  }
+
+  fetchUserJobs(): void {
+    this.isLoading = true;
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      this.jobService.getAllJobsByUserId(userId).subscribe(
+        (response) => {
+          this.jobListFull = response;
+          this.loadJobs();
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        (error) => {
+          console.error('Error fetching jobs:', error);
+          this.isLoading = false;
+          this.errorMessage = 'Failed to load jobs. Please try again.';
+          this.cdr.detectChanges();
+        }
+      );
+    } else {
+      console.error('User ID is not available in local storage.');
+      this.isLoading = false;
+      this.errorMessage = 'User not logged in.';
+      this.cdr.detectChanges();
+    }
+  }
+
+  loadJobs(): void {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = this.currentPage * this.pageSize;
+    this.jobList = this.jobListFull.slice(startIndex, endIndex);
+  }
+
+  navigatePage(direction: 'prev' | 'next'): void {
+    if (direction === 'prev' && this.currentPage > 1) {
+      this.currentPage--;
+    } else if (direction === 'next' && this.currentPage * this.pageSize < this.jobListFull.length) {
+      this.currentPage++;
+    }
+    this.loadJobs();
+    this.cdr.detectChanges();
   }
 
   selectJob(job: any): void {
@@ -113,6 +166,23 @@ export class JobSelectionComponent implements OnInit {
     this.selectedSubtasks = [];
     this.fetchSubtasksForJob(job);
     this.cdr.detectChanges(); // Ensure UI updates
+  }
+
+  selectJobFromTable(job: any): void {
+    // Map the job from the "Your Jobs" table to the format expected by the jobs list
+    const mappedJob = {
+      Id: job.id,
+      ProjectName: job.projectName,
+      FoundationSubtask: JSON.stringify([]), // Add dummy data or fetch real subtasks if available
+      WallInsulationSubtask: JSON.stringify([]),
+      WallStructureSubtask: JSON.stringify([]),
+      ElectricalSupplyNeedsSubtask: JSON.stringify([]),
+      RoofInsulationSubtask: JSON.stringify([]),
+      RoofStructureSubtask: JSON.stringify([]),
+      FinishesSubtask: JSON.stringify([]),
+    };
+    this.jobs = [mappedJob, ...this.jobs.filter(j => j.Id !== mappedJob.Id)]; // Add or update job in the list
+    this.selectJob(mappedJob);
   }
 
   fetchSubtasksForJob(job: any): void {

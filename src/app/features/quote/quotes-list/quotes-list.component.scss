@@ -1,0 +1,54 @@
+$primary-yellow: #FFC107;
+$secondary-yellow: #FFA000;
+$cyan: #00ACC1;
+$dark-gray: #333333;
+$white: #FFFFFF;
+$shadow: rgba(0, 0, 0, 0.2);
+
+.container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+mat-card {
+  background-color: $white;
+  box-shadow: 0 4px 8px $shadow;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+mat-card-title {
+  color: $dark-gray;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid $dark-gray;
+  }
+
+  th {
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    font-weight: 500;
+  }
+
+  td {
+    color: $dark-gray;
+  }
+
+  .mat-icon-button {
+    color: $cyan;
+
+    &:hover {
+      background-color: lighten($cyan, 40%);
+    }
+  }
+}
