@@ -206,13 +206,23 @@
             </div>
           </div>
           <!-- Action Buttons -->
-          <div class="action-buttons mt-4">
-            <button class="btn btn-success me-2" type="button" (click)="onSubmit()" [disabled]="isSaving">
-              Save Quote
-            </button>
-            <button class="btn btn-primary" type="button" (click)="saveToDatabase()" [disabled]="isSaving">
-              Save to Database
-            </button>
+          <div class="action-buttons mt-4 d-flex justify-content-between">
+            <div>
+              <button *ngIf="!quoteId" class="btn btn-primary me-2" type="button" (click)="saveToDatabase()" [disabled]="isSaving">
+                Save
+              </button>
+              <button *ngIf="quoteId" class="btn btn-primary me-2" type="button" (click)="updateDatabase(quoteId)" [disabled]="isSaving">
+                Update Quote
+              </button>
+            </div>
+            <div>
+              <button *ngIf="quoteId" class="btn btn-primary me-2" type="button" (click)="saveToDatabase()" [disabled]="isSaving">
+                Save as New
+              </button>
+              <button class="btn btn-success" type="button" (click)="onSubmit()" [disabled]="isSaving">
+                Download Quote
+              </button>
+            </div>
           </div>
         </form>
       </mat-card-content>

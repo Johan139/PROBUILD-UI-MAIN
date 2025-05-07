@@ -1,5 +1,10 @@
 <div class="container">
   <div class="fullcolumn">
+    <!-- Error Message -->
+    <div *ngIf="errorMessage && !isLoading" class="error-message">
+      <p>{{errorMessage}}</p>
+    </div>
+
     <!-- Your Jobs Section -->
     <mat-card class="project-card">
       <mat-card-header>
@@ -7,106 +12,221 @@
       </mat-card-header>
       <mat-card-content>
         <mat-divider></mat-divider>
-        <div *ngIf="isLoading" class="loading-container">
+        <div *ngIf="isLoading && !jobList.length" class="loading-container">
           <mat-spinner></mat-spinner>
+          <p>Loading jobs...</p>
         </div>
         <div *ngIf="jobList.length > 0 && !isLoading" class="job-list-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Job Type</th>
-                <th>Job Status</th>
-                <th>Start Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr 
-                class="data-row"
-                *ngFor="let job of jobList"
-                [ngClass]="{
-                  'published': job.status === 'PUBLISHED',
-                  'discarded': job.status === 'DISCARDED',
-                  'draft': job.status === 'NEW'
-                }"
-                (click)="selectJobFromTable(job)"
-              >
-                <td>{{ job.projectName }}</td>
-                <td>{{ job.jobType }}</td>
-                <td>{{ job.status }}</td>
-                <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="row justify-content-center mt-3">
-            <div class="col-1 d-flex justify-content-center">
-              <button class="table-button" (click)="navigatePage('prev')" [disabled]="currentPage === 1">
-                <img src="assets/custom-svg/up-square-svgrepo-com.svg" alt="Previous Page" class="icon">
-              </button>
-            </div>
-            <div class="col-1 d-flex justify-content-center">
-              <button class="table-button" (click)="navigatePage('next')" [disabled]="currentPage * pageSize >= jobListFull.length">
-                <img src="assets/custom-svg/down-square-svgrepo-com.svg" alt="Next Page" class="icon">
-              </button>
-            </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>Job Type</th>
+                  <th>Job Status</th>
+                  <th>Start Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  class="data-row"
+                  *ngFor="let job of jobList"
+                  [ngClass]="{
+                    'published': job.status === 'PUBLISHED',
+                    'discarded': job.status === 'DISCARDED',
+                    'draft': job.status === 'NEW',
+                    'selected': selectedJob?.Id === job.id
+                  }"
+                  (click)="selectJobFromTable(job)"
+                >
+                  <td>{{ job.projectName }}</td>
+                  <td>{{ job.jobType }}</td>
+                  <td>{{ job.status }}</td>
+                  <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <div *ngIf="jobList.length == 0 && !isLoading" class="no-more-jobs">
-          No more jobs to display.
-        </div>        
+        <div *ngIf="jobList.length === 0 && !isLoading && !errorMessage" class="no-more-jobs">
+          No jobs to display.
+        </div>
       </mat-card-content>
     </mat-card>
 
-    <!-- Job Selection Section -->
-    <mat-card class="job-selection-card">
-      <mat-card-header>
-        <mat-card-title>Select a Job to Quote</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider></mat-divider>
-        
-        <!-- Error Message -->
-        <div *ngIf="errorMessage" class="alert alert-danger">
-          {{ errorMessage }}
-        </div>
-
-        <!-- Jobs List -->
-        <div class="jobs-list" *ngIf="!isLoading && jobs.length > 0">
-          <mat-list>
-            <mat-list-item *ngFor="let job of jobs" (click)="selectJob(job)" [class.selected]="job === selectedJob">
-              <span>{{ job.ProjectName }} (ID: {{ job.Id }})</span>
-            </mat-list-item>
-          </mat-list>
-        </div>
-
-        <!-- No Jobs Message -->
-        <div *ngIf="!isLoading && jobs.length === 0" class="no-jobs">
-          No jobs available.
-        </div>
-
-        <!-- Subtasks Section -->
-        <div class="subtasks-section" *ngIf="selectedJob">
+    <!-- Selected Job Details Section -->
+    <div *ngIf="selectedJob" class="job-details-container">
+      <mat-card class="job-details-card">
+        <mat-card-header>
+          <mat-card-title>Job: {{selectedJob.ProjectName}}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
           <mat-divider></mat-divider>
-          <h3>Quotable Subtasks for {{ selectedJob.ProjectName }}</h3>
-          <div class="subtask-group" *ngFor="let group of subtaskGroups">
-            <h4>{{ group.title }}</h4>
-            <mat-list>
-              <mat-list-item *ngFor="let subtask of group.subtasks">
-                <mat-checkbox [(ngModel)]="subtask.selected" (change)="toggleSubtaskSelection(subtask)">
-                  {{ subtask.task }} (Cost: ${{ subtask.cost || 0 }})
-                </mat-checkbox>
-              </mat-list-item>
-            </mat-list>
+          <div *ngIf="isLoading" class="loading-container">
+            <mat-spinner></mat-spinner>
+            <p>Loading job details...</p>
+          </div>
+          <div *ngIf="!isLoading">
+            <!-- Project Details -->
+            <div class="job-details">
+              <p><strong>Start Date:</strong> {{selectedJob.desiredStartDate | date: 'yyyy-MM-dd'}}</p>
+              <p><strong>Address:</strong> {{selectedJob.address || 'N/A'}}</p>
+            </div>
+
+            <!-- Subtasks Section -->
+            <mat-card-title>Tasks and Subtasks</mat-card-title>
+            <mat-divider></mat-divider>
+            <div *ngIf="subtaskGroups.length === 0 && !isLoading" class="no-subtasks">
+              <p>No subtasks available for this job.</p>
+            </div>
+            <div class="subtask-section" *ngIf="subtaskGroups.length > 0">
+              <div class="subtask-table" *ngFor="let table of subtaskGroups">
+                <div class="table-header">
+                  <h3>{{table.title}}</h3>
+                  <button class="submit-btn" (click)="createQuoteForSelectedSubtasks()">
+                    Quote On Selection(s)
+                  </button>
+                </div>
+                <table class="themed-table">
+                  <thead>
+                    <tr>
+                      <th>Select</th>
+                      <th>Task</th>
+                      <th>Days</th>
+                      <th>Start Date</th>
+                      <th>End Date</th>
+                      <th>Task Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let subtask of table.subtasks; let i = index" [ngClass]="{ 'deleted': subtask.deleted }">
+                      <td>
+                        <mat-checkbox [(ngModel)]="subtask.selected" (change)="toggleSubtaskSelection(subtask, table.title)"></mat-checkbox>
+                      </td>
+                      <td>{{subtask.task}}</td>
+                      <td>{{subtask.days}}</td>
+                      <td>{{subtask.startDate}}</td>
+                      <td>{{subtask.endDate}}</td>
+                      <td>{{subtask.status || 'Pending'}}</td>
+                      <td>
+                        <button class="submit-btn quote-btn" (click)="createQuoteForSubtask(subtask)">
+                          Quote
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+              <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
+                View Documents
+              </button>
+              <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
+                View Bill of Materials
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Documents Dialog -->
+  <ng-template #documentsDialog>
+    <div class="documents-dialog">
+      <h2 mat-dialog-title>Quote Documents</h2>
+      <mat-dialog-content>
+        <div *ngIf="isDocumentsLoading" class="loading-documents">
+          <mat-spinner></mat-spinner>
+          <p>Loading documents...</p>
+        </div>
+        <div *ngIf="!isDocumentsLoading">
+          <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
+            <p>No documents available for this quote.</p>
+          </div>
+          <div *ngIf="documentsError" class="no-documents">
+            <p>{{documentsError}}</p>
+          </div>
+          <div *ngIf="documents.length > 0" class="documents-list">
+            <div class="document-item" *ngFor="let doc of documents; let i = index">
+              <div class="document-info">
+                <span class="document-name">{{doc.name}}</span>
+                <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
+              </div>
+              <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+                View
+              </button>
+            </div>
           </div>
         </div>
+      </mat-dialog-content>
+      <mat-dialog-actions>
+        <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+      </mat-dialog-actions>
+    </div>
+  </ng-template>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons" *ngIf="selectedJob">
-          <button class="submit-btn" mat-raised-button (click)="proceedToQuote()" [disabled]="selectedSubtasks.length === 0">
-            Create Quote
-          </button>
+  <!-- Bill of Materials Dialog -->
+  <ng-template #billOfMaterialsDialog>
+    <div class="documents-dialog report-dialog">
+      <h2 mat-dialog-title>Document Processing Results</h2>
+      <mat-dialog-content class="report-content">
+        <div *ngIf="isBomLoading" class="loading-documents">
+          <mat-spinner></mat-spinner>
+          <p>Loading processing results...</p>
         </div>
-      </mat-card-content>
-    </mat-card>
+        <div *ngIf="!isBomLoading">
+          <div *ngIf="processingResults.length === 0 || bomError" class="no-documents" [attr.error]="bomError ? '' : null">
+            <p>{{bomError || 'No document processing results available.'}}</p>
+          </div>
+          <div *ngIf="processingResults.length > 0 && !bomError" class="report-list">
+            <div class="report-item" *ngFor="let result of processingResults; let i = index">
+              <div class="report-section" *ngFor="let section of result.parsedReport.sections">
+                <h3 class="report-section-title">{{section.title}}</h3>
+                <div class="report-section-content">
+                  <div *ngIf="section.type === 'text'" class="report-text">
+                    <p *ngFor="let item of section.content" [innerHTML]="item"></p>
+                  </div>
+                  <div *ngIf="section.type === 'list'" class="report-list-items">
+                    <ul>
+                      <li *ngFor="let item of section.content">{{item}}</li>
+                    </ul>
+                  </div>
+                  <div *ngIf="section.type === 'table'" class="report-table">
+                    <table class="themed-table">
+                      <thead>
+                        <tr>
+                          <th *ngFor="let header of section.headers">{{header}}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let row of section.content">
+                          <td *ngFor="let cell of row">{{cell}}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-dialog-content>
+      <mat-dialog-actions>
+        <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
+      </mat-dialog-actions>
+    </div>
+  </ng-template>
+
+  <!-- Alert Modal -->
+  <div *ngIf="showAlert" class="alert-overlay">
+    <div class="alert-modal">
+      <p>{{alertMessage}}</p>
+      <button class="alert-button submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
+    </div>
   </div>
 </div>

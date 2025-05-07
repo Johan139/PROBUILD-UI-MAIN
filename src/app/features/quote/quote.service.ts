@@ -51,4 +51,14 @@ export class QuoteService {
       })
     );
   }
+
+  updateQuote(quote: Quote): Observable<Quote> {
+    console.log('Updating quote at:', `${this.apiUrl}/${quote.id}`, 'with data:', quote);
+    return this.http.post<Quote>(`${this.apiUrl}/UpdateQuote/${quote.id}`, quote, { headers: this.getHeaders() }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error updating quote:', error);
+        return throwError(() => new Error('Failed to update quote data.'));
+      })
+    );
+  }
 }

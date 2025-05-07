@@ -1,3 +1,19 @@
+export interface ExtraCost {
+  type: string;
+  value: number;
+  title: string;
+}
+
+export interface QuoteRow {
+  id?: number;
+  quoteId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  quote?: Quote | null;
+}
+
 export interface Quote {
   id: string | null;
   header: string;
@@ -27,13 +43,7 @@ export interface Quote {
   rows: QuoteRow[];
   total: number;
   createdDate: Date;
+  extraCosts: ExtraCost[];
   createdBy: string;
-  extraCosts: { type: 'extraCost' | 'taxPercent' | 'flatTotal' | 'discount'; value: number; title: string }[];
-}
-
-export interface QuoteRow {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+  createdID: string;
 }
