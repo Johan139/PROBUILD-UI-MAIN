@@ -65,7 +65,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading: boolean = false;
   jobListFull: any[] = [];
   jobList: any[] = [];
-  pageSize = 10;
+  pageSize = 99999;
   currentPage = 1;
   isBrowser: boolean;
   selectedUnit: string = 'sq ft';
@@ -74,6 +74,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   uploadedFilesCount: number = 0;
   uploadedFileNames: string[] = [];
   uploadedFileUrls: string[] = [];
+  subscriptionActive: boolean = false;
   sessionId: string = '';
   private hubConnection!: HubConnection;
   //predictions: any[] = [];
@@ -140,6 +141,23 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
     });
 
+    const userId = localStorage.getItem('userId');
+    this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
+    .subscribe({
+      next: (res) => {
+        this.subscriptionActive = res.hasActive;
+        if (!res.hasActive) {
+          this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
+
+        }
+      },
+      error: (err) => {
+        console.error('Subscription check failed', err);
+        this.alertMessage = "Unable to verify subscription. Try again later.";
+        this.showAlert = true;
+        this.router.navigate(['/dashboard']);
+      }
+    });
     // this.hubConnection
     //   .start()
     //   .then(() => console.log('SignalR connection established successfully'))
@@ -265,10 +283,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         resolve();
         return;
       }
-  
       const script = document.createElement('script');
-      script.src = 'https://maps.googleapis.com/maps/api/js?key='+Google_API+'&libraries=places';
-     
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -278,6 +294,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           reject(new Error('Google Maps API script loaded but google object is not defined'));
         }
       };
+      
       script.onerror = (error) => {
         console.error('Google Maps script failed to load:', error);
         reject(error);
@@ -531,6 +548,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                 operatingArea: res.operatingArea,
                 address: res.address,
                 documents: res.documents,
+                latitude : res.latitude,
+                longitude: res.longitude,
                 ...this.jobCardForm.value,
               };
               this.alertMessage = 'Job Quote Creation Successful';

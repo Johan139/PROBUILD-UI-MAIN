@@ -30,6 +30,8 @@ export interface JobResponse {
     address: string;
     user: any | null;
     bids: any | null;
+    latitude: any | null;
+    longitude: any| null;
     documents?: JobDocument[]; // Add the list of associated documents
   }
   

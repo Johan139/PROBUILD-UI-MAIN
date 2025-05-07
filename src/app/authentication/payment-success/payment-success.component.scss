@@ -1,0 +1,60 @@
+/* Retain original color scheme */
+/* Variables from Projects/Jobs theme */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+.success-container {
+    text-align: center;
+    margin-top: 100px;
+    h1 {
+      color: #4CAF50;
+      margin-bottom: 16px;
+    }
+  
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 24px;
+    }
+  }
+  .submit-btn {
+    background: $primary-yellow;
+    border-radius: 10px;
+    padding: 0px 16px;
+    font-weight: 500;
+    color: $dark-gray;
+    margin: 0 0.5rem;
+    
+    &:hover {
+      background: $darker-yellow;
+    }
+    
+    &.publish-btn {
+      background: $primary-yellow;
+      &:hover {
+        background: $darker-yellow;
+      }
+    }
+    
+    &.save-btn {
+      background: $secondary-yellow;
+      &:hover {
+        background: darken($secondary-yellow, 10%);
+      }
+    }
+    
+    &.delete-btn {
+      background: #fbd008;
+      color: $dark-gray;
+      &:hover {
+        background: $darker-yellow;
+      }
+    }
+}
+  

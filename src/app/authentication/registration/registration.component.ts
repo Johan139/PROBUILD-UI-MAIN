@@ -14,9 +14,16 @@ import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
+import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
-
+export interface SubscriptionOption {
+  id: number;
+  subscription: string;
+  amount: number;
+}
 @Component({
   selector: 'app-registration',
   standalone: true,
@@ -27,6 +34,7 @@ const BASE_URL = environment.BACKEND_URL;
     ReactiveFormsModule,
     NgForOf,
     MatSelectModule,
+    MatDialogModule,
     NgIf,
     MatInputModule,
     MatFormFieldModule,
@@ -50,10 +58,7 @@ export class RegistrationComponent implements OnInit{
     {value:'RENOVATION',display:'Renovation/Remodeling'}
   ];
 
-  subscriptionPackages = [
-    {value:'BASIC', display:'Basic'},
-    {value:'PREMIUM', display:'Premium'},
-    {value:'ENTERPRISE', display:'Enterprise'}];
+  subscriptionPackages: { value: string, display: string, amount: number }[] = [];
 
   trades = [
     {value:'ELECTRICIAN', display:'Electrician'},
@@ -155,11 +160,12 @@ export class RegistrationComponent implements OnInit{
   certified = false;
   isLoading: boolean = false;
 
-  constructor(private formBuilder: FormBuilder, private httpClient: HttpClient, private router: Router) {
+  constructor(private formBuilder: FormBuilder, private httpClient: HttpClient, private router: Router,private stripeService: StripeService,private dialog: MatDialog) {
     this.registrationForm = this.formBuilder.group({});
   }
 
   ngOnInit() {
+    this.loadSubscriptionPackages();
     this.registrationForm = this.formBuilder.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
@@ -175,6 +181,13 @@ export class RegistrationComponent implements OnInit{
       ],
       companyName: [''],
       companyRegNo: [''],
+      streetNumber: [''],
+streetName: [''],
+postalCode: [''],
+latitude: [null],
+longitude: [null],
+formattedAddress: [''],
+googlePlaceId: [''],
       vatNo: [''],
       userType: ['PERSONAL_USE', Validators.required],
     
@@ -225,12 +238,31 @@ export class RegistrationComponent implements OnInit{
     this.user = userSelected.value
   }
 
+  private loadSubscriptionPackages(): void {
+    this.stripeService.getSubscriptions().subscribe({
+      next: (subscriptions) => {
+        this.subscriptionPackages = subscriptions.map(s => ({
+          value: s.subscription,
+          display: `${s.subscription} ($${s.amount.toFixed(2)})`,
+          amount: s.amount
+        }));
+      },
+      error: (err) => {
+        console.error('Failed to load subscription packages:', err);
+      }
+    });
+  }
+
   certificationChange(selectedOption:any) {
     if(selectedOption === "FULLY_LICENSED")
       this.certified = true;
   }
 
   onSubmit(): void {
+    const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
+    console.log(selectedPackageValue);
+    const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+    
     if (this.registrationForm.valid) {
       this.isLoading = true;
       console.log(this.registrationForm.value);
@@ -264,6 +296,22 @@ export class RegistrationComponent implements OnInit{
           this.isLoading = false;
           if (res) {
             this.alertMessage = 'Registration successful, please wait for account activation you shall be advised shortly';
+            const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
+            console.log(selectedPackageValue);
+            const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+            
+            const userId = res.userId;
+
+            this.dialog.open(PaymentPromptDialogComponent, {
+              data: {
+                userId: userId,
+                packageName: selectedPackage?.value || 'Unknown',
+                amount: selectedPackage?.amount || 0,
+                source: 'register' // or 'profile'
+              },
+              disableClose: true,
+              width: '400px'
+            });
             this.showAlert = true;
             this.routeURL = 'login';
           }
@@ -273,10 +321,20 @@ export class RegistrationComponent implements OnInit{
       this.showAlert = true;
     }
   }
+
+  showPaymentPrompt() {
+    this.dialog.open(PaymentPromptDialogComponent, {
+      disableClose: true,
+      width: '400px'
+    });
+  }
+  
   closeAlert(): void {
     if(this.routeURL != ''){
       this.router.navigateByUrl('login');
     }
     this.showAlert = false;
   }
+
+
 }

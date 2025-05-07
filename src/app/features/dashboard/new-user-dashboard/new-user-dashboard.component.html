@@ -21,8 +21,8 @@
           </p>
 
           <div class="action-buttons">
-            <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToProjects()">View Projects</button>
-            <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToJobs()">Create Job Quote</button>
+            <!-- <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToProjects()">View Projects</button> -->
+            <button class="submit-btn delete-btn" mat-raised-button (click)="navigateToJobs()">View And Create Job</button>
           </div>
 
         </mat-card-content>
@@ -46,7 +46,7 @@
               <thead>
                 <tr>
                   <th>Project</th>
-
+                  <th>Task</th>
                   <th>Created</th>
                   <th>Action</th>
                 </tr>
@@ -54,6 +54,9 @@
               <tbody>
                 <tr *ngFor="let group of notes">
                   <td>{{group.projectName}}</td>
+                  <td style="white-space: normal; word-break: break-word;">
+                    {{ group.subtaskName }}
+                  </td>
                   <td>{{group.createdAt | date:'short'}}</td>
                   <td>
                     <button class="submit-btn delete-btn" (click)="openNoteDialog(group)" mat-raised-button>View</button>
@@ -84,6 +87,7 @@
                   <th>Project</th>
                   <th>Created</th>
                   <th>Progress</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -96,7 +100,9 @@
                     </div>
                     <span class="progress-percent">{{ job.progress }}%</span>
                   </td>
-                  
+                  <td>
+                    <button class="submit-btn delete-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
+                  </td>
                 </tr>
               </tbody>
             </table>

@@ -49,7 +49,6 @@ export class WeatherService {
   
     return this.httpClient.get<GoogleForecastResponse>(url).pipe(
       map((data) => {
-        console.log('Weather data:', data);
   
         if (!data.forecastDays) {
           throw new Error('No forecast data available');
@@ -83,7 +82,6 @@ export class WeatherService {
         });
       }),
       catchError((err) => {
-        console.error('Failed to fetch forecast:', err);
         return throwError(() => new Error('Unable to fetch weather forecast'));
       })
     );
