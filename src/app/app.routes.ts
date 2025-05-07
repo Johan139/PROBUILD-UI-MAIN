@@ -17,6 +17,8 @@ import { QuoteComponent } from './features/quote/quote.component';
 import { QuotesListComponent } from './features/quote/quotes-list/quotes-list.component';
 import { BidComponent } from './features/bids/bid.component';
 import { JobSelectionComponent } from './features/jobs/job-selection/job-selection.component';
+import { PaymentSuccessComponent } from './authentication/payment-success/payment-success.component';
+import { PaymentCancelComponent } from './authentication/payment-cancel/payment-cancel.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -30,6 +32,8 @@ export const routes: Routes = [
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
+  { path: 'payment-cancel', component: PaymentCancelComponent },
+  { path: 'payment-success', component: PaymentSuccessComponent },
   {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
   {path:'quotes', component: QuotesListComponent, canActivate: [AuthGuard]  },
   {path:'bids', component:BidComponent, canActivate: [AuthGuard] },

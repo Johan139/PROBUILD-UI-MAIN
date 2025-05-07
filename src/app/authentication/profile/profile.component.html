@@ -20,7 +20,7 @@
                 </div>
 
                 <!-- Role Switcher Dropdown (For Dev Testing) -->
-                <div class="form-row role-switcher" *ngIf="profileForm">
+                <!-- <div class="form-row role-switcher" *ngIf="profileForm">
                   <mat-form-field appearance="fill">
                     <mat-label>Switch Role (Dev Mode)</mat-label>
                     <mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel">
@@ -29,7 +29,7 @@
                       </mat-option>
                     </mat-select>
                   </mat-form-field>
-                </div>
+                </div> -->
 
                 <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm">
                   <!-- Personal Information -->
@@ -219,16 +219,23 @@
                     </div>
                   </div>
 
-                  <!-- Subscription & Verification -->
-                  <div class="section" *ngIf="canViewSubscription()">
-                    <h3>Subscription & Verification</h3>
-                    <div class="form-row">
-                      <mat-form-field appearance="fill">
-                        <mat-label>Subscription Package</mat-label>
-                        <input matInput formControlName="subscriptionPackage" placeholder=" " />
-                      </mat-form-field>
-                    </div>
-                  </div>
+              <!-- Subscription -->
+              <div class="section">
+                <h3>Subscription</h3>
+                <div class="form-row">
+                  <mat-form-field appearance="fill">
+                    <mat-label>Subscription Package</mat-label>
+                    <mat-select formControlName="subscriptionPackage" required>
+                      <mat-option *ngFor="let subscription of subscriptionPackages" [value]="subscription.value">
+                        {{ subscription.display }}
+                      </mat-option>
+                    </mat-select>
+                    <mat-error *ngIf="profileForm.get('subscriptionPackage')?.hasError('required')">
+                      Mandatory Field: Input Required.
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+              </div>
 
                   <!-- Submit Button -->
                   <div class="form-row">

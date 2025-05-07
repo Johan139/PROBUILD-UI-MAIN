@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, ViewEncapsulation } from '@angular/core';
 import { Router, RouterLink } from "@angular/router";
-import { CommonModule, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
+import { CommonModule, DatePipe, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule, MatCardHeader, MatCardTitle, MatCardContent } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
@@ -17,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { provideNativeDateAdapter } from '@angular/material/core';
 const BASE_URL = environment.BACKEND_URL;
 
 
@@ -43,6 +44,7 @@ const BASE_URL = environment.BACKEND_URL;
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
+  providers: [provideNativeDateAdapter(), DatePipe],
   encapsulation: ViewEncapsulation.None
 })
 export class NewUserDashboardComponent implements OnInit {
@@ -52,7 +54,7 @@ export class NewUserDashboardComponent implements OnInit {
 
   userType: string = '';
   isSubContractor: boolean = false;
-  userJobs: { projectName: string, createdAt: string, progress: number }[] = [];
+  userJobs: {id: number, projectName: string, createdAt: string, progress: number }[] = [];
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
   projectDetails: any;
@@ -77,7 +79,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
 
   constructor(
     private userService: LoginService,
-    
+     private datePipe: DatePipe,
     private router: Router,
     private dialog: MatDialog,
     private jobService: JobsService,
@@ -89,7 +91,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
   onViewNote(note: any): void {
-    console.log('View clicked for note:', note);
     // You can open a modal, route to a detail page, or fetch more info here.
   }
   ngOnInit() {
@@ -99,10 +100,11 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     const userId = localStorage.getItem('userId');
     this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${userId}`).subscribe({
       next: (notes: any) => {
+
         this.notes = notes;
+        console.log(this.notes);
         this.groupedNotes = this.groupNotesBySubtask(notes);
         this.isLoading = false;
-        console.log('Notes loaded:', this.notes);
       },
       error: (err) => {
         this.isLoading = false;
@@ -113,7 +115,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       // 🛠️ ADD THIS LINE:
   this.loadUserJobs();
     this.isSubContractor = this.userType === 'BUILDER' || this.userType === 'CONSTRUCTION';
-    console.log(this.isSubContractor);
+
     setTimeout(() => {
       this.isLoading = false;
     }, 1000); // Simulate loading
@@ -123,7 +125,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       this.documentDialogRef.close();
       this.documentDialogRef = null; // optionally clear it
     } else {
-      console.warn('Document dialog ref is not set.');
     }
   }
   openNoteDialog(group: any) {
@@ -135,6 +136,34 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       data: group
     });
   }
+
+  loadJob(id: any): void {
+    this.jobService.getSpecificJob(id).subscribe(res => {
+      const parsedDate = new Date(res.desiredStartDate);
+      const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
+      const responseParams = {
+        jobId: res.jobId,
+        operatingArea: res.operatingArea,
+        address: res.address,
+        projectName: res.projectName,
+        jobType: res.jobType,
+        buildingSize: res.buildingSize,
+        wallStructure: res.wallStructure,
+        wallInsulation: res.wallInsulation,
+        roofStructure: res.roofStructure,
+        roofInsulation: res.roofInsulation,
+        electricalSupply: res.electricalSupply,
+        finishes: res.finishes,
+        foundation: res.foundation,
+        date: formattedDate,
+        documents: res.documents,
+        latitude : res.latitude,
+        longitude: res.longitude,
+      };
+      this.router.navigate(['view-quote'], { queryParams: responseParams });
+    });
+  }
+
   onApprovalReasonChanged(event: any) {
     this.approvalReason = event.target.innerText.trim();
   }
@@ -156,7 +185,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
       next: () => {
-        console.log('✅ Note approved with reason');
         this.snackBar.open('Note saved successfully!', 'Close', {
           duration: 3000,
           panelClass: ['custom-snackbar']
@@ -170,7 +198,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
           duration: 4000,
           panelClass: ['custom-snackbar']
         });
-        console.error('Error approving note:', err);
       }
     });
   }
@@ -235,17 +262,21 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       const uniqueJobs = Array.from(uniqueProjectsMap.values());
   
       // Now for each unique job, fetch its subtasks separately:
+    
       const jobProgressPromises = uniqueJobs.map(job => 
+
         this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
           const progress = this.calculateJobProgress(subtasks || []);
+         
           return {
+            id: job.id,
             projectName: job.projectName,
-            createdAt: job.createdAt,
+            createdAt: job.desiredStartDate,
             progress
           };
         }).catch(err => {
-          console.error('Failed to fetch subtasks for job', job.id, err);
           return {
+            id: job.id,
             projectName: job.projectName,
             createdAt: job.createdAt,
             progress: 0
@@ -301,7 +332,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         this.isDocumentsLoading = false;
       },
       error: (err) => {
-        console.error('Error fetching note documents:', err);
         this.documentsError = 'Failed to load documents.';
         this.isDocumentsLoading = false;
       }
@@ -336,11 +366,9 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
       next: () => {
-        console.log('❌ Note rejected');
         this.dialog.closeAll();
       },
       error: (err) => {
-        console.error('Error rejecting note:', err);
       }
     });
   }
@@ -357,7 +385,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       },
       error: (err) => {
-        console.error('Error viewing document:', err);
         this.alertMessage = 'Failed to view document.';
         this.showAlert = true;
       }

@@ -1,4 +1,17 @@
 /* Retain original color scheme */
+/* Variables from Projects/Jobs theme */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+
+
 body {
   overflow-y: auto; /* Replaced hidden for usability */
   background-color: #fff; /* White background */
@@ -95,9 +108,7 @@ tr:hover {
 }
 
 /* Removed or Adjusted Classes/Pseudo-classes Not in Projects */
-tr:nth-child(even) {
-  /* Removed background-color: #f9f9f9; as it’s not in projects */
-}
+
 
 .published {
   color: #083d77 !important; /* Retained as specific to this context */
@@ -138,6 +149,48 @@ tr:nth-child(even) {
   width: 24px; /* Larger */
   height: 24px;
 }
+.submit-btn:disabled {
+  background-color: #cccccc !important;
+  color: #666666 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.View-btn {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  
+  &:hover {
+    background: $darker-yellow;
+  }
+  
+  &.publish-btn {
+    background: $primary-yellow;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+  
+  &.save-btn {
+    background: $secondary-yellow;
+    &:hover {
+      background: darken($secondary-yellow, 10%);
+    }
+  }
+  
+  &.delete-btn {
+    background: #fbd008;
+    color: $dark-gray;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+}
+
 
 .upload-progress {
   display: flex;
@@ -310,7 +363,16 @@ button[mat-raised-button]:hover {
   box-sizing: border-box; /* Include padding in width */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
+.job-list-scroll {
+  max-height: 600px; // or whatever fits your layout
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 
+.job-list-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
 .upload-label:hover {
   background-color: #e6bf00; /* Darker yellow */
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */

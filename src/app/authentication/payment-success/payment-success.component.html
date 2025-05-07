@@ -1,0 +1,7 @@
+<div class="success-container">
+    <h1>🎉 Payment Successful!</h1>
+    <p>Your subscription is now active.</p>
+    <button mat-flat-button color="primary" class="submit-btn delete-btn" (click)="goToDashboard()">
+      {{ source === 'register' ? 'Return to Login' : 'Return to Dashboard' }}
+    </button>
+  </div>

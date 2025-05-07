@@ -1,0 +1,8 @@
+<h2 mat-dialog-title>Registration Complete</h2>
+<mat-dialog-content>
+  <p>Your account was created. Please complete payment to continue.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="skip()">Skip</button>
+  <button mat-flat-button color="primary" (click)="continueToPayment()">Pay Now</button>
+</mat-dialog-actions>

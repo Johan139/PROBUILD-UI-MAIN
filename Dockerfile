@@ -2,7 +2,8 @@
  FROM node:22 AS build
  WORKDIR /app
  COPY package*.json ./
- RUN npm install --legacy-peer-deps
+RUN rm -rf node_modules package-lock.json
+RUN npm install --legacy-peer-deps
  COPY . .
  RUN mkdir -p src/assets
  ARG BACKEND_URL="https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"

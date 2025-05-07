@@ -15,7 +15,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
@@ -27,6 +28,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { JobsService } from '../../services/jobs.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { PaymentPromptDialogComponent } from '../registration/payment-prompt-dialog.component';
 const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-profile',
@@ -39,7 +41,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
-    MatAutocompleteModule,
+    MatAutocompleteModule,    
+    MatDialogModule,
     MatTooltipModule,
     MatSelectModule,
     MatButtonModule,
@@ -66,12 +69,14 @@ isGoogleMapsLoaded: boolean = false;
   isLoading = true;
   isSaving = false;
   isBrowser: boolean;
+  subscriptionPackages: { value: string, display: string, amount: number }[] = [];
   progress: number = 0;
   isUploading: boolean = false;
   uploadedFilesCount: number = 0;
   uploadedFileNames: string[] = [];
   uploadedFileUrls: string[] = [];
   sessionId: string = '';
+  subscriptionActive: boolean = false;
   jobCardForm: FormGroup;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -93,6 +98,8 @@ isGoogleMapsLoaded: boolean = false;
     private authService: AuthService,
     private fb: FormBuilder,
      private httpClient: HttpClient,
+     private stripeService: StripeService,
+     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
@@ -126,7 +133,7 @@ isGoogleMapsLoaded: boolean = false;
       country: [null],
       state: [null],
       city: [null],
-      subscriptionPackage: [null],
+      subscriptionPackage: ['', Validators.required],
       isVerified: [false],
       address: [null, Validators.required],
       formattedAddress: [''],
@@ -172,6 +179,7 @@ isGoogleMapsLoaded: boolean = false;
     });
   }
   ngOnInit(): void {
+    this.loadSubscriptionPackages();
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
       console.log('User Role:', this.userRole);
@@ -205,6 +213,24 @@ isGoogleMapsLoaded: boolean = false;
           console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
         });
     
+
+        const userId = localStorage.getItem('userId');
+        this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
+        .subscribe({
+          next: (res) => {
+            this.subscriptionActive = res.hasActive;
+            if (!res.hasActive) {
+              this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
+    
+            }
+          },
+          error: (err) => {
+            console.error('Subscription check failed', err);
+            this.alertMessage = "Unable to verify subscription. Try again later.";
+            this.showAlert = true;
+          }
+        });
+
         this.hubConnection
           .start()
           .then(() => console.log('SignalR connection established successfully'))
@@ -283,7 +309,20 @@ isGoogleMapsLoaded: boolean = false;
     
   }
   
-
+  private loadSubscriptionPackages(): void {
+    this.stripeService.getSubscriptions().subscribe({
+      next: (subscriptions) => {
+        this.subscriptionPackages = subscriptions.map(s => ({
+          value: s.subscription,
+          display: `${s.subscription} ($${s.amount.toFixed(2)})`,
+          amount: s.amount
+        }));
+      },
+      error: (err) => {
+        console.error('Failed to load subscription packages:', err);
+      }
+    });
+  }
   loadGoogleMapsScript(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (typeof google !== 'undefined' && google.maps) {
@@ -291,7 +330,9 @@ isGoogleMapsLoaded: boolean = false;
         return;
       }
       const script = document.createElement('script');
+
       script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+ 
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -386,6 +427,26 @@ isGoogleMapsLoaded: boolean = false;
           this.profile = response;
           this.profileForm.patchValue(response);
           this.successMessage = 'Profile updated successfully';
+                  if(!this.subscriptionActive)
+                  {
+                     const selectedPackageValue = this.profileForm.value.subscriptionPackage;
+                      console.log(selectedPackageValue);
+                      const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+                      
+                      const userId = updatedProfile.id;
+          
+                      this.dialog.open(PaymentPromptDialogComponent, {
+                        data: {
+                          userId: userId,
+                          packageName: selectedPackage?.value || 'Unknown',
+                          amount: selectedPackage?.amount || 0,
+                          source: 'Profile'
+                        },
+                        disableClose: true,
+                        width: '400px'
+                      });
+                    }
+
           this.isSaving = false;
         },
         error: (error) => {

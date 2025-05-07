@@ -29,6 +29,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './job-quote/confirmation-dialog.component';
 import { CancellationDialogComponent } from './Cancellation-Dialog.component';
+import { Location } from '@angular/common';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -119,6 +120,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private location: Location,
     private httpClient: HttpClient,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -140,14 +142,11 @@ export class JobsComponent implements OnInit, OnDestroy {
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
       this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
-      console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
     });
 
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
       this.resetFileInput();
-      console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
-      console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
     });
 
     this.hubConnection
@@ -157,7 +156,6 @@ export class JobsComponent implements OnInit, OnDestroy {
 
 
     this.route.queryParams.subscribe(params => {
-      console.log(params);
       this.projectDetails = params;
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
@@ -168,9 +166,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.store.setState({ subtaskGroups: grouped });
 
         const mainTasks = this.extractMainTasksFromGroups(grouped);
-        console.log(mainTasks);
         this.taskData = mainTasks;
-        console.log('🟢 Final Gantt taskData:', this.taskData);
         this.createTables();
       },
       error: (err) => {
@@ -179,7 +175,7 @@ export class JobsComponent implements OnInit, OnDestroy {
             next: (results) => {
               const markdown = results[0]?.fullResponse;
               const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              console.log(parsedGroups);
+       
               const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
@@ -187,7 +183,6 @@ export class JobsComponent implements OnInit, OnDestroy {
             }
           });
         } else {
-          console.error('Error loading subtasks:', err);
           this.store.setState({ subtaskGroups: [] });
         }
       }
@@ -200,7 +195,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         subtaskGroups: [{ title: 'Default Group', subtasks: [] }]
       });
     }
-
     this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
     this.createTables();
     if (this.calculatedTables && state.subtaskGroups) {
@@ -219,7 +213,6 @@ export class JobsComponent implements OnInit, OnDestroy {
       });
       this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     }
-    console.log(this.projectDetails.address);
   }
 
   getWeatherCondition(lat: number, lon: number): void {
@@ -230,7 +223,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.weatherError = null;
       },
       error: (err) => {
-        console.error('Failed to fetch forecast:', err);
         this.weatherDescription = 'Unavailable';
         this.forecast = [];
         this.weatherError = 'Failed to load weather forecast';
@@ -310,7 +302,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         }
       }
     }
-    console.log('✅ Parsed main tasks for Gantt:', mainTasks);
     return mainTasks;
   }
 
@@ -408,7 +399,6 @@ export class JobsComponent implements OnInit, OnDestroy {
   
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload without SignalR');
   
     this.httpClient
       .post<any>(BASE_URL + '/Jobs/UploadNoteImage', formData, {
@@ -422,16 +412,16 @@ export class JobsComponent implements OnInit, OnDestroy {
           if (event.type === HttpEventType.UploadProgress && event.total) {
             // Use full 0-100% range since SignalR is disabled
             this.progress = Math.round((100 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
+ 
           } else if (event.type === HttpEventType.Response) {
-            console.log('Upload response:', event.body);
+      
             const newFilesCount = newFileNames.length;
             this.uploadedFilesCount += newFilesCount;
             if (event.body?.fileUrls) {
               this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
+         
             } else {
-              console.error('No fileUrls returned in response:', event.body);
+           
             }
             this.isUploading = false;
             this.resetFileInput();
@@ -452,7 +442,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      console.log('File input reset');
+
     }
   }
 
@@ -529,7 +519,6 @@ export class JobsComponent implements OnInit, OnDestroy {
           this.noteDialogRef.close();
         },
         error: (err) => {
-          console.error('Failed to save subtask note:', err);
           this.snackBar.open('Failed to save note. Try again.', 'Close', {
             duration: 4000,
             panelClass: ['custom-snackbar']
@@ -546,7 +535,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        console.log('Cancel clicked. uploadedFileUrls before deletion:', this.uploadedFileUrls);
+  
         this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFilesCount = 0;
@@ -559,16 +548,16 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   deleteTemporaryFiles(): void {
-    console.log('Deleting temporary files. uploadedFileUrls:', this.uploadedFileUrls);
+
     if (this.uploadedFileUrls.length === 0) {
-      console.log('No temporary files to delete.');
+  
       return;
     }
     this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
       blobUrls: this.uploadedFileUrls,
     }).subscribe({
       next: () => {
-        console.log('Temporary files deleted successfully');
+ 
         this.uploadedFileUrls = [];
         this.uploadedFilesCount = 0;
         this.uploadedFileNames = [];
@@ -781,12 +770,10 @@ export class JobsComponent implements OnInit, OnDestroy {
     this.weatherService.getFutureWeather(location, date).subscribe({
       next: (data) => {
         this.weatherData = data;
-        console.log(this.weatherData);
-        console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
+
       },
       error: (err) => {
         this.weatherData = "No Weather Data as Data should be more than two weeks from now";
-        console.error('Error:', err);
       },
     });
   }
@@ -938,7 +925,9 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     }, 0);
   }
-
+  NavigateBack(): void {
+    this.location.back();
+  }
   publish() {
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
@@ -948,8 +937,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     }));
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     const dataInput = this.store.getState().subtaskGroups;
-    console.log('Tasks in store for Published:', dataInput[0]);
-    console.log('UserId :: ', localStorage.getItem("userId"));
+
     const projectData = this.prepareProjectData("PUBLISHED");
     this.isLoading = true;
     this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
@@ -962,7 +950,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.showAlert = true;
         this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
       }
     });
   }
@@ -996,8 +983,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         deleted: subtask.deleted ?? false
       }))
     );
-    console.log('Job Data:', jobData);
-    console.log('Subtasks:', subtaskList);
+
     this.isLoading = true;
     this.jobsService.updateJob(jobData, this.projectDetails.jobId).subscribe({
       next: response => {
@@ -1011,7 +997,6 @@ export class JobsComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.showAlert = true;
             this.alertMessage = "Job saved, but subtasks failed.";
-            console.error(err);
           }
         });
       },
@@ -1019,7 +1004,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.showAlert = true;
         this.alertMessage = 'An unexpected error occurred while saving the job.';
-        console.error('Job save error:', err);
       }
     });
   }
@@ -1032,7 +1016,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       }))
     }));
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-    console.log('UserId :: ', localStorage.getItem("userId"));
+
     const projectData = this.prepareProjectData("DISCARD");
     this.isLoading = true;
     this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
@@ -1045,7 +1029,6 @@ export class JobsComponent implements OnInit, OnDestroy {
         this.isLoading = false;
         this.showAlert = true;
         this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
       }
     });
   }

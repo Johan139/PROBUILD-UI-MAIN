@@ -423,6 +423,10 @@ mat-dialog-content {
     color: $dark-gray;
   }
 }
+.wrap-text {
+  white-space: normal;
+  word-break: break-word;
+}
 /* Documents Dialog */
 .documents-dialog {
   padding: 1rem;
