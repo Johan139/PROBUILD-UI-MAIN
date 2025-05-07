@@ -53,6 +53,7 @@ export class JobSelectionComponent implements OnInit {
   selectedSubtasks: any[] = [];
   selectedTableTitle: string | null = null;
   isLoading: boolean = false;
+  selectedGroupTitle: string | null = null;
   errorMessage: string = '';
   jobListFull: any[] = [];
   jobList: any[] = [];
@@ -270,19 +271,29 @@ export class JobSelectionComponent implements OnInit {
   }
 
   toggleSubtaskSelection(subtask: any, tableTitle: string): void {
-    this.subtaskGroups.forEach(group => {
-      if (group.title !== tableTitle) {
-        group.subtasks.forEach(s => (s.selected = false));
-        this.selectedSubtasks = [];
+    // If first selection or still selecting within the same group
+    if (!this.selectedGroupTitle || this.selectedGroupTitle === tableTitle) {
+      this.selectedGroupTitle = tableTitle;
+  
+      if (subtask.selected) {
+        this.selectedSubtasks.push({ ...subtask });
+      } else {
+        this.selectedSubtasks = this.selectedSubtasks.filter(
+          s => s.id !== subtask.id || s.task !== subtask.task
+        );
       }
-    });
-    if (subtask.selected) {
-      this.selectedSubtasks.push({ ...subtask });
     } else {
-      this.selectedSubtasks = this.selectedSubtasks.filter(
-        s => s.id !== subtask.id || s.task !== subtask.task
-      );
+      // Different group selected — clear all others
+      this.subtaskGroups.forEach(group => {
+        group.subtasks.forEach(s => (s.selected = false));
+      });
+  
+      // Reset selection with new subtask and group title
+      this.selectedGroupTitle = tableTitle;
+      subtask.selected = true;
+      this.selectedSubtasks = [{ ...subtask }];
     }
+  
     this.cdr.detectChanges();
   }
 
