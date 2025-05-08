@@ -19,6 +19,8 @@ import { BidComponent } from './features/bids/bid.component';
 import { JobSelectionComponent } from './features/jobs/job-selection/job-selection.component';
 import { PaymentSuccessComponent } from './authentication/payment-success/payment-success.component';
 import { PaymentCancelComponent } from './authentication/payment-cancel/payment-cancel.component';
+import { TermsComponent } from './terms.component';
+import { PrivacyComponent } from './privacy.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -30,6 +32,8 @@ export const routes: Routes = [
   {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
   {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
+  { path: 'terms', component: TermsComponent },
+  { path: 'privacy', component: PrivacyComponent },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
   { path: 'payment-cancel', component: PaymentCancelComponent },

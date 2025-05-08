@@ -1,0 +1,31 @@
+/* global styles (e.g., in styles.scss or styles.css) */
+html, body {
+    height: auto;
+    overflow-y: auto;
+  }
+  
+  /* component CSS */
+  .terms-page {
+    background-color: #f9f9f3; /* match app background */
+    padding: 40px 20px;
+    /* REMOVE these ↓↓↓ */
+    /* min-height: 100vh; */
+    /* overflow-y: auto; */
+  }
+  
+  .terms-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: transparent;
+    color: #333;
+    font-family: 'Roboto', sans-serif;
+  }
+  
+  .terms-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    color: #000;
+  }
+  

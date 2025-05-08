@@ -17,6 +17,7 @@ import {MatDivider} from "@angular/material/divider";
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
+import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -260,66 +261,78 @@ googlePlaceId: [''],
 
   onSubmit(): void {
     const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
-    console.log(selectedPackageValue);
     const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
-    
-    if (this.registrationForm.valid) {
-      this.isLoading = true;
-      console.log(this.registrationForm.value);
   
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(this.registrationForm.value), {headers:{'Content-Type': 'application/json'}})
-        .pipe(
-          catchError((error) => {
-            if (error.status === 400) {
-              if(error.error[0].code == 'DuplicateUserName'){
-                this.alertMessage = 'You are already Registered, please proceed to Login';
-                this.routeURL = '';
-              }else{
-                this.alertMessage = 'Data is Malformed please check all input fields if there are valid.';
-                this.routeURL = '';
-              }
-            } else if (error.status === 500) {
-              this.isLoading = false;
-              this.alertMessage = 'Oops something went wrong, please try again later.';
-              this.routeURL = '';
-            } else {
-              this.isLoading = false;
-              this.alertMessage = 'An unexpected error occurred. Contact support support@probuildai.com';
-              this.routeURL = '';
-            }
-            this.isLoading = false;
-            this.showAlert = true;
-            return of(null);
-          })
-        )
-        .subscribe((res: any) => {
-          this.isLoading = false;
-          if (res) {
-            this.alertMessage = 'Registration successful, please wait for account activation you shall be advised shortly';
-            const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
-            console.log(selectedPackageValue);
-            const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
-            
-            const userId = res.userId;
-
-            this.dialog.open(PaymentPromptDialogComponent, {
-              data: {
-                userId: userId,
-                packageName: selectedPackage?.value || 'Unknown',
-                amount: selectedPackage?.amount || 0,
-                source: 'register' // or 'profile'
-              },
-              disableClose: true,
-              width: '400px'
-            });
-            this.showAlert = true;
-            this.routeURL = 'login';
-          }
-        });
-    } else {
+    if (!this.registrationForm.valid) {
       this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
       this.showAlert = true;
+      return;
     }
+  
+    // ✅ Open terms dialog before submitting
+    const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
+      disableClose: true,
+      width: '500px'
+    });
+  
+    dialogRef.afterClosed().subscribe(userAgreed => {
+      if (!userAgreed) {
+        return; // Stop if user did not agree
+      }
+  
+      this.isLoading = true;
+  
+      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(this.registrationForm.value), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .pipe(
+        catchError((error) => {
+          this.isLoading = false;
+          if (error.status === 400) {
+            if (error.error[0]?.code === 'DuplicateUserName') {
+              this.alertMessage = 'You are already Registered, please proceed to Login';
+            } else {
+              this.alertMessage = 'Data is malformed. Please check all input fields.';
+            }
+          } else if (error.status === 500) {
+            this.alertMessage = 'Oops something went wrong, please try again later.';
+          } else {
+            this.alertMessage = 'An unexpected error occurred. Contact support@probuildai.com';
+          }
+          this.showAlert = true;
+          return of(null);
+        })
+      )
+      .subscribe((res: any) => {
+        this.isLoading = false;
+        if (res) {
+          this.alertMessage = 'Registration successful, please wait for account activation you shall be advised shortly';
+          const userId = res.userId;
+  if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
+  {
+    this.routeURL = 'login';
+    this.showAlert = true;
+  }
+  else
+  {
+          this.dialog.open(PaymentPromptDialogComponent, {
+            data: {
+              userId,
+              packageName: selectedPackage?.value || 'Unknown',
+              amount: selectedPackage?.amount || 0,
+              source: 'register'
+            },
+            disableClose: true,
+            width: '400px'
+          });
+  
+          this.showAlert = true;
+          this.routeURL = 'login';
+        }
+      }
+      });
+    });
+ 
   }
 
   showPaymentPrompt() {
