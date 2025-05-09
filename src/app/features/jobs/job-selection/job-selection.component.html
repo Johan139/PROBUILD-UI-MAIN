@@ -72,7 +72,6 @@
               <p><strong>Start Date:</strong> {{selectedJob.desiredStartDate | date: 'yyyy-MM-dd'}}</p>
               <p><strong>Address:</strong> {{selectedJob.address || 'N/A'}}</p>
             </div>
-
             <!-- Subtasks Section -->
             <mat-card-title>Tasks and Subtasks</mat-card-title>
             <mat-divider></mat-divider>
@@ -83,9 +82,6 @@
               <div class="subtask-table" *ngFor="let table of subtaskGroups">
                 <div class="table-header">
                   <h3>{{table.title}}</h3>
-                  <button class="submit-btn" (click)="createQuoteForSelectedSubtasks()">
-                    Quote On Selection(s)
-                  </button>
                 </div>
                 <table class="themed-table">
                   <thead>
@@ -119,7 +115,7 @@
                 </table>
               </div>
             </div>
-
+ 
             <!-- Action Buttons -->
             <div class="action-buttons">
               <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
@@ -127,6 +123,9 @@
               </button>
               <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
                 View Bill of Materials
+              </button>
+              <button class="submit-btn save-btn" mat-raised-button (click)="createQuoteForSelectedSubtasks()">
+                Quote On Selection(s)
               </button>
             </div>
           </div>
