@@ -8,16 +8,22 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root',
 })
 export class ForgotPasswordService {
-  private apiUrl = `${environment.BACKEND_URL}/account/forgotpassword`;
+  private apiUrl = `${environment.BACKEND_URL}`;
 
   constructor(private http: HttpClient) {}
 
   requestPasswordReset(email: string): Observable<void> {
-    return this.http.post<void>(this.apiUrl, { email }).pipe(
+    return this.http.post<void>(this.apiUrl + '/account/forgotpassword', { email }).pipe(
+      catchError(this.handleError)
+    );
+  }
+  resetPassword(data: any): Observable<void> {
+    return this.http.post<void>(this.apiUrl + '/account/resetpassword', data).pipe(
       catchError(this.handleError)
     );
   }
 
+  
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An unexpected error occurred. Please try again later.';
     

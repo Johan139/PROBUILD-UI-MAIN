@@ -21,6 +21,7 @@ import { PaymentSuccessComponent } from './authentication/payment-success/paymen
 import { PaymentCancelComponent } from './authentication/payment-cancel/payment-cancel.component';
 import { TermsComponent } from './terms.component';
 import { PrivacyComponent } from './privacy.component';
+import { ResetPasswordComponent } from './authentication/reset-password.component/reset-password.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -34,6 +35,7 @@ export const routes: Routes = [
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
   { path: 'terms', component: TermsComponent },
   { path: 'privacy', component: PrivacyComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
   { path: 'payment-cancel', component: PaymentCancelComponent },
