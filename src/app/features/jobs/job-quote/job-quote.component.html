@@ -101,8 +101,74 @@
   </mat-autocomplete>
 </mat-form-field>
           </div> 
+          <div class="panel-wrapper">
+          <mat-accordion multi>
+            <mat-expansion-panel [expanded]="true">
+              <mat-expansion-panel-header>
+                <mat-panel-title>Client Details</mat-panel-title>
+                <mat-panel-description>
+                  Click to expand/collapse
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+          
+              <!-- CLIENT DETAILS FORM FIELDS -->
+              <div class="form-row">
+                <mat-form-field appearance="fill">
+                  <mat-label>First Name</mat-label>
+                  <input matInput formControlName="firstName" placeholder=" " />
+                  <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
+                    First name is required.
+                  </mat-error>
+                </mat-form-field>
+          
+                <mat-form-field appearance="fill">
+                  <mat-label>Last Name</mat-label>
+                  <input matInput formControlName="lastName" placeholder=" " />
+                  <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
+                    Last name is required.
+                  </mat-error>
+                </mat-form-field>
+          
+                <mat-form-field appearance="fill">
+                  <mat-label>Email</mat-label>
+                  <input matInput formControlName="email" placeholder=" " />
+                  <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
+                    Enter a valid email address.
+                  </mat-error>
+                </mat-form-field>
+              </div>
+          
+              <div class="form-row">
+                <mat-form-field appearance="fill">
+                  <mat-label>Phone Number</mat-label>
+                  <input matInput formControlName="phone" placeholder=" " />
+                </mat-form-field>
+          
+                <mat-form-field appearance="fill">
+                  <mat-label>Company Name</mat-label>
+                  <input matInput formControlName="company" placeholder=" " />
+                </mat-form-field>
+          
+                <mat-form-field appearance="fill">
+                  <mat-label>Position/Title</mat-label>
+                  <input matInput formControlName="position" placeholder=" " />
+                </mat-form-field>
+              </div>
+        
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
+        <div class="panel-wrapper">
+          <mat-accordion multi>
+            <mat-expansion-panel [expanded]="true">
+              <mat-expansion-panel-header>
+                <mat-panel-title>Job Details</mat-panel-title>
+                <mat-panel-description>
+                  Click to expand/collapse
+                </mat-panel-description>
+              </mat-expansion-panel-header>         
 
-          <div class="form-row">
+ <div class="form-row">
             <mat-form-field appearance="fill">
               <mat-label>Job Type</mat-label>
               <mat-select formControlName="jobType">
@@ -206,6 +272,9 @@
               </mat-error>
             </mat-form-field>
           </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
           <div class="form-row button-row">
             <div class="button-group">
               <button mat-raised-button type="submit" [disabled]="!subscriptionActive" class="submit-btn">

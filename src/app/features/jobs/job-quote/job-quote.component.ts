@@ -27,7 +27,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-
+import { MatExpansionModule } from '@angular/material/expansion';
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -51,6 +51,7 @@ const Google_API = environment.Google_API;
     MatDialogModule,
     LoaderComponent,
     MatAutocompleteModule,
+    MatExpansionModule,
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
@@ -118,6 +119,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       buildingSize: ['', Validators.required],
       address: ['', Validators.required],
       blueprint: new FormControl(),
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', Validators.required],
+      company: [''],
+      position: [''],
     });
 
     this.hubConnection = new HubConnectionBuilder()
@@ -421,6 +428,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('UserId', userId ?? '');
     formData.append('status', 'NEW');
     formData.append('address', formValue.address);
+    formData.append('firstName', formValue.firstName);
+    formData.append('lastName', formValue.lastName);
+    formData.append('email', formValue.email);
+    formData.append('phone', formValue.phone);
+    formData.append('company', formValue.company);
+    formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
     formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileUrls));
   

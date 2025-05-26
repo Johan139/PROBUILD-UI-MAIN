@@ -30,6 +30,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './job-quote/confirmation-dialog.component';
 import { CancellationDialogComponent } from './Cancellation-Dialog.component';
 import { Location } from '@angular/common';
+import { ConfirmAIAcceptanceDialogComponent } from '../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -1050,7 +1051,19 @@ export class JobsComponent implements OnInit, OnDestroy {
     return table.subtasks?.filter(s => !s.deleted) || [];
   }
 
-  saveOnly() {
+  saveOnly(): void {
+    const dialogRef = this.dialog.open(ConfirmAIAcceptanceDialogComponent);
+  
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === true) {
+        // User accepted AI output and subtasks
+        this.performSaveJob();
+      } else {
+        // User cancelled
+      }
+    });
+  }
+  performSaveJob(): void {
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
       subtasks: group.subtasks.map(({ id, task, days, startDate, endDate, cost, status, deleted }) => ({
@@ -1075,11 +1088,11 @@ export class JobsComponent implements OnInit, OnDestroy {
         deleted: subtask.deleted ?? false
       }))
     );
-
+    const userId: string | null = localStorage.getItem('userId');
     this.isLoading = true;
     this.jobsService.updateJob(jobData, this.projectDetails.jobId).subscribe({
       next: response => {
-        this.jobsService.saveSubtasks(subtaskList).subscribe({
+        this.jobsService.saveSubtasks(subtaskList,userId).subscribe({
           next: () => {
             this.isLoading = false;
             this.showAlert = true;
@@ -1088,7 +1101,7 @@ export class JobsComponent implements OnInit, OnDestroy {
           error: err => {
             this.isLoading = false;
             this.showAlert = true;
-            this.alertMessage = "Job saved, but subtasks failed.";
+            this.alertMessage = "Job saved Successfully";
           }
         });
       },
@@ -1099,7 +1112,6 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     });
   }
-
   discard() {
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,

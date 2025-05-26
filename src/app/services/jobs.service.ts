@@ -41,8 +41,8 @@ downloadNoteDocument(documentId: number): Observable<Blob> {
     this.httpClient.get(BASE_URL)
   }
 
-  saveSubtasks(subtaskList: any[]): Observable<any> {
-    return this.httpClient.post(`${BASE_URL}/subtask`, subtaskList, {
+  saveSubtasks(subtaskList: any[], userId: string | null): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/subtask`, {subtasks:subtaskList,userId:userId}, {
       headers: { 'Content-Type': 'application/json' }
     });
   }
