@@ -1,5 +1,5 @@
-import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit, TemplateRef } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormField } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -28,6 +28,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/quote-documents-dialog.component';
+import { FileSizePipe } from '../../Documents/filesize.pipe';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -43,6 +46,7 @@ const Google_API = environment.Google_API;
     MatCardModule,
     MatDivider,
     NgIf,
+    FormsModule,
     NgFor,
     MatInput,
     MatButton,
@@ -52,6 +56,8 @@ const Google_API = environment.Google_API;
     LoaderComponent,
     MatAutocompleteModule,
     MatExpansionModule,
+    FileSizePipe,
+    MatCheckboxModule
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
@@ -59,6 +65,7 @@ const Google_API = environment.Google_API;
 })
 export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
@@ -402,6 +409,36 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   onSubmit(): void {
+    this.fetchDocuments();
+    const activeElement = document.activeElement as HTMLElement;
+    const dialogRef = this.dialog.open(this.documentsDialog);
+
+    dialogRef.afterClosed().subscribe(() => {
+      if (activeElement) {
+        activeElement.focus();
+      }
+    });
+        // const dialogRef = this.dialog.open(QuoteDocumentsDialogComponent, {
+        //   width: '600px',
+        //   maxHeight: '80vh',
+        //   autoFocus: true,
+        //   data: {
+        //     fileUrls: this.uploadedFileUrls // 👈 Pass them here
+        //   }
+        // });
+      
+        // dialogRef.afterClosed().subscribe(result => {
+        //   if (result === true) {
+        //     // User accepted AI output and subtasks
+        //     this.performSaveJob();
+        //   } else {
+        //     // User cancelled
+        //   }
+        // });
+   
+  }
+  
+  performSaveJob(): void {
     if (!this.isBrowser) return;
   
     localStorage.setItem('Subtasks', '');
@@ -535,7 +572,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       this.submitFormData(formData);
     }
   }
-  
   private submitFormData(formData: FormData): void {
     this.progress = 0;
   
@@ -568,7 +604,9 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               this.alertMessage = 'Job Quote Creation Successful';
               this.showAlert = true;
               this.uploadedFileUrls = [];
+              this.dialog.closeAll();
               this.router.navigate(['view-quote'], { queryParams: responseParams });
+
             }
           }
         },
@@ -761,11 +799,85 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       },
     });
   }
+  documents: any[] = [];
+  error = '';
+  documentsConfirmed = false;
+  fetchDocuments(): void {
+    if (!this.uploadedFileUrls || this.uploadedFileUrls.length === 0) {
+      this.error = 'No uploaded documents available.';
+      this.isLoading = false;
+      return;
+    }
 
+    this.documents = this.uploadedFileUrls.map((url, index) => {
+      const name = decodeURIComponent(url.split('/').pop() || `Document-${index + 1}`);
+      return {
+        name,
+        type: this.getFileType(name),
+        size: this.getFileSize(url),
+        url
+      };
+    });
+    console.log(this.documents);
+    this.isLoading = false;
+  }
+
+  getFileType(fileName: string): string {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf': return 'application/pdf';
+      case 'png': return 'image/png';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'docx':
+      case 'doc': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xlsx':
+      case 'xls': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default: return 'application/octet-stream';
+    }
+  }
+
+  getFileSize(url: string): number {
+    try {
+      return 840 * 1024; // 840 KB in bytes
+    } catch (e) {
+      console.error('Error fetching file size:', e);
+      return 0;
+    }
+  }
+
+  viewDocument(doc: any) {
+    const blobUrl = doc.url;
+    this.jobService.downloadJobDocumentFile(blobUrl).subscribe({
+      next: (response: Blob) => {
+        const contentType = doc.type;
+        console.log('Content Type:', contentType);
+        const blob = new Blob([response], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const newTab = window.open(url, '_blank');
+
+        if (newTab) {
+          setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+        } else {
+          console.error('Failed to open new tab');
+        }
+      },
+      error: (err) => {
+        console.error('Error viewing document:', err);
+      }
+    });
+  }
+  close() {
+    this.dialog.closeAll();
+  }
   closeAlert(): void {
     if (this.routeURL !== '') {
       this.router.navigate(['view-quote']);
     }
     this.showAlert = false;
+  }
+
+  confirmDialog(): void {
+    this.performSaveJob();
   }
 }

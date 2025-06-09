@@ -67,6 +67,7 @@
           <th>Task Status</th> <!-- ✅ New Static Column -->
           <th>Actions</th>
           <th>Notes</th>
+          <th>Approve</th>
         </tr>
       </thead>
       <tbody>
@@ -99,6 +100,9 @@
               Update
             </button>
           </td>
+          <td>
+            <mat-checkbox [(ngModel)]="subtask.accepted"></mat-checkbox>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -124,6 +128,9 @@
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
               Back
+            </button>
+            <button class="submit-btn save-btn" (click)="acceptAllSubtasks()">
+               Accept All Subtasks
             </button>
           </div>
         </mat-card-content>

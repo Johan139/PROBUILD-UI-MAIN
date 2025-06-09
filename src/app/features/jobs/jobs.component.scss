@@ -273,8 +273,14 @@ textarea[matInput] {
   font-weight: 600;
 }
 ::ng-deep .custom-snackbar {
-  background-color: #333 !important; // dark background
-  color: white !important;           // text color
+  background-color: #ffc107 !important;   // Bright yellow for high visibility
+  color: #000 !important;                 // Black text for contrast
+  font-size: 18px !important;             // Larger text
+  font-weight: bold !important;
+  text-align: center;
+  border: 2px solid #ff9800;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  padding: 16px 24px !important;         // text color
 
   .mat-mdc-snack-bar-action {
     color: #fbd008 !important;       // yellow Close button

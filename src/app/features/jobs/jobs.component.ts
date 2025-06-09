@@ -31,6 +31,7 @@ import { ConfirmationDialogComponent } from './job-quote/confirmation-dialog.com
 import { CancellationDialogComponent } from './Cancellation-Dialog.component';
 import { Location } from '@angular/common';
 import { ConfirmAIAcceptanceDialogComponent } from '../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -56,7 +57,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatProgressBarModule,
     MatFormFieldModule,
     MatInputModule,
-    FileSizePipe
+    FileSizePipe,
+    MatCheckboxModule
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss'
@@ -457,7 +459,8 @@ export class JobsComponent implements OnInit, OnDestroy {
           endDate: end,
           status: 'Pending',
           cost: 0,
-          deleted: false
+          deleted: false,
+          accepted: false // <-- new
         });
       }
     }
@@ -806,7 +809,16 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     });
   }
-
+  acceptAllSubtasks(): void {
+    const updatedGroups = this.store.getState().subtaskGroups.map(group => ({
+      ...group,
+      subtasks: group.subtasks.map(st => ({
+        ...st,
+        accepted: true
+      }))
+    }));
+    this.store.setState({ subtaskGroups: updatedGroups });
+  }
   openDocumentsDialog() {
     const activeElement = document.activeElement as HTMLElement;
     this.fetchDocuments();
@@ -1050,23 +1062,47 @@ export class JobsComponent implements OnInit, OnDestroy {
   getVisibleSubtasks(table: any): any[] {
     return table.subtasks?.filter(s => !s.deleted) || [];
   }
-
   saveOnly(): void {
-    const dialogRef = this.dialog.open(ConfirmAIAcceptanceDialogComponent);
-  
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === true) {
-        // User accepted AI output and subtasks
-        this.performSaveJob();
-      } else {
-        // User cancelled
+    const unaccepted = this.store.getState().subtaskGroups
+      .flatMap(group => group.subtasks)
+      .filter(st => !st.deleted && !st.accepted);
+    console.log('Unaccepted subtasks:', unaccepted);
+    console.log('Store state:', this.store.getState());
+    const dialogRef = this.dialog.open(ConfirmAIAcceptanceDialogComponent, {
+      data: {
+        warningMessage: unaccepted.length > 0
+          ? 'Please accept all subtasks to proceed with saving.'
+          : null, // Temporary to test rendering
+        disableConfirm: unaccepted.length > 0
       }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      console.log('Dialog result:', result);
     });
   }
   performSaveJob(): void {
+
+    const unaccepted = this.store.getState().subtaskGroups
+  .flatMap(group => group.subtasks)
+  .filter(st => !st.deleted && !st.accepted);
+
+if (unaccepted.length > 0) {
+  this.snackBar.open(
+    '⚠ Please accept all subtasks before saving.', 
+    'Got it', 
+    {
+      duration: 6000,
+      panelClass: ['custom-snackbar'],
+      verticalPosition: 'top',   // Optional: 'top' or 'bottom'
+      horizontalPosition: 'center'
+    }
+  );
+  return;
+}
+
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
-      subtasks: group.subtasks.map(({ id, task, days, startDate, endDate, cost, status, deleted }) => ({
+      subtasks: group.subtasks.map(({ id, task, days, startDate, endDate, cost, status, deleted, accepted }) => ({
         id,
         task,
         days,
@@ -1075,7 +1111,8 @@ export class JobsComponent implements OnInit, OnDestroy {
         cost,
         status,
         groupTitle: group.title,
-        deleted
+        deleted,
+        accepted
       }))
     }));
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });

@@ -31,6 +31,12 @@ getSubtasks(jobId: number) {
 downloadJobDocument(documentId: number): Observable<Blob> {
   return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
 }
+
+downloadJobDocumentFile(fileUrl: string): Observable<Blob> {
+  return this.httpClient.get(`${BASE_URL}/downloadFile?fileUrl=`+ fileUrl, {
+    responseType: 'blob'
+  });
+}
 downloadNoteDocument(documentId: number): Observable<Blob> {
   return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
 }

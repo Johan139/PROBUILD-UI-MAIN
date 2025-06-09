@@ -7,6 +7,7 @@ export interface Subtask {
     cost: number;
     status: string;
     deleted: boolean;
+    accepted?: boolean;
   }
   
   export interface SubtaskGroup {

@@ -155,7 +155,97 @@ tr:hover {
   cursor: not-allowed;
   box-shadow: none;
 }
+.document-meta {
+  font-size: 0.85rem;
+  color: $dark-gray;
+}
+.document-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.document-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: $black;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.25rem;
+}
+.documents-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $light-gray;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $cyan;
+    border-radius: 3px;
+  }
+}
+.no-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  &[error] {
+    color: #da4167;
+    font-weight: 500;
+  }
+}
+.documents-dialog {
+  padding: 1rem;
+
+  h2[mat-dialog-title] {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $dark-gray;
+    margin-bottom: 1rem;
+  }
+}
+.loading-documents {
+  text-align: center;
+  padding: 1rem;
+  color: $dark-gray;
+
+  p {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+  }
+}
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #f9f9f9;
+    border-color: $cyan;
+    box-shadow: $shadow;
+  }
+}
 .View-btn {
   background: $primary-yellow;
   border-radius: 10px;
@@ -190,8 +280,30 @@ tr:hover {
     }
   }
 }
+.view-btn-document {
+  background-color: $primary-yellow;
+  color: $black;
+  padding: 0.25rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-left: 1rem;
 
+  &:hover {
+    background-color: $darker-yellow;
+    color: $dark-gray;
+  }
+}
+.confirm-documents-checkbox {
+  margin: 1rem 0 1rem 0.5rem;
+  font-size: 0.95rem;
 
+  mat-checkbox {
+    font-weight: 500;
+    color: #333;
+    display: inline-block !important;
+    opacity: 1 !important;
+  }
+}
 .upload-progress {
   display: flex;
   flex-direction: column;
@@ -323,6 +435,41 @@ button[mat-raised-button]:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.submit-btn-document {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  
+  &:hover {
+    background: $darker-yellow;
+  }
+  
+  &.publish-btn {
+    background: $primary-yellow;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+  
+  &.save-btn {
+    background: $secondary-yellow;
+    &:hover {
+      background: darken($secondary-yellow, 10%);
+    }
+  }
+  
+  &.delete-btn {
+    background: #fbd008;
+    color: $dark-gray;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
 }
 
 .cancel-btn {
