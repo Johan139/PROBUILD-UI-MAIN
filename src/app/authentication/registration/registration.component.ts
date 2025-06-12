@@ -148,10 +148,12 @@ export class RegistrationComponent implements OnInit{
   ]
   userTypes = [
     {value:null, display:null},
-    {value:'PROJECT_OWNER', display:'General Contractor'},
-    {value:'CONSTRUCTION', display:'Subcontractor'},
-    {value:'SUPPLIER', display:'Supplier/Vendor'}
-
+    {value:'PERSONAL_USE', display:'Client(Personal)'},
+    {value:'BUILDER', display:'Builder'},
+    {value:'CONSTRUCTION', display:'Construction Services'},
+    {value:'SUPPLIER', display:'Supplier Services'},
+    {value:'FOREMAN', display:'Foreman'},
+    {value:'PROJECT_OWNER', display:'Contractor/Project Owner'}
   ];
 
   registrationForm: FormGroup;
