@@ -7,8 +7,9 @@ import { NgIf } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { LoaderComponent } from '../../loader/loader.component';
-import { AuthService } from '../auth.service'; // New service
+import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
@@ -22,6 +23,7 @@ import { MatDividerModule } from '@angular/material/divider';
     MatInputModule,
     LoaderComponent,
     MatButtonModule,
+    MatIconModule,
     MatDividerModule,
   ],
   templateUrl: './login.component.html',
@@ -32,6 +34,7 @@ export class LoginComponent {
   showAlert: boolean = false;
   alertMessage: string = '';
   isLoading: boolean = false;
+  hidePassword: boolean = true;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -53,6 +56,10 @@ export class LoginComponent {
     });
   }
 
+  togglePasswordVisibility(): void {
+    this.hidePassword = !this.hidePassword;
+  }
+
   onLogin() {
     if (this.loginForm.valid) {
       this.isLoading = true;
@@ -60,7 +67,7 @@ export class LoginComponent {
       this.authService.login(credentials).subscribe({
         next: () => {
           this.isLoading = false;
-          this.router.navigateByUrl('dashboard'); // Navigate on success
+          this.router.navigateByUrl('dashboard');
         },
         error: (error) => {
           this.isLoading = false;
@@ -82,5 +89,10 @@ export class LoginComponent {
 
   closeAlert(): void {
     this.showAlert = false;
+  }
+
+  onBypassLogin() {
+    this.authService.bypassLogin('Contractor'); // or whatever role you need
+    this.router.navigateByUrl('dashboard');
   }
 }

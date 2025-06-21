@@ -86,4 +86,22 @@ export class AuthService {
       firstName: payload.firstName || localStorage.getItem('firstName'),
     });
   }
+
+  bypassLogin(userType: string = 'Contractor'): void {
+    if (isPlatformBrowser(this.platformId)) {
+      // Set fake token and user data
+      localStorage.setItem('token', 'fake-dev-token-12345');
+      localStorage.setItem('userType', userType);
+      localStorage.setItem('firstName', 'Dev');
+      localStorage.setItem('userId', 'dev-user-123');
+      localStorage.setItem('loggedIn', String(true));
+    }
+
+    // Set current user
+    this.currentUserSubject.next({
+      id: 'dev-user-123',
+      userType: userType,
+      firstName: 'Dev',
+    });
+  }
 }

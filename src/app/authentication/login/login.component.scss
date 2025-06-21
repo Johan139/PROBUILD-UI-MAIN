@@ -63,7 +63,7 @@ mat-card-subtitle {
   font-size: small;
   color: $dark-gray;
   margin-bottom: 1rem;
-  
+
   a {
     color: $cyan;
     text-decoration: none;
@@ -84,20 +84,89 @@ mat-divider {
   margin: 1rem 0;
 }
 
-/* Form Fields */
+/* Form Fields - Fixed spacing */
 .form-field {
   margin-bottom: 1.5rem;
-  
+
   mat-form-field {
     width: 100%;
+
+    // Force consistent height for form fields
+    .mat-mdc-text-field-wrapper {
+      min-height: 56px;
+    }
+
+    &.mat-mdc-form-field-has-icon-suffix {
+      .mat-mdc-text-field-wrapper {
+        min-height: 56px;
+        height: 56px;
+      }
+
+      .mat-mdc-form-field-flex {
+        align-items: center;
+        height: 56px;
+      }
+
+      .mat-mdc-form-field-infix {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        min-height: 40px;
+      }
+    }
   }
-  
+
   mat-label {
     color: $dark-gray;
   }
-  
+
   input {
     color: $black;
+  }
+
+  // Ensure consistent bottom spacing regardless of password visibility
+  &:has(mat-form-field input[type="password"]),
+  &:has(mat-form-field input[type="text"]) {
+    margin-bottom: 1.5rem;
+
+    mat-form-field {
+      margin-bottom: 0;
+
+      .mat-mdc-form-field-subscript-wrapper {
+        min-height: 1.25em; // Reserve space for error messages
+      }
+    }
+  }
+}
+
+/* Password visibility toggle button styling */
+.mat-mdc-form-field-icon-suffix {
+  .mat-mdc-icon-button {
+    color: $cyan;
+    width: 40px;
+    height: 40px;
+    margin-right: -8px; 
+
+    &:hover {
+      background-color: rgba($cyan, 0.1);
+    }
+
+    .mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+    }
+  }
+}
+
+/* Ensure the form field doesn't change height */
+.mat-mdc-form-field-wrapper {
+  .mat-mdc-form-field-flex {
+    .mat-mdc-form-field-infix {
+      border-top: none;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
   }
 }
 
@@ -109,7 +178,7 @@ mat-divider {
   font-weight: 500;
   color: $dark-gray;
   width: 100%;
-  
+
   &:hover {
     background: $darker-yellow;
   }
@@ -143,10 +212,26 @@ mat-divider {
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
   width: 300px;
-  
+
   p {
     margin-bottom: 20px;
     color: $black;
+  }
+}
+
+.forgot-password-link {
+  display: block;
+  margin-top: 2.5rem;
+  text-align: right;
+
+  a {
+    color: $cyan;
+    text-decoration: none;
+    font-size: small;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -155,11 +240,11 @@ mat-divider {
   .fullcolumn {
     width: 80vw;
   }
-  
+
   .container {
     width: 95vw;
   }
-  
+
   .submit-btn {
     padding: 6px 12px;
   }
