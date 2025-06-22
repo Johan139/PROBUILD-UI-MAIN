@@ -3,7 +3,7 @@
   <app-loader></app-loader>
 
 </div>
-<div class="row job-quote-container"> 
+<div class="row job-quote-container">
   <div *ngIf="!subscriptionActive" style="text-align: center">
     <span style="color: red; font-size: 24px;">
       You do not have an active subscription.
@@ -14,7 +14,7 @@
     <mat-card class="project-card">
       <mat-card-header>
         <mat-card-title>YOUR JOBS</mat-card-title>
-   
+
       </mat-card-header>
       <mat-card-content>
         <mat-divider></mat-divider>
@@ -51,7 +51,7 @@
         </div>
         <div *ngIf="jobList.length == 0" class="no-more-jobs">
           No more jobs to display.
-        </div>        
+        </div>
       </mat-card-content>
     </mat-card>
 
@@ -100,7 +100,7 @@
     </mat-option>
   </mat-autocomplete>
 </mat-form-field>
-          </div> 
+          </div>
           <div class="panel-wrapper">
           <mat-accordion multi>
             <mat-expansion-panel [expanded]="true">
@@ -110,7 +110,7 @@
                   Click to expand/collapse
                 </mat-panel-description>
               </mat-expansion-panel-header>
-          
+
               <!-- CLIENT DETAILS FORM FIELDS -->
               <div class="form-row">
                 <mat-form-field appearance="fill">
@@ -120,7 +120,7 @@
                     First name is required.
                   </mat-error>
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Last Name</mat-label>
                   <input matInput formControlName="lastName" placeholder=" " />
@@ -128,7 +128,7 @@
                     Last name is required.
                   </mat-error>
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Email</mat-label>
                   <input matInput formControlName="email" placeholder=" " />
@@ -137,24 +137,24 @@
                   </mat-error>
                 </mat-form-field>
               </div>
-          
+
               <div class="form-row">
                 <mat-form-field appearance="fill">
                   <mat-label>Phone Number</mat-label>
                   <input matInput formControlName="phone" placeholder=" " />
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Company Name</mat-label>
                   <input matInput formControlName="company" placeholder=" " />
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Position/Title</mat-label>
                   <input matInput formControlName="position" placeholder=" " />
                 </mat-form-field>
               </div>
-        
+
             </mat-expansion-panel>
           </mat-accordion>
         </div>
@@ -166,7 +166,7 @@
                 <mat-panel-description>
                   Click to expand/collapse
                 </mat-panel-description>
-              </mat-expansion-panel-header>         
+              </mat-expansion-panel-header>
 
  <div class="form-row">
             <mat-form-field appearance="fill">

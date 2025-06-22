@@ -78,13 +78,27 @@ export class AuthService {
   }
 
   private loadUserFromToken(token: string): void {
-    // Assuming your JWT payload contains user info; use a library like jwt-decode for production
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    this.currentUserSubject.next({
-      id: payload.id || localStorage.getItem('userId'),
-      userType: payload.userType || localStorage.getItem('userType'),
-      firstName: payload.firstName || localStorage.getItem('firstName'),
-    });
+    if (token === 'fake-dev-token-12345') {
+      this.currentUserSubject.next({
+        id: localStorage.getItem('userId'),
+        userType: localStorage.getItem('userType'),
+        firstName: localStorage.getItem('firstName'),
+      });
+      return;
+    }
+
+    try {
+      // Assuming your JWT payload contains user info; use a library like jwt-decode for production
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      this.currentUserSubject.next({
+        id: payload.id || localStorage.getItem('userId'),
+        userType: payload.userType || localStorage.getItem('userType'),
+        firstName: payload.firstName || localStorage.getItem('firstName'),
+      });
+    } catch (error) {
+      console.error('Failed to decode token, logging out:', error);
+      this.logout();
+    }
   }
 
   bypassLogin(userType: string = 'Contractor'): void {
