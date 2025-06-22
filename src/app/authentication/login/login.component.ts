@@ -1,6 +1,7 @@
 // src/app/login.component.ts
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { NgIf } from '@angular/common';
@@ -31,6 +32,7 @@ import { MatDividerModule } from '@angular/material/divider';
 })
 export class LoginComponent {
   loginForm: FormGroup;
+  environment = environment;
   showAlert: boolean = false;
   alertMessage: string = '';
   isLoading: boolean = false;
