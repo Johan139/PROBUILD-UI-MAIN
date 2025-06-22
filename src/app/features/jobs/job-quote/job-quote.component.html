@@ -4,11 +4,50 @@
 
 </div>
 <div class="row job-quote-container">
-  <div *ngIf="!subscriptionActive" style="text-align: center">
-    <span style="color: red; font-size: 24px;">
-      You do not have an active subscription.
-      <a href="/profile" style="font-size: 24px;">Click here to subscribe</a>
-    </span>
+  <div *ngIf="!subscriptionActive" class="subscription-warning-container">
+    <div class="construction-warning">
+      <div class="warning-header">
+        <div class="warning-icon">
+          <svg viewBox="0 0 24 24" class="warning-triangle">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+        </div>
+        <div class="warning-title">
+          <h3>ACCESS RESTRICTED</h3>
+          <p>Construction Zone - Active Subscription Required</p>
+        </div>
+      </div>
+
+      <div class="warning-body">
+        <div class="warning-stripe"></div>
+        <div class="warning-content">
+          <h4>🚧 SUBSCRIPTION REQUIRED</h4>
+          <p>You need an active subscription to create new construction job quotes.</p>
+          <p>Subscribe now to access all ProBuild AI features and start generating professional quotes.</p>
+
+          <div class="restricted-features">
+            <h5>Restricted Features:</h5>
+            <ul>
+              <li>• Create New Job Quotes</li>
+              <li>• Generate Construction Estimates</li>
+              <li>• Access AI-Powered Analysis</li>
+              <li>• Upload Project Documents</li>
+            </ul>
+          </div>
+
+          <a href="/profile" class="subscribe-button">
+            <svg viewBox="0 0 24 24" class="button-icon">
+              <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+            </svg>
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+
+      <div class="warning-footer">
+        <div class="caution-tape"></div>
+      </div>
+    </div>
   </div>
   <div class="col-md-4 form-col">
     <mat-card class="project-card">
@@ -59,7 +98,7 @@
       <mat-card-header>
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
-      <mat-card-content>No Active Bids Currently</mat-card-content>
+      <mat-card-content>No current active bids</mat-card-content>
     </mat-card>
   </div>
   <div class="col-md-8 d-flex justify-content-center">
