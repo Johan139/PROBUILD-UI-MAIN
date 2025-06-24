@@ -319,7 +319,7 @@ this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
   headers: { 'Content-Type': 'application/json' }
 }).subscribe(() => {
   this.alertMessage = 'Trial activated. Login to get started!';
-        // this.routeURL = 'login';
+   this.routeURL = 'login';
   this.showAlert = true;
 });
   }
