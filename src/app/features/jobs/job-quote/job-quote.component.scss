@@ -634,22 +634,6 @@ mat-divider {
   max-width: 800px;
   width: 100%;
   position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: repeating-linear-gradient(
-      45deg,
-      #fbd008,
-      #fbd008 15px,
-      #000000 15px,
-      #000000 30px
-    );
-  }
 }
 
 .warning-header {
@@ -658,22 +642,6 @@ mat-divider {
   padding: 1.5rem 2rem 1rem;
   background: linear-gradient(135deg, #ffd700 0%, #fbc02d 100%);
   position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: repeating-linear-gradient(
-      90deg,
-      #000000,
-      #000000 10px,
-      #ffd700 10px,
-      #ffd700 20px
-    );
-  }
 }
 
 .warning-icon {
@@ -713,23 +681,8 @@ mat-divider {
   background: #ffffff;
 }
 
-.warning-stripe {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background: repeating-linear-gradient(
-    0deg,
-    #ffd700,
-    #ffd700 20px,
-    #000000 20px,
-    #000000 40px
-  );
-}
-
 .warning-content {
-  margin-left: 2rem;
+  margin-left: 0;
 
   h4 {
     font-size: 1.4rem;
@@ -905,7 +858,7 @@ mat-divider {
   }
 
   .warning-content {
-    margin-left: 1rem;
+    margin-left: 0;
 
     h4 {
       font-size: 1.2rem;
