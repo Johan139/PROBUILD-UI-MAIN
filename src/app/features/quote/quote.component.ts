@@ -12,10 +12,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { NgIf } from '@angular/common';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
 import { QuoteDataService } from '../quote/quote-data.service';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { LogoService } from '../../services/logo.service';
 
 @Component({
   selector: 'app-quote',
@@ -31,6 +33,7 @@ import { QuoteDataService } from '../quote/quote-data.service';
     MatSelectModule,
     MatIconModule,
     MatDividerModule,
+    MatExpansionModule,
     NgIf,
   ],
   templateUrl: './quote.component.html',
@@ -50,6 +53,8 @@ export class QuoteComponent implements OnInit {
   hasDiscount = false;
   hasFlatTotal = false;
   quoteId: string | null = null;
+  jobId?: string;
+  readOnly: boolean = false;
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -61,7 +66,8 @@ export class QuoteComponent implements OnInit {
     private router: Router,
     private quoteService: QuoteService,
     private authService: AuthService,
-    private quoteDataService: QuoteDataService
+    private quoteDataService: QuoteDataService,
+    private logoService: LogoService,
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -89,6 +95,9 @@ export class QuoteComponent implements OnInit {
       termsTitle: ['Terms'],
       terms: [''],
       quoteRows: this.fb.array([]),
+      status: ['Draft'],
+      version: [0],
+      logoId: [null],
     });
 
     // Listen to quoteRows value changes to update the total
@@ -117,7 +126,6 @@ export class QuoteComponent implements OnInit {
   ngOnInit(): void {
     // Check for quote data from the service (coming from JobSelectionComponent)
     const quote = this.quoteDataService.getQuote();
-
     if (quote) {
       // Populate the form with the passed Quote object
       this.quoteForm.patchValue({
@@ -145,22 +153,41 @@ export class QuoteComponent implements OnInit {
         notes: quote.notes || '',
         termsTitle: quote.termsTitle || 'Terms',
         terms: quote.terms || '',
+        status: quote.status || 'Draft',
       });
 
       // Set boolean flags based on the Quote object
+      this.quoteForm.get('number')?.disable();
       this.hasExtraCost = !!quote.extraCostValue;
       this.hasTax = !!quote.taxValue;
       this.hasDiscount = !!quote.discountValue;
       this.hasFlatTotal = !!quote.flatTotalValue;
       this.hasAmountPaid = !!quote.amountPaid;
+      this.jobId = quote.jobId;
 
       // Update quote rows and refresh table
       this.updateQuoteRows(quote.rows || []);
 
       // Clear the service data to prevent stale data
       this.quoteDataService.clearQuote();
-
+      if (quote.status === 'Submitted') {
+        this.readOnly = true;
+        this.quoteForm.disable();
+      }
       this.cdr.detectChanges();
+
+      if (quote.logoId) {
+        this.logoService.getLogo(quote.logoId).subscribe({
+          next: (logo) => {
+            this.logoUrl = logo.url;
+            this.quoteForm.patchValue({ logoId: logo.id });
+          },
+          error: () => {
+            this.logoUrl = null;
+          }
+        });
+      }
+
     } else {
       // If no service data, check for a quoteId in query params (editing an existing quote)
       this.route.queryParams.subscribe((params) => {
@@ -169,7 +196,9 @@ export class QuoteComponent implements OnInit {
           this.quoteService.getQuote(params['quoteId']).subscribe({
             next: (savedQuote) => {
               console.log('Quote loaded:', savedQuote);
+      
               this.quoteForm.patchValue({
+                id: savedQuote.id,
                 header: savedQuote.header,
                 number: savedQuote.number,
                 from: savedQuote.from,
@@ -193,28 +222,49 @@ export class QuoteComponent implements OnInit {
                 taxValue: savedQuote.taxValue,
                 discountValue: savedQuote.discountValue,
                 flatTotalValue: savedQuote.flatTotalValue,
+                status: savedQuote.status,
+                version: savedQuote.version,
+                logoId: savedQuote.logoId || null
               });
-
-              // Set boolean flags
+      
+              // Fetch and show logo if logoId exists
+              if (savedQuote.logoId) {
+                this.logoService.getLogo(savedQuote.logoId).subscribe({
+                  next: (logo) => {
+                    this.logoUrl = logo.url;
+                  },
+                  error: (err) => {
+                    console.error('Failed to load logo:', err);
+                    this.logoUrl = null;
+                  }
+                });
+              }
+              this.quoteForm.get('number')?.disable();
               this.hasExtraCost = !!savedQuote.extraCostValue;
               this.hasTax = !!savedQuote.taxValue;
               this.hasDiscount = !!savedQuote.discountValue;
               this.hasFlatTotal = !!savedQuote.flatTotalValue;
-
-              // Update quote rows and refresh table
+              this.jobId = savedQuote.jobID;
+      
               this.updateQuoteRows(savedQuote.rows);
-
               this.isSaving = false;
+      
+              if (savedQuote.status === 'Submitted') {
+                this.readOnly = true;
+                this.quoteForm.disable();
+              }
+      
               this.cdr.detectChanges();
             },
             error: (err) => {
               console.error('Error loading quote:', err);
               this.isSaving = false;
               this.cdr.detectChanges();
-            },
+            }
           });
         } else {
           // If no service data or quoteId, initialize with a default empty row
+          this.quoteForm.get('number')?.enable();
           const initialRow = this.createQuoteRow();
           this.quoteRows.push(initialRow);
           this.dataSource.data = [initialRow];
@@ -251,6 +301,15 @@ export class QuoteComponent implements OnInit {
     // Update dataSource with the new rows
     this.dataSource.data = this.quoteRows.controls as FormGroup[];
     this.cdr.detectChanges();
+  }
+
+  toggleReadOnly(): void {
+    this.readOnly = !this.readOnly;
+    if (this.readOnly) {
+      this.quoteForm.disable();
+    } else {
+      this.quoteForm.enable();
+    }
   }
 
   createQuoteRow(): FormGroup {
@@ -349,6 +408,48 @@ export class QuoteComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  approveQuote(): void {
+    if (!this.quoteId) return;
+
+    if (!this.jobId) {
+      console.warn('Cannot approve quote: Job ID is missing.');
+      return;
+    }
+  
+    this.quoteService.changeStatus(this.quoteId, 'Approved').subscribe({
+      next: (updatedQuote) => {
+        this.quoteForm.patchValue({ status: updatedQuote.status });
+        this.readOnly = true;
+        this.quoteForm.disable();
+        console.log('Quote approved');
+      },
+      error: (err) => {
+        console.error('Failed to approve quote:', err);
+      }
+    });
+  }
+  
+  rejectQuote(): void {
+    if (!this.quoteId) return;
+  
+    if (!this.jobId) {
+      console.warn('Cannot reject quote: Job ID is missing.');
+      return;
+    }
+
+    this.quoteService.changeStatus(this.quoteId, 'Rejected').subscribe({
+      next: (updatedQuote) => {
+        this.quoteForm.patchValue({ status: updatedQuote.status });
+        this.readOnly = true;
+        this.quoteForm.disable();
+        console.log('Quote rejected');
+      },
+      error: (err) => {
+        console.error('Failed to reject quote:', err);
+      }
+    });
+  }  
+
   getSubtotal(): number {
     let subtotal = this.quoteRows.controls.reduce((acc, row) => {
       const quantity = row.get('quantity')?.value || 0;
@@ -395,16 +496,28 @@ export class QuoteComponent implements OnInit {
 
   onLogoChange(event: Event): void {
     const file = (event.target as HTMLInputElement)?.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.logoUrl = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-      this.isLogoSupported = true;
-    } else {
+    if (!file || !file.type.startsWith('image/')) {
       this.isLogoSupported = false;
+      return;
     }
+  
+    const reader = new FileReader();
+    reader.onload = async () => {
+      this.logoUrl = reader.result as string;
+      this.isLogoSupported = true;
+  
+      const userId = this.authService.currentUserSubject.value?.id || 'anonymous';
+      this.logoService.uploadLogo(file, 'quote', userId).subscribe({
+        next: (logo) => {
+          this.quoteForm.patchValue({ logoId: logo.id });
+        },
+        error: (err) => {
+          console.error('Logo upload failed', err);
+        }
+      });
+    };
+  
+    reader.readAsDataURL(file);
   }
 
   removeLogo(): void {
@@ -419,7 +532,7 @@ export class QuoteComponent implements OnInit {
 
   async saveToDatabase(): Promise<void> {
     this.isSaving = true;
-    const formValue = this.quoteForm.value;
+    const formValue = this.quoteForm.getRawValue();
     const quote: Quote = {
       id: null,
       header: formValue.header || '',
@@ -460,7 +573,24 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
+      jobId: this.jobId,
+      version: formValue.version || undefined, // Let backend calculate version
+      status: 'Draft',
+      logoId: formValue.logoId || null,
     };
+
+    this.quoteService.saveQuoteWithVersion(quote).subscribe({
+      next: (savedQuote) => {
+        console.log('Quote saved with version:', savedQuote);
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error saving quote with version:', err);
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+    });
 
     if (this.hasExtraCost) {
       quote.extraCosts.push({
@@ -491,17 +621,117 @@ export class QuoteComponent implements OnInit {
       });
     }
 
-    this.quoteService.saveQuote(quote).subscribe({
-      next: (savedQuote) => {
-        console.log('Quote saved:', savedQuote);
+    //this.quoteService.saveQuote(quote).subscribe({
+    //  next: (savedQuote) => {
+    //    console.log('Quote saved:', savedQuote);
+    //    this.isSaving = false;
+    //    this.cdr.detectChanges();
+    //  },
+    //  error: (err) => {
+    //    console.error('Error saving quote:', err);
+    //    this.isSaving = false;
+    //    this.cdr.detectChanges();
+    //  },
+    //});
+  }
+
+  submitQuote(): void {
+    if (!this.jobId) {
+      console.warn('Cannot submit quote: Job ID is missing.');
+      return;
+    }
+
+    this.isSaving = true;
+    const formValue = this.quoteForm.getRawValue();
+    const quote: Quote = {
+      id: null,
+      header: formValue.header || '',
+      number: formValue.number || '',
+      from: formValue.from || '',
+      toTitle: formValue.toTitle || '',
+      to: formValue.to || '',
+      shipToTitle: formValue.shipToTitle || '',
+      shipTo: formValue.shipTo || '',
+      date: formValue.date || '',
+      paymentTerms: formValue.paymentTerms || '',
+      dueDate: formValue.dueDate || '',
+      poNumber: formValue.poNumber || '',
+      itemHeader: formValue.itemHeader || '',
+      quantityHeader: formValue.quantityHeader || '',
+      unitCostHeader: formValue.unitCostHeader || '',
+      amountHeader: formValue.amountHeader || '',
+      amountPaid: parseFloat(formValue.amountPaid) || 0,
+      extraCostValue: parseFloat(formValue.extraCostValue) || 0,
+      taxValue: parseFloat(formValue.taxValue) || 0,
+      discountValue: parseFloat(formValue.discountValue) || 0,
+      flatTotalValue: parseFloat(formValue.flatTotalValue) || 0,
+      notesTitle: formValue.notesTitle || '',
+      notes: formValue.notes || '',
+      termsTitle: formValue.termsTitle || '',
+      terms: formValue.terms || '',
+      rows: this.quoteRows.controls.map((row) => ({
+        id: 0,
+        quoteId: '',
+        description: row.get('description')?.value || '',
+        quantity: parseFloat(row.get('quantity')?.value) || 0,
+        unitPrice: parseFloat(row.get('unitPrice')?.value) || 0,
+        total: parseFloat(row.get('total')?.value) || 0,
+        quote: null
+      })),
+      total: this.getGrandTotal(),
+      createdDate: new Date(),
+      extraCosts: [],
+      createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
+      createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
+      jobId: this.jobId,
+      version: undefined,
+      status: 'Submitted',
+      logoId: formValue.logoId || null,
+    };
+  
+    if (this.hasExtraCost) {
+      quote.extraCosts.push({
+        type: 'extraCost',
+        value: parseFloat(formValue.extraCostValue) || 0,
+        title: 'Extra Cost',
+      });
+    }
+    if (this.hasTax) {
+      quote.extraCosts.push({
+        type: 'taxPercent',
+        value: parseFloat(formValue.taxValue) || 0,
+        title: 'Tax',
+      });
+    }
+    if (this.hasDiscount) {
+      quote.extraCosts.push({
+        type: 'discount',
+        value: parseFloat(formValue.discountValue) || 0,
+        title: 'Discount',
+      });
+    }
+    if (this.hasFlatTotal) {
+      quote.extraCosts.push({
+        type: 'flatTotal',
+        value: parseFloat(formValue.flatTotalValue) || 0,
+        title: 'Flat Total',
+      });
+    }
+  
+    this.quoteService.saveQuoteWithVersion(quote).subscribe({
+      next: (submittedQuote) => {
+        console.log('Quote submitted:', submittedQuote);
+        this.quoteForm.patchValue({ status: submittedQuote.status });
+        this.readOnly = true;
+        this.quoteForm.disable();
         this.isSaving = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error saving quote:', err);
+        console.error('Error submitting quote:', err);
         this.isSaving = false;
         this.cdr.detectChanges();
-      },
+      }
     });
   }
 
@@ -725,7 +955,7 @@ export class QuoteComponent implements OnInit {
 
   async updateDatabase(quoteId: string): Promise<void> {
     this.isSaving = true;
-    const formValue = this.quoteForm.value;
+    const formValue = this.quoteForm.getRawValue();
     const quote: Quote = {
       id: quoteId,
       header: formValue.header || '',
@@ -766,6 +996,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
+      jobId: this.jobId,
     };
 
     if (this.hasExtraCost) {
