@@ -260,7 +260,7 @@ googlePlaceId: [''],
   onSubmit(): void {
     const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
-  
+    
     if (!this.registrationForm.valid) {
       this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
       this.showAlert = true;
@@ -310,6 +310,18 @@ googlePlaceId: [''],
   {
     this.routeURL = 'login';
     this.showAlert = true;
+  }
+  else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
+  {
+      const userId = res.userId;
+      // Trigger trial subscription
+this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
+  headers: { 'Content-Type': 'application/json' }
+}).subscribe(() => {
+  this.alertMessage = 'Trial activated. Login to get started!';
+   this.routeURL = 'login';
+  this.showAlert = true;
+});
   }
   else
   {
