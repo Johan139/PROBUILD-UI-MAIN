@@ -168,13 +168,13 @@ export class JobsComponent implements OnInit, OnDestroy {
         if (!data || data.length === 0) {
           // Manually invoke the fallback logic for empty data
           console.log('Subtasks empty, falling back to GetBillOfMaterials');
-    
+
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
               const parsedGroups = this.parseMarkdownToSubtasks(markdown);
               const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
-    
+
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
               this.createTables();
@@ -182,11 +182,11 @@ export class JobsComponent implements OnInit, OnDestroy {
           });
           return; // prevent further processing
         }
-    
+
         console.log(data);
         const grouped = this.groupSubtasksByTitle(data);
         this.store.setState({ subtaskGroups: grouped });
-    
+
         const mainTasks = this.extractMainTasksFromGroups(grouped);
         this.taskData = mainTasks;
         this.createTables();
@@ -199,7 +199,7 @@ export class JobsComponent implements OnInit, OnDestroy {
               const markdown = results[0]?.fullResponse;
               const parsedGroups = this.parseMarkdownToSubtasks(markdown);
               const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
-    
+
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
               this.createTables();
@@ -210,7 +210,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         }
       }
     });
-    
+
 
     this.initialStartDate = this.projectDetails.date;
     const state = this.store.getState();
@@ -280,14 +280,14 @@ export class JobsComponent implements OnInit, OnDestroy {
   parseMarkdownToMainTasks(report: string): any[] {
     const lines = report.split('\n');
     const mainTasks: any[] = [];
-  
+
     const parseDate = (line: string): string => {
       const patterns = [
         /(\d{4})[-/](\d{2})[-/](\d{2})/,                        // 2025-05-18 or 2025/05/18
         /(\d{2})[-/](\d{2})[-/](\d{4})/,                        // 18-05-2025 or 18/05/2025
         /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,                   // May 18, 2025
       ];
-  
+
       for (const pattern of patterns) {
         const match = line.match(pattern);
         if (match) {
@@ -299,16 +299,16 @@ export class JobsComponent implements OnInit, OnDestroy {
           } else if (pattern === patterns[2]) {
             date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
           }
-  
+
           if (date && !isNaN(date.getTime())) {
             return date.toISOString().split('T')[0];
           }
         }
       }
-  
+
       return '';
     };
-  
+
     const parseDuration = (line: string): number => {
       const match = line.match(/(\d+)\s*(day|week|month)/i);
       if (!match) return 0;
@@ -321,7 +321,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         default: return value;
       }
     };
-  
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (/^#+\s?#?\s?\d+[\.\)]?/.test(line)) {
@@ -338,14 +338,14 @@ export class JobsComponent implements OnInit, OnDestroy {
             break;
           }
         }
-  
+
         if (!start) start = new Date().toISOString().split('T')[0];
         if (!end && start && days > 0) {
           const endDate = new Date(start);
           endDate.setDate(endDate.getDate() + days);
           end = endDate.toISOString().split('T')[0];
         }
-  
+
         if (start && end) {
           mainTasks.push({
             id: (mainTasks.length + 1).toString(),
@@ -358,25 +358,25 @@ export class JobsComponent implements OnInit, OnDestroy {
         }
       }
     }
-  
+
     return mainTasks;
   }
-  
+
   parseMarkdownToSubtasks(report: string): { title: string; subtasks: any[] }[] {
     const lines = report.split('\n');
     const subtasksGroups: { title: string; subtasks: any[] }[] = [];
     let currentGroup = '';
     let currentTasks: any[] = [];
-  
+
     const today = new Date().toISOString().split('T')[0];
-  
+
     const parseDate = (text: string): string => {
       const patterns = [
         /(\d{4})[-/](\d{2})[-/](\d{2})/,
         /(\d{2})[-/](\d{2})[-/](\d{4})/,
         /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,
       ];
-  
+
       for (const pattern of patterns) {
         const match = text.match(pattern);
         if (match) {
@@ -388,16 +388,16 @@ export class JobsComponent implements OnInit, OnDestroy {
           } else if (pattern === patterns[2]) {
             date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
           }
-  
+
           if (date && !isNaN(date.getTime())) {
             return date.toISOString().split('T')[0];
           }
         }
       }
-  
+
       return '';
     };
-  
+
     const parseDuration = (text: string): number => {
       const match = text.match(/(\d+)\s*(day|week|month)/i);
       if (!match) return 0;
@@ -410,16 +410,16 @@ export class JobsComponent implements OnInit, OnDestroy {
         default: return value;
       }
     };
-  
+
     const isSubtaskHeader = (line: string) =>
       line.startsWith('**') && line.endsWith('**') &&
       !line.toLowerCase().includes('duration') &&
       !line.toLowerCase().includes('start') &&
       !line.toLowerCase().includes('end');
-  
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-  
+
       if (line.startsWith('#')) {
         if (currentGroup && currentTasks.length > 0) {
           subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
@@ -427,7 +427,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         currentGroup = line.replace(/^#+/, '').trim();
         currentTasks = [];
       }
-  
+
       if (isSubtaskHeader(line)) {
         const task = line.replace(/\*\*/g, '').trim();
         let days = 0;
@@ -443,7 +443,7 @@ export class JobsComponent implements OnInit, OnDestroy {
             break;
           }
         }
-  
+
         if (!start) start = today;
         if (!end && start && days > 0) {
           const endDate = new Date(start);
@@ -451,7 +451,7 @@ export class JobsComponent implements OnInit, OnDestroy {
           end = endDate.toISOString().split('T')[0];
         }
         if (!end) end = today;
-  
+
         currentTasks.push({
           task,
           days,
@@ -464,15 +464,15 @@ export class JobsComponent implements OnInit, OnDestroy {
         });
       }
     }
-  
+
     if (currentGroup && currentTasks.length > 0) {
       subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
     }
-  
+
     return subtasksGroups;
   }
-  
-  
+
+
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -480,10 +480,10 @@ export class JobsComponent implements OnInit, OnDestroy {
       console.error('No files selected');
       return;
     }
-  
+
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-  
+
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
@@ -492,10 +492,10 @@ export class JobsComponent implements OnInit, OnDestroy {
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
     // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
-  
+
     this.progress = 0;
     this.isUploading = true;
-  
+
     this.httpClient
       .post<any>(BASE_URL + '/Jobs/UploadNoteImage', formData, {
         reportProgress: true,
@@ -508,16 +508,16 @@ export class JobsComponent implements OnInit, OnDestroy {
           if (event.type === HttpEventType.UploadProgress && event.total) {
             // Use full 0-100% range since SignalR is disabled
             this.progress = Math.round((100 * event.loaded) / event.total);
- 
+
           } else if (event.type === HttpEventType.Response) {
-      
+
             const newFilesCount = newFileNames.length;
             this.uploadedFilesCount += newFilesCount;
             if (event.body?.fileUrls) {
               this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-         
+
             } else {
-           
+
             }
             this.isUploading = false;
             this.resetFileInput();
@@ -631,7 +631,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-  
+
         this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFilesCount = 0;
@@ -646,14 +646,14 @@ export class JobsComponent implements OnInit, OnDestroy {
   deleteTemporaryFiles(): void {
 
     if (this.uploadedFileUrls.length === 0) {
-  
+
       return;
     }
     this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
       blobUrls: this.uploadedFileUrls,
     }).subscribe({
       next: () => {
- 
+
         this.uploadedFileUrls = [];
         this.uploadedFilesCount = 0;
         this.uploadedFileNames = [];
@@ -1088,8 +1088,8 @@ export class JobsComponent implements OnInit, OnDestroy {
 
 if (unaccepted.length > 0) {
   this.snackBar.open(
-    '⚠ Please accept all subtasks before saving.', 
-    'Got it', 
+    '⚠ Please accept all subtasks before saving.',
+    'Got it',
     {
       duration: 6000,
       panelClass: ['custom-snackbar'],

@@ -326,17 +326,18 @@
                 <p>Upload Progress: {{ progress }}%</p>
                 <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
               </div>
-              <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-                <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
-                  {{ uploadedFilesCount }} file(s) uploaded successfully
+              <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+                <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+                  {{ uploadedFileInfos.length }} file(s) uploaded successfully
                 </p>
               </div>
               <div class="custom-file-upload">
-                <label for="file-upload" class="upload-label submit-btn">
+                <button type="button" (click)="openUploadDialog()" class="upload-label submit-btn">
                   <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                  Upload File
-                </label>
-                <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+                  Upload
+                </button>
+                <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
+                <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
               </div>
             </div>
           </div>
@@ -372,7 +373,7 @@
         <div *ngIf="documents.length > 0" class="documents-list">
           <div class="document-item" *ngFor="let doc of documents; let i = index">
             <div class="document-info">
-              <span class="document-name">{{doc.name}}</span>
+              <span class="document-name">{{doc.displayName}}</span>
               <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
             </div>
             <button class="view-btn-document" mat-button (click)="viewDocument(doc)">
