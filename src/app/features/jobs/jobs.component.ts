@@ -172,8 +172,8 @@ export class JobsComponent implements OnInit, OnDestroy {
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
-              const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
+              const parsedGroups = this.parseTimelineToTaskGroups(markdown);
+              const parsedMainTasks = this.parseTimelineToGanttTasks(markdown);
 
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
@@ -197,8 +197,8 @@ export class JobsComponent implements OnInit, OnDestroy {
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
-              const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
+              const parsedGroups = this.parseTimelineToTaskGroups(markdown);
+              const parsedMainTasks = this.parseTimelineToGanttTasks(markdown);
 
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
@@ -277,199 +277,123 @@ export class JobsComponent implements OnInit, OnDestroy {
     }).filter(Boolean);
   }
 
-  parseMarkdownToMainTasks(report: string): any[] {
+  parseTimelineToTaskGroups(report: string): { title: string; subtasks: any[] }[] {
+    if (!report) return [];
+
     const lines = report.split('\n');
-    const mainTasks: any[] = [];
+    const taskGroupMap = new Map<string, any[]>();
+    let tableStarted = false;
+    const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+    let currentPhase = '';
 
-    const parseDate = (line: string): string => {
-      const patterns = [
-        /(\d{4})[-/](\d{2})[-/](\d{2})/,                        // 2025-05-18 or 2025/05/18
-        /(\d{2})[-/](\d{2})[-/](\d{4})/,                        // 18-05-2025 or 18/05/2025
-        /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,                   // May 18, 2025
-      ];
+    for (const line of lines) {
+      const trimmedLine = line.trim();
 
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match) {
-          let date: Date | undefined;
-          if (pattern === patterns[0]) {
-            date = new Date(`${match[1]}-${match[2]}-${match[3]}`);
-          } else if (pattern === patterns[1]) {
-            date = new Date(`${match[3]}-${match[2]}-${match[1]}`);
-          } else if (pattern === patterns[2]) {
-            date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
-          }
-
-          if (date && !isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-          }
-        }
+      if (trimmedLine.startsWith('Ready for the next prompt 20')) {
+        break;
       }
 
-      return '';
-    };
-
-    const parseDuration = (line: string): number => {
-      const match = line.match(/(\d+)\s*(day|week|month)/i);
-      if (!match) return 0;
-      const value = parseInt(match[1]);
-      const unit = match[2].toLowerCase();
-      switch (unit) {
-        case 'day': return value;
-        case 'week': return value * 7;
-        case 'month': return value * 30;
-        default: return value;
+      if (!tableStarted && headerRegex.test(trimmedLine)) {
+        tableStarted = true;
+        continue;
       }
-    };
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (/^#+\s?#?\s?\d+[\.\)]?/.test(line)) {
-        const title = line.replace(/^#+\s?#?\s?\d+[\.\)]?\s*/, '').trim();
-        let start = '', end = '', days = 0;
-        for (let j = i + 1; j < lines.length; j++) {
-          const nextLine = lines[j].trim().toLowerCase();
-          if (nextLine.includes('duration')) {
-            days = parseDuration(lines[j]);
-          } else if (nextLine.includes('start')) {
-            start = parseDate(lines[j]);
-          } else if (nextLine.includes('end')) {
-            end = parseDate(lines[j]);
-            break;
-          }
-        }
-
-        if (!start) start = new Date().toISOString().split('T')[0];
-        if (!end && start && days > 0) {
-          const endDate = new Date(start);
-          endDate.setDate(endDate.getDate() + days);
-          end = endDate.toISOString().split('T')[0];
-        }
-
-        if (start && end) {
-          mainTasks.push({
-            id: (mainTasks.length + 1).toString(),
-            name: title,
-            start: new Date(start),
-            end: new Date(end),
-            progress: 0,
-            dependencies: null
-          });
-        }
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.startsWith('|--')) {
+        continue;
       }
+
+      const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+      if (columns.length < 6) continue;
+
+      let phaseRaw = columns[0];
+      const taskName = columns[1];
+      const duration = columns[2];
+      const startDate = columns[4];
+      const endDate = columns[5];
+
+      if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone')) {
+        continue;
+      }
+
+      const phaseName = phaseRaw.replace(/\*\*|\\/g, '').trim();
+      if (phaseName) {
+        currentPhase = phaseName;
+      }
+
+      if (!taskGroupMap.has(currentPhase)) {
+        taskGroupMap.set(currentPhase, []);
+      }
+
+      if (!taskName) {
+        continue;
+      }
+
+      taskGroupMap.get(currentPhase)?.push({
+        task: taskName,
+        days: parseInt(duration, 10) || 0,
+        startDate: startDate,
+        endDate: endDate,
+        status: 'Pending',
+        cost: 0,
+        deleted: false,
+        accepted: false
+      });
     }
 
-    return mainTasks;
+    return Array.from(taskGroupMap.entries()).map(([title, subtasks]) => ({
+      title,
+      subtasks
+    }));
   }
 
-  parseMarkdownToSubtasks(report: string): { title: string; subtasks: any[] }[] {
+  parseTimelineToGanttTasks(report: string): any[] {
+    if (!report) return [];
+
     const lines = report.split('\n');
-    const subtasksGroups: { title: string; subtasks: any[] }[] = [];
-    let currentGroup = '';
-    let currentTasks: any[] = [];
+    const ganttTasks: any[] = [];
+    let tableStarted = false;
+    const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
 
-    const today = new Date().toISOString().split('T')[0];
+    for (const line of lines) {
+      const trimmedLine = line.trim();
 
-    const parseDate = (text: string): string => {
-      const patterns = [
-        /(\d{4})[-/](\d{2})[-/](\d{2})/,
-        /(\d{2})[-/](\d{2})[-/](\d{4})/,
-        /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,
-      ];
-
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-          let date: Date | undefined;
-          if (pattern === patterns[0]) {
-            date = new Date(`${match[1]}-${match[2]}-${match[3]}`);
-          } else if (pattern === patterns[1]) {
-            date = new Date(`${match[3]}-${match[2]}-${match[1]}`);
-          } else if (pattern === patterns[2]) {
-            date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
-          }
-
-          if (date && !isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-          }
-        }
+      if (trimmedLine.startsWith('Ready for the next prompt 20')) {
+        break;
       }
 
-      return '';
-    };
-
-    const parseDuration = (text: string): number => {
-      const match = text.match(/(\d+)\s*(day|week|month)/i);
-      if (!match) return 0;
-      const value = parseInt(match[1]);
-      const unit = match[2].toLowerCase();
-      switch (unit) {
-        case 'day': return value;
-        case 'week': return value * 7;
-        case 'month': return value * 30;
-        default: return value;
-      }
-    };
-
-    const isSubtaskHeader = (line: string) =>
-      line.startsWith('**') && line.endsWith('**') &&
-      !line.toLowerCase().includes('duration') &&
-      !line.toLowerCase().includes('start') &&
-      !line.toLowerCase().includes('end');
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      if (line.startsWith('#')) {
-        if (currentGroup && currentTasks.length > 0) {
-          subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
-        }
-        currentGroup = line.replace(/^#+/, '').trim();
-        currentTasks = [];
+      if (!tableStarted && headerRegex.test(trimmedLine)) {
+        tableStarted = true;
+        continue;
       }
 
-      if (isSubtaskHeader(line)) {
-        const task = line.replace(/\*\*/g, '').trim();
-        let days = 0;
-        let start = '', end = '';
-        for (let j = i + 1; j < lines.length; j++) {
-          const lookahead = lines[j].trim().toLowerCase();
-          if (lookahead.includes('duration')) {
-            days = parseDuration(lines[j]);
-          } else if (lookahead.includes('start')) {
-            start = parseDate(lines[j]);
-          } else if (lookahead.includes('end')) {
-            end = parseDate(lines[j]);
-            break;
-          }
-        }
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.startsWith('|--')) {
+        continue;
+      }
 
-        if (!start) start = today;
-        if (!end && start && days > 0) {
-          const endDate = new Date(start);
-          endDate.setDate(endDate.getDate() + days);
-          end = endDate.toISOString().split('T')[0];
-        }
-        if (!end) end = today;
+      const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+      if (columns.length < 6) continue;
 
-        currentTasks.push({
-          task,
-          days,
-          startDate: start,
-          endDate: end,
-          status: 'Pending',
-          cost: 0,
-          deleted: false,
-          accepted: false // <-- new
+      const phaseRaw = columns[0];
+      const taskName = columns[1];
+      const startDate = columns[4];
+      const endDate = columns[5];
+
+      if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone') || !taskName) {
+        continue;
+      }
+
+      if (taskName && startDate && endDate) {
+        ganttTasks.push({
+          id: taskName.replace(/\s+/g, '-').toLowerCase(),
+          name: taskName,
+          start: new Date(startDate),
+          end: new Date(endDate),
+          progress: 0,
+          dependencies: null
         });
       }
     }
-
-    if (currentGroup && currentTasks.length > 0) {
-      subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
-    }
-
-    return subtasksGroups;
+    return ganttTasks;
   }
 
 
@@ -632,7 +556,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
 
-        this.deleteTemporaryFiles();
+        //this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFilesCount = 0;
         this.uploadedFileNames = [];
