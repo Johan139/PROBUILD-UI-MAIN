@@ -289,7 +289,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         .then(() => console.log('SignalR connection stopped'))
         .catch(err => console.error('Error stopping SignalR:', err));
     }
-    this.deleteTemporaryFiles();
+    //this.deleteTemporaryFiles();
   }
 
   loadGoogleMapsScript(): Promise<void> {
@@ -616,7 +616,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isUploading = false;
           console.error('Upload error:', error);
           this.progress = 0;
-          this.deleteTemporaryFiles();
+          //this.deleteTemporaryFiles();
         },
         complete: () => console.log('Client-to-API upload complete'),
       });
@@ -764,7 +764,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
         console.log('Cancel clicked. Files to be deleted:', this.uploadedFileInfos.map(f => f.url));
-        this.deleteTemporaryFiles();
+        //this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFileInfos = [];
         this.sessionId = uuidv4();
