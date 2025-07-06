@@ -178,8 +178,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     //   .then(() => console.log('SignalR connection established successfully'))
     //   .catch(err => console.error('SignalR Connection Error:', err));
 
-    console.log(this.hubConnection.connectionId);
-
     if (this.isBrowser) {
       try {
         await this.loadGoogleMapsScript();
