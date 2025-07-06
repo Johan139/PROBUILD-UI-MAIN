@@ -798,63 +798,49 @@ export class JobsComponent implements OnInit, OnDestroy {
     const logo = new Image();
     logo.src = 'assets/logo.png';
 
-    logo.onload = () => {
-      doc.addImage(logo, 'PNG', 10, 10, 50, 15);
-      doc.setFontSize(18);
-      doc.text('Bill of Materials', 10, 35);
+    const parsedReport = this.processingResults[0].parsedReport;
 
-      const parsedReport = this.processingResults[0].parsedReport;
-      let yPos = 40;
+    const drawContent = (withLogo: boolean) => {
+      const addPageHeader = () => {
+        if (withLogo) {
+          doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+        }
+        doc.setFontSize(18);
+        doc.text('Bill of Materials', 10, withLogo ? 35 : 15);
+      };
 
-      parsedReport.sections.forEach((section: any) => {
-        doc.setFontSize(16);
-        doc.text(section.title, 10, yPos);
-        yPos += 10;
+      parsedReport.sections.forEach((section: any, index: number) => {
+        if (index > 0) {
+          doc.addPage();
+        }
+        addPageHeader();
+
+        doc.setFontSize(14);
+        doc.text(section.title, 10, withLogo ? 45 : 25); // Adjust Y as needed
 
         autoTable(doc, {
           head: [section.headers],
           body: section.content,
-          startY: yPos,
+          startY: withLogo ? 50 : 30, // Start table below the section title
           theme: 'grid',
           headStyles: {
             fillColor: '#FFC107',
             textColor: '#000000'
           },
         });
-
-        yPos = (doc as any).lastAutoTable.finalY + 10;
       });
 
       doc.save('bill-of-materials.pdf');
     };
 
+    logo.onload = () => {
+      drawContent(true);
+    };
+
     logo.onerror = () => {
       console.error('Failed to load logo for PDF.');
       this.snackBar.open('Could not load logo, proceeding without it.', 'Close', { duration: 3000 });
-      // Optionally, generate the PDF without the logo
-      const parsedReport = this.processingResults[0].parsedReport;
-      let yPos = 10;
-
-      parsedReport.sections.forEach((section: any) => {
-        doc.setFontSize(16);
-        doc.text(section.title, 10, yPos);
-        yPos += 10;
-
-        autoTable(doc, {
-          head: [section.headers],
-          body: section.content,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: {
-            fillColor: '#FFC107',
-            textColor: '#000000'
-          },
-        });
-
-        yPos = (doc as any).lastAutoTable.finalY + 10;
-      });
-
-      doc.save('bill-of-materials.pdf');
+      drawContent(false);
     };
   }
 
