@@ -32,6 +32,9 @@ import { CancellationDialogComponent } from './Cancellation-Dialog.component';
 import { Location } from '@angular/common';
 import { ConfirmAIAcceptanceDialogComponent } from '../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { marked } from 'marked';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -782,6 +785,77 @@ export class JobsComponent implements OnInit, OnDestroy {
   closeBillOfMaterialsDialog(): void {
     this.isDialogOpened = false;
     this.dialog.closeAll();
+  }
+
+  generateBOMPDF(): void {
+    if (!this.processingResults || this.processingResults.length === 0) {
+      console.error('No bill of materials data available to generate PDF.');
+      this.snackBar.open('No data available to generate PDF.', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const doc = new jsPDF();
+    const logo = new Image();
+    logo.src = 'assets/logo.png';
+
+    logo.onload = () => {
+      doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+      doc.setFontSize(18);
+      doc.text('Bill of Materials', 10, 35);
+
+      const parsedReport = this.processingResults[0].parsedReport;
+      let yPos = 40;
+
+      parsedReport.sections.forEach((section: any) => {
+        doc.setFontSize(16);
+        doc.text(section.title, 10, yPos);
+        yPos += 10;
+
+        autoTable(doc, {
+          head: [section.headers],
+          body: section.content,
+          startY: yPos,
+          theme: 'grid',
+          headStyles: {
+            fillColor: '#FFC107',
+            textColor: '#000000'
+          },
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      });
+
+      doc.save('bill-of-materials.pdf');
+    };
+
+    logo.onerror = () => {
+      console.error('Failed to load logo for PDF.');
+      this.snackBar.open('Could not load logo, proceeding without it.', 'Close', { duration: 3000 });
+      // Optionally, generate the PDF without the logo
+      const parsedReport = this.processingResults[0].parsedReport;
+      let yPos = 10;
+
+      parsedReport.sections.forEach((section: any) => {
+        doc.setFontSize(16);
+        doc.text(section.title, 10, yPos);
+        yPos += 10;
+
+        autoTable(doc, {
+          head: [section.headers],
+          body: section.content,
+          startY: yPos,
+          theme: 'grid',
+          headStyles: {
+            fillColor: '#FFC107',
+            textColor: '#000000'
+          },
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      });
+
+      doc.save('bill-of-materials.pdf');
+    };
   }
 
   fetchDocuments(): void {
