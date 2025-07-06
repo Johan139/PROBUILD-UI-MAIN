@@ -3,18 +3,57 @@
   <app-loader></app-loader>
 
 </div>
-<div class="row job-quote-container"> 
-  <div *ngIf="!subscriptionActive" style="text-align: center">
-    <span style="color: red; font-size: 24px;">
-      You do not have an active subscription.
-      <a href="/profile" style="font-size: 24px;">Click here to subscribe</a>
-    </span>
+<div class="row job-quote-container">
+  <div *ngIf="!subscriptionActive" class="subscription-warning-container">
+    <div class="construction-warning">
+      <div class="warning-header">
+        <div class="warning-icon">
+          <svg viewBox="0 0 24 24" class="warning-triangle">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+        </div>
+        <div class="warning-title">
+          <h3>ACCESS RESTRICTED</h3>
+          <p>Construction Zone - Active Subscription Required</p>
+        </div>
+      </div>
+
+      <div class="warning-body">
+        <div class="warning-stripe"></div>
+        <div class="warning-content">
+          <h4>🚧 SUBSCRIPTION REQUIRED</h4>
+          <p>You need an active subscription to create new construction job quotes.</p>
+          <p>Subscribe now to access all ProBuild AI features and start generating professional quotes.</p>
+
+          <div class="restricted-features">
+            <h5>Restricted Features:</h5>
+            <ul>
+              <li>• Create New Job Quotes</li>
+              <li>• Generate Construction Estimates</li>
+              <li>• Access AI-Powered Analysis</li>
+              <li>• Upload Project Documents</li>
+            </ul>
+          </div>
+
+          <a href="/profile" class="subscribe-button">
+            <svg viewBox="0 0 24 24" class="button-icon">
+              <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+            </svg>
+            Subscribe Now
+          </a>
+        </div>
+      </div>
+
+      <div class="warning-footer">
+        <div class="caution-tape"></div>
+      </div>
+    </div>
   </div>
   <div class="col-md-4 form-col">
     <mat-card class="project-card">
       <mat-card-header>
         <mat-card-title>YOUR JOBS</mat-card-title>
-   
+
       </mat-card-header>
       <mat-card-content>
         <mat-divider></mat-divider>
@@ -51,7 +90,7 @@
         </div>
         <div *ngIf="jobList.length == 0" class="no-more-jobs">
           No more jobs to display.
-        </div>        
+        </div>
       </mat-card-content>
     </mat-card>
 
@@ -59,7 +98,7 @@
       <mat-card-header>
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
-      <mat-card-content>No Active Bids Currently</mat-card-content>
+      <mat-card-content>No current active bids</mat-card-content>
     </mat-card>
   </div>
   <div class="col-md-8 d-flex justify-content-center">
@@ -100,7 +139,7 @@
     </mat-option>
   </mat-autocomplete>
 </mat-form-field>
-          </div> 
+          </div>
           <div class="panel-wrapper">
           <mat-accordion multi>
             <mat-expansion-panel [expanded]="true">
@@ -110,7 +149,7 @@
                   Click to expand/collapse
                 </mat-panel-description>
               </mat-expansion-panel-header>
-          
+
               <!-- CLIENT DETAILS FORM FIELDS -->
               <div class="form-row">
                 <mat-form-field appearance="fill">
@@ -120,7 +159,7 @@
                     First name is required.
                   </mat-error>
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Last Name</mat-label>
                   <input matInput formControlName="lastName" placeholder=" " />
@@ -128,7 +167,7 @@
                     Last name is required.
                   </mat-error>
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Email</mat-label>
                   <input matInput formControlName="email" placeholder=" " />
@@ -137,24 +176,24 @@
                   </mat-error>
                 </mat-form-field>
               </div>
-          
+
               <div class="form-row">
                 <mat-form-field appearance="fill">
                   <mat-label>Phone Number</mat-label>
                   <input matInput formControlName="phone" placeholder=" " />
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Company Name</mat-label>
                   <input matInput formControlName="company" placeholder=" " />
                 </mat-form-field>
-          
+
                 <mat-form-field appearance="fill">
                   <mat-label>Position/Title</mat-label>
                   <input matInput formControlName="position" placeholder=" " />
                 </mat-form-field>
               </div>
-        
+
             </mat-expansion-panel>
           </mat-accordion>
         </div>
@@ -166,7 +205,7 @@
                 <mat-panel-description>
                   Click to expand/collapse
                 </mat-panel-description>
-              </mat-expansion-panel-header>         
+              </mat-expansion-panel-header>
 
  <div class="form-row">
             <mat-form-field appearance="fill">
@@ -287,17 +326,18 @@
                 <p>Upload Progress: {{ progress }}%</p>
                 <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
               </div>
-              <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-                <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
-                  {{ uploadedFilesCount }} file(s) uploaded successfully
+              <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+                <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+                  {{ uploadedFileInfos.length }} file(s) uploaded successfully
                 </p>
               </div>
               <div class="custom-file-upload">
-                <label for="file-upload" class="upload-label submit-btn">
+                <button type="button" (click)="openUploadDialog()" class="upload-label submit-btn">
                   <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                  Upload File
-                </label>
-                <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+                  Upload
+                </button>
+                <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
+                <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
               </div>
             </div>
           </div>
@@ -333,7 +373,7 @@
         <div *ngIf="documents.length > 0" class="documents-list">
           <div class="document-item" *ngFor="let doc of documents; let i = index">
             <div class="document-info">
-              <span class="document-name">{{doc.name}}</span>
+              <span class="document-name">{{doc.displayName}}</span>
               <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
             </div>
             <button class="view-btn-document" mat-button (click)="viewDocument(doc)">

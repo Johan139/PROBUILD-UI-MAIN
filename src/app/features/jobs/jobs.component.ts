@@ -32,6 +32,9 @@ import { CancellationDialogComponent } from './Cancellation-Dialog.component';
 import { Location } from '@angular/common';
 import { ConfirmAIAcceptanceDialogComponent } from '../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { marked } from 'marked';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -168,13 +171,13 @@ export class JobsComponent implements OnInit, OnDestroy {
         if (!data || data.length === 0) {
           // Manually invoke the fallback logic for empty data
           console.log('Subtasks empty, falling back to GetBillOfMaterials');
-    
+
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
-              const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
-    
+              const parsedGroups = this.parseTimelineToTaskGroups(markdown);
+              const parsedMainTasks = this.parseTimelineToGanttTasks(markdown);
+
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
               this.createTables();
@@ -182,11 +185,11 @@ export class JobsComponent implements OnInit, OnDestroy {
           });
           return; // prevent further processing
         }
-    
+
         console.log(data);
         const grouped = this.groupSubtasksByTitle(data);
         this.store.setState({ subtaskGroups: grouped });
-    
+
         const mainTasks = this.extractMainTasksFromGroups(grouped);
         this.taskData = mainTasks;
         this.createTables();
@@ -197,9 +200,9 @@ export class JobsComponent implements OnInit, OnDestroy {
           this.jobsService.GetBillOfMaterials(this.projectDetails.jobId).subscribe({
             next: (results) => {
               const markdown = results[0]?.fullResponse;
-              const parsedGroups = this.parseMarkdownToSubtasks(markdown);
-              const parsedMainTasks = this.parseMarkdownToMainTasks(markdown);
-    
+              const parsedGroups = this.parseTimelineToTaskGroups(markdown);
+              const parsedMainTasks = this.parseTimelineToGanttTasks(markdown);
+
               this.store.setState({ subtaskGroups: parsedGroups });
               this.taskData = parsedMainTasks;
               this.createTables();
@@ -210,7 +213,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         }
       }
     });
-    
+
 
     this.initialStartDate = this.projectDetails.date;
     const state = this.store.getState();
@@ -258,6 +261,13 @@ export class JobsComponent implements OnInit, OnDestroy {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  private cleanTaskName(name: string): string {
+    if (typeof name === 'string') {
+      return name.replace(/^\*\*|\*\*$/g, '').trim();
+    }
+    return name;
+  }
+
   extractMainTasksFromGroups(groups: { title: string, subtasks: any[] }[]): any[] {
     return groups.map((group, index) => {
       const subtasks = group.subtasks?.filter(st => !st.deleted) || [];
@@ -268,7 +278,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       const percentDone = Math.round((completed / subtasks.length) * 100);
       return {
         id: (index + 1).toString(),
-        name: group.title,
+        name: this.cleanTaskName(group.title),
         start,
         end,
         progress: percentDone,
@@ -277,202 +287,126 @@ export class JobsComponent implements OnInit, OnDestroy {
     }).filter(Boolean);
   }
 
-  parseMarkdownToMainTasks(report: string): any[] {
+  parseTimelineToTaskGroups(report: string): { title: string; subtasks: any[] }[] {
+    if (!report) return [];
+
     const lines = report.split('\n');
-    const mainTasks: any[] = [];
-  
-    const parseDate = (line: string): string => {
-      const patterns = [
-        /(\d{4})[-/](\d{2})[-/](\d{2})/,                        // 2025-05-18 or 2025/05/18
-        /(\d{2})[-/](\d{2})[-/](\d{4})/,                        // 18-05-2025 or 18/05/2025
-        /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,                   // May 18, 2025
-      ];
-  
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
-        if (match) {
-          let date: Date | undefined;
-          if (pattern === patterns[0]) {
-            date = new Date(`${match[1]}-${match[2]}-${match[3]}`);
-          } else if (pattern === patterns[1]) {
-            date = new Date(`${match[3]}-${match[2]}-${match[1]}`);
-          } else if (pattern === patterns[2]) {
-            date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
-          }
-  
-          if (date && !isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-          }
-        }
+    const taskGroupMap = new Map<string, any[]>();
+    let tableStarted = false;
+    const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+    let currentPhase = '';
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith('Ready for the next prompt 20')) {
+        break;
       }
-  
-      return '';
-    };
-  
-    const parseDuration = (line: string): number => {
-      const match = line.match(/(\d+)\s*(day|week|month)/i);
-      if (!match) return 0;
-      const value = parseInt(match[1]);
-      const unit = match[2].toLowerCase();
-      switch (unit) {
-        case 'day': return value;
-        case 'week': return value * 7;
-        case 'month': return value * 30;
-        default: return value;
+
+      if (!tableStarted && headerRegex.test(trimmedLine)) {
+        tableStarted = true;
+        continue;
       }
-    };
-  
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (/^#+\s?#?\s?\d+[\.\)]?/.test(line)) {
-        const title = line.replace(/^#+\s?#?\s?\d+[\.\)]?\s*/, '').trim();
-        let start = '', end = '', days = 0;
-        for (let j = i + 1; j < lines.length; j++) {
-          const nextLine = lines[j].trim().toLowerCase();
-          if (nextLine.includes('duration')) {
-            days = parseDuration(lines[j]);
-          } else if (nextLine.includes('start')) {
-            start = parseDate(lines[j]);
-          } else if (nextLine.includes('end')) {
-            end = parseDate(lines[j]);
-            break;
-          }
-        }
-  
-        if (!start) start = new Date().toISOString().split('T')[0];
-        if (!end && start && days > 0) {
-          const endDate = new Date(start);
-          endDate.setDate(endDate.getDate() + days);
-          end = endDate.toISOString().split('T')[0];
-        }
-  
-        if (start && end) {
-          mainTasks.push({
-            id: (mainTasks.length + 1).toString(),
-            name: title,
-            start: new Date(start),
-            end: new Date(end),
-            progress: 0,
-            dependencies: null
-          });
-        }
+
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+        continue;
       }
+
+      const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+      if (columns.length < 6) continue;
+
+      let phaseRaw = columns[0];
+      const taskName = columns[1];
+      const duration = columns[2];
+      const startDate = columns[4];
+      const endDate = columns[5];
+
+      if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone')) {
+        continue;
+      }
+
+      const phaseName = phaseRaw.replace(/\*\*|\\/g, '').trim();
+      if (phaseName) {
+        currentPhase = phaseName;
+      }
+
+      if (!taskGroupMap.has(currentPhase)) {
+        taskGroupMap.set(currentPhase, []);
+      }
+
+      if (!taskName) {
+        continue;
+      }
+
+      taskGroupMap.get(currentPhase)?.push({
+        task: this.cleanTaskName(taskName),
+        days: parseInt(duration, 10) || 0,
+        startDate: startDate,
+        endDate: endDate,
+        status: 'Pending',
+        cost: 0,
+        deleted: false,
+        accepted: false
+      });
     }
-  
-    return mainTasks;
+
+    return Array.from(taskGroupMap.entries()).map(([title, subtasks]) => ({
+      title: this.cleanTaskName(title),
+      subtasks
+    }));
   }
-  
-  parseMarkdownToSubtasks(report: string): { title: string; subtasks: any[] }[] {
+
+  parseTimelineToGanttTasks(report: string): any[] {
+    if (!report) return [];
+
     const lines = report.split('\n');
-    const subtasksGroups: { title: string; subtasks: any[] }[] = [];
-    let currentGroup = '';
-    let currentTasks: any[] = [];
-  
-    const today = new Date().toISOString().split('T')[0];
-  
-    const parseDate = (text: string): string => {
-      const patterns = [
-        /(\d{4})[-/](\d{2})[-/](\d{2})/,
-        /(\d{2})[-/](\d{2})[-/](\d{4})/,
-        /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/,
-      ];
-  
-      for (const pattern of patterns) {
-        const match = text.match(pattern);
-        if (match) {
-          let date: Date | undefined;
-          if (pattern === patterns[0]) {
-            date = new Date(`${match[1]}-${match[2]}-${match[3]}`);
-          } else if (pattern === patterns[1]) {
-            date = new Date(`${match[3]}-${match[2]}-${match[1]}`);
-          } else if (pattern === patterns[2]) {
-            date = new Date(`${match[1]} ${match[2]}, ${match[3]}`);
-          }
-  
-          if (date && !isNaN(date.getTime())) {
-            return date.toISOString().split('T')[0];
-          }
-        }
+    const ganttTasks: any[] = [];
+    let tableStarted = false;
+    const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith('Ready for the next prompt 20')) {
+        break;
       }
-  
-      return '';
-    };
-  
-    const parseDuration = (text: string): number => {
-      const match = text.match(/(\d+)\s*(day|week|month)/i);
-      if (!match) return 0;
-      const value = parseInt(match[1]);
-      const unit = match[2].toLowerCase();
-      switch (unit) {
-        case 'day': return value;
-        case 'week': return value * 7;
-        case 'month': return value * 30;
-        default: return value;
+
+      if (!tableStarted && headerRegex.test(trimmedLine)) {
+        tableStarted = true;
+        continue;
       }
-    };
-  
-    const isSubtaskHeader = (line: string) =>
-      line.startsWith('**') && line.endsWith('**') &&
-      !line.toLowerCase().includes('duration') &&
-      !line.toLowerCase().includes('start') &&
-      !line.toLowerCase().includes('end');
-  
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-  
-      if (line.startsWith('#')) {
-        if (currentGroup && currentTasks.length > 0) {
-          subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
-        }
-        currentGroup = line.replace(/^#+/, '').trim();
-        currentTasks = [];
+
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+        continue;
       }
-  
-      if (isSubtaskHeader(line)) {
-        const task = line.replace(/\*\*/g, '').trim();
-        let days = 0;
-        let start = '', end = '';
-        for (let j = i + 1; j < lines.length; j++) {
-          const lookahead = lines[j].trim().toLowerCase();
-          if (lookahead.includes('duration')) {
-            days = parseDuration(lines[j]);
-          } else if (lookahead.includes('start')) {
-            start = parseDate(lines[j]);
-          } else if (lookahead.includes('end')) {
-            end = parseDate(lines[j]);
-            break;
-          }
-        }
-  
-        if (!start) start = today;
-        if (!end && start && days > 0) {
-          const endDate = new Date(start);
-          endDate.setDate(endDate.getDate() + days);
-          end = endDate.toISOString().split('T')[0];
-        }
-        if (!end) end = today;
-  
-        currentTasks.push({
-          task,
-          days,
-          startDate: start,
-          endDate: end,
-          status: 'Pending',
-          cost: 0,
-          deleted: false,
-          accepted: false // <-- new
+
+      const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+      if (columns.length < 6) continue;
+
+      const phaseRaw = columns[0];
+      const taskName = columns[1];
+      const startDate = columns[4];
+      const endDate = columns[5];
+
+      if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone') || !taskName) {
+        continue;
+      }
+
+      if (taskName && startDate && endDate) {
+        ganttTasks.push({
+          id: taskName.replace(/\s+/g, '-').toLowerCase(),
+          name: this.cleanTaskName(taskName),
+          start: new Date(startDate),
+          end: new Date(endDate),
+          progress: 0,
+          dependencies: null
         });
       }
     }
-  
-    if (currentGroup && currentTasks.length > 0) {
-      subtasksGroups.push({ title: currentGroup, subtasks: currentTasks });
-    }
-  
-    return subtasksGroups;
+    return ganttTasks;
   }
-  
-  
+
+
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -480,10 +414,10 @@ export class JobsComponent implements OnInit, OnDestroy {
       console.error('No files selected');
       return;
     }
-  
+
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-  
+
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
@@ -492,10 +426,10 @@ export class JobsComponent implements OnInit, OnDestroy {
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
     // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
-  
+
     this.progress = 0;
     this.isUploading = true;
-  
+
     this.httpClient
       .post<any>(BASE_URL + '/Jobs/UploadNoteImage', formData, {
         reportProgress: true,
@@ -508,16 +442,16 @@ export class JobsComponent implements OnInit, OnDestroy {
           if (event.type === HttpEventType.UploadProgress && event.total) {
             // Use full 0-100% range since SignalR is disabled
             this.progress = Math.round((100 * event.loaded) / event.total);
- 
+
           } else if (event.type === HttpEventType.Response) {
-      
+
             const newFilesCount = newFileNames.length;
             this.uploadedFilesCount += newFilesCount;
             if (event.body?.fileUrls) {
               this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-         
+
             } else {
-           
+
             }
             this.isUploading = false;
             this.resetFileInput();
@@ -552,7 +486,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       };
       group.push({
         id: st.id,
-        task: st.task ?? st.taskName,
+        task: this.cleanTaskName(st.task ?? st.taskName),
         days: st.days,
         startDate: formatDate(st.startDate),
         endDate: formatDate(st.endDate),
@@ -563,7 +497,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       groupedMap.set(st.groupTitle, group);
     }
     return Array.from(groupedMap.entries()).map(([title, subtasks]) => ({
-      title,
+      title: this.cleanTaskName(title),
       subtasks
     }));
   }
@@ -631,8 +565,8 @@ export class JobsComponent implements OnInit, OnDestroy {
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-  
-        this.deleteTemporaryFiles();
+
+        //this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFilesCount = 0;
         this.uploadedFileNames = [];
@@ -646,14 +580,14 @@ export class JobsComponent implements OnInit, OnDestroy {
   deleteTemporaryFiles(): void {
 
     if (this.uploadedFileUrls.length === 0) {
-  
+
       return;
     }
     this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
       blobUrls: this.uploadedFileUrls,
     }).subscribe({
       next: () => {
- 
+
         this.uploadedFileUrls = [];
         this.uploadedFilesCount = 0;
         this.uploadedFileNames = [];
@@ -706,86 +640,208 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   parseReport(fullResponse: string): any {
-    const lines = fullResponse.split('\n').filter(line => line.trim());
+    if (!fullResponse) {
+      return { sections: [] };
+    }
+
+    const phaseSections = fullResponse.split(/(?=### \*\*.*(?:Phase|Analysis Package))/);
     const sections: any[] = [];
-    let currentSection: any = null;
-    let inTable = false;
-    let tableHeaders: string[] = [];
-    let tableContent: any[] = [];
-    for (const line of lines) {
-      if (line.startsWith('##')) {
-        if (currentSection) {
-          if (inTable) {
-            currentSection.content = tableContent;
-            inTable = false;
-            tableHeaders = [];
-            tableContent = [];
+
+    for (const section of phaseSections) {
+      const lines = section.trim().split('\n');
+      if (lines.length === 0) {
+        continue;
+      }
+
+      const phaseTitleLine = lines[0];
+      let phaseName = phaseTitleLine.replace(/### \*\*/, '').replace(/\*\*/, '').trim();
+
+      const phaseMatch = phaseName.match(/Phase\s\d+:\s(.*)/);
+      if (phaseMatch && phaseMatch[1]) {
+        phaseName = phaseMatch[1];
+      } else if (phaseName.includes('Analysis Package')) {
+        phaseName = phaseName.replace(/Analysis Package/, '').replace(/Phase/, '').trim();
+      } else {
+        continue;
+      }
+
+      const bomTitleIndex = lines.findIndex(line => line.includes('### **Output 1: Materials Bill of Materials (BOM)**'));
+      if (bomTitleIndex === -1) {
+        continue;
+      }
+
+      let tableHeaderIndex = -1;
+      for (let i = bomTitleIndex + 1; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('|')) {
+          tableHeaderIndex = i;
+          break;
+        }
+      }
+
+      if (tableHeaderIndex === -1) {
+        continue;
+      }
+
+      const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
+      const tableContent: any[] = [];
+
+      // Start from the line after the header and separator
+      for (let i = tableHeaderIndex + 2; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+
+        if (trimmedLine.startsWith('|')) {
+          const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
+          if (row.length > 0) {
+            if (row[0]) {
+              // Clean up markdown asterisks from the Item column
+              row[0] = row[0].replace(/\*/g, '');
+            }
+            tableContent.push(row);
           }
-          sections.push(currentSection);
-        }
-        currentSection = {
-          title: line.replace('##', '').trim(),
-          type: 'text',
-          content: []
-        };
-      } else if (line.includes('|') && currentSection) {
-        if (!inTable) {
-          inTable = true;
-          currentSection.type = 'table';
-          currentSection.content = [];
-          tableHeaders = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-          currentSection.headers = tableHeaders;
-        } else if (line.includes('---')) {
-          continue;
         } else {
-          const row = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-          tableContent.push(row);
+          // End of table
+          break;
         }
-      } else if (line.startsWith('-') && currentSection) {
-        if (inTable) {
-          currentSection.content = tableContent;
-          inTable = false;
-          tableHeaders = [];
-          tableContent = [];
-          sections.push(currentSection);
-          currentSection = {
-            title: currentSection.title + ' (List)',
-            type: 'list',
-            content: []
-          };
-        } else if (currentSection.type !== 'list') {
-          currentSection.type = 'list';
-          currentSection.content = [];
-        }
-        currentSection.content.push(line.replace('-', '').trim());
-      } else if (currentSection) {
-        if (inTable) {
-          currentSection.content = tableContent;
-          inTable = false;
-          tableHeaders = [];
-          tableContent = [];
-          sections.push(currentSection);
-          currentSection = {
-            title: currentSection.title + ' (Text)',
-            type: 'text',
-            content: []
-          };
-        }
-        currentSection.content.push(line.trim());
+      }
+
+      if (tableHeaders.length > 0 && tableContent.length > 0) {
+        sections.push({
+          title: phaseName,
+          type: 'table',
+          headers: tableHeaders,
+          content: tableContent
+        });
       }
     }
-    if (currentSection) {
-      if (inTable) {
-        currentSection.content = tableContent;
-      }
-      sections.push(currentSection);
+
+    // --- Cost Breakdown Extraction Logic ---
+    const allLines = fullResponse.split('\n');
+    let costBreakdownTitleIndex = -1;
+
+    // Prioritized search for the cost breakdown table title
+    const prioritizedRegex = [
+        /### \*\*.*Detailed Cost Breakdown\*\*/i,
+        /### \*\*.*As-Specced Project Budget\*\*/i,
+        /### \*\*.*Cost Breakdown\*\*/i,
+    ];
+
+    for (const regex of prioritizedRegex) {
+        const index = allLines.findIndex(line => regex.test(line));
+        if (index !== -1) {
+            costBreakdownTitleIndex = index;
+            break;
+        }
     }
+
+    if (costBreakdownTitleIndex !== -1) {
+      let tableHeaderIndex = -1;
+      for (let i = costBreakdownTitleIndex + 1; i < allLines.length; i++) {
+        const trimmedLine = allLines[i].trim();
+        if (trimmedLine.startsWith('|') && !trimmedLine.includes('---')) {
+          tableHeaderIndex = i;
+          break;
+        }
+      }
+
+      if (tableHeaderIndex !== -1) {
+        const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim().replace(/\*\*/g, '')).filter(Boolean);
+        const tableContent: any[] = [];
+
+        // Check for separator line
+        if (allLines[tableHeaderIndex + 1] && allLines[tableHeaderIndex + 1].trim().startsWith('|') && allLines[tableHeaderIndex + 1].includes('---')) {
+            // Start from the line after the header and separator
+            for (let i = tableHeaderIndex + 2; i < allLines.length; i++) {
+                const line = allLines[i];
+                const trimmedLine = line.trim();
+
+                if (trimmedLine.startsWith('|')) {
+                    const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
+                    if (row.length > 0) {
+                        tableContent.push(row);
+                    }
+                } else {
+                    // End of table if we hit a non-table line
+                    break;
+                }
+            }
+        }
+
+        if (tableHeaders.length > 0 && tableContent.length > 0) {
+          const title = "Total Cost Breakdown";
+          sections.push({
+            title: title,
+            type: 'table',
+            headers: tableHeaders,
+            content: tableContent
+          });
+        }
+      }
+    }
+
     return { sections };
   }
 
   closeBillOfMaterialsDialog(): void {
     this.isDialogOpened = false;
     this.dialog.closeAll();
+  }
+
+  generateBOMPDF(): void {
+    if (!this.processingResults || this.processingResults.length === 0) {
+      console.error('No bill of materials data available to generate PDF.');
+      this.snackBar.open('No data available to generate PDF.', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const doc = new jsPDF();
+    const logo = new Image();
+    logo.src = 'assets/logo.png';
+
+    const parsedReport = this.processingResults[0].parsedReport;
+
+    const drawContent = (withLogo: boolean) => {
+      const addPageHeader = () => {
+        if (withLogo) {
+          doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+        }
+        doc.setFontSize(18);
+        doc.text('Bill of Materials', 10, withLogo ? 35 : 15);
+      };
+
+      parsedReport.sections.forEach((section: any, index: number) => {
+        if (index > 0) {
+          doc.addPage();
+        }
+        addPageHeader();
+
+        doc.setFontSize(14);
+        doc.text(section.title, 10, withLogo ? 45 : 25); // Adjust Y as needed
+
+        autoTable(doc, {
+          head: [section.headers],
+          body: section.content,
+          startY: withLogo ? 50 : 30, // Start table below the section title
+          theme: 'grid',
+          headStyles: {
+            fillColor: '#FFC107',
+            textColor: '#000000'
+          },
+        });
+      });
+
+      doc.save('bill-of-materials.pdf');
+    };
+
+    logo.onload = () => {
+      drawContent(true);
+    };
+
+    logo.onerror = () => {
+      console.error('Failed to load logo for PDF.');
+      this.snackBar.open('Could not load logo, proceeding without it.', 'Close', { duration: 3000 });
+      drawContent(false);
+    };
   }
 
   fetchDocuments(): void {
@@ -1088,8 +1144,8 @@ export class JobsComponent implements OnInit, OnDestroy {
 
 if (unaccepted.length > 0) {
   this.snackBar.open(
-    '⚠ Please accept all subtasks before saving.', 
-    'Got it', 
+    '⚠ Please accept all subtasks before saving.',
+    'Got it',
     {
       duration: 6000,
       panelClass: ['custom-snackbar'],

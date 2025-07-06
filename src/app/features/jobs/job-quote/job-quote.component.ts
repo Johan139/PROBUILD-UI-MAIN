@@ -31,6 +31,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/quote-documents-dialog.component';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -42,7 +43,7 @@ const Google_API = environment.Google_API;
     MatFormField,
     MatSelectModule,
     MatDatepickerModule,
-    ReactiveFormsModule,  
+    ReactiveFormsModule,
     MatCardModule,
     MatDivider,
     NgIf,
@@ -66,6 +67,8 @@ const Google_API = environment.Google_API;
 export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
@@ -79,12 +82,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedUnit: string = 'sq ft';
   progress: number = 0;
   isUploading: boolean = false;
-  uploadedFilesCount: number = 0;
-  uploadedFileNames: string[] = [];
-  uploadedFileUrls: string[] = [];
   subscriptionActive: boolean = false;
   sessionId: string = '';
   private hubConnection!: HubConnection;
+  uploadedFileInfos: { name: string, url: string, type: string, size: number }[] = [];
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
@@ -151,8 +152,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
       this.resetFileInput();
-      console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
-      console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
+      console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
+      console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
 
     const userId = localStorage.getItem('userId');
@@ -288,7 +289,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         .then(() => console.log('SignalR connection stopped'))
         .catch(err => console.error('Error stopping SignalR:', err));
     }
-    this.deleteTemporaryFiles();
+    //this.deleteTemporaryFiles();
   }
 
   loadGoogleMapsScript(): Promise<void> {
@@ -308,7 +309,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           reject(new Error('Google Maps API script loaded but google object is not defined'));
         }
       };
-      
+
       script.onerror = (error) => {
         console.error('Google Maps script failed to load:', error);
         reject(error);
@@ -426,7 +427,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         //     fileUrls: this.uploadedFileUrls // 👈 Pass them here
         //   }
         // });
-      
+
         // dialogRef.afterClosed().subscribe(result => {
         //   if (result === true) {
         //     // User accepted AI output and subtasks
@@ -435,12 +436,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         //     // User cancelled
         //   }
         // });
-   
+
   }
-  
+
   performSaveJob(): void {
     if (!this.isBrowser) return;
-  
+
     localStorage.setItem('Subtasks', '');
     this.isLoading = true;
     this.isUploading = true;
@@ -472,8 +473,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('company', formValue.company);
     formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
-    formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileUrls));
-  
+    formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileInfos.map(f => f.url)));
+
     if (this.selectedPlace && this.selectedPlace.place_id) {
       const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
       placesService.getDetails(
@@ -488,14 +489,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
             const lng = place.geometry?.location?.lng ? place.geometry.location.lng() : undefined;
             console.log('Latitude:', lat, 'Longitude:', lng);
             formData.set('address', place.formatted_address || formValue.address);
-  
+
             let streetNumber = '';
             let streetName = '';
             let city = '';
             let state = '';
             let postalCode = '';
             let country = '';
-  
+
             if (place.address_components) {
               place.address_components.forEach(component => {
                 const types = component.types;
@@ -519,14 +520,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
               });
             }
-  
+
             formData.append('streetNumber', streetNumber);
             formData.append('streetName', streetName);
             formData.append('city', city);
             formData.append('state', state);
             formData.append('postalCode', postalCode);
             formData.append('country', country);
-  
+
             if (lat !== undefined && lng !== undefined) {
               console.log('Appending latitude and longitude to FormData:', lat, lng);
               formData.append('latitude', lat.toString());
@@ -537,7 +538,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               console.warn('Latitude or Longitude undefined for place_id:', this.selectedPlace!.place_id);
               console.warn('Place types:', place.types);
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
-  
+
               // Fallback to Geocoding API
               console.log('Falling back to Geocoding API for address:', formValue.address);
               this.httpClient.get('https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='+ Google_API)
@@ -574,7 +575,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   private submitFormData(formData: FormData): void {
     this.progress = 0;
-  
+
     this.httpClient
       .post<JobResponse>(`${BASE_URL}/Jobs`, formData, {
         headers: new HttpHeaders(),
@@ -603,7 +604,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               };
               this.alertMessage = 'Job Quote Creation Successful';
               this.showAlert = true;
-              this.uploadedFileUrls = [];
+              this.uploadedFileInfos = [];
               this.dialog.closeAll();
               this.router.navigate(['view-quote'], { queryParams: responseParams });
 
@@ -615,7 +616,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isUploading = false;
           console.error('Upload error:', error);
           this.progress = 0;
-          this.deleteTemporaryFiles();
+          //this.deleteTemporaryFiles();
         },
         complete: () => console.log('Client-to-API upload complete'),
       });
@@ -690,46 +691,45 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       console.error('No files selected');
       return;
     }
-  
-    const newFileNames = Array.from(input.files).map(file => file.name);
-    this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-  
+
+    const files = Array.from(input.files);
     const formData = new FormData();
-    Array.from(input.files).forEach(file => {
+    files.forEach(file => {
       formData.append('Blueprint', file);
     });
+
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
     formData.append('sessionId', this.sessionId);
-    // Remove connectionId since SignalR is disabled
-    // formData.append('connectionId', this.hubConnection?.connectionId || '');
-  
+
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload without SignalR');
-  
+
     this.httpClient
-      .post<any>(BASE_URL + '/Jobs/UploadImage', formData, {
+      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ Accept: 'application/json' }),
       })
       .pipe(timeout(300000))
       .subscribe({
-        next: (event) => {
-          if (event.type === HttpEventType.UploadProgress && event.total) {
-            // Use full 0-100% range since SignalR is disabled
-            this.progress = Math.round((100 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}%`);
-          } else if (event.type === HttpEventType.Response) {
-            console.log('Upload response:', event.body);
-            const newFilesCount = newFileNames.length;
-            this.uploadedFilesCount += newFilesCount;
-            if (event.body?.fileUrls) {
-              this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-              console.log('Updated uploadedFileUrls:', this.uploadedFileUrls);
+        next: (httpEvent) => {
+          if (httpEvent.type === HttpEventType.UploadProgress && httpEvent.total) {
+            this.progress = Math.round((100 * httpEvent.loaded) / httpEvent.total);
+          } else if (httpEvent.type === HttpEventType.Response) {
+            if (httpEvent.body?.fileUrls && httpEvent.body.fileUrls.length > 0) {
+              const newFileInfos = httpEvent.body.fileUrls.map((url: string, index: number) => {
+                const file = files[index];
+                return {
+                  name: file.name,
+                  url: url,
+                  type: file.type || this.getFileType(file.name),
+                  size: file.size,
+                };
+              });
+              this.uploadedFileInfos = [...this.uploadedFileInfos, ...newFileInfos];
             } else {
-              console.error('No fileUrls returned in response:', event.body);
+               console.error('No fileUrls returned in response:', httpEvent.body);
             }
             this.isUploading = false;
             this.resetFileInput();
@@ -739,18 +739,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           console.error('Upload error:', error);
           this.progress = 0;
           this.isUploading = false;
-          this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
           this.resetFileInput();
         },
-        complete: () => console.log('Client-to-API upload complete'),
+        complete: () => console.log('File upload process complete.'),
       });
   }
 
   resetFileInput(): void {
-    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-      console.log('File input reset');
+    if (this.fileInput.nativeElement) {
+      this.fileInput.nativeElement.value = '';
+    }
+    if (this.folderInput.nativeElement) {
+      this.folderInput.nativeElement.value = '';
     }
   }
 
@@ -763,12 +763,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        console.log('Cancel clicked. uploadedFileUrls before deletion:', this.uploadedFileUrls);
-        this.deleteTemporaryFiles();
+        console.log('Cancel clicked. Files to be deleted:', this.uploadedFileInfos.map(f => f.url));
+        //this.deleteTemporaryFiles();
         this.jobCardForm.reset();
-        this.uploadedFilesCount = 0;
-        this.uploadedFileNames = [];
-        this.uploadedFileUrls = [];
+        this.uploadedFileInfos = [];
         this.sessionId = uuidv4();
         this.router.navigate(['/dashboard']);
       }
@@ -776,26 +774,19 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteTemporaryFiles(): void {
-    console.log('Deleting temporary files. uploadedFileUrls:', this.uploadedFileUrls);
-    if (this.uploadedFileUrls.length === 0) {
-      console.log('No temporary files to delete.');
+    const urlsToDelete = this.uploadedFileInfos.map(f => f.url);
+    if (urlsToDelete.length === 0) {
       return;
     }
-
     this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
-      blobUrls: this.uploadedFileUrls,
+      blobUrls: urlsToDelete,
     }).subscribe({
       next: () => {
-        console.log('Temporary files deleted successfully');
-        this.uploadedFileUrls = [];
-        this.uploadedFilesCount = 0;
-        this.uploadedFileNames = [];
+        this.uploadedFileInfos = [];
       },
       error: (error) => {
         console.error('Error deleting temporary files:', error);
-        this.uploadedFileUrls = [];
-        this.uploadedFilesCount = 0;
-        this.uploadedFileNames = [];
+        this.uploadedFileInfos = [];
       },
     });
   }
@@ -803,23 +794,38 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   error = '';
   documentsConfirmed = false;
   fetchDocuments(): void {
-    if (!this.uploadedFileUrls || this.uploadedFileUrls.length === 0) {
+    if (!this.uploadedFileInfos || this.uploadedFileInfos.length === 0) {
       this.error = 'No uploaded documents available.';
-      this.isLoading = false;
+      this.documents = [];
       return;
     }
 
-    this.documents = this.uploadedFileUrls.map((url, index) => {
-      const name = decodeURIComponent(url.split('/').pop() || `Document-${index + 1}`);
-      return {
-        name,
-        type: this.getFileType(name),
-        size: this.getFileSize(url),
-        url
-      };
-    });
-    console.log(this.documents);
+    this.documents = this.uploadedFileInfos.map(fileInfo => ({
+      ...fileInfo,
+      displayName: this.getDisplayName(fileInfo.name)
+    }));
     this.isLoading = false;
+  }
+
+  getDisplayName(fileName: string): string {
+    const lastDotIndex = fileName.lastIndexOf('.');
+    return lastDotIndex > 0 ? fileName.substring(0, lastDotIndex) : fileName;
+  }
+
+  getUploadedFileNames(): string {
+    return this.uploadedFileInfos.map(f => f.name).join(', ');
+  }
+
+  openUploadDialog(): void {
+    const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'files') {
+        this.fileInput.nativeElement.click();
+      } else if (result === 'folder') {
+        this.folderInput.nativeElement.click();
+      }
+    });
   }
 
   getFileType(fileName: string): string {

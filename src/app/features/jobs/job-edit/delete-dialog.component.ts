@@ -6,7 +6,7 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
   standalone: true,
   imports: [MatDialogModule], // Add MatDialogModule to imports
   template: `
-    <h2 mat-dialog-title>Are You Sure You Want to delete?</h2>
+    <h2 mat-dialog-title>Are you sure you want to delete?</h2>
     <mat-dialog-content>
       <p>
        Are you sure you want to delete a subtask line?

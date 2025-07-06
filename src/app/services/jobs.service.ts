@@ -24,25 +24,28 @@ export class JobsService {
   getAllJobsByUserId(userId: string): Observable<any> {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
-getSubtasks(jobId: number) {
-  return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
-}
-// Updated to use documentId instead of blobUrl
-downloadJobDocument(documentId: number): Observable<Blob> {
-  return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
-}
 
-downloadJobDocumentFile(fileUrl: string): Observable<Blob> {
-  return this.httpClient.get(`${BASE_URL}/downloadFile?fileUrl=`+ fileUrl, {
-    responseType: 'blob'
-  });
-}
-downloadNoteDocument(documentId: number): Observable<Blob> {
-  return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
-}
+  getSubtasks(jobId: number) {
+    return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
+  }
+
+  // Updated to use documentId instead of blobUrl
+  downloadJobDocument(documentId: number): Observable<Blob> {
+    return this.httpClient.get(`${BASE_URL}/download/${documentId}`, { responseType: 'blob' });
+  }
+
+  downloadJobDocumentFile(fileUrl: string): Observable<Blob> {
+    return this.httpClient.get(`${BASE_URL}/downloadFile?fileUrl=`+ fileUrl, {
+      responseType: 'blob'
+    });
+  }
+  downloadNoteDocument(documentId: number): Observable<Blob> {
+    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
+  }
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
+
   getAllJobs() {
     this.httpClient.get(BASE_URL)
   }

@@ -6,13 +6,13 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
   standalone: true,
   imports: [MatDialogModule], // Add MatDialogModule to imports
   template: `
-    <h2 mat-dialog-title>Are You Sure You Want to Cancel?</h2>
+    <h2 mat-dialog-title>Are you sure you want to cancel?</h2>
     <mat-dialog-content>
       <p>
         You are about to cancel the creation of this note. Any progress, including uploaded documents, will be permanently discarded. This action cannot be undone.
       </p>
       <p>
-        Please confirm if you wish to proceed with the cancellation, or return to your work to preserve your efforts.
+        Please confirm if you wish to proceed with the cancellation, or return to your work to preserve your progress.
       </p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
