@@ -701,6 +701,70 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     }
 
+    // --- New Cost Breakdown Extraction Logic ---
+    const allLines = fullResponse.split('\n');
+    let costBreakdownTitleIndex = -1;
+
+    // Prioritized search for the cost breakdown table title
+    const prioritizedRegex = [
+        /### \*\*.*Detailed Cost Breakdown\*\*/i,
+        /### \*\*.*As-Specced Project Budget\*\*/i,
+        /### \*\*.*Cost Breakdown\*\*/i,
+    ];
+
+    for (const regex of prioritizedRegex) {
+        const index = allLines.findIndex(line => regex.test(line));
+        if (index !== -1) {
+            costBreakdownTitleIndex = index;
+            break;
+        }
+    }
+
+    if (costBreakdownTitleIndex !== -1) {
+      let tableHeaderIndex = -1;
+      for (let i = costBreakdownTitleIndex + 1; i < allLines.length; i++) {
+        const trimmedLine = allLines[i].trim();
+        if (trimmedLine.startsWith('|') && !trimmedLine.includes('---')) {
+          tableHeaderIndex = i;
+          break;
+        }
+      }
+
+      if (tableHeaderIndex !== -1) {
+        const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
+        const tableContent: any[] = [];
+
+        // Check for separator line
+        if (allLines[tableHeaderIndex + 1] && allLines[tableHeaderIndex + 1].trim().startsWith('|') && allLines[tableHeaderIndex + 1].includes('---')) {
+            // Start from the line after the header and separator
+            for (let i = tableHeaderIndex + 2; i < allLines.length; i++) {
+                const line = allLines[i];
+                const trimmedLine = line.trim();
+
+                if (trimmedLine.startsWith('|')) {
+                    const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
+                    if (row.length > 0) {
+                        tableContent.push(row);
+                    }
+                } else {
+                    // End of table if we hit a non-table line
+                    break;
+                }
+            }
+        }
+
+        if (tableHeaders.length > 0 && tableContent.length > 0) {
+          const title = "Total Cost Breakdown";
+          sections.push({
+            title: title,
+            type: 'table',
+            headers: tableHeaders,
+            content: tableContent
+          });
+        }
+      }
+    }
+
     return { sections };
   }
 
