@@ -298,7 +298,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         continue;
       }
 
-      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.startsWith('|--')) {
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
         continue;
       }
 
@@ -366,7 +366,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         continue;
       }
 
-      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.startsWith('|--')) {
+      if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
         continue;
       }
 
@@ -630,6 +630,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   parseReport(fullResponse: string): any {
+    console.log('Parsing report:', fullResponse);
     const lines = fullResponse.split('\n').filter(line => line.trim());
     const sections: any[] = [];
     let currentSection: any = null;
