@@ -742,7 +742,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
 
       if (tableHeaderIndex !== -1) {
-        const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
+        const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim().replace(/\*\*/g, '')).filter(Boolean);
         const tableContent: any[] = [];
 
         // Check for separator line
