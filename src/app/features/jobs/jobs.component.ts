@@ -683,6 +683,10 @@ export class JobsComponent implements OnInit, OnDestroy {
         if (trimmedLine.startsWith('|')) {
           const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
           if (row.length > 0) {
+            if (row[0]) {
+              // Clean up markdown asterisks from the Item column
+              row[0] = row[0].replace(/\*/g, '');
+            }
             tableContent.push(row);
           }
         } else {
@@ -701,7 +705,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     }
 
-    // --- New Cost Breakdown Extraction Logic ---
+    // --- Cost Breakdown Extraction Logic ---
     const allLines = fullResponse.split('\n');
     let costBreakdownTitleIndex = -1;
 
@@ -742,7 +746,7 @@ export class JobsComponent implements OnInit, OnDestroy {
                 const trimmedLine = line.trim();
 
                 if (trimmedLine.startsWith('|')) {
-                    const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
+                    const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
                     if (row.length > 0) {
                         tableContent.push(row);
                     }
