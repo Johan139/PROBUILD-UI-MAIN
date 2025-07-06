@@ -630,81 +630,77 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   parseReport(fullResponse: string): any {
-    console.log('Parsing report:', fullResponse);
-    const lines = fullResponse.split('\n').filter(line => line.trim());
+    if (!fullResponse) {
+      return { sections: [] };
+    }
+
+    const phaseSections = fullResponse.split(/(?=### \*\*.*(?:Phase|Analysis Package))/);
     const sections: any[] = [];
-    let currentSection: any = null;
-    let inTable = false;
-    let tableHeaders: string[] = [];
-    let tableContent: any[] = [];
-    for (const line of lines) {
-      if (line.startsWith('##')) {
-        if (currentSection) {
-          if (inTable) {
-            currentSection.content = tableContent;
-            inTable = false;
-            tableHeaders = [];
-            tableContent = [];
+
+    for (const section of phaseSections) {
+      const lines = section.trim().split('\n');
+      if (lines.length === 0) {
+        continue;
+      }
+
+      const phaseTitleLine = lines[0];
+      let phaseName = phaseTitleLine.replace(/### \*\*/, '').replace(/\*\*/, '').trim();
+
+      const phaseMatch = phaseName.match(/Phase\s\d+:\s(.*)/);
+      if (phaseMatch && phaseMatch[1]) {
+        phaseName = phaseMatch[1];
+      } else if (phaseName.includes('Analysis Package')) {
+        phaseName = phaseName.replace(/Analysis Package/, '').replace(/Phase/, '').trim();
+      } else {
+        continue;
+      }
+
+      const bomTitleIndex = lines.findIndex(line => line.includes('### **Output 1: Materials Bill of Materials (BOM)**'));
+      if (bomTitleIndex === -1) {
+        continue;
+      }
+
+      let tableHeaderIndex = -1;
+      for (let i = bomTitleIndex + 1; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('|')) {
+          tableHeaderIndex = i;
+          break;
+        }
+      }
+
+      if (tableHeaderIndex === -1) {
+        continue;
+      }
+
+      const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
+      const tableContent: any[] = [];
+
+      // Start from the line after the header and separator
+      for (let i = tableHeaderIndex + 2; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+
+        if (trimmedLine.startsWith('|')) {
+          const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
+          if (row.length > 0) {
+            tableContent.push(row);
           }
-          sections.push(currentSection);
-        }
-        currentSection = {
-          title: line.replace('##', '').trim(),
-          type: 'text',
-          content: []
-        };
-      } else if (line.includes('|') && currentSection) {
-        if (!inTable) {
-          inTable = true;
-          currentSection.type = 'table';
-          currentSection.content = [];
-          tableHeaders = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-          currentSection.headers = tableHeaders;
-        } else if (line.includes('---')) {
-          continue;
         } else {
-          const row = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-          tableContent.push(row);
+          // End of table
+          break;
         }
-      } else if (line.startsWith('-') && currentSection) {
-        if (inTable) {
-          currentSection.content = tableContent;
-          inTable = false;
-          tableHeaders = [];
-          tableContent = [];
-          sections.push(currentSection);
-          currentSection = {
-            title: currentSection.title + ' (List)',
-            type: 'list',
-            content: []
-          };
-        } else if (currentSection.type !== 'list') {
-          currentSection.type = 'list';
-          currentSection.content = [];
-        }
-        currentSection.content.push(line.replace('-', '').trim());
-      } else if (currentSection) {
-        if (inTable) {
-          currentSection.content = tableContent;
-          inTable = false;
-          tableHeaders = [];
-          tableContent = [];
-          sections.push(currentSection);
-          currentSection = {
-            title: currentSection.title + ' (Text)',
-            type: 'text',
-            content: []
-          };
-        }
-        currentSection.content.push(line.trim());
+      }
+
+      if (tableHeaders.length > 0 && tableContent.length > 0) {
+        sections.push({
+          title: phaseName,
+          type: 'table',
+          headers: tableHeaders,
+          content: tableContent
+        });
       }
     }
-    if (currentSection) {
-      if (inTable) {
-        currentSection.content = tableContent;
-      }
-      sections.push(currentSection);
-    }
+
     return { sections };
   }
 
