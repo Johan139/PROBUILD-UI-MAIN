@@ -258,6 +258,13 @@ export class JobsComponent implements OnInit, OnDestroy {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  private cleanTaskName(name: string): string {
+    if (typeof name === 'string') {
+      return name.replace(/^\*\*|\*\*$/g, '').trim();
+    }
+    return name;
+  }
+
   extractMainTasksFromGroups(groups: { title: string, subtasks: any[] }[]): any[] {
     return groups.map((group, index) => {
       const subtasks = group.subtasks?.filter(st => !st.deleted) || [];
@@ -268,7 +275,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       const percentDone = Math.round((completed / subtasks.length) * 100);
       return {
         id: (index + 1).toString(),
-        name: group.title,
+        name: this.cleanTaskName(group.title),
         start,
         end,
         progress: percentDone,
@@ -329,7 +336,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
 
       taskGroupMap.get(currentPhase)?.push({
-        task: taskName,
+        task: this.cleanTaskName(taskName),
         days: parseInt(duration, 10) || 0,
         startDate: startDate,
         endDate: endDate,
@@ -341,7 +348,7 @@ export class JobsComponent implements OnInit, OnDestroy {
     }
 
     return Array.from(taskGroupMap.entries()).map(([title, subtasks]) => ({
-      title,
+      title: this.cleanTaskName(title),
       subtasks
     }));
   }
@@ -385,7 +392,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       if (taskName && startDate && endDate) {
         ganttTasks.push({
           id: taskName.replace(/\s+/g, '-').toLowerCase(),
-          name: taskName,
+          name: this.cleanTaskName(taskName),
           start: new Date(startDate),
           end: new Date(endDate),
           progress: 0,
@@ -476,7 +483,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       };
       group.push({
         id: st.id,
-        task: st.task ?? st.taskName,
+        task: this.cleanTaskName(st.task ?? st.taskName),
         days: st.days,
         startDate: formatDate(st.startDate),
         endDate: formatDate(st.endDate),
@@ -487,7 +494,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       groupedMap.set(st.groupTitle, group);
     }
     return Array.from(groupedMap.entries()).map(([title, subtasks]) => ({
-      title,
+      title: this.cleanTaskName(title),
       subtasks
     }));
   }
