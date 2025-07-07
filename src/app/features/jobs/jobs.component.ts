@@ -53,6 +53,7 @@ const BASE_URL = environment.BACKEND_URL;
     MatCardTitle,
     MatCardContent,
     MatDivider,
+    MatIconModule,
     MatTooltipModule,
     LoaderComponent,
     GanttChartComponent,

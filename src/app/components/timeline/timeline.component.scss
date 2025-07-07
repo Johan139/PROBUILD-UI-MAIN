@@ -78,7 +78,7 @@
 
     .week-cell {
       flex: 1;
-      min-width: 0;
+      min-width: 140px;
       border-right: 1px solid #d9d9d9;
     }
 
@@ -100,11 +100,12 @@
 
     .day-cell {
       flex: 1;
-      padding: 0.25rem;
+      padding: 0.25rem 0;
       text-align: center;
       font-size: 0.75rem;
       color: #000;
       border-right: 1px solid rgba(217, 217, 217, 0.3);
+      min-width: 20px;
     }
 
     .day-cell.weekend {
@@ -119,6 +120,7 @@
     .timeline-grid {
       position: relative;
       overflow-y: auto;
+      overflow-x: hidden;
       background-color: #fff;
     }
 
@@ -159,34 +161,35 @@
     .task-group-bar {
       position: absolute;
       height: 48px;
-      background-color: #61a0af;
+      background: linear-gradient(135deg, #61a0af 0%, #4a8a98 100%);
       border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(97, 160, 175, 0.2);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid #4a8a98;
       overflow: hidden;
       z-index: 3;
       margin: 4px 0;
-    }
 
-    .task-group-bar:hover {
-      background-color: #fbd008;
-      border-color: #e6bd00;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      transform: translateY(-1px);
-    }
+      &:hover {
+        background: linear-gradient(135deg, #fbd008 0%, #e6bd00 100%);
+        border-color: #e6bd00;
+        box-shadow: 0 6px 16px rgba(251, 208, 8, 0.3);
+        transform: translateY(-2px) scale(1.02);
+      }
 
-    .task-group-bar.critical {
-      border: 2px solid #ef4444;
-      border-left: 4px solid #ef4444;
-    }
+      &.critical {
+        border: 2px solid #ef4444;
+        border-left: 4px solid #ef4444;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+      }
 
-    .task-group-bar.dragging {
-      opacity: 0.7;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
-      z-index: 10;
-      transform: rotate(2deg);
+      &.dragging {
+        opacity: 0.8;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        z-index: 10;
+        transform: rotate(1deg) scale(1.05);
+      }
     }
 
     .task-content {
@@ -303,35 +306,47 @@
       padding: 1.5rem;
       overflow-y: auto;
       flex: 1;
+
+      h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
     }
 
     .group-info {
-      background-color: #f8fafc;
-      padding: 1rem;
-      border-radius: 6px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 1.25rem;
+      border-radius: 8px;
       margin-bottom: 1.5rem;
       border: 1px solid #e2e8f0;
-    }
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
-    .info-item {
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-    }
+      .info-item {
+        margin-bottom: 0.75rem;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
 
-    .info-item:last-child {
-      margin-bottom: 0;
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        strong {
+          min-width: 80px;
+          color: #374151;
+        }
+      }
     }
 
     .status-on-track { color: #059669; font-weight: 500; }
     .status-behind { color: #dc2626; font-weight: 500; }
     .status-ahead { color: #2563eb; font-weight: 500; }
-
-    .modal-content h3 {
-      margin: 0 0 1rem 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #111827;
-    }
 
     .subtasks-list {
       space-y: 0.75rem;
@@ -387,6 +402,19 @@
       margin-bottom: 0.5rem;
       font-size: 0.875rem;
       color: #6b7280;
+      align-items: center;
+
+      .duration, .dates {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
     }
 
     .subtask-progress {
@@ -441,10 +469,39 @@
     }
 
     .btn-primary {
-      background-color: #fbd008;
-      color: #000;
-    }
+    background-color: #fbd008;
+    color: #000;
+  }
 
-    .btn-primary:hover {
-      background-color: #e6bd00;
-    }
+  .btn-primary:hover {
+    background-color: #e6bd00;
+  }
+
+::ng-deep .custom-modal-panel {
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+}
+
+/* Status badge styles */
+.status-badge-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge-in_progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge-completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge-delayed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
