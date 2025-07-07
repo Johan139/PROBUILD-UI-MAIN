@@ -869,7 +869,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < reportSections.length; i++) {
       const section = reportSections[i];
-      const promptNumberMatch = fullResponse.match(new RegExp(`Ready for the next prompt (${i + 2})`));
+      const promptNumberMatch = fullResponse.match(new RegExp(`Ready for the next prompt (${i})`));
 
       if (promptNumberMatch) {
         const promptNumber = parseInt(promptNumberMatch[1], 10);
