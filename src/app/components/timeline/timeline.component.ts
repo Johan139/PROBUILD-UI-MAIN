@@ -82,7 +82,6 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
    ngOnChanges(changes: SimpleChanges) {
      if (changes['taskGroups']) {
-       console.log('[Timeline] ngOnChanges: taskGroups received', changes['taskGroups'].currentValue);
        this.initializeViewStartDate();
        this.generateWeeklyDates();
        this.calculateTimelineHeight();
@@ -90,63 +89,48 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
    }
 
    private initializeViewStartDate() {
-     console.log('[Timeline] initializeViewStartDate: Called');
      if (!this.taskGroups || this.taskGroups.length === 0) {
        this.viewStartDate = new Date();
        this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-       console.log('[Timeline] initializeViewStartDate: No task groups, defaulting to start of current week:', this.viewStartDate);
        return;
      }
-
-     console.log('[Timeline] initializeViewStartDate: Processing taskGroups:', this.taskGroups);
 
      let allTimestamps: number[] = this.taskGroups
        .flatMap(g => g.subtasks)
        .map(t => {
          if (t.start) {
-           console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has start date (Date object):`, t.start);
            return t.start.getTime();
          }
          if (t.startDate) {
            const d = new Date(t.startDate);
-           console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has startDate (string): '${t.startDate}'. Parsed as:`, d);
            return isNaN(d.getTime()) ? undefined : d.getTime();
          }
-         console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has no valid start date property.`);
          return undefined;
        })
        .filter((t): t is number => t !== undefined);
 
-     console.log('[Timeline] initializeViewStartDate: All subtask timestamps:', allTimestamps);
-
      if (allTimestamps.length === 0) {
-       console.log('[Timeline] initializeViewStartDate: No valid subtask start dates found. Falling back to group start dates.');
        // Fallback to group start dates
        allTimestamps = this.taskGroups
          .map(g => {
-           console.log(`[Timeline] initializeViewStartDate: Group '${g.title}' has startDate:`, g.startDate);
            return g.startDate?.getTime();
          })
          .filter((t): t is number => t !== undefined && !isNaN(t));
-       console.log('[Timeline] initializeViewStartDate: All group timestamps:', allTimestamps);
      }
 
      if (allTimestamps.length === 0) {
        this.viewStartDate = new Date();
        this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-       console.log('[Timeline] initializeViewStartDate: No valid timestamps found at all. Defaulting to start of current week:', this.viewStartDate);
        return;
      }
 
      const earliestTimestamp = Math.min(...allTimestamps);
      const earliestDate = new Date(earliestTimestamp);
-     console.log('[Timeline] initializeViewStartDate: Earliest timestamp:', earliestTimestamp, 'Earliest date:', earliestDate);
 
      // Set view start date to beginning of the week of the earliest task
      const newStartDate = new Date(earliestDate);
      newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
      this.viewStartDate = newStartDate;
-     console.log('[Timeline] initializeViewStartDate: Final calculated viewStartDate:', this.viewStartDate);
    }
 
   private calculateTimelineHeight() {

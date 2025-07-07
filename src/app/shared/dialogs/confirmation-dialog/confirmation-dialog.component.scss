@@ -1,0 +1,44 @@
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+p {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+mat-dialog-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.return-btn {
+  background-color: #FBD008; /* Yellow */
+  color: #333;
+}
+
+.return-btn:hover {
+  background-color: #e6bf00; /* Darker yellow */
+}
+
+.confirm-btn {
+  background-color: #FBD008; /* Red */
+  color: #333;
+}
+
+.confirm-btn:hover {
+  background-color: #e6bf00; /* Darker red */
+}

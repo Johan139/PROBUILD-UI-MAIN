@@ -27,7 +27,7 @@ import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
-import { ConfirmationDialogComponent } from './job-quote/confirmation-dialog.component';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { CancellationDialogComponent } from './Cancellation-Dialog.component';
 import { Location } from '@angular/common';
 import { ConfirmAIAcceptanceDialogComponent } from '../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
@@ -142,10 +142,18 @@ export class JobsComponent implements OnInit, OnDestroy {
     return this.dialog.openDialogs.length > 0;
   }
 
-  get timelineGroups(): TimelineGroup[] {
-    const subtaskGroups = this.store.getState().subtaskGroups || [];
+  private _timelineGroups: TimelineGroup[] = [];
+  private _lastSubtaskGroups: any;
 
-    return subtaskGroups.map(group => {
+  get timelineGroups(): TimelineGroup[] {
+    const subtaskGroups = this.store.getState().subtaskGroups;
+
+    if (subtaskGroups === this._lastSubtaskGroups) {
+      return this._timelineGroups;
+    }
+
+    this._lastSubtaskGroups = subtaskGroups;
+    this._timelineGroups = (subtaskGroups || []).map((group: { title: string, subtasks: any[] }) => {
       const tasks = group.subtasks.filter((task: any) => !task.deleted);
 
       if (tasks.length === 0) {
@@ -162,17 +170,17 @@ export class JobsComponent implements OnInit, OnDestroy {
       // Calculate group start and end dates
       const startDates = tasks
         .map((task: any) => new Date(task.startDate || task.start))
-        .filter(date => !isNaN(date.getTime()));
+        .filter((date: Date) => !isNaN(date.getTime()));
 
       const endDates = tasks
         .map((task: any) => new Date(task.endDate || task.end))
-        .filter(date => !isNaN(date.getTime()));
+        .filter((date: Date) => !isNaN(date.getTime()));
 
       const groupStartDate = startDates.length > 0 ?
-        new Date(Math.min(...startDates.map(d => d.getTime()))) : new Date();
+        new Date(Math.min(...startDates.map((d: Date) => d.getTime()))) : new Date();
 
       const groupEndDate = endDates.length > 0 ?
-        new Date(Math.max(...endDates.map(d => d.getTime()))) : new Date();
+        new Date(Math.max(...endDates.map((d: Date) => d.getTime()))) : new Date();
 
       // Calculate progress
       const completedTasks = tasks.filter((task: any) =>
@@ -214,6 +222,8 @@ export class JobsComponent implements OnInit, OnDestroy {
         scheduleStatus
       };
     });
+
+    return this._timelineGroups;
   }
 
   get timelineTaskData(): TimelineTask[] {
@@ -279,47 +289,55 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   handleGroupMove(event: {groupId: string, newStartDate: Date, newEndDate: Date}) {
-    console.log('Group moved:', event);
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Confirm Move',
+        message: `Are you sure you want to move this event to ${format(event.newStartDate, 'MMM d, yyyy')}?`
+      }
+    });
 
-    // Find the subtask group and update all tasks
-    const subtaskGroups = this.store.getState().subtaskGroups || [];
-    const groupIndex = subtaskGroups.findIndex((g: any) => g.title === event.groupId);
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Find the subtask group and update all tasks
+        const subtaskGroups = this.store.getState().subtaskGroups || [];
+        const groupIndex = subtaskGroups.findIndex((g: any) => g.title === event.groupId);
 
-    if (groupIndex !== -1) {
-      const group = subtaskGroups[groupIndex];
-      const oldStartDate = new Date(Math.min(...group.subtasks.map((t: any) =>
-        new Date(t.startDate || t.start).getTime()
-      )));
+        if (groupIndex !== -1) {
+          const group = subtaskGroups[groupIndex];
+          const oldStartDate = new Date(Math.min(...group.subtasks.map((t: any) =>
+            new Date(t.startDate || t.start).getTime()
+          )));
 
-      const daysDelta = differenceInCalendarDays(event.newStartDate, oldStartDate);
+          const daysDelta = differenceInCalendarDays(event.newStartDate, oldStartDate);
 
-      // Update all subtasks in the group
-      group.subtasks.forEach((task: any) => {
-        const taskStart = new Date(task.startDate || task.start);
-        const taskEnd = new Date(task.endDate || task.end);
+          // Update all subtasks in the group
+          group.subtasks.forEach((task: any) => {
+            const taskStart = new Date(task.startDate || task.start);
+            const taskEnd = new Date(task.endDate || task.end);
 
-        taskStart.setDate(taskStart.getDate() + daysDelta);
-        taskEnd.setDate(taskEnd.getDate() + daysDelta);
+            taskStart.setDate(taskStart.getDate() + daysDelta);
+            taskEnd.setDate(taskEnd.getDate() + daysDelta);
 
-        task.startDate = taskStart.toISOString().split('T')[0];
-        task.endDate = taskEnd.toISOString().split('T')[0];
-      });
+            task.startDate = taskStart.toISOString().split('T')[0];
+            task.endDate = taskEnd.toISOString().split('T')[0];
+          });
 
-      // Update the store
-      this.store.setState({
-        subtaskGroups: [...subtaskGroups]
-      });
+          // Update the store
+          this.store.setState({
+            subtaskGroups: [...subtaskGroups]
+          });
 
-      // Show confirmation message
-      this.alertMessage = `${event.groupId} has been moved to start on ${format(event.newStartDate, 'MMM d, yyyy')}`;
-      this.showAlert = true;
-    }
+          // Show confirmation message
+          this.alertMessage = `${event.groupId} has been moved to start on ${format(event.newStartDate, 'MMM d, yyyy')}`;
+          this.showAlert = true;
+        }
+      }
+    });
   }
 
   handleEditGroup(group: TimelineGroup) {
     console.log('Edit group:', group);
     // Navigate to edit view or open edit modal
-    // You can implement this based on your existing edit functionality
   }
 
   ngOnInit() {
