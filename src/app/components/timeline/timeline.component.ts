@@ -418,4 +418,14 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     }
     return new Date(); // Return today's date as a fallback
   }
+
+  public getGroupStatus(group: TimelineGroup): string {
+    if (group.subtasks.some(t => t.status === 'delayed')) {
+      return 'delayed';
+    }
+    if (group.subtasks.every(t => t.status === 'completed')) {
+      return 'completed';
+    }
+    return 'in_progress';
+  }
 }

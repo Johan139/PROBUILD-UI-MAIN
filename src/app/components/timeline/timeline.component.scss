@@ -188,6 +188,14 @@
         opacity: 0.4;
         border-style: dashed;
       }
+
+      &.status-completed {
+        background: grey;
+      }
+
+      &.status-delayed {
+        background: linear-gradient(135deg, #fbd008 0%, #f57f17 100%);
+      }
     }
 
     .group-ghost {

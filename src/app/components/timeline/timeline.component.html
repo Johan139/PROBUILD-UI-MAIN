@@ -34,11 +34,19 @@
         <!-- Legend -->
         <div class="timeline-legend">
           <div class="legend-item">
-            <div class="legend-color" style="background-color: #e6bd00;"></div>
-            <span>Regular Task</span>
+            <div class="legend-color" style="background: linear-gradient(135deg, #e6bd00 0%, #fbd008 100%);"></div>
+            <span>In Progress</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color critical" style="background-color: #e6bd00; border-left: 2px solid #ef4444;"></div>
+            <div class="legend-color" style="background-color: grey;"></div>
+            <span>Completed</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: linear-gradient(135deg, #fbd008 0%, #f57f17 100%);"></div>
+            <span>Delayed</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color critical" style="background: linear-gradient(135deg, #e6bd00 0%, #fbd008 100%); border-left: 2px solid #ef4444;"></div>
             <span>Critical Path</span>
           </div>
         </div>
@@ -90,6 +98,7 @@
         <div
           *ngFor="let group of taskGroups; let groupIndex = index"
           class="task-group-bar"
+          [ngClass]="'status-' + getGroupStatus(group)"
           [class.critical]="isGroupCritical(group)"
           [class.dragging]="draggingGroup === group.title"
           [style]="getGroupStyle(group, groupIndex)"

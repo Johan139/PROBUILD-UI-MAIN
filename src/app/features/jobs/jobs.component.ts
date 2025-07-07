@@ -256,7 +256,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   private isTaskCritical(task: any): boolean {
-    // Define logic for critical tasks - you can customize this
+    // Define logic for critical tasks
     const criticalKeywords = ['foundation', 'structural', 'inspection', 'permit'];
     const taskName = (task.task || task.name || '').toLowerCase();
     return criticalKeywords.some(keyword => taskName.includes(keyword));
@@ -266,13 +266,13 @@ export class JobsComponent implements OnInit, OnDestroy {
   // Add event handlers
   handleTaskClick(task: TimelineTask) {
     console.log('Task clicked:', task);
-    // Add your task click logic here
+    // Task click logic here
   }
 
   handleTaskMove(event: {taskId: string, newStartDate: Date, newEndDate: Date}) {
     console.log('Task moved:', event);
 
-    // Update the task in your data
+    // Update the task data
     const taskIndex = this.taskData.findIndex((t: any) => t.id === event.taskId);
     if (taskIndex !== -1) {
       this.taskData[taskIndex].start = event.newStartDate;
@@ -285,7 +285,7 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   handleGroupClick(group: TimelineGroup) {
     console.log('Group clicked:', group);
-    // The modal will be handled by the timeline component itself
+    // Handled by the timeline component itself
   }
 
   handleGroupMove(event: {groupId: string, newStartDate: Date, newEndDate: Date}) {
