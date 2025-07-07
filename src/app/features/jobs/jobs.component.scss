@@ -367,7 +367,6 @@ textarea[matInput] {
   padding: 0; // Remove padding since timeline has its own
   border-radius: 8px;
   border: 1px solid $light-gray;
-  overflow: hidden;
 }
 
 @media (max-width: 768px) {

@@ -1,0 +1,183 @@
+    <div class="timeline-container">
+      <!-- Timeline Controls -->
+      <div class="timeline-controls">
+        <div class="timeline-navigation">
+          <button
+            class="nav-btn"
+            (click)="navigateTimeline(-14)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+          <button
+            class="nav-btn"
+            (click)="navigateTimeline(14)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+
+          <div class="date-range">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>
+              {{formatDate(viewStartDate, 'MMM d, yyyy')}} - {{formatDate(getEndDate(), 'MMM d, yyyy')}}
+            </span>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="timeline-legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background-color: #61a0af;"></div>
+            <span>Regular Task</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color critical" style="background-color: #61a0af; border: 2px solid #ef4444;"></div>
+            <span>Critical Path</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Header - Weekly Dates -->
+      <div #headerRef class="timeline-header">
+        <div
+          *ngFor="let week of weeklyDates; let i = index"
+          class="week-cell"
+          [class.current-week]="isCurrentWeek(week.start)">
+          <div class="week-label">{{formatDate(week.start, 'MMM d')}}</div>
+          <div class="week-days">
+            <div
+              *ngFor="let day of week.days"
+              class="day-cell"
+              [class.weekend]="isWeekend(day)"
+              [class.today]="isToday(day)">
+              {{formatDate(day, 'd')}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Grid -->
+      <div
+        #timelineRef
+        class="timeline-grid"
+        [style.height.px]="timelineHeight"
+        (scroll)="onGridScroll()"
+        (mousemove)="handleDragOver($event)"
+        (mouseup)="handleDragEnd($event)"
+        (mouseleave)="handleDragEnd($event)">
+
+        <!-- Grid Background -->
+        <div class="grid-background">
+          <div
+            *ngFor="let week of weeklyDates"
+            class="week-grid"
+            [class.current-week-bg]="isCurrentWeek(week.start)">
+            <div
+              *ngFor="let day of week.days"
+              class="day-grid"
+              [class.weekend-bg]="isWeekend(day)"
+              [class.today-bg]="isToday(day)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Groups (Main Tasks) -->
+        <div
+          *ngFor="let group of taskGroups; let groupIndex = index"
+          class="task-group-bar"
+          [class.critical]="isGroupCritical(group)"
+          [class.dragging]="draggingGroup === group.title"
+          [style]="getGroupStyle(group, groupIndex)"
+          [attr.data-group]="group.title"
+          [title]="getGroupTooltip(group)"
+          (click)="openGroupModal(group)"
+          (mousedown)="handleDragStart($event, group.title)">
+
+          <div class="task-content">
+            <div class="task-name">{{group.title}}</div>
+            <div class="task-duration">
+              {{formatDate(group.startDate!, 'MMM d')}} - {{formatDate(group.endDate!, 'MMM d')}}
+            </div>
+            <div class="task-count">{{group.subtasks.length}} tasks</div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              [style.width.%]="group.progress || 0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Today Line -->
+        <div class="today-line" [style.left]="getTodayPosition()"></div>
+      </div>
+    </div>
+
+    <!-- Task Group Detail Modal -->
+    <ng-template #groupDetailModal let-data>
+      <div class="group-modal">
+        <div class="modal-header">
+          <h2>{{selectedGroup?.title}}</h2>
+          <button class="close-btn" (click)="closeGroupModal()">×</button>
+        </div>
+
+        <div class="modal-content">
+          <div class="group-info">
+            <div class="info-item">
+              <strong>Duration:</strong>
+              {{formatDate(selectedGroup?.startDate!, 'MMM d, yyyy')}} -
+              {{formatDate(selectedGroup?.endDate!, 'MMM d, yyyy')}}
+            </div>
+            <div class="info-item">
+              <strong>Progress:</strong> {{selectedGroup?.progress || 0}}%
+            </div>
+            <div class="info-item">
+              <strong>Status:</strong>
+              <span [class]="'status-' + (selectedGroup?.scheduleStatus || 'on-track')">
+                {{selectedGroup?.scheduleStatus || 'on-track'}}
+              </span>
+            </div>
+          </div>
+
+          <h3>Subtasks ({{selectedGroup?.subtasks?.length || 0}})</h3>
+          <div class="subtasks-list">
+            <div
+              *ngFor="let subtask of selectedGroup?.subtasks"
+              class="subtask-item"
+              [class.completed]="subtask.status === 'completed'"
+              [class.critical]="subtask.isCritical">
+
+              <div class="subtask-header">
+                <div class="subtask-name">{{subtask.task || subtask.name}}</div>
+                <div class="subtask-status">{{subtask.status || 'pending'}}</div>
+              </div>
+
+              <div class="subtask-details">
+                <span class="duration">{{subtask.days || getDuration(subtask)}} days</span>
+                <span class="dates">
+                  {{formatDate(getSafeDate(subtask.start, subtask.startDate), 'MMM d')}} -
+                  {{formatDate(getSafeDate(subtask.end, subtask.endDate), 'MMM d')}}
+                </span>
+              </div>
+
+              <div class="subtask-progress" *ngIf="subtask.progress !== undefined">
+                <div class="progress-bar-small">
+                  <div class="progress-fill-small" [style.width.%]="subtask.progress || 0"></div>
+                </div>
+                <span>{{subtask.progress}}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" (click)="closeGroupModal()">Close</button>
+          <button class="btn btn-primary" (click)="editGroup(selectedGroup!)">Edit Tasks</button>
+        </div>
+      </div>
+    </ng-template>

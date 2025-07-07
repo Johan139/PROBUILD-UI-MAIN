@@ -1124,6 +1124,14 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   createTables(): void {
     const stateGroups = this.store.getState().subtaskGroups;
+    if (!stateGroups || stateGroups.length === 0) {
+      return;
+    }
+    const datesArePopulated = stateGroups[0]?.subtasks?.[0]?.startDate;
+    if (datesArePopulated) {
+      this.taskData = this.extractMainTasksFromGroups(stateGroups);
+      return;
+    }
     const tables = [
       'Foundation Subtasks',
       'WallInsulation Subtasks',
