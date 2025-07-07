@@ -85,17 +85,32 @@ export class TimelineComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validDates = this.taskGroups
-      .map(g => g.startDate?.getTime())
-      .filter((t): t is number => t !== undefined && !isNaN(t));
+    let allTimestamps: number[] = this.taskGroups
+      .flatMap(g => g.subtasks)
+      .map(t => {
+        if (t.start) return t.start.getTime();
+        if (t.startDate) {
+          const d = new Date(t.startDate);
+          return isNaN(d.getTime()) ? undefined : d.getTime();
+        }
+        return undefined;
+      })
+      .filter((t): t is number => t !== undefined);
 
-    if (validDates.length === 0) {
+    if (allTimestamps.length === 0) {
+      // Fallback to group start dates
+      allTimestamps = this.taskGroups
+        .map(g => g.startDate?.getTime())
+        .filter((t): t is number => t !== undefined && !isNaN(t));
+    }
+
+    if (allTimestamps.length === 0) {
       this.viewStartDate = new Date();
       this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
       return;
     }
 
-    const earliestTimestamp = Math.min(...validDates);
+    const earliestTimestamp = Math.min(...allTimestamps);
     const earliestDate = new Date(earliestTimestamp);
 
     // Set view start date to beginning of the week of the earliest task

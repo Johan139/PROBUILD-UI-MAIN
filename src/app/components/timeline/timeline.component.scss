@@ -74,11 +74,11 @@
       display: flex;
       background-color: #fbd008;
       border-bottom: 2px solid #d9d9d9;
-      overflow-x: hidden;
     }
 
     .week-cell {
-      min-width: 140px;
+      flex: 1;
+      min-width: 0;
       border-right: 1px solid #d9d9d9;
     }
 
@@ -119,7 +119,6 @@
     .timeline-grid {
       position: relative;
       overflow-y: auto;
-      overflow-x: hidden;
       background-color: #fff;
     }
 
@@ -133,7 +132,8 @@
     }
 
     .week-grid {
-      min-width: 140px;
+      flex: 1;
+      min-width: 0;
       border-right: 1px solid rgba(217, 217, 217, 0.3);
       display: flex;
     }
