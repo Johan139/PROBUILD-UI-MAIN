@@ -846,34 +846,29 @@ export class JobsComponent implements OnInit, OnDestroy {
       return { sections: [] };
     }
 
-    const phaseSections = fullResponse.split(/(?=### \*\*.*(?:Phase|Analysis Package))/);
     const sections: any[] = [];
+    // Split the report by BOM headers. The lookahead assertion `(?=...)` keeps the delimiter.
+    const bomSections = fullResponse.split(/(?=### \*\*.*?Bill of Materials \(BOM\)\*\*)/);
 
-    for (const section of phaseSections) {
+    for (const section of bomSections) {
+      // Process only the parts that are actual BOM sections
+      if (!section.trim().startsWith('### **') || !section.includes('Bill of Materials (BOM)')) {
+        continue;
+      }
+
       const lines = section.trim().split('\n');
       if (lines.length === 0) {
         continue;
       }
 
-      const phaseTitleLine = lines[0];
-      let phaseName = phaseTitleLine.replace(/### \*\*/, '').replace(/\*\*/, '').trim();
+      // Extract title from the header
+      const titleLine = lines[0];
+      const titleMatch = titleLine.match(/### \*\*(.*?)\*\*/);
+      const title = titleMatch ? titleMatch[1] : 'Bill of Materials';
 
-      const phaseMatch = phaseName.match(/Phase\s\d+:\s(.*)/);
-      if (phaseMatch && phaseMatch[1]) {
-        phaseName = phaseMatch[1];
-      } else if (phaseName.includes('Analysis Package')) {
-        phaseName = phaseName.replace(/Analysis Package/, '').replace(/Phase/, '').trim();
-      } else {
-        continue;
-      }
-
-      const bomTitleIndex = lines.findIndex(line => line.includes('### **Output 1: Materials Bill of Materials (BOM)**'));
-      if (bomTitleIndex === -1) {
-        continue;
-      }
-
+      // Find the start of the markdown table
       let tableHeaderIndex = -1;
-      for (let i = bomTitleIndex + 1; i < lines.length; i++) {
+      for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim().startsWith('|')) {
           tableHeaderIndex = i;
           break;
@@ -884,32 +879,29 @@ export class JobsComponent implements OnInit, OnDestroy {
         continue;
       }
 
+      // Parse table headers
       const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
       const tableContent: any[] = [];
 
-      // Start from the line after the header and separator
+      // Parse table rows (starting after header and separator line)
       for (let i = tableHeaderIndex + 2; i < lines.length; i++) {
         const line = lines[i];
         const trimmedLine = line.trim();
 
         if (trimmedLine.startsWith('|')) {
-          const row = trimmedLine.split('|').map(cell => cell.trim()).filter(Boolean);
+          const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
           if (row.length > 0) {
-            if (row[0]) {
-              // Clean up markdown asterisks from the Item column
-              row[0] = row[0].replace(/\*/g, '');
-            }
             tableContent.push(row);
           }
-        } else {
-          // End of table
-          break;
+        } else if (trimmedLine.startsWith('###')) {
+            // Stop if we hit a new markdown header, indicating end of current BOM section
+            break;
         }
       }
 
       if (tableHeaders.length > 0 && tableContent.length > 0) {
         sections.push({
-          title: phaseName,
+          title: title,
           type: 'table',
           headers: tableHeaders,
           content: tableContent
@@ -917,11 +909,10 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     }
 
-    // --- Cost Breakdown Extraction Logic ---
+    // --- Cost Breakdown Extraction Logic (preserved) ---
     const allLines = fullResponse.split('\n');
     let costBreakdownTitleIndex = -1;
 
-    // Prioritized search for the cost breakdown table title
     const prioritizedRegex = [
         /### \*\*.*Detailed Cost Breakdown\*\*/i,
         /### \*\*.*As-Specced Project Budget\*\*/i,
@@ -950,9 +941,7 @@ export class JobsComponent implements OnInit, OnDestroy {
         const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim().replace(/\*\*/g, '')).filter(Boolean);
         const tableContent: any[] = [];
 
-        // Check for separator line
         if (allLines[tableHeaderIndex + 1] && allLines[tableHeaderIndex + 1].trim().startsWith('|') && allLines[tableHeaderIndex + 1].includes('---')) {
-            // Start from the line after the header and separator
             for (let i = tableHeaderIndex + 2; i < allLines.length; i++) {
                 const line = allLines[i];
                 const trimmedLine = line.trim();
@@ -963,7 +952,6 @@ export class JobsComponent implements OnInit, OnDestroy {
                         tableContent.push(row);
                     }
                 } else {
-                    // End of table if we hit a non-table line
                     break;
                 }
             }
