@@ -847,65 +847,72 @@ export class JobsComponent implements OnInit, OnDestroy {
     }
 
     const sections: any[] = [];
-    // Split the report by BOM headers. The lookahead assertion `(?=...)` keeps the delimiter.
-    const bomSections = fullResponse.split(/(?=### \*\*.*?Bill of Materials \(BOM\)\*\*)/);
+    const promptTitles: { [key: number]: string } = {
+      2: 'Groundwork & Foundation phase',
+      3: 'Framing and Structure phase',
+      4: 'Roofing phase',
+      5: 'Exterior Enclosure phase',
+      6: 'Electrical phase',
+      7: 'Plumbing phase',
+      8: 'HVAC phase',
+      9: 'Insulation phase',
+      10: 'Drywall phase',
+      11: 'Painting & Coatings phase',
+      12: 'Trim & Doors phase',
+      13: 'Kitchen & Bath phase',
+      14: 'Flooring phase',
+      15: 'Exterior Flatwork & Landscaping phase',
+      16: 'Cleaning & Final Touches phase'
+    };
 
-    for (const section of bomSections) {
-      // Process only the parts that are actual BOM sections
-      if (!section.trim().startsWith('### **') || !section.includes('Bill of Materials (BOM)')) {
-        continue;
-      }
+    const reportSections = fullResponse.split(/Ready for the next prompt \d+\./);
 
-      const lines = section.trim().split('\n');
-      if (lines.length === 0) {
-        continue;
-      }
+    for (let i = 0; i < reportSections.length; i++) {
+      const section = reportSections[i];
+      const promptNumberMatch = fullResponse.match(new RegExp(`Ready for the next prompt (${i + 2})`));
 
-      // Extract title from the header
-      const titleLine = lines[0];
-      const titleMatch = titleLine.match(/### \*\*(.*?)\*\*/);
-      const title = titleMatch ? titleMatch[1] : 'Bill of Materials';
+      if (promptNumberMatch) {
+        const promptNumber = parseInt(promptNumberMatch[1], 10);
+        const title = promptTitles[promptNumber];
 
-      // Find the start of the markdown table
-      let tableHeaderIndex = -1;
-      for (let i = 1; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('|')) {
-          tableHeaderIndex = i;
-          break;
-        }
-      }
-
-      if (tableHeaderIndex === -1) {
-        continue;
-      }
-
-      // Parse table headers
-      const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
-      const tableContent: any[] = [];
-
-      // Parse table rows (starting after header and separator line)
-      for (let i = tableHeaderIndex + 2; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmedLine = line.trim();
-
-        if (trimmedLine.startsWith('|')) {
-          const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
-          if (row.length > 0) {
-            tableContent.push(row);
+        if (title) {
+          const lines = section.trim().split('\n');
+          let tableHeaderIndex = -1;
+          for (let j = 0; j < lines.length; j++) {
+            if (lines[j].trim().startsWith('|') && lines[j].includes('Item')) {
+              tableHeaderIndex = j;
+              break;
+            }
           }
-        } else if (trimmedLine.startsWith('###')) {
-            // Stop if we hit a new markdown header, indicating end of current BOM section
-            break;
-        }
-      }
 
-      if (tableHeaders.length > 0 && tableContent.length > 0) {
-        sections.push({
-          title: title,
-          type: 'table',
-          headers: tableHeaders,
-          content: tableContent
-        });
+          if (tableHeaderIndex !== -1) {
+            const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
+            const tableContent: any[] = [];
+
+            for (let j = tableHeaderIndex + 2; j < lines.length; j++) {
+              const line = lines[j];
+              const trimmedLine = line.trim();
+
+              if (trimmedLine.startsWith('|')) {
+                const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
+                if (row.length > 0) {
+                  tableContent.push(row);
+                }
+              } else if (trimmedLine.startsWith('###') || trimmedLine.startsWith('Ready for the next prompt')) {
+                break;
+              }
+            }
+
+            if (tableHeaders.length > 0 && tableContent.length > 0) {
+              sections.push({
+                title: title,
+                type: 'table',
+                headers: tableHeaders,
+                content: tableContent
+              });
+            }
+          }
+        }
       }
     }
 
