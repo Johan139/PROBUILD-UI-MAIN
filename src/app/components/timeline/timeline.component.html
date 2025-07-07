@@ -4,14 +4,18 @@
         <div class="timeline-navigation">
           <button
             class="nav-btn"
-            (click)="navigateTimeline(-7)">
+            (mousedown)="startTimelineNavigation(-7)"
+            (mouseup)="stopTimelineNavigation()"
+            (mouseleave)="stopTimelineNavigation()">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
           </button>
           <button
             class="nav-btn"
-            (click)="navigateTimeline(7)">
+            (mousedown)="startTimelineNavigation(7)"
+            (mouseup)="stopTimelineNavigation()"
+            (mouseleave)="stopTimelineNavigation()">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
@@ -30,11 +34,11 @@
         <!-- Legend -->
         <div class="timeline-legend">
           <div class="legend-item">
-            <div class="legend-color" style="background-color: #61a0af;"></div>
+            <div class="legend-color" style="background-color: #e6bd00;"></div>
             <span>Regular Task</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color critical" style="background-color: #61a0af; border: 2px solid #ef4444;"></div>
+            <div class="legend-color critical" style="background-color: #e6bd00; border: 2px solid #ef4444;"></div>
             <span>Critical Path</span>
           </div>
         </div>
@@ -174,7 +178,7 @@
 
         <div class="modal-actions">
           <button class="btn btn-secondary" (click)="closeGroupModal()">Close</button>
-          <button class="btn btn-primary" (click)="editGroup(selectedGroup!)">Edit Tasks</button>
+          <!-- <button class="btn btn-primary" (click)="editGroup(selectedGroup!)">Edit Tasks</button> -->
         </div>
       </div>
     </ng-template>

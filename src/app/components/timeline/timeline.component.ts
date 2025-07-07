@@ -59,6 +59,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   selectedGroup: TimelineGroup | null = null;
   modalRef: MatDialogRef<any> | null = null;
   private ghostElement: HTMLElement | null = null;
+  private navigationInterval: any;
 
   private weeksToShow: number = 12;
   private mouseMoveListener?: (e: MouseEvent) => void;
@@ -180,6 +181,17 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     newDate.setDate(newDate.getDate() + days);
     this.viewStartDate = newDate;
     this.generateWeeklyDates();
+  }
+
+  startTimelineNavigation(direction: number) {
+    this.navigateTimeline(direction); // Initial call
+    this.navigationInterval = setInterval(() => {
+      this.navigateTimeline(direction);
+    }, 100);
+  }
+
+  stopTimelineNavigation() {
+    clearInterval(this.navigationInterval);
   }
 
   public onGridScroll(): void {
