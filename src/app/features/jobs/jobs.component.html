@@ -10,7 +10,7 @@
           <div *ngIf="isLoading">
             <app-loader></app-loader>
           </div>
-          
+
           <!-- Project Details Section -->
           <div class="job-details">
             <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
@@ -29,7 +29,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div *ngIf="weatherError" class="weather-error">
               {{ weatherError }}
             </div>
@@ -41,7 +41,12 @@
             <mat-divider class="timeline-divider"></mat-divider>
             <div class="chart-container">
               <div class="timeline-wrapper">
-                <app-gantt-chart [tasks]="taskData" class="gantt-chart"></app-gantt-chart>
+                <app-timeline
+                  [tasks]="timelineTaskData"
+                  (onTaskClick)="handleTaskClick($event)"
+                  (onTaskMove)="handleTaskMove($event)"
+                  class="timeline-chart">
+                </app-timeline>
               </div>
             </div>
           </div>
@@ -76,11 +81,11 @@
             <input type="text" [(ngModel)]="subtask.task" class="no-border" />
           </td>
           <td>
-            <input type="number" [(ngModel)]="subtask.days" class="no-border" 
+            <input type="number" [(ngModel)]="subtask.days" class="no-border"
                    (change)="updateSubtaskDates(table, i)" />
           </td>
           <td>
-            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" 
+            <input type="date" [(ngModel)]="subtask.startDate" class="no-border"
                    (change)="updateSubtaskDates(table, i)" />
           </td>
           <td>
@@ -93,7 +98,7 @@
             <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
               Delete
             </button>
-        
+
           </td>
           <td>
             <button class="submit-btn delete-btn" (click)="openNoteDialog(subtask)">

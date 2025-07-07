@@ -35,6 +35,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { marked } from 'marked';
+import { TimelineComponent, TimelineTask } from '../../components/timeline/timeline.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -61,7 +62,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatFormFieldModule,
     MatInputModule,
     FileSizePipe,
-    MatCheckboxModule
+    MatCheckboxModule,
+    TimelineComponent
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss'
@@ -136,6 +138,61 @@ export class JobsComponent implements OnInit, OnDestroy {
 
   get isDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
+  }
+
+  get timelineTaskData(): TimelineTask[] {
+    if (!this.taskData) return [];
+
+    return this.taskData.map((task: any) => ({
+      id: task.id,
+      name: task.name,
+      start: new Date(task.start),
+      end: new Date(task.end),
+      progress: task.progress || 0,
+      dependencies: task.dependencies,
+      resource: task.resource,
+      color: this.getTaskColor(task),
+      isCritical: this.isTaskCritical(task)
+    }));
+  }
+
+  private getTaskColor(task: any): string {
+    // Define colors based on task type or status
+    const colorMap: { [key: string]: string } = {
+      'Foundation': '#3b82f6',
+      'Roof Structure': '#10b981',
+      'Wall Structure': '#f59e0b',
+      'Electrical': '#ef4444',
+      'Plumbing': '#8b5cf6'
+    };
+
+    return colorMap[task.name] || '#61a0af';
+  }
+
+  private isTaskCritical(task: any): boolean {
+    // Define which tasks are on critical path
+    const criticalTasks = ['Foundation', 'Roof Structure'];
+    return criticalTasks.includes(task.name);
+  }
+
+  // Add event handlers
+  handleTaskClick(task: TimelineTask) {
+    console.log('Task clicked:', task);
+    // Add your task click logic here
+  }
+
+  handleTaskMove(event: {taskId: string, newStartDate: Date, newEndDate: Date}) {
+    console.log('Task moved:', event);
+
+    // Update the task in your data
+    const taskIndex = this.taskData.findIndex((t: any) => t.id === event.taskId);
+    if (taskIndex !== -1) {
+      this.taskData[taskIndex].start = event.newStartDate;
+      this.taskData[taskIndex].end = event.newEndDate;
+
+      // Trigger change detection
+      this.taskData = [...this.taskData];
+    }
   }
 
   ngOnInit() {
