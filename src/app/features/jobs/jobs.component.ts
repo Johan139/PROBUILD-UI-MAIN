@@ -35,7 +35,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { marked } from 'marked';
-import { TimelineComponent, TimelineTask } from '../../components/timeline/timeline.component';
+import { differenceInCalendarDays, format } from 'date-fns';
+import { TimelineComponent, TimelineTask, TimelineGroup } from '../../components/timeline/timeline.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -140,6 +141,80 @@ export class JobsComponent implements OnInit, OnDestroy {
     return this.dialog.openDialogs.length > 0;
   }
 
+  get timelineGroups(): TimelineGroup[] {
+    const subtaskGroups = this.store.getState().subtaskGroups || [];
+
+    return subtaskGroups.map(group => {
+      const tasks = group.subtasks.filter((task: any) => !task.deleted);
+
+      if (tasks.length === 0) {
+        return {
+          title: group.title,
+          subtasks: [],
+          startDate: new Date(),
+          endDate: new Date(),
+          progress: 0,
+          scheduleStatus: 'on-track' as const
+        };
+      }
+
+      // Calculate group start and end dates
+      const startDates = tasks
+        .map((task: any) => new Date(task.startDate || task.start))
+        .filter(date => !isNaN(date.getTime()));
+
+      const endDates = tasks
+        .map((task: any) => new Date(task.endDate || task.end))
+        .filter(date => !isNaN(date.getTime()));
+
+      const groupStartDate = startDates.length > 0 ?
+        new Date(Math.min(...startDates.map(d => d.getTime()))) : new Date();
+
+      const groupEndDate = endDates.length > 0 ?
+        new Date(Math.max(...endDates.map(d => d.getTime()))) : new Date();
+
+      // Calculate progress
+      const completedTasks = tasks.filter((task: any) =>
+        task.status === 'completed' || task.accepted
+      ).length;
+      const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
+      // Determine schedule status
+      const today = new Date();
+      const isOverdue = tasks.some((task: any) => {
+        const taskEnd = new Date(task.endDate || task.end);
+        return taskEnd < today && task.status !== 'completed' && !task.accepted;
+      });
+
+      const scheduleStatus = isOverdue ? 'behind' :
+        (progress === 100 ? 'ahead' : 'on-track');
+
+      return {
+        title: group.title,
+        subtasks: tasks.map((task: any) => ({
+          id: task.id || Math.random().toString(),
+          name: task.task,
+          task: task.task,
+          start: new Date(task.startDate || task.start),
+          end: new Date(task.endDate || task.end),
+          startDate: task.startDate,
+          endDate: task.endDate,
+          days: task.days,
+          progress: task.accepted ? 100 : (task.status === 'completed' ? 100 : 0),
+          status: task.status || 'pending',
+          isCritical: this.isTaskCritical(task),
+          cost: task.cost,
+          deleted: task.deleted,
+          accepted: task.accepted
+        })),
+        startDate: groupStartDate,
+        endDate: groupEndDate,
+        progress,
+        scheduleStatus
+      };
+    });
+  }
+
   get timelineTaskData(): TimelineTask[] {
     if (!this.taskData) return [];
 
@@ -170,10 +245,12 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   private isTaskCritical(task: any): boolean {
-    // Define which tasks are on critical path
-    const criticalTasks = ['Foundation', 'Roof Structure'];
-    return criticalTasks.includes(task.name);
+    // Define logic for critical tasks - you can customize this
+    const criticalKeywords = ['foundation', 'structural', 'inspection', 'permit'];
+    const taskName = (task.task || task.name || '').toLowerCase();
+    return criticalKeywords.some(keyword => taskName.includes(keyword));
   }
+
 
   // Add event handlers
   handleTaskClick(task: TimelineTask) {
@@ -193,6 +270,55 @@ export class JobsComponent implements OnInit, OnDestroy {
       // Trigger change detection
       this.taskData = [...this.taskData];
     }
+  }
+
+  handleGroupClick(group: TimelineGroup) {
+    console.log('Group clicked:', group);
+    // The modal will be handled by the timeline component itself
+  }
+
+  handleGroupMove(event: {groupId: string, newStartDate: Date, newEndDate: Date}) {
+    console.log('Group moved:', event);
+
+    // Find the subtask group and update all tasks
+    const subtaskGroups = this.store.getState().subtaskGroups || [];
+    const groupIndex = subtaskGroups.findIndex((g: any) => g.title === event.groupId);
+
+    if (groupIndex !== -1) {
+      const group = subtaskGroups[groupIndex];
+      const oldStartDate = new Date(Math.min(...group.subtasks.map((t: any) =>
+        new Date(t.startDate || t.start).getTime()
+      )));
+
+      const daysDelta = differenceInCalendarDays(event.newStartDate, oldStartDate);
+
+      // Update all subtasks in the group
+      group.subtasks.forEach((task: any) => {
+        const taskStart = new Date(task.startDate || task.start);
+        const taskEnd = new Date(task.endDate || task.end);
+
+        taskStart.setDate(taskStart.getDate() + daysDelta);
+        taskEnd.setDate(taskEnd.getDate() + daysDelta);
+
+        task.startDate = taskStart.toISOString().split('T')[0];
+        task.endDate = taskEnd.toISOString().split('T')[0];
+      });
+
+      // Update the store
+      this.store.setState({
+        subtaskGroups: [...subtaskGroups]
+      });
+
+      // Show confirmation message
+      this.alertMessage = `${event.groupId} has been moved to start on ${format(event.newStartDate, 'MMM d, yyyy')}`;
+      this.showAlert = true;
+    }
+  }
+
+  handleEditGroup(group: TimelineGroup) {
+    console.log('Edit group:', group);
+    // Navigate to edit view or open edit modal
+    // You can implement this based on your existing edit functionality
   }
 
   ngOnInit() {
@@ -685,7 +811,7 @@ export class JobsComponent implements OnInit, OnDestroy {
           this.bomError = status.message;
           this.IsAIProcessed = false;
           this.isBomLoading = false;
-          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100h', maxWidth: '150vw' });
+          this.dialog.open(this.billOfMaterialsDialog, { width: '20000px', maxHeight: '100vh', maxWidth: '150vw' });
         }
       },
       error: (error) => {
