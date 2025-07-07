@@ -65,9 +65,7 @@
         class="timeline-grid"
         [style.height.px]="timelineHeight"
         (scroll)="onGridScroll()"
-        (mousemove)="handleDragOver($event)"
-        (mouseup)="handleDragEnd($event)"
-        (mouseleave)="handleDragEnd($event)">
+        >
 
         <!-- Grid Background -->
         <div class="grid-background">
@@ -93,8 +91,7 @@
           [style]="getGroupStyle(group, groupIndex)"
           [attr.data-group]="group.title"
           [title]="getGroupTooltip(group)"
-          (click)="openGroupModal(group)"
-          (mousedown)="handleDragStart($event, group.title)">
+          (mousedown)="handleDragStart($event, group)">
 
           <div class="task-content">
             <div class="task-name">{{group.title}}</div>

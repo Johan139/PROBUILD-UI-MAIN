@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ViewChild, ElementRef, OnDestroy, TemplateRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ViewChild, ElementRef, OnDestroy, TemplateRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { format, addDays, differenceInCalendarDays } from 'date-fns';
@@ -39,7 +39,7 @@ export interface TimelineGroup {
   templateUrl: './timeline.component.html',
   styleUrls: ['./timeline.component.scss']
 })
-export class TimelineComponent implements OnInit, OnDestroy {
+export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   @Input() taskGroups: TimelineGroup[] = [];
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
   @Output() onGroupMove = new EventEmitter<{groupId: string, newStartDate: Date, newEndDate: Date}>();
@@ -51,12 +51,14 @@ export class TimelineComponent implements OnInit, OnDestroy {
 
   viewStartDate: Date = new Date();
   draggingGroup: string | null = null;
-  dragStartX: number = 0;
   dragStartDate: Date | null = null;
+  isDragging: boolean = false;
+  dragStartPos: { x: number, y: number } | null = null;
   weeklyDates: { start: Date; days: Date[] }[] = [];
   timelineHeight: number = 400;
   selectedGroup: TimelineGroup | null = null;
   modalRef: MatDialogRef<any> | null = null;
+  private ghostElement: HTMLElement | null = null;
 
   private weeksToShow: number = 12;
   private mouseMoveListener?: (e: MouseEvent) => void;
@@ -78,46 +80,74 @@ export class TimelineComponent implements OnInit, OnDestroy {
     }
   }
 
-  private initializeViewStartDate() {
-    if (!this.taskGroups || this.taskGroups.length === 0) {
-      this.viewStartDate = new Date();
-      this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-      return;
-    }
+   ngOnChanges(changes: SimpleChanges) {
+     if (changes['taskGroups']) {
+       console.log('[Timeline] ngOnChanges: taskGroups received', changes['taskGroups'].currentValue);
+       this.initializeViewStartDate();
+       this.generateWeeklyDates();
+       this.calculateTimelineHeight();
+     }
+   }
 
-    let allTimestamps: number[] = this.taskGroups
-      .flatMap(g => g.subtasks)
-      .map(t => {
-        if (t.start) return t.start.getTime();
-        if (t.startDate) {
-          const d = new Date(t.startDate);
-          return isNaN(d.getTime()) ? undefined : d.getTime();
-        }
-        return undefined;
-      })
-      .filter((t): t is number => t !== undefined);
+   private initializeViewStartDate() {
+     console.log('[Timeline] initializeViewStartDate: Called');
+     if (!this.taskGroups || this.taskGroups.length === 0) {
+       this.viewStartDate = new Date();
+       this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
+       console.log('[Timeline] initializeViewStartDate: No task groups, defaulting to start of current week:', this.viewStartDate);
+       return;
+     }
 
-    if (allTimestamps.length === 0) {
-      // Fallback to group start dates
-      allTimestamps = this.taskGroups
-        .map(g => g.startDate?.getTime())
-        .filter((t): t is number => t !== undefined && !isNaN(t));
-    }
+     console.log('[Timeline] initializeViewStartDate: Processing taskGroups:', this.taskGroups);
 
-    if (allTimestamps.length === 0) {
-      this.viewStartDate = new Date();
-      this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-      return;
-    }
+     let allTimestamps: number[] = this.taskGroups
+       .flatMap(g => g.subtasks)
+       .map(t => {
+         if (t.start) {
+           console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has start date (Date object):`, t.start);
+           return t.start.getTime();
+         }
+         if (t.startDate) {
+           const d = new Date(t.startDate);
+           console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has startDate (string): '${t.startDate}'. Parsed as:`, d);
+           return isNaN(d.getTime()) ? undefined : d.getTime();
+         }
+         console.log(`[Timeline] initializeViewStartDate: Task '${t.name}' has no valid start date property.`);
+         return undefined;
+       })
+       .filter((t): t is number => t !== undefined);
 
-    const earliestTimestamp = Math.min(...allTimestamps);
-    const earliestDate = new Date(earliestTimestamp);
+     console.log('[Timeline] initializeViewStartDate: All subtask timestamps:', allTimestamps);
 
-    // Set view start date to beginning of the week of the earliest task
-    const newStartDate = new Date(earliestDate);
-    newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
-    this.viewStartDate = newStartDate;
-  }
+     if (allTimestamps.length === 0) {
+       console.log('[Timeline] initializeViewStartDate: No valid subtask start dates found. Falling back to group start dates.');
+       // Fallback to group start dates
+       allTimestamps = this.taskGroups
+         .map(g => {
+           console.log(`[Timeline] initializeViewStartDate: Group '${g.title}' has startDate:`, g.startDate);
+           return g.startDate?.getTime();
+         })
+         .filter((t): t is number => t !== undefined && !isNaN(t));
+       console.log('[Timeline] initializeViewStartDate: All group timestamps:', allTimestamps);
+     }
+
+     if (allTimestamps.length === 0) {
+       this.viewStartDate = new Date();
+       this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
+       console.log('[Timeline] initializeViewStartDate: No valid timestamps found at all. Defaulting to start of current week:', this.viewStartDate);
+       return;
+     }
+
+     const earliestTimestamp = Math.min(...allTimestamps);
+     const earliestDate = new Date(earliestTimestamp);
+     console.log('[Timeline] initializeViewStartDate: Earliest timestamp:', earliestTimestamp, 'Earliest date:', earliestDate);
+
+     // Set view start date to beginning of the week of the earliest task
+     const newStartDate = new Date(earliestDate);
+     newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
+     this.viewStartDate = newStartDate;
+     console.log('[Timeline] initializeViewStartDate: Final calculated viewStartDate:', this.viewStartDate);
+   }
 
   private calculateTimelineHeight() {
     this.timelineHeight = Math.max(200, this.taskGroups.length * 60 + 40);
@@ -197,70 +227,121 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.closeGroupModal();
   }
 
-  handleDragStart(e: MouseEvent, groupTitle: string) {
-    e.preventDefault();
-    e.stopPropagation();
-    this.draggingGroup = groupTitle;
-    this.dragStartX = e.clientX;
+  handleDragStart(e: MouseEvent, group: TimelineGroup) {
+    // Prevent drag for right-click
+    if (e.button === 2) {
+      return;
+    }
 
-    const group = this.taskGroups.find(g => g.title === groupTitle);
+    this.dragStartPos = { x: e.clientX, y: e.clientY };
+    this.draggingGroup = group.title;
+
     if (group && group.startDate) {
       this.dragStartDate = new Date(group.startDate);
     }
+
+    // Don't create ghost element immediately, wait for drag threshold
   }
 
   handleDragOver(e: MouseEvent) {
-    e.preventDefault();
-    if (!this.draggingGroup || !this.dragStartDate || !this.timelineRef?.nativeElement) return;
+    if (!this.dragStartPos || !this.draggingGroup) {
+      return;
+    }
 
-    // Visual feedback during drag could be added here
-    const dragDelta = e.clientX - this.dragStartX;
-    const groupEl = document.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
-    if (groupEl) {
-      groupEl.style.transform = `translateX(${dragDelta}px)`;
+    const dx = e.clientX - this.dragStartPos.x;
+    const dy = e.clientY - this.dragStartPos.y;
+
+    if (!this.isDragging && Math.sqrt(dx * dx + dy * dy) > 5) {
+      this.isDragging = true;
+      this.createGhostElement();
+    }
+
+    if (this.isDragging) {
+      e.preventDefault();
+      this.updateGhostPosition(e.clientX);
     }
   }
 
   handleDragEnd(e: MouseEvent) {
-    if (!this.draggingGroup || !this.dragStartDate || !this.timelineRef?.nativeElement) {
-      this.resetDrag();
-      return;
-    }
-
-    const rect = this.timelineRef.nativeElement.getBoundingClientRect();
-    const timelineWidth = rect.width;
-    const totalDays = this.weeksToShow * 7;
-    const dayWidth = timelineWidth / totalDays;
-    const dragDelta = e.clientX - this.dragStartX;
-    const daysDelta = Math.round(dragDelta / dayWidth);
-
     const group = this.taskGroups.find(g => g.title === this.draggingGroup);
-    if (group && group.startDate && group.endDate && daysDelta !== 0) {
-      const groupDuration = differenceInCalendarDays(group.endDate, group.startDate);
 
-      const newStartDate = addDays(this.dragStartDate, daysDelta);
-      const newEndDate = addDays(newStartDate, groupDuration);
+    if (this.isDragging) {
+      if (!this.draggingGroup || !this.dragStartDate || !this.timelineRef?.nativeElement || !this.dragStartPos) {
+        this.resetDrag();
+        return;
+      }
 
-      this.onGroupMove.emit({
-        groupId: group.title,
-        newStartDate,
-        newEndDate
-      });
+      const rect = this.timelineRef.nativeElement.getBoundingClientRect();
+      const timelineWidth = rect.width;
+      const totalDays = this.weeksToShow * 7;
+      const dayWidth = timelineWidth / totalDays;
+      const dragDelta = e.clientX - this.dragStartPos.x;
+      const daysDelta = Math.round(dragDelta / dayWidth);
+
+      if (group && group.startDate && group.endDate && daysDelta !== 0) {
+        const groupDuration = differenceInCalendarDays(group.endDate, group.startDate);
+
+        const newStartDate = addDays(this.dragStartDate, daysDelta);
+        const newEndDate = addDays(newStartDate, groupDuration);
+
+        this.onGroupMove.emit({
+          groupId: group.title,
+          newStartDate,
+          newEndDate
+        });
+      }
+    } else if (group) {
+      // This is a click, not a drag
+      this.openGroupModal(group);
     }
 
     this.resetDrag();
   }
 
+  private createGhostElement() {
+    if (!this.draggingGroup || !this.timelineRef) return;
+
+    const originalEl = this.timelineRef.nativeElement.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
+    if (!originalEl) return;
+
+    this.ghostElement = originalEl.cloneNode(true) as HTMLElement;
+    this.ghostElement.classList.add('group-ghost');
+
+    const rect = originalEl.getBoundingClientRect();
+    this.ghostElement.style.width = `${rect.width}px`;
+    this.ghostElement.style.height = `${rect.height}px`;
+    this.ghostElement.style.top = `${rect.top}px`;
+    this.ghostElement.style.left = `${rect.left}px`;
+
+    document.body.appendChild(this.ghostElement);
+    originalEl.classList.add('dragging-source');
+  }
+
+  private updateGhostPosition(currentX: number) {
+    if (!this.ghostElement || !this.dragStartPos) return;
+
+    const dragDelta = currentX - this.dragStartPos.x;
+    this.ghostElement.style.transform = `translateX(${dragDelta}px)`;
+  }
+
   private resetDrag() {
+    if (this.ghostElement) {
+      this.ghostElement.remove();
+      this.ghostElement = null;
+    }
+
     if (this.draggingGroup) {
-      const groupEl = document.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
-      if (groupEl) {
-        groupEl.style.transform = '';
+      const originalEl = document.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
+      if (originalEl) {
+        originalEl.classList.remove('dragging-source');
+        originalEl.style.transform = '';
       }
     }
 
     this.draggingGroup = null;
     this.dragStartDate = null;
+    this.isDragging = false;
+    this.dragStartPos = null;
   }
 
   getGroupStyle(group: TimelineGroup, index: number): any {
