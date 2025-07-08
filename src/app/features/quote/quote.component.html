@@ -215,30 +215,34 @@
               </div>
             </div>
           </div>
-
+          
           <!-- Action Buttons -->
           <div class="action-buttons mt-4 d-flex justify-content-between">
-            <!-- Approve / Reject only shown if status is 'Submitted' -->
-            <div *ngIf="quoteForm.get('status')?.value === 'Submitted'">
+
+            <!-- Approve / Reject buttons shown only if status is 'Submitted' -->
+            <div *ngIf="!isOwnQuote && quoteForm.get('status')?.value === 'Submitted'">
               <button class="btn btn-success me-2" type="button" (click)="approveQuote()" [disabled]="!jobId">Approve</button>
               <button class="btn btn-danger" type="button" (click)="rejectQuote()" [disabled]="!jobId">Reject</button>
             </div>
-          
-            <!-- Normal actions if not read-only or not in Submitted state -->
-            <div *ngIf="quoteForm.get('status')?.value !== 'Submitted'">
+
+            <!-- Show Save as New only if Rejected -->
+            <div *ngIf="quoteForm.get('status')?.value === 'Rejected'">
+              <button class="btn btn-secondary me-2" type="button" (click)="saveToDatabase()" [disabled]="isSaving">Save as New</button>
+            </div>
+
+            <!-- Show full controls only if not Submitted, Approved, or Rejected -->
+            <div *ngIf="!['Submitted', 'Approved', 'Rejected'].includes(quoteForm.get('status')?.value)">
               <button class="btn btn-primary me-2" type="button" (click)="saveToDatabase()" [disabled]="isSaving || readOnly">
                 Save / Update Quote
               </button>
-              <!-- <button *ngIf="quoteId" class="btn btn-primary me-2" type="button" (click)="saveToDatabase()" [disabled]="isSaving || readOnly">
-                Save as New
-              </button> -->
-              <button class="btn btn-warning me-2" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
+              <button class="btn btn-success me-2" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
                 Submit Quote
               </button>
               <button class="btn btn-success me-2" type="button" (click)="onSubmit()" [disabled]="isSaving || readOnly">
                 Download Quote
               </button>
             </div>
+
           </div>
 
         </form>
