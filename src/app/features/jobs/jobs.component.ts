@@ -385,7 +385,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.projectDetails = params;
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
-    console.log('here1')
     this.jobsService.getJobSubtasks(this.projectDetails.jobId).subscribe({
       next: (data) => {
         if (!data || data.length === 0) {
@@ -1556,21 +1555,22 @@ if (unaccepted.length > 0) {
     if (place?.geometry?.location) {
       const payload = {
         address: place.formatted_address || this.addressControl.value,
-        googlePlaceId: place.place_id,
-        latitude: place.geometry.location.lat(),
-        longitude: place.geometry.location.lng()
       };
 
-      this.httpClient.put(`${BASE_URL}/Jobs/${this.projectDetails.jobId}/address`, payload)
+      this.httpClient.patch(`${BASE_URL}/Jobs/${this.projectDetails.jobId}/address`, payload)
         .subscribe({
           next: () => {
-            this.projectDetails.address = payload.address;
-            this.projectDetails.latitude = payload.latitude;
-            this.projectDetails.longitude = payload.longitude;
-            this.isEditingAddress = false;
             this.isLoading = false;
+            this.isEditingAddress = false;
+            this.projectDetails.address = payload.address;
+
+            if (place.geometry?.location) {
+              this.projectDetails.latitude = place.geometry.location.lat();
+              this.projectDetails.longitude = place.geometry.location.lng();
+              this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
+            }
+
             this.snackBar.open('Address updated successfully!', 'Close', { duration: 3000 });
-            this.getWeatherCondition(payload.latitude, payload.longitude);
           },
           error: (err) => {
             console.error('Failed to update address', err);
