@@ -14,7 +14,30 @@
           <!-- Project Details Section -->
           <div class="job-details">
             <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
-            <p><strong>Address:</strong> {{projectDetails.address}}</p>
+            <div class="address-container">
+              <p><strong>Address:</strong></p>
+              <div *ngIf="!isEditingAddress" class="address-display">
+                <span>{{projectDetails.address}}</span>
+                <button mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+              <div *ngIf="isEditingAddress" class="address-edit">
+                <mat-form-field appearance="fill">
+                  <mat-label>Address</mat-label>
+                  <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto" placeholder="Enter an address" />
+                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                    <mat-option *ngFor="let suggestion of addressSuggestions" [value]="suggestion">
+                      {{ suggestion.description }}
+                    </mat-option>
+                  </mat-autocomplete>
+                </mat-form-field>
+                <div class="edit-buttons">
+                  <button mat-raised-button color="primary" (click)="saveAddress()" [disabled]="isLoading">Save</button>
+                  <button mat-button (click)="toggleAddressEdit(false)">Cancel</button>
+                </div>
+              </div>
+            </div>
             <div *ngIf="forecast.length" class="weather-scroll-container">
               <div *ngFor="let day of forecast" class="forecast-card">
                 <div class="date">{{ day.date }}</div>

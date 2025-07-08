@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { SubTasks } from './../../models/sub-tasks';
 import { ActivatedRoute, Router } from "@angular/router";
 import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
@@ -11,13 +11,14 @@ import { Store } from '../../store/store.service';
 import { WeatherService, ForecastDay } from '../../services/weather.service';
 import { JobsService } from '../../services/jobs.service';
 import { LoaderComponent } from '../../loader/loader.component';
-import { FormGroup, FormsModule } from '@angular/forms';
+import { FormGroup, FormsModule, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { interval, Subscription, timeout } from 'rxjs';
+import { interval, Subscription, timeout, debounceTime, switchMap, of, Observable } from 'rxjs';
 import { DeleteDialogComponent } from './job-edit/delete-dialog.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -45,6 +46,7 @@ const BASE_URL = environment.BACKEND_URL;
   standalone: true,
   imports: [
     FormsModule,
+    ReactiveFormsModule,
     NgIf,
     NgForOf,
     MatButton,
@@ -65,20 +67,27 @@ const BASE_URL = environment.BACKEND_URL;
     MatInputModule,
     FileSizePipe,
     MatCheckboxModule,
-    TimelineComponent
+    TimelineComponent,
+    MatAutocompleteModule
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss'
 })
-export class JobsComponent implements OnInit, OnDestroy {
+export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
   @ViewChild('noteDialog') noteDialog!: TemplateRef<any>;
+  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  addressSuggestions: { description: string; place_id: string }[] = [];
 
   taskData: any;
   subtasks: SubTasks = new SubTasks();
   calculatedSubtasks: { task: string; days: number; startDate: string; endDate: string }[] = [];
   projectDetails: any;
+  isEditingAddress: boolean = false;
+  addressControl = new FormControl<string>('');
+  selectedPlace: google.maps.places.PlaceResult | null = null;
+  private isGoogleMapsLoaded: boolean = false;
   startDateDisplay: any;
   initialStartDate: any;
   subTasksObtained: any;
@@ -132,7 +141,8 @@ export class JobsComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private location: Location,
     private httpClient: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private cdr: ChangeDetectorRef
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -363,6 +373,14 @@ export class JobsComponent implements OnInit, OnDestroy {
       .catch(err => console.error('SignalR Connection Error:', err));
 
       console.log('here')
+    if (this.isBrowser) {
+      this.loadGoogleMapsScript().then(() => {
+        this.isGoogleMapsLoaded = true;
+      }).catch(err => {
+        console.error('Error loading Google Maps API:', err);
+        this.isGoogleMapsLoaded = false;
+      });
+    }
     this.route.queryParams.subscribe(params => {
       this.projectDetails = params;
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
@@ -916,7 +934,7 @@ export class JobsComponent implements OnInit, OnDestroy {
       }
     }
 
-    // --- Cost Breakdown Extraction Logic (preserved) ---
+    // --- Cost Breakdown Extraction Logic ---
     const allLines = fullResponse.split('\n');
     let costBreakdownTitleIndex = -1;
 
@@ -1495,6 +1513,145 @@ if (unaccepted.length > 0) {
         });
         this.store.setState({ subtaskGroups: updatedState });
       }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    if (this.isBrowser) {
+        this.loadGoogleMapsScript().then(() => {
+            this.isGoogleMapsLoaded = true;
+            this.addressControl.valueChanges.pipe(
+                debounceTime(300),
+                switchMap(value => this.getPlacePredictions(value))
+            ).subscribe(predictions => {
+                this.addressSuggestions = predictions;
+            });
+        }).catch(err => console.error('Error loading Google Maps API:', err));
+    }
+  }
+
+  toggleAddressEdit(isEditing: boolean): void {
+    this.isEditingAddress = isEditing;
+    if (isEditing) {
+      this.addressControl.setValue(this.projectDetails.address, { emitEvent: true });
+      setTimeout(() => {
+        if (this.addressInput?.nativeElement) {
+          this.addressInput.nativeElement.focus();
+        }
+      }, 0);
+    } else {
+      this.selectedPlace = null;
+      this.addressSuggestions = [];
+    }
+  }
+
+  saveAddress(): void {
+    if (!this.selectedPlace || !this.projectDetails.jobId) {
+      this.snackBar.open('Please select a valid address from the suggestions.', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.isLoading = true;
+    const place = this.selectedPlace;
+    if (place?.geometry?.location) {
+      const payload = {
+        address: place.formatted_address || this.addressControl.value,
+        googlePlaceId: place.place_id,
+        latitude: place.geometry.location.lat(),
+        longitude: place.geometry.location.lng()
+      };
+
+      this.httpClient.put(`${BASE_URL}/Jobs/${this.projectDetails.jobId}/address`, payload)
+        .subscribe({
+          next: () => {
+            this.projectDetails.address = payload.address;
+            this.projectDetails.latitude = payload.latitude;
+            this.projectDetails.longitude = payload.longitude;
+            this.isEditingAddress = false;
+            this.isLoading = false;
+            this.snackBar.open('Address updated successfully!', 'Close', { duration: 3000 });
+            this.getWeatherCondition(payload.latitude, payload.longitude);
+          },
+          error: (err) => {
+            console.error('Failed to update address', err);
+            this.isLoading = false;
+            this.snackBar.open('Failed to update address.', 'Close', { duration: 3000 });
+          }
+        });
+    } else {
+      this.isLoading = false;
+      this.snackBar.open('Could not retrieve address details. Please try again.', 'Close', { duration: 3000 });
+    }
+  }
+
+  loadGoogleMapsScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (typeof google !== 'undefined' && google.maps) {
+          resolve();
+        } else {
+          reject(new Error('Google Maps API script loaded but google object is not defined'));
+        }
+      };
+      script.onerror = (error) => {
+        console.error('Google Maps script failed to load:', error);
+        reject(error);
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  private getPlacePredictions(input: string | null): Observable<{ description: string; place_id: string }[]> {
+    if (!input || !this.isGoogleMapsLoaded) {
+        return of([]);
+    }
+    const autocompleteService = new google.maps.places.AutocompleteService();
+    return new Observable(observer => {
+        autocompleteService.getPlacePredictions({ input, componentRestrictions: { country: 'us' }, types: ['address'] }, (predictions, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+                observer.next(predictions.map(p => ({ description: p.description, place_id: p.place_id })));
+            } else {
+                observer.next([]);
+            }
+            observer.complete();
+        });
+    });
+  }
+
+  onAddressSelected(event: MatAutocompleteSelectedEvent): void {
+    const selectedOption = event.option.value;
+    if (!selectedOption || !selectedOption.place_id) {
+        this.selectedPlace = null;
+        return;
+    }
+
+    this.addressControl.setValue(selectedOption.description, { emitEvent: false });
+
+    if (!this.addressInput?.nativeElement) {
+        return;
+    }
+    const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
+
+    placesService.getDetails({
+        placeId: selectedOption.place_id,
+        fields: ['address_components', 'formatted_address', 'geometry', 'name', 'place_id']
+    }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            this.selectedPlace = place;
+            if (place.formatted_address) {
+                this.addressControl.setValue(place.formatted_address, { emitEvent: false });
+            }
+        } else {
+            this.selectedPlace = null;
+        }
     });
   }
 }
