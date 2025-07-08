@@ -1674,7 +1674,7 @@ if (unaccepted.length > 0) {
                 latitude: place.geometry.location.lat(),
                 longitude: place.geometry.location.lng(),
                 formatted_address: place.formatted_address,
-                place_id: place.place_id
+                google_place_id: place.place_id
               };
             }
 
