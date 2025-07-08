@@ -93,12 +93,45 @@
         </div>
       </mat-card-content>
     </mat-card>
-
     <mat-card class="project-card-bids mt-3">
       <mat-card-header>
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
-      <mat-card-content>No current active bids</mat-card-content>
+
+      <mat-card-content>
+        <div *ngIf="activeBidsDataSource" class="job-list-container">
+          <div class="job-list-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Quote #</th>
+                  <th>Created By</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
+                  <td>{{ quote.number || 'N/A' }}</td>
+                  <td>{{ quote.createdBy || 'Unknown' }}</td>
+                  <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
+                  <td>${{ quote.total.toFixed(2) }}</td>
+                  <td>
+                    <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
+          No active bids to display.
+        </div>
+      </mat-card-content>
+
     </mat-card>
   </div>
   <div class="col-md-8 d-flex justify-content-center">

@@ -1,14 +1,14 @@
 import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit, TemplateRef } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatFormField } from '@angular/material/form-field';
+import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCardModule } from '@angular/material/card';
-import { MatDivider } from '@angular/material/divider';
+import { MatDividerModule } from '@angular/material/divider';
 import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
-import { MatInput } from '@angular/material/input';
-import { MatButton } from '@angular/material/button';
+import { MatInput, MatInputModule } from '@angular/material/input';
+import { MatButton, MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -27,11 +27,17 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { QuoteService } from '../../quote/quote.service';
+import { MatCellDef, MatHeaderCellDef, MatRowDef, MatHeaderRowDef, MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/quote-documents-dialog.component';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+
+import { MatIconModule } from '@angular/material/icon';
+
 import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
+
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -40,25 +46,39 @@ const Google_API = environment.Google_API;
   standalone: true,
   imports: [
     CommonModule,
+
+    ReactiveFormsModule,  
+
     MatFormField,
     MatSelectModule,
     MatDatepickerModule,
     ReactiveFormsModule,
     MatCardModule,
     MatDivider,
-    NgIf,
     FormsModule,
+    NgIf,
     NgFor,
-    MatInput,
-    MatButton,
+    
+    // Angular Material Modules
+    MatFormFieldModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatCardModule,
+    MatDividerModule,
+    MatInputModule,
+    MatButtonModule,
     MatProgressBarModule,
     MatTooltipModule,
     MatDialogModule,
-    LoaderComponent,
     MatAutocompleteModule,
+    MatTableModule,
     MatExpansionModule,
+    MatIconModule,
+    MatCheckboxModule,
+
+    // Custom Components and Pipes
+    LoaderComponent,
     FileSizePipe,
-    MatCheckboxModule
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
@@ -93,6 +113,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   addressControl = new FormControl<string>('');
   selectedPlace: { description: string; place_id: string } | null = null;
   private isGoogleMapsLoaded: boolean = false; // Track if Google Maps script is loaded
+  activeBidsDataSource = new MatTableDataSource<any>();
+  activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -101,7 +123,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private datePipe: DatePipe,
     @Inject(PLATFORM_ID) private platformId: Object,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private quoteService: QuoteService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -215,6 +238,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('User ID is not available in local storage.');
       }
     }
+
+    this.loadActiveBids();
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -368,6 +393,19 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
+  loadActiveBids(): void {
+    const userId: string | null = localStorage.getItem('userId');
+    this.quoteService.getQuotesByUser(userId ?? '').subscribe({
+      next: (quotes) => {
+        this.activeBidsDataSource.data = quotes;
+      },
+      error: (err) => {
+        console.error('Failed to load active bids', err);
+        this.activeBidsDataSource.data = [];
+      }
+    });
+  }
+
   displayFn(option: any): string {
     return option && option.description ? option.description : '';
   }
@@ -376,6 +414,13 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     const startIndex = (this.currentPage - 1) * this.pageSize;
     const endIndex = this.currentPage * this.pageSize;
     this.jobList = this.jobListFull.slice(startIndex, endIndex);
+  }
+
+  openQuote(quoteId: string | null): void {
+    console.log('Attempting to open quote with ID:', quoteId);
+    this.router.navigate(['/quote'], {
+      queryParams: { quoteId: quoteId }
+    });
   }
 
   navigatePage(direction: 'prev' | 'next'): void {

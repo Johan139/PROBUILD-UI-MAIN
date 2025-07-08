@@ -46,4 +46,8 @@ export interface Quote {
   extraCosts: ExtraCost[];
   createdBy: string;
   createdID: string;
+  jobId?: string;
+  version?: number;
+  status?: string;
+  logoId?: string;
 }
