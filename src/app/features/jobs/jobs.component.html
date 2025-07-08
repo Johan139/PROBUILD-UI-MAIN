@@ -15,9 +15,8 @@
           <div class="job-details">
             <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
             <div class="address-container">
-              <p><strong>Address:</strong></p>
               <div *ngIf="!isEditingAddress" class="address-display">
-                <span>{{projectDetails.address}}</span>
+                <span><strong>Address:</strong> <span *ngIf="projectDetails.jobAddress">{{projectDetails.jobAddress.formattedAddress}}</span></span>
                 <button mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
                   <mat-icon>edit</mat-icon>
                 </button>

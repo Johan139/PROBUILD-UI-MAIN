@@ -88,6 +88,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   addressControl = new FormControl<string>('');
   selectedPlace: google.maps.places.PlaceResult | null = null;
   private isGoogleMapsLoaded: boolean = false;
+  private selectedAddress: any;
   startDateDisplay: any;
   initialStartDate: any;
   subTasksObtained: any;
@@ -350,6 +351,24 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     // Navigate to edit view or open edit modal
   }
 
+  private getJobDetails(jobId: string): void {
+    this.jobsService.getSpecificJob(jobId).subscribe({
+      next: (jobDetails) => {
+        this.projectDetails = jobDetails;
+        if (jobDetails.jobAddress) {
+          this.projectDetails.address = jobDetails.jobAddress.formatted_address;
+          if (jobDetails.jobAddress.latitude && jobDetails.jobAddress.longitude) {
+            this.getWeatherCondition(jobDetails.jobAddress.latitude, jobDetails.jobAddress.longitude);
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load job details', err);
+        this.snackBar.open('Failed to refresh job details.', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
   ngOnInit() {
     this.sessionId = uuidv4();
     this.hubConnection = new HubConnectionBuilder()
@@ -383,8 +402,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     this.route.queryParams.subscribe(params => {
       this.projectDetails = params;
+      console.log('ngOnInit: Got jobId from route:', this.projectDetails.jobId);
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
+    this.getJobDetails(this.projectDetails.jobId);
     this.jobsService.getJobSubtasks(this.projectDetails.jobId).subscribe({
       next: (data) => {
         if (!data || data.length === 0) {
@@ -441,7 +462,11 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         subtaskGroups: [{ title: 'Default Group', subtasks: [] }]
       });
     }
-    this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
+    if (this.projectDetails.jobAddress && this.projectDetails.jobAddress.latitude && this.projectDetails.jobAddress.longitude) {
+      this.getWeatherCondition(this.projectDetails.jobAddress.latitude, this.projectDetails.jobAddress.longitude);
+    } else if (this.projectDetails.latitude && this.projectDetails.longitude) {
+       this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
+    }
     this.createTables();
     if (this.calculatedTables && state.subtaskGroups) {
       const updatedSubtaskGroups = this.calculatedTables.map((group) => {
@@ -1545,43 +1570,29 @@ if (unaccepted.length > 0) {
   }
 
   saveAddress(): void {
-    if (!this.selectedPlace || !this.projectDetails.jobId) {
+    if (!this.selectedAddress || !this.projectDetails.jobId) {
       this.snackBar.open('Please select a valid address from the suggestions.', 'Close', { duration: 3000 });
       return;
     }
 
     this.isLoading = true;
-    const place = this.selectedPlace;
-    if (place?.geometry?.location) {
-      const payload = {
-        address: place.formatted_address || this.addressControl.value,
-      };
+    console.log('Saving address:', this.selectedAddress);
+    const payload = this.selectedAddress;
 
-      this.httpClient.patch(`${BASE_URL}/Jobs/${this.projectDetails.jobId}/address`, payload)
-        .subscribe({
-          next: () => {
-            this.isLoading = false;
-            this.isEditingAddress = false;
-            this.projectDetails.address = payload.address;
-
-            if (place.geometry?.location) {
-              this.projectDetails.latitude = place.geometry.location.lat();
-              this.projectDetails.longitude = place.geometry.location.lng();
-              this.getWeatherCondition(this.projectDetails.latitude, this.projectDetails.longitude);
-            }
-
-            this.snackBar.open('Address updated successfully!', 'Close', { duration: 3000 });
-          },
-          error: (err) => {
-            console.error('Failed to update address', err);
-            this.isLoading = false;
-            this.snackBar.open('Failed to update address.', 'Close', { duration: 3000 });
-          }
-        });
-    } else {
-      this.isLoading = false;
-      this.snackBar.open('Could not retrieve address details. Please try again.', 'Close', { duration: 3000 });
-    }
+    this.httpClient.put(`${BASE_URL}/Jobs/${this.projectDetails.jobId}/address`, payload)
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.isEditingAddress = false;
+          this.getJobDetails(this.projectDetails.jobId);
+          this.snackBar.open('Address updated successfully!', 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+          console.error('Failed to update address', err);
+          this.isLoading = false;
+          this.snackBar.open('Failed to update address.', 'Close', { duration: 3000 });
+        }
+      });
   }
 
   loadGoogleMapsScript(): Promise<void> {
@@ -1646,11 +1657,33 @@ if (unaccepted.length > 0) {
     }, (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             this.selectedPlace = place;
+            // This is a helper function to extract address components
+            const getAddressComponent = (components: google.maps.GeocoderAddressComponent[], type: string) => {
+              const component = components.find(c => c.types.includes(type));
+              return component ? component.long_name : '';
+            };
+
+            if (place.address_components && place.geometry && place.geometry.location) {
+              this.selectedAddress = {
+                streetNumber: getAddressComponent(place.address_components, 'street_number'),
+                streetName: getAddressComponent(place.address_components, 'route'),
+                city: getAddressComponent(place.address_components, 'locality'),
+                state: getAddressComponent(place.address_components, 'administrative_area_level_1'),
+                zipCode: getAddressComponent(place.address_components, 'postalCode'),
+                country: getAddressComponent(place.address_components, 'country'),
+                latitude: place.geometry.location.lat(),
+                longitude: place.geometry.location.lng(),
+                formatted_address: place.formatted_address,
+                place_id: place.place_id
+              };
+            }
+
             if (place.formatted_address) {
-                this.addressControl.setValue(place.formatted_address, { emitEvent: false });
+                this.addressControl.setValue(event.option.value.description, { emitEvent: false });
             }
         } else {
             this.selectedPlace = null;
+            this.selectedAddress = null;
         }
     });
   }
