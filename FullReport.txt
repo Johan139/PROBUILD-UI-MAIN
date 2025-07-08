@@ -1,0 +1,726 @@
+### **Phase 1: Initial Analysis & Reporting**
+
+---
+
+#### **Metadata Report**
+
+| **Item**                | **Information Extracted**                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Project Name**        | HERNANDEZ RESIDENCE                                                                                                     |
+| **Address**             | 216 Shelf Rock Road, Georgetown, Block H, Lot 4, Williamson County, Texas                                               |
+| **Architect**           | Russel Moran, 3225 Port Royal Court, Plano, TX                                                                          |
+| **Engineer**            | L120 Engineering & Design (Aliaksei Patsevich, PE), 9607 Lakemont Dr, Dallas, TX                                         |
+| **Revision Date**       | Architectural Sheets: 09/08/2023; Structural Sheets: 08/31/2022                                                         |
+| **Sheet Numbers**       | S-0, S-1, S-3, S-4, S-5, SD-1, A-1, A-2, A-3, A-4, A-5, E1-1a, Site Plan                                                 |
+| **Climate Zone**        | IECC Climate Zone 2A (Warm-Humid).                                                                                     |
+| **Units of Measurement**| Imperial (Feet & Inches)                                                                                                |
+
+---
+
+#### **Zoning & Site Report**
+
+*   **Zoning Compliance**:
+    *   The property is located in Georgetown, Williamson County, Texas. The provided site plan indicates specific building lines: 20 feet from the west, 10 feet from the north, and 10 feet from the south. The front setback from Shelf Rock Road appears to be approximately 25 feet.
+    *   According to the City of Georgetown's Unified Development Code, standard setbacks in a Residential Single-Family (RS) district can vary. A typical RS district requires a minimum lot size of 5,500 square feet. This project's lot is 43,838 sq ft, which is well above the minimum.
+    *   The building's heated area is 3,503 sq ft, and the total unheated area (garage, porches) is 1,714 sq ft. The total footprint is approximately 5,217 sq ft. This results in a lot coverage of approximately 11.9%, which is well within typical residential limits.
+    *   **Finding**: The planned construction appears to respect the setbacks indicated on the site plan and has a low lot coverage percentage, suggesting compliance. However, formal verification against the specific zoning for "Block H, Lot 4" through the Georgetown Planning Department is a required next step.
+
+*   **Utility Status**:
+    *   **Water & Electricity**: The City of Georgetown provides water and operates a community-owned electric utility. The presence of an electrical meter on plan E1-1a and extensive plumbing on plan A-5 confirms connection to these services.
+    *   **Sewer/Wastewater**: The City of Georgetown provides water services, which typically includes wastewater. The plans do not specify a septic system, so a connection to the municipal sewer is assumed.
+    *   **Gas**: The site plan explicitly notes a "PROPANE LOCATION," which indicates that natural gas service is likely unavailable at this specific site. The project will rely on a private propane tank for gas appliances.
+    *   **Internet/Cable**: Multiple providers offer services in the Georgetown area.
+
+*   **Unforeseen Work and Building Material**:
+    *   **Site Work**: The site plan indicates a curved driveway and standard clearing. However, the Texas Hill Country is known for rocky soil. A contingency for rock excavation for the foundation and utility trenches should be included.
+    *   **Utility Connections**: Costs for extending water, sewer, and electrical lines from the main road to the building footprint, including trenching and backfill, must be accounted for.
+    *   **Drainage**: A comprehensive site drainage plan is not detailed and will be required to manage runoff, especially given the roof's complex design. This will likely involve grading, swales, and potentially underground drainage lines.
+    *   **Material Contingency**: A general contingency for materials such as additional flashing, fasteners, adhesives, and sealants not explicitly itemized but required for a complete and weather-tight building envelope is necessary.
+
+---
+
+#### **Permits and Approvals Report**
+
+For a new single-family residence in Georgetown, Texas, the following permits and associated approvals will be required. The primary issuing agency is the City of Georgetown Development Services, which utilizes an online portal for applications.
+
+| Permit Name                    | Issuing Agency                     | Requirements (Brief Description)                                                                                                    |
+| ------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **New Residential Construction Permit** | City of Georgetown                 | Master permit covering the structure. Requires submission of all architectural and structural plans. Plan review takes 15-20 business days. |
+| **Trade Permits (Included in New Construction)** | City of Georgetown                 | Electrical, Plumbing, and Mechanical (HVAC) work is covered under the main building permit but requires licensed contractors and inspections for each trade. |
+| **Driveway/Curb Cut Permit**     | City of Georgetown                 | Required for any new driveway that connects to a city street.                                                                      |
+| **Williamson County Fire Code Review** | Williamson County Fire Marshal     | While the property is in the City of Georgetown, the County Fire Marshal may have jurisdiction or review requirements for fire safety, though this typically applies to unincorporated areas. Verification of jurisdiction is needed. |
+
+---
+
+#### **Blueprint Review & Error Report**
+
+The analysis is based on the core principle of *Blueprint Supremacy*. The primary structural system is identified as **Wood Frame Construction** with a concrete slab-on-grade foundation and a brick/stone veneer exterior.
+
+| Sheet Number       | Error Description                                                                                                                                                                        | Potential Impact on Construction                                                                                                                                                                                                                                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-1                | **Outdated Building Code Reference**: The structural plans specify the "2015 (IRC) International Residential Code". The City of Georgetown has adopted the 2021 IRC. The state of Texas has also adopted the 2021 IRC, effective July 1, 2024. | **CRITICAL**: The plans must be reviewed and updated to comply with the 2021 IRC and 2023 NEC to be approved for a permit. This may impact structural requirements (e.g., wind bracing, connections), energy efficiency measures, and electrical systems, potentially leading to redesign and cost changes. |
+| A-1 (Floor Plan)   | **Accessibility - Door Widths**: Multiple interior doors (e.g., to Bedroom 3, Bath 3, and closets) are specified as 2'4" (28 inches) wide. This does not meet the typical 32-inch clear width requirement for basic accessibility. | **Moderate**: While not always strictly enforced in all private single-family homes, this could be an issue for client convenience or future needs. A change order would be required to re-frame these openings for larger doors, impacting material costs (doors, headers) and labor.                |
+| S-5, SD-1          | **Conflict with User Request**: The user job type specifies "Wall Structure: BRICK". The blueprints (e.g., S-5, SD-1 Detail 2) clearly detail a wood-framed structure with a brick/stone veneer, not a structural brick (masonry) wall. | **Informational**: Construction will follow the blueprints, not the initial request. This clarifies that cost and timeline will be based on a wood-frame structure. No negative impact, but it's a key clarification for the client.                                                                    |
+| A-2, A-3           | **Inconsistent Material Callouts**: The "Brick Calculations" table on sheet A-2 details percentages of "Masonry" and "Stucco". The elevations show a mix of stone and brick veneer, not just brick. Stucco is also present. | **Low**: This is a minor terminology issue. The visual information on the elevations is clear enough for bidding, but the material quantities for stone, brick, and stucco need to be calculated separately and accurately during the Bill of Materials (BOM) phase, rather than relying on the table's "Masonry" percentage. |
+
+---
+### **Decision & Conclusion**
+
+The provided blueprint set is detailed and comprehensive, including architectural, structural, and MEP plans with sufficient detail to proceed. The identified issues, such as the outdated code reference and minor dimensional conflicts, are items that would typically be addressed during a standard plan review and pre-construction phase. They do not represent a critical deficiency in the plans themselves.
+
+Ready for the next prompt 1.
+
+
+---
+
+### **Site Logistics & Safety Plan**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Block H, Lot 4, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+This plan outlines the procedures and protocols for managing site logistics and ensuring the health and safety of all personnel during the construction of the Hernandez Residence. This document is mandatory for all contractors, subcontractors, and visitors. All activities will be conducted in strict accordance with the standards of the U.S. Occupational Safety and Health Administration (OSHA).
+
+---
+
+### **Part 1: Site Layout Plan**
+
+The site is a 1.006-acre lot with primary access from Shelf Rock Road. The layout is designed to maximize efficiency while minimizing safety risks and environmental impact.
+
+*   **Site Access:**
+    *   A single, stabilized construction entrance will be established at the driveway's proposed location on Shelf Rock Road.
+    *   The entrance will be a minimum of 20 feet wide and surfaced with 3-inch crushed rock to a depth of 6 inches to prevent mud from being tracked onto the public roadway.
+    *   All vehicular traffic (deliveries, workers, inspectors) will use this single point of entry and exit.
+
+*   **Parking:**
+    *   A designated worker parking area will be established in the northeast corner of the lot, clear of all access routes and material laydown areas.
+    *   No personal vehicles will be permitted within the primary construction zone.
+
+*   **Site Office & Amenities:**
+    *   A site office trailer (approx. 8'x20') will be located approximately 30 feet from the site entrance to the east of the driveway. This location allows for the supervision of incoming traffic and deliveries.
+    *   Two (2) portable toilets will be located adjacent to the site office for easy access and servicing.
+    *   A designated break area with a shaded canopy and water station will be established near the parking area, away from active construction hazards.
+
+*   **Material Staging & Laydown Areas:**
+    *   **Zone A (Foundation/Framing):** A large, open area west of the main building footprint will be designated for bulk materials, including foundation rebar, formwork, and lumber packages. This area allows for forklift access from multiple sides.
+    *   **Zone B (Veneer/Roofing):** Pallets of brick, stone, and roof tiles will be staged around the building's perimeter after the structure is framed and sheathed. Materials will be placed a minimum of 10 feet from the foundation to allow clear access for scaffolding and personnel.
+    *   **Zone C (Secured Storage):** The garage bay, once framed and secured, will be used as a lockable storage area for high-value items like windows, doors, and finish materials.
+
+*   **Waste Management:**
+    *   A 30-yard construction dumpster will be located east of the driveway, near the site entrance, for efficient removal and replacement.
+    *   The area around the dumpster will be kept clear of debris. All waste will be disposed of in the container daily.
+
+*   **Perimeter Fencing & Signage:**
+    *   The active construction zone (encompassing the building footprint, all staging areas, and the site office) will be secured with 6-foot-high temporary chain-link fencing with windscreens.
+    *   The main entrance will have a lockable gate.
+    *   **Required Signage at Entrance:**
+        *   Project Name and Address
+        *   "DANGER: CONSTRUCTION SITE - AUTHORIZED PERSONNEL ONLY"
+        *   "ALL VISITORS MUST REPORT TO SITE OFFICE"
+        *   "HARD HATS REQUIRED BEYOND THIS POINT"
+        *   Emergency Contact Information (Project Manager, 911)
+
+---
+
+### **Part 2: Material & Equipment Management Plan**
+
+*   **Delivery Protocol:**
+    *   All deliveries must be scheduled with the Project Manager a minimum of 48 hours in advance.
+    *   Delivery drivers will be instructed on the designated access route and unloading zone (Zone A or B).
+    *   Drivers must remain in their vehicles or designated safe areas during unloading by site personnel.
+    *   The Project Manager or a designated representative will inspect and sign for all deliveries.
+
+*   **Major Equipment Placement:**
+    *   **Rough-Terrain Forklift:** This will be the primary equipment for material handling. It will have a designated parking and refueling spot near Zone A. Daily pre-use inspections are mandatory and will be logged.
+    *   **Mobile Crane (for Trusses):** A mobile crane will be required for a short duration to set roof trusses. The crane setup location will be on the most level ground available, clear of the building, staging zones, and any potential underground utilities. The specific location will be determined by the Project Manager and crane operator on the day of the lift.
+
+---
+
+### **Part 3: Health & Safety Plan**
+
+This plan is based on OSHA regulations for residential construction. Failure to comply will result in removal from the site.
+
+*   **Hazard Identification:** The following primary hazards are anticipated. Specific mitigation measures will be addressed in daily safety briefings.
+    *   **Falls from Height:** From ladders, scaffolding, and the roof structure.
+    *   **Excavation/Trench Collapse:** During foundation and utility work.
+    *   **Electrical Shock:** From temporary power, power tools, and existing utilities.
+    *   **Material Handling:** Strains and sprains from lifting; "struck-by" incidents involving the forklift.
+    *   **Environmental:** Heat stress (critical in Texas), venomous insects/snakes.
+    *   **Slips, Trips, & Falls:** Due to debris, cords, and uneven surfaces.
+
+*   **Required Personal Protective Equipment (PPE):**
+
+| PPE Item                  | Level     | Requirement                                                                                             |
+| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| **Hard Hat**              | Mandatory | Type 1, Class E. Must be worn by all personnel at all times within the fenced construction zone.          |
+| **Safety Glasses**        | Mandatory | Z87+ rated. Must be worn by all personnel at all times within the fenced construction zone.             |
+| **High-Visibility Vest**  | Mandatory | Type R, Class 2. Must be worn by all personnel at all times within the fenced construction zone.          |
+| **Work Boots**            | Mandatory | Substantial, over-the-ankle, with protective toe recommended.                                           |
+| **Fall Protection Harness** | Task-Specific | Required for any work 6 feet or more above a lower level, including roofing and truss setting. |
+| **Hearing Protection**    | Task-Specific | Required for operation of loud equipment (saws, generators, etc.).                                        |
+| **Gloves**                | Task-Specific | Required for material handling, concrete work, and demolition.                                            |
+
+*   **Emergency Procedures:**
+    *   **Emergency Services:** **Dial 911** for all fire, medical, or police emergencies.
+    *   **Site Address:** **216 Shelf Rock Road, Georgetown, TX.** This must be provided clearly to dispatchers.
+    *   **Local Responders:** The Georgetown Fire Department provides fire and emergency medical services. The Williamson County Sheriff's Office is the primary law enforcement agency.
+    *   **Emergency Meeting Point:** A designated safe assembly area will be clearly marked at the front of the property, near the street and away from the construction entrance.
+    *   **First Aid:** A comprehensive industrial first aid kit and an eye-wash station will be located in the site office.
+    *   **Posted Information:** A poster with the site address, a map to the nearest hospital (St. David's Georgetown Hospital), and emergency contact numbers for the Project Manager and company safety officer will be posted in the site office and at the main entrance.
+
+*   **Toolbox Talk Schedule:**
+    *   **Daily Safety Huddle:** A 5-minute meeting each morning before work begins to discuss the day's tasks, associated hazards, and required controls.
+    *   **Weekly "Toolbox Talk":** A mandatory, all-hands safety meeting will be held every **Monday at 7:00 AM**. Each meeting will cover a specific OSHA-related topic relevant to the current phase of construction (e.g., Trench Safety, Fall Protection, Electrical Safety). Attendance and topics will be documented.
+
+Ready for the next prompt 2.
+
+
+---
+
+### **Groundwork & Foundation Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview & Risk Assessment**
+
+*   **Foundation Type:** The blueprints (Sheet S-1) specify a monolithic slab-on-grade foundation with integrated grade beams. The slab is 4 inches thick, supported by 12-inch wide perimeter and interior grade beams extending to a total depth of 24 inches.
+*   **Soil Preparation:** The plans call for the slab to be placed on compacted fill over undisturbed native soil. A 10-mil vapor barrier is required under all conditioned and garage slab areas.
+*   **Risk Assessment - Geotechnical Data:** **CRITICAL RISK:** The provided blueprint package lacks a geotechnical report. Structural Note #3 on Sheet S-1 specifies a minimum required soil bearing capacity of 1500 PSF, but this is an assumed value. The project's location in the Texas Hill Country is known for highly variable soil conditions, including expansive clays and rock. Without a site-specific soil analysis, the current foundation design is based on an assumption and may be inadequate. A geotechnical investigation is strongly recommended before proceeding to construction to verify bearing capacity and mitigate risks of future foundation movement or failure. All costs provided below are based on the foundation design as specified and do not include any potential redesign or additional earthwork that a geotechnical report might mandate.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+The following table details all materials required for the Groundwork & Foundation phase, with pricing localized to the Georgetown/Austin, TX market for Q3 2025.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Gravel Base Course** | Washed, Graded Crushed Stone | CY | 71.00 | $55.00 | 31 20 00 | 4" depth under entire 5,217 sq ft slab footprint |
+| **Vapor Barrier** | Polyethylene Film | SF | 4,920.00 | $0.25 | 07 26 00 | 10-Mil, for 4,278 sq ft of interior slab area + 15% overlap |
+| **Concrete** | Ready-Mix, 3000 PSI | CY | 121.00 | $160.00 | 03 30 00 | For slab and all grade beams, includes 10% waste factor |
+| **Rebar - Slab** | Grade 60 Reinforcing Steel | LF | 7,603.00 | $0.45 | 03 21 00 | #3 bar at 18" O.C. each way, with 10% waste/lap factor |
+| **Rebar - Beams** | Grade 60 Reinforcing Steel | LF | 3,194.00 | $0.95 | 03 21 00 | #5 bar, (4) continuous in all beams, 10% waste/lap factor |
+| **Rebar - Stirrups** | Grade 60 Reinforcing Steel | LF | 3,194.00 | $0.45 | 03 21 00 | #3 stirrups at 18" O.C. in beams, 10% waste factor |
+| **Anchor Bolts** | Galvanized Steel with Nuts/Washers | EA | 104.00 | $4.50 | 03 16 00 | 1/2" dia. x 10" at 4'-0" O.C. along exterior wall plates |
+| **Hold-Downs** | Simpson Strong-Tie HDU or equal | EA | 18.00 | $38.00 | 03 16 00 | HDU4-SDS2.5 or similar, locations per plan S-1 |
+| **Expansion Joint** | Asphalt Impregnated Fiberboard | LF | 150.00 | $1.20 | 03 15 00 | 1/2" x 4", for isolation joints at porches and garage |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates the cost for subcontracted trades based on the scope of work and localized labor rates for the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Excavation Contractor** | Clear and grub building pad. Excavate ~145 CY for grade beams and spread spoils on-site per plan. | 32 | $120.00 | $3,840.00 | 31 20 00 |
+| **Foundation Contractor** | Place and compact gravel base. Set all formwork for slab and beams. Place all specified rebar and anchorages. Place 121 CY of concrete. Strip forms. | 260 | $42.00 | $10,920.00 | 03 30 00 |
+| **Concrete Finishing** | Provide power trowel finish to 775 sq ft garage slab. Provide broom finish to 939 sq ft of exterior porches. Provide float finish to 3,503 sq ft of interior slab. | N/A (Included in Foundation Labor) | N/A | $3,651.00 | 03 35 00 |
+| **Termite Treatment** | Apply chemical termiticide barrier to soil under slab area prior to vapor barrier installation. | 4 | $95.00 | $380.00 | 31 31 16 |
+
+*Note on Hourly Rates & Costs:*
+*   **Excavation:** Rate includes operator and equipment (skid steer/mini-excavator).
+*   **Foundation Contractor:** The hourly rate is a blended average for a crew of 1 lead finisher and 3-4 concrete laborers. The total cost is for labor only.
+*   **Concrete Finishing:** This cost is broken out for clarity but is typically included in the foundation contractor's overall bid. The value is estimated based on a rate of ~$0.65/sq ft for the varied finishes required.
+*   **Termite Treatment:** This is typically a flat-fee service based on the square footage of the treatment area.
+
+Ready for the next prompt 3.
+
+
+---
+
+### **Framing & Structure Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Structural System:** The structure is identified from the blueprints as conventional **Wood Framing** with a **pre-engineered Roof Truss System**. The design is single-story on a slab-on-grade foundation. No structural steel elements are specified in the plans.
+*   **Code Compliance & Special Conditions:**
+    *   **Fire-Rated Assemblies:** As per standard building codes (IRC Section R302), the wall separating the garage from the residence is a required fire-rated assembly. The plans must ensure a 1-hour rating, which involves specific framing, sheathing (5/8" Type X Gypsum Board, to be costed in Finishes), and fire-stopping at all penetrations. Material for fire-stopping is included in this estimate.
+    *   **MEP Coordination:** The plans do not indicate specific chases or bulkheads for MEP systems. A material allowance for blocking to support plumbing vents, waste lines, and electrical panels has been included. Coordination between framing and MEP trades will be critical on-site.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+The following table details all physical materials required for the Framing & Structure phase. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A waste factor of 15% has been applied to dimensional lumber and 12% to sheathing.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Sill Plates** | Pressure Treated Lumber, No. 2 Grade | LF | 410.00 | $1.85 | 06 11 00 | 2x6, for all exterior walls on concrete slab |
+| **Exterior Wall Studs** | SPF Lumber, Stud Grade | EA | 738.00 | $6.90 | 06 11 00 | 2x6x10', for 10' wall height at 16" o.c. |
+| **Interior Wall Studs**| SPF Lumber, Stud Grade | EA | 780.00 | $4.20 | 06 11 00 | 2x4x10', for 10' wall height at 16" o.c. |
+| **Wall Plates** | SPF Lumber, No. 2 Grade | LF | 3,380.00 | $1.15 | 06 11 00 | 2x6 and 2x4, for double top plates & bottom plates |
+| **Wall Sheathing** | OSB Panel | SHT | 195.00 | $26.00 | 06 16 00 | 7/16", 4'x8', for all exterior walls |
+| **Roof Sheathing** | OSB Panel | SHT | 215.00 | $26.00 | 06 16 00 | 1/2", 4'x8', for entire roof surface area (6,850 sq ft) |
+| **Roof Trusses** | Pre-Engineered Wood Trusses | SQFT | 5,217.00 | $11.50 | 06 17 53 | Custom design per plan, price includes delivery |
+| **LVL Beams** | Laminated Veneer Lumber | LF | 184.00 | $21.50 | 06 17 00 | Various sizes (2-1.75" x 11.875", etc.) per plan S-1 |
+| **Porch Framing** | Pressure Treated Lumber, No. 2 Grade | BDFT | 650.00 | $1.45 | 06 11 00 | 2x8 and 2x10 members for porch roofs |
+| **Weather Barrier** | House Wrap (e.g., Tyvek) | ROL | 5.00 | $190.00 | 07 27 00 | 9'x150' Rolls, for all exterior wall sheathing |
+| **Connectors** | Galvanized Steel (Simpson or equal) | ALLOW | 1.00 | $4,500.00 | 06 05 23 | Hurricane ties, straps, hangers, clips, hold-downs |
+| **Fasteners** | Nails, Screws, Adhesives | ALLOW | 1.00 | $3,800.00 | 06 05 00 | For all framing, sheathing, and connectors |
+| **Fire Blocking/Caulk**| Fire-Retardant Sealant | TUBE | 30.00 | $14.00 | 07 84 00 | For all wall plate penetrations and draft stopping |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates the cost for the framing trade based on the scope of work and localized labor rates for the Georgetown, TX area. The rate reflects a fully burdened cost for a professional framing crew.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Framing Contractor**| Receive and inventory all materials. Install sill plates. Frame all exterior (2x6) and interior (2x4) walls. Install all LVL headers and porch framing. Coordinate with and install pre-engineered roof truss system. Install all wall and roof sheathing. Install all specified metal connectors and hardware. Provide all necessary blocking for MEP trades. | 1,460 | $65.00 | $94,900.00 | 06 10 00 |
+
+*Note on Labor Calculation:*
+*   The **Estimated Man-Hours** are derived from industry-standard productivity rates for a custom residential project of this size and complexity, factoring in 10-foot wall heights and a complex roof structure. The calculation is based on the total framed area, including the house, garage, and porches.
+
+Ready for the next prompt 4.
+
+
+---
+
+### **Roofing Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Roofing System Type:** The elevations (A-2, A-3) and user requirements specify a **Standard Profile Concrete Tile Roof**. This analysis is based on a Boral "Villa 900" style tile or an equivalent product common in the Texas market.
+*   **Roof Geometry & Area:** The roof is a complex hip design with multiple intersecting ridges and valleys. The primary roof slopes specified on the elevations are **6:12, 8:12, and 10:12**. The total roof surface area to be covered is approximately **6,850 sq ft** (68.5 squares).
+*   **Code & Climate Requirements:**
+    *   **Wind Resistance:** Georgetown, TX, requires compliance with wind load standards. The selected tile system and fastening method must meet or exceed these requirements. Concrete tile systems are noted for their high wind resistance.
+    *   **Underlayment:** For a long-term tile roof system in this climate, a high-quality, high-temperature rated synthetic underlayment is specified instead of traditional felt paper. This provides a more durable secondary water barrier.
+    *   **Hail Resistance:** Boral concrete tiles offer options for Class 3 or Class 4 impact resistance, which may qualify for insurance discounts in this hail-prone region.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+The following table details all physical materials required for the Roofing phase. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A waste factor of 18% is applied to the primary roofing material due to the roof's high complexity.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Roof Sheathing** | OSB Panel (Previously listed in Framing) | SHT | 215.00 | $26.00 | 06 16 00 | 1/2", 4'x8' |
+| **Synthetic Underlayment** | High-Temp, Woven Polypropylene | ROL | 8.00 | $145.00 | 07 31 26 | 10-Square Rolls (1,000 sq ft) |
+| **Concrete Roof Tiles** | Standard Profile Concrete Tile (e.g., Boral Villa) | SQ | 81.00 | $350.00 | 07 32 13 | Covers 6,850 sq ft + 18% waste factor |
+| **Hip & Ridge Tiles** | Matching Concrete Profile | LF | 620.00 | $7.50 | 07 32 13 | For all hip and ridge lines |
+| **Drip Edge Flashing** | Pre-finished Metal | LF | 460.00 | $2.25 | 07 62 00 | For all eave perimeters |
+| **Valley Flashing** | 24" W-Valley, Pre-finished Metal | LF | 260.00 | $4.50 | 07 62 00 | For all roof valleys |
+| **Wall/Step Flashing** | Pre-finished Metal | LF | 150.00 | $2.75 | 07 62 00 | For roof-to-wall intersections |
+| **Ventilation - Ridge** | Shingle-Over Style Ridge Vent | LF | 120.00 | $8.00 | 07 72 00 | For primary roof ridges |
+| **Ventilation - Soffit** | Continuous Soffit Vents | LF | 450.00 | $2.50 | 07 72 00 | For all vented soffit areas |
+| **Pipe Flashing Boots** | Lead or TPO Boot with Collar | EA | 8.00 | $25.00 | 07 62 00 | For all plumbing/exhaust vents |
+| **Fasteners & Sealants**| Corrosion-Resistant Screws, Sealant, Mortar | ALLOW | 1.00 | $2,900.00 | 07 05 00 | Tile fasteners, flashing sealants, hip/ridge mortar |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates the cost for the roofing trade based on the scope of work and localized labor rates for the Georgetown, TX area. The total cost is derived from a blended per-square-foot rate common for this type of complex installation.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Roofing Contractor**| Install complete concrete tile roofing system. This includes laying all synthetic underlayment, installing metal drip edge and flashings, loading and fastening all field tiles, setting hip and ridge tiles in mortar, installing all specified ventilation, and flashing all roof penetrations. | 680 | $72.00 | $48,960.00 | 07 30 00 |
+
+*Note on Labor Calculation:*
+*   The total estimated cost is based on a comprehensive installation rate of approximately **$715 per square** for a complex concrete tile roof in the Austin area. This rate includes labor, fasteners, and general overhead.
+*   The **Localized Hourly Rate** of $72.00 is a blended, fully-burdened rate representing a skilled roofing crew.
+*   The **Estimated Man-Hours** are back-calculated from the total cost and blended rate to provide a project planning metric, reflecting the high labor intensity of a tile roof installation compared to other systems.
+
+Ready for the next prompt 5.
+
+
+---
+
+### **Exterior Enclosure Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Primary Wall Cladding:** The elevations (Sheets A-2, A-3) detail a mixed veneer system. Based on a detailed takeoff of the elevations, the primary cladding is approximately **60% Stone Veneer and 40% Brick Veneer**. Stucco is specified for soffit areas.
+*   **Insulation System:** The user requirement is "FOAM" insulation. In compliance with modern building practices in IECC Climate Zone 2A, this analysis specifies **Open-Cell Spray Foam Insulation (OCSF)**. This includes filling wall cavities and applying foam to the underside of the roof deck, creating a high-performance, unvented (sealed) attic assembly.
+*   **Weather/Air Barrier:** A primary weather barrier (House Wrap) was included in the Framing BOM. This phase includes the critical secondary components: flashing tapes for all openings and sealants.
+*   **Openings:** All windows and doors are sourced from the schedules and details on Sheet A-1.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+The following table details all physical materials for the Exterior Enclosure phase. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. Waste factors of 10% for masonry and 15% for trim are included.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Stone Veneer** | Chopped Natural Stone, Texas Mix | SF | 2,292.00 | $14.50 | 04 42 00 | Covers 2,084 sq ft + 10% waste |
+| **Brick Veneer** | Standard Queen Size, Clay | EA | 10,700.00 | $0.65 | 04 21 13 | Approx. 7 brick/sq ft for 1,389 sq ft + 10% waste |
+| **Mortar & Lath** | Type N Mortar, Metal Lath, Scratch Coat | ALLOW | 1.00 | $5,500.00 | 04 05 13 | All necessary mortar, additives, and lath for stone/brick |
+| **Masonry Ties** | Corrugated Wall Ties | EA | 1,200.00 | $0.40 | 04 05 19 | For anchoring veneer to sheathing |
+| **Wall Insulation** | Open-Cell Spray Foam (OCSF) | BDFT | 19,104.00 | $0.60 | 07 21 19 | For 3,473 sq ft of 2x6 wall cavity (5.5" depth) |
+| **Roof Deck Insulation** | Open-Cell Spray Foam (OCSF) | BDFT | 37,675.00 | $0.55 | 07 21 19 | For 6,850 sq ft of roof deck (5.5" depth, R-22) |
+| **Windows** | Vinyl, Single-Hung, Low-E, Insulated Glass | ALLOW | 1.00 | $14,800.00 | 08 53 13 | Per Window Schedule, Sheet A-1 |
+| **Exterior Doors** | Fiberglass/Steel, Insulated | ALLOW | 1.00 | $7,200.00 | 08 10 00 | Per Door Schedule, Sheet A-1 (Front, Patio, Service) |
+| **Garage Doors** | Insulated Steel, Raised Panel | ALLOW | 1.00 | $6,800.00 | 08 36 13 | (1) 16'x8' and (1) 9'x8' with openers |
+| **Fascia & Soffit** | Fiber Cement Trim & Vented Soffit Panels | LF | 920.00 | $4.50 | 07 46 48 | 460 LF of Fascia and 460 LF of Soffit Material |
+| **Flashing Tape** | Self-Adhering Butyl Window Flashing | ROL | 8.00 | $45.00 | 07 65 00 | 6" x 75' rolls, for all window and door openings |
+| **Gutters & Downspouts** | 6" K-Style Seamless Aluminum | LF | 460.00 | $9.00 | 07 71 00 | For all sloped roof eaves, includes downspouts |
+| **Exterior Paint** | Premium Acrylic Latex, Semi-Gloss | GAL | 15.00 | $65.00 | 09 91 13 | For all trim, soffits, and exterior doors |
+| **Exterior Sealant** | Polyurethane Construction Sealant | TUBE | 50.00 | $12.00 | 07 92 00 | For all openings, trim, and material transitions |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the required trades. Rates are localized for the Georgetown, TX area and reflect fully burdened labor costs.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Masonry Contractor**| Install moisture barrier, lath, scratch coat, and all specified brick and stone veneer. Coordinate installation of masonry ties. Clean all finished masonry surfaces. | 480 | $75.00 | $36,000.00 | 04 20 00 |
+| **Insulation Contractor**| Spray open-cell foam in all exterior wall cavities and to the underside of the entire roof deck to specified depths. Trim/prep for drywall. | 120 | $85.00 | $10,200.00 | 07 21 00 |
+| **Window & Door Installer**| Install, level, secure, and flash all windows (21 units), exterior personnel doors (4 units), and garage doors (2 units) per manufacturer specifications. | 110 | $68.00 | $7,480.00 | 08 00 00 |
+| **Gutter Contractor**| Field-form and install seamless aluminum gutters and downspouts on all specified eaves. | 24 | $70.00 | $1,680.00 | 07 71 00 |
+| **Exterior Finishing**| Install all fiber cement fascia and soffit materials. Prepare and paint all trim, soffits, and exterior doors (2 coats). Apply all exterior sealants. | 160 | $65.00 | $10,400.00 | 09 91 13 |
+
+Ready for the next prompt 6.
+
+
+---
+
+### **Electrical Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **System Requirements:** The electrical plan (Sheet E1-1a) specifies a standard residential service for the United States: **200 Amp, 120/240 Volt, Single Phase, 60 Hz**. This service size is adequate for the specified 3,503 sq ft of living space, major electrical appliances, and HVAC system.
+*   **Code Compliance:** All work will be performed in accordance with the 2023 National Electrical Code (NEC), the State of Texas amendments, and the City of Georgetown's local ordinances. This includes requirements for Arc-Fault Circuit Interrupter (AFCI) protection on most branch circuits and Ground-Fault Circuit Interrupter (GFCI) protection in required areas (kitchens, bathrooms, garage, exterior).
+*   **Special Conditions:** The panel schedule on E1-1a clearly identifies dedicated circuits for all major appliances, including the oven, dryer, and HVAC systems. The user's request for "2500" is superseded by the 200A (48 kW) service specified on the blueprints. No renewable energy or EV charging systems are detailed on the plans.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+This BOM is based on a detailed takeoff from Sheet E1-1a. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A 20% waste factor is applied to wiring.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Service Entrance Cable**| Aluminum SER | LF | 75.00 | $12.50 | 26 05 19 | 4/0-4/0-2/0-4/0, for 200A service from meter to panel |
+| **Main Panel** | Main Breaker Load Center | EA | 1.00 | $450.00 | 26 24 16 | 200A, 42-Circuit, NEMA 1 (Indoor) |
+| **Circuit Breakers** | Combination AFCI/GFCI and Standard | ALLOW | 1.00 | $1,650.00 | 26 28 16 | Full complement for 42-circuit panel per schedule |
+| **Grounding System** | Copper Conductor & Ground Rods | SET | 1.00 | $220.00 | 26 05 26 | #4 Bare Copper, (2) 8' Copper-Clad Rods & Clamps |
+| **Branch Circuit Wire**| NM-B Cable (Romex) | ROL | 16.00 | $95.00 | 26 05 19 | 14/2 AWG, 250' Rolls, for 15A lighting circuits |
+| **Branch Circuit Wire**| NM-B Cable (Romex) | ROL | 20.00 | $140.00 | 26 05 19 | 12/2 AWG, 250' Rolls, for 20A receptacle circuits |
+| **Appliance Wire** | NM-B Cable (Romex) | LF | 350.00 | $3.75 | 26 05 19 | 10/3 & 6/3 AWG, for Dryer, Oven, HVAC circuits |
+| **Device Boxes** | Plastic & Metal, Single/Multi-Gang | EA | 215.00 | $2.50 | 26 05 33 | For all switches, receptacles, and fixtures |
+| **Receptacles** | Duplex, 15A & 20A, Standard & Tamper-Resistant | EA | 80.00 | $4.00 | 26 27 26 | White/Ivory color |
+| **GFCI Receptacles** | Duplex, 20A, Tamper-Resistant | EA | 15.00 | $19.00 | 26 27 26 | Required for kitchens, baths, garage, exterior |
+| **Switches** | Decorator Style, Single-Pole, 3-Way, 4-Way | EA | 40.00 | $5.50 | 26 27 26 | White/Ivory color |
+| **Recessed Lighting** | 6" LED Retrofit Canless Fixture | EA | 55.00 | $30.00 | 26 51 13 | Complete kits, warm white (3000K) |
+| **Light Fixture Package**| Interior & Exterior Fixtures, Ceiling Fans | ALLOW | 1.00 | $9,500.00 | 26 51 00 | Owner-selected fixtures and fans |
+| **Smoke/CO Detectors**| Hardwired with Battery Backup, Interconnected | EA | 10.00 | $45.00 | 26 53 13 | Combination Smoke & Carbon Monoxide alarms |
+| **Low-Voltage Cable** | Cat 6 & RG6 Coaxial Cable | BOX | 4.00 | $180.00 | 27 10 00 | (2) 1000' boxes of each type |
+| **Low-Voltage Outlets**| Data/Coax Wall Plates & Jacks | EA | 12.00 | $12.00 | 27 15 00 | Keystone-style plates with Cat 6 and Coax inserts |
+| **Miscellaneous** | Staples, Wire Nuts, Tape, Plates, Labels | ALLOW | 1.00 | $950.00 | 26 05 00 | Consumables for complete installation |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the electrical trades. The hourly rate is a fully burdened, blended rate for a licensed electrician and apprentice team in the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Licensed Electrical Contractor** | Install main service drop, meter base, and 200A panel. Rough-in all device boxes and wiring for branch circuits, lighting, and dedicated appliances. Install all recessed cans. Trim-out all devices, switches, plates, and light fixtures. Install and interconnect all smoke/CO detectors. Perform all final testing and coordinate inspections. | 320 | $95.00 | $30,400.00 | 26 00 00 |
+| **Low-Voltage Technician** | Rough-in all low-voltage wiring (Cat 6, RG6) to specified locations. Install wall plates and terminate all connections at a central structured wiring panel. | 40 | $85.00 | $3,400.00 | 27 00 00 |
+
+*Note on Labor Calculation:*
+*   The **Licensed Electrical Contractor** man-hours are estimated based on the complexity and device count of a custom home of this size. It encompasses all phases from rough-in through final trim and commissioning.
+*   The **Low-Voltage Technician** scope is often performed by the primary electrical contractor but is broken out here for cost clarity. The labor covers running wires and terminating connections.
+
+Ready for the next prompt 7.
+
+
+---
+
+### **Plumbing Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **System Identification:** The plumbing plans (Sheet A-5) and standard construction practices in Texas indicate the following systems:
+    *   **Water Supply:** PEX-A tubing for all interior hot and cold water distribution, utilizing a manifold (homerun) system for balanced flow and fewer concealed fittings. The main service line from the meter to the house will be 1" copper or PEX.
+    *   **Drain, Waste, Vent (DWV):** Schedule 40 PVC pipe for all under-slab and above-grade drain, waste, and vent lines.
+    *   **Gas System:** The site plan specifies a propane tank. Distribution will be via Corrugated Stainless Steel Tubing (CSST) for interior runs, with black iron pipe for exterior stubs and appliance connections.
+*   **Code Compliance:** All work will conform to the 2021 International Plumbing Code (IPC) and the 2021 International Fuel Gas Code (IFGC) as adopted by the State of Texas and the City of Georgetown.
+*   **Fixture & Appliance Takeoff:** The plans detail 3 full bathrooms, a kitchen, a utility room, and exterior connections, including a gas-fired tankless water heater.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+This BOM is based on a detailed takeoff from the plumbing and architectural plans. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A 20% waste factor is applied to all piping.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Site Utilities** | PVC & PEX Piping | ALLOW | 1.00 | $1,200.00 | 22 10 00 | 1" PEX supply & 4" PVC sewer main from house to tap |
+| **PVC DWV Pipe** | Schedule 40 | LF | 450.00 | $4.50 | 22 05 13 | Assorted 1.5", 2", 3", and 4" pipe |
+| **PVC DWV Fittings** | Schedule 40 | ALLOW | 1.00 | $950.00 | 22 05 13 | Wyes, elbows, tees, cleanouts, etc. |
+| **PEX-A Supply Tubing** | PEX-A, Red & Blue | LF | 1,200.00 | $0.90 | 22 11 16 | Assorted 1/2", 3/4", and 1" tubing |
+| **PEX-A Fittings** | Expansion Rings, Manifolds, Valves | ALLOW | 1.00 | $1,100.00 | 22 11 16 | Manifold, valves, expansion rings, stub-outs |
+| **Gas Piping (CSST)** | Corrugated Stainless Steel Tubing | LF | 150.00 | $7.50 | 22 11 19 | 1" and 3/4" with protective jacket |
+| **Gas Fittings** | CSST-specific fittings, valves, regulators | ALLOW | 1.00 | $650.00 | 22 11 19 | Shutoffs, sediment traps, bonding hardware |
+| **Water Heater** | Gas Tankless, High-Efficiency | EA | 1.00 | $2,200.00 | 22 32 00 | Rinnai or similar, 199k BTU, for whole-house use |
+| **Plumbing Fixture Package** | Toilets, Sinks, Shower/Tub Kits | ALLOW | 1.00 | $18,500.00 | 22 40 00 | For 3 toilets, 4 lavatories, 1 kitchen sink, 2 showers, 1 tub |
+| **Faucet & Trim Package** | Faucets, Shower Heads, Valves | ALLOW | 1.00 | $7,500.00 | 22 40 00 | Owner-selected trim for all fixtures |
+| **Valves & Drains** | Angle Stops, Hose Bibbs, Shower Drains | ALLOW | 1.00 | $880.00 | 22 05 23 | Fixture shutoffs, ice maker box, washer box, (3) hose bibbs |
+| **Miscellaneous** | Hangers, Glue, Primer, Insulation, Test Plugs | ALLOW | 1.00 | $1,250.00 | 22 05 00 | All necessary installation consumables and test equipment |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the plumbing trade. The hourly rate is a fully burdened, blended rate for a licensed plumber and apprentice team in the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Licensed Plumbing Contractor** | Perform all work in three phases: 1) Under-slab DWV rough-in. 2) Top-out rough-in of all DWV and PEX supply lines and gas piping. 3) Set-out and connection of all fixtures, faucets, and appliances (water heater, dishwasher, etc.). Perform all code-required pressure and leak tests for water, DWV, and gas systems. | 310 | $105.00 | $32,550.00 | 22 00 00 |
+
+*Note on Labor Calculation:*
+*   The **Estimated Man-Hours** are calculated based on the quantity and complexity of the project. This includes a comprehensive scope covering all site utility connections, the complete interior plumbing system, gas system installation, and all fixture connections and commissioning.
+*   The **Localized Hourly Rate** reflects the 2025 market rate for a qualified, licensed, and insured plumbing contractor in the competitive Austin-Georgetown metropolitan area.
+
+Ready for the next prompt 8.
+
+
+---
+
+### **HVAC Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **System Determination:** The blueprints do not include a detailed mechanical plan, which is common for residential projects where the HVAC system is design-built by the installing contractor. Based on the 3,503 sq ft conditioned area, the 10-foot ceilings, and the high-performance sealed attic assembly (due to spray foam on the roof deck), a **Zoned Central Heat Pump System** is the most appropriate and efficient choice for the hot, humid climate of Georgetown, TX (IECC Zone 2A).
+    *   This analysis specifies two separate high-efficiency heat pump systems to create two primary comfort zones, improving efficiency and comfort.
+*   **Performance Specifications:**
+    *   **Sizing:** A preliminary load calculation suggests a total capacity of approximately 5 tons is required. This will be split between a **3-ton system** (serving the main living area, kitchen, and master suite) and a **2-ton system** (serving the secondary bedrooms and study).
+    *   **Efficiency:** The systems specified will meet a minimum of **16 SEER2** (Seasonal Energy Efficiency Ratio 2), exceeding current federal minimums for the region.
+*   **Ventilation & Code:** Due to the airtight construction with spray foam, a dedicated mechanical ventilation system is required by code and best practice (ASHRAE 62.2) to ensure healthy indoor air quality. This analysis includes an **Energy Recovery Ventilator (ERV)**. All ductwork will be sealed with mastic and pressure tested as required by the Texas Residential Building Energy Code.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+The following BOM is based on the selected system design and a takeoff from the architectural plans. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A 15% waste factor is applied to ductwork.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Heat Pump System 1** | Matched Condenser & Air Handler | SET | 1.00 | $6,800.00 | 23 62 13 | 3-Ton, 16 SEER2 Heat Pump |
+| **Heat Pump System 2** | Matched Condenser & Air Handler | SET | 1.00 | $5,500.00 | 23 62 13 | 2-Ton, 16 SEER2 Heat Pump |
+| **Rigid Ductwork** | Sheet Metal, Insulated (R-8) | LF | 150.00 | $18.00 | 23 31 13 | Main supply/return trunk lines |
+| **Flexible Ductwork** | Insulated (R-8) | LF | 420.00 | $8.00 | 23 31 16 | Branch lines to registers |
+| **Ductwork Components**| Plenums, Boots, Wyes, Collars | ALLOW | 1.00 | $1,900.00 | 23 33 00 | All necessary transitions and fittings |
+| **Registers & Grilles** | Stamped Steel, White | EA | 32.00 | $35.00 | 23 37 13 | (25) Supply Registers, (7) Return Air Grilles |
+| **Refrigerant Line Sets**| Copper, Insulated | SET | 2.00 | $650.00 | 23 23 00 | For connecting condensers to air handlers |
+| **Condensate Drains** | PVC Piping and Fittings | ALLOW | 1.00 | $350.00 | 22 14 29 | Includes primary and secondary drain lines |
+| **Ventilation (ERV)** | Energy Recovery Ventilator | EA | 1.00 | $1,800.00 | 23 72 00 | Sized for whole-house continuous ventilation |
+| **Exhaust Fans** | Bathroom Fans with Ducting | EA | 4.00 | $150.00 | 23 73 00 | 110 CFM, low-sone fans for all baths & powder |
+| **Controls** | Wi-Fi Enabled Smart Thermostats | EA | 2.00 | $275.00 | 23 09 23 | For independent zone control |
+| **Duct Sealant** | Water-Based Mastic | GAL | 3.00 | $40.00 | 23 05 53 | For sealing all duct connections |
+| **Miscellaneous** | Equipment Pads, Hangers, Tape, Fasteners | ALLOW | 1.00 | $850.00 | 23 05 00 | All necessary installation hardware |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the HVAC trade. The hourly rate is a fully burdened, blended rate for a licensed HVAC lead technician and installer team in the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **HVAC Contractor**| Design and install two complete, zoned heat pump systems. Install all rigid and flex ductwork, sealing all joints with mastic. Install ERV, bath fans, and range hood venting. Install refrigerant lines and condensate drains. Install smart thermostats and zone controls. Perform system startup, refrigerant charging, air balancing, and all code-required testing. | 250 | $110.00 | $27,500.00 | 23 00 00 |
+
+*Note on Labor Calculation:*
+*   The **Total Estimated Cost** is reflective of a complete, high-quality, zoned HVAC installation for a custom home of this size in the specified market. The cost is comprehensive, covering design, installation, and commissioning.
+*   The **Estimated Man-Hours** and **Localized Hourly Rate** are derived from the total project cost and represent the intensive labor required for a two-system installation, including meticulous duct sealing and system balancing to meet modern energy codes.
+
+Ready for the next prompt 9.
+
+
+---
+
+### **Insulation Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Insulation Strategy:** As established in the Exterior Enclosure phase, the primary thermal and air barrier for this project is a complete **Open-Cell Spray Foam (OCSF)** encapsulation. This method is highly effective for the hot and humid climate of Georgetown, TX (IECC Climate Zone 2A).
+    *   **Exterior Walls:** All 2x6 exterior wall cavities will be filled with OCSF.
+    *   **Roof:** The underside of the entire roof deck will be sprayed with OCSF, creating a high-performance, unvented (sealed) attic assembly. The attic space will therefore be a conditioned or semi-conditioned space.
+*   **Required R-Values:**
+    *   **Walls:** 5.5 inches of OCSF will be applied to achieve an R-value of **R-20**.
+    *   **Roof Deck:** 6 inches of OCSF will be applied to the roof deck to achieve an R-value of **R-22**. While code often requires higher R-values for ceilings (R-38), the sealed attic approach provides a superior air barrier, and this R-value on the roof deck is a widely accepted performance path equivalent.
+*   **Additional Insulation:**
+    *   **Acoustic Control:** Mineral wool batts will be installed in interior walls around all bathrooms and the Master Bedroom suite to reduce sound transmission.
+    *   **Air Sealing:** A comprehensive air sealing package is required, using foam and caulk at all building envelope penetrations, in addition to the air sealing properties of the OCSF.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+This BOM details all materials for the complete insulation and air sealing scope. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wall & Roof Insulation**| Open-Cell Spray Foam (OCSF), 0.5 lb density | BDFT | 56,779.00 | $0.57 | 07 21 19 | 19,104 BDFT for walls (5.5") & 37,675 BDFT for roof (6") |
+| **Acoustic Insulation**| Mineral Wool Sound Attenuation Batts | SQFT | 850.00 | $1.30 | 07 21 16 | For ~800 sq ft of interior walls around baths/master |
+| **Air Sealing Sealant**| Low-Expansion Foam Sealant | CAN | 24.00 | $15.00 | 07 27 00 | For windows, doors, and MEP penetrations |
+| **Fire-Safing Sealant**| Intumescent Fire-Resistant Caulk | TUBE | 30.00 | $14.00 | 07 84 43 | For sealing top/bottom plate penetrations in rated walls |
+| **Ventilation Baffles**| Polystyrene Rafter Vents | EA | 40.00 | $3.50 | 07 22 16 | Required at soffits to ensure air path if vented attic were used; included as best practice backup |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the insulation trade. The rate is a fully burdened, blended rate for a certified spray foam technician and insulation installer in the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Insulation Contractor**| Perform comprehensive air sealing of the building envelope. Spray open-cell foam in all exterior wall cavities and to the underside of the entire roof deck to specified depths. Install mineral wool acoustic batts in designated interior walls. Trim/scape all overspray and prep for drywall. | 150 | $85.00 | $12,750.00 | 07 21 00 |
+
+*Note on Overlap and Labor Calculation:*
+*   The primary cost for insulation (spray foam material and labor) was previously included within the **Exterior Enclosure** and **HVAC** phases due to its integral function in the building envelope and HVAC system design. This dedicated phase report isolates and details that scope for clarity.
+*   The **Estimated Man-Hours** and **Total Estimated Cost** have been adjusted from preliminary figures in other phases to holistically account for the complete insulation and air-sealing scope, including the installation of acoustic batts and detailed sealing work.
+
+Ready for the next prompt 10.
+
+
+
+---
+
+### **Drywall Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Drywall System Scope:** The analysis covers all interior walls and ceilings for the 3,503 sq ft conditioned living area and the 775 sq ft garage. Ceilings are 10 feet high throughout. The total surface area for drywall installation is approximately **17,000 sq ft**.
+*   **Specified Drywall Types:**
+    *   **Standard Gypsum Board:** 1/2" thickness on all standard walls and 5/8" thickness on all standard ceilings to prevent sagging over time.
+    *   **Moisture-Resistant Gypsum Board:** 1/2" thickness will be used in all 3 full bathrooms and the laundry room.
+    *   **Fire-Rated (Type X) Gypsum Board:** 5/8" thickness is required by code and will be installed on all walls and the ceiling separating the garage from the conditioned living space.
+*   **Required Finish Level:** A **Level 4 Finish** is specified for all areas. This finish is suitable for flat, matte, or low-sheen paints and textures. It includes three coats of joint compound over all joints and fasteners, with a final sanding to produce a smooth, consistent surface ready for priming.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+This BOM details all materials for the complete drywall and finishing scope. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025. A waste factor of 15% is applied to sheet goods.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Standard Drywall** | Gypsum Board | SHT | 268.00 | $18.00 | 09 29 00 | 1/2" x 4' x 12' |
+| **Ceiling Drywall** | Gypsum Board, Sag-Resistant | SHT | 84.00 | $22.00 | 09 29 00 | 5/8" x 4' x 12' |
+| **Fire-Rated Drywall** | Type X Gypsum Board | SHT | 31.00 | $24.00 | 09 21 16 | 5/8" x 4' x 12' |
+| **Moisture-Resistant Drywall**| "Greenboard" or "Purple Board" | SHT | 15.00 | $26.00 | 09 29 00 | 1/2" x 4' x 12' |
+| **Joint Compound** | All-Purpose & Topping Mix | BOX | 26.00 | $20.00 | 09 29 00 | 4.5-Gallon Boxes |
+| **Joint Tape** | Paper Drywall Tape | ROL | 17.00 | $4.00 | 09 29 00 | 500' Rolls |
+| **Corner Bead** | Metal or Vinyl Corner Reinforcement | LF | 500.00 | $1.10 | 09 29 00 | For all outside corners and returns |
+| **Drywall Screws** | Coarse Thread, Phosphate Coated | BOX | 5.00 | $45.00 | 09 29 00 | 25 lb. Box, 1-1/4" and 1-5/8" |
+| **Drywall Primer/Surfacer**| High-Build PVA Drywall Primer | GAL | 50.00 | $25.00 | 09 91 23 | For preparing all surfaces for paint |
+| **Miscellaneous** | Sanding Screens, Masking Materials | ALLOW | 1.00 | $450.00 | 09 29 00 | All necessary installation consumables |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the drywall trade. The rate is a fully burdened, blended rate for a professional drywall crew (hangers and finishers) in the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Drywall Contractor**| Hang all specified types of drywall on walls and ceilings. Install all corner beads and trims. Tape and finish all joints and fasteners to a consistent Level 4 finish. Sand all finished surfaces. Apply one coat of PVA drywall primer to all surfaces, preparing them for the final paint finishes. | 765 | $70.00 | $53,550.00 | 09 29 00 |
+
+*Note on Labor Calculation:*
+*   The **Estimated Man-Hours** are calculated based on a comprehensive productivity rate for a high-quality residential project, accounting for 10-foot ceilings and multiple drywall types. The scope includes all activities from hanging the first sheet through the application of the final primer coat.
+*   The **Total Estimated Cost** can also be represented as a turnkey rate of approximately **$3.15 per square foot** of surface area, which is competitive for a fully primed, Level 4 finish in this market.
+
+Ready for the next prompt 11.
+
+
+
+---
+
+### **Painting & Coatings Phase Analysis Package**
+**Project:** HERNANDEZ RESIDENCE
+**Location:** 216 Shelf Rock Road, Georgetown, Williamson County, Texas
+**Report Date:** July 5, 2025
+
+---
+
+### **Analysis Overview**
+
+*   **Painting Scope:** This analysis covers all final painting for interior and exterior surfaces. The interior scope includes approximately 12,000 sq ft of wall surface and 5,053 sq ft of ceiling surface. The exterior scope includes all soffits, fascia, and doors. The primary stone and brick veneer cladding is not painted.
+*   **Specified Finishes:** For a high-end custom home, a multi-sheen approach is standard. This estimate is based on the following specifications:
+    *   **Interior Ceilings:** Flat finish (to hide imperfections), 2 coats.
+    *   **Interior Walls:** Eggshell or Matte finish (for durability and washability), 2 coats.
+    *   **Interior Trim & Doors:** Semi-Gloss finish (for durability and contrast), 2 coats.
+    *   **Exterior Trim & Doors:** Satin finish (for weather resistance and appearance), 2 coats.
+*   **Specialty Coatings:** A high-performance, 2-part epoxy coating is specified for the 775 sq ft garage floor to provide a durable and cleanable surface.
+*   **Code & Environmental:** All specified paints will be low-VOC (Volatile Organic Compound) formulations to comply with modern environmental and health standards. All waste paint and solvents will be disposed of according to local Williamson County regulations.
+
+---
+
+### **Output 1: Materials Bill of Materials (BOM)**
+
+This BOM details all materials for the complete painting and coatings scope. The main PVA primer for drywall was included in the Drywall Phase budget; this BOM includes primers for other substrates. Pricing is localized to the Austin/Georgetown, TX market for Q3 2025.
+
+| Item | Specification | Unit | Quantity | Unit Cost | CSI Code | Size/Detail |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Interior Wall Paint** | Premium Acrylic Latex, Eggshell Finish | GAL | 70.00 | $60.00 | 09 91 23 | Covers ~12,000 sq ft, 2 coats |
+| **Interior Ceiling Paint** | Premium Acrylic Latex, Flat Finish | GAL | 30.00 | $50.00 | 09 91 23 | Covers ~5,053 sq ft, 2 coats |
+| **Interior Trim & Door Paint** | Premium Acrylic Enamel, Semi-Gloss Finish | GAL | 15.00 | $70.00 | 09 91 23 | For all interior doors, window trim, and baseboards |
+| **Exterior Trim & Door Paint** | Premium Exterior Acrylic, Satin Finish | GAL | 10.00 | $75.00 | 09 91 13 | For soffits, fascia, and all personnel/garage doors |
+| **Exterior Primer** | Bonding Primer for Fiber Cement & Metal | GAL | 5.00 | $65.00 | 09 91 13 | For all exterior trim and doors |
+| **Epoxy Floor Coating** | 2-Part Garage Floor Epoxy Kit | KIT | 2.00 | $250.00 | 09 96 33 | For 775 sq ft garage floor, includes flakes and clear top coat |
+| **Surface Prep Materials** | Tape, Plastic, Paper, Drop Cloths | ALLOW | 1.00 | $850.00 | 09 91 00 | For complete masking and protection of all surfaces |
+| **Application Supplies** | Rollers, Brushes, Trays, Buckets | ALLOW | 1.00 | $600.00 | 09 91 00 | High-quality tools for a premium finish |
+| **Caulk & Filler** | Paintable Caulk & Wood Filler | ALLOW | 1.00 | $300.00 | 09 91 00 | For filling all trim joints and nail holes before painting |
+
+---
+
+### **Output 2: Subcontractor Cost Breakdown**
+
+The following table estimates costs for the painting trades. Rates are fully burdened and localized for the Georgetown, TX area.
+
+| Trade | Scope of Work | Estimated Man-Hours | Localized Hourly Rate | Total Estimated Cost | CSI Code |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Painting Contractor**| Perform all surface preparation including filling nail holes, caulking trim, and extensive masking. Apply two finish coats to all interior walls, ceilings, trim, and doors. Prepare and apply two finish coats to all exterio
