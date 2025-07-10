@@ -110,7 +110,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
   options: { description: string; place_id: string }[] = [];
-  addressControl = new FormControl<string>('');
+  addressControl = new FormControl<string>('',[Validators.required]);
   selectedPlace: { description: string; place_id: string } | null = null;
   private isGoogleMapsLoaded: boolean = false; // Track if Google Maps script is loaded
   activeBidsDataSource = new MatTableDataSource<any>();
@@ -455,7 +455,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   onSubmit(): void {
     this.fetchDocuments();
     const activeElement = document.activeElement as HTMLElement;
+
+      // 👇 Force validation to trigger
+  this.addressControl.markAsTouched();
+
+  // Optionally validate the entire form
+  this.jobCardForm.markAllAsTouched();
+ if (this.jobCardForm.invalid || this.addressControl.invalid) {
+    return; // prevent proceeding
+  }
+
     const dialogRef = this.dialog.open(this.documentsDialog);
+
 
     dialogRef.afterClosed().subscribe(() => {
       if (activeElement) {

@@ -154,18 +154,18 @@ export class JobsComponent implements OnInit, OnDestroy {
       this.isUploading = false;
       this.resetFileInput();
     });
-    console.log('here')
+
     this.hubConnection
       .start()
       .then(() => console.log('SignalR connection established successfully'))
       .catch(err => console.error('SignalR Connection Error:', err));
 
-      console.log('here')
+
     this.route.queryParams.subscribe(params => {
       this.projectDetails = params;
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
-    console.log('here1')
+
     this.jobsService.getJobSubtasks(this.projectDetails.jobId).subscribe({
       next: (data) => {
         if (!data || data.length === 0) {
@@ -1132,9 +1132,12 @@ export class JobsComponent implements OnInit, OnDestroy {
         disableConfirm: unaccepted.length > 0
       }
     });
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('Dialog result:', result);
-    });
+dialogRef.afterClosed().subscribe(result => {
+  console.log('Dialog result:', result);
+  if (result === true) {
+    this.performSaveJob();
+  }
+});
   }
   performSaveJob(): void {
 
@@ -1155,7 +1158,7 @@ if (unaccepted.length > 0) {
   );
   return;
 }
-
+console.log('here')
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
       subtasks: group.subtasks.map(({ id, task, days, startDate, endDate, cost, status, deleted, accepted }) => ({

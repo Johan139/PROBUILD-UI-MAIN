@@ -159,6 +159,7 @@
 <!-- Replace your existing address mat-form-field with this -->
 <mat-form-field appearance="fill">
   <mat-label>Address</mat-label>
+
   <input
     #addressInput
     matInput
@@ -171,6 +172,9 @@
       {{ option.description }}
     </mat-option>
   </mat-autocomplete>
+    <mat-error *ngIf="addressControl.hasError('required') && addressControl.touched">
+    Mandatory Field: Address is required
+  </mat-error>
 </mat-form-field>
           </div>
           <div class="panel-wrapper">
@@ -189,7 +193,7 @@
                   <mat-label>First Name</mat-label>
                   <input matInput formControlName="firstName" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
-                    First name is required.
+                     Mandatory Field: First name is required.
                   </mat-error>
                 </mat-form-field>
 
@@ -197,7 +201,7 @@
                   <mat-label>Last Name</mat-label>
                   <input matInput formControlName="lastName" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
-                    Last name is required.
+                     Mandatory Field: Last name is required.
                   </mat-error>
                 </mat-form-field>
 
@@ -205,7 +209,7 @@
                   <mat-label>Email</mat-label>
                   <input matInput formControlName="email" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
-                    Enter a valid email address.
+                     Mandatory Field: Email address is required.
                   </mat-error>
                 </mat-form-field>
               </div>
