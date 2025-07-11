@@ -897,69 +897,93 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {
-      2: 'Groundwork & Foundation phase',
-      3: 'Framing and Structure phase',
-      4: 'Roofing phase',
-      5: 'Exterior Enclosure phase',
-      6: 'Electrical phase',
-      7: 'Plumbing phase',
-      8: 'HVAC phase',
-      9: 'Insulation phase',
-      10: 'Drywall phase',
-      11: 'Painting & Coatings phase',
-      12: 'Trim & Doors phase',
-      13: 'Kitchen & Bath phase',
-      14: 'Flooring phase',
-      15: 'Exterior Flatwork & Landscaping phase',
-      16: 'Cleaning & Final Touches phase'
+      2: 'Groundwork & Foundation',
+      3: 'Framing & Structure',
+      4: 'Roofing',
+      5: 'Exterior Enclosure',
+      6: 'Electrical',
+      7: 'Plumbing',
+      8: 'HVAC',
+      9: 'Insulation',
+      10: 'Drywall',
+      11: 'Painting & Coatings',
+      12: 'Interior Trim & Doors',
+      13: 'Kitchen & Bath',
+      14: 'Flooring',
+      15: 'Exterior Flatwork & Landscaping',
+      16: 'Cleaning & Final Touches'
     };
 
-    const reportSections = fullResponse.split(/Ready for the next prompt \d+\./);
+    const parseTableFromLines = (lines: string[], startIndex: number) => {
+      let tableHeaderIndex = -1;
+      for (let j = startIndex; j < lines.length; j++) {
+        if (lines[j].trim().startsWith('|') && !lines[j].includes('---')) {
+          tableHeaderIndex = j;
+          break;
+        }
+      }
 
-    for (let i = 0; i < reportSections.length; i++) {
-      const section = reportSections[i];
-      const promptNumberMatch = fullResponse.match(new RegExp(`Ready for the next prompt (${i})`));
+      if (tableHeaderIndex !== -1) {
+        const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim().replace(/\*\*/g, '')).slice(1, -1);
+        const tableContent: any[] = [];
 
-      if (promptNumberMatch) {
-        const promptNumber = parseInt(promptNumberMatch[1], 10);
-        const title = promptTitles[promptNumber];
+        for (let j = tableHeaderIndex + 2; j < lines.length; j++) {
+          const line = lines[j];
+          const trimmedLine = line.trim();
 
-        if (title) {
-          const lines = section.trim().split('\n');
-          let tableHeaderIndex = -1;
-          for (let j = 0; j < lines.length; j++) {
-            if (lines[j].trim().startsWith('|') && lines[j].includes('Item')) {
-              tableHeaderIndex = j;
-              break;
+          if (trimmedLine.startsWith('|')) {
+            const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).slice(1, -1);
+            if (row.length > 0 && row.join('').trim() !== '') {
+              tableContent.push(row);
             }
+          } else if (trimmedLine.startsWith('###') || trimmedLine.startsWith('Ready for the next prompt') || trimmedLine.startsWith('*Note:')) {
+            break;
           }
+        }
 
-          if (tableHeaderIndex !== -1) {
-            const tableHeaders = lines[tableHeaderIndex].split('|').map(cell => cell.trim()).filter(Boolean);
-            const tableContent: any[] = [];
+        if (tableHeaders.length > 0 && tableContent.length > 0) {
+          return {
+            headers: tableHeaders,
+            content: tableContent
+          };
+        }
+      }
+      return null;
+    };
 
-            for (let j = tableHeaderIndex + 2; j < lines.length; j++) {
-              const line = lines[j];
-              const trimmedLine = line.trim();
+    const reportSections = fullResponse.split(/(?=Ready for the next prompt \d+\.)/);
 
-              if (trimmedLine.startsWith('|')) {
-                const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
-                if (row.length > 0) {
-                  tableContent.push(row);
-                }
-              } else if (trimmedLine.startsWith('###') || trimmedLine.startsWith('Ready for the next prompt')) {
-                break;
-              }
-            }
+    for (const sectionText of reportSections) {
+      const promptNumberMatch = sectionText.match(/Ready for the next prompt (\d+)\./);
+      if (!promptNumberMatch) continue;
 
-            if (tableHeaders.length > 0 && tableContent.length > 0) {
-              sections.push({
-                title: title,
-                type: 'table',
-                headers: tableHeaders,
-                content: tableContent
-              });
-            }
+      const promptNumber = parseInt(promptNumberMatch[1], 10);
+      const phaseName = promptTitles[promptNumber];
+
+      if (phaseName) {
+        const lines = sectionText.trim().split('\n');
+
+        const bomTitleIndex = lines.findIndex(l => l.includes('Materials Bill of Materials (BOM)'));
+        if (bomTitleIndex !== -1) {
+          const table = parseTableFromLines(lines, bomTitleIndex + 1);
+          if (table) {
+            sections.push({
+              title: `${phaseName} - Bill of Materials`,
+              type: 'table',
+              ...table
+            });
+          }
+        }
+
+        const subconTitleIndex = lines.findIndex(l => l.includes('Subcontractor Cost Breakdown'));
+        if (subconTitleIndex !== -1) {
+          const table = parseTableFromLines(lines, subconTitleIndex + 1);
+          if (table) {
+            sections.push({
+              title: `${phaseName} - Subcontractor Cost Breakdown`,
+              type: 'table',
+              ...table
+            });
           }
         }
       }
@@ -984,44 +1008,13 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     if (costBreakdownTitleIndex !== -1) {
-      let tableHeaderIndex = -1;
-      for (let i = costBreakdownTitleIndex + 1; i < allLines.length; i++) {
-        const trimmedLine = allLines[i].trim();
-        if (trimmedLine.startsWith('|') && !trimmedLine.includes('---')) {
-          tableHeaderIndex = i;
-          break;
-        }
-      }
-
-      if (tableHeaderIndex !== -1) {
-        const tableHeaders = allLines[tableHeaderIndex].split('|').map(cell => cell.trim().replace(/\*\*/g, '')).filter(Boolean);
-        const tableContent: any[] = [];
-
-        if (allLines[tableHeaderIndex + 1] && allLines[tableHeaderIndex + 1].trim().startsWith('|') && allLines[tableHeaderIndex + 1].includes('---')) {
-            for (let i = tableHeaderIndex + 2; i < allLines.length; i++) {
-                const line = allLines[i];
-                const trimmedLine = line.trim();
-
-                if (trimmedLine.startsWith('|')) {
-                    const row = trimmedLine.split('|').map(cell => cell.trim().replace(/\*/g, '')).filter(Boolean);
-                    if (row.length > 0) {
-                        tableContent.push(row);
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        if (tableHeaders.length > 0 && tableContent.length > 0) {
-          const title = "Total Cost Breakdown";
-          sections.push({
-            title: title,
-            type: 'table',
-            headers: tableHeaders,
-            content: tableContent
-          });
-        }
+      const table = parseTableFromLines(allLines, costBreakdownTitleIndex + 1);
+      if (table) {
+        sections.push({
+          title: "Total Cost Breakdown",
+          type: 'table',
+          ...table
+        });
       }
     }
 
