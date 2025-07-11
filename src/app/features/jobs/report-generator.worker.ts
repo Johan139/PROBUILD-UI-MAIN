@@ -73,6 +73,8 @@ addEventListener('message', async ({ data }) => {
               doc.addPage();
               currentY = margin;
             }
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
             const itemLines = doc.splitTextToSize(`• ${item}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
@@ -87,6 +89,8 @@ addEventListener('message', async ({ data }) => {
               doc.addPage();
               currentY = margin;
             }
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
             const itemLines = doc.splitTextToSize(`${olCounter}. ${item}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
