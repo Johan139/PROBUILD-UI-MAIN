@@ -132,6 +132,29 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   precipitationProbability: number = 0;
   private hubConnection!: HubConnection;
   private pollingSubscription: Subscription | null = null;
+  public isGeneratingReport = false;
+
+  private getBase64ImageFromURL(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const dataURL = canvas.toDataURL('image/png');
+          resolve(dataURL);
+        } else {
+          reject(new Error('Could not get canvas context.'));
+        }
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -1084,117 +1107,113 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     };
   }
 
-  downloadEnvironmentalReport(jobId: string): void {
-    this.jobsService.GetBillOfMaterials(jobId).subscribe({
-      next: (results) => {
-        if (results && results.length > 0 && results[0].fullResponse) {
-          const fullResponse = results[0].fullResponse;
+  async downloadEnvironmentalReport(jobId: string): Promise<void> {
+    this.isGeneratingReport = true;
+    try {
+      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      if (results && results.length > 0 && results[0].fullResponse) {
+        const fullResponse = results[0].fullResponse;
 
-          // 1. Parse the report
-          const reportStartMarker = "Ready for the next prompt 20.";
-          const reportEndMarker = "Ready for the next prompt 21.";
+        // 1. Parse the report
+        const reportStartMarker = "Ready for the next prompt 20.";
+        const reportEndMarker = "Ready for the next prompt 21.";
 
-          let startIndex = fullResponse.indexOf(reportStartMarker);
-          if (startIndex === -1) {
-            this.snackBar.open('Environmental report section not found.', 'Close', { duration: 3000 });
-            return;
-          }
-          startIndex += reportStartMarker.length;
-
-          const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
-          if (endIndex === -1) {
-            this.snackBar.open('End of environmental report section not found.', 'Close', { duration: 3000 });
-            return;
-          }
-
-          let reportContent = fullResponse.substring(startIndex, endIndex).trim();
-
-          // Remove unwanted lines
-          const linesToRemove = [
-            "Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.",
-            "**Prepared By:** Gemini Sustainability Consulting",
-            "**From:** Gemini - Sustainability Consultant & Estimator",
-            "### **Phase 20: Environmental Lifecycle Report**"
-          ];
-
-          linesToRemove.forEach(line => {
-            reportContent = reportContent.replace(new RegExp(line.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
-          });
-
-          // 2. Generate the PDF
-          const doc = new jsPDF();
-          const logo = new Image();
-          logo.src = 'assets/logo.jpg';
-
-          const drawPdf = async (withLogo: boolean) => {
-            const reportElement = document.createElement('div');
-            // Use 'marked' to convert markdown to HTML, handling the promise
-            reportElement.innerHTML = await Promise.resolve(marked(reportContent));
-            reportElement.style.width = '800px';
-            reportElement.style.padding = '20px';
-            reportElement.style.fontFamily = 'helvetica';
-            reportElement.style.fontSize = '12px';
-            document.body.appendChild(reportElement);
-
-            const canvas = await html2canvas(reportElement, { scale: 2 });
-            document.body.removeChild(reportElement);
-
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = 190;
-            const pageHeight = 295;
-            const imgHeight = canvas.height * imgWidth / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 45;
-
-            if (withLogo) {
-              doc.addImage(logo, 'JPEG', 10, 10, 50, 15);
-            }
-            doc.setFontSize(18);
-            doc.text("Environmental Lifecycle Report", 105, 25, { align: 'center' });
-
-            doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= (pageHeight - position - 15); // subtract top and bottom margin
-
-            while (heightLeft > 0) {
-              position = -imgHeight + heightLeft;
-              doc.addPage();
-              doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-              heightLeft -= pageHeight;
-            }
-
-            const pageCount = (doc as any).internal.getNumberOfPages();
-            for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.text(
-                    "This report was generated by AI - please view our terms and conditions",
-                    105,
-                    doc.internal.pageSize.height - 10,
-                    { align: 'center' }
-                );
-            }
-
-            doc.save('environmental-lifecycle-report.pdf');
-          };
-
-          logo.onload = () => {
-            drawPdf(true);
-          };
-
-          logo.onerror = () => {
-              this.snackBar.open('Could not load logo. PDF will be generated without it.', 'Close', { duration: 3000 });
-              drawPdf(false);
-          };
-
-        } else {
-          this.snackBar.open('Could not retrieve the report data.', 'Close', { duration: 3000 });
+        let startIndex = fullResponse.indexOf(reportStartMarker);
+        if (startIndex === -1) {
+          this.snackBar.open('Environmental report section not found.', 'Close', { duration: 3000 });
+          return;
         }
-      },
-      error: (err) => {
-        console.error('Failed to get bill of materials for report:', err);
-        this.snackBar.open('Failed to fetch report data.', 'Close', { duration: 3000 });
+        startIndex += reportStartMarker.length;
+
+        const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+        if (endIndex === -1) {
+          this.snackBar.open('End of environmental report section not found.', 'Close', { duration: 3000 });
+          return;
+        }
+
+        let reportContent = fullResponse.substring(startIndex, endIndex).trim();
+
+        // Remove unwanted lines
+        const linesToRemove = [
+          "Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.",
+          "**Prepared By:** Gemini Sustainability Consulting",
+          "**From:** Gemini - Sustainability Consultant & Estimator",
+          "### **Phase 20: Environmental Lifecycle Report**"
+        ];
+
+        linesToRemove.forEach(line => {
+          reportContent = reportContent.replace(new RegExp(line.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
+        });
+
+        // 2. Generate the PDF
+        const doc = new jsPDF();
+        let logoBase64: string | null = null;
+        try {
+          logoBase64 = await this.getBase64ImageFromURL('assets/logo.jpg');
+        } catch (error) {
+          console.error('Failed to load logo, proceeding without it.', error);
+          this.snackBar.open('Could not load logo. PDF will be generated without it.', 'Close', { duration: 3000 });
+        }
+
+        const reportElement = document.createElement('div');
+        reportElement.innerHTML = await Promise.resolve(marked(reportContent));
+        reportElement.style.width = '800px';
+        reportElement.style.padding = '20px';
+        reportElement.style.fontFamily = 'helvetica';
+        reportElement.style.fontSize = '12px';
+        document.body.appendChild(reportElement);
+
+        const canvas = await html2canvas(reportElement, { scale: 2 });
+        document.body.removeChild(reportElement);
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 190;
+        const pageHeight = 295;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 45;
+
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', 10, 10, 50, 15);
+        }
+        doc.setFontSize(18);
+        doc.text("Environmental Lifecycle Report", 105, 25, { align: 'center' });
+
+        doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= (pageHeight - position - 15);
+
+        while (heightLeft > 0) {
+          position = -imgHeight + heightLeft;
+          doc.addPage();
+          doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          if (i === totalPages) {
+            doc.setFontSize(8);
+            doc.text(
+              "This report was generated by AI - please view our terms and conditions",
+              105,
+              doc.internal.pageSize.height - 10,
+              { align: 'center' }
+            );
+          }
+        }
+
+        doc.save('environmental-lifecycle-report.pdf');
+
+      } else {
+        this.snackBar.open('Could not retrieve the report data.', 'Close', { duration: 3000 });
       }
-    });
+    } catch (err) {
+      console.error('Failed to get bill of materials for report:', err);
+      this.snackBar.open('Failed to fetch report data.', 'Close', { duration: 3000 });
+    } finally {
+      this.isGeneratingReport = false;
+    }
   }
 
   fetchDocuments(): void {

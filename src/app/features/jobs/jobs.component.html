@@ -156,8 +156,9 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
               View Bill of Materials
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)">
-              Download Environmental Report
+            <button class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport">
+              <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
+              <span *ngIf="isGeneratingReport">Generating...</span>
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
               Back
