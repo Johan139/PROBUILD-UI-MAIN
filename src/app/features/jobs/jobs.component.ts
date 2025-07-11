@@ -1198,6 +1198,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent || '');
           json.push({ type: 'ul', items });
           break;
+        case 'OL':
+          const olItems = Array.from(el.querySelectorAll('li')).map(li => li.textContent || '');
+          json.push({ type: 'ol', items: olItems });
+          break;
         case 'TABLE':
           const head = Array.from(el.querySelectorAll('thead tr')).map(tr =>
             Array.from(tr.querySelectorAll('th')).map(th => th.textContent || '')

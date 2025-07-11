@@ -19,7 +19,7 @@ addEventListener('message', async ({ data }) => {
 
   try {
     const doc = new jsPDF('p', 'mm', 'a4');
-    const logoUrl = 'assets/logo.jpg';
+    const logoUrl = '/assets/logo.jpg';
     const logoDataUrl = await fetchAsDataURL(logoUrl);
 
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -55,14 +55,14 @@ addEventListener('message', async ({ data }) => {
           doc.setFontSize(14);
           doc.setFont('helvetica', 'bold');
           const h3Lines = doc.splitTextToSize(element.text, usableWidth);
-          doc.text(h3Lines, margin, currentY);
+          doc.text(h3Lines, margin, currentY, { charSpace: 0 });
           currentY += (h3Lines.length * 7) + 2;
           break;
         case 'p':
           doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
           const pLines = doc.splitTextToSize(element.text, usableWidth);
-          doc.text(pLines, margin, currentY);
+          doc.text(pLines, margin, currentY, { charSpace: 0 });
           currentY += (pLines.length * 5) + 2;
           break;
         case 'ul':
@@ -74,8 +74,23 @@ addEventListener('message', async ({ data }) => {
               currentY = margin;
             }
             const itemLines = doc.splitTextToSize(`• ${item}`, usableWidth - 5);
-            doc.text(itemLines, margin + 5, currentY);
+            doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
+          });
+          break;
+        case 'ol':
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          let olCounter = 1;
+          element.items.forEach((item: string) => {
+            if (currentY > pageHeight - margin) {
+              doc.addPage();
+              currentY = margin;
+            }
+            const itemLines = doc.splitTextToSize(`${olCounter}. ${item}`, usableWidth - 5);
+            doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
+            currentY += (itemLines.length * 5) + 2;
+            olCounter++;
           });
           break;
         case 'table':
@@ -84,6 +99,7 @@ addEventListener('message', async ({ data }) => {
             body: element.body,
             startY: currentY,
             theme: 'grid',
+            margin: { left: margin, right: margin },
             headStyles: {
               fillColor: '#FFC107',
               textColor: '#000000'
