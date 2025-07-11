@@ -333,12 +333,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
             task.endDate = taskEnd.toISOString().split('T')[0];
           });
 
-          // Update the store
           this.store.setState({
             subtaskGroups: [...subtaskGroups]
           });
 
-          // Show confirmation message
           this.alertMessage = `${event.groupId} has been moved to start on ${format(event.newStartDate, 'MMM d, yyyy')}`;
           this.showAlert = true;
         }
@@ -354,11 +352,19 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private getJobDetails(jobId: string): void {
     this.jobsService.getSpecificJob(jobId).subscribe({
       next: (jobDetails) => {
-        this.projectDetails = jobDetails;
-        if (jobDetails.jobAddress) {
-          this.projectDetails.address = jobDetails.jobAddress.formatted_address;
-          if (jobDetails.jobAddress.latitude && jobDetails.jobAddress.longitude) {
-            this.getWeatherCondition(jobDetails.jobAddress.latitude, jobDetails.jobAddress.longitude);
+        // Merge the fetched job details into the existing projectDetails object
+        this.projectDetails = { ...this.projectDetails, ...jobDetails };
+
+        if (jobDetails.address) {
+          this.projectDetails.address = jobDetails.address;
+          this.projectDetails.latitude = jobDetails.latitude;
+          this.projectDetails.longitude = jobDetails.longitude;
+
+          if (jobDetails.latitude && jobDetails.longitude) {
+            this.getWeatherCondition(
+              parseFloat(jobDetails.latitude),
+              parseFloat(jobDetails.longitude)
+            );
           }
         }
       },
@@ -490,6 +496,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.weatherService.getWeatherForecast(lat, lon).subscribe({
       next: (data) => {
         this.forecast = data;
+        console.log('Weather data:', data);
         this.weatherDescription = data[0]?.condition || 'Unavailable';
         this.weatherError = null;
       },
@@ -1170,7 +1177,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.weatherService.getFutureWeather(location, date).subscribe({
       next: (data) => {
         this.weatherData = data;
-
       },
       error: (err) => {
         this.weatherData = "No Weather Data as Data should be more than two weeks from now";
@@ -1657,7 +1663,6 @@ if (unaccepted.length > 0) {
     }, (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             this.selectedPlace = place;
-            // This is a helper function to extract address components
             const getAddressComponent = (components: google.maps.GeocoderAddressComponent[], type: string) => {
               const component = components.find(c => c.types.includes(type));
               return component ? component.long_name : '';

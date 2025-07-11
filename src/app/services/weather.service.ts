@@ -46,21 +46,21 @@ export class WeatherService {
   getWeatherForecast(lat: number, lon: number): Observable<ForecastDay[]> {
     const url = `${BASE_URL}/weather-forecast?lat=${lat}&lon=${lon}`; // Your backend proxy
     console.log('Calling backend weather endpoint:', url);
-  
+
     return this.httpClient.get<GoogleForecastResponse>(url).pipe(
       map((data) => {
-  
+
         if (!data.forecastDays) {
           throw new Error('No forecast data available');
         }
-  
+
         return data.forecastDays.map((day) => {
           const displayDate = new Date(
             day.displayDate.year,
             day.displayDate.month - 1,
             day.displayDate.day
           );
-  
+
           return {
             date: displayDate.toLocaleDateString('en-US', {
               weekday: 'short',  // e.g., "Thu"
@@ -86,8 +86,8 @@ export class WeatherService {
       })
     );
   }
-  
-  
+
+
 
   private capitalize(str: string): string {
     if (!str) return '';
