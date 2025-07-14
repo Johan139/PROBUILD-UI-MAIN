@@ -10,7 +10,7 @@
   <a routerLink="/dashboard" class="logo-link">
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
-  <span class="spacer"></span>
+  <span class="spacer logged-in-name">{{LoggedInName}}</span>
   <button *ngIf="shouldShowLogoutButton()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
     <mat-icon svgIcon="icons8-settings"></mat-icon>
   </button>

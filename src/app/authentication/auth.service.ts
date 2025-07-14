@@ -10,6 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
 })
 export class AuthService {
   private http = inject(HttpClient);
+  
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`; // Match your backend
   public currentUserSubject = new BehaviorSubject<any>(null); // Store user info
@@ -36,6 +37,7 @@ export class AuthService {
             localStorage.setItem('token', response.token);
             localStorage.setItem('userType', response.userType);
             localStorage.setItem('firstName', response.firstName);
+            localStorage.setItem('lastName', response.lastName); 
             localStorage.setItem('userId', response.id);
             localStorage.setItem('loggedIn', String(true));
           }
@@ -43,6 +45,7 @@ export class AuthService {
             id: response.id,
             userType: response.userType,
             firstName: response.firstName,
+            lastName: response.lastName 
           });
         })
       );
@@ -58,6 +61,7 @@ export class AuthService {
       localStorage.removeItem('token');
       localStorage.removeItem('userType');
       localStorage.removeItem('firstName');
+      localStorage.removeItem('lastName');
       localStorage.removeItem('userId');
       localStorage.removeItem('loggedIn');
     }
@@ -83,6 +87,7 @@ export class AuthService {
         id: localStorage.getItem('userId'),
         userType: localStorage.getItem('userType'),
         firstName: localStorage.getItem('firstName'),
+        lastName: localStorage.getItem('lastName')
       });
       return;
     }

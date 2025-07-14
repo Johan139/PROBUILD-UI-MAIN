@@ -76,6 +76,46 @@ $darker-yellow: #e6bf00;
       transform: translateY(-60%) !important;
     }
   }
+}
+  .submit-btn {
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+
+    &:hover {
+      background-color: $darker-yellow;
+    }
+  }
+.form-row-button {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
+
+  mat-form-field {
+    flex: 1;
+    width: 100%;
+
+    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+      background-color: $white !important;
+      border-radius: 6px;
+      border: 1px solid $cyan;
+    }
+    ::ng-deep .mdc-floating-label {
+      position: static !important;
+      font-size: 0.9rem;
+      color: $dark-gray;
+    }
+    ::ng-deep .mdc-text-field .mdc-floating-label {
+      transform: translateY(-60%) !important;
+    }
+  }
 
   .submit-btn {
     background-color: $primary-yellow;
@@ -92,7 +132,6 @@ $darker-yellow: #e6bf00;
     }
   }
 }
-
 .alert-overlay {
   position: fixed;
   top: 0;

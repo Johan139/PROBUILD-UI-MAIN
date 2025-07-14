@@ -195,7 +195,13 @@ footer {
 .spacer {
   flex: 1 1 auto;
 }
+.logged-in-name{
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: flex-start;
 
+}
 @media (max-width: 768px) {
   .sidenav {
     width: 150px;

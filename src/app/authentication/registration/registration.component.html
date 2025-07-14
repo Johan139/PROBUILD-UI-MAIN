@@ -237,10 +237,9 @@
               </div>
 
               <!-- Submit Button -->
-              <div class="form-row">
+              <div class="form-row-button">
                 <button mat-raised-button type="submit" class="submit-btn">Register</button>
               </div>
-
             </form>
           </div>
           <ng-template #loadingTemplate>
@@ -255,6 +254,6 @@
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button mat-raised-button class="submit-btn" (click)="closeAlert()">OK</button>
+    <button mat-button class="submit-btn" (click)="closeAlert()">OK</button>
   </div>
 </div>

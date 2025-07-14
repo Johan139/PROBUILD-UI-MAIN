@@ -10,6 +10,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { LoaderComponent } from './loader/loader.component';
 import { MatMenuModule} from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
+import { AuthService } from './authentication/auth.service';
+import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-dialog/logout-confirm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-root',
@@ -37,6 +40,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
   alertMessage: string = '';
+  LoggedInName: string = '';
   routeURL: string = '/';
   isLoading: boolean = false;
   title = 'ProBuildAI';
@@ -44,7 +48,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isBrowser: boolean = typeof window !== 'undefined';
   isSidenavOpen = false;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer) {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private dialog: MatDialog, private router: Router,  private authService: AuthService, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
     matIconRegistry.addSvgIcon(
@@ -67,7 +71,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.isBrowser) {
-      this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
+ this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        const firstName = user.firstName || localStorage.getItem('firstName') || '';
+        const lastName = user.lastName || localStorage.getItem('lastName') || '';
+        this.LoggedInName = `${firstName} ${lastName}`.trim();
+        this.loggedIn = true;
+      } else {
+        this.LoggedInName = '';
+        this.loggedIn = false;
+      }
+    });
     }
   }
 
@@ -104,18 +118,24 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.showAlert = false;
   }
-  logout() {
-    this.showAlert = true;
-    this.alertMessage = 'Are you sure you want to Logout ?';
-    this.loggedIn = false;
-    localStorage.setItem('token', '');
-    localStorage.setItem('jwtToken', '');
-    localStorage.setItem('loggedIn', 'false');
-    localStorage.setItem('userId', '');
-    localStorage.setItem('userType', '');
-    localStorage.setItem('firstName', '');
-    localStorage.setItem('Subtasks', '')
-  }
+logout(): void {
+  const dialogRef = this.dialog.open(LogoutConfirmDialogComponent, {
+    width: '320px',
+    disableClose: true
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    console.log(result)
+    if (result === true) {
+      localStorage.clear();
+      this.loggedIn = false;
+      this.authService.logout();
+          if (this.routeURL) {
+      this.router.navigateByUrl(this.routeURL);
+    }
+    }
+  });
+}
   toggleSidenav(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
   }
