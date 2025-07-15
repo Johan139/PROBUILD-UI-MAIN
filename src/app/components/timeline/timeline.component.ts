@@ -227,13 +227,60 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  public getScheduleStatus(group: TimelineGroup): 'on-track' | 'behind' | 'ahead' {
+    if (!group.startDate || !group.endDate) {
+      return 'on-track';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const groupStartDate = new Date(group.startDate);
+    groupStartDate.setHours(0, 0, 0, 0);
+
+    const groupEndDate = new Date(group.endDate);
+    groupEndDate.setHours(0, 0, 0, 0);
+
+    const progress = group.progress || 0;
+
+    if (progress === 100) {
+      return 'on-track';
+    }
+
+    if (today > groupEndDate && progress < 100) {
+      return 'behind';
+    }
+
+    if (today < groupStartDate) {
+      return 'on-track';
+    }
+
+    const totalDuration = differenceInCalendarDays(groupEndDate, groupStartDate);
+    const elapsedDuration = differenceInCalendarDays(today, groupStartDate);
+
+    if (totalDuration <= 0) {
+      return today > groupEndDate ? 'behind' : 'on-track';
+    }
+
+    const expectedProgress = Math.min(100, (elapsedDuration / totalDuration) * 100);
+
+    if (progress < expectedProgress) {
+      return 'behind';
+    }
+
+    return 'on-track';
+  }
+
   openGroupModal(group: TimelineGroup) {
-    this.selectedGroup = group;
+    this.selectedGroup = {
+      ...group,
+      scheduleStatus: this.getScheduleStatus(group)
+    };
     this.modalRef = this.dialog.open(this.groupDetailModal, {
       width: '600px',
       maxHeight: '80vh',
       disableClose: false,
-      data: { group }
+      data: { group: this.selectedGroup }
     });
   }
 

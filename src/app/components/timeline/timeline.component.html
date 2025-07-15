@@ -102,7 +102,7 @@
         <div
           *ngFor="let group of taskGroups; let groupIndex = index"
           class="task-group-bar"
-          [ngClass]="'status-' + getGroupStatus(group)"
+          [ngClass]="['status-' + getGroupStatus(group), 'schedule-status-' + getScheduleStatus(group)]"
           [class.critical]="isGroupCritical(group)"
           [class.dragging]="draggingGroup === group.title"
           [style]="getGroupStyle(group, groupIndex)"
