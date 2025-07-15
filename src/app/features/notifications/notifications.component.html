@@ -1,23 +1,17 @@
-<div class="main-container">
-  <div class="message-text">
-    <form [formGroup]="broadcastForm" (ngSubmit)="broadcastMessage()">
-      <mat-form-field floatLabel="always" class="w-100">
-        <mat-label>Password*</mat-label>
-        <input type="text" matInput formControlName="message" required>
-        <mat-error *ngIf="broadcastForm.get('messgae')?.hasError('required')">
-          Message is required before broadcast can be made.
-        </mat-error>
-      </mat-form-field>
-      <br>
-
-      <button class="w-100" mat-raised-button (click)="broadcastMessage()">Send Update</button>
-    </form>
-
-  </div>
-  <div class="message-history">
-    <mat-card>
-
-    </mat-card>
-
-  </div>
+<div class="notifications-container">
+  <h1>All Notifications</h1>
+  <ul *ngIf="notifications$ | async as notifications" class="notification-list">
+    <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
+      <li *ngFor="let notification of notifications" class="notification-item">
+        <p class="notification-message">
+          <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} - <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
+        </p>
+      </li>
+    </ng-container>
+    <ng-template #noNotifications>
+      <li class="no-notifications">
+        You have no notifications.
+      </li>
+    </ng-template>
+  </ul>
 </div>

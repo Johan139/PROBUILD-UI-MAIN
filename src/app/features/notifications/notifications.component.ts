@@ -1,44 +1,25 @@
-import {Component, OnInit} from '@angular/core';
-import {MatFormField, MatFormFieldModule} from "@angular/material/form-field";
-import {MatCard} from "@angular/material/card";
-import {FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
-import {MatInput} from "@angular/material/input";
-import {NgIf} from "@angular/common";
-import {MatButton} from "@angular/material/button";
-import {NotificationsService} from "../../services/notifications.service";
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { NotificationsService } from '../../services/notifications.service';
+import { Notification } from '../../models/notification';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatCard,
-    FormsModule,
-    MatInput,
-    NgIf,
-    ReactiveFormsModule,
-    MatButton
-  ],
+  imports: [CommonModule],
   templateUrl: './notifications.component.html',
-  styleUrl: './notifications.component.scss'
+  styleUrls: ['./notifications.component.scss']
 })
-export class NotificationsComponent implements  OnInit{
-  broadcastForm: FormGroup;
+export class NotificationsComponent implements OnInit {
+  notifications$!: Observable<Notification[]>;
 
-  constructor(private formBuilder: FormBuilder,
-              private notificationService: NotificationsService) {
-    this.broadcastForm = this.formBuilder.group({
-      message: ['', Validators.required],
-    })
+  constructor(private notificationsService: NotificationsService) { }
+
+  ngOnInit(): void {
+    this.notifications$ = this.notificationsService.notifications$;
+    this.notificationsService.getAllNotifications().subscribe(notifications => {
+      // The BehaviorSubject in the service will handle the initial list.
+    });
   }
-
-  ngOnInit() {
-   //messageHistory = this.notificationService.getAllMessages()
-  }
-
-  broadcastMessage() {
-    //this.notificationService.sendBroadcast(broadcastForm.value)
-  }
-
-
 }

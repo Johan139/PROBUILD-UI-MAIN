@@ -11,6 +11,9 @@
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
   <span class="spacer"></span>
+  <button mat-icon-button [matMenuTriggerFor]="notificationMenu" aria-label="Toggle notifications menu">
+    <mat-icon>notifications</mat-icon>
+  </button>
   <button *ngIf="shouldShowLogoutButton()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
     <mat-icon svgIcon="icons8-settings"></mat-icon>
   </button>
@@ -31,7 +34,7 @@
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
         <span class="menu-item">JOBS</span>
       </button>
-      
+
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-assignment" (click)="sidenav.close()">
         <span class="menu-item">JOB ASSIGNMENT</span>
       </button>
@@ -56,7 +59,7 @@
         <span class="menu-item">BIDS</span>
       </button> -->
 
-      
+
     </mat-nav-list>
   </mat-sidenav>
 
@@ -83,5 +86,20 @@
   <button mat-menu-item (click)="logout()">
     <mat-icon svgIcon="logout"></mat-icon>
     Logout
+  </button>
+</mat-menu>
+
+<mat-menu #notificationMenu="matMenu">
+  <ng-container *ngIf="recentNotifications$ | async as notifications">
+    <button mat-menu-item *ngFor="let notification of notifications">
+      <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
+    </button>
+    <button mat-menu-item *ngIf="notifications.length === 0">
+      <span>No recent notifications</span>
+    </button>
+  </ng-container>
+  <mat-divider></mat-divider>
+  <button mat-menu-item routerLink="/notifications">
+    Show all notifications
   </button>
 </mat-menu>
