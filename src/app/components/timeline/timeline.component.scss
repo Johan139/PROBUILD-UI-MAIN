@@ -161,25 +161,24 @@
     .task-group-bar {
       position: absolute;
       height: 48px;
-      background: linear-gradient(135deg, #e6bd00 0%, #fbd008 100%);
+      background: #fbd008; // Yellow for active tasks
       border-radius: 6px;
       box-shadow: 0 2px 8px rgba(251, 208, 8, 0.1);
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid #e6bd00;
+      border: 1px solid #fbc02d;
       overflow: hidden;
       z-index: 3;
       margin: 4px 0;
 
       &:hover {
-        background: linear-gradient(135deg, #fbd008 0%, #e6bd00 100%);
-        border-color: #e6bd00;
+        background: #fbd008;
+        border-color: #fbc02d;
         box-shadow: 0 6px 16px rgba(251, 208, 8, 0.3);
         transform: translateY(-2px) scale(1.02);
       }
 
       &.critical {
-
         border-left: 4px solid #ef4444;
         box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
       }
@@ -190,11 +189,18 @@
       }
 
       &.status-completed {
-        background: grey;
+        background: #616161; // Dark grey
+        border-color: #424242;
+      }
+
+      &.status-pending {
+        background: #e0e0e0; // Light grey
+        border-color: #bdbdbd;
       }
 
       &.status-delayed {
-        background: linear-gradient(135deg, #fbd008 0%, #f57f17 100%);
+        background: linear-gradient(135deg, #ffeb3b 0%, #f44336 100%); // Yellow to red
+        border-color: #f44336;
       }
     }
 
@@ -217,6 +223,20 @@
       color: white;
       position: relative;
       z-index: 2;
+    }
+    .progress-pill {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      background-color: rgba(0, 0, 0, 0.2);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      z-index: 3;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
     }
 
     .task-name {

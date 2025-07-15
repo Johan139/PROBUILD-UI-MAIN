@@ -34,19 +34,23 @@
         <!-- Legend -->
         <div class="timeline-legend">
           <div class="legend-item">
-            <div class="legend-color" style="background: linear-gradient(135deg, #e6bd00 0%, #fbd008 100%);"></div>
-            <span>In Progress</span>
+            <div class="legend-color" style="background-color: #fbd008;"></div>
+            <span>Active</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background-color: grey;"></div>
+            <div class="legend-color" style="background-color: #616161;"></div>
             <span>Completed</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color" style="background: linear-gradient(135deg, #fbd008 0%, #f57f17 100%);"></div>
-            <span>Delayed</span>
+            <div class="legend-color" style="background-color: #e0e0e0;"></div>
+            <span>Pending</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color critical" style="background: linear-gradient(135deg, #e6bd00 0%, #fbd008 100%); border-left: 2px solid #ef4444;"></div>
+            <div class="legend-color" style="background: linear-gradient(135deg, #ffeb3b 0%, #f44336 100%);"></div>
+            <span>Behind Schedule</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color critical" style="background: #fbd008; border-left: 2px solid #ef4444;"></div>
             <span>Critical Path</span>
           </div>
         </div>
@@ -112,6 +116,10 @@
               {{formatDate(group.startDate!, 'MMM d')}} - {{formatDate(group.endDate!, 'MMM d')}}
             </div>
             <div class="task-count">{{group.subtasks.length}} tasks</div>
+          </div>
+
+          <div class="progress-pill">
+            {{ group.progress }}%
           </div>
 
           <!-- Progress Bar -->

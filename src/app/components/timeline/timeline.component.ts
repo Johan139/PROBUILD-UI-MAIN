@@ -58,6 +58,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   timelineHeight: number = 400;
   selectedGroup: TimelineGroup | null = null;
   modalRef: MatDialogRef<any> | null = null;
+  endDate: Date = new Date();
   private ghostElement: HTMLElement | null = null;
   private navigationInterval: any;
 
@@ -68,10 +69,12 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   constructor(private dialog: MatDialog) {}
 
   ngOnInit() {
+    this.processTaskGroups();
     this.initializeViewStartDate();
     this.generateWeeklyDates();
     this.calculateTimelineHeight();
     this.setupGlobalListeners();
+    this.updateEndDate();
   }
 
   ngOnDestroy() {
@@ -83,11 +86,26 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
    ngOnChanges(changes: SimpleChanges) {
      if (changes['taskGroups']) {
+       this.processTaskGroups();
        this.initializeViewStartDate();
        this.generateWeeklyDates();
        this.calculateTimelineHeight();
      }
    }
+
+   private processTaskGroups(): void {
+    if (!this.taskGroups) {
+      return;
+    }
+    this.taskGroups.forEach(group => {
+      if (group.subtasks && group.subtasks.length > 0) {
+        const totalProgress = group.subtasks.reduce((acc, subtask) => acc + (subtask.progress || 0), 0);
+        group.progress = Math.round(totalProgress / group.subtasks.length);
+      } else {
+        group.progress = 0;
+      }
+    });
+  }
 
    private initializeViewStartDate() {
      if (!this.taskGroups || this.taskGroups.length === 0) {
@@ -156,6 +174,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private generateWeeklyDates() {
+    console.log('[Timeline] generateWeeklyDates called');
     this.weeklyDates = [];
 
     for (let week = 0; week < this.weeksToShow; week++) {
@@ -177,9 +196,12 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   navigateTimeline(days: number) {
+    console.log(`[Timeline] navigateTimeline called with days: ${days}`);
+    console.log(`[Timeline] Current viewStartDate:`, this.viewStartDate);
     const newDate = new Date(this.viewStartDate);
     newDate.setDate(newDate.getDate() + days);
     this.viewStartDate = newDate;
+    console.log(`[Timeline] New viewStartDate:`, this.viewStartDate);
     this.generateWeeklyDates();
   }
 
@@ -473,12 +495,22 @@ private parseMultipleFormats(dateInput: Date | string | null | undefined): Date 
   }
 
   public getGroupStatus(group: TimelineGroup): string {
+    if (!group.subtasks || group.subtasks.length === 0) {
+      return 'pending';
+    }
+
     if (group.subtasks.some(t => t.status === 'delayed')) {
       return 'delayed';
     }
+
     if (group.subtasks.every(t => t.status === 'completed')) {
       return 'completed';
     }
+
+    if (group.subtasks.every(t => t.status === 'pending')) {
+      return 'pending';
+    }
+
     return 'in_progress';
   }
 }
