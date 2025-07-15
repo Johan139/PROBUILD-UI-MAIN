@@ -105,6 +105,7 @@
           [ngClass]="['status-' + getGroupStatus(group), 'schedule-status-' + getScheduleStatus(group)]"
           [class.critical]="isGroupCritical(group)"
           [class.dragging]="draggingGroup === group.title"
+          [class.read-only]="!isProjectOwner"
           [style]="getGroupStyle(group, groupIndex)"
           [attr.data-group]="group.title"
           [title]="getGroupTooltip(group)"
@@ -195,7 +196,7 @@
 
         <div class="modal-actions">
           <button class="btn btn-secondary" (click)="closeGroupModal()">Close</button>
-          <!-- <button class="btn btn-primary" (click)="editGroup(selectedGroup!)">Edit Tasks</button> -->
+          <button class="btn btn-primary" *ngIf="isProjectOwner" (click)="editGroup(selectedGroup!)">Edit Tasks</button>
         </div>
       </div>
     </ng-template>

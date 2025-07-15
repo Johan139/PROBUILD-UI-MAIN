@@ -34,6 +34,8 @@ import { AddressService } from './services/address.service';
 import { NoteService } from './services/note.service';
 import { TimelineService } from './services/timeline.service';
 import { SignalrService } from './services/signalr.service';
+import { JobAssignmentService } from './job-assignment/job-assignment.service';
+import { AuthService } from '../../authentication/auth.service';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -110,6 +112,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   jobCardForm: FormGroup;
   sessionId: string = '';
   public isGeneratingReport = false;
+  public isProjectOwner = false;
   private pollingSubscription: Subscription | null = null;
 
   constructor(
@@ -129,7 +132,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public addressService: AddressService,
     public noteService: NoteService,
     public timelineService: TimelineService,
-    private signalrService: SignalrService
+    private signalrService: SignalrService,
+    private jobAssignmentService: JobAssignmentService,
+    private authService: AuthService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -156,6 +161,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.projectDetails.date
       ).toISOString().split('T')[0];
       this.jobDataService.fetchJobData(this.projectDetails);
+      if (this.projectDetails.jobId) {
+        this.checkProjectOwnerStatus(this.projectDetails.jobId);
+      }
     });
 
     this.store.select((state) => state.projectDetails).subscribe((details) => {
@@ -384,4 +392,26 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   closeAlert(): void {
     this.showAlert = false;
   }
+
+  private checkProjectOwnerStatus(jobId: string): void {
+    const userId = this.authService.currentUserSubject.value?.id;
+    if (!userId || !jobId) {
+      this.isProjectOwner = false;
+      return;
+    }
+
+    this.jobAssignmentService.getJobAssignment().subscribe(assignments => {
+      const numericJobId = +jobId;
+      const jobAssignment = assignments.find(assignment => assignment.id === numericJobId);
+
+      if (jobAssignment) {
+        const user = jobAssignment.jobUser.find(u => u.id === userId);
+        this.isProjectOwner = !!user && user.jobRole === 'PROJECT_OWNER';
+      } else {
+        this.isProjectOwner = false;
+      }
+    });
+  }
 }
+
+

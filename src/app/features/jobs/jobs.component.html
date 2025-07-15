@@ -20,7 +20,7 @@
                   <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
                   <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
                 </span>
-                <button mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
+                <button *ngIf="isProjectOwner" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
                   <mat-icon>edit</mat-icon>
                 </button>
               </div>
@@ -68,6 +68,7 @@
               <div class="timeline-wrapper">
                 <app-timeline
                   [taskGroups]="(timelineService.timelineGroups$ | async)!"
+                  [isProjectOwner]="isProjectOwner"
                   (onGroupClick)="timelineService.handleGroupClick($event)"
                   (onGroupMove)="timelineService.handleGroupMove($event)"
                   (onEditGroup)="timelineService.handleEditGroup($event)">
@@ -83,7 +84,7 @@
   <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
     <div class="table-header">
       <h3>{{table.title}}</h3>
-      <button class="submit-btn" (click)="subtaskService.addSubtask(table)">
+      <button *ngIf="isProjectOwner" class="submit-btn" (click)="subtaskService.addSubtask(table)">
         Add Subtask
       </button>
     </div>
@@ -103,35 +104,35 @@
       <tbody>
         <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
           <td>
-            <input type="text" [(ngModel)]="subtask.task" class="no-border" />
+            <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
           </td>
           <td>
-            <input type="number" [(ngModel)]="subtask.days" class="no-border"
-                   (change)="subtaskService.updateSubtaskDates(table, i)" />
+            <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
+                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
-            <input type="date" [(ngModel)]="subtask.startDate" class="no-border"
-                   (change)="subtaskService.updateSubtaskDates(table, i)" />
+            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
+                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
-            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
+            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
           </td>
           <td>
             {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
           </td>
           <td>
-            <button class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
+            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
               Delete
             </button>
 
           </td>
           <td>
-            <button class="submit-btn delete-btn" (click)="openNoteDialog(subtask)">
-              Update
+            <button class="submit-btn" (click)="openNoteDialog(subtask)">
+              {{ isProjectOwner ? 'Update' : 'View Note' }}
             </button>
           </td>
           <td>
-            <mat-checkbox [(ngModel)]="subtask.accepted"></mat-checkbox>
+            <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
           </td>
         </tr>
       </tbody>
@@ -141,13 +142,13 @@
 
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <button class="submit-btn publish-btn" mat-raised-button (click)="subtaskService.publish()">
+            <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="subtaskService.publish()">
               Publish Job
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()">
               Save Job
             </button>
-            <button class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()">
+            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()">
               Discard Job
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
@@ -163,7 +164,7 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
               Back
             </button>
-            <button class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()">
                Accept All Subtasks
             </button>
           </div>

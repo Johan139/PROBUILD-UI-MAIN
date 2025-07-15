@@ -41,6 +41,7 @@ export interface TimelineGroup {
 })
 export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   @Input() taskGroups: TimelineGroup[] = [];
+  @Input() isProjectOwner: boolean = false;
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
   @Output() onGroupMove = new EventEmitter<{groupId: string, newStartDate: Date, newEndDate: Date}>();
   @Output() onEditGroup = new EventEmitter<TimelineGroup>();
@@ -298,6 +299,10 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   handleDragStart(e: MouseEvent, group: TimelineGroup) {
+    if (!this.isProjectOwner) {
+      this.openGroupModal(group);
+      return;
+    }
     // Prevent drag for right-click
     if (e.button === 2) {
       return;
