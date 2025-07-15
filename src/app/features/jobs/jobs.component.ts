@@ -1106,47 +1106,52 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     };
   }
 
-  async downloadEnvironmentalReport(jobId: string): Promise<void> {
-    this.isGeneratingReport = true;
-    try {
-      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
-      if (!results || results.length === 0 || !results[0].fullResponse) {
-        this.snackBar.open('Could not retrieve the report data.', 'Close', { duration: 3000 });
-        this.isGeneratingReport = false;
-        return;
-      }
+async downloadEnvironmentalReport(jobId: string): Promise<void> {
+  this.isGeneratingReport = true;
+  try {
+    const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+    if (!results || results.length === 0 || !results[0].fullResponse) {
+      this.snackBar.open('Could not retrieve the report data.', 'Close', { duration: 3000 });
+      this.isGeneratingReport = false;
+      return;
+    }
 
-      const fullResponse = results[0].fullResponse;
-      const reportStartMarker = "Ready for the next prompt 20.";
-      const reportEndMarker = "Ready for the next prompt 21.";
-      let startIndex = fullResponse.indexOf(reportStartMarker);
-      if (startIndex === -1) {
-        this.snackBar.open('Environmental report section not found.', 'Close', { duration: 3000 });
-        this.isGeneratingReport = false;
-        return;
-      }
-      startIndex += reportStartMarker.length;
+    const fullResponse = results[0].fullResponse;
+    const reportStartMarker = "Ready for the next prompt 20.";
+    const reportEndMarker = "Ready for the next prompt 21.";
+    let startIndex = fullResponse.indexOf(reportStartMarker);
+    if (startIndex === -1) {
+      this.snackBar.open('Environmental report section not found.', 'Close', { duration: 3000 });
+      this.isGeneratingReport = false;
+      return;
+    }
+    startIndex += reportStartMarker.length;
 
-      const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
-      if (endIndex === -1) {
-        this.snackBar.open('End of environmental report section not found.', 'Close', { duration: 3000 });
-        this.isGeneratingReport = false;
-        return;
-      }
+    const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+    if (endIndex === -1) {
+      this.snackBar.open('End of environmental report section not found.', 'Close', { duration: 3000 });
+      this.isGeneratingReport = false;
+      return;
+    }
 
-      let reportContent = fullResponse.substring(startIndex, endIndex).trim();
-      const linesToRemove = [
-        "Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.",
-        "**Prepared By:** Gemini Sustainability Consulting",
-        "**From:** Gemini - Sustainability Consultant & Estimator",
-        "### **Phase 20: Environmental Lifecycle Report**"
-      ];
-      linesToRemove.forEach(line => {
-        reportContent = reportContent.replace(new RegExp(line.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
-      });
+    let reportContent = fullResponse.substring(startIndex, endIndex).trim();
+    const linesToRemove = [
+      "Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.",
+      "**Prepared By:** Gemini Sustainability Consulting",
+      "**From:** Gemini - Sustainability Consultant & Estimator",
+      "### **Phase 20: Environmental Lifecycle Report**"
+    ];
+    linesToRemove.forEach(line => {
+      reportContent = reportContent.replace(new RegExp(line.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'), '').trim();
+    });
 
-      const parsedContent = await Promise.resolve(marked(reportContent));
+    const parsedContent = await Promise.resolve(marked(reportContent));
 
+    // Load logo using Image object
+    const logo = new Image();
+    logo.src = 'assets/logo.png';
+
+    const generateReport = (logoDataUrl?: string) => {
       const worker = new Worker(new URL('./report-generator.worker', import.meta.url), { type: 'module' });
 
       worker.onmessage = ({ data }) => {
@@ -1172,14 +1177,44 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
       const jsonContent = this._parseHtmlToJson(parsedContent);
       console.log('Parsed JSON content:', jsonContent);
-      worker.postMessage({ reportContent: jsonContent });
 
-    } catch (err) {
-      console.error('Failed to get bill of materials for report:', err);
-      this.snackBar.open('Failed to fetch report data.', 'Close', { duration: 3000 });
-      this.isGeneratingReport = false;
-    }
+      worker.postMessage({
+        reportContent: jsonContent,
+        logoDataUrl: logoDataUrl
+      });
+    };
+
+    logo.onload = () => {
+      // Convert the loaded image to data URL
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = logo.width;
+      canvas.height = logo.height;
+      ctx!.drawImage(logo, 0, 0);
+      const logoDataUrl = canvas.toDataURL('image/png');
+      generateReport(logoDataUrl);
+    };
+
+    logo.onerror = () => {
+      console.warn('Could not load logo, proceeding without it.');
+      generateReport(); // Generate without logo
+    };
+
+  } catch (err) {
+    console.error('Failed to get bill of materials for report:', err);
+    this.snackBar.open('Failed to fetch report data.', 'Close', { duration: 3000 });
+    this.isGeneratingReport = false;
   }
+}
+
+  private blobToDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
   private _parseHtmlToJson(htmlString: string): any[] {
     const parser = new DOMParser();
