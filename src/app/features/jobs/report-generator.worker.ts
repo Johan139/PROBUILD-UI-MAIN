@@ -3,6 +3,18 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Helper function to format project information
+const formatProjectInfo = (text: string): string => {
+  // Handle the concatenated project info
+  if (text.includes('Project:') && text.includes('Address:') && text.includes('Date:')) {
+    return text
+      .replace(/RESIDENCEAddress:/g, 'RESIDENCE\nAddress:')
+      .replace(/Address:/g, '\nAddress:')
+      .replace(/Date:/g, '\nDate:')
+  }
+  return text;
+};
+
 // Helper function to clean Unicode characters that cause issues in jsPDF
 const cleanTextForPDF = (text: string): string => {
   return text
@@ -96,13 +108,55 @@ addEventListener('message', async ({ data }) => {
           doc.text(h3Lines, margin, currentY, { charSpace: 0 });
           currentY += (h3Lines.length * 7) + 2;
           break;
-        case 'p':
+       case 'p':
           doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
-          const cleanPText = cleanTextForPDF(element.text);
-          const pLines = doc.splitTextToSize(cleanPText, usableWidth);
-          doc.text(pLines, margin, currentY, { charSpace: 0 });
-          currentY += (pLines.length * 5) + 2;
+          let cleanPText = cleanTextForPDF(element.text);
+
+          // Special handling for project information
+          if (cleanPText.includes('Project:') && cleanPText.includes('Address:') && cleanPText.includes('Date:')) {
+            // Extract and format each piece of information
+            const projectMatch = cleanPText.match(/Project:\s*([^A]+?)(?=Address:|$)/);
+            const addressMatch = cleanPText.match(/Address:\s*([^D]+?)(?=Date:|$)/);
+            const dateMatch = cleanPText.match(/Date:\s*(.+)/);
+
+            if (projectMatch && addressMatch && dateMatch) {
+              const project = projectMatch[1].trim();
+              const address = addressMatch[1].trim();
+              const date = dateMatch[1].trim();
+
+              // Format as separate lines
+              doc.setFont('helvetica', 'bold');
+              doc.text('Project:', margin, currentY);
+              doc.setFont('helvetica', 'normal');
+              doc.text(project, margin + 25, currentY);
+              currentY += 6;
+
+              doc.setFont('helvetica', 'bold');
+              doc.text('Address:', margin, currentY);
+              doc.setFont('helvetica', 'normal');
+              const addressLines = doc.splitTextToSize(address, usableWidth - 25);
+              doc.text(addressLines, margin + 25, currentY);
+              currentY += (addressLines.length * 5);
+
+              doc.setFont('helvetica', 'bold');
+              doc.text('Date:', margin, currentY);
+              doc.setFont('helvetica', 'normal');
+              doc.text(date, margin + 25, currentY);
+              currentY += 7;
+            } else {
+              // Fallback to simple formatting
+              cleanPText = formatProjectInfo(cleanPText);
+              const pLines = doc.splitTextToSize(cleanPText, usableWidth);
+              doc.text(pLines, margin, currentY, { charSpace: 0 });
+              currentY += (pLines.length * 5) + 2;
+            }
+          } else {
+            // Regular paragraph handling
+            const pLines = doc.splitTextToSize(cleanPText, usableWidth);
+            doc.text(pLines, margin, currentY, { charSpace: 0 });
+            currentY += (pLines.length * 5) + 2;
+          }
           break;
         case 'ul':
           doc.setFontSize(10);
