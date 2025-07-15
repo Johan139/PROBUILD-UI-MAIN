@@ -15,6 +15,14 @@ const formatProjectInfo = (text: string): string => {
   return text;
 };
 
+// Helper function to clean up excessive newlines
+const cleanNewlines = (text: string): string => {
+  return text
+    .replace(/\n\n+/g, ' ')  // Replace double+ newlines with single space
+    .replace(/\n/g, ' ')     // Replace remaining single newlines with spaces
+    .trim();                 // Remove leading/trailing whitespace
+};
+
 // Helper function to prevent line breaks after colons
 const preventColonBreaks = (text: string): string => {
   // Replace colon + space with colon + non-breaking space equivalent
@@ -115,7 +123,7 @@ addEventListener('message', async ({ data }) => {
           doc.text(h3Lines, margin, currentY, { charSpace: 0 });
           currentY += (h3Lines.length * 7) + 2;
           break;
-       case 'p':
+        case 'p':
           doc.setFontSize(10);
           doc.setFont('helvetica', 'normal');
           let cleanPText = cleanTextForPDF(element.text);
@@ -176,7 +184,8 @@ addEventListener('message', async ({ data }) => {
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             let cleanItem = cleanTextForPDF(item);
-            cleanItem = preventColonBreaks(cleanItem); // Add this line
+            cleanItem = preventColonBreaks(cleanItem);
+            cleanItem = cleanNewlines(cleanItem); // Add this line
             const itemLines = doc.splitTextToSize(`• ${cleanItem}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
@@ -194,7 +203,8 @@ addEventListener('message', async ({ data }) => {
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
             let cleanItem = cleanTextForPDF(item);
-            cleanItem = preventColonBreaks(cleanItem); // Add this line
+            cleanItem = preventColonBreaks(cleanItem);
+            cleanItem = cleanNewlines(cleanItem); // Add this line
             const itemLines = doc.splitTextToSize(`${olCounter}. ${cleanItem}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
