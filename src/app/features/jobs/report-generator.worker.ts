@@ -15,6 +15,13 @@ const formatProjectInfo = (text: string): string => {
   return text;
 };
 
+// Helper function to prevent line breaks after colons
+const preventColonBreaks = (text: string): string => {
+  // Replace colon + space with colon + non-breaking space equivalent
+  // This prevents jsPDF from breaking the line right after a colon
+  return text.replace(/:\s+/g, ':\u00A0'); // \u00A0 is a non-breaking space
+};
+
 // Helper function to clean Unicode characters that cause issues in jsPDF
 const cleanTextForPDF = (text: string): string => {
   return text
@@ -168,7 +175,8 @@ addEventListener('message', async ({ data }) => {
             }
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            const cleanItem = cleanTextForPDF(item);
+            let cleanItem = cleanTextForPDF(item);
+            cleanItem = preventColonBreaks(cleanItem); // Add this line
             const itemLines = doc.splitTextToSize(`• ${cleanItem}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
@@ -185,7 +193,8 @@ addEventListener('message', async ({ data }) => {
             }
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            const cleanItem = cleanTextForPDF(item);
+            let cleanItem = cleanTextForPDF(item);
+            cleanItem = preventColonBreaks(cleanItem); // Add this line
             const itemLines = doc.splitTextToSize(`${olCounter}. ${cleanItem}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;
