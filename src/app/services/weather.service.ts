@@ -82,7 +82,7 @@ export class WeatherService {
         });
       }),
       catchError((err) => {
-        return throwError(() => new Error('Unable to fetch weather forecast'));
+        return throwError(() => new Error('Unable to fetch weather forecast' + " " + err.message));
       })
     );
   }

@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, ViewChild, ElementRef, OnDestroy, TemplateRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { format, addDays, differenceInCalendarDays } from 'date-fns';
+import { format, addDays, differenceInCalendarDays, isValid, parse } from 'date-fns';
 
 export interface TimelineTask {
   id: string;
@@ -397,9 +397,62 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
    return date.toDateString() === today.toDateString();
  }
 
- formatDate(date: Date, formatStr: string): string {
-   return format(date, formatStr);
- }
+formatDate(date: Date | string | null | undefined, formatStr: string): string {
+  if (!date) return '';
+
+  const parsedDate = this.parseMultipleFormats(date);
+  return parsedDate ? format(parsedDate, formatStr) : '';
+}
+
+private parseMultipleFormats(dateInput: Date | string | null | undefined): Date | null {
+  if (!dateInput) return null;
+
+  if (dateInput instanceof Date) {
+    return isValid(dateInput) ? dateInput : null;
+  }
+
+  if (typeof dateInput !== 'string') return null;
+
+  const dateStr = dateInput.trim();
+  if (!dateStr) return null;
+
+  // Define the formats to try in order of preference
+  const formats = [
+    'dd/MM/yyyy',    // 20/12/2025
+    'dd-MM-yyyy',    // 20-12-2025
+    'MM/dd/yyyy',    // 12/20/2025
+    'MM-dd-yyyy',    // 12-20-2025
+    'yyyy-MM-dd',    // 2025-12-20
+    'yyyy/MM/dd',    // 2025/12/20
+    'dd/MM/yy',      // 20/12/25
+    'dd-MM-yy',      // 20-12-25
+    'MM/dd/yy',      // 12/20/25
+    'MM-dd-yy'       // 12-20-25
+  ];
+
+  for (const formatPattern of formats) {
+    try {
+      const parsedDate = parse(dateStr, formatPattern, new Date());
+      if (isValid(parsedDate)) {
+        return parsedDate;
+      }
+    } catch (e) {
+      // Continue to next format
+    }
+  }
+
+  // Fallback to native Date parsing
+  try {
+    const nativeDate = new Date(dateStr);
+    if (isValid(nativeDate)) {
+      return nativeDate;
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  return null;
+}
 
  getDuration(task: TimelineTask): number {
    if (!task.start || !task.end) return 0;

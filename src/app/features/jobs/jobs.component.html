@@ -40,8 +40,8 @@
                 </div>
               </div>
             </div>
-            <div *ngIf="forecast.length" class="weather-scroll-container">
-              <div *ngFor="let day of forecast" class="forecast-card">
+            <div *ngIf="store.getState().forecast?.length" class="weather-scroll-container">
+              <div *ngFor="let day of store.getState().forecast" class="forecast-card">
                 <div class="date">{{ day.date }}</div>
                 <img [src]="day.iconUrl" alt="Weather Icon" />
                 <div class="condition">{{ day.condition }}</div>
@@ -55,8 +55,8 @@
               </div>
             </div>
 
-            <div *ngIf="weatherError" class="weather-error">
-              {{ weatherError }}
+            <div *ngIf="store.getState().weatherError" class="weather-error">
+              {{ store.getState().weatherError }}
             </div>
           </div>
 
@@ -67,10 +67,10 @@
             <div class="chart-container">
               <div class="timeline-wrapper">
                 <app-timeline
-                  [taskGroups]="timelineGroups"
-                  (onGroupClick)="handleGroupClick($event)"
-                  (onGroupMove)="handleGroupMove($event)"
-                  (onEditGroup)="handleEditGroup($event)">
+                  [taskGroups]="timelineService.timelineGroups"
+                  (onGroupClick)="timelineService.handleGroupClick($event)"
+                  (onGroupMove)="timelineService.handleGroupMove($event)"
+                  (onEditGroup)="timelineService.handleEditGroup($event)">
                 </app-timeline>
               </div>
             </div>
@@ -83,7 +83,7 @@
   <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
     <div class="table-header">
       <h3>{{table.title}}</h3>
-      <button class="submit-btn" (click)="addSubtask(table)">
+      <button class="submit-btn" (click)="subtaskService.addSubtask(table)">
         Add Subtask
       </button>
     </div>
@@ -101,17 +101,17 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let subtask of getVisibleSubtasks(table); let i = index">
+        <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
           <td>
             <input type="text" [(ngModel)]="subtask.task" class="no-border" />
           </td>
           <td>
             <input type="number" [(ngModel)]="subtask.days" class="no-border"
-                   (change)="updateSubtaskDates(table, i)" />
+                   (change)="subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
             <input type="date" [(ngModel)]="subtask.startDate" class="no-border"
-                   (change)="updateSubtaskDates(table, i)" />
+                   (change)="subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
             <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
@@ -120,7 +120,7 @@
             {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
           </td>
           <td>
-            <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
+            <button class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
               Delete
             </button>
 
@@ -141,13 +141,13 @@
 
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <button class="submit-btn publish-btn" mat-raised-button (click)="publish()">
+            <button class="submit-btn publish-btn" mat-raised-button (click)="subtaskService.publish()">
               Publish Job
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="saveOnly()">
+            <button class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()">
               Save Job
             </button>
-            <button class="submit-btn delete-btn" mat-raised-button (click)="discard()">
+            <button class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()">
               Discard Job
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
@@ -163,7 +163,7 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
               Back
             </button>
-            <button class="submit-btn save-btn" (click)="acceptAllSubtasks()">
+            <button class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()">
                Accept All Subtasks
             </button>
           </div>
