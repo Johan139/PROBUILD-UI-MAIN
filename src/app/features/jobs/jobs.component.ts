@@ -1171,6 +1171,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       };
 
       const jsonContent = this._parseHtmlToJson(parsedContent);
+      console.log('Parsed JSON content:', jsonContent);
       worker.postMessage({ reportContent: jsonContent });
 
     } catch (err) {
