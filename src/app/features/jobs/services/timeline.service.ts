@@ -5,102 +5,105 @@ import { TimelineTask, TimelineGroup } from '../../../components/timeline/timeli
 import { differenceInCalendarDays, format } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { Observable, map } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TimelineService {
+  timelineGroups$: Observable<TimelineGroup[]>;
+
   constructor(
     private store: Store<SubtasksState>,
     private dialog: MatDialog
-  ) {}
+  ) {
+    this.timelineGroups$ = this.store.select(state => state.subtaskGroups).pipe(
+      map(subtaskGroups => {
+        return (subtaskGroups || []).map(
+          (group: { title: string; subtasks: any[] }) => {
+            const tasks = group.subtasks.filter((task: any) => !task.deleted);
 
-  get timelineGroups(): TimelineGroup[] {
-    const subtaskGroups = this.store.getState().subtaskGroups;
+            if (tasks.length === 0) {
+              return {
+                title: group.title,
+                subtasks: [],
+                startDate: new Date(),
+                endDate: new Date(),
+                progress: 0,
+                scheduleStatus: 'on-track' as const,
+              };
+            }
 
-    return (subtaskGroups || []).map(
-      (group: { title: string; subtasks: any[] }) => {
-        const tasks = group.subtasks.filter((task: any) => !task.deleted);
+            const startDates = tasks
+              .map((task: any) => new Date(task.startDate || task.start))
+              .filter((date: Date) => !isNaN(date.getTime()));
 
-        if (tasks.length === 0) {
-          return {
-            title: group.title,
-            subtasks: [],
-            startDate: new Date(),
-            endDate: new Date(),
-            progress: 0,
-            scheduleStatus: 'on-track' as const,
-          };
-        }
+            const endDates = tasks
+              .map((task: any) => new Date(task.endDate || task.end))
+              .filter((date: Date) => !isNaN(date.getTime()));
 
-        const startDates = tasks
-          .map((task: any) => new Date(task.startDate || task.start))
-          .filter((date: Date) => !isNaN(date.getTime()));
+            const groupStartDate =
+              startDates.length > 0
+                ? new Date(Math.min(...startDates.map((d: Date) => d.getTime())))
+                : new Date();
 
-        const endDates = tasks
-          .map((task: any) => new Date(task.endDate || task.end))
-          .filter((date: Date) => !isNaN(date.getTime()));
+            const groupEndDate =
+              endDates.length > 0
+                ? new Date(Math.max(...endDates.map((d: Date) => d.getTime())))
+                : new Date();
 
-        const groupStartDate =
-          startDates.length > 0
-            ? new Date(Math.min(...startDates.map((d: Date) => d.getTime())))
-            : new Date();
+            const completedTasks = tasks.filter(
+              (task: any) => task.status === 'completed' || task.accepted
+            ).length;
+            const progress =
+              tasks.length > 0
+                ? Math.round((completedTasks / tasks.length) * 100)
+                : 0;
 
-        const groupEndDate =
-          endDates.length > 0
-            ? new Date(Math.max(...endDates.map((d: Date) => d.getTime())))
-            : new Date();
+            const today = new Date();
+            const isOverdue = tasks.some((task: any) => {
+              const taskEnd = new Date(task.endDate || task.end);
+              return (
+                taskEnd < today && task.status !== 'completed' && !task.accepted
+              );
+            });
 
-        const completedTasks = tasks.filter(
-          (task: any) => task.status === 'completed' || task.accepted
-        ).length;
-        const progress =
-          tasks.length > 0
-            ? Math.round((completedTasks / tasks.length) * 100)
-            : 0;
+            const scheduleStatus = isOverdue
+              ? 'behind'
+              : progress === 100
+              ? 'ahead'
+              : 'on-track';
 
-        const today = new Date();
-        const isOverdue = tasks.some((task: any) => {
-          const taskEnd = new Date(task.endDate || task.end);
-          return (
-            taskEnd < today && task.status !== 'completed' && !task.accepted
-          );
-        });
-
-        const scheduleStatus = isOverdue
-          ? 'behind'
-          : progress === 100
-          ? 'ahead'
-          : 'on-track';
-
-        return {
-          title: group.title,
-          subtasks: tasks.map((task: any) => ({
-            id: task.id || Math.random().toString(),
-            name: task.task,
-            task: task.task,
-            start: new Date(task.startDate || task.start),
-            end: new Date(task.endDate || task.end),
-            startDate: task.startDate,
-            endDate: task.endDate,
-            days: task.days,
-            progress: task.accepted
-              ? 100
-              : task.status === 'completed'
-              ? 100
-              : 0,
-            status: task.status || 'pending',
-            isCritical: this.isTaskCritical(task),
-            cost: task.cost,
-            deleted: task.deleted,
-            accepted: task.accepted,
-          })),
-          startDate: groupStartDate,
-          endDate: groupEndDate,
-          progress,
-          scheduleStatus,
-        };
-      }
+            return {
+              title: group.title,
+              subtasks: tasks.map((task: any) => ({
+                id: task.id || Math.random().toString(),
+                name: task.task,
+                task: task.task,
+                start: new Date(task.startDate || task.start),
+                end: new Date(task.endDate || task.end),
+                startDate: task.startDate,
+                endDate: task.endDate,
+                days: task.days,
+                progress: task.accepted
+                  ? 100
+                  : task.status === 'completed'
+                  ? 100
+                  : 0,
+                status: task.status || 'pending',
+                isCritical: this.isTaskCritical(task),
+                cost: task.cost,
+                deleted: task.deleted,
+                accepted: task.accepted,
+              })),
+              startDate: groupStartDate,
+              endDate: groupEndDate,
+              progress,
+              scheduleStatus,
+            };
+          }
+        );
+      })
     );
   }
 

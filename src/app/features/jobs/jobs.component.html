@@ -67,7 +67,7 @@
             <div class="chart-container">
               <div class="timeline-wrapper">
                 <app-timeline
-                  [taskGroups]="timelineService.timelineGroups"
+                  [taskGroups]="(timelineService.timelineGroups$ | async)!"
                   (onGroupClick)="timelineService.handleGroupClick($event)"
                   (onGroupMove)="timelineService.handleGroupMove($event)"
                   (onEditGroup)="timelineService.handleEditGroup($event)">

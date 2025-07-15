@@ -74,7 +74,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     this.generateWeeklyDates();
     this.calculateTimelineHeight();
     this.setupGlobalListeners();
-    this.updateEndDate();
+    this.getEndDate();
   }
 
   ngOnDestroy() {
@@ -152,6 +152,8 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
      this.viewStartDate = newStartDate;
    }
 
+
+
   private calculateTimelineHeight() {
     this.timelineHeight = Math.max(200, this.taskGroups.length * 60 + 40);
   }
@@ -203,9 +205,11 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     this.viewStartDate = newDate;
     console.log(`[Timeline] New viewStartDate:`, this.viewStartDate);
     this.generateWeeklyDates();
+    this.getEndDate();
   }
 
   startTimelineNavigation(direction: number) {
+    console.log(`[Timeline] startTimelineNavigation called with direction: ${direction}`);
     this.navigateTimeline(direction); // Initial call
     this.navigationInterval = setInterval(() => {
       this.navigateTimeline(direction);
@@ -213,6 +217,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   stopTimelineNavigation() {
+    console.log('[Timeline] stopTimelineNavigation called');
     clearInterval(this.navigationInterval);
   }
 

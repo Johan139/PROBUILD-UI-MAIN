@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from "@angular/router";
-import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
+import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
@@ -41,6 +41,7 @@ const BASE_URL = environment.BACKEND_URL;
   selector: 'app-jobs',
   standalone: true,
   imports: [
+    AsyncPipe,
     FormsModule,
     ReactiveFormsModule,
     NgIf,
