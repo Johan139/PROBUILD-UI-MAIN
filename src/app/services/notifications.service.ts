@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, BehaviorSubject, tap, catchError, throwError } from 'rxjs';
 import { Notification } from '../models/notification';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../authentication/auth.service';
@@ -96,9 +96,25 @@ export class NotificationsService {
     return this.http.get<Notification[]>(this.apiUrl);
   }
 
-  sendTestNotification(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/test`, {});
-  }
+sendTestNotification(): Observable<any> {
+  const token = this.authService.getToken();
+
+  // Explicitly set headers
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  });
+
+  return this.http.post(`${this.apiUrl}/test`, {}, { headers }).pipe(
+    tap((response) => {
+      console.log('Test notification success:', response);
+    }),
+    catchError((error) => {
+      console.error('Test notification error:', error);
+      return throwError(error);
+    })
+  );
+}
 
   // Method to manually reconnect WebSocket if needed
   reconnectWebSocket(): void {
