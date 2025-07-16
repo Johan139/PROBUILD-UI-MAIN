@@ -129,7 +129,7 @@ export class JobDataService {
 
   private groupSubtasksByTitle(
     subtasks: any[]
-  ): { title: string; subtasks: any[] }[] {
+  ): { title: string; subtasks: any[]; progress: number }[] {
     const groupedMap = new Map<string, any[]>();
     for (const st of subtasks) {
       const group = groupedMap.get(st.groupTitle) || [];
@@ -149,10 +149,20 @@ export class JobDataService {
       });
       groupedMap.set(st.groupTitle, group);
     }
-    return Array.from(groupedMap.entries()).map(([title, subtasks]) => ({
-      title: this.cleanTaskName(title),
-      subtasks,
-    }));
+    return Array.from(groupedMap.entries()).map(([title, subtasks]) => {
+      const completedCount = subtasks.filter(
+        (s) => s.status && s.status.toLowerCase() === 'completed'
+      ).length;
+      const progress =
+        subtasks.length > 0
+          ? Math.round((completedCount / subtasks.length) * 100)
+          : 0;
+      return {
+        title: this.cleanTaskName(title),
+        subtasks,
+        progress,
+      };
+    });
   }
 
   private parseTimelineToTaskGroups(

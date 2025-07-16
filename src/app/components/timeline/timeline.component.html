@@ -173,7 +173,7 @@
             <div
               *ngFor="let subtask of selectedGroup?.subtasks"
               class="subtask-item"
-              [class.completed]="subtask.status === 'completed'"
+              [class.completed]="subtask.status && subtask.status.toLowerCase() === 'completed'"
               [class.critical]="subtask.isCritical">
 
               <div class="subtask-header">
@@ -189,11 +189,11 @@
                 </span>
               </div>
 
-              <div class="subtask-progress" *ngIf="subtask.progress !== undefined">
+              <div class="subtask-progress">
                 <div class="progress-bar-small">
-                  <div class="progress-fill-small" [style.width.%]="subtask.progress || 0"></div>
+                  <div class="progress-fill-small" [style.width.%]="subtask.status && subtask.status.toLowerCase() === 'completed' ? 100 : 0"></div>
                 </div>
-                <span>{{subtask.progress}}%</span>
+                <span>{{ subtask.status && subtask.status.toLowerCase() === 'completed' ? 100 : 0 }}%</span>
               </div>
               <div class="subtask-weather-warning" *ngIf="subtask.hasWeatherWarning">
                 <img [src]="subtask.weatherIconUrl" alt="Weather Icon" class="weather-icon" />

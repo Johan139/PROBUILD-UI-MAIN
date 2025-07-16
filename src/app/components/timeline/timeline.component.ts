@@ -103,14 +103,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     if (!this.taskGroups) {
       return;
     }
-    this.taskGroups.forEach(group => {
-      if (group.subtasks && group.subtasks.length > 0) {
-        const totalProgress = group.subtasks.reduce((acc, subtask) => acc + (subtask.progress || 0), 0);
-        group.progress = Math.round(totalProgress / group.subtasks.length);
-      } else {
-        group.progress = 0;
-      }
-    });
+    // Progress is now calculated in job-data.service.ts
   }
 
    private initializeViewStartDate() {
