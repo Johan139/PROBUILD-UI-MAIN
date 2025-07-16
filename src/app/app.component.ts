@@ -3,7 +3,7 @@ import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router'
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
-import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor, DatePipe } from "@angular/common";
+import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor, DatePipe, SlicePipe } from "@angular/common";
 import { MatNavList } from "@angular/material/list";
 import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -38,7 +38,8 @@ import { JobDataService } from './features/jobs/services/job-data.service';
     MatIconModule,
     AsyncPipe,
     NgFor,
-    MatDividerModule
+    MatDividerModule,
+    SlicePipe
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`
@@ -54,9 +55,11 @@ export class AppComponent implements OnInit, OnDestroy {
   isBrowser: boolean = typeof window !== 'undefined';
   isSidenavOpen = false;
   recentNotifications$!: Observable<Notification[]>;
+  public hasUnreadNotifications$!: Observable<boolean>;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, private notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
     this.isBrowser = isPlatformBrowser(this.platformId);
+    this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
 
     matIconRegistry.addSvgIcon(
       'icons8-settings',
@@ -82,6 +85,10 @@ export class AppComponent implements OnInit, OnDestroy {
       this.recentNotifications$ = this.notificationsService.notifications$;
       this.notificationsService.getAllNotifications().subscribe();
     }
+  }
+
+  onNotificationsOpened(): void {
+    this.notificationsService.markAsRead();
   }
 
   ngOnDestroy() {

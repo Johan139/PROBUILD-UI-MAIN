@@ -11,8 +11,9 @@
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
   <span class="spacer"></span>
-  <button mat-icon-button [matMenuTriggerFor]="notificationMenu" aria-label="Toggle notifications menu">
+  <button mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
     <mat-icon>notifications</mat-icon>
+    <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
   </button>
   <button *ngIf="shouldShowLogoutButton()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
     <mat-icon svgIcon="icons8-settings"></mat-icon>
@@ -92,7 +93,7 @@
 <mat-menu #notificationMenu="matMenu">
   <ng-container *ngIf="(recentNotifications$ | async) as notifications">
     <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
-      <ng-container *ngFor="let notification of notifications">
+      <ng-container *ngFor="let notification of notifications | slice:0:5">
         <button mat-menu-item (click)="navigateToJob(notification)">
           <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
         </button>
