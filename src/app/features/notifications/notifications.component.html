@@ -5,7 +5,7 @@
     <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
       <li *ngFor="let notification of notifications" class="notification-item">
         <p class="notification-message">
-          <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} - <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
+          <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
         </p>
       </li>
     </ng-container>

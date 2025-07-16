@@ -6,6 +6,8 @@ import { differenceInCalendarDays, format } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { Observable, map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +17,8 @@ export class TimelineService {
 
   constructor(
     private store: Store<SubtasksState>,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private http: HttpClient
   ) {
     this.timelineGroups$ = this.store.select(state => state.subtaskGroups).pipe(
       map(subtaskGroups => {
@@ -178,7 +181,7 @@ export class TimelineService {
     groupId: string;
     newStartDate: Date;
     newEndDate: Date;
-  }) {
+  }, jobId: number) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirm Move',
@@ -220,6 +223,7 @@ export class TimelineService {
 
             task.startDate = taskStart.toISOString().split('T')[0];
             task.endDate = taskEnd.toISOString().split('T')[0];
+            this.notifyTimelineUpdate(jobId, task.id).subscribe();
           });
 
           this.store.setState({
@@ -228,6 +232,10 @@ export class TimelineService {
         }
       }
     });
+  }
+
+  notifyTimelineUpdate(jobId: number, subtaskId: number): Observable<any> {
+    return this.http.post(`${environment.BACKEND_URL}/Jobs/NotifyTimelineUpdate`, { jobId, subtaskId });
   }
 
   handleGroupClick(group: TimelineGroup) {
