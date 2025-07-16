@@ -18,6 +18,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { JobDataService } from '../../jobs/services/job-data.service';
 const BASE_URL = environment.BACKEND_URL;
 
 
@@ -86,6 +87,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
     private http: HttpClient,
+    private jobDataService: JobDataService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -138,30 +140,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
 
   loadJob(id: any): void {
-    this.jobService.getSpecificJob(id).subscribe(res => {
-      const parsedDate = new Date(res.desiredStartDate);
-      const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-      const responseParams = {
-        jobId: res.jobId,
-        operatingArea: res.operatingArea,
-        address: res.address,
-        projectName: res.projectName,
-        jobType: res.jobType,
-        buildingSize: res.buildingSize,
-        wallStructure: res.wallStructure,
-        wallInsulation: res.wallInsulation,
-        roofStructure: res.roofStructure,
-        roofInsulation: res.roofInsulation,
-        electricalSupply: res.electricalSupply,
-        finishes: res.finishes,
-        foundation: res.foundation,
-        date: formattedDate,
-        documents: res.documents,
-        latitude : res.latitude,
-        longitude: res.longitude,
-      };
-      this.router.navigate(['view-quote'], { queryParams: responseParams });
-    });
+    this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');
   }
 
   onApprovalReasonChanged(event: any) {
