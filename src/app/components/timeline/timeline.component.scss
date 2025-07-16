@@ -220,33 +220,39 @@
 
     .task-content {
       display: flex;
-      align-items: flex-start;
-
-      .weather-warning-icon {
-        margin-right: 8px;
-        color: #ffcc00; // or a suitable warning color
-        cursor: help;
-      }
       flex-direction: column;
       justify-content: center;
       padding: 0 0.75rem;
       height: 100%;
-      color: white;
+      color: rgb(3, 3, 3);
       position: relative;
       z-index: 2;
     }
-    .progress-pill {
+    .task-meta {
       position: absolute;
       top: 50%;
       right: 12px;
       transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 3;
+    }
+
+    .weather-warning-icon {
+      font-size: 1.1rem;
+      cursor: help;
+      color: #ffc107;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .progress-pill {
       background-color: rgba(0, 0, 0, 0.2);
       color: white;
       padding: 2px 8px;
       border-radius: 12px;
       font-size: 0.75rem;
       font-weight: 600;
-      z-index: 3;
       text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
     }
 

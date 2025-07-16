@@ -22,6 +22,8 @@ export class WeatherImpactService {
   constructor() { }
 
   public applyWeatherImpact(taskGroups: TimelineGroup[], dailyForecasts: ForecastDay[]): TimelineGroup[] {
+    console.log('Processing weather impact for tasks:', JSON.stringify(taskGroups, null, 2));
+    console.log('Using weather forecast:', JSON.stringify(dailyForecasts, null, 2));
     if (!dailyForecasts || dailyForecasts.length === 0) {
       return taskGroups;
     }
@@ -34,14 +36,29 @@ export class WeatherImpactService {
         const taskNameLower = task.name.toLowerCase();
         const isAffected = this.RAIN_AFFECTED_CATEGORIES.some(cat => taskNameLower.includes(cat));
 
+        console.log(`Checking task: '${task.name}' (Start: ${task.start}, End: ${task.end}) - Weather-sensitive: ${isAffected}`);
+
         if (isAffected) {
           const taskStartDate = new Date(task.start);
+          taskStartDate.setHours(0, 0, 0, 0);
           const taskEndDate = new Date(task.end);
+          taskEndDate.setHours(0, 0, 0, 0);
+          const taskYear = taskStartDate.getFullYear();
 
           const affectedDays = dailyForecasts.filter(day => {
-            const forecastDate = new Date(day.date);
-            const isRainy = day.condition.toLowerCase().includes('rain') || day.precipitationProbability > 50;
-            return forecastDate >= taskStartDate && forecastDate <= taskEndDate && isRainy;
+            const forecastDate = new Date(`${day.date} ${taskYear}`);
+            forecastDate.setHours(0, 0, 0, 0);
+
+            const isAdverse = day.condition.toLowerCase().includes('rain') ||
+                              day.condition.toLowerCase().includes('thunderstorm') ||
+                              day.precipitationProbability > 50;
+
+            const withinRange = forecastDate >= taskStartDate && forecastDate <= taskEndDate;
+
+            if (withinRange) {
+              console.log(`  - Checking forecast for ${day.date}: Condition='${day.condition}', Precip.=${day.precipitationProbability}%. Is adverse? ${isAdverse}`);
+            }
+            return withinRange && isAdverse;
           });
 
           if (affectedDays.length > 0) {
@@ -52,8 +69,13 @@ export class WeatherImpactService {
               warningMessages.push(warning);
             }
             groupHasWarning = true;
+          } else {
+            task.hasWeatherWarning = false;
           }
+        } else {
+          task.hasWeatherWarning = false;
         }
+        console.log(`  => Final decision for '${task.name}': hasWeatherWarning = ${task.hasWeatherWarning}`);
       });
 
       if (groupHasWarning) {
