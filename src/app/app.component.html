@@ -93,7 +93,7 @@
   <ng-container *ngIf="(recentNotifications$ | async) as notifications">
     <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
       <ng-container *ngFor="let notification of notifications">
-        <button mat-menu-item>
+        <button mat-menu-item (click)="navigateToJob(notification)">
           <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
         </button>
       </ng-container>

@@ -3,7 +3,7 @@
   <button *ngIf="authService.isLoggedIn()" (click)="sendTestNotification()">Send Test Notification</button>
   <ul *ngIf="notifications$ | async as notifications" class="notification-list">
     <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
-      <li *ngFor="let notification of notifications" class="notification-item">
+      <li *ngFor="let notification of notifications" class="notification-item" (click)="navigateToJob(notification)">
         <p class="notification-message">
           <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
         </p>

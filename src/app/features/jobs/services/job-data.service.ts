@@ -12,6 +12,8 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { Router } from '@angular/router';
+import { formatDate } from '@angular/common';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +23,8 @@ export class JobDataService {
     private jobsService: JobsService,
     private weatherService: WeatherService,
     private store: Store<SubtasksState>,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router,
   ) {}
 
   getJobDetails(jobId: string, projectDetails: any) {
@@ -283,5 +286,32 @@ export class JobDataService {
       UserId: localStorage.getItem('userId'),
       Blueprint: projectDetails.blueprintPath || '',
     };
+  }
+
+  public navigateToJob(notification: any): void {
+    this.jobsService.getSpecificJob(notification.jobId).subscribe(job => {
+      const parsedDate = new Date(job.desiredStartDate);
+      const formattedDate = formatDate(parsedDate, 'dd/MM/yyyy', 'en-GB');
+      const params = {
+        jobId: job.jobId,
+        operatingArea: job.operatingArea,
+        address: job.address,
+        projectName: job.projectName,
+        jobType: job.jobType,
+        buildingSize: job.buildingSize,
+        wallStructure: job.wallStructure,
+        wallInsulation: job.wallInsulation,
+        roofStructure: job.roofStructure,
+        roofInsulation: job.roofInsulation,
+        electricalSupply: job.electricalSupply,
+        finishes: job.finishes,
+        foundation: job.foundation,
+        date: formattedDate,
+        documents: job.documents,
+        latitude: job.latitude,
+        longitude: job.longitude,
+      };
+      this.router.navigate(['/view-quote'], { queryParams: params });
+    });
   }
 }

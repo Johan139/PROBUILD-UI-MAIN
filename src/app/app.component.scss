@@ -22,7 +22,8 @@ $red: #DA4167;
   padding: 10px 16px; // Match the padding of the sidenav buttons
   display: flex;
   align-items: center; // Align icon and text vertically
-  
+
+  cursor: pointer;
 }
 
 // Style the icons inside the menu items
@@ -200,7 +201,7 @@ footer {
   .sidenav {
     width: 150px;
   }
-  
+
   .logo-link img {
     width: 120px;
     height: 40px;

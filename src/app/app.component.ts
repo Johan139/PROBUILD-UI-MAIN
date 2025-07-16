@@ -3,7 +3,7 @@ import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router'
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
-import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor } from "@angular/common";
+import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor, DatePipe } from "@angular/common";
 import { MatNavList } from "@angular/material/list";
 import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -11,9 +11,11 @@ import { LoaderComponent } from './loader/loader.component';
 import { MatMenuModule} from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { NotificationsService } from './services/notifications.service';
+import { JobsService } from './services/jobs.service';
 import { Observable, tap } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
+import { JobDataService } from './features/jobs/services/job-data.service';
 
 @Component({
   selector: 'app-root',
@@ -39,7 +41,8 @@ import { MatDividerModule } from '@angular/material/divider';
     MatDividerModule
   ],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'] // Fixed typo from `styleUrl` to `styleUrls`
+  styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`
+  providers: [DatePipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
@@ -52,7 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isSidenavOpen = false;
   recentNotifications$!: Observable<Notification[]>;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, private notificationsService: NotificationsService) {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, private notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
     this.isBrowser = isPlatformBrowser(this.platformId);
 
     matIconRegistry.addSvgIcon(
@@ -130,5 +133,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isSidenavOpen = !this.isSidenavOpen;
   }
 
+  navigateToJob(notification: any): void {
+    this.jobDataService.navigateToJob(notification);
+  }
 }
 
