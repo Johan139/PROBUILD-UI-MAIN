@@ -22,8 +22,6 @@ export class WeatherImpactService {
   constructor() { }
 
   public applyWeatherImpact(taskGroups: TimelineGroup[], dailyForecasts: ForecastDay[]): TimelineGroup[] {
-    console.log('Processing weather impact for tasks:', JSON.stringify(taskGroups, null, 2));
-    console.log('Using weather forecast:', JSON.stringify(dailyForecasts, null, 2));
     if (!dailyForecasts || dailyForecasts.length === 0) {
       return taskGroups;
     }
@@ -35,8 +33,6 @@ export class WeatherImpactService {
       group.subtasks.forEach(task => {
         const taskNameLower = task.name.toLowerCase();
         const isAffected = this.RAIN_AFFECTED_CATEGORIES.some(cat => taskNameLower.includes(cat));
-
-        console.log(`Checking task: '${task.name}' (Start: ${task.start}, End: ${task.end}) - Weather-sensitive: ${isAffected}`);
 
         if (isAffected) {
           const taskStartDate = new Date(task.start);
@@ -55,9 +51,6 @@ export class WeatherImpactService {
 
             const withinRange = forecastDate >= taskStartDate && forecastDate <= taskEndDate;
 
-            if (withinRange) {
-              console.log(`  - Checking forecast for ${day.date}: Condition='${day.condition}', Precip.=${day.precipitationProbability}%. Is adverse? ${isAdverse}`);
-            }
             return withinRange && isAdverse;
           });
 
@@ -77,7 +70,6 @@ export class WeatherImpactService {
         } else {
           task.hasWeatherWarning = false;
         }
-        console.log(`  => Final decision for '${task.name}': hasWeatherWarning = ${task.hasWeatherWarning}`);
       });
 
       if (groupHasWarning) {

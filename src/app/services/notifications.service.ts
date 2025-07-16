@@ -99,7 +99,6 @@ export class NotificationsService {
   getAllNotifications(): Observable<Notification[]> {
     return this.http.get<Notification[]>(this.apiUrl).pipe(
       tap(notifications => {
-        console.log('Fetched historical notifications:', notifications);
         this.notificationsSubject.next(notifications);
         this.checkForUnreadNotifications();
         console.log('Notifications subject updated with:', notifications);
