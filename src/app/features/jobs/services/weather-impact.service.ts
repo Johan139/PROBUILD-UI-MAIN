@@ -7,7 +7,7 @@ import { ForecastDay } from '../../../services/weather.service';
 })
 export class WeatherImpactService {
 
-  // List of task categories affected by rain, based on Demo/weather-impact.txt
+  // List of task categories affected by rain
   private readonly RAIN_AFFECTED_CATEGORIES = [
     'site preparation', 'excavation', 'foundation', 'concrete',
     'framing', 'structural carpentry', 'roof installation', 'masonry',
@@ -63,8 +63,10 @@ export class WeatherImpactService {
 
           if (affectedDays.length > 0) {
             task.hasWeatherWarning = true;
+            const firstAffectedDay = affectedDays[0];
+            task.weatherWarningMessage = `Potential delay due to ${firstAffectedDay.condition}.`;
+            task.weatherIconUrl = firstAffectedDay.iconUrl;
             const warning = `Task '${task.name}' may be delayed due to rain forecast on ${affectedDays.length} day(s).`;
-            task.weatherWarningMessage = warning;
             if (!warningMessages.includes(warning)) {
               warningMessages.push(warning);
             }

@@ -23,6 +23,7 @@ export interface TimelineTask {
   endDate?: string;
   hasWeatherWarning?: boolean;
   weatherWarningMessage?: string;
+  weatherIconUrl?: string;
 }
 
 export interface TimelineGroup {

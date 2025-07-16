@@ -195,6 +195,10 @@
                 </div>
                 <span>{{subtask.progress}}%</span>
               </div>
+              <div class="subtask-weather-warning" *ngIf="subtask.hasWeatherWarning">
+                <img [src]="subtask.weatherIconUrl" alt="Weather Icon" class="weather-icon" />
+                <span>{{ subtask.weatherWarningMessage }}</span>
+              </div>
             </div>
           </div>
         </div>
