@@ -220,6 +220,13 @@
 
     .task-content {
       display: flex;
+      align-items: flex-start;
+
+      .weather-warning-icon {
+        margin-right: 8px;
+        color: #ffcc00; // or a suitable warning color
+        cursor: help;
+      }
       flex-direction: column;
       justify-content: center;
       padding: 0 0.75rem;

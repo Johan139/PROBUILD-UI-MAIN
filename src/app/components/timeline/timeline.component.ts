@@ -21,6 +21,8 @@ export interface TimelineTask {
   days?: number;
   startDate?: string;
   endDate?: string;
+  hasWeatherWarning?: boolean;
+  weatherWarningMessage?: string;
 }
 
 export interface TimelineGroup {
@@ -30,6 +32,8 @@ export interface TimelineGroup {
   endDate?: Date;
   progress?: number;
   scheduleStatus?: 'on-track' | 'behind' | 'ahead';
+  hasWeatherWarning?: boolean;
+  weatherWarningMessage?: string;
 }
 
 @Component({

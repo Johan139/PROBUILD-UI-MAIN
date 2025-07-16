@@ -112,6 +112,9 @@
           (mousedown)="handleDragStart($event, group)">
 
           <div class="task-content">
+            <div *ngIf="group.hasWeatherWarning" class="weather-warning-icon" [title]="group.weatherWarningMessage">
+              ⚠️
+            </div>
             <div class="task-name">{{group.title}}</div>
             <div class="task-duration">
               {{formatDate(group.startDate!, 'MMM d')}} - {{formatDate(group.endDate!, 'MMM d')}}

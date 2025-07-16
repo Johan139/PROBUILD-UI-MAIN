@@ -15,7 +15,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, timeout, debounceTime, switchMap, of, Observable } from 'rxjs';
+import { Subscription, timeout, debounceTime, switchMap, of, Observable, map } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { environment } from '../../../environments/environment';
@@ -36,6 +36,8 @@ import { TimelineService } from './services/timeline.service';
 import { SignalrService } from './services/signalr.service';
 import { JobAssignmentService } from './job-assignment/job-assignment.service';
 import { AuthService } from '../../authentication/auth.service';
+import { WeatherService } from '../../weather.service';
+import { WeatherImpactService } from './services/weather-impact.service';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -115,6 +117,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
+  timelineGroups: TimelineGroup[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -135,7 +138,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public timelineService: TimelineService,
     private signalrService: SignalrService,
     private jobAssignmentService: JobAssignmentService,
-    private authService: AuthService
+    private authService: AuthService,
+    private weatherService: WeatherService,
+    private weatherImpactService: WeatherImpactService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -168,10 +173,25 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
-    this.store.select((state) => state.projectDetails).subscribe((details) => {
-      if (details) {
-        this.projectDetails = details;
-      }
+    this.store.select(state => state.projectDetails).pipe(
+      switchMap(projectDetails => {
+        if (!projectDetails || !projectDetails.latitude || !projectDetails.longitude) {
+          return of([]);
+        }
+        return this.timelineService.timelineGroups$.pipe(
+          switchMap(timelineGroups =>
+            this.store.select(s => s.forecast).pipe(
+              map(forecast => {
+                if (!forecast) return timelineGroups;
+                return this.weatherImpactService.applyWeatherImpact(timelineGroups, forecast);
+              })
+            )
+          )
+        );
+      })
+    ).subscribe(processedTimelineGroups => {
+      this.timelineGroups = processedTimelineGroups;
+      this.cdr.detectChanges();
     });
   }
 

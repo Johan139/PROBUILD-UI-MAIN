@@ -67,7 +67,7 @@
             <div class="chart-container">
               <div class="timeline-wrapper">
                 <app-timeline
-                  [taskGroups]="(timelineService.timelineGroups$ | async)!"
+                  [taskGroups]="timelineGroups"
                   [isProjectOwner]="isProjectOwner"
                   (onGroupClick)="timelineService.handleGroupClick($event)"
                   (onGroupMove)="handleGroupMove($event)"
