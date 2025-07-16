@@ -113,6 +113,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   sessionId: string = '';
   public isGeneratingReport = false;
   public isProjectOwner = false;
+  public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
 
   constructor(
@@ -146,6 +147,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.sessionId = uuidv4();
+    this.currentUserId = this.authService.currentUserSubject.value?.id;
     this.signalrService.startConnection(this.sessionId);
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
@@ -383,6 +385,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           });
         },
       });
+  }
+
+  handleGroupMove(event: { groupId: string; newStartDate: Date; newEndDate: Date; }): void {
+    this.timelineService.handleGroupMove(event, this.projectDetails.jobId, this.currentUserId);
   }
 
   NavigateBack(): void {

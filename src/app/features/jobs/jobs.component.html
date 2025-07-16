@@ -70,7 +70,7 @@
                   [taskGroups]="(timelineService.timelineGroups$ | async)!"
                   [isProjectOwner]="isProjectOwner"
                   (onGroupClick)="timelineService.handleGroupClick($event)"
-                  (onGroupMove)="timelineService.handleGroupMove($event, projectDetails.jobId)"
+                  (onGroupMove)="handleGroupMove($event)"
                   (onEditGroup)="timelineService.handleEditGroup($event)">
                 </app-timeline>
               </div>

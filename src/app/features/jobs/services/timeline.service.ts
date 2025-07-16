@@ -181,7 +181,7 @@ export class TimelineService {
     groupId: string;
     newStartDate: Date;
     newEndDate: Date;
-  }, jobId: number) {
+  }, jobId: number, senderId: string) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirm Move',
@@ -223,7 +223,7 @@ export class TimelineService {
 
             task.startDate = taskStart.toISOString().split('T')[0];
             task.endDate = taskEnd.toISOString().split('T')[0];
-            this.notifyTimelineUpdate(jobId, task.id).subscribe();
+            this.notifyTimelineUpdate(jobId, task.id, senderId).subscribe();
           });
 
           this.store.setState({
@@ -234,8 +234,8 @@ export class TimelineService {
     });
   }
 
-  notifyTimelineUpdate(jobId: number, subtaskId: number): Observable<any> {
-    return this.http.post(`${environment.BACKEND_URL}/Jobs/NotifyTimelineUpdate`, { jobId, subtaskId });
+  notifyTimelineUpdate(jobId: number, subtaskId: number, senderId: string): Observable<any> {
+    return this.http.post(`${environment.BACKEND_URL}/Jobs/NotifyTimelineUpdate`, { jobId, subtaskId, senderId });
   }
 
   handleGroupClick(group: TimelineGroup) {
