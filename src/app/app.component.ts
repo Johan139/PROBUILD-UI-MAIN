@@ -3,7 +3,7 @@ import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router'
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
-import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe } from "@angular/common";
+import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor } from "@angular/common";
 import { MatNavList } from "@angular/material/list";
 import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -11,7 +11,7 @@ import { LoaderComponent } from './loader/loader.component';
 import { MatMenuModule} from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
 import { NotificationsService } from './services/notifications.service';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
 
@@ -35,6 +35,7 @@ import { MatDividerModule } from '@angular/material/divider';
     RouterModule,
     MatIconModule,
     AsyncPipe,
+    NgFor,
     MatDividerModule
   ],
   templateUrl: './app.component.html',
@@ -75,7 +76,8 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit() {
     if (this.isBrowser) {
       this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
-      this.recentNotifications$ = this.notificationsService.getRecentNotifications();
+      this.recentNotifications$ = this.notificationsService.notifications$;
+      this.notificationsService.getAllNotifications().subscribe();
     }
   }
 
@@ -127,5 +129,6 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleSidenav(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
   }
+
 }
 

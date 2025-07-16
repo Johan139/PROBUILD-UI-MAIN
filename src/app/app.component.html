@@ -90,13 +90,19 @@
 </mat-menu>
 
 <mat-menu #notificationMenu="matMenu">
-  <ng-container *ngIf="recentNotifications$ | async as notifications">
-    <button mat-menu-item *ngFor="let notification of notifications">
-      <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
-    </button>
-    <button mat-menu-item *ngIf="notifications.length === 0">
-      <span>No recent notifications</span>
-    </button>
+  <ng-container *ngIf="(recentNotifications$ | async) as notifications">
+    <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
+      <ng-container *ngFor="let notification of notifications">
+        <button mat-menu-item>
+          <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
+        </button>
+      </ng-container>
+    </ng-container>
+    <ng-template #noNotifications>
+      <button mat-menu-item>
+        <span>No recent notifications</span>
+      </button>
+    </ng-template>
   </ng-container>
   <mat-divider></mat-divider>
   <button mat-menu-item routerLink="/notifications">

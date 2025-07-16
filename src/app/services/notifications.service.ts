@@ -88,7 +88,6 @@ export class NotificationsService {
     }
   }
 
-  // HTTP methods - these will automatically include auth headers via interceptor
   getRecentNotifications(): Observable<Notification[]> {
     return this.http.get<Notification[]>(`${this.apiUrl}/recent`);
   }
