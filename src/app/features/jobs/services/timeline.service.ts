@@ -182,10 +182,10 @@ export class TimelineService {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirm Move',
-        message: `Are you sure you want to move this event to ${format(
+        message: `Please confirm you want to move this task to ${format(
           event.newStartDate,
           'MMM d, yyyy'
-        )}?`,
+        )}. This will notify all users assigned to this task.`,
       },
     });
 

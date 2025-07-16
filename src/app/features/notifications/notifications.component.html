@@ -1,5 +1,6 @@
 <div class="notifications-container">
   <h1>All Notifications</h1>
+  <button *ngIf="authService.isLoggedIn()" (click)="sendTestNotification()">Send Test Notification</button>
   <ul *ngIf="notifications$ | async as notifications" class="notification-list">
     <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
       <li *ngFor="let notification of notifications" class="notification-item">
