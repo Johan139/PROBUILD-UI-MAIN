@@ -20,8 +20,13 @@ export class NotificationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.notifications$ = this.notificationsService.notifications$;
-    this.notificationsService.getAllNotifications().subscribe(notifications => {
-      // The BehaviorSubject in the service will handle the initial list.
+    this.notificationsService.getAllNotifications().subscribe({
+      next: (notifications) => console.log('Initial notifications loaded in component:', notifications),
+      error: (err) => console.error('Error loading initial notifications in component:', err)
+    });
+
+    this.notifications$.subscribe(notifications => {
+      console.log('Component notifications$ updated:', notifications);
     });
   }
   sendTestNotification(): void {

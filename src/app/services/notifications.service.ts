@@ -71,6 +71,7 @@ export class NotificationsService {
       });
 
     this.hubConnection.on('ReceiveNotification', (notification: Notification) => {
+      console.log('Received real-time notification:', notification);
       const currentNotifications = this.notificationsSubject.value;
       this.notificationsSubject.next([notification, ...currentNotifications]);
     });
@@ -93,7 +94,17 @@ export class NotificationsService {
   }
 
   getAllNotifications(): Observable<Notification[]> {
-    return this.http.get<Notification[]>(this.apiUrl);
+    return this.http.get<Notification[]>(this.apiUrl).pipe(
+      tap(notifications => {
+        console.log('Fetched historical notifications:', notifications);
+        this.notificationsSubject.next(notifications);
+        console.log('Notifications subject updated with:', notifications);
+      }),
+      catchError(error => {
+        console.error('Error fetching historical notifications:', error);
+        return throwError(error);
+      })
+    );
   }
 
 sendTestNotification(): Observable<any> {

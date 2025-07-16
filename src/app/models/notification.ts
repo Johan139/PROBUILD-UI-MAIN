@@ -2,7 +2,7 @@ export interface Notification {
   id: number;
   message: string;
   timestamp: Date;
-  projectId: number;
+  jobId: number;
   projectName: string;
   senderFullName: string;
 }
