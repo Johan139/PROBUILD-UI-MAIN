@@ -10,13 +10,38 @@
           <div *ngIf="isLoading">
             <app-loader></app-loader>
           </div>
-          
+
           <!-- Project Details Section -->
           <div class="job-details">
             <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
-            <p><strong>Address:</strong> {{projectDetails.address}}</p>
-            <div *ngIf="forecast.length" class="weather-scroll-container">
-              <div *ngFor="let day of forecast" class="forecast-card">
+            <div class="address-container">
+              <div *ngIf="!isEditingAddress" class="address-display">
+                <span><strong>Address: </strong>
+                  <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
+                  <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
+                </span>
+                <button *ngIf="isProjectOwner" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+              <div *ngIf="isEditingAddress" class="address-edit">
+                <mat-form-field appearance="fill">
+                  <mat-label>Address</mat-label>
+                  <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto" placeholder="Enter an address" />
+                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                    <mat-option *ngFor="let suggestion of addressSuggestions" [value]="suggestion">
+                      {{ suggestion.description }}
+                    </mat-option>
+                  </mat-autocomplete>
+                </mat-form-field>
+                <div class="edit-buttons">
+                  <button mat-raised-button color="primary" (click)="saveAddress()" [disabled]="isLoading">Save</button>
+                  <button mat-button (click)="toggleAddressEdit(false)">Cancel</button>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="store.getState().forecast?.length" class="weather-scroll-container">
+              <div *ngFor="let day of store.getState().forecast" class="forecast-card">
                 <div class="date">{{ day.date }}</div>
                 <img [src]="day.iconUrl" alt="Weather Icon" />
                 <div class="condition">{{ day.condition }}</div>
@@ -29,19 +54,25 @@
                 </div>
               </div>
             </div>
-            
-            <div *ngIf="weatherError" class="weather-error">
-              {{ weatherError }}
+
+            <div *ngIf="store.getState().weatherError" class="weather-error">
+              {{ store.getState().weatherError }}
             </div>
           </div>
 
           <!-- Timeline Section -->
           <div class="timeline-section">
-            <mat-card-title class="timeline-title">📅 Estimated Timeline</mat-card-title>
+            <mat-card-title class="timeline-title">Probuild Construction Timeline</mat-card-title>
             <mat-divider class="timeline-divider"></mat-divider>
             <div class="chart-container">
               <div class="timeline-wrapper">
-                <app-gantt-chart [tasks]="taskData" class="gantt-chart"></app-gantt-chart>
+                <app-timeline
+                  [taskGroups]="timelineGroups"
+                  [isProjectOwner]="isProjectOwner"
+                  (onGroupClick)="timelineService.handleGroupClick($event)"
+                  (onGroupMove)="handleGroupMove($event)"
+                  (onEditGroup)="timelineService.handleEditGroup($event)">
+                </app-timeline>
               </div>
             </div>
           </div>
@@ -53,7 +84,7 @@
   <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
     <div class="table-header">
       <h3>{{table.title}}</h3>
-      <button class="submit-btn" (click)="addSubtask(table)">
+      <button *ngIf="isProjectOwner" class="submit-btn" (click)="subtaskService.addSubtask(table)">
         Add Subtask
       </button>
     </div>
@@ -64,44 +95,44 @@
           <th>Days</th>
           <th>Start Date</th>
           <th>End Date</th>
-          <th>Task Status</th> <!-- ✅ New Static Column -->
+          <th>Task Status</th>
           <th>Actions</th>
           <th>Notes</th>
           <th>Approve</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let subtask of getVisibleSubtasks(table); let i = index">
+        <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
           <td>
-            <input type="text" [(ngModel)]="subtask.task" class="no-border" />
+            <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
           </td>
           <td>
-            <input type="number" [(ngModel)]="subtask.days" class="no-border" 
-                   (change)="updateSubtaskDates(table, i)" />
+            <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
+                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
-            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" 
-                   (change)="updateSubtaskDates(table, i)" />
+            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
+                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
           </td>
           <td>
-            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" />
+            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
           </td>
           <td>
             {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
           </td>
           <td>
-            <button class="submit-btn delete-btn" (click)="deleteSubtask(table, i)">
+            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
               Delete
             </button>
-        
+
           </td>
           <td>
-            <button class="submit-btn delete-btn" (click)="openNoteDialog(subtask)">
+            <button class="submit-btn" (click)="openNoteDialog(subtask)">
               Update
             </button>
           </td>
           <td>
-            <mat-checkbox [(ngModel)]="subtask.accepted"></mat-checkbox>
+            <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
           </td>
         </tr>
       </tbody>
@@ -111,13 +142,13 @@
 
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <button class="submit-btn publish-btn" mat-raised-button (click)="publish()">
+            <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="subtaskService.publish()">
               Publish Job
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="saveOnly()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()">
               Save Job
             </button>
-            <button class="submit-btn delete-btn" mat-raised-button (click)="discard()">
+            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()">
               Discard Job
             </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
@@ -126,10 +157,14 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
               View Bill of Materials
             </button>
+            <button class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport">
+              <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
+              <span *ngIf="isGeneratingReport">Generating...</span>
+            </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
               Back
             </button>
-            <button class="submit-btn save-btn" (click)="acceptAllSubtasks()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()">
                Accept All Subtasks
             </button>
           </div>

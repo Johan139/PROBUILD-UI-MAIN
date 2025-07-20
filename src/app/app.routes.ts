@@ -45,11 +45,11 @@ export const routes: Routes = [
   {path:'bids', component:BidComponent, canActivate: [AuthGuard] },
   {path:'quote/:id', component: QuoteComponent, canActivate: [AuthGuard] },
   {path:'jobselection', component:JobSelectionComponent, canActivate: [AuthGuard] },
+  {path:'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
   {path:'dashboard', component: DashboardComponent,
     canActivate: [AuthGuard],
     children: [
       {path:'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
-      {path:'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
       {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
       {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
       {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },

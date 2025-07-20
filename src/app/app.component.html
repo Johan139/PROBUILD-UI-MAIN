@@ -4,14 +4,18 @@
 
 <!-- Header -->
 <mat-toolbar color="primary" class="header">
-  <button *ngIf="shouldShowSidenav()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
+  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
     <mat-icon>menu</mat-icon>
   </button>
   <a routerLink="/dashboard" class="logo-link">
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
   <span class="spacer"></span>
-  <button *ngIf="shouldShowLogoutButton()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
+  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
+    <mat-icon>notifications</mat-icon>
+    <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
+  </button>
+  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
     <mat-icon svgIcon="icons8-settings"></mat-icon>
   </button>
 </mat-toolbar>
@@ -31,7 +35,7 @@
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
         <span class="menu-item">JOBS</span>
       </button>
-      
+
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-assignment" (click)="sidenav.close()">
         <span class="menu-item">JOB ASSIGNMENT</span>
       </button>
@@ -56,7 +60,7 @@
         <span class="menu-item">BIDS</span>
       </button> -->
 
-      
+
     </mat-nav-list>
   </mat-sidenav>
 
@@ -83,5 +87,26 @@
   <button mat-menu-item (click)="logout()">
     <mat-icon svgIcon="logout"></mat-icon>
     Logout
+  </button>
+</mat-menu>
+
+<mat-menu #notificationMenu="matMenu">
+  <ng-container *ngIf="(recentNotifications$ | async) as notifications">
+    <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
+      <ng-container *ngFor="let notification of notifications | slice:0:5">
+        <button mat-menu-item (click)="navigateToJob(notification)">
+          <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
+        </button>
+      </ng-container>
+    </ng-container>
+    <ng-template #noNotifications>
+      <button mat-menu-item>
+        <span>No recent notifications</span>
+      </button>
+    </ng-template>
+  </ng-container>
+  <mat-divider></mat-divider>
+  <button mat-menu-item routerLink="/notifications">
+    Show all notifications
   </button>
 </mat-menu>

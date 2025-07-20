@@ -1,44 +1,67 @@
-import {Component, OnInit} from '@angular/core';
-import {MatFormField, MatFormFieldModule} from "@angular/material/form-field";
-import {MatCard} from "@angular/material/card";
-import {FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
-import {MatInput} from "@angular/material/input";
-import {NgIf} from "@angular/common";
-import {MatButton} from "@angular/material/button";
-import {NotificationsService} from "../../services/notifications.service";
+import { Component, OnInit, isDevMode } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { NotificationsService } from '../../services/notifications.service';
+import { AuthService } from '../../authentication/auth.service';
+import { Notification } from '../../models/notification';
+import { JobDataService } from '../jobs/services/job-data.service';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatCard,
-    FormsModule,
-    MatInput,
-    NgIf,
-    ReactiveFormsModule,
-    MatButton
-  ],
+  imports: [CommonModule],
   templateUrl: './notifications.component.html',
-  styleUrl: './notifications.component.scss'
+  styleUrls: ['./notifications.component.scss'],
+  providers: [DatePipe]
 })
-export class NotificationsComponent implements  OnInit{
-  broadcastForm: FormGroup;
+export class NotificationsComponent implements OnInit {
+  isDevMode = isDevMode();
+  currentPage: number = 1;
+  pageSize: number = 50;
+  public paginatedNotifications: any[] = [];
+    totalNotifications = 0;
+  totalPages: number = Number.MAX_SAFE_INTEGER;
 
-  constructor(private formBuilder: FormBuilder,
-              private notificationService: NotificationsService) {
-    this.broadcastForm = this.formBuilder.group({
-      message: ['', Validators.required],
-    })
+  constructor(
+    private notificationsService: NotificationsService,
+    public authService: AuthService,
+    private datePipe: DatePipe,
+    private jobDataService: JobDataService
+  ) { }
+
+  ngOnInit(): void {
+    this.loadNotifications();
   }
 
-  ngOnInit() {
-   //messageHistory = this.notificationService.getAllMessages()
+  loadNotifications(): void {
+    this.notificationsService.getAllNotifications(this.currentPage, this.pageSize).subscribe(response => {
+      this.paginatedNotifications = response?.notifications || [];
+      this.totalPages = response?.totalCount ? Math.ceil(response.totalCount / this.pageSize) : 1;
+    });
   }
 
-  broadcastMessage() {
-    //this.notificationService.sendBroadcast(broadcastForm.value)
+  navigateToJob(notification: Notification): void {
+    this.jobDataService.navigateToJob(notification);
   }
 
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadNotifications();
+    }
+  }
 
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadNotifications();
+    }
+  }
+
+  sendTestNotification(): void {
+    this.notificationsService.sendTestNotification().subscribe(() => {
+      this.currentPage = 1;
+      this.totalPages = Number.MAX_SAFE_INTEGER;
+      this.loadNotifications();
+    });
+  }
 }

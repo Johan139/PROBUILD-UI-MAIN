@@ -2,7 +2,7 @@ import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, ViewEnc
 import { Router, RouterLink } from "@angular/router";
 import { CommonModule, DatePipe, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCardModule, MatCardHeader, MatCardTitle, MatCardContent } from "@angular/material/card";
+import { MatCardModule } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
 import { GanttChartComponent } from '../../../components/gantt-chart/gantt-chart.component';
 import { LoaderComponent } from '../../../loader/loader.component';
@@ -18,10 +18,11 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { JobDataService } from '../../jobs/services/job-data.service';
+import { AuthService } from '../../../authentication/auth.service';
+import { filter, take, switchMap } from 'rxjs/operators';
+
 const BASE_URL = environment.BACKEND_URL;
-
-
-
 @Component({
   selector: 'app-new-user-dashboard',
   standalone: true,
@@ -40,7 +41,7 @@ const BASE_URL = environment.BACKEND_URL;
     FileSizePipe,
     MatFormFieldModule,  // ✅ added
     MatInputModule,      // ✅ added
-    FormsModule,     
+    FormsModule,
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
@@ -86,6 +87,8 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
     private http: HttpClient,
+    private jobDataService: JobDataService,
+    private authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -97,12 +100,15 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.isLoading = true;
     this.userType = this.userService.getUserType();
 
-    const userId = localStorage.getItem('userId');
-    this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${userId}`).subscribe({
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => {
+        return this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${user.id}`);
+      })
+    ).subscribe({
       next: (notes: any) => {
-
         this.notes = notes;
-        console.log(this.notes);
         this.groupedNotes = this.groupNotesBySubtask(notes);
         this.isLoading = false;
       },
@@ -110,15 +116,13 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         this.isLoading = false;
       }
     });
- 
 
-      // 🛠️ ADD THIS LINE:
-  this.loadUserJobs();
+    this.loadUserJobs();
     this.isSubContractor = this.userType === 'BUILDER' || this.userType === 'CONSTRUCTION';
 
     setTimeout(() => {
       this.isLoading = false;
-    }, 1000); // Simulate loading
+    }, 1000);
   }
   closeDocumentsDialog() {
     if (this.documentDialogRef) {
@@ -138,30 +142,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
 
   loadJob(id: any): void {
-    this.jobService.getSpecificJob(id).subscribe(res => {
-      const parsedDate = new Date(res.desiredStartDate);
-      const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-      const responseParams = {
-        jobId: res.jobId,
-        operatingArea: res.operatingArea,
-        address: res.address,
-        projectName: res.projectName,
-        jobType: res.jobType,
-        buildingSize: res.buildingSize,
-        wallStructure: res.wallStructure,
-        wallInsulation: res.wallInsulation,
-        roofStructure: res.roofStructure,
-        roofInsulation: res.roofInsulation,
-        electricalSupply: res.electricalSupply,
-        finishes: res.finishes,
-        foundation: res.foundation,
-        date: formattedDate,
-        documents: res.documents,
-        latitude : res.latitude,
-        longitude: res.longitude,
-      };
-      this.router.navigate(['view-quote'], { queryParams: responseParams });
-    });
+    this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');
   }
 
   onApprovalReasonChanged(event: any) {
@@ -182,7 +163,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     formData.append('JobId', this.noteBeingApproved.jobId);
     formData.append('NoteText', this.approvalReason);
     formData.append("CreatedByUserId", localStorage.getItem("userId") || "");
-  
+
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
       next: () => {
         this.snackBar.open('Note saved successfully!', 'Close', {
@@ -207,16 +188,16 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
   groupNotesBySubtask(notes: any[]): { [subtaskId: string]: any[] } {
     const grouped: { [subtaskId: string]: any[] } = {};
-  
+
     notes.forEach(note => {
       const subtaskId = note.jobSubtaskId;
-  
+
       if (!grouped[subtaskId]) {
         grouped[subtaskId] = [];
       }
       grouped[subtaskId].push(note);
     });
-  
+
     return grouped;
   }
   isMine(note: any): boolean {
@@ -236,38 +217,40 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     const completedDays = subtasks
       .filter(st => st.status?.toLowerCase() === 'completed')
       .reduce((sum, st) => sum + st.days, 0);
-  
+
     const totalDays = subtasks.reduce((sum, st) => sum + st.days, 0);
-  
+
     return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
   }
 
   loadUserJobs() {
-    const userId = localStorage.getItem('userId') || '';
-  
-    this.jobService.getAllJobsByUserId(userId).subscribe(jobs => {
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => this.jobService.getAllJobsByUserId(user.id))
+    ).subscribe(jobs => {
       if (!jobs) {
         this.userJobs = [];
         return;
       }
-  
+
       const uniqueProjectsMap = new Map<string, any>();
-  
+
       jobs.forEach(job => {
         if (!uniqueProjectsMap.has(job.projectName)) {
           uniqueProjectsMap.set(job.projectName, job);
         }
       });
-  
+
       const uniqueJobs = Array.from(uniqueProjectsMap.values());
-  
+
       // Now for each unique job, fetch its subtasks separately:
-    
-      const jobProgressPromises = uniqueJobs.map(job => 
+
+      const jobProgressPromises = uniqueJobs.map(job =>
 
         this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
           const progress = this.calculateJobProgress(subtasks || []);
-         
+
           return {
             id: job.id,
             projectName: job.projectName,
@@ -283,7 +266,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
           };
         })
       );
-  
+
   Promise.all(jobProgressPromises).then(results => {
   this.userJobs = results.sort((a, b) => b.progress - a.progress);
 });
@@ -342,7 +325,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     const activeElement = document.activeElement as HTMLElement;
 
     this.fetchDocuments(note.jobSubtaskId); // ✅ pass the note ID
-  
+
     this.documentDialogRef = this.dialog.open(this.documentsDialog, {
       width: '500px',
       maxHeight: '80vh',
@@ -353,9 +336,9 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         activeElement.focus();
       }
     });
- 
+
   }
-  
+
   rejectNote(note: any) {
 
     const formData = new FormData();
@@ -363,7 +346,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     formData.append('Approved', 'false');
     formData.append('jobSubtaskId', note.jobSubtaskId.toString()); // ✅ fix here
     formData.append('Rejected', 'true');
-  
+
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
       next: () => {
         this.dialog.closeAll();
@@ -401,5 +384,5 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   navigateToJobs() {
     this.router.navigateByUrl('job-quote');
   }
-  
+
 }

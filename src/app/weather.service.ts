@@ -44,7 +44,7 @@ export class WeatherService {
   constructor(private httpClient: HttpClient) {}
 
   getWeatherForecast(lat: string, lon: string): Observable<ForecastDay[]> {
-    const url = `${this.baseUrl}?key=${environment.googleWeatherApiKey}&location.latitude=${lat}&location.longitude=${lon}&unitsSystem=METRIC`;
+    const url = `${this.baseUrl}?key=${environment.Google_API}&location.latitude=${lat}&location.longitude=${lon}&unitsSystem=METRIC`;
     return this.httpClient.get<GoogleForecastResponse>(url).pipe(
       map((data) => {
         if (!data.forecastDays) {
