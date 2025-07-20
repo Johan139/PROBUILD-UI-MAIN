@@ -11,15 +11,17 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
 /* Base Styles */
 .container {
-  width: 80vw;
-  padding: 1rem;
-  display: flex;
-  justify-content: center;
+  min-width: 100vw;
   min-height: calc(100vh - 65px);
+  padding: 1rem;
+  overflow-x: auto;
+  overflow-y: auto;
+  display: block; // allow child to size normally
 }
 
 .fullcolumn {
   width: 100%;
+  overflow-x: auto; /* Allow horizontal scroll if content overflows */
   background-color: $white;
   border-radius: 8px;
   padding: 1rem;
@@ -99,6 +101,8 @@ mat-divider {
 /* Timeline Section */
 .timeline-section {
   padding: 2rem;
+  display: block;
+    animation: fadeIn 0.5s ease-in-out;
   background-color: $white;
   border-radius: 12px;
   margin: 2rem 0;
@@ -129,15 +133,14 @@ mat-divider {
 
 /* Chart Container */
 .chart-container {
+  width: 100%;
+  overflow-x: auto;
+  max-width: unset;
   padding: 1.5rem;
-  max-width: 1200px;
   background-color: #f9f9f9;
   border: 2px solid $secondary-yellow;
   border-radius: 12px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03), $shadow;
-  margin: 0 auto;
-  max-width: 100%;
-  overflow-x: auto;
   position: relative;
 }
 ::ng-deep .subtask-note-dialog .mat-mdc-dialog-surface {
@@ -401,8 +404,19 @@ textarea[matInput] {
   padding: 0; // Remove padding since timeline has its own
   border-radius: 8px;
   border: 1px solid $light-gray;
+    display: block;
+  min-width: max-content; // <--- This is critical
+  width: fit-content;
+}
+app-timeline {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
 }
 
+app-timeline > * {
+  min-width: max-content;
+}
 @media (max-width: 768px) {
   .timeline-chart {
     min-height: 250px;
@@ -668,9 +682,7 @@ textarea[matInput] {
   }
 }
 
-.timeline-section {
-  animation: fadeIn 0.5s ease-in-out;
-}
+
 
 /* Documents Dialog */
 .documents-dialog {
