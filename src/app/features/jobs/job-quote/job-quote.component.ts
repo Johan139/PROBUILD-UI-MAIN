@@ -122,8 +122,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     @Inject(PLATFORM_ID) private platformId: Object,
     private router: Router,
     private dialog: MatDialog,
-    private authService: AuthService
-    private quoteService: QuoteService
+    private authService: AuthService,
+    private quoteService: QuoteService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
