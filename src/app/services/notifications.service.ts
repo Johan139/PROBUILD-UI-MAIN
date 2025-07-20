@@ -108,7 +108,7 @@ export class NotificationsService {
         }),
         catchError(error => {
           console.error('Error fetching historical notifications:', error);
-          return throwError(error);
+          return throwError(() => new Error(error));
         })
       );
     }

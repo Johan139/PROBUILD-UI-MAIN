@@ -18,7 +18,7 @@ import { JobResponse } from '../../../models/jobdetails.response';
 import { JobsService } from '../../../services/jobs.service';
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { LoaderComponent } from '../../../loader/loader.component';
-import { timeout, debounceTime, switchMap } from 'rxjs/operators';
+import { timeout, debounceTime, switchMap, filter, take } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { formatDate } from '@angular/common';
 import { DatePipe } from '@angular/common';
@@ -32,6 +32,7 @@ import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/q
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
+import { AuthService } from '../../../authentication/auth.service';
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -101,7 +102,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private datePipe: DatePipe,
     @Inject(PLATFORM_ID) private platformId: Object,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private authService: AuthService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -156,14 +158,17 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
 
-    const userId = localStorage.getItem('userId');
-    this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
-    .subscribe({
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => {
+        return this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${user.id}`);
+      })
+    ).subscribe({
       next: (res) => {
         this.subscriptionActive = res.hasActive;
         if (!res.hasActive) {
           this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
-
         }
       },
       error: (err) => {
@@ -197,23 +202,29 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.isBrowser) {
-      const userId = localStorage.getItem('userId');
-      if (userId) {
-        this.isLoading = true;
-        this.jobService.getAllJobsByUserId(userId).subscribe(
-          (response) => {
-            this.jobListFull = response;
-            this.loadJobs();
+      this.authService.currentUser$.pipe(
+        filter(user => !!user),
+        take(1),
+        switchMap(user => {
+            if (user && user.id) {
+                this.isLoading = true;
+                return this.jobService.getAllJobsByUserId(user.id);
+            }
+            return of([]); // Return empty observable if no user
+        })
+    ).subscribe({
+        next: (response: any) => {
+            if (response) {
+                this.jobListFull = response;
+                this.loadJobs();
+            }
             this.isLoading = false;
-          },
-          (error) => {
+        },
+        error: (error) => {
             console.error('Error fetching jobs:', error);
             this.isLoading = false;
-          }
-        );
-      } else {
-        console.error('User ID is not available in local storage.');
-      }
+        }
+    });
     }
   }
 

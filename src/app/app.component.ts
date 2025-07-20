@@ -97,12 +97,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  shouldShowSidenav(): boolean {
-    const excludedRoutes = ['/login', '/register', '/confirm-email'];
-    return !excludedRoutes.includes(this.router.url);
-  }
-
-  shouldShowLogoutButton(): boolean {
+  shouldShowHeaderButtons(): boolean {
     const excludedRoutes = ['/login', '/register', '/confirm-email'];
     return !excludedRoutes.includes(this.router.url);
   }
