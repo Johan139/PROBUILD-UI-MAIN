@@ -343,6 +343,7 @@ export class JobSelectionComponent implements OnInit {
       createdBy: localStorage.getItem('userId') || 'unknown',
       createdID: uuidv4(),
       extraCosts: [],
+      jobId: this.selectedJob.Id
     };
 
     this.quoteDataService.setQuote(newQuote);

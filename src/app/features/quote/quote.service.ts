@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { catchError, Observable, throwError } from 'rxjs';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
-import {environment} from "../../../environments/environment";
+import { environment } from "../../../environments/environment";
 
 @Injectable({
   providedIn: 'root'
@@ -12,8 +12,10 @@ export class QuoteService {
   
   private apiUrl = `${environment.BACKEND_URL}/quotes`;
 
-  constructor(private http: HttpClient,
-    private authService: AuthService) { }
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) { }
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -59,6 +61,28 @@ export class QuoteService {
         console.error('Error updating quote:', error);
         return throwError(() => new Error('Failed to update quote data.'));
       })
+    );
+  }
+
+  getJobQuotes(jobId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/GetJobQuotes/${jobId}`);
+  }
+
+  getQuotesByUser(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/GetJobQuotesByUserId/${userId}`);
+  }
+
+  saveQuoteWithVersion(quote: Quote): Observable<Quote> {
+    return this.http.post<Quote>(`${this.apiUrl}/SaveQuoteWithVersion`, quote);
+  }
+
+  changeStatus(quoteId: string, newStatus: string): Observable<Quote> {
+    return this.http.post<Quote>(
+      `${this.apiUrl}/ChangeStatus/${quoteId}`,
+      JSON.stringify(newStatus), // Important: serialize the string
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }

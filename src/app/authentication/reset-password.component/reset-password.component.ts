@@ -56,8 +56,16 @@ export class ResetPasswordComponent implements OnInit {
     this.email = this.route.snapshot.queryParamMap.get('email') || '';
 
     this.resetForm = this.fb.group({
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', Validators.required]
+      password: ['',[
+          Validators.required,
+          Validators.minLength(10),
+          Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/)
+        ]],
+      confirmPassword: ['',[
+          Validators.required,
+          Validators.minLength(10),
+          Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/)
+        ]]
     }, {
       validator: this.passwordMatchValidator
     });

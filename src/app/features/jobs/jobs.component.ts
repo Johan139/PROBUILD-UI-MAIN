@@ -426,8 +426,33 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.location.back();
   }
 
+
   closeAlert(): void {
     this.showAlert = false;
+
+  getVisibleSubtasks(table: any): any[] {
+    return table.subtasks?.filter(s => !s.deleted) || [];
+  }
+  saveOnly(): void {
+    const unaccepted = this.store.getState().subtaskGroups
+      .flatMap(group => group.subtasks)
+      .filter(st => !st.deleted && !st.accepted);
+    console.log('Unaccepted subtasks:', unaccepted);
+    console.log('Store state:', this.store.getState());
+    const dialogRef = this.dialog.open(ConfirmAIAcceptanceDialogComponent, {
+      data: {
+        warningMessage: unaccepted.length > 0
+          ? 'Please accept all subtasks to proceed with saving.'
+          : null, // Temporary to test rendering
+        disableConfirm: unaccepted.length > 0
+      }
+    });
+dialogRef.afterClosed().subscribe(result => {
+  console.log('Dialog result:', result);
+  if (result === true) {
+    this.performSaveJob();
+  }
+});
   }
 
   private checkProjectOwnerStatus(jobId: string, userId: string): void {
@@ -449,5 +474,3 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 }
-
-

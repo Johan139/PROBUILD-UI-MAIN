@@ -93,12 +93,45 @@
         </div>
       </mat-card-content>
     </mat-card>
-
     <mat-card class="project-card-bids mt-3">
       <mat-card-header>
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
-      <mat-card-content>No current active bids</mat-card-content>
+
+      <mat-card-content>
+        <div *ngIf="activeBidsDataSource" class="job-list-container">
+          <div class="job-list-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Quote #</th>
+                  <th>Created By</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
+                  <td>{{ quote.number || 'N/A' }}</td>
+                  <td>{{ quote.createdBy || 'Unknown' }}</td>
+                  <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
+                  <td>${{ quote.total.toFixed(2) }}</td>
+                  <td>
+                    <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
+          No active bids to display.
+        </div>
+      </mat-card-content>
+
     </mat-card>
   </div>
   <div class="col-md-8 d-flex justify-content-center">
@@ -126,6 +159,7 @@
 <!-- Replace your existing address mat-form-field with this -->
 <mat-form-field appearance="fill">
   <mat-label>Address</mat-label>
+
   <input
     #addressInput
     matInput
@@ -138,6 +172,9 @@
       {{ option.description }}
     </mat-option>
   </mat-autocomplete>
+    <mat-error *ngIf="addressControl.hasError('required') && addressControl.touched">
+    Mandatory Field: Address is required
+  </mat-error>
 </mat-form-field>
           </div>
           <div class="panel-wrapper">
@@ -156,7 +193,7 @@
                   <mat-label>First Name</mat-label>
                   <input matInput formControlName="firstName" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
-                    First name is required.
+                     Mandatory Field: First name is required.
                   </mat-error>
                 </mat-form-field>
 
@@ -164,7 +201,7 @@
                   <mat-label>Last Name</mat-label>
                   <input matInput formControlName="lastName" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
-                    Last name is required.
+                     Mandatory Field: Last name is required.
                   </mat-error>
                 </mat-form-field>
 
@@ -172,7 +209,7 @@
                   <mat-label>Email</mat-label>
                   <input matInput formControlName="email" placeholder=" " />
                   <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
-                    Enter a valid email address.
+                     Mandatory Field: Email address is required.
                   </mat-error>
                 </mat-form-field>
               </div>
