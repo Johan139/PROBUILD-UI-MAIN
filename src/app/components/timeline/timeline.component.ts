@@ -184,7 +184,6 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private generateWeeklyDates() {
-    console.log('[Timeline] generateWeeklyDates called');
     this.weeklyDates = [];
 
     for (let week = 0; week < this.weeksToShow; week++) {
@@ -206,18 +205,14 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   navigateTimeline(days: number) {
-    console.log(`[Timeline] navigateTimeline called with days: ${days}`);
-    console.log(`[Timeline] Current viewStartDate:`, this.viewStartDate);
     const newDate = new Date(this.viewStartDate);
     newDate.setDate(newDate.getDate() + days);
     this.viewStartDate = newDate;
-    console.log(`[Timeline] New viewStartDate:`, this.viewStartDate);
     this.generateWeeklyDates();
     this.getEndDate();
   }
 
   startTimelineNavigation(direction: number) {
-    console.log(`[Timeline] startTimelineNavigation called with direction: ${direction}`);
     this.navigateTimeline(direction); // Initial call
     this.navigationInterval = setInterval(() => {
       this.navigateTimeline(direction);
@@ -225,7 +220,6 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   stopTimelineNavigation() {
-    console.log('[Timeline] stopTimelineNavigation called');
     clearInterval(this.navigationInterval);
   }
 
@@ -567,11 +561,11 @@ private parseMultipleFormats(dateInput: Date | string | null | undefined): Date 
       return 'delayed';
     }
 
-    if (group.subtasks.every(t => t.status === 'completed')) {
+    if ((group.progress ?? 0) === 100) {
       return 'completed';
     }
 
-    if (group.subtasks.every(t => t.status === 'pending')) {
+    if ((group.progress ?? 0) === 0) {
       return 'pending';
     }
 
