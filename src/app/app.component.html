@@ -10,7 +10,7 @@
   <a routerLink="/dashboard" class="logo-link">
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
-  <span class="spacer"></span>
+  <span class="spacer logged-in-name">{{LoggedInName}}</span>
   <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
     <mat-icon>notifications</mat-icon>
     <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>

@@ -10,6 +10,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { LoaderComponent } from './loader/loader.component';
 import { MatMenuModule} from '@angular/material/menu';
 import { DomSanitizer } from '@angular/platform-browser';
+import { AuthService } from './authentication/auth.service';
+import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-dialog/logout-confirm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 import { NotificationsService } from './services/notifications.service';
 import { JobsService } from './services/jobs.service';
 import { Observable, tap } from 'rxjs';
@@ -48,6 +51,7 @@ import { JobDataService } from './features/jobs/services/job-data.service';
 export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
   alertMessage: string = '';
+  LoggedInName: string = '';
   routeURL: string = '/';
   isLoading: boolean = false;
   title = 'ProBuildAI';
@@ -57,7 +61,9 @@ export class AppComponent implements OnInit, OnDestroy {
   recentNotifications$!: Observable<Notification[]>;
   public hasUnreadNotifications$!: Observable<boolean>;
 
+
   constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
+
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
 
@@ -81,9 +87,21 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.isBrowser) {
+
+ this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        const firstName = user.firstName || localStorage.getItem('firstName') || '';
+        const lastName = user.lastName || localStorage.getItem('lastName') || '';
+        this.LoggedInName = `${firstName} ${lastName}`.trim();
+      } else {
+        this.LoggedInName = '';
+      }
+    });
+
       this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
       this.recentNotifications$ = this.notificationsService.notifications$;
       this.notificationsService.getAllNotifications(1, 50).subscribe();
+
     }
   }
 
@@ -119,18 +137,24 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.showAlert = false;
   }
-  logout() {
-    this.showAlert = true;
-    this.alertMessage = 'Are you sure you want to Logout ?';
-    this.loggedIn = false;
-    localStorage.setItem('token', '');
-    localStorage.setItem('jwtToken', '');
-    localStorage.setItem('loggedIn', 'false');
-    localStorage.setItem('userId', '');
-    localStorage.setItem('userType', '');
-    localStorage.setItem('firstName', '');
-    localStorage.setItem('Subtasks', '')
-  }
+logout(): void {
+  const dialogRef = this.dialog.open(LogoutConfirmDialogComponent, {
+    width: '320px',
+    disableClose: true
+  });
+
+  dialogRef.afterClosed().subscribe(result => {
+    console.log(result)
+    if (result === true) {
+      localStorage.clear();
+      this.loggedIn = false;
+      this.authService.logout();
+          if (this.routeURL) {
+      this.router.navigateByUrl(this.routeURL);
+    }
+    }
+  });
+}
   toggleSidenav(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
   }

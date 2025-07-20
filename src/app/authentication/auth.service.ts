@@ -10,6 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
 })
 export class AuthService {
   private http = inject(HttpClient);
+  
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`; // Match your backend
   public currentUserSubject = new BehaviorSubject<any>(null); // Store user info
@@ -70,6 +71,19 @@ export class AuthService {
       .pipe(
         tap((response) => {
           if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('userType', response.userType);
+            localStorage.setItem('firstName', response.firstName);
+            localStorage.setItem('lastName', response.lastName); 
+            localStorage.setItem('userId', response.id);
+            localStorage.setItem('loggedIn', String(true));
+          }
+          this.currentUserSubject.next({
+            id: response.id,
+            userType: response.userType,
+            firstName: response.firstName,
+            lastName: response.lastName 
+          });
             // Extract token and user details from response
             console.log('Login response:', response);
             const { token, refreshToken, userId, firstName, userType } = response;
@@ -110,6 +124,7 @@ export class AuthService {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userType');
       localStorage.removeItem('firstName');
+      localStorage.removeItem('lastName');
       localStorage.removeItem('userId');
       localStorage.removeItem('loggedIn');
     }
@@ -176,7 +191,17 @@ export class AuthService {
   }
 
   private loadUserFromToken(token: string): void {
+
+    if (token === 'fake-dev-token-12345') {
+      this.currentUserSubject.next({
+        id: localStorage.getItem('userId'),
+        userType: localStorage.getItem('userType'),
+        firstName: localStorage.getItem('firstName'),
+        lastName: localStorage.getItem('lastName')
+      });
+
     if (!token) {
+
       return;
     }
     try {

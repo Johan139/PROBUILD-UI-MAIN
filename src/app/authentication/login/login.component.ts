@@ -74,13 +74,15 @@ export class LoginComponent {
         error: (error) => {
           this.isLoading = false;
           this.showAlert = true;
-          if (error.status === 401) {
-            this.alertMessage = 'Login Failed, please check username or password';
-          } else if (error.status === 500) {
-            this.alertMessage = 'Oops something went wrong, please try again later.';
-          } else {
-            this.alertMessage = 'An unexpected error occurred. Contact support';
-          }
+  if (error.status === 0) {
+    this.alertMessage = 'Network error. Please check your internet connection.';
+  } else if (error.status === 401) {
+    this.alertMessage = error.error?.error || 'Login failed. Please check your username or password.';
+  } else if (error.status === 500) {
+    this.alertMessage = error.error?.error || 'Server error. Please try again later.';
+  } else {
+    this.alertMessage = error.error?.error || 'An unexpected error occurred. Contact support.';
+  }
         },
       });
     } else {
