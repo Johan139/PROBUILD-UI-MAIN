@@ -1,4 +1,3 @@
-// src/app/authentication/auth.service.ts
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, firstValueFrom } from 'rxjs';
@@ -10,56 +9,49 @@ import { isPlatformBrowser } from '@angular/common';
 })
 export class AuthService {
   private http = inject(HttpClient);
-  
   private platformId = inject(PLATFORM_ID);
-  private apiUrl = `${environment.BACKEND_URL}/Account`; // Match your backend
-  public currentUserSubject = new BehaviorSubject<any>(null); // Store user info
-  public currentUser$ = this.currentUserSubject.asObservable();
-  public userRole = null;
-  private isRefreshing = false;
-  private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private apiUrl = `${environment.BACKEND_URL}/Account`;
 
-  constructor() {
-  }
+  public currentUserSubject = new BehaviorSubject<any>(null);
+  public currentUser$ = this.currentUserSubject.asObservable();
+  public userRole: string | null = null;
+
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<any>(null);
+
+  constructor() {}
 
   async initialize(): Promise<void> {
-    if (isPlatformBrowser(this.platformId)) {
-      const userJson = localStorage.getItem('currentUser');
-      console.log('Initializing AuthService with user:', userJson);
-      if (!userJson) {
-        return; // Not logged in, do nothing.
-      }
+    if (!isPlatformBrowser(this.platformId)) return;
 
-      // If there's a user, parse and update the subject
-      const user = JSON.parse(userJson);
-      this.currentUserSubject.next(user);
+    const userJson = localStorage.getItem('currentUser');
+    if (!userJson) return;
 
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        // User data exists but no token, inconsistent state.
-        this.logout();
-        return;
-      }
+    const user = JSON.parse(userJson);
+    this.currentUserSubject.next(user);
 
-      try {
-        const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
-        const expirationDate = new Date(0);
-        expirationDate.setUTCSeconds(decodedToken.exp);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      this.logout();
+      return;
+    }
 
-        if (expirationDate.valueOf() < new Date().valueOf()) {
-          // Token is expired, refresh it.
-          try {
-            await firstValueFrom(this.refreshToken());
-          } catch (error) {
-            console.error('Session expired, logging out.', error);
-            this.logout(); // Logout if refresh fails
-          }
+    try {
+      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
+      const expiration = new Date(0);
+      expiration.setUTCSeconds(decodedToken.exp);
+
+      if (expiration.valueOf() < Date.now()) {
+        try {
+          await firstValueFrom(this.refreshToken());
+        } catch (err) {
+          console.error('Session expired. Logging out.', err);
+          this.logout();
         }
-      } catch (error) {
-        // Token is malformed or another error occurred
-        console.error('Failed to process token, logging out.', error);
-        this.logout();
       }
+    } catch (err) {
+      console.error('Invalid token. Logging out.', err);
+      this.logout();
     }
   }
 
@@ -70,51 +62,27 @@ export class AuthService {
       })
       .pipe(
         tap((response) => {
-          if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem('token', response.token);
-            localStorage.setItem('userType', response.userType);
-            localStorage.setItem('firstName', response.firstName);
-            localStorage.setItem('lastName', response.lastName); 
-            localStorage.setItem('userId', response.id);
-            localStorage.setItem('loggedIn', String(true));
-          }
-          this.currentUserSubject.next({
-            id: response.id,
-            userType: response.userType,
-            firstName: response.firstName,
-            lastName: response.lastName 
-          });
-            // Extract token and user details from response
-            console.log('Login response:', response);
-            const { token, refreshToken, userId, firstName, userType } = response;
-            console.log('Login successful, token:', token);
-            console.log('Login successful, refreshToken:', refreshToken);
-            console.log('Login successful, id:', userId);
-            console.log('Login successful, firstName:', firstName);
-            console.log('Login successful, userType:', userType);
+          if (!isPlatformBrowser(this.platformId)) return;
 
-            // Save tokens to localStorage
-            localStorage.setItem('accessToken', token);
-            localStorage.setItem('refreshToken', refreshToken);
+          const { token, refreshToken, userId, firstName, lastName, userType } = response;
 
-            // Create and save user object
-            const user = {
-              id: userId,
-              firstName,
-              userType,
-            };
-            console.log('User logged in:', user);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('accessToken', token);
+          localStorage.setItem('refreshToken', refreshToken);
+          localStorage.setItem('userId', userId);
+          localStorage.setItem('firstName', firstName);
+          localStorage.setItem('lastName', lastName);
+          localStorage.setItem('userType', userType);
+          localStorage.setItem('loggedIn', 'true');
 
-            // Update the currentUserSubject
-            this.currentUserSubject.next(user);
-          }
+          const user = { id: userId, firstName, lastName, userType };
+          localStorage.setItem('currentUser', JSON.stringify(user));
+
+          this.currentUserSubject.next(user);
         })
       );
   }
 
   changeUserRole(userType: string): void {
-    localStorage.removeItem('userType');
     localStorage.setItem('userType', userType);
   }
 
@@ -127,6 +95,7 @@ export class AuthService {
       localStorage.removeItem('lastName');
       localStorage.removeItem('userId');
       localStorage.removeItem('loggedIn');
+      localStorage.removeItem('currentUser');
     }
     this.currentUserSubject.next(null);
   }
@@ -138,12 +107,11 @@ export class AuthService {
 
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
-    const refreshToken = localStorage.getItem('refreshToken');
 
+    const refreshToken = localStorage.getItem('refreshToken');
     return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
       tap((response: any) => {
         this.isRefreshing = false;
-        console.log('Token refreshed successfully:', response);
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
         this.refreshTokenSubject.next(response.accessToken);
@@ -152,72 +120,62 @@ export class AuthService {
   }
 
   async getToken(): Promise<string | null> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null;
-    }
+    if (!isPlatformBrowser(this.platformId)) return null;
 
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-      return null;
-    }
+    if (!token) return null;
 
     try {
       const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
-      const expirationDate = new Date(0);
-      expirationDate.setUTCSeconds(decodedToken.exp);
+      const expiration = new Date(0);
+      expiration.setUTCSeconds(decodedToken.exp);
 
-      if (expirationDate.valueOf() < new Date().valueOf() + 5000) { // 5 seconds buffer
-        this.refreshToken();
+      if (expiration.valueOf() < Date.now() + 5000) {
+        await firstValueFrom(this.refreshToken());
         return localStorage.getItem('accessToken');
       }
 
       return token;
-    } catch (error) {
+    } catch (err) {
+      console.error('Token decode failed:', err);
       return null;
-    } finally {
     }
   }
 
   isLoggedIn(): boolean {
-    if (isPlatformBrowser(this.platformId)) {
-      return !!localStorage.getItem('accessToken');
-    }
-    return false;
+    return isPlatformBrowser(this.platformId) && !!localStorage.getItem('accessToken');
   }
 
-  // New method to get role
   getUserRole(): string | null {
-    return localStorage.getItem('userType') || null;
+    return localStorage.getItem('userType');
   }
 
   private loadUserFromToken(token: string): void {
+    if (!token) return;
 
     if (token === 'fake-dev-token-12345') {
       this.currentUserSubject.next({
         id: localStorage.getItem('userId'),
         userType: localStorage.getItem('userType'),
         firstName: localStorage.getItem('firstName'),
-        lastName: localStorage.getItem('lastName')
+        lastName: localStorage.getItem('lastName'),
       });
-
-    if (!token) {
-
       return;
     }
+
     try {
-      console.log('Decoding token:', token);
       const payload = JSON.parse(atob(token.split('.')[1]));
-      this.currentUserSubject.next({
+      const user = {
         id: payload.UserId || localStorage.getItem('userId'),
         userType: payload.UserType || localStorage.getItem('userType'),
         firstName: payload.FirstName || localStorage.getItem('firstName'),
         lastName: payload.LastName || localStorage.getItem('lastName'),
         companyName: payload.CompanyName || localStorage.getItem('companyName'),
-      });
-    } catch (error) {
-      console.error('Failed to decode token', error);
-      this.currentUserSubject.next(null); // Clear user data on error
-    } finally {
+      };
+      this.currentUserSubject.next(user);
+    } catch (err) {
+      console.error('Failed to decode token', err);
+      this.currentUserSubject.next(null);
     }
   }
 }

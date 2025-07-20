@@ -62,7 +62,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public hasUnreadNotifications$!: Observable<boolean>;
 
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
 
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
