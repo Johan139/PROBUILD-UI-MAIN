@@ -94,9 +94,4 @@ export class LoginComponent {
   closeAlert(): void {
     this.showAlert = false;
   }
-
-  onBypassLogin() {
-    this.authService.bypassLogin('Contractor'); // or whatever role you need
-    this.router.navigateByUrl('dashboard');
-  }
 }

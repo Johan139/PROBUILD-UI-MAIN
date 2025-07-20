@@ -50,16 +50,50 @@ mat-divider {
 /* Job Details */
 .job-details {
   padding: 1rem 0;
-  
+
   h4 {
     color: $black;
     margin-bottom: 0.5rem;
   }
-  
+
   p {
     color: $black;
     margin: 0.25rem 0;
   }
+}
+
+.address-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.address-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-icon {
+  color: #61a0af;
+  background-color: transparent;
+  border: none;
+}
+
+.address-edit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  mat-form-field {
+    width: 400px;
+  }
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 /* Timeline Section */
@@ -356,11 +390,23 @@ textarea[matInput] {
     background-color: rgba(18, 124, 32, 0.1);
   }
 }
+.timeline-chart {
+  width: 100%;
+  min-height: 300px;
+  font-family: Arial, sans-serif;
+}
+
 .timeline-wrapper {
   background: linear-gradient(135deg, $white 0%, #f9f9f9 100%);
-  padding: 1rem;
+  padding: 0; // Remove padding since timeline has its own
   border-radius: 8px;
   border: 1px solid $light-gray;
+}
+
+@media (max-width: 768px) {
+  .timeline-chart {
+    min-height: 250px;
+  }
 }
 
 /* Gantt Chart Styling */
@@ -467,13 +513,13 @@ textarea[matInput] {
 
 .subtask-table {
   margin-bottom: 2rem;
-  
+
   .table-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-    
+
     h3 {
       color: $black;
       font-size: 1.2rem;
@@ -484,7 +530,7 @@ textarea[matInput] {
 .themed-table {
   width: 100%;
   border-collapse: collapse;
-  
+
   th {
     background-color: $primary-yellow;
     color: $black;
@@ -493,11 +539,11 @@ textarea[matInput] {
     text-align: left;
     border-bottom: 2px solid $light-gray;
   }
-  
+
   td {
     padding: 8px;
     border: 1px solid $light-gray;
-    
+
     input.no-border {
       border: none;
       width: 100%;
@@ -508,7 +554,7 @@ textarea[matInput] {
       }
     }
   }
-  
+
   tr:hover {
     background-color: $light-gray;
   }
@@ -532,7 +578,7 @@ textarea[matInput] {
   font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
-  
+
   &:hover {
     background: $darker-yellow;
   }
@@ -546,25 +592,25 @@ textarea[matInput] {
   font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
-  
+
   &:hover {
     background: $darker-yellow;
   }
-  
+
   &.publish-btn {
     background: $primary-yellow;
     &:hover {
       background: $darker-yellow;
     }
   }
-  
+
   &.save-btn {
     background: $secondary-yellow;
     &:hover {
       background: darken($secondary-yellow, 10%);
     }
   }
-  
+
   &.delete-btn {
     background: #fbd008;
     color: $dark-gray;
@@ -603,7 +649,7 @@ textarea[matInput] {
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
   width: 300px;
-  
+
   p {
     margin-bottom: 20px;
     color: $black;
@@ -956,16 +1002,16 @@ mat-dialog-actions {
   .container {
     width: 95vw;
   }
-  
+
   .submit-btn {
     width: 100%;
     margin: 0.5rem 0;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   .themed-table {
     th, td {
       font-size: 0.8rem;

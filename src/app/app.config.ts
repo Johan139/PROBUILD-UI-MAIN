@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { Store, INITIAL_STATE} from '../app/store/store.service'
@@ -6,6 +6,11 @@ import { provideClientHydration } from '@angular/platform-browser';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { authInterceptor } from './authentication/http.interceptor';
 import { provideHttpClient, withFetch, withInterceptors} from "@angular/common/http";
+import { AuthService } from './authentication/auth.service';
+
+export function initializeApp(authService: AuthService) {
+  return () => authService.initialize();
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,6 +26,12 @@ export const appConfig: ApplicationConfig = {
           }
         ]
       },
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeApp,
+      deps: [AuthService],
+      multi: true
     },
     Store,
     provideHttpClient(withInterceptors([authInterceptor]), withFetch()),

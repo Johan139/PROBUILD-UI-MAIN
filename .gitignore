@@ -39,3 +39,8 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Demo folder
+/Demo
+Demo/*
+docs/
