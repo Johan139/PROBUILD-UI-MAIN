@@ -15,7 +15,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, timeout, debounceTime, switchMap, of, Observable, map } from 'rxjs';
+import { Subscription, timeout, debounceTime, switchMap, of, Observable, map, filter, take } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { environment } from '../../../environments/environment';
@@ -152,7 +152,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.sessionId = uuidv4();
-    this.currentUserId = this.authService.currentUserSubject.value?.id;
     this.signalrService.startConnection(this.sessionId);
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
@@ -168,8 +167,15 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.projectDetails.date
       ).toISOString().split('T')[0];
       this.jobDataService.fetchJobData(this.projectDetails);
-      if (this.projectDetails.jobId) {
-        this.checkProjectOwnerStatus(this.projectDetails.jobId);
+
+      if (this.projectDetails?.jobId) {
+        this.authService.currentUser$.pipe(
+          filter(user => !!user),
+          take(1)
+        ).subscribe(user => {
+          this.currentUserId = user.id;
+          this.checkProjectOwnerStatus(this.projectDetails.jobId, user.id);
+        });
       }
     });
 
@@ -408,7 +414,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   handleGroupMove(event: { groupId: string; newStartDate: Date; newEndDate: Date; }): void {
-    this.timelineService.handleGroupMove(event, this.projectDetails.jobId, this.currentUserId);
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1)
+    ).subscribe(user => {
+      this.timelineService.handleGroupMove(event, this.projectDetails.jobId, user.id);
+    });
   }
 
   NavigateBack(): void {
@@ -419,8 +430,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.showAlert = false;
   }
 
-  private checkProjectOwnerStatus(jobId: string): void {
-    const userId = this.authService.currentUserSubject.value?.id;
+  private checkProjectOwnerStatus(jobId: string, userId: string): void {
     if (!userId || !jobId) {
       this.isProjectOwner = false;
       return;

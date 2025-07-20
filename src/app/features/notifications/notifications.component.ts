@@ -3,9 +3,6 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { NotificationsService } from '../../services/notifications.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Notification } from '../../models/notification';
-import { Observable } from 'rxjs';
-import { JobsService } from '../../services/jobs.service';
-import { Router } from '@angular/router';
 import { JobDataService } from '../jobs/services/job-data.service';
 
 @Component({
@@ -17,37 +14,54 @@ import { JobDataService } from '../jobs/services/job-data.service';
   providers: [DatePipe]
 })
 export class NotificationsComponent implements OnInit {
-  notifications$!: Observable<Notification[]>;
   isDevMode = isDevMode();
+  currentPage: number = 1;
+  pageSize: number = 50;
+  public paginatedNotifications: any[] = [];
+    totalNotifications = 0;
+  totalPages: number = Number.MAX_SAFE_INTEGER;
 
   constructor(
     private notificationsService: NotificationsService,
     public authService: AuthService,
-    private jobsService: JobsService,
-    private router: Router,
     private datePipe: DatePipe,
     private jobDataService: JobDataService
   ) { }
 
   ngOnInit(): void {
-    this.notifications$ = this.notificationsService.notifications$;
-    this.notificationsService.getAllNotifications().subscribe({
-      next: (notifications) => console.log('Initial notifications loaded in component:', notifications),
-      error: (err) => console.error('Error loading initial notifications in component:', err)
-    });
+    this.loadNotifications();
+  }
 
-    this.notifications$.subscribe(notifications => {
-      console.log('Component notifications$ updated:', notifications);
+  loadNotifications(): void {
+    this.notificationsService.getAllNotifications(this.currentPage, this.pageSize).subscribe(response => {
+      this.paginatedNotifications = response?.notifications || [];
+      this.totalPages = response?.totalCount ? Math.ceil(response.totalCount / this.pageSize) : 1;
     });
   }
 
-  navigateToJob(notification: any): void {
+  navigateToJob(notification: Notification): void {
     this.jobDataService.navigateToJob(notification);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadNotifications();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadNotifications();
+    }
   }
 
   sendTestNotification(): void {
     this.notificationsService.sendTestNotification().subscribe(() => {
-      this.notificationsService.getAllNotifications().subscribe();
+      this.currentPage = 1;
+      this.totalPages = Number.MAX_SAFE_INTEGER;
+      this.loadNotifications();
     });
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
+import { AuthService } from '../../../authentication/auth.service';
 
 @Injectable({
   providedIn: 'root',
@@ -10,16 +11,24 @@ export class SignalrService {
   public progress = new Subject<number>();
   public uploadComplete = new Subject<number>();
 
-  constructor() {}
+  constructor(private authService: AuthService) {}
 
   public startConnection(sessionId: string): void {
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(
-        `https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub?sessionId=${sessionId}`
+        `https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub?sessionId=${sessionId}`,
+        {
+          accessTokenFactory: async () => {
+            const token = await this.authService.getToken();
+            return token || '';
+          }
+        }
       )
+      .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Debug)
       .build();
 
+    this.hubConnection.onreconnecting(error => console.warn('Connection lost. Reconnecting...', error));
     this.hubConnection
       .start()
       .then(() => console.log('SignalR connection established successfully'))

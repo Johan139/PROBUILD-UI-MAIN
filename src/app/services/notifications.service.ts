@@ -6,6 +6,11 @@ import { environment } from '../../environments/environment';
 import { AuthService } from '../authentication/auth.service';
 import * as signalR from '@microsoft/signalr';
 
+export interface PaginatedNotificationResponse {
+  notifications: Notification[];
+  totalCount: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -41,22 +46,16 @@ export class NotificationsService {
       console.log('User not authenticated, skipping SignalR connection');
       return;
     }
-    const token = this.authService.getToken();
-    if (!token) {
-      console.error('No authentication token available');
-      return;
-    }
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.SIGNALR_URL}/notifications`, { accessTokenFactory: () => token })
-      .withAutomaticReconnect()
-      .build();
-
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(`${environment.SIGNALR_URL}/notifications`, {
-        accessTokenFactory: () => token
+        accessTokenFactory: async () => {
+          const token = await this.authService.getToken();
+          return token || '';
+        }
       })
       .withAutomaticReconnect()
       .build();
+
 
     this.hubConnection.start()
       .then(() => {
@@ -96,22 +95,26 @@ export class NotificationsService {
     return this.http.get<Notification[]>(`${this.apiUrl}/recent`);
   }
 
-  getAllNotifications(): Observable<Notification[]> {
-    return this.http.get<Notification[]>(this.apiUrl).pipe(
-      tap(notifications => {
-        this.notificationsSubject.next(notifications);
-        this.checkForUnreadNotifications();
-        console.log('Notifications subject updated with:', notifications);
-      }),
-      catchError(error => {
-        console.error('Error fetching historical notifications:', error);
-        return throwError(error);
-      })
-    );
-  }
+  getAllNotifications(page: number, pageSize: number): Observable<PaginatedNotificationResponse> {
+      const url = `${this.apiUrl}?page=${page}&pageSize=${pageSize}`;
+      return this.http.get<PaginatedNotificationResponse>(url).pipe(
+        tap(response => {
+          console.log('Fetched notifications:', response);
+          const notifications = response?.notifications || [];
+          console.log('Notifications:', notifications);
+          this.notificationsSubject.next(notifications);
+          this.checkForUnreadNotifications();
+          console.log('Notifications subject updated with:', notifications);
+        }),
+        catchError(error => {
+          console.error('Error fetching historical notifications:', error);
+          return throwError(error);
+        })
+      );
+    }
 
   sendTestNotification(): Observable<any> {
-    const token = this.authService.getToken();
+    const token = localStorage.getItem('accessToken');
 
     // Explicitly set headers
     const headers = new HttpHeaders({

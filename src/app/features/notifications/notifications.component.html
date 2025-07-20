@@ -1,18 +1,26 @@
 <div class="notifications-container">
   <h1>All Notifications</h1>
+   <div class="pagination-controls">
+    <button (click)="previousPage()" [disabled]="currentPage === 1">Previous</button>
+    <span>Page {{ currentPage }} of {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+  </div>
   <!-- <button *ngIf="authService.isLoggedIn()" (click)="sendTestNotification()">Send Test Notification</button> -->
-  <ul *ngIf="notifications$ | async as notifications" class="notification-list">
-    <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
-      <li *ngFor="let notification of notifications" class="notification-item" (click)="navigateToJob(notification)">
-        <p class="notification-message">
-          <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
-        </p>
-      </li>
-    </ng-container>
-    <ng-template #noNotifications>
-      <li class="no-notifications">
-        You have no notifications.
-      </li>
-    </ng-template>
+  <ul *ngIf="paginatedNotifications.length > 0; else noNotifications" class="notification-list">
+    <li *ngFor="let notification of paginatedNotifications" class="notification-item" (click)="navigateToJob(notification)">
+      <p class="notification-message">
+        <strong>{{ notification.senderFullName }}</strong> - {{ notification.projectName }}: {{ notification.message }} <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
+      </p>
+    </li>
   </ul>
+  <ng-template #noNotifications>
+    <div class="no-notifications">
+      You have no notifications.
+    </div>
+  </ng-template>
+  <div class="pagination-controls">
+    <button (click)="previousPage()" [disabled]="currentPage === 1">Previous</button>
+    <span>Page {{ currentPage }} of {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+  </div>
 </div>

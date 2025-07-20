@@ -2,7 +2,7 @@ import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, ViewEnc
 import { Router, RouterLink } from "@angular/router";
 import { CommonModule, DatePipe, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCardModule, MatCardHeader, MatCardTitle, MatCardContent } from "@angular/material/card";
+import { MatCardModule } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
 import { GanttChartComponent } from '../../../components/gantt-chart/gantt-chart.component';
 import { LoaderComponent } from '../../../loader/loader.component';
@@ -19,10 +19,10 @@ import { MatInputModule } from '@angular/material/input'; // also needed for mat
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
+import { AuthService } from '../../../authentication/auth.service';
+import { filter, take, switchMap } from 'rxjs/operators';
+
 const BASE_URL = environment.BACKEND_URL;
-
-
-
 @Component({
   selector: 'app-new-user-dashboard',
   standalone: true,
@@ -88,6 +88,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     private snackBar: MatSnackBar,
     private http: HttpClient,
     private jobDataService: JobDataService,
+    private authService: AuthService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -99,12 +100,15 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.isLoading = true;
     this.userType = this.userService.getUserType();
 
-    const userId = localStorage.getItem('userId');
-    this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${userId}`).subscribe({
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => {
+        return this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${user.id}`);
+      })
+    ).subscribe({
       next: (notes: any) => {
-
         this.notes = notes;
-        console.log(this.notes);
         this.groupedNotes = this.groupNotesBySubtask(notes);
         this.isLoading = false;
       },
@@ -113,14 +117,12 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       }
     });
 
-
-      // 🛠️ ADD THIS LINE:
-  this.loadUserJobs();
+    this.loadUserJobs();
     this.isSubContractor = this.userType === 'BUILDER' || this.userType === 'CONSTRUCTION';
 
     setTimeout(() => {
       this.isLoading = false;
-    }, 1000); // Simulate loading
+    }, 1000);
   }
   closeDocumentsDialog() {
     if (this.documentDialogRef) {
@@ -222,9 +224,11 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
 
   loadUserJobs() {
-    const userId = localStorage.getItem('userId') || '';
-
-    this.jobService.getAllJobsByUserId(userId).subscribe(jobs => {
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => this.jobService.getAllJobsByUserId(user.id))
+    ).subscribe(jobs => {
       if (!jobs) {
         this.userJobs = [];
         return;
