@@ -47,7 +47,8 @@ export class DocumentService {
   viewDocument(document: any): void {
     this.jobsService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
-        const blob = new Blob([response], { type: document.type });
+
+         const blob = new Blob([response], { type: 'application/pdf' }); // Force PDF MIME type
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');
         if (!newTab) {

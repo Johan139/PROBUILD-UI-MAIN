@@ -195,7 +195,7 @@
         <div *ngIf="documents.length > 0" class="documents-list">
           <div class="document-item" *ngFor="let doc of documents; let i = index">
             <div class="document-info">
-              <span class="document-name">{{doc.name}}</span>
+              <span class="document-name">{{doc.fileName}}</span>
               <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
             </div>
             <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">

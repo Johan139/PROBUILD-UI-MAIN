@@ -341,6 +341,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .fetchDocuments(this.projectDetails.jobId)
       .subscribe((docs) => {
         this.documents = docs;
+
         this.dialog.open(this.documentsDialog, {
           width: '500px',
           maxHeight: '80vh',
