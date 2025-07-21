@@ -5,6 +5,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Profile, TeamMember, Document } from './profile.model';
+import { userTypes } from '../../data/user-types';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -41,7 +42,7 @@ const BASE_URL = environment.BACKEND_URL;
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
-    MatAutocompleteModule,    
+    MatAutocompleteModule,
     MatDialogModule,
     MatTooltipModule,
     MatSelectModule,
@@ -82,8 +83,11 @@ isGoogleMapsLoaded: boolean = false;
   successMessage: string | null = null;
   userRole: string | null = null;
   isVerified = false;
-  
-  availableRoles: string[] = ['FOREMAN', 'BUILDER', 'PERSONAL_USE', 'PROJECT_OWNER', 'SUPPLIER', 'CONSTRUCTION'];
+
+  availableRoles: string[] = userTypes
+    .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
+    .map(ut => ut.display);
+
   teamMembers: TeamMember[] = [];
   documents: ProfileDocument[] = [];
   displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
@@ -199,20 +203,20 @@ isGoogleMapsLoaded: boolean = false;
         .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
           .configureLogging(LogLevel.Debug)
           .build();
-    
+
         this.hubConnection.on('ReceiveProgress', (progress: number) => {
           const cappedProgress = Math.min(100, progress);
           this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
           console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
         });
-    
+
         this.hubConnection.on('UploadComplete', (fileCount: number) => {
           this.isUploading = false;
           this.resetFileInput();
           console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
           console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
         });
-    
+
 
         const userId = localStorage.getItem('userId');
         this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
@@ -221,7 +225,7 @@ isGoogleMapsLoaded: boolean = false;
             this.subscriptionActive = res.hasActive;
             if (!res.hasActive) {
               this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
-    
+
             }
           },
           error: (err) => {
@@ -268,7 +272,7 @@ isGoogleMapsLoaded: boolean = false;
   onAddressSelected(event: MatAutocompleteSelectedEvent): void {
     const selectedAddress = event.option.value;
     this.selectedPlace = selectedAddress;
-  
+
     const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
     placesService.getDetails(
       {
@@ -285,7 +289,7 @@ isGoogleMapsLoaded: boolean = false;
           const components = place.address_components || [];
           const getComponent = (type: string) =>
             components.find(c => c.types.includes(type))?.long_name || '';
-    
+
           const patchObj = {
             address: selectedAddress.description,
             formattedAddress: place.formatted_address || selectedAddress.description,
@@ -299,16 +303,16 @@ isGoogleMapsLoaded: boolean = false;
             longitude: place.geometry?.location?.lng() ?? null,
             googlePlaceId: place.place_id || selectedAddress.place_id,  // fallback if needed
           };
-    
+
           this.profileForm.patchValue(patchObj);
           this.addressControl.setValue(patchObj.address);
           console.log('🔄 Google Place data patched:', patchObj);
         }
       }
     );
-    
+
   }
-  
+
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
@@ -332,7 +336,7 @@ isGoogleMapsLoaded: boolean = false;
       const script = document.createElement('script');
 
       script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
- 
+
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -363,7 +367,7 @@ isGoogleMapsLoaded: boolean = false;
       console.warn('UserId not found for document fetch');
       return;
     }
-  
+
     this.profileService.getUserDocuments(userId).subscribe({
       next: (docs: ProfileDocument[]) => {
         this.documents = docs.map(doc => ({
@@ -385,21 +389,21 @@ isGoogleMapsLoaded: boolean = false;
         // Infer MIME type based on extension
         const extension = document.name?.split('.').pop()?.toLowerCase();
         let mimeType = 'application/octet-stream'; // fallback
-  
+
         if (extension === 'pdf') mimeType = 'application/pdf';
         else if (['png', 'jpg', 'jpeg'].includes(extension)) mimeType = `image/${extension}`;
         else if (extension === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         else if (extension === 'doc') mimeType = 'application/msword';
-  
+
         const blob = new Blob([response], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');
-  
+
         if (!newTab) {
           this.alertMessage = 'Failed to open document. Please allow pop-ups for this site.';
           this.showAlert = true;
         }
-  
+
         // Cleanup after 10 seconds
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       },
@@ -410,7 +414,7 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
-  
+
   onSubmit(): void {
     console.log(this.profileForm)
     if (this.profileForm.valid && !this.isSaving) {
@@ -421,7 +425,7 @@ isGoogleMapsLoaded: boolean = false;
         SessionId: this.sessionId
       });
       const updatedProfile: Profile = this.profileForm.value;
-      
+
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
@@ -432,9 +436,9 @@ isGoogleMapsLoaded: boolean = false;
                      const selectedPackageValue = this.profileForm.value.subscriptionPackage;
                       console.log(selectedPackageValue);
                       const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
-                      
+
                       const userId = updatedProfile.id;
-          
+
                       this.dialog.open(PaymentPromptDialogComponent, {
                         data: {
                           userId: userId,
@@ -466,10 +470,10 @@ isGoogleMapsLoaded: boolean = false;
       console.error('No files selected');
       return;
     }
-  
+
     const newFileNames = Array.from(input.files).map(file => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
-  
+
     const formData = new FormData();
     Array.from(input.files).forEach(file => {
       formData.append('Blueprint', file);
@@ -478,11 +482,11 @@ isGoogleMapsLoaded: boolean = false;
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
     // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
-  
+
     this.progress = 0;
     this.isUploading = true;
     console.log('Starting file upload without SignalR');
-  
+
     this.httpClient
       .post<any>(BASE_URL + '/profile/UploadImage', formData, {
         reportProgress: true,
@@ -581,15 +585,15 @@ isGoogleMapsLoaded: boolean = false;
   }
 
   canViewCompanyDetails(): boolean {
-    return ['CONSTRUCTION', 'PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+    return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
   canViewCertification(): boolean {
-    return ['FOREMAN', 'CONSTRUCTION', 'BUILDER'].includes(this.userRole || '');
+    return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
   canViewTradeSupplier(): boolean {
-    return ['FOREMAN', 'CONSTRUCTION', 'PROJECT_OWNER', 'SUPPLIER'].includes(this.userRole || '');
+    return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
   canViewDeliveryLocation(): boolean {
@@ -599,7 +603,7 @@ isGoogleMapsLoaded: boolean = false;
   canViewSubscription(): boolean {
     return this.availableRoles.includes(this.userRole || '');
   }
-  
+
 }
 // To this:
 export interface ProfileDocument {

@@ -60,15 +60,18 @@
                       <mat-form-field appearance="fill">
                         <mat-label>User Type</mat-label>
                         <mat-select formControlName="userType" panelClass="custom-select-panel">
-                          <mat-option value="BUILDER">Builder</mat-option>
-                          <mat-option value="CONSTRUCTION">Construction</mat-option>
+                          <mat-option value="GENERAL_CONTRACTOR">General Contractor</mat-option>
+                          <mat-option value="PROJECT_MANAGER">Project Manager</mat-option>
+                          <mat-option value="CHIEF_ESTIMATOR">Chief Estimator</mat-option>
+                          <mat-option value="GENERAL_SUPERINTENDANT">General Superintendant</mat-option>
+                          <mat-option value="SUPERINTENDANT">Superintendant</mat-option>
+                          <mat-option value="ASSISTANT_SUPERINTENDANT">Assistant Superintendant</mat-option>
                           <mat-option value="FOREMAN">Foreman</mat-option>
-                          <mat-option value="PERSONAL_USE">Personal Use</mat-option>
-                          <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
-                          <mat-option value="SUPPLIER">Supplier</mat-option>
+                          <mat-option value="SUBCONTRACTOR">Subcontractor</mat-option>
+                          <mat-option value="VENDOR">Vendor</mat-option>
                         </mat-select>
                       </mat-form-field>
-     
+
                     </div>
                   </div>
 
@@ -239,9 +242,9 @@
 
                   <!-- Submit Button -->
                   <div class="form-row">
-                    <button mat-raised-button 
-                            type="submit" 
-                            class="submit-btn" 
+                    <button mat-raised-button
+                            type="submit"
+                            class="submit-btn"
                           >
                       {{ isSaving ? 'Saving...' : 'Save Profile' }}
                     </button>
@@ -283,9 +286,9 @@
                           Invalid email format.
                         </mat-error>
                       </mat-form-field>
-                      <button mat-raised-button 
-                              type="submit" 
-                              class="submit-btn" 
+                      <button mat-raised-button
+                              type="submit"
+                              class="submit-btn"
                               [disabled]="teamForm.invalid">
                         Add Member
                       </button>

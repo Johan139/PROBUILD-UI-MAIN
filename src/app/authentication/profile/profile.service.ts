@@ -14,7 +14,7 @@ export class ProfileService {
 
   // Dummy data for team members
   private dummyTeamMembers: TeamMember[] = [
-    { name: 'John Doe', role: 'BUILDER', email: 'john.doe@example.com' },
+    { name: 'John Doe', role: 'SUBCONTRACTOR', email: 'john.doe@example.com' },
     { name: 'Jane Smith', role: 'FOREMAN', email: 'jane.smith@example.com' }
   ];
 
@@ -52,9 +52,11 @@ export class ProfileService {
         })
       );
   }
-downloadJobDocument(documentId: number): Observable<Blob> {
-  return this.http.get(`${this.apiUrl}/download/${documentId}`, { responseType: 'blob' });
-}
+
+  downloadJobDocument(documentId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/download/${documentId}`, { responseType: 'blob' });
+  }
+
   updateProfile(profile: Profile): Observable<Profile> {
     const url = `${this.apiUrl}/update`;
     return this.http.post<Profile>(url, profile, { headers: this.getHeaders() })
@@ -80,6 +82,7 @@ downloadJobDocument(documentId: number): Observable<Blob> {
   getUserDocuments(userId: string): Observable<ProfileDocument []> {
     return this.http.get<ProfileDocument []>(`${this.apiUrl}/GetDocuments/${userId}`);
   }
+
   getTeamMembers(): Observable<TeamMember[]> {
     // Simulate API call with dummy data
     return of(this.dummyTeamMembers);

@@ -443,7 +443,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
       if (jobAssignment) {
         const user = jobAssignment.jobUser.find(u => u.id === userId);
-        this.isProjectOwner = !!user && user.jobRole === 'PROJECT_OWNER';
+        this.isProjectOwner = !!user && user.jobRole === 'GENERAL_CONTRACTOR';
       } else {
         this.isProjectOwner = false;
       }

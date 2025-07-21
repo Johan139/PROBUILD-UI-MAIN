@@ -86,16 +86,36 @@
                 <div class="form-row">
                   <mat-form-field appearance="fill">
                     <mat-label>Country</mat-label>
-                    <mat-select formControlName="country" required>
-                      <mat-option *ngFor="let type of countries" [value]="type.value">{{ type.display }}</mat-option>
-                    </mat-select>
+                    <input type="text"
+                           placeholder=" "
+                           aria-label="Country"
+                           matInput
+                           formControlName="country"
+                           [matAutocomplete]="auto"
+                           required>
+                    <mat-autocomplete #auto="matAutocomplete">
+                      <mat-option *ngFor="let country of filteredCountries | async" [value]="country.display">
+                        {{country.display}}
+                      </mat-option>
+                    </mat-autocomplete>
                     <mat-error *ngIf="registrationForm.get('country')?.hasError('required')">
                       Mandatory Field: Input Required.
                     </mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="fill">
                     <mat-label>State/Province</mat-label>
-                    <input matInput formControlName="state" placeholder=" " required />
+                    <input type="text"
+                           placeholder=" "
+                           aria-label="State"
+                           matInput
+                           formControlName="state"
+                           [matAutocomplete]="autoState"
+                           required>
+                    <mat-autocomplete #autoState="matAutocomplete">
+                      <mat-option *ngFor="let state of filteredStates | async" [value]="state.display">
+                        {{state.display}}
+                      </mat-option>
+                    </mat-autocomplete>
                     <mat-error *ngIf="registrationForm.get('state')?.hasError('required')">
                       Mandatory Field: Input Required.
                     </mat-error>
@@ -161,8 +181,72 @@
                 </div>
               </div>
 
+                <!-- Trades -->
+                <div class="section" *ngIf="user === 'SUBCONTRACTOR'">
+                  <h3>Trades</h3>
+                  <div class="trades-selection-container">
+                    <div class="trade-input-section">
+                      <mat-form-field class="full-width" appearance="fill">
+                        <mat-label>Add Trades</mat-label>
+                        <input matInput
+                              placeholder="Type to search trades..."
+                              [formControl]="tradeCtrl"
+                              [matAutocomplete]="autoTrade">
+                        <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selectedTrade($event)">
+                          <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
+                            {{trade.display}}
+                          </mat-option>
+                        </mat-autocomplete>
+                      </mat-form-field>
+                    </div>
+                    <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
+                      <h4>Selected Trades:</h4>
+                      <div class="chips-wrapper">
+                        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)" [removable]="true">
+                          {{trade.display}}
+                          <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                        </mat-chip-row>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              <!-- Supplier Types -->
+              <div class="section" *ngIf="user === 'VENDOR'">
+                <h3>Supplier Types</h3>
+                <div class="supplier-types-selection-container">
+                  <div class="supplier-type-input-section">
+                    <mat-form-field class="full-width" appearance="fill">
+                      <mat-label>Add Supplier Types</mat-label>
+                      <input matInput
+                            placeholder="Type to search supplier types..."
+                            [formControl]="supplierTypeCtrl"
+                            [matAutocomplete]="autoSupplierType">
+                      <mat-autocomplete #autoSupplierType="matAutocomplete" (optionSelected)="selectedSupplierType($event)">
+                        <mat-option *ngFor="let type of filteredSupplierTypes | async" [value]="type">
+                          {{type.display}}
+                        </mat-option>
+                      </mat-autocomplete>
+                    </mat-form-field>
+                  </div>
+                  <div class="selected-supplier-types-display" *ngIf="selectedSupplierTypes.length > 0">
+                    <h4>Selected Supplier Types:</h4>
+                    <div class="chips-wrapper">
+                      <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)" [removable]="true">
+                        {{type.display}}
+                        <button matChipRemove>
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      </mat-chip-row>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Builder Specific -->
-              <div class="section" *ngIf="user == 'BUILDER'">
+              <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
                 <h3>Builder Details</h3>
                 <div class="form-row">
                   <mat-form-field appearance="fill">
@@ -181,15 +265,9 @@
               </div>
 
               <!-- Construction Specific -->
-              <div class="section" *ngIf="user == 'CONSTRUCTION'">
+              <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
                 <h3>Construction Details</h3>
                 <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Trade</mat-label>
-                    <mat-select formControlName="trade">
-                      <mat-option *ngFor="let trade of trades" [value]="trade.value">{{ trade.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
                   <mat-form-field appearance="fill">
                     <mat-label>Project Preferences</mat-label>
                     <mat-select formControlName="projectPreferences">
@@ -206,15 +284,9 @@
               </div>
 
               <!-- Supplier Specific -->
-              <div class="section" *ngIf="user == 'SUPPLIER'">
+              <div class="section" *ngIf="user == 'VENDOR'">
                 <h3>Supplier Details</h3>
                 <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Supplier Type</mat-label>
-                    <mat-select formControlName="supplierType">
-                      <mat-option *ngFor="let supplier of supplierTypes" [value]="supplier.value">{{ supplier.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
                   <mat-form-field appearance="fill">
                     <mat-label>Products Offered</mat-label>
                     <mat-select formControlName="productsOffered">

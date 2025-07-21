@@ -45,12 +45,9 @@
         <mat-form-field>
           <mat-label>Job Role</mat-label>
           <mat-select [(ngModel)]="newAssignment.jobRole" name="jobRole" required>
-            <mat-option value="BUILDER">Builder</mat-option>
-            <mat-option value="CONSTRUCTION">Construction</mat-option>
-            <mat-option value="FOREMAN">Foreman</mat-option>
-            <mat-option value="PERSONAL_USE">Personal Use</mat-option>
-            <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
-            <mat-option value="SUPPLIER">Supplier</mat-option>
+            <mat-option *ngFor="let role of jobRoles" [value]="role.value">
+              {{ role.display }}
+            </mat-option>
           </mat-select>
         </mat-form-field>
       </form>
@@ -73,7 +70,7 @@
             {{ element.job.id || 'N/A' }}
           </td>
         </ng-container>
-          
+
         <!-- Project Name Column -->
         <ng-container matColumnDef="projectName">
           <th mat-header-cell *matHeaderCellDef>Project Name</th>
@@ -110,7 +107,7 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let element">
-            <button mat-button class="submit-btn delete-btn" 
+            <button mat-button class="submit-btn delete-btn"
                     (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">
               Delete

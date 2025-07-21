@@ -118,7 +118,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     });
 
     this.loadUserJobs();
-    this.isSubContractor = this.userType === 'BUILDER' || this.userType === 'CONSTRUCTION';
+    this.isSubContractor = this.userType === 'SUBCONTRACTOR' || this.userType === 'CONSTRUCTION';
 
     setTimeout(() => {
       this.isLoading = false;
