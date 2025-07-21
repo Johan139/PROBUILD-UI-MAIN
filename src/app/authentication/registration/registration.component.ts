@@ -116,11 +116,23 @@ export class RegistrationComponent implements OnInit{
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
-      map((trade: string | null) => (trade ? this._filterTrades(trade) : this.trades.slice())),
+      map(value => {
+        const searchString = ((typeof value === 'string' ? value : '') || '').toLowerCase();
+        return this.trades.filter(trade =>
+          !this.selectedTrades.some(st => st.value === trade.value) &&
+          trade.display.toLowerCase().includes(searchString)
+        );
+      })
     );
     this.filteredSupplierTypes = this.supplierTypeCtrl.valueChanges.pipe(
       startWith(null),
-      map((supplierType: string | null) => (supplierType ? this._filterSupplierTypes(supplierType) : this.supplierTypes.slice())),
+      map(value => {
+        const searchString = ((typeof value === 'string' ? value : '') || '').toLowerCase();
+        return this.supplierTypes.filter(type =>
+          !this.selectedSupplierTypes.some(st => st.value === type.value) &&
+          type.display.toLowerCase().includes(searchString)
+        );
+      })
     );
   }
 
@@ -214,6 +226,7 @@ export class RegistrationComponent implements OnInit{
     const index = this.selectedTrades.indexOf(trade);
     if (index >= 0) {
       this.selectedTrades.splice(index, 1);
+      this.tradeCtrl.setValue(this.tradeCtrl.value);
     }
   }
 
@@ -225,10 +238,6 @@ export class RegistrationComponent implements OnInit{
     this.tradeCtrl.setValue(null);
   }
 
-  private _filterTrades(value: string) {
-    const filterValue = value.toLowerCase();
-    return this.trades.filter(trade => trade.display.toLowerCase().includes(filterValue));
-  }
 
   addSupplierType(event: any): void {
     const value = (event.value || '').trim();
@@ -246,6 +255,7 @@ export class RegistrationComponent implements OnInit{
     const index = this.selectedSupplierTypes.indexOf(type);
     if (index >= 0) {
       this.selectedSupplierTypes.splice(index, 1);
+      this.supplierTypeCtrl.setValue(this.supplierTypeCtrl.value);
     }
   }
 
@@ -257,10 +267,6 @@ export class RegistrationComponent implements OnInit{
     this.supplierTypeCtrl.setValue(null);
   }
 
-  private _filterSupplierTypes(value: string) {
-    const filterValue = value.toLowerCase();
-    return this.supplierTypes.filter(type => type.display.toLowerCase().includes(filterValue));
-  }
 
   private _filterCountries(value: string): any[] {
     const filterValue = value.toLowerCase();

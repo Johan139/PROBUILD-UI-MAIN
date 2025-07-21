@@ -202,7 +202,7 @@
                     <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
                       <h4>Selected Trades:</h4>
                       <div class="chips-wrapper">
-                        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)">
+                        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)" [removable]="true">
                           {{trade.display}}
                           <button matChipRemove>
                             <mat-icon>cancel</mat-icon>
@@ -234,7 +234,7 @@
                   <div class="selected-supplier-types-display" *ngIf="selectedSupplierTypes.length > 0">
                     <h4>Selected Supplier Types:</h4>
                     <div class="chips-wrapper">
-                      <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)">
+                      <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)" [removable]="true">
                         {{type.display}}
                         <button matChipRemove>
                           <mat-icon>cancel</mat-icon>
