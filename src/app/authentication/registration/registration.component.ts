@@ -163,7 +163,7 @@ export class RegistrationComponent implements OnInit{
       vatNo: [''],
       userType: ['PERSONAL_USE', Validators.required],
 
-      constructionType: (''),
+      constructionType: ([]),
       country: ['', Validators.required],
       state: ['', Validators.required],
       city: ['', Validators.required],
@@ -175,11 +175,11 @@ export class RegistrationComponent implements OnInit{
       availability:(''),
 
       subscriptionPackage: ['', Validators.required],
-      projectPreferences: (''),
+      projectPreferences: ([]),
 
-      productsOffered:(''),
+      productsOffered:([]),
 
-      deliveryArea: (''),
+      deliveryArea: ([]),
       deliveryTime: (''),
       userName:(''),
     });
@@ -421,6 +421,50 @@ export class RegistrationComponent implements OnInit{
       disableClose: true,
       width: '400px'
     });
+  }
+
+  getConstructionTypeDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('constructionType')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.constructionTypes
+      .filter(type => selectedValues.includes(type.value))
+      .map(type => type.display)
+      .join(', ');
+  }
+
+  getProjectPreferencesDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('projectPreferences')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.preferenceOptions
+      .filter(pref => selectedValues.includes(pref.value))
+      .map(pref => pref.display)
+      .join(', ');
+  }
+
+  getProductsOfferedDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('productsOffered')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.supplierProducts
+      .filter(prod => selectedValues.includes(prod.value))
+      .map(prod => prod.display)
+      .join(', ');
+  }
+
+  getDeliveryAreaDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('deliveryArea')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.deliveryAreas
+      .filter(area => selectedValues.includes(area.value))
+      .map(area => area.display)
+      .join(', ');
   }
 
   closeAlert(): void {

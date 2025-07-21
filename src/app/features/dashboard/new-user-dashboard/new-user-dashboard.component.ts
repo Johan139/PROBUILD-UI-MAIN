@@ -305,6 +305,11 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.documents = [];
     this.http.get<any[]>(`${BASE_URL}/Jobs/GetNoteDocuments/${noteId}`).subscribe({
       next: (docs) => {
+        if (!docs || docs.length === 0) {
+          this.documentsError = 'No documents found for this note.';
+          this.isDocumentsLoading = false;
+          return;
+        }
         this.documents = docs.map(doc => ({
           id: doc.id,
           name: doc.fileName,
@@ -315,13 +320,12 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         this.isDocumentsLoading = false;
       },
       error: (err) => {
-        this.documentsError = 'Failed to load documents.';
+        this.documentsError = err.error?.message;
         this.isDocumentsLoading = false;
       }
     });
   }
   openDocumentsDialog(note: any) {
-
     const activeElement = document.activeElement as HTMLElement;
 
     this.fetchDocuments(note.jobSubtaskId); // ✅ pass the note ID

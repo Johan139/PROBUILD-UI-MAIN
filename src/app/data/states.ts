@@ -528,5 +528,16 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '6', display: 'Northeastern Region' },
     { value: '7', display: 'Eastern Region' },
     { value: '8', display: 'Southern Region' }
+  ],
+  'ZAF': [
+    { value: 'EC', display: 'Eastern Cape' },
+    { value: 'FS', display: 'Free State' },
+    { value: 'GP', display: 'Gauteng' },
+    { value: 'KZN', display: 'KwaZulu-Natal' },
+    { value: 'LP', display: 'Limpopo' },
+    { value: 'MP', display: 'Mpumalanga' },
+    { value: 'NC', display: 'Northern Cape' },
+    { value: 'NW', display: 'North West' },
+    { value: 'WC', display: 'Western Cape' }
   ]
 };

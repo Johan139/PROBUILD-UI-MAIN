@@ -10,7 +10,7 @@
   <a routerLink="/dashboard" class="logo-link">
     <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
   </a>
-  <span class="spacer logged-in-name">{{LoggedInName}}</span>
+  <span class="spacer logged-in-name" routerLink="/profile">{{LoggedInName}}</span>
   <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
     <mat-icon>notifications</mat-icon>
     <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
@@ -51,15 +51,27 @@
       <button mat-flat-button class="menu-button custom-button" routerLink="/quote" (click)="sidenav.close()">
         <span class="menu-item">NEW QUOTE</span>
       </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/jobselection" (click)="sidenav.close()">
-        <span class="menu-item">AVAILABLE JOB</span>
-      </button>
-
-      <!-- <button mat-flat-button class="menu-button custom-button" routerLink="/bids" (click)="sidenav.close()">
-        <span class="menu-item">BIDS</span>
+      <!--TODO: Implement available jobs, request for bid, archive, open bids, and bids -->
+<!--
+      <button mat-flat-button class="menu-button custom-button" routerLink="/availablejobs" (click)="sidenav.close()">
+        <span class="menu-item">AVAILABLE JOBS</span>
       </button> -->
 
+      <button mat-flat-button class="menu-button custom-button" routerLink="/notifications" (click)="sidenav.close()">
+        <span class="menu-item">NOTIFICATIONS</span>
+      </button>
+<!--
+      <button mat-flat-button class="menu-button custom-button" routerLink="/requestforbid" (click)="sidenav.close()">
+        <span class="menu-item">REQUEST FOR BID</span>
+      </button>
+
+      <button mat-flat-button class="menu-button custom-button" routerLink="/archive" (click)="sidenav.close()">
+        <span class="menu-item">ARCHIVE</span>
+      </button>
+
+      <button mat-flat-button class="menu-button custom-button" routerLink="/openbids" (click)="sidenav.close()">
+        <span class="menu-item">OPEN BIDS</span>
+      </button> -->
 
     </mat-nav-list>
   </mat-sidenav>

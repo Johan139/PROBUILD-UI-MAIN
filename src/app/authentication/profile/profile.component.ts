@@ -580,8 +580,9 @@ isGoogleMapsLoaded: boolean = false;
     console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
+  // TODO: Implement these methods based on user roles once development complete
   canViewPersonalInfo(): boolean {
-    return this.availableRoles.includes(this.userRole || '');
+    return true;
   }
 
   canViewCompanyDetails(): boolean {
@@ -601,7 +602,7 @@ isGoogleMapsLoaded: boolean = false;
   }
 
   canViewSubscription(): boolean {
-    return this.availableRoles.includes(this.userRole || '');
+    return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
 }

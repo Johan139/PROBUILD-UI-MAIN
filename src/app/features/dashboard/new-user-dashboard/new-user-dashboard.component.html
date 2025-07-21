@@ -53,7 +53,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let group of notes">
-                  <td>{{group.projectName}}</td>
+                  <td style="white-space: normal; word-break: break-word;">{{group.projectName}}</td>
                   <td style="white-space: normal; word-break: break-word;">
                     {{ group.subtaskName }}
                   </td>
@@ -93,7 +93,7 @@
               <tbody>
                 <tr *ngFor="let job of userJobs">
                   <td>{{ job.projectName }}</td>
-                  <td>{{ job.createdAt | date: 'short' }}</td>
+                  <td>{{ job.createdAt | date: 'shortDate' }}</td>
                   <td>
                     <div class="job-progress-bar">
                       <div class="progress-fill" [style.width.%]="job.progress"></div>

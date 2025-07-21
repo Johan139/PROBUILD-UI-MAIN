@@ -186,6 +186,8 @@ footer {
 
 .notification-button {
   position: relative;
+  margin-left: 3px;
+  margin-right: 0px;
 }
 
 .notification-dot {
@@ -215,7 +217,9 @@ footer {
   flex-direction: row-reverse;
   justify-content: space-between;
   align-items: flex-start;
-
+}
+.logged-in-name:hover {
+  cursor: pointer;
 }
 @media (max-width: 768px) {
   .sidenav {

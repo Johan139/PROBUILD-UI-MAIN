@@ -4,7 +4,6 @@
       <mat-card class="profile-card">
         <mat-card-header>
           <mat-card-title>User Profile</mat-card-title>
-
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
@@ -18,19 +17,10 @@
                 <div *ngIf="errorMessage" class="error-message">
                   {{ errorMessage }}
                 </div>
-
                 <!-- Role Switcher Dropdown (For Dev Testing) -->
-                <!-- <div class="form-row role-switcher" *ngIf="profileForm">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Switch Role (Dev Mode)</mat-label>
-                    <mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel">
-                      <mat-option *ngFor="let role of availableRoles" [value]="role">
+                <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
                         {{ role }}
-                      </mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div> -->
-
+                      </mat-option></mat-select></mat-form-field></div> -->
                 <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm">
                   <!-- Personal Information -->
                   <div class="section" *ngIf="canViewPersonalInfo()">
@@ -39,23 +29,17 @@
                       <mat-form-field appearance="fill">
                         <mat-label>First Name</mat-label>
                         <input matInput formControlName="firstName" placeholder=" " />
-                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
+                        <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Last Name</mat-label>
                         <input matInput formControlName="lastName" placeholder=" " />
-                        <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
+                        <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Phone Number</mat-label>
                         <input matInput formControlName="phoneNumber" placeholder=" " />
-                        <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
+                        <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>User Type</mat-label>
@@ -71,52 +55,8 @@
                           <mat-option value="VENDOR">Vendor</mat-option>
                         </mat-select>
                       </mat-form-field>
-
                     </div>
                   </div>
-
-                  <!-- Company Details -->
-                  <div class="section" *ngIf="canViewCompanyDetails()">
-                    <h3>Company Details</h3>
-                    <div class="form-row">
-                      <mat-form-field appearance="fill">
-                        <mat-label>Company Name</mat-label>
-                        <input matInput formControlName="companyName" placeholder=" " />
-                        <mat-error *ngIf="profileForm.get('companyName')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
-                      </mat-form-field>
-                      <mat-form-field appearance="fill">
-                        <mat-label>No. of Employees</mat-label>
-                        <input matInput formControlName="nrEmployees" placeholder=" " />
-                      </mat-form-field>
-                      <mat-form-field appearance="fill">
-                        <mat-label>Years of Operation</mat-label>
-                        <input matInput formControlName="yearsOfOperation" placeholder=" " />
-                      </mat-form-field>
-                      <mat-form-field appearance="fill">
-                        <mat-label>Construction Type</mat-label>
-                        <mat-select formControlName="constructionType" panelClass="custom-select-panel">
-                          <mat-option value="RESIDENTIAL">Residential</mat-option>
-                          <mat-option value="COMMERCIAL">Commercial</mat-option>
-                          <mat-option value="INDUSTRIAL">Industrial</mat-option>
-                          <mat-option value="INFRASTRUCTURE">Infrastructure</mat-option>
-                          <mat-option value="RENOVATION">Renovation/Remodeling</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </div>
-                    <div class="form-row">
-                      <mat-form-field appearance="fill">
-                        <mat-label>Company Registration No</mat-label>
-                        <input matInput formControlName="companyRegNo" placeholder=" " />
-                      </mat-form-field>
-                      <mat-form-field appearance="fill">
-                        <mat-label>VAT No</mat-label>
-                        <input matInput formControlName="vatNo" placeholder=" " />
-                      </mat-form-field>
-                    </div>
-                  </div>
-
                   <!-- Certification & Availability -->
                   <div class="section" *ngIf="canViewCertification()">
                     <h3>Certification & Availability</h3>
@@ -124,6 +64,7 @@
                       <mat-form-field appearance="fill">
                         <mat-label>Availability</mat-label>
                         <mat-select formControlName="availability" panelClass="custom-select-panel">
+                          <mat-option value=""></mat-option>
                           <mat-option value="Full-time">Full-time</mat-option>
                           <mat-option value="Part-time">Part-time</mat-option>
                           <mat-option value="On-demand">On-demand</mat-option>
@@ -132,6 +73,7 @@
                       <mat-form-field appearance="fill">
                         <mat-label>Certification Status</mat-label>
                         <mat-select formControlName="certificationStatus" panelClass="custom-select-panel">
+                          <mat-option value=""></mat-option>
                           <mat-option value="Certified">Certified</mat-option>
                           <mat-option value="Pending">Pending</mat-option>
                           <mat-option value="Not Certified">Not Certified</mat-option>
@@ -149,15 +91,12 @@
                         </div>
                         <div class="custom-file-upload">
                           <label for="file-upload" class="upload-label submit-btn">
-                            <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                            Upload File
-                          </label>
+                            <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon" /> Upload File </label>
                           <input id="file-upload" type="file" (change)="onFileSelected($event)" />
                         </div>
                       </div>
                     </div>
                   </div>
-
                   <!-- Trade & Supplier Info -->
                   <div class="section" *ngIf="canViewTradeSupplier()">
                     <h3>Trade & Supplier Info</h3>
@@ -180,27 +119,20 @@
                       </mat-form-field>
                     </div>
                   </div>
-
                   <!-- Delivery & Location -->
                   <div class="section" *ngIf="canViewDeliveryLocation()">
                     <h3>Operating area and Location</h3>
                     <div class="form-row">
-                                  <!-- ✅ New Address Field -->
-                                  <mat-form-field appearance="fill">
-                                    <mat-label>Address</mat-label>
-                                    <input
-                                      #addressInput
-                                      matInput
-                                      [formControl]="addressControl"
-                                      [matAutocomplete]="auto"
-                                      placeholder="Enter an address"
-                                    />
-                                    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-                                      <mat-option *ngFor="let option of options" [value]="option">
-                                        {{ option.description }}
-                                      </mat-option>
-                                    </mat-autocomplete>
-                                  </mat-form-field>
+                      <!-- ✅ New Address Field -->
+                      <mat-form-field appearance="fill">
+                        <mat-label>Address</mat-label>
+                        <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto" placeholder="Enter an address" />
+                        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                          <mat-option *ngFor="let option of options" [value]="option">
+                            {{ option.description }}
+                          </mat-option>
+                        </mat-autocomplete>
+                      </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Lead Time</mat-label>
                         <input matInput formControlName="deliveryTime" placeholder=" " />
@@ -221,37 +153,29 @@
                       </mat-form-field>
                     </div>
                   </div>
-
-              <!-- Subscription -->
-              <div class="section">
-                <h3>Subscription</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Subscription Package</mat-label>
-                    <mat-select formControlName="subscriptionPackage" required>
-                      <mat-option *ngFor="let subscription of subscriptionPackages" [value]="subscription.value">
-                        {{ subscription.display }}
-                      </mat-option>
-                    </mat-select>
-                    <mat-error *ngIf="profileForm.get('subscriptionPackage')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                  </mat-form-field>
-                </div>
-              </div>
-
+                  <!-- Subscription -->
+                  <div class="section">
+                    <h3>Subscription</h3>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Subscription Package</mat-label>
+                        <mat-select formControlName="subscriptionPackage" required>
+                          <mat-option *ngFor="let subscription of subscriptionPackages" [value]="subscription.value">
+                            {{ subscription.display }}
+                          </mat-option>
+                        </mat-select>
+                        <mat-error *ngIf="profileForm.get('subscriptionPackage')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                      </mat-form-field>
+                    </div>
+                  </div>
                   <!-- Submit Button -->
                   <div class="form-row">
-                    <button mat-raised-button
-                            type="submit"
-                            class="submit-btn"
-                          >
+                    <button mat-raised-button type="submit" class="submit-btn">
                       {{ isSaving ? 'Saving...' : 'Save Profile' }}
                     </button>
                   </div>
                 </form>
               </mat-tab>
-
               <!-- Team Management Tab -->
               <mat-tab label="Team Management">
                 <div class="section">
@@ -261,9 +185,7 @@
                       <mat-form-field appearance="fill">
                         <mat-label>Name</mat-label>
                         <input matInput formControlName="name" placeholder=" " />
-                        <mat-error *ngIf="teamForm.get('name')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
+                        <mat-error *ngIf="teamForm.get('name')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Role</mat-label>
@@ -272,26 +194,15 @@
                             {{ role }}
                           </mat-option>
                         </mat-select>
-                        <mat-error *ngIf="teamForm.get('role')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
+                        <mat-error *ngIf="teamForm.get('role')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Email</mat-label>
                         <input matInput formControlName="email" placeholder=" " />
-                        <mat-error *ngIf="teamForm.get('email')?.hasError('required')">
-                          Mandatory Field: Input Required.
-                        </mat-error>
-                        <mat-error *ngIf="teamForm.get('email')?.hasError('email')">
-                          Invalid email format.
-                        </mat-error>
+                        <mat-error *ngIf="teamForm.get('email')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                        <mat-error *ngIf="teamForm.get('email')?.hasError('email')"> Invalid email format. </mat-error>
                       </mat-form-field>
-                      <button mat-raised-button
-                              type="submit"
-                              class="submit-btn"
-                              [disabled]="teamForm.invalid">
-                        Add Member
-                      </button>
+                      <button mat-raised-button type="submit" class="submit-btn" [disabled]="teamForm.invalid"> Add Member </button>
                     </div>
                   </form>
                 </div>
@@ -323,7 +234,6 @@
                   </mat-table>
                 </div>
               </mat-tab>
-
               <!-- Documents Tab -->
               <mat-tab label="Documents">
                 <div class="section">
@@ -352,6 +262,48 @@
                     <mat-header-row *matHeaderRowDef="documentColumns"></mat-header-row>
                     <mat-row *matRowDef="let row; columns: documentColumns;"></mat-row>
                   </mat-table>
+                </div>
+              </mat-tab>
+              <!-- Company Profile Tab -->
+              <mat-tab *ngIf="canViewCompanyDetails()" label="Company Profile">
+                <!-- Company Details -->
+                <div class="section">
+                  <h3>Company Details</h3>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Name</mat-label>
+                      <input matInput formControlName="companyName" placeholder=" " />
+                      <mat-error *ngIf="profileForm.get('companyName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>No. of Employees</mat-label>
+                      <input matInput formControlName="nrEmployees" placeholder=" " />
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Years of Operation</mat-label>
+                      <input matInput formControlName="yearsOfOperation" placeholder=" " />
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Construction Type</mat-label>
+                      <mat-select formControlName="constructionType" panelClass="custom-select-panel">
+                        <mat-option value="RESIDENTIAL">Residential</mat-option>
+                        <mat-option value="COMMERCIAL">Commercial</mat-option>
+                        <mat-option value="INDUSTRIAL">Industrial</mat-option>
+                        <mat-option value="INFRASTRUCTURE">Infrastructure</mat-option>
+                        <mat-option value="RENOVATION">Renovation/Remodeling</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Registration No</mat-label>
+                      <input matInput formControlName="companyRegNo" placeholder=" " />
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>VAT Number</mat-label>
+                      <input matInput formControlName="vatNo" placeholder=" " />
+                    </mat-form-field>
+                  </div>
                 </div>
               </mat-tab>
             </mat-tab-group>
