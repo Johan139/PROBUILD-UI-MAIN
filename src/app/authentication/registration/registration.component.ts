@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatGridListModule} from "@angular/material/grid-list";
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import {NgForOf, NgIf} from "@angular/common";
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
+import {AsyncPipe, NgForOf, NgIf} from "@angular/common";
 import { MatSelectModule} from "@angular/material/select";
 import {MatInputModule} from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -10,14 +10,35 @@ import {MatButton} from "@angular/material/button";
 import {HttpClient} from "@angular/common/http";
 import {Router} from "@angular/router";
 import { environment } from '../../../environments/environment';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import {catchError, map, startWith} from 'rxjs/operators';
+import {Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
+import { COUNTRIES } from '../../data/countries';
+import { STATES } from '../../data/states';
+import {MatAutocompleteModule} from "@angular/material/autocomplete";
+import { userTypes } from '../../data/user-types';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import {
+  constructionTypes,
+  trades,
+  supplierTypes,
+  supplierProducts,
+  deliveryAreas,
+  preferenceOptions,
+  leadTimeDelivery,
+  availabilityOptions,
+  employeeNumber,
+  operationalYears,
+  certificationOptions
+} from '../../data/registration-data';
 
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -41,8 +62,13 @@ export interface SubscriptionOption {
     MatFormFieldModule,
     MatButton,
     LoaderComponent,
-    MatDivider
-],
+    MatDivider,
+    MatAutocompleteModule,
+    AsyncPipe,
+    MatCheckboxModule,
+    MatChipsModule,
+    MatIconModule
+  ],
   templateUrl: './registration.component.html',
   styleUrl: './registration.component.scss'
 })
@@ -51,108 +77,35 @@ export class RegistrationComponent implements OnInit{
   alertMessage: string = '';
   routeURL: string = '';
   // Options for dropdowns
-  constructionTypes = [
-    {value:'RESIDENTIAL', display:'Residential (Single-Family, Multi-Family)'},
-    {value:'COMMERCIAL',display:'Commercial (Retail, Office)'},
-    {value:'INDUSTRIAL',display:'Industrial (Factories, Warehouses)'},
-    {value:'INFRASTRUCTURE',display:'Infrastructure (Highways, Bridges)'},
-    {value:'RENOVATION',display:'Renovation/Remodeling'}
-  ];
+  constructionTypes = constructionTypes;
+  trades = trades;
+  supplierTypes = supplierTypes;
+  supplierProducts = supplierProducts;
+  deliveryAreas = deliveryAreas;
+  preferenceOptions = preferenceOptions;
+  leadTimeDelivery = leadTimeDelivery;
+  availabilityOptions = availabilityOptions;
+  employeeNumber = employeeNumber;
+  operationalYears = operationalYears;
+  certificationOptions = certificationOptions;
 
   subscriptionPackages: { value: string, display: string, amount: number }[] = [];
 
-  trades = [
-    {value:'ELECTRICIAN', display:'Electrician'},
-    {value:'PLUMBER', display:'Plumber'},
-    {value:'CARPENTER', display:'Carpenter'},
-    {value:'BRICK_LAYER', display:'Bricklayer'},
-    {value:'HVAC', display:'HVAC Specialist'},
-    {value:'PAINTER', display:'Painter'},
-    {value:'ROOFER', display:'Roofer'},
-    {value:'FRAMER', display:'Framer'},
-    {value:'DRYWALL', display:'Drywall Installer'},
-    {value:'FLOORING', display:'Flooring Specialist'},
-    {value:'TILER', display:'Tiler'},
-    {value:'WELDER', display:'Welder'},
-    {value:'MASON', display:'Mason'},
-    {value:'GLAZIER', display:'Glazier'},
-    {value:'LANDSCAPER', display:'Landscaper'},
-    {value:'GENERAL', display:'General Laborer'},
-    {value:'WASTE', display:'Waste Management Services'},
-    {value:'', display:'Other'}
-  ]; //search for other column will be LIKE OTHER %
-  supplierTypes = [
-    {value:'BUILDING_MATERIAL', display:'Building Materials (Concrete, Lumber, Steel)'},
-    {value:'TOOLS_EQUIPMENT', display:'Tools and Equipment Supplier'},
-    {value:'HEAVY_MACHINERY', display:'Heavy Machinery Rental'},
-    {value:'SAFETY_EQUIPMENT', display:'Safety Equipment Supplier'},
-    {value:'PLUMBING', display:'Plumbing Supplies'},
-    {value:'HVAC', display:'HVAC Supplies and Services'},
-    {value:'ELECTRICAL', display:'Electrical Supplies'},
-    {value:'ROOFING', display:'Roofing Materials'},
-    {value:'INSULATION_MATERIAL', display:'Insulation Materials'},
-    {value:'FLOORING_MATERIAL', display:'Flooring Materials'},
-    {value:'ARCHITECT', display:'Architectural Services'},
-    {value:'ENGINEER', display:'Engineering Services'},
-    {value:'WASTE', display:'Waste Management Services'},
-    {value:'SCAFFOLDING', display:'Scaffolding Rental'},
-    {value:'' , display:'Other'}
-  ];
+  countries = COUNTRIES;
+  states: { [key: string]: { value: string, display: string }[] } = STATES;
+  filteredCountries: Observable<any[]> | undefined;
+  filteredStates: Observable<any[]> | undefined;
 
-  supplierProducts = [
-    {value:'LUMBER', display:'Lumber (Softwood, Hardwood, Pressure-Treated)'},
-    {value:'STEEL', display:'Steel (Structural, Rebar)'},
-    {value:'ROOFING_MATERIAL', display:'Roofing Materials (Asphalt Shingles, Metal Roofing)'},
-    {value:'INSULATION_MATERIAL', display:'Insulation Materials (Fiberglass, Spray Foam)'},
-    {value:'ELECTRICAL', display:'Electrical Supplies (Wires, Switchgear)'},
-    {value:'PLUMBING', display:'Plumbing Equipment (Pipes, Fittings)'},
-    {value:'HVAC_EQUIPMENT', display:'HVAC Equipment (Ducts, Units)'},
-    {value:'PAINT_FINISHES', display:'Paint and Finishes'},
-    {value:'ALTERNATIVE', display:'Sustainable Materials (Solar Panels, Low VOC Paint)'},
-    {value:'', display:'Other'}
-  ];
-  deliveryAreas = [
-    {value:'LOCAL', display:'Local'},
-    {value:'REGIONAL', display:'Regional'},
-    {value:'NATIONAL', display:'National'}
-  ];
-  countries = [
-    { value: 'RSA', display: 'South Africa', phonePattern: /^(\+27|0)[6-8][0-9]{8}$/ },
-    { value: 'USA', display: 'United States of America', phonePattern: /^(\+1|1)?[2-9][0-9]{9}$/ }
-  ];
-  preferenceOptions = [
-    {value:'SHORT', display:'Short-term Projects (1-3 months)'},
-    {value:'LONG', display:'Long-term Projects (6+ months)'},
-    {value:'CONTRACT', display:'Contract-based'},
-    {value:'DEMAND', display:'On-demand basis (Per Task/Hour)'}
-  ];
-  leadTimeDelivery = [
-    {value:'SAME_DAY', display:'Same Day'},
-    {value:'3_DAYS', display:'1-3 Days'},
-    {value:'1_WEEK', display:'1 Week'},
-    {value:'1_WEEK+', display:'More than 1 Week'}
-  ];
-  availabilityOptions = [
-    {value:'IMMEDIATE', display:'Available Immediately'},
-    {value:'2_WEEKS', display:'Within 1-2 Weeks'},
-    {value:'1_MONTH', display:'Within 1 Month'},
-    {value:'PROJECT_BASIS', display:'By Project Basis'}
-  ];
-  employeeNumber = ['1-10', '11-50', '51-100', '100+'];
-  operationalYears = ['Less than 1 year', '1-3 years', '3-5 years', '5-10 years', '10+ years'];
-  certificationOptions = [
-    {value:'FULLY_LICENSED', display:'Licensed and Certified'},
-    {value:'LICENSED', display:'Licensed (No Certification)'},
-    {value:'CERTIFIED', display:'Certification (No License)'},
-    {value:'NON_LICENSED', display:'Unlicensed/Uncertified'}
-  ]
-  userTypes = [
-    {value:null, display:null},
-    {value:'PROJECT_OWNER', display:'General Contractor'},
-    {value:'CONSTRUCTION', display:'Subcontractor'},
-    {value:'SUPPLIER', display:'Supplier/Vendor'}
+  userTypes = userTypes;
+  separatorKeysCodes: number[] = [ENTER, COMMA];
 
-  ];
+  tradeCtrl = new FormControl();
+  filteredTrades: Observable<{ value: string; display: string; }[]>;
+  selectedTrades: { value: string; display: string; }[] = [];
+
+  supplierTypeCtrl = new FormControl();
+  filteredSupplierTypes: Observable<{ value: string; display: string; }[]>;
+  selectedSupplierTypes: { value: string; display: string; }[] = [];
 
   registrationForm: FormGroup;
   user:string = "";
@@ -161,6 +114,14 @@ export class RegistrationComponent implements OnInit{
 
   constructor(private formBuilder: FormBuilder, private httpClient: HttpClient, private router: Router,private stripeService: StripeService,private dialog: MatDialog) {
     this.registrationForm = this.formBuilder.group({});
+    this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
+      startWith(null),
+      map((trade: string | null) => (trade ? this._filterTrades(trade) : this.trades.slice())),
+    );
+    this.filteredSupplierTypes = this.supplierTypeCtrl.valueChanges.pipe(
+      startWith(null),
+      map((supplierType: string | null) => (supplierType ? this._filterSupplierTypes(supplierType) : this.supplierTypes.slice())),
+    );
   }
 
   ngOnInit() {
@@ -181,60 +142,155 @@ export class RegistrationComponent implements OnInit{
       companyName: [''],
       companyRegNo: [''],
       streetNumber: [''],
-streetName: [''],
-postalCode: [''],
-latitude: [null],
-longitude: [null],
-formattedAddress: [''],
-googlePlaceId: [''],
+      streetName: [''],
+      postalCode: [''],
+      latitude: [null],
+      longitude: [null],
+      formattedAddress: [''],
+      googlePlaceId: [''],
       vatNo: [''],
       userType: ['PERSONAL_USE', Validators.required],
-    
-      constructionType: (''), 
+
+      constructionType: (''),
       country: ['', Validators.required],
       state: ['', Validators.required],
       city: ['', Validators.required],
-    
-      nrEmployees: (''), 
-      yearsOfOperation: (''), 
-      certificationStatus: (''), 
-      certificationDocumentPath: (''), 
+
+      nrEmployees: (''),
+      yearsOfOperation: (''),
+      certificationStatus: (''),
+      certificationDocumentPath: (''),
       availability:(''),
-    
+
       subscriptionPackage: ['', Validators.required],
       projectPreferences: (''),
-    
-      trade: (''), 
-      productsOffered:(''), 
-      supplierType:(''),
-    
-      deliveryArea: (''), 
-      deliveryTime: (''), 
-      userName:('')
+
+      productsOffered:(''),
+
+      deliveryArea: (''),
+      deliveryTime: (''),
+      userName:(''),
     });
-    
+
     this.user = 'PERSONAL_USE';
-    
+
     // Update phone number validation based on country selection
-    this.registrationForm.get('country')?.valueChanges.subscribe(countryCode => {
-      this.updatePhoneNumberValidator(countryCode);
+    this.filteredCountries = this.registrationForm.get('country')?.valueChanges.pipe(
+      startWith(''),
+      map(value => this._filterCountries(value))
+    );
+
+    this.registrationForm.get('country')?.valueChanges.subscribe(countryValue => {
+      const country = this.countries.find(c => c.display === countryValue);
+      if (country) {
+        this.updatePhoneNumberValidator(country.value);
+        this.filteredStates = this.registrationForm.get('state')?.valueChanges.pipe(
+          startWith(''),
+          map(value => this._filterStates(value, country.value))
+        );
+      }
     });
-    
+
+    this.registrationForm.get('userType')?.valueChanges.subscribe(value => {
+      this.user = value;
+      this.selectedTrades = [];
+      this.selectedSupplierTypes = [];
+    });
   }
+
+  addTrade(event: any): void {
+    const value = (event.value || '').trim();
+    if (value) {
+      const selectedTrade = this.trades.find(trade => trade.display.toLowerCase() === value.toLowerCase());
+      if (selectedTrade && !this.selectedTrades.includes(selectedTrade)) {
+        this.selectedTrades.push(selectedTrade);
+      }
+    }
+    event.chipInput!.clear();
+    this.registrationForm.get('tradeCtrl')!.setValue(null);
+  }
+
+  removeTrade(trade: any): void {
+    const index = this.selectedTrades.indexOf(trade);
+    if (index >= 0) {
+      this.selectedTrades.splice(index, 1);
+    }
+  }
+
+  selectedTrade(event: any): void {
+    const selectedTrade = event.option.value;
+    if (!this.selectedTrades.includes(selectedTrade)) {
+      this.selectedTrades.push(selectedTrade);
+    }
+    this.tradeCtrl.setValue(null);
+  }
+
+  private _filterTrades(value: string) {
+    const filterValue = value.toLowerCase();
+    return this.trades.filter(trade => trade.display.toLowerCase().includes(filterValue));
+  }
+
+  addSupplierType(event: any): void {
+    const value = (event.value || '').trim();
+    if (value) {
+      const selectedType = this.supplierTypes.find(type => type.display.toLowerCase() === value.toLowerCase());
+      if (selectedType && !this.selectedSupplierTypes.includes(selectedType)) {
+        this.selectedSupplierTypes.push(selectedType);
+      }
+    }
+    event.chipInput!.clear();
+    this.registrationForm.get('supplierTypeCtrl')!.setValue(null);
+  }
+
+  removeSupplierType(type: any): void {
+    const index = this.selectedSupplierTypes.indexOf(type);
+    if (index >= 0) {
+      this.selectedSupplierTypes.splice(index, 1);
+    }
+  }
+
+  selectedSupplierType(event: any): void {
+    const selectedType = event.option.value;
+    if (!this.selectedSupplierTypes.includes(selectedType)) {
+      this.selectedSupplierTypes.push(selectedType);
+    }
+    this.supplierTypeCtrl.setValue(null);
+  }
+
+  private _filterSupplierTypes(value: string) {
+    const filterValue = value.toLowerCase();
+    return this.supplierTypes.filter(type => type.display.toLowerCase().includes(filterValue));
+  }
+
+  private _filterCountries(value: string): any[] {
+    const filterValue = value.toLowerCase();
+    return this.countries.filter(option => option.display.toLowerCase().includes(filterValue));
+  }
+
+  private _filterStates(value: string, countryCode: string): any[] {
+    const filterValue = value.toLowerCase();
+    const countryStates = this.states[countryCode] || [];
+    return countryStates.filter(option => option.display.toLowerCase().includes(filterValue));
+  }
+
   updatePhoneNumberValidator(countryCode: string) {
     const phoneNumberControl = this.registrationForm.get('phoneNumber');
     const selectedCountry = this.countries.find(country => country.value === countryCode);
-    if (selectedCountry && phoneNumberControl) {
+    if (selectedCountry && phoneNumberControl && selectedCountry.phonePattern) {
       phoneNumberControl.setValidators([
         Validators.required,
         Validators.pattern(selectedCountry.phonePattern)
       ]);
-      phoneNumberControl.updateValueAndValidity();
+    } else if (phoneNumberControl) {
+      // Reset to default or no pattern
+      phoneNumberControl.setValidators([Validators.required]);
     }
+    phoneNumberControl?.updateValueAndValidity();
   }
 
   userType(userSelected: any){
-    this.user = userSelected.value
+    //This is now handled by the valueChanges subscription in ngOnInit
+    //this.user = userSelected.value
   }
 
   private loadSubscriptionPackages(): void {
@@ -260,27 +316,37 @@ googlePlaceId: [''],
   onSubmit(): void {
     const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
-    
+
     if (!this.registrationForm.valid) {
       this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
       this.showAlert = true;
       return;
     }
-  
+
     // ✅ Open terms dialog before submitting
     const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
       disableClose: true,
       width: '500px'
     });
-  
+
     dialogRef.afterClosed().subscribe(userAgreed => {
       if (!userAgreed) {
         return; // Stop if user did not agree
       }
-  
+
       this.isLoading = true;
-  
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(this.registrationForm.value), {
+
+      const formValue = this.registrationForm.getRawValue();
+
+      if (this.user === 'SUBCONTRACTOR') {
+        formValue.trades = this.selectedTrades.map(trade => trade.value);
+      }
+
+      if (this.user === 'VENDOR') {
+        formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
+      }
+
+      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
         headers: { 'Content-Type': 'application/json' }
       })
       .pipe(
@@ -306,43 +372,42 @@ googlePlaceId: [''],
         if (res) {
           this.alertMessage = 'Registration successful, please wait for account activation you shall be advised shortly';
           const userId = res.userId;
-  if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
-  {
-    this.routeURL = 'login';
-    this.showAlert = true;
-  }
-  else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
-  {
-      const userId = res.userId;
-      // Trigger trial subscription
-this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
-  headers: { 'Content-Type': 'application/json' }
-}).subscribe(() => {
-  this.alertMessage = 'Trial activated. Login to get started!';
-   this.routeURL = 'login';
-  this.showAlert = true;
-});
-  }
-  else
-  {
-          this.dialog.open(PaymentPromptDialogComponent, {
-            data: {
-              userId,
-              packageName: selectedPackage?.value || 'Unknown',
-              amount: selectedPackage?.amount || 0,
-              source: 'register'
-            },
-            disableClose: true,
-            width: '400px'
-          });
-  
-          this.showAlert = true;
-          this.routeURL = 'login';
+          if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
+          {
+            this.routeURL = 'login';
+            this.showAlert = true;
+          }
+          else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
+          {
+            const userId = res.userId;
+            // Trigger trial subscription
+            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
+              headers: { 'Content-Type': 'application/json' }
+            }).subscribe(() => {
+              this.alertMessage = 'Trial activated. Login to get started!';
+              this.routeURL = 'login';
+              this.showAlert = true;
+            });
+          }
+          else
+          {
+            this.dialog.open(PaymentPromptDialogComponent, {
+              data: {
+                userId,
+                packageName: selectedPackage?.value || 'Unknown',
+                amount: selectedPackage?.amount || 0,
+                source: 'register'
+              },
+              disableClose: true,
+              width: '400px'
+            });
+
+            this.showAlert = true;
+            this.routeURL = 'login';
+          }
         }
-      }
       });
     });
- 
   }
 
   showPaymentPrompt() {
@@ -351,13 +416,11 @@ this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
       width: '400px'
     });
   }
-  
+
   closeAlert(): void {
     if(this.routeURL != ''){
       this.router.navigateByUrl('login');
     }
     this.showAlert = false;
   }
-
-
 }

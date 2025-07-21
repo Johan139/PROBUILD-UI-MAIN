@@ -180,3 +180,16 @@ $darker-yellow: #e6bf00;
     font-size: 1.2rem;
   }
 }
+.chip-container {
+  display: flex;
+  align-items: flex-start;
+}
+
+.chip-input-container {
+  flex-grow: 1;
+}
+
+.chip-grid {
+  margin-left: 16px;
+  max-width: 50%;
+}

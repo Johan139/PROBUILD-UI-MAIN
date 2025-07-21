@@ -50,7 +50,7 @@
             <mat-option value="FOREMAN">Foreman</mat-option>
             <mat-option value="PERSONAL_USE">Personal Use</mat-option>
             <mat-option value="PROJECT_OWNER">Project Owner</mat-option>
-            <mat-option value="SUPPLIER">Supplier</mat-option>
+            <mat-option value="VENDOR">Supplier/Vendor</mat-option>
           </mat-select>
         </mat-form-field>
       </form>
@@ -73,7 +73,7 @@
             {{ element.job.id || 'N/A' }}
           </td>
         </ng-container>
-          
+
         <!-- Project Name Column -->
         <ng-container matColumnDef="projectName">
           <th mat-header-cell *matHeaderCellDef>Project Name</th>
@@ -110,7 +110,7 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let element">
-            <button mat-button class="submit-btn delete-btn" 
+            <button mat-button class="submit-btn delete-btn"
                     (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">
               Delete
