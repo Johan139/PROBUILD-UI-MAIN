@@ -181,58 +181,68 @@
                 </div>
               </div>
 
-              <!-- Trades -->
-              <div class="section" *ngIf="user === 'SUBCONTRACTOR'">
-                <h3>Trades</h3>
-                <mat-form-field class="full-width">
-                  <mat-label>Select Trades</mat-label>
-                  <mat-chip-grid #chipGridTrades>
-                    <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)">
-                      {{trade.display}}
-                      <button matChipRemove>
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    </mat-chip-row>
-                  </mat-chip-grid>
-                  <input placeholder="New trade..."
-                         #tradeInput
-                         [formControl]="tradeCtrl"
-                         [matAutocomplete]="autoTrade"
-                         [matChipInputFor]="chipGridTrades"
-                         (matChipInputTokenEnd)="addTrade($event)">
-                  <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selectedTrade($event)">
-                    <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
-                      {{trade.display}}
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
-              </div>
+                <!-- Trades -->
+                <div class="section" *ngIf="user === 'SUBCONTRACTOR'">
+                  <h3>Trades</h3>
+                  <div class="trades-selection-container">
+                    <div class="trade-input-section">
+                      <mat-form-field class="full-width" appearance="fill">
+                        <mat-label>Add Trades</mat-label>
+                        <input matInput
+                              placeholder="Type to search trades..."
+                              [formControl]="tradeCtrl"
+                              [matAutocomplete]="autoTrade">
+                        <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selectedTrade($event)">
+                          <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
+                            {{trade.display}}
+                          </mat-option>
+                        </mat-autocomplete>
+                      </mat-form-field>
+                    </div>
+                    <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
+                      <h4>Selected Trades:</h4>
+                      <div class="chips-wrapper">
+                        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)">
+                          {{trade.display}}
+                          <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                        </mat-chip-row>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
               <!-- Supplier Types -->
               <div class="section" *ngIf="user === 'VENDOR'">
                 <h3>Supplier Types</h3>
-                <mat-form-field class="full-width">
-                  <mat-label>Select Supplier Types</mat-label>
-                  <mat-chip-grid #chipGridSupplierTypes>
-                    <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)">
-                      {{type.display}}
-                      <button matChipRemove>
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    </mat-chip-row>
-                  </mat-chip-grid>
-                  <input placeholder="New supplier type..."
-                         #supplierTypeInput
-                         [formControl]="supplierTypeCtrl"
-                         [matAutocomplete]="autoSupplierType"
-                         [matChipInputFor]="chipGridSupplierTypes"
-                         (matChipInputTokenEnd)="addSupplierType($event)">
-                  <mat-autocomplete #autoSupplierType="matAutocomplete" (optionSelected)="selectedSupplierType($event)">
-                    <mat-option *ngFor="let type of filteredSupplierTypes | async" [value]="type">
-                      {{type.display}}
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
+                <div class="supplier-types-selection-container">
+                  <div class="supplier-type-input-section">
+                    <mat-form-field class="full-width" appearance="fill">
+                      <mat-label>Add Supplier Types</mat-label>
+                      <input matInput
+                            placeholder="Type to search supplier types..."
+                            [formControl]="supplierTypeCtrl"
+                            [matAutocomplete]="autoSupplierType">
+                      <mat-autocomplete #autoSupplierType="matAutocomplete" (optionSelected)="selectedSupplierType($event)">
+                        <mat-option *ngFor="let type of filteredSupplierTypes | async" [value]="type">
+                          {{type.display}}
+                        </mat-option>
+                      </mat-autocomplete>
+                    </mat-form-field>
+                  </div>
+                  <div class="selected-supplier-types-display" *ngIf="selectedSupplierTypes.length > 0">
+                    <h4>Selected Supplier Types:</h4>
+                    <div class="chips-wrapper">
+                      <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)">
+                        {{type.display}}
+                        <button matChipRemove>
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      </mat-chip-row>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Builder Specific -->

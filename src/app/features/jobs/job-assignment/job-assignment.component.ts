@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDividerModule } from '@angular/material/divider';
+import { userTypes } from '../../../data/user-types';
 
 @Component({
   selector: 'app-job-assignment',
@@ -47,6 +48,7 @@ export class JobAssignmentComponent implements OnInit {
   userList: JobUser[] = [];
   newAssignment: { email: string; jobRole: string } = { email: '', jobRole: '' };
   filteredJobAssignment: { job: JobAssignment; user: JobUser }[] = [];
+  jobRoles: { value: string; display: string; }[] = [];
 
   constructor(
     private jobAssignmentService: JobAssignmentService,
@@ -56,6 +58,7 @@ export class JobAssignmentComponent implements OnInit {
   ngOnInit(): void {
     console.log('ngOnInit called');
     this.loadInitialData();
+    this.jobRoles = userTypes.filter(role => role.value !== 'GENERAL_CONTRACTOR');
   }
 
   async loadInitialData(): Promise<void> {

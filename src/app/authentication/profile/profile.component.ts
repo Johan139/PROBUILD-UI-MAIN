@@ -84,7 +84,9 @@ isGoogleMapsLoaded: boolean = false;
   userRole: string | null = null;
   isVerified = false;
 
-  availableRoles: string[] = userTypes.map(ut => ut.display);
+  availableRoles: string[] = userTypes
+    .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
+    .map(ut => ut.display);
 
   teamMembers: TeamMember[] = [];
   documents: ProfileDocument[] = [];

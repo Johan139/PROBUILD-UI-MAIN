@@ -193,3 +193,79 @@ $darker-yellow: #e6bf00;
   margin-left: 16px;
   max-width: 50%;
 }
+
+.trades-selection-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  min-height: 80px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.selected-trades-display {
+  flex: 1;
+  min-width: 300px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: $dark-gray;
+    font-weight: 500;
+  }
+
+  .chips-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid $cyan;
+    border-radius: 6px;
+    background-color: $white;
+    min-height: 60px;
+    align-items: flex-start;
+    align-content: flex-start;
+
+    mat-chip-row {
+      background-color: #f0f0f0;
+      color: $dark-gray;
+
+      &:hover {
+        background-color: #e0e0e0;
+      }
+
+      button[matChipRemove] {
+        color: #666;
+
+        &:hover {
+          color: #f44336;
+        }
+      }
+    }
+  }
+}
+
+.trade-input-section {
+  flex: 1;
+  min-width: 250px;
+}
+
+.trades-form-field-wrapper {
+  display: none;
+}
+
+.supplier-types-selection-container {
+  @extend .trades-selection-container;
+}
+
+.selected-supplier-types-display {
+  @extend .selected-trades-display;
+}
+
+.supplier-type-input-section {
+  @extend .trade-input-section;
+}
+
