@@ -30,7 +30,7 @@ export interface Profile {
 }
 
 export interface TeamMember {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   role: string;

@@ -129,6 +129,7 @@ isGoogleMapsLoaded: boolean = false;
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
       @Inject(PLATFORM_ID) private platformId: Object,
+          private snackBar: MatSnackBar,
     private teamManagementService: TeamManagementService
   ) {
        this.jobCardForm = new FormGroup({});
@@ -553,9 +554,11 @@ isGoogleMapsLoaded: boolean = false;
       const newMember: TeamMember = this.teamForm.value;
       this.teamManagementService.addTeamMember(newMember).subscribe({
         next: (member: TeamMember) => {
-          this.teamMembers.push(member);
+          this.teamMembers = [...this.teamMembers, { ...newMember, status: 'Invited' }];
           this.teamForm.reset();
-          this.successMessage = 'Team member added successfully';
+          this.snackBar.open('Team member invited successfully', 'Close', {
+            duration: 3000,
+          });
         },
         error: (error) => {
           if (error.status === 409) {
@@ -576,7 +579,7 @@ isGoogleMapsLoaded: boolean = false;
       console.log('File input reset');
     }
   }
-  removeTeamMember(id: number): void {
+  removeTeamMember(id: string): void {
     this.teamManagementService.removeTeamMember(id).subscribe({
       next: () => {
         this.teamMembers = this.teamMembers.filter(member => member.id !== id);

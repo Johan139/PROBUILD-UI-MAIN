@@ -19,7 +19,7 @@ export class TeamManagementService {
     return this.http.get<any[]>(`${this.apiUrl}/members`);
   }
 
-  removeTeamMember(id: number): Observable<any> {
+  removeTeamMember(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/members/${id}`);
   }
 }
