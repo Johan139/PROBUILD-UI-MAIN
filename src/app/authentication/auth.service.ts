@@ -175,6 +175,17 @@ login(credentials: { email: string; password: string }): Observable<any> {
     return localStorage.getItem('userType');
   }
 
+  isTeamMember(): boolean {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.isTeamMember === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
   private loadUserFromToken(token: string): void {
     if (!token) return;
 

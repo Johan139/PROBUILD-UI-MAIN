@@ -16,6 +16,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
+import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
@@ -42,6 +43,7 @@ const BASE_URL = environment.BACKEND_URL;
     MatFormFieldModule,  // ✅ added
     MatInputModule,      // ✅ added
     FormsModule,
+    MatSelectModule
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
@@ -77,6 +79,8 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     { id: '2', name: 'Foundation', start: new Date(2025, 1, 1), end: new Date(2025, 1, 20), progress: 20, dependencies: null },
     { id: '3', name: 'Wall Structure', start: new Date(2025, 1, 21), end: new Date(2025, 2, 10), progress: 0, dependencies: '2' },
   ];
+  teams: any[] = [];
+  selectedTeam: any = null;
 
   constructor(
     private userService: LoginService,
@@ -99,6 +103,15 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   ngOnInit() {
     this.isLoading = true;
     this.userType = this.userService.getUserType();
+
+    if (this.authService.isTeamMember()) {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.teams = payload.team;
+        this.selectedTeam = this.teams[0];
+      }
+    }
 
     this.authService.currentUser$.pipe(
       filter(user => !!user),
@@ -224,10 +237,17 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
 
   loadUserJobs() {
+    const isTeamMember = this.authService.isTeamMember();
     this.authService.currentUser$.pipe(
       filter(user => !!user),
       take(1),
-      switchMap(user => this.jobService.getAllJobsByUserId(user.id))
+      switchMap(user => {
+        if (isTeamMember) {
+          return this.jobService.getAssignedJobsForTeamMember(user.id);
+        } else {
+          return this.jobService.getAllJobsByUserId(user.id);
+        }
+      })
     ).subscribe(jobs => {
       if (!jobs) {
         this.userJobs = [];

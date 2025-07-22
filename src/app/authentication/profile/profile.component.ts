@@ -6,6 +6,7 @@ import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Profile, TeamMember, Document } from './profile.model';
 import { userTypes } from '../../data/user-types';
+import { TeamManagementService } from '../../services/team-management.service';
 import {
   constructionTypes,
   preferenceOptions,
@@ -34,6 +35,7 @@ import { timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { JobsService } from '../../services/jobs.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -54,6 +56,7 @@ const BASE_URL = environment.BACKEND_URL;
     MatAutocompleteModule,
     MatDialogModule,
     MatTooltipModule,
+    MatSnackBarModule,
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
@@ -101,7 +104,7 @@ isGoogleMapsLoaded: boolean = false;
 
   teamMembers: TeamMember[] = [];
   documents: ProfileDocument[] = [];
-  displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
+  displayedColumns: string[] = ['name', 'role', 'email', 'status', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
   constructionTypes = constructionTypes;
   preferenceOptions = preferenceOptions;
@@ -125,7 +128,8 @@ isGoogleMapsLoaded: boolean = false;
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
-      @Inject(PLATFORM_ID) private platformId: Object
+      @Inject(PLATFORM_ID) private platformId: Object,
+    private teamManagementService: TeamManagementService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -168,7 +172,8 @@ isGoogleMapsLoaded: boolean = false;
     });
 
     this.teamForm = this.fb.group({
-      name: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
       role: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]]
     });
@@ -369,7 +374,7 @@ isGoogleMapsLoaded: boolean = false;
     });
   }
   loadTeamMembers(): void {
-    this.profileService.getTeamMembers().subscribe({
+    this.teamManagementService.getTeamMembers().subscribe({
       next: (members: TeamMember[]) => {
         this.teamMembers = members;
       },
@@ -546,14 +551,18 @@ isGoogleMapsLoaded: boolean = false;
   addTeamMember(): void {
     if (this.teamForm.valid) {
       const newMember: TeamMember = this.teamForm.value;
-      this.profileService.addTeamMember(newMember).subscribe({
+      this.teamManagementService.addTeamMember(newMember).subscribe({
         next: (member: TeamMember) => {
           this.teamMembers.push(member);
           this.teamForm.reset();
           this.successMessage = 'Team member added successfully';
         },
-        error: () => {
-          this.errorMessage = 'Failed to add team member.';
+        error: (error) => {
+          if (error.status === 409) {
+            this.errorMessage = error.error.message;
+          } else {
+            this.errorMessage = 'Failed to add team member.';
+          }
         }
       });
     } else {
@@ -567,10 +576,10 @@ isGoogleMapsLoaded: boolean = false;
       console.log('File input reset');
     }
   }
-  removeTeamMember(email: string): void {
-    this.profileService.removeTeamMember(email).subscribe({
+  removeTeamMember(id: number): void {
+    this.teamManagementService.removeTeamMember(id).subscribe({
       next: () => {
-        this.teamMembers = this.teamMembers.filter(member => member.email !== email);
+        this.teamMembers = this.teamMembers.filter(member => member.id !== id);
         this.successMessage = 'Team member removed successfully';
       },
       error: () => {

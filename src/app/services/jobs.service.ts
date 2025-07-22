@@ -25,6 +25,10 @@ export class JobsService {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
 
+  getAssignedJobsForTeamMember(userId: string): Observable<any> {
+    return this.httpClient.get(BASE_URL+'/assigned/'+userId, {headers:{'Content-Type': 'application/json'}})
+  }
+
   getSubtasks(jobId: number) {
     return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
   }

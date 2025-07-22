@@ -234,13 +234,13 @@
                     <div class="form-row">
                       <mat-form-field appearance="fill">
                         <mat-label>First Name</mat-label>
-                        <input matInput formControlName="teamMemberFirstName" placeholder=" " />
-                        <mat-error *ngIf="teamForm.get('teamMemberFirstName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                        <input matInput formControlName="firstName" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('firstName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Last Name</mat-label>
-                        <input matInput formControlName="teamMemberLastname" placeholder=" " />
-                        <mat-error *ngIf="teamForm.get('teamMemberLastname')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                        <input matInput formControlName="lastName" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('lastName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Role</mat-label>
@@ -266,7 +266,7 @@
                   <mat-table [dataSource]="teamMembers" class="mat-elevation-z8">
                     <ng-container matColumnDef="name">
                       <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
-                      <mat-cell *matCellDef="let member">{{ member.name }}</mat-cell>
+                      <mat-cell *matCellDef="let member">{{ member.firstName }} {{ member.lastName }}</mat-cell>
                     </ng-container>
                     <ng-container matColumnDef="role">
                       <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
@@ -276,10 +276,14 @@
                       <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
                       <mat-cell *matCellDef="let member">{{ member.email }}</mat-cell>
                     </ng-container>
+                    <ng-container matColumnDef="status">
+                      <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+                      <mat-cell *matCellDef="let member">{{ member.status }}</mat-cell>
+                    </ng-container>
                     <ng-container matColumnDef="actions">
                       <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
                       <mat-cell *matCellDef="let member">
-                        <button mat-icon-button color="warn" (click)="removeTeamMember(member.email)">
+                        <button mat-icon-button color="warn" (click)="removeTeamMember(member.id)">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </mat-cell>

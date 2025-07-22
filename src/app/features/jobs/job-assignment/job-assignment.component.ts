@@ -1,5 +1,6 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { JobAssignmentService } from './job-assignment.service';
+import { TeamManagementService } from '../../../services/team-management.service';
 import { MatTableModule } from '@angular/material/table';
 import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
 import { NgForOf, NgIf } from '@angular/common';
@@ -52,7 +53,8 @@ export class JobAssignmentComponent implements OnInit {
 
   constructor(
     private jobAssignmentService: JobAssignmentService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private teamManagementService: TeamManagementService
   ) {}
 
   ngOnInit(): void {
@@ -67,13 +69,20 @@ export class JobAssignmentComponent implements OnInit {
       this.jobAssignmentService.getJobAssignment().subscribe({
         next: (data: JobAssignment[]) => {
           this.jobAssignmentList = data;
-          this.jobAssignmentService.getAvailableUser().subscribe({
-            next: (data: JobUser[]) => {
-              this.userList = data;
+          this.teamManagementService.getTeamMembers().subscribe({
+            next: (data: any[]) => {
+              this.userList = data.map(tm => ({
+                id: tm.id,
+                firstName: tm.firstName,
+                lastName: tm.lastName,
+                phoneNumber: tm.phoneNumber,
+                userType: tm.role,
+                jobRole: tm.role
+              }));
             },
             error: (error) => {
-              console.error('Error getting assigned users', error);
-              this.showError('Failed to get assigned users');
+              console.error('Error getting team members', error);
+              this.showError('Failed to get team members');
               this.isLoading = false;
             }
           });

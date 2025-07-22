@@ -99,12 +99,9 @@ export class NotificationsService {
       const url = `${this.apiUrl}?page=${page}&pageSize=${pageSize}`;
       return this.http.get<PaginatedNotificationResponse>(url).pipe(
         tap(response => {
-          console.log('Fetched notifications:', response);
           const notifications = response?.notifications || [];
-          console.log('Notifications:', notifications);
           this.notificationsSubject.next(notifications);
           this.checkForUnreadNotifications();
-          console.log('Notifications subject updated with:', notifications);
         }),
         catchError(error => {
           console.error('Error fetching historical notifications:', error);
@@ -112,26 +109,6 @@ export class NotificationsService {
         })
       );
     }
-
-  sendTestNotification(): Observable<any> {
-    const token = localStorage.getItem('accessToken');
-
-    // Explicitly set headers
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-
-    return this.http.post(`${this.apiUrl}/test`, {}, { headers }).pipe(
-      tap((response) => {
-        console.log('Test notification success:', response);
-      }),
-      catchError((error) => {
-        console.error('Test notification error:', error);
-        return throwError(error);
-      })
-    );
-  }
 
   markAsRead(): void {
     const allNotificationIds = this.notificationsSubject.value.map(n => n.id);

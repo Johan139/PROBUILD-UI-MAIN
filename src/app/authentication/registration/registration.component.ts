@@ -8,9 +8,10 @@ import {MatInputModule} from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import {MatButton} from "@angular/material/button";
 import {HttpClient} from "@angular/common/http";
-import {Router} from "@angular/router";
+import {Router, ActivatedRoute} from "@angular/router";
 import { environment } from '../../../environments/environment';
 import {catchError, map, startWith} from 'rxjs/operators';
+import { InvitationService } from '../../services/invitation.service';
 import {Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
@@ -112,7 +113,15 @@ export class RegistrationComponent implements OnInit{
   certified = false;
   isLoading: boolean = false;
 
-  constructor(private formBuilder: FormBuilder, private httpClient: HttpClient, private router: Router,private stripeService: StripeService,private dialog: MatDialog) {
+  constructor(
+    private formBuilder: FormBuilder,
+    private httpClient: HttpClient,
+    private router: Router,
+    private stripeService: StripeService,
+    private dialog: MatDialog,
+    private route: ActivatedRoute,
+    private invitationService: InvitationService
+  ) {
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
@@ -139,10 +148,10 @@ export class RegistrationComponent implements OnInit{
   ngOnInit() {
     this.loadSubscriptionPackages();
     this.registrationForm = this.formBuilder.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
+      firstName: [{value: '', disabled: true}, Validators.required],
+      lastName: [{value: '', disabled: true}, Validators.required],
       phoneNumber: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      email: [{value: '', disabled: true}, [Validators.required, Validators.email]],
       password: [
         '',
         [
@@ -207,6 +216,26 @@ export class RegistrationComponent implements OnInit{
       this.user = value;
       this.selectedTrades = [];
       this.selectedSupplierTypes = [];
+    });
+
+    this.route.queryParams.subscribe(params => {
+      const token = params['token'];
+      if (token) {
+        this.invitationService.getInvitation(token).subscribe({
+          next: (data) => {
+            this.registrationForm.patchValue(data);
+            this.registrationForm.get('userType')?.disable();
+          },
+          error: () => {
+            this.alertMessage = 'Invalid or expired invitation token.';
+            this.showAlert = true;
+          }
+        });
+      } else {
+        this.registrationForm.get('firstName')?.enable();
+        this.registrationForm.get('lastName')?.enable();
+        this.registrationForm.get('email')?.enable();
+      }
     });
   }
 
@@ -320,6 +349,32 @@ export class RegistrationComponent implements OnInit{
   }
 
   onSubmit(): void {
+    const token = this.route.snapshot.queryParams['token'];
+    if (token) {
+      if (this.registrationForm.valid) {
+        this.isLoading = true;
+        const data = {
+          token: token,
+          password: this.registrationForm.get('password')?.value,
+          phoneNumber: this.registrationForm.get('phoneNumber')?.value
+        };
+        this.invitationService.registerInvited(data).subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.alertMessage = 'Registration successful. You can now log in.';
+            this.showAlert = true;
+            this.routeURL = 'login';
+          },
+          error: () => {
+            this.isLoading = false;
+            this.alertMessage = 'Failed to complete registration.';
+            this.showAlert = true;
+          }
+        });
+      }
+      return;
+    }
+
     const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
 
