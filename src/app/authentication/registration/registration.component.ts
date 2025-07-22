@@ -77,6 +77,7 @@ export class RegistrationComponent implements OnInit{
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
+  token: string | null = null;
   // Options for dropdowns
   constructionTypes = constructionTypes;
   trades = trades;
@@ -219,11 +220,19 @@ export class RegistrationComponent implements OnInit{
     });
 
     this.route.queryParams.subscribe(params => {
-      const token = params['token'];
-      if (token) {
-        this.invitationService.getInvitation(token).subscribe({
-          next: (data) => {
+      this.token = params['token'];
+      if (this.token) {
+        this.invitationService.getInvitation(this.token).subscribe({
+          next: (data: any) => {
+            console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
+            if (data.role) {
+              const userType = this.userTypes.find(t => t.display === data.role);
+              if (userType) {
+                this.registrationForm.get('userType')?.setValue(userType.value);
+                this.user = userType.value;
+              }
+            }
             this.registrationForm.get('userType')?.disable();
           },
           error: () => {
@@ -349,12 +358,11 @@ export class RegistrationComponent implements OnInit{
   }
 
   onSubmit(): void {
-    const token = this.route.snapshot.queryParams['token'];
-    if (token) {
+    if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;
         const data = {
-          token: token,
+          token: this.token,
           password: this.registrationForm.get('password')?.value,
           phoneNumber: this.registrationForm.get('phoneNumber')?.value
         };
