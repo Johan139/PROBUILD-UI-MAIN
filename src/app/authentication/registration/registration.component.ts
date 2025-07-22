@@ -222,6 +222,16 @@ export class RegistrationComponent implements OnInit{
     this.route.queryParams.subscribe(params => {
       this.token = params['token'];
       if (this.token) {
+        // When a token is present, remove required validators from fields that are not needed for invited users
+        const fieldsToUpdate = ['country', 'state', 'city', 'subscriptionPackage'];
+        fieldsToUpdate.forEach(fieldName => {
+          const control = this.registrationForm.get(fieldName);
+          if (control) {
+            control.clearValidators();
+            control.updateValueAndValidity();
+          }
+        });
+
         this.invitationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
             console.log('Invitation data:', data);
@@ -371,7 +381,7 @@ export class RegistrationComponent implements OnInit{
             this.isLoading = false;
             this.alertMessage = 'Registration successful. You can now log in.';
             this.showAlert = true;
-            this.routeURL = 'login';
+            this.routeURL = 'login?type=member';
           },
           error: () => {
             this.isLoading = false;
