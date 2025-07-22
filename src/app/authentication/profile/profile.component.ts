@@ -6,6 +6,15 @@ import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Profile, TeamMember, Document } from './profile.model';
 import { userTypes } from '../../data/user-types';
+import {
+  constructionTypes,
+  preferenceOptions,
+  supplierProducts,
+  deliveryAreas,
+  leadTimeDelivery,
+  availabilityOptions,
+  certificationOptions
+} from '../../data/registration-data';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -92,7 +101,14 @@ isGoogleMapsLoaded: boolean = false;
   documents: ProfileDocument[] = [];
   displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
-    private hubConnection!: HubConnection;
+  constructionTypes = constructionTypes;
+  preferenceOptions = preferenceOptions;
+  supplierProducts = supplierProducts;
+  deliveryAreas = deliveryAreas;
+  leadTimeDelivery = leadTimeDelivery;
+  availabilityOptions = availabilityOptions;
+  certificationOptions = certificationOptions;
+  private hubConnection!: HubConnection;
 
   alertMessage: string | undefined;
   showAlert: boolean | undefined;
@@ -121,7 +137,7 @@ isGoogleMapsLoaded: boolean = false;
       companyName: [null],
       companyRegNo: [null],
       vatNo: [null],
-      constructionType: [null],
+      constructionType: [[]],
       nrEmployees: [null],
       yearsOfOperation: [null],
       certificationStatus: [null],
@@ -130,9 +146,9 @@ isGoogleMapsLoaded: boolean = false;
       trade: [null],
       SessionId :[null],
       supplierType: [null],
-      productsOffered: [null],
-      projectPreferences: [null],
-      deliveryArea: [null],
+      productsOffered: [[]],
+      projectPreferences: [[]],
+      deliveryArea: [[]],
       deliveryTime: [null],
       country: [null],
       state: [null],
