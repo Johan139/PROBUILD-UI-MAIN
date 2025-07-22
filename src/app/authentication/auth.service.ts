@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, firstValueFrom } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -55,32 +55,57 @@ export class AuthService {
     }
   }
 
-  login(credentials: { email: string; password: string }): Observable<any> {
-    return this.http
-      .post<any>(`${this.apiUrl}/login`, credentials, {
-        headers: { 'Content-Type': 'application/json' },
+login(credentials: { email: string; password: string }): Observable<any> {
+  return this.http
+    .post<any>(`${this.apiUrl}/login`, credentials, {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    .pipe(
+      tap((response) => {
+        console.log('response:', response);
+        if (!isPlatformBrowser(this.platformId)) return;
+
+        // Defensive guard to avoid TypeError
+        if (!response || typeof response !== 'object' || !response.token) {
+          console.warn('Invalid response received in tap. Skipping login logic.');
+          return;
+        }
+
+        const { token, refreshToken, userId, firstName, lastName, userType } = response;
+
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('firstName', firstName);
+        localStorage.setItem('lastName', lastName);
+        localStorage.setItem('userType', userType);
+        localStorage.setItem('loggedIn', 'true');
+
+        const user = { id: userId, firstName, lastName, userType };
+        localStorage.setItem('currentUser', JSON.stringify(user));
+
+        this.currentUserSubject.next(user);
+      }),
+      catchError((error: HttpErrorResponse) => {
+
+
+        let parsed = error.error;
+        if (typeof parsed === 'string') {
+          try {
+            parsed = JSON.parse(parsed);
+          } catch {
+            parsed = {};
+          }
+        }
+
+        // Log or surface error message
+        console.error('Login error:', parsed?.error || error.message || 'Unknown error');
+
+        return throwError(() => error);
       })
-      .pipe(
-        tap((response) => {
-          if (!isPlatformBrowser(this.platformId)) return;
+    );
+}
 
-          const { token, refreshToken, userId, firstName, lastName, userType } = response;
-
-          localStorage.setItem('accessToken', token);
-          localStorage.setItem('refreshToken', refreshToken);
-          localStorage.setItem('userId', userId);
-          localStorage.setItem('firstName', firstName);
-          localStorage.setItem('lastName', lastName);
-          localStorage.setItem('userType', userType);
-          localStorage.setItem('loggedIn', 'true');
-
-          const user = { id: userId, firstName, lastName, userType };
-          localStorage.setItem('currentUser', JSON.stringify(user));
-
-          this.currentUserSubject.next(user);
-        })
-      );
-  }
 
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);

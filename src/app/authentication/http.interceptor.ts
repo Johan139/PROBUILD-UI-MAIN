@@ -25,9 +25,18 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
   return next(req).pipe(
     catchError((error: any) => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
+      // Skip refresh logic for /login and /refresh-token
+      const isAuthEndpoint = req.url.includes('/login') || req.url.includes('/refresh-token');
+
+      if (error instanceof HttpErrorResponse && error.status === 401 && !isAuthEndpoint) {
         return authService.refreshToken().pipe(
           switchMap((token: any) => {
+            if (!token || !token.accessToken) {
+              console.warn('Refresh token failed or returned invalid token.');
+              authService.logout();
+              return throwError(() => new Error('Unable to refresh access token.'));
+            }
+
             const newReq = req.clone({
               setHeaders: {
                 Authorization: `Bearer ${token.accessToken}`
@@ -41,7 +50,9 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
           })
         );
       }
+
       return throwError(() => error);
     })
   );
 };
+

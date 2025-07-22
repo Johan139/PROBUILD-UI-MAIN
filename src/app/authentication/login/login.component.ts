@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { LoaderComponent } from '../../loader/loader.component';
 import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -66,24 +67,47 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       this.isLoading = true;
       const credentials = this.loginForm.value;
+      console.log(credentials)
       this.authService.login(credentials).subscribe({
         next: () => {
           this.isLoading = false;
           this.router.navigateByUrl('dashboard');
         },
-        error: (error) => {
-          this.isLoading = false;
-          this.showAlert = true;
-  if (error.status === 0) {
-    this.alertMessage = 'Network error. Please check your internet connection.';
-  } else if (error.status === 401) {
-    this.alertMessage = error.error?.error || 'Login failed. Please check your username or password.';
-  } else if (error.status === 500) {
-    this.alertMessage = error.error?.error || 'Server error. Please try again later.';
-  } else {
-    this.alertMessage = error.error?.error || 'An unexpected error occurred. Contact support.';
-  }
-        },
+     error: (error: any) => {
+        this.isLoading = false;
+        this.showAlert = true;
+
+        let message = 'Login failed. Please try again.';
+        this.alertMessage = message;
+
+        if (error instanceof HttpErrorResponse) {
+          let backendError = error.error;
+
+          if (typeof backendError === 'string') {
+            try {
+              backendError = JSON.parse(backendError);
+            } catch {
+              backendError = {};
+            }
+          }
+
+          if (error.status === 401) {
+            this.alertMessage = backendError?.error || message;
+          } else if (error.status === 500) {
+            this.alertMessage = backendError?.error || 'Server error. Try again later.';
+          } else {
+            this.alertMessage = backendError?.error || message;
+          }
+        } else if (error instanceof Error) {
+          // Interceptor custom error (e.g. refresh token failed)
+          this.alertMessage = error.message || message;
+        } else {
+          this.alertMessage = message;
+        }
+
+        console.log('Resolved alert message:', this.alertMessage);
+      }
+
       });
     } else {
       this.showAlert = true;
