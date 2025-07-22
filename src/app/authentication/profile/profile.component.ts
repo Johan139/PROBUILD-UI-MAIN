@@ -95,6 +95,8 @@ isGoogleMapsLoaded: boolean = false;
 
   availableRoles: string[] = userTypes
     .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
+    .filter(ut => ut.value !== 'SUBCONTRACTOR')
+    .filter(ut => ut.value !== 'VENDOR')
     .map(ut => ut.display);
 
   teamMembers: TeamMember[] = [];

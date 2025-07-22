@@ -233,9 +233,14 @@
                   <form [formGroup]="teamForm" (ngSubmit)="addTeamMember()">
                     <div class="form-row">
                       <mat-form-field appearance="fill">
-                        <mat-label>Name</mat-label>
-                        <input matInput formControlName="name" placeholder=" " />
-                        <mat-error *ngIf="teamForm.get('name')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                        <mat-label>First Name</mat-label>
+                        <input matInput formControlName="teamMemberFirstName" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('teamMemberFirstName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Last Name</mat-label>
+                        <input matInput formControlName="teamMemberLastname" placeholder=" " />
+                        <mat-error *ngIf="teamForm.get('teamMemberLastname')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Role</mat-label>

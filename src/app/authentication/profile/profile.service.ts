@@ -12,17 +12,6 @@ import { AuthService } from '../auth.service';
 export class ProfileService {
   private apiUrl = `${environment.BACKEND_URL}/profile`;
 
-  // Dummy data for team members
-  private dummyTeamMembers: TeamMember[] = [
-    { name: 'John Doe', role: 'SUBCONTRACTOR', email: 'john.doe@example.com' },
-    { name: 'Jane Smith', role: 'FOREMAN', email: 'jane.smith@example.com' }
-  ];
-
-  // Dummy data for documents
-  private dummyDocuments: Document[] = [
-    { name: 'Certification.pdf', type: 'Certification', path: 'https://example.com/cert.pdf', uploadedDate: new Date('2025-01-15') },
-    { name: 'License.docx', type: 'License', path: 'https://example.com/license.docx', uploadedDate: new Date('2025-02-20') }
-  ];
 
   constructor(
     private http: HttpClient,
@@ -84,24 +73,37 @@ export class ProfileService {
   }
 
   getTeamMembers(): Observable<TeamMember[]> {
-    // Simulate API call with dummy data
-    return of(this.dummyTeamMembers);
+    const url = `${this.apiUrl}/team`;
+    return this.http.get<TeamMember[]>(url, { headers: this.getHeaders() }).pipe(
+      catchError(error => {
+        console.error('Error fetching team members:', error);
+        return throwError(() => new Error('Failed to load team members'));
+      })
+    );
   }
 
   addTeamMember(member: TeamMember): Observable<TeamMember> {
-    // Simulate adding to dummy data
-    this.dummyTeamMembers.push(member);
-    return of(member);
+    const url = `${this.apiUrl}/team`;
+    return this.http.post<TeamMember>(url, member, { headers: this.getHeaders() }).pipe(
+      catchError(error => {
+        console.error('Error adding team member:', error);
+        return throwError(() => new Error('Failed to add team member'));
+      })
+    );
   }
 
   removeTeamMember(email: string): Observable<void> {
-    // Simulate removing from dummy data
-    this.dummyTeamMembers = this.dummyTeamMembers.filter(member => member.email !== email);
-    return of(void 0);
+    const url = `${this.apiUrl}/team/${email}`;
+    return this.http.delete<void>(url, { headers: this.getHeaders() }).pipe(
+      catchError(error => {
+        console.error('Error removing team member:', error);
+        return throwError(() => new Error('Failed to remove team member'));
+      })
+    );
   }
 
   getDocuments(): Observable<Document[]> {
-    // Simulate API call with dummy data
-    return of(this.dummyDocuments);
+    // This seems to be unused, if it were to be used, it would need a proper implementation
+    return of([]);
   }
 }
