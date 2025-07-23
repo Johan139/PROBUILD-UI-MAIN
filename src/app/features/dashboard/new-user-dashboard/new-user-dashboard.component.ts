@@ -22,6 +22,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { filter, take, switchMap } from 'rxjs/operators';
+import { TeamManagementService } from '../../../services/team-management.service';
 
 const BASE_URL = environment.BACKEND_URL;
 @Component({
@@ -33,15 +34,15 @@ const BASE_URL = environment.BACKEND_URL;
     NgOptimizedImage,
     MatButtonModule,
     MatCardModule,
-    MatProgressBarModule,   // ✅ ADD THIS HERE
+    MatProgressBarModule,
     MatDividerModule,
     GanttChartComponent,
     LoaderComponent,
     RouterLink,
-    MatDialogModule,     // ✅ ADDED HERE
+    MatDialogModule,
     FileSizePipe,
-    MatFormFieldModule,  // ✅ added
-    MatInputModule,      // ✅ added
+    MatFormFieldModule,
+    MatInputModule,
     FormsModule,
     MatSelectModule
   ],
@@ -61,10 +62,10 @@ export class NewUserDashboardComponent implements OnInit {
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
   projectDetails: any;
-isApprovalMode = false;
-approvalReason: string = '';
-groupedNotes: { [subtaskId: string]: any[] } = {};
-approvalReasonDialogRef: MatDialogRef<any> | null = null;
+  isApprovalMode = false;
+  approvalReason: string = '';
+  groupedNotes: { [subtaskId: string]: any[] } = {};
+  approvalReasonDialogRef: MatDialogRef<any> | null = null;
   isBrowser: boolean;
   showApprovalInput: boolean = false;
   noteBeingApproved: any = null;
@@ -93,6 +94,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     private http: HttpClient,
     private jobDataService: JobDataService,
     private authService: AuthService,
+    private teamManagementService: TeamManagementService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -105,12 +107,13 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     this.userType = this.userService.getUserType();
 
     if (this.authService.isTeamMember()) {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        this.teams = payload.team;
-        this.selectedTeam = this.teams[0];
-      }
+      this.teamManagementService.getMyTeams().subscribe(teams => {
+        this.teams = teams;
+        console.log('Teams:', teams);
+        if (teams && teams.length > 0) {
+          this.selectedTeam = teams[0];
+        }
+      });
     }
 
     this.authService.currentUser$.pipe(
@@ -137,6 +140,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       this.isLoading = false;
     }, 1000);
   }
+
   closeDocumentsDialog() {
     if (this.documentDialogRef) {
       this.documentDialogRef.close();
@@ -144,6 +148,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
     } else {
     }
   }
+
   openNoteDialog(group: any) {
     this.dialog.open(this.noteDetailDialog, {
       width: '80vw',
@@ -195,10 +200,12 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       }
     });
   }
+
   cancelApproval() {
     this.approvalReasonDialogRef?.close();
     this.resetApproval();
   }
+
   groupNotesBySubtask(notes: any[]): { [subtaskId: string]: any[] } {
     const grouped: { [subtaskId: string]: any[] } = {};
 
@@ -213,13 +220,16 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
 
     return grouped;
   }
+
   isMine(note: any): boolean {
     const myUserId = localStorage.getItem('userId');
     return note.createdByUserId?.toString() === myUserId;
   }
+
   groupedSubtaskIds(): string[] {
     return Object.keys(this.groupedNotes);
   }
+
   resetApproval() {
     this.showApprovalInput = false;
     this.noteBeingApproved = null;
@@ -265,9 +275,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       const uniqueJobs = Array.from(uniqueProjectsMap.values());
 
       // Now for each unique job, fetch its subtasks separately:
-
       const jobProgressPromises = uniqueJobs.map(job =>
-
         this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
           const progress = this.calculateJobProgress(subtasks || []);
 
@@ -287,9 +295,9 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         })
       );
 
-  Promise.all(jobProgressPromises).then(results => {
-  this.userJobs = results.sort((a, b) => b.progress - a.progress);
-});
+      Promise.all(jobProgressPromises).then(results => {
+        this.userJobs = results.sort((a, b) => b.progress - a.progress);
+      });
     });
   }
 
@@ -305,6 +313,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       data: { approvalReason: '' }
     });
   }
+
   getFileType(fileName: string): string {
     const extension = fileName.split('.').pop()?.toLowerCase();
     switch (extension) {
@@ -319,6 +328,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
         return 'application/octet-stream';
     }
   }
+
   fetchDocuments(noteId: number): void {
     this.isDocumentsLoading = true;
     this.documentsError = null;
@@ -345,6 +355,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       }
     });
   }
+
   openDocumentsDialog(note: any) {
     const activeElement = document.activeElement as HTMLElement;
 
@@ -364,7 +375,6 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   }
 
   rejectNote(note: any) {
-
     const formData = new FormData();
     formData.append('Id', note.id.toString());
     formData.append('Approved', 'false');
@@ -379,6 +389,7 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       }
     });
   }
+
   viewDocument(document: any) {
     this.jobsService.downloadNoteDocument(document.id).subscribe({
       next: (response: Blob) => {
@@ -397,10 +408,12 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
       }
     });
   }
+
   Close() {
     // You can make an API call here
     this.dialog.closeAll();
   }
+
   navigateToProjects() {
     this.router.navigateByUrl('/projects');
   }
@@ -408,5 +421,4 @@ approvalReasonDialogRef: MatDialogRef<any> | null = null;
   navigateToJobs() {
     this.router.navigateByUrl('job-quote');
   }
-
 }

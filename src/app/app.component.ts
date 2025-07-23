@@ -89,6 +89,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isBrowser) {
 
  this.authService.currentUser$.subscribe(user => {
+  console.log('Current user:', user);
       if (user) {
         const firstName = user.firstName || localStorage.getItem('firstName') || '';
         const lastName = user.lastName || localStorage.getItem('lastName') || '';
@@ -97,11 +98,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.LoggedInName = '';
       }
     });
-
       this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
       this.recentNotifications$ = this.notificationsService.notifications$;
       this.notificationsService.getAllNotifications(1, 50).subscribe();
-
     }
   }
 

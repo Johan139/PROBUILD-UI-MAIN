@@ -13,7 +13,7 @@
           <div *ngIf="teams.length > 1">
             <mat-form-field>
               <mat-label>Select Team</mat-label>
-              <mat-select [(value)]="selectedTeam">
+              <mat-select [(ngModel)]="selectedTeam" name="team">
                 <mat-option *ngFor="let team of teams" [value]="team">{{ team.inviterName }}</mat-option>
               </mat-select>
             </mat-form-field>

@@ -22,4 +22,12 @@ export class TeamManagementService {
   removeTeamMember(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/members/${id}`);
   }
+
+  getTeamMemberById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/members/${id}`);
+  }
+
+  getMyTeams(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/my-teams`);
+  }
 }

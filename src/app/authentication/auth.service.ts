@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
+import { TeamManagementService } from '../services/team-management.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +12,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`;
+  private teamManagementService = inject(TeamManagementService);
 
   public currentUserSubject = new BehaviorSubject<any>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -24,33 +26,36 @@ export class AuthService {
   async initialize(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    const userJson = localStorage.getItem('currentUser');
-    if (!userJson) return;
-
-    const user = JSON.parse(userJson);
-    this.currentUserSubject.next(user);
-
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      this.logout();
-      return;
+      return; // No token, not logged in
     }
+
+    // Use the token as the source of truth to populate the user
+    this.loadUserFromToken(token);
 
     try {
       const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
       const expiration = new Date(0);
       expiration.setUTCSeconds(decodedToken.exp);
 
+      // Check if the token is expired and refresh it if necessary
       if (expiration.valueOf() < Date.now()) {
+        console.log('Access token expired, attempting to refresh...');
         try {
           await firstValueFrom(this.refreshToken());
+          const newToken = localStorage.getItem('accessToken');
+          if (newToken) {
+            // Reload user data from the new token
+            this.loadUserFromToken(newToken);
+          }
         } catch (err) {
           console.error('Session expired. Logging out.', err);
           this.logout();
         }
       }
     } catch (err) {
-      console.error('Invalid token. Logging out.', err);
+      console.error('Invalid token found. Logging out.', err);
       this.logout();
     }
   }
@@ -67,7 +72,7 @@ export class AuthService {
             // If the first login fails with 401, try the member login
             return this.loginMember(credentials);
           }
-          // For other errors, propagate the error
+          // For other errors, show the error
           return throwError(() => this.handleLoginError(error));
         })
       );
@@ -81,20 +86,23 @@ export class AuthService {
       return;
     }
 
-    const { token, refreshToken, userId, firstName, lastName, userType } = response;
-
+    const { token, refreshToken } = response;
     localStorage.setItem('accessToken', token);
     localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('userId', userId);
-    localStorage.setItem('firstName', firstName);
-    localStorage.setItem('lastName', lastName);
-    localStorage.setItem('userType', userType);
     localStorage.setItem('loggedIn', 'true');
 
-    const user = { id: userId, firstName, lastName, userType };
-    localStorage.setItem('currentUser', JSON.stringify(user));
-
-    this.currentUserSubject.next(user);
+    if (response.userId) {
+      const { userId, firstName, lastName, userType } = response;
+      const user = { id: userId, firstName, lastName, userType };
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('firstName', firstName);
+      localStorage.setItem('lastName', lastName);
+      localStorage.setItem('userType', userType);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      this.currentUserSubject.next(user);
+    } else {
+      this.fetchTeamMemberDetails(token).subscribe();
+    }
   }
 
   private handleLoginError(error: HttpErrorResponse): HttpErrorResponse {
@@ -122,7 +130,6 @@ export class AuthService {
         })
       );
   }
-
 
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);
@@ -218,17 +225,73 @@ export class AuthService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const user = {
-        id: payload.UserId || localStorage.getItem('userId'),
-        userType: payload.UserType || localStorage.getItem('userType'),
-        firstName: payload.FirstName || localStorage.getItem('firstName'),
-        lastName: payload.LastName || localStorage.getItem('lastName'),
-        companyName: payload.CompanyName || localStorage.getItem('companyName'),
-      };
-      this.currentUserSubject.next(user);
+      console.log('Decoded token payload:', payload);
+
+      if (payload.isTeamMember === 'true') {
+        const teamMemberId = payload.team.split(':')[0];
+        this.teamManagementService.getTeamMemberById(teamMemberId).subscribe({
+          next: (teamMember) => {
+            const user = {
+              id: teamMemberId,
+              inviterId: teamMember.inviterId,
+              firstName: teamMember.firstName,
+              lastName: teamMember.lastName,
+              email: teamMember.email,
+              userType: teamMember.role,
+              isTeamMember: true,
+            };
+            this.currentUserSubject.next(user);
+          },
+          error: (err) => {
+            console.error('Failed to fetch team member details', err);
+            this.currentUserSubject.next(null);
+          },
+        });
+      } else {
+        console.log('Payload:', payload);
+        const user = {
+          id: payload.UserId || localStorage.getItem('userId'),
+          userType: payload.UserType || localStorage.getItem('userType'),
+          firstName: payload.FirstName || localStorage.getItem('firstName'),
+          lastName: payload.LastName || localStorage.getItem('lastName'),
+          companyName: payload.CompanyName || localStorage.getItem('companyName'),
+        };
+        this.currentUserSubject.next(user);
+      }
     } catch (err) {
       console.error('Failed to decode token', err);
       this.currentUserSubject.next(null);
+    }
+  }
+
+  fetchTeamMemberDetails(token: string): Observable<any> {
+    try {
+      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
+      const teamInfo = decodedToken.team;
+      if (!teamInfo) {
+        return throwError(() => new Error('Not a team member token'));
+      }
+      const teamMemberId = teamInfo.split(':')[1];
+
+      return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
+        tap(memberDetails => {
+          const user = {
+            id: memberDetails.id,
+            firstName: memberDetails.firstName,
+            lastName: memberDetails.lastName,
+            role: memberDetails.role,
+          };
+          localStorage.setItem('userId', user.id);
+          localStorage.setItem('firstName', user.firstName);
+          localStorage.setItem('lastName', user.lastName);
+          localStorage.setItem('userType', user.role);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+        })
+      );
+    } catch (err) {
+      console.error('Failed to decode token or fetch team member details', err);
+      return throwError(() => new Error('Invalid token'));
     }
   }
 }
