@@ -4,22 +4,27 @@ import { TeamManagementService } from '../../../services/team-management.service
 import { AuthService } from '../../../authentication/auth.service';
 import { MatTableModule } from '@angular/material/table';
 import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
-import { NgForOf, NgIf } from '@angular/common';
+import { AsyncPipe, NgForOf, NgIf } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardModule } from '@angular/material/card';
 import { LoaderComponent } from '../../../loader/loader.component';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDividerModule } from '@angular/material/divider';
 import { userTypes } from '../../../data/user-types';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Observable, of } from 'rxjs';
+import { startWith, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-job-assignment',
   standalone: true,
   imports: [
     FormsModule,
+    ReactiveFormsModule,
     NgIf,
     NgForOf,
     MatButton,
@@ -30,7 +35,10 @@ import { userTypes } from '../../../data/user-types';
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
-    MatDividerModule
+    MatDividerModule,
+    MatAutocompleteModule,
+    AsyncPipe,
+    MatTooltipModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './job-assignment.component.html',
@@ -48,9 +56,15 @@ export class JobAssignmentComponent implements OnInit {
   selectedJob: JobAssignment | null = null;
   selectedUser: JobUser | null = null;
   userList: JobUser[] = [];
+  teamMembers: any[] = [];
   newAssignment: { email: string; jobRole: string } = { email: '', jobRole: '' };
   filteredJobAssignment: { job: JobAssignment; user: JobUser }[] = [];
   jobRoles: { value: string; display: string; }[] = [];
+
+  jobControl = new FormControl();
+  userControl = new FormControl();
+  filteredJobs: Observable<JobAssignment[]> = of([]);
+  filteredUsers: Observable<JobUser[]> = of([]);
 
   constructor(
     private jobAssignmentService: JobAssignmentService,
@@ -63,6 +77,7 @@ export class JobAssignmentComponent implements OnInit {
     console.log('ngOnInit called');
     this.loadInitialData();
     this.jobRoles = userTypes.filter(role => role.value !== 'GENERAL_CONTRACTOR');
+
   }
 
   async loadInitialData(): Promise<void> {
@@ -80,6 +95,7 @@ export class JobAssignmentComponent implements OnInit {
           const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
           this.teamManagementService.getTeamMembers(userId).subscribe({
             next: (data: any[]) => {
+              this.teamMembers = data;
               this.userList = data.map(tm => ({
                 id: tm.id,
                 firstName: tm.firstName,
@@ -88,6 +104,15 @@ export class JobAssignmentComponent implements OnInit {
                 userType: tm.role,
                 jobRole: tm.role
               }));
+              this.filteredUsers = this.userControl.valueChanges.pipe(
+                startWith(''),
+                map(value => {
+                  if (!value) {
+                    this.newAssignment.jobRole = '';
+                  }
+                  return this._filterUsers(value);
+                })
+              );
             },
             error: (error) => {
               console.error('Error getting team members', error);
@@ -95,6 +120,10 @@ export class JobAssignmentComponent implements OnInit {
               this.isLoading = false;
             }
           });
+          this.filteredJobs = this.jobControl.valueChanges.pipe(
+            startWith(''),
+            map(value => this._filterJobs(value))
+          );
           this.filterAssignments();
           this.isLoading = false;
           this.cdr.detectChanges();
@@ -220,8 +249,55 @@ export class JobAssignmentComponent implements OnInit {
     this.newAssignment = { email: '', jobRole: '' };
   }
 
-  onJobSelectionChange(): void {
+  onJobSelectionChange(job: JobAssignment): void {
+    this.selectedJob = job;
     this.filterAssignments();
+  }
+
+  onUserSelected(user: JobUser): void {
+    this.selectedUser = user;
+    if (user && user.id) {
+      const selectedTeamMember = this.teamMembers.find(member => member.id === user.id);
+      if (selectedTeamMember) {
+        this.newAssignment.jobRole = selectedTeamMember.role;
+      }
+    } else {
+      this.newAssignment.jobRole = '';
+    }
+  }
+
+  private _filterJobs(value: string | JobAssignment): JobAssignment[] {
+    const filterValue = typeof value === 'string' ? value.toLowerCase() : (value.projectName || '').toLowerCase();
+    const filtered = this.jobAssignmentList.filter(job => (job.projectName || '').toLowerCase().includes(filterValue));
+    return [
+      { id: 0, projectName: '', jobUser: [] },
+      ...filtered
+    ];
+  }
+
+  private _filterUsers(value: string | JobUser): JobUser[] {
+    const filterValue = typeof value === 'string' ? value.toLowerCase() : (value ? `${value.firstName} ${value.lastName}` : '').toLowerCase();
+    const filtered = this.userList.filter(user =>
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(filterValue)
+    );
+    return [
+      { id: '', firstName: '', lastName: '', phoneNumber: '', userType: '', jobRole: '' },
+      ...filtered
+    ];
+  }
+
+  displayJob(job: JobAssignment): string {
+    if (job && job.id === 0) {
+      return '';
+    }
+    return job && job.projectName ? job.projectName : '';
+  }
+
+  displayUser(user: JobUser): string {
+    if (user && !user.id) {
+      return '';
+    }
+    return user && user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '';
   }
 
   private showError(message: string): void {

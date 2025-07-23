@@ -18,42 +18,50 @@
       <form class="form-row" (ngSubmit)="submitAssignment()">
         <mat-form-field class="job-selection">
           <mat-label>Select Job</mat-label>
-          <mat-select [(ngModel)]="selectedJob" name="jobSelection" (ngModelChange)="onJobSelectionChange()">
-            <mat-option *ngIf="!jobAssignmentList?.length" disabled>
-              No jobs available
+          <input type="text"
+                 placeholder="Search for a job"
+                 aria-label="Select Job"
+                 matInput
+                 [formControl]="jobControl"
+                 [matAutocomplete]="autoJob">
+          <mat-autocomplete #autoJob="matAutocomplete" [displayWith]="displayJob" (optionSelected)="onJobSelectionChange($event.option.value)">
+            <mat-option *ngIf="!(filteredJobs | async)?.length" disabled>
+              No jobs found
             </mat-option>
-            <mat-option [value]="null">--All Jobs--</mat-option>
-            <mat-option *ngFor="let element of jobAssignmentList" [value]="element">
-              {{ element?.projectName}}
+            <mat-option *ngFor="let job of filteredJobs | async" [value]="job">
+              {{ job.projectName }}
             </mat-option>
-          </mat-select>
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field class="job-selection">
           <mat-label>Select User</mat-label>
-          <mat-select [(ngModel)]="selectedUser" name="userSelection">
-            <mat-option *ngIf="!userList.length" disabled>
-              No users available
+          <input type="text"
+                 placeholder="Search for a user"
+                 aria-label="Select User"
+                 matInput
+                 [formControl]="userControl"
+                 [matAutocomplete]="autoUser">
+          <mat-autocomplete #autoUser="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelected($event.option.value)">
+            <mat-option *ngIf="!(filteredUsers | async)?.length" disabled>
+              No users found
             </mat-option>
-            <mat-option *ngFor="let element of userList" [value]="element">
-              {{ element.firstName || '' }}
-              {{ element.lastName || 'N/A' }}
+            <mat-option *ngFor="let user of filteredUsers | async" [value]="user">
+              {{ user.firstName }} {{ user.lastName }}
             </mat-option>
-          </mat-select>
+          </mat-autocomplete>
         </mat-form-field>
 
-        <mat-form-field>
+        <mat-form-field class="job-role-field"
+                        [class.filled]="newAssignment.jobRole"
+                        [matTooltip]="!newAssignment.jobRole ? 'This will be automatically filled in when a user is selected' : ''">
           <mat-label>Job Role</mat-label>
-          <mat-select [(ngModel)]="newAssignment.jobRole" name="jobRole" required>
-            <mat-option *ngFor="let role of jobRoles" [value]="role.value">
-              {{ role.display }}
-            </mat-option>
-          </mat-select>
+          <input matInput [(ngModel)]="newAssignment.jobRole" name="jobRole" readonly>
         </mat-form-field>
       </form>
 
       <div class="button-container">
-        <button mat-button class="submit-btn" (click)="submitAssignment()" [disabled]="isSaving">
+        <button mat-button class="submit-btn" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser">
           {{ isSaving ? 'Saving...' : 'Assign' }}
         </button>
       </div>
