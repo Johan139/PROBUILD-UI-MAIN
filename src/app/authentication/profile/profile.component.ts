@@ -212,10 +212,12 @@ isGoogleMapsLoaded: boolean = false;
       this.userRole = this.authService.getUserRole();
       console.log('User Role:', this.userRole);
       console.log('User Data:', user);
-      if (user) {
+      if (user && user.id) {
         this.loadProfile();
-        this.loadTeamMembers();
         this.loadDocuments();
+      } else if (user) {
+        // User object exists but might not be fully populated yet.
+        // Wait for the full user object.
       } else {
         this.isLoading = false;
         this.errorMessage = 'Please log in to view your profile.';
@@ -284,6 +286,7 @@ isGoogleMapsLoaded: boolean = false;
         this.successMessage = 'Profile loaded successfully';
         this.isLoading = false;
         this.isVerified = data.isVerified ?? false;
+        this.loadTeamMembers();
       },
       error: (error) => {
         this.errorMessage = error.message === 'User not authenticated'
@@ -375,11 +378,18 @@ isGoogleMapsLoaded: boolean = false;
     });
   }
   loadTeamMembers(): void {
-    this.teamManagementService.getTeamMembers().subscribe({
+    const currentUser = this.authService.currentUserSubject.value;
+    if (!currentUser || !currentUser.id) {
+      this.errorMessage = 'User not fully loaded. Please try again.';
+      return;
+    }
+    const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
+    this.teamManagementService.getTeamMembers(userId).subscribe({
       next: (members: TeamMember[]) => {
         this.teamMembers = members;
       },
       error: (error) => {
+        console.error('[ProfileComponent] Error loading team members:', error);
         this.errorMessage = 'Failed to load team members.';
       }
     });
@@ -552,9 +562,14 @@ isGoogleMapsLoaded: boolean = false;
   addTeamMember(): void {
     if (this.teamForm.valid) {
       const newMember: TeamMember = this.teamForm.value;
-      this.teamManagementService.addTeamMember(newMember).subscribe({
+      const inviterId = this.authService.currentUserSubject.value?.id;
+      if (!inviterId) {
+        this.errorMessage = 'Cannot add team member: User not logged in.';
+        return;
+      }
+      this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
         next: (member: TeamMember) => {
-          this.teamMembers = [...this.teamMembers, { ...newMember, status: 'Invited' }];
+          this.teamMembers = [...this.teamMembers, member];
           this.teamForm.reset();
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
@@ -572,6 +587,7 @@ isGoogleMapsLoaded: boolean = false;
       this.errorMessage = 'Please fill all required fields correctly.';
     }
   }
+
   resetFileInput(): void {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
@@ -579,6 +595,7 @@ isGoogleMapsLoaded: boolean = false;
       console.log('File input reset');
     }
   }
+
   removeTeamMember(id: string): void {
     this.teamManagementService.removeTeamMember(id).subscribe({
       next: () => {
@@ -590,6 +607,7 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
+
   ngOnDestroy(): void {
     if (this.hubConnection) {
       this.hubConnection.stop()
@@ -597,6 +615,7 @@ isGoogleMapsLoaded: boolean = false;
         .catch(err => console.error('Error stopping SignalR:', err));
     }
   }
+
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);

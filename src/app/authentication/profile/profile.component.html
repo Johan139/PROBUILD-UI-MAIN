@@ -8,17 +8,17 @@
         <mat-card-content>
           <mat-divider></mat-divider>
           <div class="profile-content">
-            <mat-tab-group>
-              <!-- Profile Tab -->
-              <mat-tab label="Profile">
-                <div *ngIf="errorMessage" class="error-message">
-                  {{ errorMessage }}
-                </div>
-                <!-- Role Switcher Dropdown (For Dev Testing) -->
-                <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
-                        {{ role }}
-                      </mat-option></mat-select></mat-form-field></div> -->
-                <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm">
+            <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm.controls">
+              <mat-tab-group>
+                <!-- Profile Tab -->
+                <mat-tab label="Profile">
+                  <div *ngIf="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                  </div>
+                  <!-- Role Switcher Dropdown (For Dev Testing) -->
+                  <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
+                          {{ role }}
+                        </mat-option></mat-select></mat-form-field></div> -->
                   <!-- Personal Information -->
                   <div class="section" *ngIf="canViewPersonalInfo()">
                     <h3>Personal Information</h3>
@@ -115,11 +115,10 @@
                       {{ isSaving ? 'Saving...' : 'Save Profile' }}
                     </button>
                   </div>
-                </form>
-              </mat-tab>
-               <!-- Company Profile Tab -->
-              <mat-tab *ngIf="canViewCompanyDetails()" label="Company Profile">
-                <!-- Company Details -->
+                </mat-tab>
+                <!-- Company Profile Tab -->
+                <mat-tab *ngIf="canViewCompanyDetails()" label="Company Profile">
+                  <!-- Company Details -->
                 <div class="section">
                   <h3>Company Details</h3>
                   <div class="form-row">
@@ -320,7 +319,8 @@
                   </mat-table>
                 </div>
               </mat-tab>
-            </mat-tab-group>
+              </mat-tab-group>
+            </form>
           </div>
         </mat-card-content>
       </mat-card>

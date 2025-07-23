@@ -11,12 +11,14 @@ export class TeamManagementService {
 
   constructor(private http: HttpClient) { }
 
-  addTeamMember(member: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/members`, member);
+  addTeamMember(member: any, inviterId: string): Observable<any> {
+    const memberWithInviter = { ...member, inviterId };
+    return this.http.post(`${this.apiUrl}/members`, memberWithInviter);
   }
 
-  getTeamMembers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/members`);
+  getTeamMembers(userId: string): Observable<any[]> {
+    const url = `${this.apiUrl}/members/user/${userId}`;
+    return this.http.get<any[]>(url);
   }
 
   removeTeamMember(id: string): Observable<any> {

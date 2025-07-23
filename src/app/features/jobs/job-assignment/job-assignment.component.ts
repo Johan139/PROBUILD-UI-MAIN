@@ -1,6 +1,7 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { JobAssignmentService } from './job-assignment.service';
 import { TeamManagementService } from '../../../services/team-management.service';
+import { AuthService } from '../../../authentication/auth.service';
 import { MatTableModule } from '@angular/material/table';
 import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
 import { NgForOf, NgIf } from '@angular/common';
@@ -54,7 +55,8 @@ export class JobAssignmentComponent implements OnInit {
   constructor(
     private jobAssignmentService: JobAssignmentService,
     private cdr: ChangeDetectorRef,
-    private teamManagementService: TeamManagementService
+    private teamManagementService: TeamManagementService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -69,7 +71,14 @@ export class JobAssignmentComponent implements OnInit {
       this.jobAssignmentService.getJobAssignment().subscribe({
         next: (data: JobAssignment[]) => {
           this.jobAssignmentList = data;
-          this.teamManagementService.getTeamMembers().subscribe({
+          const currentUser = this.authService.currentUserSubject.value;
+          if (!currentUser || !currentUser.id) {
+            this.showError('User not logged in');
+            this.isLoading = false;
+            return;
+          }
+          const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
+          this.teamManagementService.getTeamMembers(userId).subscribe({
             next: (data: any[]) => {
               this.userList = data.map(tm => ({
                 id: tm.id,

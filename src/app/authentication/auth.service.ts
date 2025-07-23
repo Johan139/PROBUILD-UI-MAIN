@@ -240,7 +240,11 @@ export class AuthService {
               userType: teamMember.role,
               isTeamMember: true,
             };
-            this.currentUserSubject.next(user);
+            if (user.inviterId) {
+              this.currentUserSubject.next(user);
+            } else {
+              console.warn('Team member data is incomplete. Waiting for inviterId.');
+            }
           },
           error: (err) => {
             console.error('Failed to fetch team member details', err);
