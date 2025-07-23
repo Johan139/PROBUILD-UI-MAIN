@@ -27,6 +27,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -63,6 +65,7 @@ const BASE_URL = environment.BACKEND_URL;
     MatTabsModule,
     MatTableModule,
     MatDialogModule,
+    MatMenuModule,
     NgForOf,
     NgIf
   ],
@@ -104,6 +107,8 @@ isGoogleMapsLoaded: boolean = false;
     .map(ut => ut.display);
 
   teamMembers: TeamMember[] = [];
+  activeTeamMembers: TeamMember[] = [];
+  deactivatedTeamMembers: TeamMember[] = [];
   documents: ProfileDocument[] = [];
   displayedColumns: string[] = ['name', 'role', 'email', 'status', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
@@ -388,6 +393,9 @@ isGoogleMapsLoaded: boolean = false;
     this.teamManagementService.getTeamMembers(userId).subscribe({
       next: (members: TeamMember[]) => {
         this.teamMembers = members;
+        this.activeTeamMembers = members.filter(m => m.status !== 'Deactivated');
+        this.activeTeamMembers = members.filter(m => m.status !== 'Deleted');
+        this.deactivatedTeamMembers = members.filter(m => m.status === 'Deactivated');
       },
       error: (error) => {
         console.error('[ProfileComponent] Error loading team members:', error);
@@ -418,6 +426,7 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
+
   viewDocument(document: any): void {
     this.profileService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
@@ -573,6 +582,7 @@ isGoogleMapsLoaded: boolean = false;
       this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
         next: (member: TeamMember) => {
           this.teamMembers = [...this.teamMembers, member];
+          this.loadTeamMembers();
           this.teamForm.reset();
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
@@ -601,14 +611,70 @@ isGoogleMapsLoaded: boolean = false;
     }
   }
 
-  removeTeamMember(id: string): void {
-    this.teamManagementService.removeTeamMember(id).subscribe({
+  openConfirmationDialog(memberId: string, action: 'deactivate' | 'reactivate' | 'delete'): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: `Confirm ${action}`,
+        message: `Are you sure you want to ${action} this team member?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        switch (action) {
+          case 'deactivate':
+            this.deactivateTeamMember(memberId);
+            break;
+          case 'reactivate':
+            this.reactivateTeamMember(memberId);
+            break;
+          case 'delete':
+            this.deleteTeamMember(memberId);
+            break;
+        }
+      }
+    });
+  }
+
+  deactivateTeamMember(id: string): void {
+    this.teamManagementService.deactivateTeamMember(id).subscribe({
       next: () => {
-        this.teamMembers = this.teamMembers.filter(member => member.id !== id);
-        this.successMessage = 'Team member removed successfully';
+        const member = this.teamMembers.find(m => m.id === id);
+        if (member) {
+          member.status = 'Deactivated';
+          this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated');
+          this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
+        }
+        this.snackBar.open('Team member deactivated successfully', 'Close', { duration: 3000 });
       },
       error: () => {
-        this.errorMessage = 'Failed to remove team member.';
+        this.snackBar.open('Failed to deactivate team member', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  reactivateTeamMember(id: string): void {
+    this.teamManagementService.reactivateTeamMember(id).subscribe({
+      next: () => {
+        this.loadTeamMembers();
+        this.snackBar.open('Team member reactivated successfully', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to reactivate team member', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  deleteTeamMember(id: string): void {
+    this.teamManagementService.removeTeamMember(id).subscribe({
+      next: () => {
+        this.teamMembers = this.teamMembers.filter(m => m.id !== id);
+        this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated');
+        this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
+        this.snackBar.open('Team member permanently deleted', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to delete team member', 'Close', { duration: 3000 });
       }
     });
   }

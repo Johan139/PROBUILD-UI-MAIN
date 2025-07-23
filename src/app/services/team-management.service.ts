@@ -29,6 +29,14 @@ export class TeamManagementService {
     return this.http.get<any>(`${this.apiUrl}/members/${id}`);
   }
 
+  deactivateTeamMember(id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/members/${id}/deactivate`, {});
+  }
+
+  reactivateTeamMember(id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/members/${id}/reactivate`, {});
+  }
+
   getMyTeams(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/my-teams`);
   }
