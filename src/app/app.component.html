@@ -20,6 +20,11 @@
   </button>
 </mat-toolbar>
 
+<!-- Company Name Bar -->
+<div *ngIf="companyName" class="company-bar">
+  <span>{{ companyName }}</span>
+</div>
+
 <!-- Side Navigation and Content -->
 <mat-sidenav-container class="nav-container">
   <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation" >

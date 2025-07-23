@@ -52,6 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
   alertMessage: string = '';
   LoggedInName: string = '';
+  companyName: string = '';
   routeURL: string = '/';
   isLoading: boolean = false;
   title = 'ProBuildAI';
@@ -94,8 +95,10 @@ export class AppComponent implements OnInit, OnDestroy {
         const firstName = user.firstName || localStorage.getItem('firstName') || '';
         const lastName = user.lastName || localStorage.getItem('lastName') || '';
         this.LoggedInName = `${firstName} ${lastName}`.trim();
+        this.companyName = user.companyName || localStorage.getItem('companyName') || '';
       } else {
         this.LoggedInName = '';
+        this.companyName = '';
       }
     });
       this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
