@@ -31,9 +31,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
-import { timeout } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -119,7 +117,6 @@ isGoogleMapsLoaded: boolean = false;
   leadTimeDelivery = leadTimeDelivery;
   availabilityOptions = availabilityOptions;
   certificationOptions = certificationOptions;
-  private hubConnection!: HubConnection;
 
   alertMessage: string | undefined;
   showAlert: boolean | undefined;
@@ -128,9 +125,8 @@ isGoogleMapsLoaded: boolean = false;
     private profileService: ProfileService,
     private authService: AuthService,
     private fb: FormBuilder,
-     private httpClient: HttpClient,
-     private stripeService: StripeService,
-     private dialog: MatDialog,
+    private stripeService: StripeService,
+    private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
@@ -194,6 +190,7 @@ isGoogleMapsLoaded: boolean = false;
       this.domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
     );
   }
+
   ngAfterViewInit(): void {
     this.addressControl.valueChanges.subscribe(value => {
       if (typeof value === 'string' && value.trim()) {
@@ -212,72 +209,40 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
+
   ngOnInit(): void {
     this.loadSubscriptionPackages();
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
-      console.log('User Role:', this.userRole);
-      console.log('User Data:', user);
       if (user && user.id) {
         this.loadProfile();
         this.loadDocuments();
-      } else if (user) {
-        // User object exists but might not be fully populated yet.
-        // Wait for the full user object.
+        this.checkSubscription();
       } else {
         this.isLoading = false;
         this.errorMessage = 'Please log in to view your profile.';
       }
     });
 
-        this.sessionId = uuidv4();
-        this.hubConnection = new HubConnectionBuilder()
-        .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
-          .configureLogging(LogLevel.Debug)
-          .build();
+    this.sessionId = uuidv4();
+    this.profileService.initializeSignalR();
 
-        this.hubConnection.on('ReceiveProgress', (progress: number) => {
-          const cappedProgress = Math.min(100, progress);
-          this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
-          console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
-        });
+    this.profileService.progress$.subscribe(progress => {
+      this.progress = progress;
+    });
 
-        this.hubConnection.on('UploadComplete', (fileCount: number) => {
-          this.isUploading = false;
-          this.resetFileInput();
-          console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
-          console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
-        });
+    this.profileService.uploadComplete$.subscribe(fileCount => {
+      this.isUploading = false;
+      this.resetFileInput();
+      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
+    });
 
-
-        const userId = localStorage.getItem('userId');
-        this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
-        .subscribe({
-          next: (res) => {
-            this.subscriptionActive = res.hasActive;
-            if (!res.hasActive) {
-              this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
-
-            }
-          },
-          error: (err) => {
-            console.error('Subscription check failed', err);
-            this.alertMessage = "Unable to verify subscription. Try again later.";
-            this.showAlert = true;
-          }
-        });
-
-        this.hubConnection
-          .start()
-          .then(() => console.log('SignalR connection established successfully'))
-          .catch(err => console.error('SignalR Connection Error:', err));
-
-          if (this.isBrowser) {
-            this.loadGoogleMapsScript().then(() => {
-              this.isGoogleMapsLoaded = true;
-              this.autocompleteService = new google.maps.places.AutocompleteService();
-            });
-          }
+    if (this.isBrowser) {
+      this.profileService.loadGoogleMapsScript().then(() => {
+        this.isGoogleMapsLoaded = true;
+        this.autocompleteService = new google.maps.places.AutocompleteService();
+      }).catch(err => console.error('Google Maps script loading error:', err));
+    }
   }
 
   loadProfile(): void {
@@ -360,29 +325,24 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
-  loadGoogleMapsScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof google !== 'undefined' && google.maps) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
 
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
 
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if (typeof google !== 'undefined' && google.maps) {
-          resolve();
-        } else {
-          reject('Google Maps API not available after load');
+  checkSubscription(): void {
+    this.profileService.hasActiveSubscription().subscribe({
+      next: (res) => {
+        this.subscriptionActive = res.hasActive;
+        if (!res.hasActive) {
+          this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
         }
-      };
-      script.onerror = reject;
-      document.head.appendChild(script);
+      },
+      error: (err) => {
+        console.error('Subscription check failed', err);
+        this.alertMessage = "Unable to verify subscription. Try again later.";
+        this.showAlert = true;
+      }
     });
   }
+
   loadTeamMembers(): void {
     const currentUser = this.authService.currentUserSubject.value;
     if (!currentUser || !currentUser.id) {
@@ -524,49 +484,33 @@ isGoogleMapsLoaded: boolean = false;
     });
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
 
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload without SignalR');
 
-    this.httpClient
-      .post<any>(BASE_URL + '/profile/UploadImage', formData, {
-        reportProgress: true,
-        observe: 'events',
-        headers: new HttpHeaders({ Accept: 'application/json' }),
-      })
-      .pipe(timeout(300000))
-      .subscribe({
-        next: (event) => {
-          if (event.type === HttpEventType.UploadProgress && event.total) {
-            // Use full 0-100% range since SignalR is disabled
-            this.progress = Math.round((100 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
-          } else if (event.type === HttpEventType.Response) {
-            console.log('Upload response:', event.body);
-            const newFilesCount = newFileNames.length;
-            this.uploadedFilesCount += newFilesCount;
-            if (event.body?.fileUrls) {
-              this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
-            } else {
-              console.error('No fileUrls returned in response:', event.body);
-            }
-            this.isUploading = false;
-            this.resetFileInput();
+    this.profileService.uploadImage(formData).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          this.progress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          const newFilesCount = newFileNames.length;
+          this.uploadedFilesCount += newFilesCount;
+          if (event.body?.fileUrls) {
+            this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
           }
-        },
-        error: (error) => {
-          console.error('Upload error:', error);
-          this.progress = 0;
           this.isUploading = false;
-          this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
           this.resetFileInput();
-        },
-        complete: () => console.log('Client-to-API upload complete'),
-      });
+        }
+      },
+      error: (error) => {
+        console.error('Upload error:', error);
+        this.progress = 0;
+        this.isUploading = false;
+        this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
+        this.resetFileInput();
+      }
+    });
   }
 
   addTeamMember(): void {
@@ -680,11 +624,7 @@ isGoogleMapsLoaded: boolean = false;
   }
 
   ngOnDestroy(): void {
-    if (this.hubConnection) {
-      this.hubConnection.stop()
-        .then(() => console.log('SignalR connection stopped'))
-        .catch(err => console.error('Error stopping SignalR:', err));
-    }
+    this.profileService.stopSignalR();
   }
 
   changeUserRole(newRole: string): void {
