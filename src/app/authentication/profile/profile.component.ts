@@ -81,6 +81,7 @@ isGoogleMapsLoaded: boolean = false;
   teamForm: FormGroup;
   isLoading = true;
   isSaving = false;
+  isSendingInvite = false;
   isBrowser: boolean;
   subscriptionPackages: { value: string, display: string, amount: number }[] = [];
   progress: number = 0;
@@ -561,10 +562,12 @@ isGoogleMapsLoaded: boolean = false;
 
   addTeamMember(): void {
     if (this.teamForm.valid) {
+      this.isSendingInvite = true;
       const newMember: TeamMember = this.teamForm.value;
       const inviterId = this.authService.currentUserSubject.value?.id;
       if (!inviterId) {
         this.errorMessage = 'Cannot add team member: User not logged in.';
+        this.isSendingInvite = false;
         return;
       }
       this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
@@ -574,6 +577,7 @@ isGoogleMapsLoaded: boolean = false;
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
+          this.isSendingInvite = false;
         },
         error: (error) => {
           if (error.status === 409) {
@@ -581,6 +585,7 @@ isGoogleMapsLoaded: boolean = false;
           } else {
             this.errorMessage = 'Failed to add team member.';
           }
+          this.isSendingInvite = false;
         }
       });
     } else {

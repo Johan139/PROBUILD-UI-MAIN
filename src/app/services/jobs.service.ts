@@ -43,9 +43,11 @@ export class JobsService {
       responseType: 'blob'
     });
   }
+
   downloadNoteDocument(documentId: number): Observable<Blob> {
     return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
   }
+
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
@@ -59,15 +61,19 @@ export class JobsService {
       headers: { 'Content-Type': 'application/json' }
     });
   }
+
   getJobSubtasks(jobId: number): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
   }
+
   getSpecificJob(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/Id/' +jobId)
   }
+
   GetBillOfMaterials(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/processing-results/' +jobId)
   }
+
   GetBillOfMaterialsStatus(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'processing-results/' +jobId)
   }
@@ -75,6 +81,7 @@ export class JobsService {
   setJobCard(jobForm:any){
     this.jobQuote = jobForm;
   }
+
   getJobCard(){
     return this.jobQuote;
   }

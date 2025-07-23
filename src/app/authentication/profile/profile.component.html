@@ -253,7 +253,9 @@
                         <mat-error *ngIf="teamForm.get('email')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                         <mat-error *ngIf="teamForm.get('email')?.hasError('email')"> Invalid email format. </mat-error>
                       </mat-form-field>
-                      <button mat-raised-button type="submit" class="submit-btn" [disabled]="teamForm.invalid"> Add Member </button>
+                      <button mat-raised-button type="submit" class="submit-btn" [disabled]="teamForm.invalid || isSendingInvite">
+                        {{ isSendingInvite ? 'Sending Invite...' : 'Add Member' }}
+                      </button>
                     </div>
                   </form>
                 </div>
