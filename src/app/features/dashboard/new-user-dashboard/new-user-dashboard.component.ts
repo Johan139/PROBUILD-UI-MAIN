@@ -105,6 +105,23 @@ export class NewUserDashboardComponent implements OnInit {
   onViewNote(note: any): void {
     // You can open a modal, route to a detail page, or fetch more info here.
   }
+
+  getNoteStatus(note: any): string {
+    if (!note.notes || note.notes.length === 0) {
+      return 'Pending';
+    }
+    const lastNote = note.notes[note.notes.length - 1];
+    if (lastNote.approved) {
+      return 'Approved';
+    }
+    if (lastNote.rejected) {
+      return 'Rejected';
+    }
+    if (lastNote.archived) {
+      return 'Archived';
+    }
+    return 'Pending';
+  }
   ngOnInit() {
     this.isLoading = true;
     this.userType = this.userService.getUserType();
@@ -127,8 +144,11 @@ export class NewUserDashboardComponent implements OnInit {
       })
     ).subscribe({
       next: (notes: any) => {
-        this.notes = notes;
-        this.groupedNotes = this.groupNotesBySubtask(notes);
+        this.notes = notes.map(note => ({
+          ...note,
+          status: this.getNoteStatus(note)
+        }));
+        this.groupedNotes = this.groupNotesBySubtask(this.notes);
         this.isLoading = false;
       },
       error: (err) => {

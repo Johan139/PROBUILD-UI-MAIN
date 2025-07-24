@@ -30,7 +30,6 @@ export class NoteDetailDialogComponent implements OnInit {
   }
 
   getStatus(note: any): string {
-    console.log('Note object in getStatus:', note);
     if (note.approved) {
       return 'Approved';
     }

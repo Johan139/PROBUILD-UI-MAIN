@@ -32,8 +32,8 @@
   <mat-dialog-actions class="dialog-action-buttons" align="end">
     <button mat-raised-button class="submit-btn delete-btn" (click)="startApproval(data.notes[0])">Approve</button>
     <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data.notes[0])">Reject</button>
-    <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
     <button mat-raised-button class="submit-btn delete-btn" *ngIf="data.notes[0].approved || data.notes[0].rejected" (click)="archiveNote(data.notes[0])">Archive</button>
+    <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
     <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
   </mat-dialog-actions>
 </div>

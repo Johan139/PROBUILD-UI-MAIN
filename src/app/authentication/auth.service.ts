@@ -225,7 +225,7 @@ export class AuthService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Decoded token payload:', payload);
+      console.log('DELETE ME: Decoded token payload:', payload);
 
       if (payload.isTeamMember === 'true') {
         const teamMemberId = payload.team.split(':')[0];
@@ -252,7 +252,7 @@ export class AuthService {
           },
         });
       } else {
-        console.log('Payload:', payload);
+        console.log('DELETE ME: Payload:', payload);
         const user = {
           id: payload.UserId || localStorage.getItem('userId'),
           userType: payload.UserType || localStorage.getItem('userType'),

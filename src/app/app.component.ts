@@ -91,7 +91,7 @@ export class AppComponent implements OnInit, OnDestroy {
 ngOnInit() {
   if (this.isBrowser) {
     this.authService.currentUser$.subscribe(user => {
-        console.log('Current user:', user);
+        console.log('DELETE ME: Current user:', user);
         if (user) {
           const firstName = user.firstName || localStorage.getItem('firstName') || '';
           const lastName = user.lastName || localStorage.getItem('lastName') || '';
