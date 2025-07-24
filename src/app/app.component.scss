@@ -41,7 +41,38 @@ $red: #DA4167;
   min-width: 200px;
   background-color: $dark-gray;
 }
+.submenu {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 24px;
+  align-items: right;
+  margin-top: 5px !important;
+  border-radius: 5px !important;
+  width: 99% !important;
+  color: #3b3b3b !important;
+  border: none;
+  transition: background-color 0.3s;
+}
+.submenu-button {
+  background-color: $primary-yellow !important;
+  color: $dark-gray !important;
+  font-weight: bold;
+  width: 99%;
+  text-align: center;
+  margin: 8px 0;
+  padding: 10px;
+  box-sizing: border-box;
+  background: $primary-yellow;
+  box-shadow: 0 0 0 3px $primary-yellow,
+                inset 0 0 0 3px $dark-gray;
+  border-radius: 5px;
+}
 
+.expand-icon {
+  margin-left: auto;
+}
 .custom-button {
   background-color: $primary-yellow !important;
   color: $dark-gray !important;
@@ -56,7 +87,13 @@ $red: #DA4167;
                 inset 0 0 0 3px $dark-gray;
   border-radius: 5px;
 }
-
+.menu-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px; // optional: keeps arrow from hugging the edge
+}
 .custom-button .menu-item {
   font-size: 16px;
 }

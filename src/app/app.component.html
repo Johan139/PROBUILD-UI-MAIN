@@ -55,7 +55,51 @@
       <button mat-flat-button class="menu-button custom-button" routerLink="/jobselection" (click)="sidenav.close()">
         <span class="menu-item">AVAILABLE JOB</span>
       </button>
+<!-- Services Toggle Button -->
+<button mat-flat-button class="menu-button custom-button" (click)="isServicesExpanded = !isServicesExpanded">
+  <span class="menu-item">SERVICES</span>
+  <mat-icon class="expand-icon">{{ isServicesExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+</button>
 
+<!-- Submenu Items -->
+<!-- Submenu Items -->
+<div *ngIf="isServicesExpanded" class="submenu">
+  <!-- Terms of Use -->
+  <ng-container *ngIf="loggedIn; else externalTerms">
+    <button mat-flat-button class="submenu custom-button" routerLink="/termsofuse" (click)="sidenav.close()">
+      <span class="menu-item">Terms of Use</span>
+    </button>
+  </ng-container>
+  <ng-template #externalTerms>
+    <a mat-flat-button class="submenu custom-button" href="/termsofuse" target="_blank" rel="noopener">
+      <span class="menu-item">Terms of Use</span>
+    </a>
+  </ng-template>
+
+  <!-- Privacy Policy -->
+  <ng-container *ngIf="loggedIn; else externalPrivacy">
+    <button mat-flat-button class="submenu custom-button" routerLink="/privacy" (click)="sidenav.close()">
+      <span class="menu-item">Privacy Policy</span>
+    </button>
+  </ng-container>
+  <ng-template #externalPrivacy>
+    <a mat-flat-button class="submenu custom-button" href="/privacy" target="_blank" rel="noopener">
+      <span class="menu-item">Privacy Policy</span>
+    </a>
+  </ng-template>
+
+  <!-- Master Services -->
+  <ng-container *ngIf="loggedIn; else externalMaster">
+    <button mat-flat-button class="submenu custom-button" routerLink="/masteragreement" (click)="sidenav.close()">
+      <span class="menu-item">Master Services</span>
+    </button>
+  </ng-container>
+  <ng-template #externalMaster>
+    <a mat-flat-button class="submenu custom-button" href="/masteragreement" target="_blank" rel="noopener">
+      <span class="menu-item">Master Services</span>
+    </a>
+  </ng-template>
+</div>
       <!-- <button mat-flat-button class="menu-button custom-button" routerLink="/bids" (click)="sidenav.close()">
         <span class="menu-item">BIDS</span>
       </button> -->

@@ -54,6 +54,7 @@ export class AppComponent implements OnInit, OnDestroy {
   LoggedInName: string = '';
   routeURL: string = '/';
   isLoading: boolean = false;
+  isServicesExpanded: boolean = false;
   title = 'ProBuildAI';
   loggedIn = false;
   isBrowser: boolean = typeof window !== 'undefined';
@@ -85,10 +86,9 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  ngOnInit() {
-    if (this.isBrowser) {
-
- this.authService.currentUser$.subscribe(user => {
+ngOnInit() {
+  if (this.isBrowser) {
+    this.authService.currentUser$.subscribe(user => {
       if (user) {
         const firstName = user.firstName || localStorage.getItem('firstName') || '';
         const lastName = user.lastName || localStorage.getItem('lastName') || '';
@@ -96,14 +96,15 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         this.LoggedInName = '';
       }
+
+      // ✅ Set loggedIn reactively based on whether a user is present
+      this.loggedIn = !!user;
     });
 
-      this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
-      this.recentNotifications$ = this.notificationsService.notifications$;
-      this.notificationsService.getAllNotifications(1, 50).subscribe();
-
-    }
+    this.recentNotifications$ = this.notificationsService.notifications$;
+    this.notificationsService.getAllNotifications(1, 50).subscribe();
   }
+}
 
   onNotificationsOpened(): void {
     this.notificationsService.markAsRead();
@@ -115,10 +116,10 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  shouldShowHeaderButtons(): boolean {
-    const excludedRoutes = ['/login', '/register', '/confirm-email'];
-    return !excludedRoutes.includes(this.router.url);
-  }
+shouldShowHeaderButtons(): boolean {
+  const excludedRoutes = ['/login', '/register', '/confirm-email'];
+  return this.loggedIn && !excludedRoutes.includes(this.router.url.toLowerCase());
+}
 
   onBrowserClose(event: BeforeUnloadEvent ) {
     localStorage.setItem('loggedIn', 'false');
