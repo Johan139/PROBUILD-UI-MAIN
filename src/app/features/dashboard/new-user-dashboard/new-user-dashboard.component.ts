@@ -59,6 +59,7 @@ export class NewUserDashboardComponent implements OnInit {
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {id: number, projectName: string, createdAt: string, progress: number }[] = [];
+  jobsLoading: boolean = false;
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
   projectDetails: any;
@@ -247,6 +248,7 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   loadUserJobs() {
+    this.jobsLoading = true;
     const isTeamMember = this.authService.isTeamMember();
     this.authService.currentUser$.pipe(
       filter(user => !!user),
@@ -258,46 +260,60 @@ export class NewUserDashboardComponent implements OnInit {
           return this.jobService.getAllJobsByUserId(user.id);
         }
       })
-    ).subscribe(jobs => {
-      if (!jobs) {
-        this.userJobs = [];
-        return;
-      }
-
-      const uniqueProjectsMap = new Map<string, any>();
-
-      jobs.forEach(job => {
-        if (!uniqueProjectsMap.has(job.projectName)) {
-          uniqueProjectsMap.set(job.projectName, job);
+    ).subscribe({
+      next: jobs => {
+        if (!jobs) {
+          this.userJobs = [];
+          this.jobsLoading = false;
+          return;
         }
-      });
 
-      const uniqueJobs = Array.from(uniqueProjectsMap.values());
+        const uniqueProjectsMap = new Map<string, any>();
 
-      // Now for each unique job, fetch its subtasks separately:
-      const jobProgressPromises = uniqueJobs.map(job =>
-        this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
-          const progress = this.calculateJobProgress(subtasks || []);
+        jobs.forEach(job => {
+          if (!uniqueProjectsMap.has(job.projectName)) {
+            uniqueProjectsMap.set(job.projectName, job);
+          }
+        });
 
-          return {
-            id: job.id,
-            projectName: job.projectName,
-            createdAt: job.desiredStartDate,
-            progress
-          };
-        }).catch(err => {
-          return {
-            id: job.id,
-            projectName: job.projectName,
-            createdAt: job.createdAt,
-            progress: 0
-          };
-        })
-      );
+        const uniqueJobs = Array.from(uniqueProjectsMap.values());
 
-      Promise.all(jobProgressPromises).then(results => {
-        this.userJobs = results.sort((a, b) => b.progress - a.progress);
-      });
+        if (uniqueJobs.length === 0) {
+          this.userJobs = [];
+          this.jobsLoading = false;
+          return;
+        }
+
+        // Now for each unique job, fetch its subtasks separately:
+        const jobProgressPromises = uniqueJobs.map(job =>
+          this.jobsService.getJobSubtasks(job.id).toPromise().then(subtasks => {
+            const progress = this.calculateJobProgress(subtasks || []);
+
+            return {
+              id: job.id,
+              projectName: job.projectName,
+              createdAt: job.desiredStartDate,
+              progress
+            };
+          }).catch(err => {
+            return {
+              id: job.id,
+              projectName: job.projectName,
+              createdAt: job.createdAt,
+              progress: 0
+            };
+          })
+        );
+
+        Promise.all(jobProgressPromises).then(results => {
+          this.userJobs = results.sort((a, b) => b.progress - a.progress);
+          this.jobsLoading = false;
+        });
+      },
+      error: (err) => {
+        this.userJobs = [];
+        this.jobsLoading = false;
+      }
     });
   }
 

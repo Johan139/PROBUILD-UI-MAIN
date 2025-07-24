@@ -85,7 +85,10 @@
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
-          <div *ngIf="userJobs.length === 0">
+          <div *ngIf="jobsLoading">
+            <p>Loading jobs...</p>
+          </div>
+          <div *ngIf="!jobsLoading && userJobs.length === 0">
             <p>No jobs assigned to you yet.</p>
           </div>
           <div class="job-scroll-container" *ngIf="userJobs.length > 0">
