@@ -284,6 +284,7 @@ mat-card-content {
 .progress-percent {
   font-size: 12px;
   color: #333;
+  margin-left: 5px;
 }
 
 .job-progress-panel {
@@ -593,4 +594,34 @@ mat-divider {
   white-space: pre-wrap;
   word-wrap: break-word;
   max-height: none;
+}
+
+.mat-elevation-z8 {
+  margin-top: 20px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+
+  mat-header-cell, mat-cell {
+    padding: 10px;
+    color: #333;
+  }
+
+  mat-header-cell {
+    background-color: #fcd02d;
+    font-weight: 700;
+  }
+
+  mat-row:hover {
+    background-color: lighten(#61a0af, 40%);
+  }
+
+  mat-icon-button {
+    color: #333;
+
+    &:hover {
+      color: #61a0af;
+    }
+  }
 }

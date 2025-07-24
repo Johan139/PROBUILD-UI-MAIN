@@ -20,6 +20,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -46,7 +48,8 @@ const BASE_URL = environment.BACKEND_URL;
     FormsModule,
     MatSelectModule,
     MatMenuModule,
-    MatIconModule
+    MatIconModule,
+    MatTableModule
 ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
@@ -59,6 +62,7 @@ export class NewUserDashboardComponent implements OnInit {
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {id: number, projectName: string, createdAt: string, progress: number }[] = [];
+  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'actions'];
   jobsLoading: boolean = false;
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
