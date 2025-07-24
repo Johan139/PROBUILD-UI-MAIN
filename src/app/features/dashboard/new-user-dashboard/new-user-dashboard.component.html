@@ -120,8 +120,16 @@
                     </div>
                     <span class="progress-percent">{{ job.progress }}%</span>
                   </td>
-                  <td>
-                    <button class="submit-btn delete-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
+                  <td class="options-cell">
+                    <button mat-icon-button [matMenuTriggerFor]="menu">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #menu="matMenu">
+                      <button mat-menu-item (click)="loadJob(job.id)">View Job</button>
+                      <button mat-menu-item [disabled]="job.progress !== 100" (click)="archiveJob(job.id)">
+                        Archive Job
+                      </button>
+                    </mat-menu>
                   </td>
                 </tr>
               </tbody>

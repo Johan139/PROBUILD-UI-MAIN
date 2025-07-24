@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild } from '@angular/core';
 import { Router, RouterLink } from "@angular/router";
 import { CommonModule, DatePipe, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -18,6 +18,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatInputModule } from '@angular/material/input'; // also needed for matInput
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -32,25 +34,23 @@ const BASE_URL = environment.BACKEND_URL;
   imports: [
     NgIf,
     CommonModule,
-    NgOptimizedImage,
     MatButtonModule,
     MatCardModule,
     MatProgressBarModule,
     MatDividerModule,
-    GanttChartComponent,
     LoaderComponent,
-    RouterLink,
     MatDialogModule,
     FileSizePipe,
     MatFormFieldModule,
     MatInputModule,
     FormsModule,
-    MatSelectModule
-  ],
+    MatSelectModule,
+    MatMenuModule,
+    MatIconModule
+],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
-  providers: [provideNativeDateAdapter(), DatePipe],
-  encapsulation: ViewEncapsulation.None
+  providers: [provideNativeDateAdapter(), DatePipe]
 })
 export class NewUserDashboardComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -309,7 +309,9 @@ export class NewUserDashboardComponent implements OnInit {
 
         const uniqueProjectsMap = new Map<string, any>();
 
-        jobs.forEach(job => {
+        const nonArchivedJobs = jobs.filter(job => job.status !== 'ARCHIVED');
+
+        nonArchivedJobs.forEach(job => {
           if (!uniqueProjectsMap.has(job.projectName)) {
             uniqueProjectsMap.set(job.projectName, job);
           }
@@ -353,6 +355,22 @@ export class NewUserDashboardComponent implements OnInit {
         this.userJobs = [];
         this.jobsLoading = false;
       }
+    });
+  }
+
+  archiveJob(jobId: number): void {
+    this.jobService.archiveJob(jobId).subscribe({
+      next: () => {
+        this.snackBar.open('Job archived successfully!', 'Close', {
+          duration: 3000,
+        });
+        this.loadUserJobs();
+      },
+      error: () => {
+        this.snackBar.open('Failed to archive job.', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 

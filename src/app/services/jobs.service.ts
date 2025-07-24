@@ -86,6 +86,18 @@ export class JobsService {
     return this.jobQuote;
   }
 
+  archiveJob(jobId: number): Observable<void> {
+    return this.httpClient.put<void>(`${BASE_URL}/${jobId}/archive`, {});
+  }
+
+  getArchivedJobs(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/archived`);
+  }
+
+  getDashboardJobs(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
+  }
+
   archiveNote(noteId: number): Observable<any> {
     return this.httpClient.post(`${BASE_URL}/notes/${noteId}/archive`, {});
   }

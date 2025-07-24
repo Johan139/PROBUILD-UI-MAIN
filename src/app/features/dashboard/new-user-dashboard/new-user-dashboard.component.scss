@@ -85,25 +85,25 @@ mat-card-title {
   font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
-  
+
   &:hover {
     background: $darker-yellow;
   }
-  
+
   &.publish-btn {
     background: $primary-yellow;
     &:hover {
       background: $darker-yellow;
     }
   }
-  
+
   &.save-btn {
     background: $secondary-yellow;
     &:hover {
       background: darken($secondary-yellow, 10%);
     }
   }
-  
+
   &.delete-btn {
     background: #fbd008;
     color: $dark-gray;
@@ -138,6 +138,11 @@ mat-card-title {
     word-wrap: break-word;
   }
 
+  .options-cell {
+    text-align: center;
+    vertical-align: middle;
+  }
+
   th {
     background-color: $secondary-yellow;
     color: $dark-gray;
@@ -148,14 +153,14 @@ mat-card-title {
     background-color: #f9f9f9;
   }
 
-  button {
+  button:not([mat-icon-button]) {
     padding: 4px 12px;
     font-size: 0.85rem;
   }
 }
 mat-card-content {
   padding-top: 1rem;
-  
+
   p {
     color: $black;
     margin-bottom: 1.5rem;
@@ -267,7 +272,7 @@ mat-card-content {
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 4px;
-  
+
 }
 
 .progress-fill {
@@ -463,7 +468,7 @@ mat-divider {
   color: $dark-gray;
   width: 200px;
   margin: 0 0.5rem;
-  
+
   &:hover {
     background: $darker-yellow;
   }
@@ -488,16 +493,16 @@ mat-divider {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .submit-btn {
     width: 100%;
     margin: 0.5rem 0;
   }
-  
+
   .action-buttons {
     flex-direction: column;
   }
-  
+
   mat-card {
     height: auto;
     min-height: 300px;
