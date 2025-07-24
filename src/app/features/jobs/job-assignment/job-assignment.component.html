@@ -99,7 +99,7 @@
         <ng-container matColumnDef="jobRole">
           <th mat-header-cell *matHeaderCellDef>Job Role</th>
           <td mat-cell *matCellDef="let element">
-            {{ element.user.jobRole || 'N/A' }}
+            {{ element.user.jobRole | roleDisplay }}
           </td>
         </ng-container>
 

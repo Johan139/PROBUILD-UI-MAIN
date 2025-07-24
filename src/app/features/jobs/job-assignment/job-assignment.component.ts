@@ -18,6 +18,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable, of } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
+import { SharedModule } from '../../../shared/shared.module';
 
 @Component({
   selector: 'app-job-assignment',
@@ -38,7 +39,8 @@ import { startWith, map } from 'rxjs/operators';
     MatDividerModule,
     MatAutocompleteModule,
     AsyncPipe,
-    MatTooltipModule
+    MatTooltipModule,
+    SharedModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './job-assignment.component.html',

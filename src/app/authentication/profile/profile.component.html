@@ -241,8 +241,8 @@
                       <mat-form-field appearance="fill">
                         <mat-label>Role</mat-label>
                         <mat-select formControlName="role" panelClass="custom-select-panel">
-                          <mat-option *ngFor="let role of availableRoles" [value]="role">
-                            {{ role }}
+                          <mat-option *ngFor="let role of availableRoles" [value]="role.value">
+                            {{ role.display }}
                           </mat-option>
                         </mat-select>
                         <mat-error *ngIf="teamForm.get('role')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
@@ -270,7 +270,7 @@
                         </ng-container>
                         <ng-container matColumnDef="role">
                           <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
-                          <mat-cell *matCellDef="let member">{{ member.role }}</mat-cell>
+                          <mat-cell *matCellDef="let member">{{ member.role | roleDisplay }}</mat-cell>
                         </ng-container>
                         <ng-container matColumnDef="email">
                           <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
@@ -310,7 +310,7 @@
                         </ng-container>
                         <ng-container matColumnDef="role">
                           <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
-                          <mat-cell *matCellDef="let member">{{ member.role }}</mat-cell>
+                          <mat-cell *matCellDef="let member">{{ member.role | roleDisplay }}</mat-cell>
                         </ng-container>
                         <ng-container matColumnDef="email">
                           <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>

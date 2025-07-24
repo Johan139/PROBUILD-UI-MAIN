@@ -41,6 +41,7 @@ import { JobsService } from '../../services/jobs.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { PaymentPromptDialogComponent } from '../registration/payment-prompt-dialog.component';
+import { SharedModule } from '../../shared/shared.module';
 const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-profile',
@@ -65,7 +66,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatDialogModule,
     MatMenuModule,
     NgForOf,
-    NgIf
+    NgIf,
+    SharedModule
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
@@ -98,11 +100,10 @@ isGoogleMapsLoaded: boolean = false;
   userRole: string | null = null;
   isVerified = false;
 
-  availableRoles: string[] = userTypes
+  availableRoles: { value: string, display: string }[] = userTypes
     .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
     .filter(ut => ut.value !== 'SUBCONTRACTOR')
-    .filter(ut => ut.value !== 'VENDOR')
-    .map(ut => ut.display);
+    .filter(ut => ut.value !== 'VENDOR');
 
   teamMembers: TeamMember[] = [];
   activeTeamMembers: TeamMember[] = [];
