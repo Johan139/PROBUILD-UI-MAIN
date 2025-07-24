@@ -26,22 +26,25 @@ export class NoteDetailDialogComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    console.log('NoteDetailDialogComponent data:', this.data);
   }
 
   getStatus(note: any): string {
-    if (note.archived) {
-      return 'Archived';
-    }
+    console.log('Note object in getStatus:', note);
     if (note.approved) {
       return 'Approved';
     }
     if (note.rejected) {
       return 'Rejected';
     }
+    if (note.archived) {
+      return 'Archived';
+    }
     return 'Pending';
   }
 
   startApproval(note: any): void {
+    console.log('Note object in startApproval:', note);
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -53,7 +56,12 @@ export class NoteDetailDialogComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.noteService.approveNote(note.id, result).subscribe(() => {
+        const noteToApprove = {
+          ...note,
+          jobId: this.data.jobId,
+          jobSubtaskId: this.data.jobSubtaskId
+        };
+        this.noteService.approveNote(noteToApprove, result).subscribe(() => {
           this.dialogRef.close(true);
         });
       }
@@ -72,7 +80,12 @@ export class NoteDetailDialogComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.noteService.rejectNote(note.id, result).subscribe(() => {
+        const noteToReject = {
+          ...note,
+          jobId: this.data.jobId,
+          jobSubtaskId: this.data.jobSubtaskId
+        };
+        this.noteService.rejectNote(noteToReject, result).subscribe(() => {
           this.dialogRef.close(true);
         });
       }

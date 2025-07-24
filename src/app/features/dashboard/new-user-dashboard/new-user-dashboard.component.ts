@@ -1,10 +1,9 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild } from '@angular/core';
-import { Router, RouterLink } from "@angular/router";
-import { CommonModule, DatePipe, NgIf, NgOptimizedImage, isPlatformBrowser } from "@angular/common";
+import { Router } from "@angular/router";
+import { CommonModule, DatePipe, NgIf, isPlatformBrowser } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
-import { GanttChartComponent } from '../../../components/gantt-chart/gantt-chart.component';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { LoginService } from "../../../services/login.service";
 import { HttpClient } from '@angular/common/http';
@@ -21,7 +20,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-import { MatSortModule } from '@angular/material/sort';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -164,24 +162,12 @@ export class NewUserDashboardComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result === true) {
         this.refreshNotes();
       }
     });
   }
 
-  getStatus(note: any): string {
-    if (note.approved) {
-      return 'Approved';
-    }
-    if (note.rejected) {
-      return 'Rejected';
-    }
-    if (note.archived) {
-      return 'Archived';
-    }
-    return 'Pending';
-  }
 
   loadJob(id: any): void {
     this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');

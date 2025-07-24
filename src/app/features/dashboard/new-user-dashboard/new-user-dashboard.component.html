@@ -61,22 +61,24 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let group of notes">
-                  <td style="white-space: normal; word-break: break-word;">{{group.projectName}}</td>
+                <tr *ngFor="let note of notes">
+                  <td style="white-space: normal; word-break: break-word;">{{note.projectName}}</td>
                   <td style="white-space: normal; word-break: break-word;">
-                    {{ group.subtaskName }}
+                    {{ note.subtaskName }}
                   </td>
-                  <td style="white-space: normal; word-break: break-word;">{{group.createdAt | date:'short'}}</td>
+                  <td style="white-space: normal; word-break: break-word;">{{note.createdAt | date:'short'}}</td>
                   <td style="white-space: normal; word-break: break-word;">
                    <span [ngClass]="{
-                     'status-approved': group.notes[0].approved,
-                     'status-rejected': group.notes[0].rejected
+                     'status-approved': note.Status === 'Approved',
+                     'status-rejected': note.Status === 'Rejected',
+                     'status-archived': note.Status === 'Archived',
+                     'status-pending': note.Status === 'Pending'
                    }">
-                     {{ getStatus(group.notes[0]) }}
+                     {{ note.Status }}
                    </span>
                   </td>
                   <td>
-                    <button class="submit-btn delete-btn" (click)="openNoteDialog(group)" mat-raised-button>View</button>
+                    <button class="submit-btn delete-btn" (click)="openNoteDialog(note)" mat-raised-button>View</button>
                   </td>
                 </tr>
               </tbody>

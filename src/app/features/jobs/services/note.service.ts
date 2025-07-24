@@ -51,38 +51,54 @@ export class NoteService {
       );
   }
 
-  approveNote(noteId: number, reason: string): Observable<any> {
+  approveNote(note: any, reason: string): Observable<any> {
     const formData = new FormData();
-    formData.append('NoteId', noteId.toString());
-    formData.append('Reason', reason);
-    return this.httpClient.post(`${BASE_URL}/Jobs/ApproveNote`, formData).pipe(
+    formData.append('Id', note.id.toString());
+    formData.append('JobId', note.jobId.toString());
+    formData.append('JobSubtaskId', note.jobSubtaskId.toString());
+    formData.append('NoteText', `Approved: ${reason}`);
+    formData.append('CreatedByUserId', note.createdByUserId);
+    formData.append('Approved', 'true');
+    formData.append('Rejected', 'false');
+
+    return this.httpClient.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).pipe(
       tap(() => {
         this.snackBar.open('Note approved successfully!', 'Close', {
           duration: 3000,
+          panelClass: ['custom-snackbar'],
         });
       }),
       catchError((err) => {
         this.snackBar.open('Failed to approve note. Please try again.', 'Close', {
           duration: 3000,
+          panelClass: ['custom-snackbar'],
         });
         return of(err);
       })
     );
   }
 
-  rejectNote(noteId: number, reason: string): Observable<any> {
+  rejectNote(note: any, reason: string): Observable<any> {
     const formData = new FormData();
-    formData.append('NoteId', noteId.toString());
-    formData.append('Reason', reason);
-    return this.httpClient.post(`${BASE_URL}/Jobs/RejectNote`, formData).pipe(
+    formData.append('Id', note.id.toString());
+    formData.append('JobId', note.jobId.toString());
+    formData.append('JobSubtaskId', note.jobSubtaskId.toString());
+    formData.append('NoteText', `Rejected: ${reason}`);
+    formData.append('CreatedByUserId', note.createdByUserId);
+    formData.append('Approved', 'false');
+    formData.append('Rejected', 'true');
+
+    return this.httpClient.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).pipe(
       tap(() => {
         this.snackBar.open('Note rejected successfully!', 'Close', {
           duration: 3000,
+          panelClass: ['custom-snackbar'],
         });
       }),
       catchError((err) => {
         this.snackBar.open('Failed to reject note. Please try again.', 'Close', {
           duration: 3000,
+          panelClass: ['custom-snackbar'],
         });
         return of(err);
       })
@@ -99,7 +115,7 @@ export class NoteService {
       })
     );
   }
-  
+
   archiveNote(noteId: number): Observable<any> {
     return this.httpClient.post(`${BASE_URL}/Jobs/notes/${noteId}/archive`, {}).pipe(
       tap(() => {
