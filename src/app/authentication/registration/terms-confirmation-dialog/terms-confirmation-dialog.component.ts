@@ -17,19 +17,46 @@ import { NgIf } from '@angular/common';
     NgIf
   ],
   template: `
-    <h1 mat-dialog-title>Terms and Conditions</h1>
-    <mat-dialog-content>
-      <p>
-        I agree to the <a href="/terms" target="_blank">Terms of Use</a> and 
-        <a href="/privacy" target="_blank">Privacy Policy</a>, and I understand that I am solely 
-        responsible for verifying all outputs and complying with applicable licensing laws in my jurisdiction.
-      </p>
-      <mat-checkbox [(ngModel)]="agreed">I Agree</mat-checkbox>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button class="return-btn" (click)="cancel()">Cancel</button>
-      <button mat-flat-button color="primary" class="confirm-btn" [disabled]="!agreed" (click)="confirm()">Continue</button>
-    </mat-dialog-actions>
+   <h1 mat-dialog-title>Terms and Conditions</h1>
+<mat-dialog-content>
+<mat-checkbox
+  [checked]="acceptedMSA"
+  (change)="acceptedMSA = $event.checked"
+>
+  I accept the
+  <a href="/masteragreement" target="_blank" rel="noopener noreferrer">
+    Master Services Agreement
+  </a>
+  and Order Form terms
+</mat-checkbox>
+<br />
+<mat-checkbox
+  [checked]="acknowledgedPrivacy"
+  (change)="acknowledgedPrivacy = $event.checked"
+>
+  I acknowledge the
+  <a href="/privacy" target="_blank" rel="noopener noreferrer">
+    Privacy Policy
+  </a>
+</mat-checkbox>
+  <br />
+  <mat-checkbox [(ngModel)]="confirmAuthorization">
+    I confirm that I am authorized to enter into this subscription on behalf of the Client
+  </mat-checkbox>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button class="return-btn" (click)="cancel()">Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    class="confirm-btn"
+    [disabled]="!allChecked()"
+    (click)="confirm()"
+  >
+    Continue
+  </button>
+</mat-dialog-actions>
   `,
   styles: [`
     h2 {
@@ -85,9 +112,15 @@ import { NgIf } from '@angular/common';
   `]
 })
 export class TermsConfirmationDialogComponent {
-  agreed = false;
+  acceptedMSA = false;
+  acknowledgedPrivacy = false;
+  confirmAuthorization = false;
 
   constructor(private dialogRef: MatDialogRef<TermsConfirmationDialogComponent>) {}
+
+  allChecked(): boolean {
+    return this.acceptedMSA && this.acknowledgedPrivacy && this.confirmAuthorization;
+  }
 
   cancel() {
     this.dialogRef.close(false);

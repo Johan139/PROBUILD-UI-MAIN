@@ -22,6 +22,8 @@ import { PaymentCancelComponent } from './authentication/payment-cancel/payment-
 import { TermsComponent } from './terms.component';
 import { PrivacyComponent } from './privacy.component';
 import { ResetPasswordComponent } from './authentication/reset-password.component/reset-password.component';
+import { MasterServicesAgreementComponent } from './master-services-agreement.component';
+import { SubscriptionConfirmationComponent } from './subscription-confirmation/subscription-confirmation.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -33,8 +35,10 @@ export const routes: Routes = [
   {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
   {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
-  { path: 'terms', component: TermsComponent },
+  { path: 'termsofuse', component: TermsComponent },
   { path: 'privacy', component: PrivacyComponent },
+  { path: 'subscriptionconfirmation', component: SubscriptionConfirmationComponent },
+    { path: 'masteragreement', component: MasterServicesAgreementComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
