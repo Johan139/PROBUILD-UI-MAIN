@@ -1,0 +1,20 @@
+.dashboard-container {
+  padding: 20px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.no-notes {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+table {
+  width: 100%;
+}

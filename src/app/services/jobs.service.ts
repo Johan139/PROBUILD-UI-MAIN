@@ -86,4 +86,11 @@ export class JobsService {
     return this.jobQuote;
   }
 
+  archiveNote(noteId: number): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/notes/${noteId}/archive`, {});
+  }
+
+  getArchivedNotes(userId: string): Observable<any> {
+    return this.httpClient.get(`${BASE_URL}/notes/archived/${userId}`);
+  }
 }

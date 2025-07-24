@@ -1,0 +1,54 @@
+<div class="dashboard-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Archived Action Points</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="isLoading" class="loading-container">
+        <app-loader></app-loader>
+      </div>
+
+      <div *ngIf="!isLoading && archivedNotes.length === 0" class="no-notes">
+        <p>No archived action points found.</p>
+      </div>
+
+      <table mat-table [dataSource]="archivedNotes" *ngIf="!isLoading && archivedNotes.length > 0" class="mat-elevation-z8">
+
+        <!-- Project Column -->
+        <ng-container matColumnDef="project">
+          <th mat-header-cell *matHeaderCellDef> Project </th>
+          <td mat-cell *matCellDef="let note"> {{note.projectName}} </td>
+        </ng-container>
+
+        <!-- Task Column -->
+        <ng-container matColumnDef="task">
+          <th mat-header-cell *matHeaderCellDef> Task </th>
+          <td mat-cell *matCellDef="let note"> {{note.subtaskName}} </td>
+        </ng-container>
+
+        <!-- Created Column -->
+        <ng-container matColumnDef="created">
+          <th mat-header-cell *matHeaderCellDef> Created </th>
+          <td mat-cell *matCellDef="let note"> {{note.createdAt | date:'medium'}} </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef> Status </th>
+          <td mat-cell *matCellDef="let note"> {{getStatus(note)}} </td>
+        </ng-container>
+
+        <!-- View Column -->
+        <ng-container matColumnDef="view">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let note">
+            <button mat-button (click)="openNoteDetail(note)">View</button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </mat-card-content>
+  </mat-card>
+</div>

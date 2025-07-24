@@ -23,6 +23,7 @@ import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { filter, take, switchMap } from 'rxjs/operators';
 import { TeamManagementService } from '../../../services/team-management.service';
+import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 @Component({
@@ -52,7 +53,6 @@ const BASE_URL = environment.BACKEND_URL;
   encapsulation: ViewEncapsulation.None
 })
 export class NewUserDashboardComponent implements OnInit {
-  @ViewChild('noteDetailDialog') noteDetailDialog!: TemplateRef<any>;
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('approvalReasonDialog') approvalReasonDialog!: TemplateRef<any>;
 
@@ -151,13 +151,32 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   openNoteDialog(group: any) {
-    this.dialog.open(this.noteDetailDialog, {
+    const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
       maxHeight: '100vh',
       panelClass: 'custom-dialog-container',
       data: group
     });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.refreshNotes();
+      }
+    });
+  }
+
+  getStatus(note: any): string {
+    if (note.approved) {
+      return 'Approved';
+    }
+    if (note.rejected) {
+      return 'Rejected';
+    }
+    if (note.archived) {
+      return 'Archived';
+    }
+    return 'Pending';
   }
 
   loadJob(id: any): void {
@@ -220,6 +239,26 @@ export class NewUserDashboardComponent implements OnInit {
     });
 
     return grouped;
+  }
+
+  refreshNotes() {
+    this.isLoading = true;
+    this.authService.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      switchMap(user => {
+        return this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${user.id}`);
+      })
+    ).subscribe({
+      next: (notes: any) => {
+        this.notes = notes;
+        this.groupedNotes = this.groupNotesBySubtask(notes);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.isLoading = false;
+      }
+    });
   }
 
   isMine(note: any): boolean {

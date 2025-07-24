@@ -56,6 +56,7 @@
                   <th>Project</th>
                   <th>Task</th>
                   <th>Created</th>
+                  <th>Status</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -65,7 +66,15 @@
                   <td style="white-space: normal; word-break: break-word;">
                     {{ group.subtaskName }}
                   </td>
-                  <td>{{group.createdAt | date:'short'}}</td>
+                  <td style="white-space: normal; word-break: break-word;">{{group.createdAt | date:'short'}}</td>
+                  <td style="white-space: normal; word-break: break-word;">
+                   <span [ngClass]="{
+                     'status-approved': group.notes[0].approved,
+                     'status-rejected': group.notes[0].rejected
+                   }">
+                     {{ getStatus(group.notes[0]) }}
+                   </span>
+                  </td>
                   <td>
                     <button class="submit-btn delete-btn" (click)="openNoteDialog(group)" mat-raised-button>View</button>
                   </td>
@@ -123,38 +132,6 @@
     </div>
   </div>
 </div>
-
-<ng-template #noteDetailDialog let-data>
-  <div class="note-detail-dialog">
-    <h2 mat-dialog-title>Note Details</h2>
-
-    <mat-dialog-content>
-
-      <p><strong>Project:</strong> {{ data.projectName }}</p>
-      <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
-      <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
-
-      <p><strong>Messages:</strong></p>
-      <div class="chat-box-inside-dialog">
-        <div *ngFor="let note of data.notes" class="chat-message">
-          <div class="chat-bubble">
-            <div class="note-text">{{ note.noteText }}</div>
-            <div class="note-time">{{ note.createdAt | date:'short' }}</div>
-          </div>
-        </div>
-      </div>
-
-    </mat-dialog-content>
-
-    <mat-dialog-actions class="dialog-action-buttons" align="end">
-      <button mat-raised-button class="submit-btn delete-btn" (click)="startApproval(data)">Approve</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data)">Reject</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
-    </mat-dialog-actions>
-  </div>
-</ng-template>
-
 
 <!-- Documents Dialog -->
 <ng-template #documentsDialog>

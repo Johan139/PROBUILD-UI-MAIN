@@ -1,0 +1,40 @@
+<div class="note-detail-dialog">
+  <h2 mat-dialog-title>Note Details</h2>
+
+  <mat-dialog-content>
+
+    <p><strong>Project:</strong> {{ data.projectName }}</p>
+    <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
+    <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
+    <p><strong>Status:</strong>
+        <span [ngClass]="{
+          'status-approved': data.approved,
+          'status-rejected': data.rejected,
+          'status-archived': data.archived
+        }">
+          {{ getStatus(data) }}
+        </span>
+      </p>
+
+    <p><strong>Messages:</strong></p>
+    <div class="chat-box-inside-dialog">
+      <div *ngFor="let note of data.notes" class="chat-message">
+        <div class="chat-bubble">
+          <div class="note-text">{{ note.noteText }}</div>
+          <div class="note-time">{{ note.createdAt | date:'short' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <p *ngIf="data.notes[0].rejectionReason"><strong>Rejection Reason:</strong> {{ data.notes[0].rejectionReason }}</p>
+
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-action-buttons" align="end">
+    <button mat-raised-button class="submit-btn delete-btn" (click)="startApproval(data)">Approve</button>
+    <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data)">Reject</button>
+    <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
+    <button mat-raised-button class="submit-btn delete-btn" *ngIf="data.notes[0].approved || data.notes[0].rejected" (click)="archiveNote(data)">Archive</button>
+    <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
+  </mat-dialog-actions>
+</div>
