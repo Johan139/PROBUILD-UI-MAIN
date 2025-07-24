@@ -27,6 +27,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   gap: 1rem;
   justify-content: center;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .column {
@@ -260,6 +261,8 @@ mat-card-content {
   border-radius: 8px;
 }
 .job-scroll-container {
+  flex: 1;
+  min-height: 0;
   max-height: calc(100vh - 300px); // Adjust this value to suit the height of your header/cards
   overflow-y: auto;
   padding-right: 8px; // Optional: space to prevent scrollbar overlap
@@ -290,14 +293,9 @@ mat-card-content {
 .job-progress-panel {
   display: flex;
   flex-direction: column;
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   min-width: 320px;
-}
-
-.job-scroll-container {
-  flex: 1;
-  overflow-y: auto;
-  max-height: 500px; // or whatever fits nicely in your card
+  min-height: 0;
 }
 .chat-message {
   display: flex;

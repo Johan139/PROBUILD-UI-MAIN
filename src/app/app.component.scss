@@ -103,8 +103,7 @@ mat-toolbar {
   background-color: $primary-yellow;
 }
 mat-sidenav-container {
-  //height: 100%;
-  height: calc(100vh - 65px);
+  height: calc(100vh - 115px);
 }
 .mat-sidenav, mat-sidenav {
   width: 150px;
@@ -112,11 +111,12 @@ mat-sidenav-container {
   border-radius: 0px;
   font-family: Orbitron, sans-serif ;
 }
-mat-sidenav-content{
+mat-sidenav-content {
   margin-left: 0 !important;
-  display: flex; /* Enables Flexbox */
-  // align-items: center; /* Centers vertically */
-  justify-content: center; /* Centers horizontally */
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  overflow: auto;
 }
 .alert-overlay {
   position: fixed;
@@ -244,7 +244,7 @@ footer {
   font-family: 'Orbitron', sans-serif;
 }
 .nav-container {
-  height: calc(100vh - 64px); /* Adjust based on toolbar height */
+  height: calc(100vh - 114px); /* Adjust based on toolbar height */
   width: 100%; // Full width
 }
 .spacer {
