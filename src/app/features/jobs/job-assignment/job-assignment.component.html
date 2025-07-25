@@ -50,7 +50,7 @@
                         [class.filled]="newAssignment.jobRole"
                         [matTooltip]="!newAssignment.jobRole ? 'This will be automatically filled in when a user is selected' : ''">
           <mat-label>Job Role</mat-label>
-          <input matInput [(ngModel)]="newAssignment.jobRole" name="jobRole" readonly>
+          <input matInput [value]="newAssignment.jobRole | roleDisplay" name="jobRole" readonly>
         </mat-form-field>
       </form>
 

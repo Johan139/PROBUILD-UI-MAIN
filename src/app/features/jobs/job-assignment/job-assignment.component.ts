@@ -55,6 +55,7 @@ export class JobAssignmentComponent implements OnInit {
   selectedJob: JobAssignment | null = null;
   selectedUser: JobUser | null = null;
   userList: JobUser[] = [];
+  availableUsers: JobUser[] = [];
   teamMembers: any[] = [];
   newAssignment: { email: string; jobRole: string } = { email: '', jobRole: '' };
   filteredJobAssignment: { job: JobAssignment; user: JobUser }[] = [];
@@ -104,6 +105,7 @@ export class JobAssignmentComponent implements OnInit {
                 userType: tm.role,
                 jobRole: tm.role
               }));
+              this.availableUsers = [...this.userList];
               this.filteredUsers = this.userControl.valueChanges.pipe(
                 startWith(''),
                 map(value => {
@@ -246,15 +248,44 @@ export class JobAssignmentComponent implements OnInit {
 
   private resetForm(): void {
     this.selectedUser = null;
+    this.selectedJob = null;
+    this.jobControl.setValue('');
+    this.userControl.setValue('');
     this.newAssignment = { email: '', jobRole: '' };
   }
 
   onJobSelectionChange(job: JobAssignment): void {
     this.selectedJob = job;
     this.filterAssignments();
+
+    if (job && job.id !== 0) {
+      const assignedUserIds = job.jobUser.map(u => u.id);
+      this.availableUsers = this.userList.filter(user => !assignedUserIds.includes(user.id));
+
+      if (this.selectedUser && assignedUserIds.includes(this.selectedUser.id)) {
+        this.snackBar.open('This user is already assigned to the selected job.', 'Close', { duration: 3000 });
+        this.selectedUser = null;
+        this.userControl.setValue('');
+        this.newAssignment.jobRole = '';
+      }
+    } else {
+      this.availableUsers = [...this.userList];
+    }
+    this.userControl.updateValueAndValidity({ onlySelf: true, emitEvent: true });
   }
 
   onUserSelected(user: JobUser): void {
+    if (this.selectedJob && this.selectedJob.id !== 0) {
+      const assignedUserIds = this.selectedJob.jobUser.map(u => u.id);
+      if (user && user.id && assignedUserIds.includes(user.id)) {
+        this.snackBar.open('This user is already assigned to the selected job.', 'Close', { duration: 3000 });
+        this.userControl.setValue('');
+        this.selectedUser = null;
+        this.newAssignment.jobRole = '';
+        return;
+      }
+    }
+
     this.selectedUser = user;
     if (user && user.id) {
       const selectedTeamMember = this.teamMembers.find(member => member.id === user.id);
@@ -277,7 +308,7 @@ export class JobAssignmentComponent implements OnInit {
 
   private _filterUsers(value: string | JobUser): JobUser[] {
     const filterValue = typeof value === 'string' ? value.toLowerCase() : (value ? `${value.firstName} ${value.lastName}` : '').toLowerCase();
-    const filtered = this.userList.filter(user =>
+    const filtered = this.availableUsers.filter(user =>
       `${user.firstName} ${user.lastName}`.toLowerCase().includes(filterValue)
     );
     return [
