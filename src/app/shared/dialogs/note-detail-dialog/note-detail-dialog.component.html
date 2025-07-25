@@ -4,14 +4,10 @@
   <mat-dialog-content>
 
     <p><strong>Project:</strong> {{ data.projectName }}</p>
-    <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
+    <p><strong>Subtask:</strong> {{ data.subtaskName }}</p>
     <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
     <p><strong>Status:</strong>
-        <span [ngClass]="{
-          'status-approved': data.approved,
-          'status-rejected': data.rejected,
-          'status-archived': data.archived
-        }">
+        <span [ngClass]="'status-' + getStatus(data.notes[0]).toLowerCase()">
           {{ getStatus(data.notes[0]) }}
         </span>
       </p>

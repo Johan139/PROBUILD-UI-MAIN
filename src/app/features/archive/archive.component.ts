@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { NoteService } from '../jobs/services/note.service';
 import { JobsService } from '../../services/jobs.service';
+import { AuthService } from '../../authentication/auth.service';
 import { NoteDetailDialogComponent } from '../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,16 +33,23 @@ export class ArchiveComponent implements OnInit {
   isLoading = true;
   displayedColumns: string[] = ['project', 'task', 'created', 'status', 'view'];
   jobDisplayedColumns: string[] = ['projectName', 'jobType', 'status', 'completionDate'];
+  private userId: string | null = null;
 
   constructor(
     private noteService: NoteService,
     private jobsService: JobsService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private authService: AuthService,
   ) { }
 
   ngOnInit(): void {
-    this.loadArchivedNotes();
-    this.loadArchivedJobs();
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userId = user.id;
+        this.loadArchivedNotes();
+        this.loadArchivedJobs();
+      }
+    });
   }
 
   loadArchivedJobs(): void {
@@ -58,8 +66,9 @@ export class ArchiveComponent implements OnInit {
   }
 
   loadArchivedNotes(): void {
+    if (!this.userId) return;
     this.isLoading = true;
-    this.noteService.getArchivedNotes().subscribe({
+    this.noteService.getArchivedNotes(this.userId).subscribe({
       next: (notes) => {
         this.archivedNotes = notes;
         this.isLoading = false;
@@ -74,13 +83,24 @@ export class ArchiveComponent implements OnInit {
     this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
-      data: { notes: [note] }
+      data: note
     });
   }
 
   getStatus(note: any): string {
-    if (note.approved) return 'Approved';
-    if (note.rejected) return 'Rejected';
-    return 'Archived';
+    if (!note.notes || note.notes.length === 0) {
+      return 'Pending';
+    }
+    const lastNote = note.notes[note.notes.length - 1];
+    if (lastNote.archived) {
+      return 'Archived';
+    }
+    if (lastNote.approved) {
+      return 'Approved';
+    }
+    if (lastNote.rejected) {
+      return 'Rejected';
+    }
+    return 'Pending';
   }
 }

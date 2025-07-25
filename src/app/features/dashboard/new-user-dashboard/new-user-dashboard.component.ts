@@ -442,7 +442,7 @@ export class NewUserDashboardComponent implements OnInit {
   openDocumentsDialog(note: any) {
     const activeElement = document.activeElement as HTMLElement;
 
-    this.fetchDocuments(note.jobSubtaskId); // ✅ pass the note ID
+    this.fetchDocuments(note.jobSubtaskId);
 
     this.documentDialogRef = this.dialog.open(this.documentsDialog, {
       width: '500px',
@@ -461,7 +461,7 @@ export class NewUserDashboardComponent implements OnInit {
     const formData = new FormData();
     formData.append('Id', note.id.toString());
     formData.append('Approved', 'false');
-    formData.append('jobSubtaskId', note.jobSubtaskId.toString()); // ✅ fix here
+    formData.append('jobSubtaskId', note.jobSubtaskId.toString());
     formData.append('Rejected', 'true');
 
     this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({

@@ -31,20 +31,29 @@
             <!-- Created Column -->
             <ng-container matColumnDef="created">
               <th mat-header-cell *matHeaderCellDef> Created </th>
-              <td mat-cell *matCellDef="let note"> {{note.createdAt | date:'medium'}} </td>
+              <td mat-cell *matCellDef="let note"> {{note.createdAt | date:'short'}} </td>
             </ng-container>
 
             <!-- Status Column -->
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef> Status </th>
-              <td mat-cell *matCellDef="let note"> {{getStatus(note)}} </td>
+              <td mat-cell *matCellDef="let note">
+                <span [ngClass]="{
+                  'status-approved': getStatus(note) === 'Approved',
+                  'status-rejected': getStatus(note) === 'Rejected',
+                  'status-archived': getStatus(note) === 'Archived',
+                  'status-pending': getStatus(note) === 'Pending'
+                }">
+                  {{ getStatus(note) }}
+                </span>
+              </td>
             </ng-container>
 
             <!-- View Column -->
             <ng-container matColumnDef="view">
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let note">
-                <button mat-button (click)="openNoteDetail(note)">View</button>
+                <button mat-raised-button class="submit-btn delete-btn" (click)="openNoteDetail(note)">View</button>
               </td>
             </ng-container>
 
@@ -84,7 +93,7 @@
             <!-- Completion Date Column -->
             <ng-container matColumnDef="completionDate">
               <th mat-header-cell *matHeaderCellDef> Completion Date </th>
-              <td mat-cell *matCellDef="let job"> {{job.completionDate | date:'medium'}} </td>
+              <td mat-cell *matCellDef="let job"> {{job.completionDate | date:'shortDate'}} </td>
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="jobDisplayedColumns"></tr>

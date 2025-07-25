@@ -69,9 +69,9 @@
                   <td style="white-space: normal; word-break: break-word;">{{note.createdAt | date:'short'}}</td>
                   <td style="white-space: normal; word-break: break-word;">
                    <span [ngClass]="{
+                     'status-archived': note.status === 'Archived',
                      'status-approved': note.status === 'Approved',
                      'status-rejected': note.status === 'Rejected',
-                     'status-archived': note.status === 'Archived',
                      'status-pending': note.status === 'Pending'
                    }">
                      {{ note.status }}

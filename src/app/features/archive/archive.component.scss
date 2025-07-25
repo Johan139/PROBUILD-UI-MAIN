@@ -18,3 +18,67 @@
 table {
   width: 100%;
 }
+
+.mat-elevation-z8 {
+  margin-top: 20px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+
+  .mat-header-cell, .mat-cell {
+    padding: 10px;
+    color: #333;
+  }
+
+  th.mat-header-cell {
+    background-color: #fcd02d !important;
+    font-weight: 700;
+  }
+
+  .mat-row:hover {
+    background-color: lighten(#61a0af, 40%);
+  }
+}
+
+.submit-btn {
+  background: #fbd008;
+  border-radius: 10px;
+  padding: 0px 16px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0.5rem;
+
+  &:hover {
+    background: #e6bf00;
+  }
+
+  &.delete-btn {
+    width: 80px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    margin: 0 auto;
+    display: block;
+    border-radius: 6px;
+  }
+}
+
+.status-approved {
+  color: green;
+  font-weight: bold;
+}
+
+.status-rejected {
+  color: red;
+  font-weight: bold;
+}
+
+.status-archived {
+  color: grey;
+  font-weight: bold;
+}
+
+.status-pending {
+  color: grey;
+  font-weight: bold;
+}

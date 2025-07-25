@@ -105,8 +105,8 @@ export class NoteService {
     );
   }
 
-  getArchivedNotes(): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived`).pipe(
+  getArchivedNotes(userId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived/${userId}`).pipe(
       catchError((err) => {
         this.snackBar.open('Failed to fetch archived notes.', 'Close', {
           duration: 3000,

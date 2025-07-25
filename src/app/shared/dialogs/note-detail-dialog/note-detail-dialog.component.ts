@@ -30,14 +30,14 @@ export class NoteDetailDialogComponent implements OnInit {
   }
 
   getStatus(note: any): string {
+    if (note.archived) {
+      return 'Archived';
+    }
     if (note.approved) {
       return 'Approved';
     }
     if (note.rejected) {
       return 'Rejected';
-    }
-    if (note.archived) {
-      return 'Archived';
     }
     return 'Pending';
   }
