@@ -42,6 +42,7 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { PaymentPromptDialogComponent } from '../registration/payment-prompt-dialog.component';
 import { SharedModule } from '../../shared/shared.module';
+import { ManagePermissionsDialogComponent } from '../../shared/dialogs/manage-permissions-dialog/manage-permissions-dialog.component';
 const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-profile',
@@ -577,6 +578,21 @@ isGoogleMapsLoaded: boolean = false;
             this.deleteTeamMember(memberId);
             break;
         }
+      }
+    });
+  }
+
+  openPermissionsDialog(teamMemberId: string, firstName: string, lastName: string): void {
+    const dialogRef = this.dialog.open(ManagePermissionsDialogComponent, {
+      width: '500px',
+      data: { teamMemberId, teamMemberName: `${firstName} ${lastName}`  }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.snackBar.open('Permissions updated successfully', 'Close', {
+          duration: 3000
+        });
       }
     });
   }

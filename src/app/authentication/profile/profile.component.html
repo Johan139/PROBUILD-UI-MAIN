@@ -287,6 +287,10 @@
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #activeMenu="matMenu">
+                              <button mat-menu-item (click)="openPermissionsDialog(member.id, member.firstName, member.lastName)">
+                                <mat-icon>manage_accounts</mat-icon>
+                                <span>Manage Permissions</span>
+                              </button>
                               <button mat-menu-item (click)="openConfirmationDialog(member.id, 'deactivate')">
                                 <mat-icon>person_remove</mat-icon>
                                 <span>Deactivate</span>

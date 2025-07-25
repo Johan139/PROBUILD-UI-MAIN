@@ -40,4 +40,12 @@ export class TeamManagementService {
   getMyTeams(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/my-teams`);
   }
+
+  getPermissions(teamMemberId: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/members/${teamMemberId}/permissions`);
+  }
+
+  updatePermissions(teamMemberId: string, permissions: string[]): Observable<any> {
+    return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, { PermissionKeys: permissions });
+  }
 }

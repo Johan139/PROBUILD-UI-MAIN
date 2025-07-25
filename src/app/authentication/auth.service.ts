@@ -17,11 +17,16 @@ export class AuthService {
   public currentUserSubject = new BehaviorSubject<any>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
   public userRole: string | null = null;
+  private userPermissions: string[] = [];
 
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<any>(null);
 
   constructor() {}
+
+  public hasPermission(permissionKey: string): boolean {
+    return this.userPermissions.includes(permissionKey);
+  }
 
   async initialize(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
@@ -101,7 +106,13 @@ export class AuthService {
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
     } else {
-      this.fetchTeamMemberDetails(token).subscribe();
+      this.fetchTeamMemberDetails(token).subscribe({
+        next: (memberDetails) => {
+          if (memberDetails && memberDetails.id) {
+            this.loadUserPermissions(memberDetails.id);
+          }
+        },
+      });
     }
   }
 
@@ -245,6 +256,7 @@ export class AuthService {
             } else {
               console.warn('Team member data is incomplete. Waiting for inviterId.');
             }
+            this.loadUserPermissions(teamMemberId);
           },
           error: (err) => {
             console.error('Failed to fetch team member details', err);
@@ -297,5 +309,18 @@ export class AuthService {
       console.error('Failed to decode token or fetch team member details', err);
       return throwError(() => new Error('Invalid token'));
     }
+  }
+
+  private loadUserPermissions(teamMemberId: string): void {
+    this.teamManagementService.getPermissions(teamMemberId).subscribe({
+      next: (permissions) => {
+        this.userPermissions = permissions;
+        console.log('Permissions loaded:', this.userPermissions);
+      },
+      error: (err) => {
+        console.error('Failed to load user permissions', err);
+        this.userPermissions = [];
+      },
+    });
   }
 }

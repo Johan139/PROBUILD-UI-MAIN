@@ -16,7 +16,9 @@
     <div class="chat-box-inside-dialog">
       <div *ngFor="let note of data.notes" class="chat-message">
         <div class="chat-bubble">
-          <div class="note-text">{{ note.createdAt | date:'short' }} : {{ note.noteText }}</div>
+          <div class="note-text">
+            {{ note.createdAt | date:'short' }} - <strong>{{ getUserName(note.createdByUserId) }}</strong>: {{ note.noteText }}
+          </div>
         </div>
       </div>
     </div>
