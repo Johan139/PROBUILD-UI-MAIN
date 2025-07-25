@@ -55,7 +55,7 @@
                     </div>
                   </div>
                   <!-- Certification & Availability -->
-                  <div class="section" *ngIf="canViewCertification()">
+                  <div class="section" *ngIf="canViewCertification() && !authService.isTeamMember()">
                     <h3>Certification & Availability</h3>
                     <div class="form-row">
                       <mat-form-field appearance="fill">
@@ -95,7 +95,7 @@
                     </div>
                   </div>
                   <!-- Subscription -->
-                  <div class="section">
+                  <div class="section" *ngIf="!authService.isTeamMember()">
                     <h3>Subscription</h3>
                     <div class="form-row">
                       <mat-form-field appearance="fill">
@@ -117,7 +117,7 @@
                   </div>
                 </mat-tab>
                 <!-- Company Profile Tab -->
-                <mat-tab *ngIf="canViewCompanyDetails()" label="Company Profile">
+                <mat-tab *ngIf="canViewCompanyDetails() && !authService.isTeamMember()" label="Company Profile">
                   <!-- Company Details -->
                 <div class="section">
                   <h3>Company Details</h3>
@@ -223,8 +223,8 @@
                   </div>
               </mat-tab>
               <!-- Team Management Tab -->
-              <mat-tab label="Team Management">
-                <div class="section">
+              <mat-tab label="Team Management" *ngIf="authService.hasPermission('addTeamMembers') || authService.hasPermission('deleteTeamMembers') || authService.hasPermission('editTeamMembers')">
+                <div class="section" *ngIf="authService.hasPermission('addTeamMembers')">
                   <h3>Add Team Member</h3>
                   <form [formGroup]="teamForm" (ngSubmit)="addTeamMember()">
                     <div class="form-row">
@@ -287,15 +287,15 @@
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #activeMenu="matMenu">
-                              <button mat-menu-item (click)="openPermissionsDialog(member.id, member.firstName, member.lastName)">
+                              <button mat-menu-item (click)="openPermissionsDialog(member.id, member.firstName, member.lastName)" *ngIf="authService.hasPermission('editTeamMembers')">
                                 <mat-icon>manage_accounts</mat-icon>
                                 <span>Manage Permissions</span>
                               </button>
-                              <button mat-menu-item (click)="openConfirmationDialog(member.id, 'deactivate')">
+                              <button mat-menu-item (click)="openConfirmationDialog(member.id, 'deactivate')" *ngIf="authService.hasPermission('editTeamMembers')">
                                 <mat-icon>person_remove</mat-icon>
                                 <span>Deactivate</span>
                               </button>
-                              <button mat-menu-item (click)="openConfirmationDialog(member.id, 'delete')">
+                              <button mat-menu-item (click)="openConfirmationDialog(member.id, 'delete')" *ngIf="authService.hasPermission('deleteTeamMembers')">
                                 <mat-icon>delete</mat-icon>
                                 <span>Delete</span>
                               </button>

@@ -1,4 +1,5 @@
 import { Component, ElementRef, Inject, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -125,7 +126,7 @@ isGoogleMapsLoaded: boolean = false;
 
   constructor(
     private profileService: ProfileService,
-    private authService: AuthService,
+    public authService: AuthService,
     private fb: FormBuilder,
     private stripeService: StripeService,
     private dialog: MatDialog,
@@ -251,18 +252,26 @@ isGoogleMapsLoaded: boolean = false;
     this.isLoading = true;
     this.errorMessage = null;
     this.successMessage = null;
-    this.profileService.getProfile().subscribe({
-      next: (data: Profile) => {
-        console.log('Profile Data:', data);
-        this.profile = data;
-        this.profileForm.patchValue(data[0]);
+    this.profileService.getProfile().pipe(
+      catchError(err => {
+        const currentUser = this.authService.currentUserSubject.value;
+        if (currentUser && currentUser.isTeamMember && currentUser.id) {
+          return this.profileService.getTeamMemberProfile(currentUser.id);
+        }
+        return throwError(() => err);
+      })
+    ).subscribe({
+      next: (data: Profile | Profile[]) => {
+        const profileData = Array.isArray(data) ? data[0] : data;
+        this.profile = profileData;
+        this.profileForm.patchValue(profileData);
         this.successMessage = 'Profile loaded successfully';
         this.isLoading = false;
-        this.isVerified = data.isVerified ?? false;
+        this.isVerified = profileData.isVerified ?? false;
         this.loadTeamMembers();
       },
       error: (error) => {
-        this.errorMessage = error.message === 'User not authenticated'
+        this.errorMessage = error.message?.includes('User not authenticated')
           ? 'Please log in to view your profile.'
           : 'Failed to load profile. Please try again.';
         this.isLoading = false;

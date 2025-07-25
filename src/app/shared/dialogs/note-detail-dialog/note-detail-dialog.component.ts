@@ -2,6 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { NoteService } from '../../../features/jobs/services/note.service';
 import { UserService } from '../../../services/user.service';
+import { AuthService } from '../../../authentication/auth.service';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -26,7 +27,8 @@ export class NoteDetailDialogComponent implements OnInit {
         @Inject(MAT_DIALOG_DATA) public data: any,
         private noteService: NoteService,
         private userService: UserService,
-        private dialog: MatDialog
+        private dialog: MatDialog,
+        public authService: AuthService
     ) { }
 
     ngOnInit(): void {

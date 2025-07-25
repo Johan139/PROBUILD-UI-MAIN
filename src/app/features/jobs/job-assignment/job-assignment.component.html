@@ -1,12 +1,6 @@
 <div class="container">
   <app-loader *ngIf="isLoading"></app-loader>
 
-  <div class="alert-overlay" *ngIf="showAlert">
-    <div class="alert-modal">
-      <h3>{{ alertMessage }}</h3>
-      <button mat-button class="submit-btn" (click)="closeAlert()">OK</button>
-    </div>
-  </div>
 
   <mat-card class="profile-card">
     <mat-card-title>Job Assignments</mat-card-title>
@@ -61,7 +55,7 @@
       </form>
 
       <div class="button-container">
-        <button mat-button class="submit-btn" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser">
+        <button mat-button class="submit-btn" *ngIf="authService.hasPermission('AddTeamMembers')" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser || !newAssignment.jobRole">
           {{ isSaving ? 'Saving...' : 'Assign' }}
         </button>
       </div>
@@ -115,7 +109,8 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let element">
-            <button mat-button class="submit-btn delete-btn"
+            <button mat-button class="submit-btn" color="accent"
+                    *ngIf="authService.hasPermission('deleteTeamMembers')"
                     (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">
               Delete

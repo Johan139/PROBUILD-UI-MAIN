@@ -25,6 +25,10 @@ export class AuthService {
   constructor() {}
 
   public hasPermission(permissionKey: string): boolean {
+    const userRole = this.getUserRole();
+    if (userRole === 'GENERAL_CONTRACTOR') {
+      return true;
+    }
     return this.userPermissions.includes(permissionKey);
   }
 

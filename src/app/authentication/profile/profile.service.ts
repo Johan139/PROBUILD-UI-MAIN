@@ -12,6 +12,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 })
 export class ProfileService {
   private apiUrl = `${environment.BACKEND_URL}/profile`;
+  private teamsApiUrl = `${environment.BACKEND_URL}/teams`;
   private hubConnection!: HubConnection;
   private progressSubject = new Subject<number>();
   private uploadCompleteSubject = new Subject<number>();
@@ -76,6 +77,16 @@ export class ProfileService {
           return throwError(() => new Error('Failed to load profile'));
         })
       );
+  }
+
+  getTeamMemberProfile(userId: string): Observable<Profile> {
+    const url = `${this.teamsApiUrl}/members/${userId}`;
+    return this.http.get<Profile>(url, { headers: this.getHeaders() }).pipe(
+      catchError(error => {
+        console.error('Error fetching team member profile:', error);
+        return throwError(() => new Error('Failed to load team member profile'));
+      })
+    );
   }
 
   downloadJobDocument(documentId: number): Observable<Blob> {

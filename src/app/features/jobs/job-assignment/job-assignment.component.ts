@@ -1,4 +1,5 @@
 import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { JobAssignmentService } from './job-assignment.service';
 import { TeamManagementService } from '../../../services/team-management.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -48,10 +49,6 @@ import { SharedModule } from '../../../shared/shared.module';
 })
 export class JobAssignmentComponent implements OnInit {
   isLoading = false;
-  successMessage: string | null = null;
-  errorMessage: string | null = null;
-  showAlert = false;
-  alertMessage = '';
   jobAssignmentList: JobAssignment[] = [];
   assignmentColumns: string[] = ['id', 'projectName', 'assignedUser', 'jobRole', 'phoneNumber', 'actions'];
   isSaving = false;
@@ -72,7 +69,8 @@ export class JobAssignmentComponent implements OnInit {
     private jobAssignmentService: JobAssignmentService,
     private cdr: ChangeDetectorRef,
     private teamManagementService: TeamManagementService,
-    private authService: AuthService
+    public authService: AuthService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -90,7 +88,7 @@ export class JobAssignmentComponent implements OnInit {
           this.jobAssignmentList = data;
           const currentUser = this.authService.currentUserSubject.value;
           if (!currentUser || !currentUser.id) {
-            this.showError('User not logged in');
+            this.snackBar.open('User not logged in', 'Close', { duration: 3000 });
             this.isLoading = false;
             return;
           }
@@ -118,7 +116,7 @@ export class JobAssignmentComponent implements OnInit {
             },
             error: (error) => {
               console.error('Error getting team members', error);
-              this.showError('Failed to get team members');
+              this.snackBar.open('Failed to get team members', 'Close', { duration: 3000 });
               this.isLoading = false;
             }
           });
@@ -132,13 +130,13 @@ export class JobAssignmentComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error loading data:', error);
-          this.showError('Failed to load job assignments. Please try again.');
+          this.snackBar.open('Failed to load job assignments. Please try again.', 'Close', { duration: 3000 });
           this.isLoading = false;
         }
       });
     } catch (error) {
       console.error('Unexpected error:', error);
-      this.showError('An unexpected error occurred.');
+      this.snackBar.open('An unexpected error occurred.', 'Close', { duration: 3000 });
       this.isLoading = false;
     }
   }
@@ -162,7 +160,7 @@ export class JobAssignmentComponent implements OnInit {
 
   submitAssignment(): void {
     if (!this.selectedJob || !this.selectedUser || !this.newAssignment.jobRole) {
-      this.showError('Please fill in all required fields');
+      this.snackBar.open('Please fill in all required fields', 'Close', { duration: 3000 });
       return;
     }
 
@@ -200,14 +198,14 @@ export class JobAssignmentComponent implements OnInit {
         }
 
         this.filterAssignments();
-        this.showSuccess('Job assignment created successfully');
+        this.snackBar.open('Job assignment created successfully', 'Close', { duration: 3000 });
         this.resetForm();
         this.isSaving = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error creating assignment:', error);
-        this.showError('Failed to create job assignment');
+        this.snackBar.open('Failed to create job assignment', 'Close', { duration: 3000 });
         this.isSaving = false;
       }
     });
@@ -215,7 +213,7 @@ export class JobAssignmentComponent implements OnInit {
 
   deleteUserAssignment(job: JobAssignment, user: JobUser): void {
     if (!job || !user) {
-      this.showError('Invalid job assignment or user');
+      this.snackBar.open('Invalid job assignment or user', 'Close', { duration: 3000 });
       return;
     }
     this.isLoading = true;
@@ -234,13 +232,13 @@ export class JobAssignmentComponent implements OnInit {
           assignment.id === job.id ? updatedAssignment : assignment
         );
         this.filterAssignments();
-        this.showSuccess('Job assignment deleted successfully');
+        this.snackBar.open('Job assignment deleted successfully', 'Close', { duration: 3000 });
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error deleting assignment:', error);
-        this.showError('Failed to delete job assignment');
+        this.snackBar.open('Failed to delete job assignment', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -302,22 +300,4 @@ export class JobAssignmentComponent implements OnInit {
     return user && user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '';
   }
 
-  private showError(message: string): void {
-    this.errorMessage = message;
-    this.successMessage = null;
-    this.alertMessage = message;
-    this.showAlert = true;
-  }
-
-  private showSuccess(message: string): void {
-    this.successMessage = message;
-    this.errorMessage = null;
-    this.alertMessage = message;
-    this.showAlert = true;
-  }
-
-  closeAlert(): void {
-    this.showAlert = false;
-    this.alertMessage = '';
-  }
 }
