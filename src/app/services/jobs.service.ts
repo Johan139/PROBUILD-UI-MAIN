@@ -26,7 +26,11 @@ export class JobsService {
   }
 
   getAssignedJobsForTeamMember(userId: string): Observable<any> {
-    return this.httpClient.get(BASE_URL+'/assigned/'+userId, {headers:{'Content-Type': 'application/json'}})
+    return this.httpClient.get(`${environment.BACKEND_URL}/Jobs/assigned/${userId}`, {headers:{'Content-Type': 'application/json'}})
+  }
+
+  getAssignedJobs(userId: string): Observable<any> {
+    return this.httpClient.get(`${environment.BACKEND_URL}/JobAssignment/GetAssignedUsers/${userId}`, {headers:{'Content-Type': 'application/json'}})
   }
 
   getSubtasks(jobId: number) {

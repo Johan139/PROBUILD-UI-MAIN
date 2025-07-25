@@ -546,7 +546,10 @@ isGoogleMapsLoaded: boolean = false;
         },
         error: (error) => {
           if (error.status === 409) {
-            this.errorMessage = error.error.message;
+            this.snackBar.open(error.error.message, 'Close', {
+              duration: 5000,
+              panelClass: ['error-snackbar']
+            });
           } else {
             this.errorMessage = 'Failed to add team member.';
           }
