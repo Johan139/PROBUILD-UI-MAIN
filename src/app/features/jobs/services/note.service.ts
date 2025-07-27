@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-const BASE_URL = environment.BACKEND_URL;
+const BASE_URL = environment.BACKEND_URL + '/Notes';
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +33,7 @@ export class NoteService {
     formData.append('SessionId', sessionId);
 
     return this.httpClient
-      .post(BASE_URL + '/Jobs/SaveSubtaskNote', formData)
+      .post(BASE_URL + '/SaveSubtaskNote', formData)
       .pipe(
         tap(() => {
           this.snackBar.open('Note saved successfully!', 'Close', {
@@ -61,7 +61,7 @@ export class NoteService {
     formData.append('Approved', 'true');
     formData.append('Rejected', 'false');
 
-    return this.httpClient.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).pipe(
+    return this.httpClient.post(`${BASE_URL}/UpdateNoteStatus`, formData).pipe(
       tap(() => {
         this.snackBar.open('Note approved successfully!', 'Close', {
           duration: 3000,
@@ -88,7 +88,7 @@ export class NoteService {
     formData.append('Approved', 'false');
     formData.append('Rejected', 'true');
 
-    return this.httpClient.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).pipe(
+    return this.httpClient.post(`${BASE_URL}/UpdateNoteStatus`, formData).pipe(
       tap(() => {
         this.snackBar.open('Note rejected successfully!', 'Close', {
           duration: 3000,
@@ -107,7 +107,7 @@ export class NoteService {
 
   getNotesByUserId(userId: string): Observable<any[]> {
     return this.httpClient
-      .get<any[]>(`${BASE_URL}/Jobs/GetNotesByUserId/${userId}`)
+      .get<any[]>(`${BASE_URL}/GetNotesByUserId/${userId}`)
       .pipe(
         catchError((err) => {
           this.snackBar.open('Failed to fetch notes.', 'Close', {
@@ -120,7 +120,7 @@ export class NoteService {
 
   getNotesForAssignedJobs(userId: string): Observable<any[]> {
     return this.httpClient
-      .get<any[]>(`${BASE_URL}/Jobs/notes/assigned/${userId}`)
+      .get<any[]>(`${BASE_URL}/notes/assigned/${userId}`)
       .pipe(
         catchError((err) => {
           this.snackBar.open('Failed to fetch assigned notes.', 'Close', {
@@ -132,7 +132,7 @@ export class NoteService {
   }
 
   getArchivedNotes(userId: string): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived/${userId}`).pipe(
+    return this.httpClient.get<any[]>(`${BASE_URL}/notes/archived/${userId}`).pipe(
       catchError((err) => {
         this.snackBar.open('Failed to fetch archived notes.', 'Close', {
           duration: 3000,
@@ -143,7 +143,7 @@ export class NoteService {
   }
 
   getArchivedNotesForAssignedJobs(userId: string): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived/assigned/${userId}`).pipe(
+    return this.httpClient.get<any[]>(`${BASE_URL}/notes/archived/assigned/${userId}`).pipe(
       catchError((err) => {
         this.snackBar.open('Failed to fetch assigned archived notes.', 'Close', {
           duration: 3000,
@@ -154,7 +154,7 @@ export class NoteService {
   }
 
   archiveNote(noteId: number): Observable<any> {
-    return this.httpClient.post(`${BASE_URL}/Jobs/notes/${noteId}/archive`, {}).pipe(
+    return this.httpClient.post(`${BASE_URL}/notes/${noteId}/archive`, {}).pipe(
       tap(() => {
         this.snackBar.open('Note archived successfully!', 'Close', {
           duration: 3000,
@@ -167,5 +167,13 @@ export class NoteService {
         return of(err);
       })
     );
+  }
+
+  downloadNoteDocument(documentId: number): Observable<Blob> {
+    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
+  }
+  
+  getNoteDocuments(noteId: number): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/GetNoteDocuments/${noteId}`);
   }
 }

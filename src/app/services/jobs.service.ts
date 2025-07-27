@@ -48,9 +48,6 @@ export class JobsService {
     });
   }
 
-  downloadNoteDocument(documentId: number): Observable<Blob> {
-    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
-  }
 
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
@@ -102,11 +99,5 @@ export class JobsService {
     return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
   }
 
-  archiveNote(noteId: number): Observable<any> {
-    return this.httpClient.post(`${BASE_URL}/notes/${noteId}/archive`, {});
-  }
 
-  getArchivedNotes(userId: string): Observable<any> {
-    return this.httpClient.get(`${BASE_URL}/notes/archived/${userId}`);
-  }
 }

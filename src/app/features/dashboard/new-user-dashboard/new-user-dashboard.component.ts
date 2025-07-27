@@ -96,7 +96,6 @@ export class NewUserDashboardComponent implements OnInit {
     private jobService: JobsService,
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
-    private http: HttpClient,
     private jobDataService: JobDataService,
     private authService: AuthService,
     private teamManagementService: TeamManagementService,
@@ -228,7 +227,7 @@ export class NewUserDashboardComponent implements OnInit {
     formData.append('NoteText', this.approvalReason);
     formData.append("CreatedByUserId", localStorage.getItem("userId") || "");
 
-    this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
+    this.noteService.approveNote(this.noteBeingApproved, this.approvalReason).subscribe({
       next: () => {
         this.snackBar.open('Note saved successfully!', 'Close', {
           duration: 3000,
@@ -438,7 +437,7 @@ export class NewUserDashboardComponent implements OnInit {
     this.isDocumentsLoading = true;
     this.documentsError = null;
     this.documents = [];
-    this.http.get<any[]>(`${BASE_URL}/Jobs/GetNoteDocuments/${noteId}`).subscribe({
+    this.noteService.getNoteDocuments(noteId).subscribe({
       next: (docs) => {
         if (!docs || docs.length === 0) {
           this.documentsError = 'No documents found for this note.';
@@ -486,7 +485,7 @@ export class NewUserDashboardComponent implements OnInit {
     formData.append('jobSubtaskId', note.jobSubtaskId.toString());
     formData.append('Rejected', 'true');
 
-    this.http.post(`${BASE_URL}/Jobs/UpdateNoteStatus`, formData).subscribe({
+    this.noteService.rejectNote(note, '').subscribe({
       next: () => {
         this.dialog.closeAll();
       },
@@ -496,7 +495,7 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   viewDocument(document: any) {
-    this.jobsService.downloadNoteDocument(document.id).subscribe({
+    this.noteService.downloadNoteDocument(document.id).subscribe({
       next: (response: Blob) => {
         const blob = new Blob([response], { type: document.type });
         const url = window.URL.createObjectURL(blob);
