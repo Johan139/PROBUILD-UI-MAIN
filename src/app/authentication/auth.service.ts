@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError } from 'rxjs';
+import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
@@ -17,19 +17,22 @@ export class AuthService {
   public currentUserSubject = new BehaviorSubject<any>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
   public userRole: string | null = null;
-  private userPermissions: string[] = [];
+  private _userPermissions = new BehaviorSubject<string[]>([]);
+  public userPermissions$ = this._userPermissions.asObservable();
 
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<any>(null);
 
   constructor() {}
 
-  public hasPermission(permissionKey: string): boolean {
+  public hasPermission(permissionKey: string): Observable<boolean> {
     const userRole = this.getUserRole();
     if (userRole === 'GENERAL_CONTRACTOR') {
-      return true;
+      return new BehaviorSubject(true).asObservable();
     }
-    return this.userPermissions.includes(permissionKey);
+    return this.userPermissions$.pipe(
+      map(permissions => permissions.includes(permissionKey))
+    );
   }
 
   async initialize(): Promise<void> {
@@ -318,12 +321,12 @@ export class AuthService {
   private loadUserPermissions(teamMemberId: string): void {
     this.teamManagementService.getPermissions(teamMemberId).subscribe({
       next: (permissions) => {
-        this.userPermissions = permissions;
-        console.log('Permissions loaded:', this.userPermissions);
+        this._userPermissions.next(permissions);
+        console.log('Permissions loaded:', this._userPermissions.getValue());
       },
       error: (err) => {
         console.error('Failed to load user permissions', err);
-        this.userPermissions = [];
+        this._userPermissions.next([]);
       },
     });
   }

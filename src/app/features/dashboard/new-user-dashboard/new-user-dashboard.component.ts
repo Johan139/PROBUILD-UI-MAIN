@@ -14,7 +14,7 @@ import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatInputModule } from '@angular/material/input'; // also needed for matInput
+import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatMenuModule } from '@angular/material/menu';
@@ -24,11 +24,13 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { filter, take, switchMap } from 'rxjs/operators';
+import { of, combineLatest } from 'rxjs';
 import { TeamManagementService } from '../../../services/team-management.service';
 import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
+import { NoteService } from '../../jobs/services/note.service';
 
-const BASE_URL = environment.BACKEND_URL;
-@Component({
+ const BASE_URL = environment.BACKEND_URL;
+ @Component({
   selector: 'app-new-user-dashboard',
   standalone: true,
   imports: [
@@ -98,6 +100,7 @@ export class NewUserDashboardComponent implements OnInit {
     private jobDataService: JobDataService,
     private authService: AuthService,
     private teamManagementService: TeamManagementService,
+    private noteService: NoteService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -122,6 +125,7 @@ export class NewUserDashboardComponent implements OnInit {
     }
     return 'Pending';
   }
+
   ngOnInit() {
     this.isLoading = true;
     this.userType = this.userService.getUserType();
@@ -136,15 +140,27 @@ export class NewUserDashboardComponent implements OnInit {
       });
     }
 
-    this.authService.currentUser$.pipe(
-      filter(user => !!user),
-      take(1),
-      switchMap(user => {
-        return this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${user.id}`);
+    combineLatest([
+      this.authService.currentUser$,
+      this.authService.userPermissions$
+    ]).pipe(
+      filter(([user, permissions]) => !!user),
+      switchMap(([user, permissions]) => {
+        const isTeamMember = !!user.inviterId;
+        if (isTeamMember && permissions.includes('manageSubtaskNotes')) {
+          console.log("Getting notes as team member");
+          return this.noteService.getNotesForAssignedJobs(user.id);
+        } else if (!isTeamMember) {
+          console.log("Getting notes as full user")
+          return this.noteService.getNotesByUserId(user.id);
+        } else {
+          console.log("Not getting any notes")
+          return of([]);
+        }
       })
     ).subscribe({
       next: (notes: any) => {
-        this.notes = notes.map(note => ({
+        this.notes = notes.map((note: any) => ({
           ...note,
           status: this.getNoteStatus(note)
         }));
@@ -257,7 +273,13 @@ export class NewUserDashboardComponent implements OnInit {
       filter(user => !!user),
       take(1),
       switchMap(user => {
-        return this.http.get(`${BASE_URL}/Jobs/GetNotesByUserId/${user.id}`);
+        if (user.inviterId && this.authService.hasPermission('14')) {
+          return this.noteService.getNotesForAssignedJobs(user.id);
+        } else if (!user.inviterId) {
+          return this.noteService.getNotesByUserId(user.id);
+        } else {
+          return of([]);
+        }
       })
     ).subscribe({
       next: (notes: any) => {

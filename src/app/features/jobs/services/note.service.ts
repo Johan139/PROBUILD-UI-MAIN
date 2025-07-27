@@ -105,6 +105,32 @@ export class NoteService {
     );
   }
 
+  getNotesByUserId(userId: string): Observable<any[]> {
+    return this.httpClient
+      .get<any[]>(`${BASE_URL}/Jobs/GetNotesByUserId/${userId}`)
+      .pipe(
+        catchError((err) => {
+          this.snackBar.open('Failed to fetch notes.', 'Close', {
+            duration: 3000,
+          });
+          return of([]);
+        })
+      );
+  }
+
+  getNotesForAssignedJobs(userId: string): Observable<any[]> {
+    return this.httpClient
+      .get<any[]>(`${BASE_URL}/Jobs/notes/assigned/${userId}`)
+      .pipe(
+        catchError((err) => {
+          this.snackBar.open('Failed to fetch assigned notes.', 'Close', {
+            duration: 3000,
+          });
+          return of([]);
+        })
+      );
+  }
+
   getArchivedNotes(userId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived/${userId}`).pipe(
       catchError((err) => {
