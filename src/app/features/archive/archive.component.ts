@@ -8,7 +8,8 @@ import { NoteDetailDialogComponent } from '../../shared/dialogs/note-detail-dial
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTabsModule } from '@angular/material/tabs';
-
+import { combineLatest, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
 import { MatCardModule } from '@angular/material/card';
 
@@ -43,13 +44,8 @@ export class ArchiveComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
-      if (user) {
-        this.userId = user.id;
-        this.loadArchivedNotes();
-        this.loadArchivedJobs();
-      }
-    });
+    this.loadArchivedNotes();
+    this.loadArchivedJobs();
   }
 
   loadArchivedJobs(): void {
@@ -66,9 +62,26 @@ export class ArchiveComponent implements OnInit {
   }
 
   loadArchivedNotes(): void {
-    if (!this.userId) return;
     this.isLoading = true;
-    this.noteService.getArchivedNotes(this.userId).subscribe({
+    combineLatest([
+      this.authService.currentUser$,
+      this.authService.userPermissions$
+    ]).pipe(
+      switchMap(([user, permissions]) => {
+        if (user) {
+          this.userId = user.id;
+          const isTeamMember = !!user.inviterId;
+          const canManageNotes = permissions.includes('manageSubtaskNotes');
+
+          if (isTeamMember && canManageNotes) {
+            return this.noteService.getArchivedNotesForAssignedJobs(user.id);
+          } else if (!isTeamMember) {
+            return this.noteService.getArchivedNotes(user.id);
+          }
+        }
+        return of([]);
+      })
+    ).subscribe({
       next: (notes) => {
         this.archivedNotes = notes;
         this.isLoading = false;

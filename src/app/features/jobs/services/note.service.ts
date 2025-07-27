@@ -142,6 +142,17 @@ export class NoteService {
     );
   }
 
+  getArchivedNotesForAssignedJobs(userId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/Jobs/notes/archived/assigned/${userId}`).pipe(
+      catchError((err) => {
+        this.snackBar.open('Failed to fetch assigned archived notes.', 'Close', {
+          duration: 3000,
+        });
+        return of([]);
+      })
+    );
+  }
+
   archiveNote(noteId: number): Observable<any> {
     return this.httpClient.post(`${BASE_URL}/Jobs/notes/${noteId}/archive`, {}).pipe(
       tap(() => {
