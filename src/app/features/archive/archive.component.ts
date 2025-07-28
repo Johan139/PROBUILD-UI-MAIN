@@ -120,7 +120,7 @@ export class ArchiveComponent implements OnInit {
     const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
-      data: { ...note, userNames }
+      data: { ...note, userNames, isArchived: true }
     });
 
     dialogRef.afterClosed().subscribe(() => {
