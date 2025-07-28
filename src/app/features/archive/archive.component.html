@@ -53,7 +53,9 @@
             <ng-container matColumnDef="view">
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let note">
-                <button mat-raised-button class="submit-btn delete-btn" (click)="openNoteDetail(note)">View</button>
+                <button mat-raised-button class="submit-btn delete-btn" (click)="openNoteDetail(note)" [disabled]="openingNoteId === note.notes[0].id">
+                  {{ openingNoteId === note.notes[0].id ? 'Viewing...' : 'View' }}
+                </button>
               </td>
             </ng-container>
 

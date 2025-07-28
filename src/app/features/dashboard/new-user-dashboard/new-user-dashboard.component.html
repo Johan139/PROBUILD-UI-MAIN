@@ -78,7 +78,9 @@
                    </span>
                   </td>
                   <td>
-                    <button class="submit-btn delete-btn" (click)="openNoteDialog(note)" mat-raised-button>View</button>
+                    <button class="submit-btn delete-btn" (click)="openNoteDialog(note)" mat-raised-button [disabled]="openingNoteId === note.notes[0].id">
+                      {{ openingNoteId === note.notes[0].id ? 'Viewing...' : 'View' }}
+                    </button>
                   </td>
                 </tr>
               </tbody>

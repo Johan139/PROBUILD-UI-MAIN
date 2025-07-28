@@ -24,10 +24,11 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { filter, take, switchMap } from 'rxjs/operators';
-import { of, combineLatest } from 'rxjs';
+import { of, combineLatest, forkJoin } from 'rxjs';
 import { TeamManagementService } from '../../../services/team-management.service';
 import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
 import { NoteService } from '../../jobs/services/note.service';
+import { UserService } from '../../../services/user.service';
 
  const BASE_URL = environment.BACKEND_URL;
  @Component({
@@ -80,6 +81,7 @@ export class NewUserDashboardComponent implements OnInit {
   isDocumentsLoading: boolean = false;
   documentsError: string | null = null;
   notes: any[] = [];
+  openingNoteId: string | null = null;
   taskData: any[] = [
     { id: '1', name: 'Roof Structure', start: new Date(2025, 2, 1), end: new Date(2025, 2, 15), progress: 0, dependencies: null },
     { id: '2', name: 'Foundation', start: new Date(2025, 1, 1), end: new Date(2025, 1, 20), progress: 20, dependencies: null },
@@ -89,8 +91,8 @@ export class NewUserDashboardComponent implements OnInit {
   selectedTeam: any = null;
 
   constructor(
-    private userService: LoginService,
-     private datePipe: DatePipe,
+    private loginService: LoginService,
+    private datePipe: DatePipe,
     private router: Router,
     private dialog: MatDialog,
     private jobService: JobsService,
@@ -100,6 +102,7 @@ export class NewUserDashboardComponent implements OnInit {
     private authService: AuthService,
     private teamManagementService: TeamManagementService,
     private noteService: NoteService,
+    private userService: UserService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -127,7 +130,7 @@ export class NewUserDashboardComponent implements OnInit {
 
   ngOnInit() {
     this.isLoading = true;
-    this.userType = this.userService.getUserType();
+    this.userType = this.loginService.getUserType();
 
     if (this.authService.isTeamMember()) {
       this.teamManagementService.getMyTeams().subscribe(teams => {
@@ -188,15 +191,37 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   openNoteDialog(group: any) {
+    this.openingNoteId = group.notes[0].id;
+    const userIds = [...new Set(group.notes.map((n: any) => n.createdByUserId))].filter(id => !!id) as string[];
+    if (userIds.length === 0) {
+      this.openDialogWithUserNames(group, new Map<string, string>());
+      return;
+    }
+
+    const userRequests = userIds.map(id => this.userService.getUserById(id));
+
+    forkJoin(userRequests).subscribe(users => {
+      const userNames = new Map<string, string>();
+      users.forEach(user => {
+        if (user) {
+          userNames.set(user.id, `${user.firstName} ${user.lastName}`);
+        }
+      });
+      this.openDialogWithUserNames(group, userNames);
+    });
+  }
+
+  openDialogWithUserNames(group: any, userNames: Map<string, string>) {
     const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
       maxHeight: '100vh',
       panelClass: 'custom-dialog-container',
-      data: group
+      data: { ...group, userNames }
     });
 
     dialogRef.afterClosed().subscribe(result => {
+      this.openingNoteId = null;
       if (result === true) {
         this.refreshNotes();
       }

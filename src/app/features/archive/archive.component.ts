@@ -8,9 +8,10 @@ import { NoteDetailDialogComponent } from '../../shared/dialogs/note-detail-dial
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTabsModule } from '@angular/material/tabs';
-import { combineLatest, of } from 'rxjs';
+import { combineLatest, of, forkJoin } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
+import { UserService } from '../../services/user.service';
 import { MatCardModule } from '@angular/material/card';
 
 @Component({
@@ -35,12 +36,14 @@ export class ArchiveComponent implements OnInit {
   displayedColumns: string[] = ['project', 'task', 'created', 'status', 'view'];
   jobDisplayedColumns: string[] = ['projectName', 'jobType', 'status', 'completionDate'];
   private userId: string | null = null;
+  openingNoteId: string | null = null;
 
   constructor(
     private noteService: NoteService,
     private jobsService: JobsService,
     private dialog: MatDialog,
     private authService: AuthService,
+    private userService: UserService,
   ) { }
 
   ngOnInit(): void {
@@ -93,10 +96,35 @@ export class ArchiveComponent implements OnInit {
   }
 
   openNoteDetail(note: any): void {
-    this.dialog.open(NoteDetailDialogComponent, {
+    this.openingNoteId = note.notes[0].id;
+    const userIds = [...new Set(note.notes.map((n: any) => n.createdByUserId))].filter(id => !!id) as string[];
+    if (userIds.length === 0) {
+      this.openDialogWithUserNames(note, new Map<string, string>());
+      return;
+    }
+
+    const userRequests = userIds.map(id => this.userService.getUserById(id));
+
+    forkJoin(userRequests).subscribe(users => {
+      const userNames = new Map<string, string>();
+      users.forEach(user => {
+        if (user) {
+          userNames.set(user.id, `${user.firstName} ${user.lastName}`);
+        }
+      });
+      this.openDialogWithUserNames(note, userNames);
+    });
+  }
+
+  openDialogWithUserNames(note: any, userNames: Map<string, string>) {
+    const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
-      data: note
+      data: { ...note, userNames }
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.openingNoteId = null;
     });
   }
 

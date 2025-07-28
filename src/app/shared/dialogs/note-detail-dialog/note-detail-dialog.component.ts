@@ -20,8 +20,6 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
 })
 export class NoteDetailDialogComponent implements OnInit {
 
-    userNames = new Map<string, string>();
-
     constructor(
         public dialogRef: MatDialogRef<NoteDetailDialogComponent>,
         @Inject(MAT_DIALOG_DATA) public data: any,
@@ -32,17 +30,10 @@ export class NoteDetailDialogComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.data.notes.forEach((note: any) => {
-            if (note.createdByUserId && !this.userNames.has(note.createdByUserId)) {
-                this.userService.getUserById(note.createdByUserId).subscribe(user => {
-                    this.userNames.set(note.createdByUserId, `${user.firstName} ${user.lastName}`);
-                });
-            }
-        });
     }
 
     getUserName(userId: string): string {
-        return this.userNames.get(userId) || 'Loading...';
+        return this.data.userNames.get(userId) || 'Loading...';
     }
 
     getStatus(note: any): string {
