@@ -219,7 +219,7 @@ isGoogleMapsLoaded: boolean = false;
         this.loadProfile();
         this.loadDocuments();
         this.checkSubscription();
-      } else {
+      } else if (!this.authService.isLoggedIn()) {
         this.isLoading = false;
         this.snackBar.open('Please log in to view your profile.', 'Close', { duration: 3000 });
       }
@@ -360,8 +360,7 @@ isGoogleMapsLoaded: boolean = false;
     this.teamManagementService.getTeamMembers(userId).subscribe({
       next: (members: TeamMember[]) => {
         this.teamMembers = members;
-        this.activeTeamMembers = members.filter(m => m.status !== 'Deactivated');
-        this.activeTeamMembers = members.filter(m => m.status !== 'Deleted');
+        this.activeTeamMembers = members.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
         this.deactivatedTeamMembers = members.filter(m => m.status === 'Deactivated');
       },
       error: (error) => {
@@ -609,7 +608,7 @@ isGoogleMapsLoaded: boolean = false;
         const member = this.teamMembers.find(m => m.id === id);
         if (member) {
           member.status = 'Deactivated';
-          this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated');
+          this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
           this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
         }
         this.snackBar.open('Team member deactivated successfully', 'Close', { duration: 3000 });
@@ -636,7 +635,7 @@ isGoogleMapsLoaded: boolean = false;
     this.teamManagementService.removeTeamMember(id).subscribe({
       next: () => {
         this.teamMembers = this.teamMembers.filter(m => m.id !== id);
-        this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated');
+        this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
         this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
         this.snackBar.open('Team member permanently deleted', 'Close', { duration: 3000 });
       },

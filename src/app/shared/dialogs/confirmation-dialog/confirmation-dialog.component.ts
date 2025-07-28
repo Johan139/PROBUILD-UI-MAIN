@@ -35,7 +35,7 @@ export class ConfirmationDialogComponent {
   ) {}
 
   onConfirm(): void {
-    this.dialogRef.close(this.reason);
+    this.dialogRef.close(this.data.input ? this.reason : true);
   }
 
   onCancel(): void {

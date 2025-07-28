@@ -280,7 +280,7 @@
                         <ng-container matColumnDef="actions">
                           <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
                           <mat-cell *matCellDef="let member">
-                            <button mat-icon-button [matMenuTriggerFor]="activeMenu">
+                            <button type="button" mat-icon-button [matMenuTriggerFor]="activeMenu">
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #activeMenu="matMenu">
@@ -324,7 +324,7 @@
                         <ng-container matColumnDef="actions">
                           <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
                           <mat-cell *matCellDef="let member">
-                            <button mat-icon-button [matMenuTriggerFor]="deactivatedMenu">
+                            <button type="button" mat-icon-button [matMenuTriggerFor]="deactivatedMenu">
                               <mat-icon>more_vert</mat-icon>
                             </button>
                             <mat-menu #deactivatedMenu="matMenu">
