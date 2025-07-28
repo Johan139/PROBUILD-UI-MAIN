@@ -221,7 +221,6 @@ isGoogleMapsLoaded: boolean = false;
         this.checkSubscription();
       } else if (!this.authService.isLoggedIn()) {
         this.isLoading = false;
-        this.snackBar.open('Please log in to view your profile.', 'Close', { duration: 3000 });
       }
     });
 
@@ -261,15 +260,12 @@ isGoogleMapsLoaded: boolean = false;
         const profileData = Array.isArray(data) ? data[0] : data;
         this.profile = profileData;
         this.profileForm.patchValue(profileData);
-        this.snackBar.open('Profile loaded successfully', 'Close', { duration: 3000 });
         this.isLoading = false;
         this.isVerified = profileData.isVerified ?? false;
         this.loadTeamMembers();
       },
       error: (error) => {
-        this.snackBar.open(error.message?.includes('User not authenticated')
-          ? 'Please log in to view your profile.'
-          : 'Failed to load profile. Please try again.', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
     });
