@@ -21,35 +21,23 @@ import { MatDialogModule } from '@angular/material/dialog';
   templateUrl: './manage-permissions-dialog.component.html',
   styleUrl: './manage-permissions-dialog.component.scss'
 })
-export class ManagePermissionsDialogComponent implements OnInit {
+export class ManagePermissionsDialogComponent {
   permissionsForm: FormGroup;
   permissions = PERMISSIONS;
   teamMemberName: string;
-  teamMemberRole: string;
 
   constructor(
     public dialogRef: MatDialogRef<ManagePermissionsDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { teamMemberId: string, teamMemberName: string, teamMemberRole: string },
+    @Inject(MAT_DIALOG_DATA) public data: { teamMemberId: string, teamMemberName: string, permissions: string[] },
     private fb: FormBuilder,
     private teamManagementService: TeamManagementService
   ) {
     this.teamMemberName = this.data.teamMemberName;
-    this.teamMemberRole = this.data.teamMemberRole;
     const formControls = this.permissions.reduce((acc, permission) => {
-      acc[permission.key] = new FormControl(false);
+      acc[permission.key] = new FormControl(this.data.permissions.includes(permission.key));
       return acc;
     }, {});
     this.permissionsForm = this.fb.group(formControls);
-  }
-
-  ngOnInit(): void {
-    this.teamManagementService.getPermissions(this.data.teamMemberId).subscribe(currentPermissions => {
-      const newValues = {};
-      this.permissions.forEach(permission => {
-        newValues[permission.key] = currentPermissions.includes(permission.key);
-      });
-      this.permissionsForm.patchValue(newValues);
-    });
   }
 
   save(): void {

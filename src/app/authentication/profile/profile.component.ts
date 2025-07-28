@@ -588,17 +588,23 @@ isGoogleMapsLoaded: boolean = false;
   }
 
   openPermissionsDialog(teamMemberId: string, firstName: string, lastName: string): void {
-    const dialogRef = this.dialog.open(ManagePermissionsDialogComponent, {
-      width: '500px',
-      data: { teamMemberId, teamMemberName: `${firstName} ${lastName}`  }
-    });
+    this.teamManagementService.getPermissions(teamMemberId).subscribe(permissions => {
+      const dialogRef = this.dialog.open(ManagePermissionsDialogComponent, {
+        width: '500px',
+        data: {
+          teamMemberId,
+          teamMemberName: `${firstName} ${lastName}`,
+          permissions
+        }
+      });
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.snackBar.open('Permissions updated successfully', 'Close', {
-          duration: 3000
-        });
-      }
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.snackBar.open('Permissions updated successfully', 'Close', {
+            duration: 3000
+          });
+        }
+      });
     });
   }
 
