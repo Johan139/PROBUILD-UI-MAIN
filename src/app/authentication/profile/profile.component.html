@@ -12,9 +12,6 @@
               <mat-tab-group>
                 <!-- Profile Tab -->
                 <mat-tab label="Profile">
-                  <div *ngIf="errorMessage" class="error-message">
-                    {{ errorMessage }}
-                  </div>
                   <!-- Role Switcher Dropdown (For Dev Testing) -->
                   <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
                           {{ role }}
@@ -25,22 +22,22 @@
                     <div class="form-row">
                       <mat-form-field appearance="fill">
                         <mat-label>First Name</mat-label>
-                        <input matInput formControlName="firstName" placeholder=" " />
+                        <input matInput formControlName="firstName" placeholder=" " [readonly]="authService.isTeamMember()" />
                         <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Last Name</mat-label>
-                        <input matInput formControlName="lastName" placeholder=" " />
+                        <input matInput formControlName="lastName" placeholder=" " [readonly]="authService.isTeamMember()" />
                         <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>Phone Number</mat-label>
-                        <input matInput formControlName="phoneNumber" placeholder=" " />
+                        <input matInput formControlName="phoneNumber" placeholder=" " [readonly]="authService.isTeamMember()" />
                         <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')"> Mandatory Field: Input Required. </mat-error>
                       </mat-form-field>
                       <mat-form-field appearance="fill">
                         <mat-label>User Type</mat-label>
-                        <mat-select formControlName="userType" panelClass="custom-select-panel">
+                        <mat-select formControlName="userType" panelClass="custom-select-panel" [disabled]="authService.isTeamMember()">
                           <mat-option value="GENERAL_CONTRACTOR">General Contractor</mat-option>
                           <mat-option value="PROJECT_MANAGER">Project Manager</mat-option>
                           <mat-option value="CHIEF_ESTIMATOR">Chief Estimator</mat-option>
@@ -111,7 +108,7 @@
                   </div>
                   <!-- Submit Button -->
                   <div class="form-row">
-                    <button mat-raised-button type="submit" class="submit-btn">
+                    <button mat-raised-button type="submit" class="submit-btn" *ngIf="!authService.isTeamMember()">
                       {{ isSaving ? 'Saving...' : 'Save Profile' }}
                     </button>
                   </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@a
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { JobAssignmentService } from './job-assignment.service';
 import { TeamManagementService } from '../../../services/team-management.service';
+import { JobsService } from '../../../services/jobs.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { MatTableModule } from '@angular/material/table';
 import { JobAssignment, JobAssignmentLink, JobUser } from './job-assignment.model';
@@ -17,9 +18,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { userTypes } from '../../../data/user-types';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, of } from 'rxjs';
+import { Observable, of, switchMap, filter, take, forkJoin } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
 import { SharedModule } from '../../../shared/shared.module';
+import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-job-assignment',
@@ -57,8 +59,10 @@ export class JobAssignmentComponent implements OnInit {
   userList: JobUser[] = [];
   availableUsers: JobUser[] = [];
   teamMembers: any[] = [];
+  currentUser: any;
   newAssignment: { email: string; jobRole: string } = { email: '', jobRole: '' };
   filteredJobAssignment: { job: JobAssignment; user: JobUser }[] = [];
+  jobsForDropdown: JobAssignment[] = [];
   jobRoles: { value: string; display: string; }[] = [];
 
   jobControl = new FormControl();
@@ -70,92 +74,104 @@ export class JobAssignmentComponent implements OnInit {
     private jobAssignmentService: JobAssignmentService,
     private cdr: ChangeDetectorRef,
     private teamManagementService: TeamManagementService,
+    private jobsService: JobsService,
     public authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private userService: UserService,
   ) {}
 
   ngOnInit(): void {
-    console.log('ngOnInit called');
     this.loadInitialData();
     this.jobRoles = userTypes.filter(role => role.value !== 'GENERAL_CONTRACTOR');
-
   }
 
-  async loadInitialData(): Promise<void> {
+  loadInitialData(): void {
     this.isLoading = true;
-    try {
-      this.jobAssignmentService.getJobAssignment().subscribe({
-        next: (data: JobAssignment[]) => {
-          this.jobAssignmentList = data;
-          const currentUser = this.authService.currentUserSubject.value;
-          if (!currentUser || !currentUser.id) {
-            this.snackBar.open('User not logged in', 'Close', { duration: 3000 });
-            this.isLoading = false;
-            return;
-          }
-          const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
-          this.teamManagementService.getTeamMembers(userId).subscribe({
-            next: (data: any[]) => {
-              this.teamMembers = data;
-              this.userList = data.map(tm => ({
-                id: tm.id,
-                firstName: tm.firstName,
-                lastName: tm.lastName,
-                phoneNumber: tm.phoneNumber,
-                userType: tm.role,
-                jobRole: tm.role
-              }));
-              this.availableUsers = [...this.userList];
-              this.filteredUsers = this.userControl.valueChanges.pipe(
-                startWith(''),
-                map(value => {
-                  if (!value) {
-                    this.newAssignment.jobRole = '';
-                  }
-                  return this._filterUsers(value);
-                })
-              );
-            },
-            error: (error) => {
-              console.error('Error getting team members', error);
-              this.snackBar.open('Failed to get team members', 'Close', { duration: 3000 });
-              this.isLoading = false;
+    this.authService.currentUser$.pipe(
+      filter(user => !!user && !!user.id),
+      take(1),
+      switchMap(currentUser => {
+        this.currentUser = currentUser;
+        const allAssignmentsObservable = this.jobAssignmentService.getJobAssignment();
+        const teamMembersObservable = this.teamManagementService.getTeamMembers(
+          currentUser.isTeamMember ? currentUser.inviterId : currentUser.id
+        );
+        const jobsForDropdownObservable = currentUser.isTeamMember
+          ? this.jobsService.getAssignedJobsForTeamMember(currentUser.id)
+          : of(null);
+
+        return forkJoin({
+          allAssignments: allAssignmentsObservable,
+          teamMembers: teamMembersObservable,
+          jobsForDropdown: jobsForDropdownObservable
+        });
+      })
+    ).subscribe({
+      next: ({ allAssignments, teamMembers, jobsForDropdown }) => {
+        this.jobAssignmentList = allAssignments;
+        this.jobsForDropdown = jobsForDropdown || allAssignments;
+        this.teamMembers = teamMembers;
+
+        this.userList = teamMembers.map(tm => ({
+          id: tm.id,
+          firstName: tm.firstName,
+          lastName: tm.lastName,
+          phoneNumber: tm.phoneNumber,
+          userType: tm.role,
+          jobRole: tm.role
+        }));
+
+        this.availableUsers = [...this.userList];
+
+        this.filteredUsers = this.userControl.valueChanges.pipe(
+          startWith(''),
+          map(value => {
+            if (!value) {
+              this.newAssignment.jobRole = '';
             }
-          });
-          this.filteredJobs = this.jobControl.valueChanges.pipe(
-            startWith(''),
-            map(value => this._filterJobs(value))
-          );
-          this.filterAssignments();
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error loading data:', error);
-          this.snackBar.open('Failed to load job assignments. Please try again.', 'Close', { duration: 3000 });
-          this.isLoading = false;
-        }
-      });
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      this.snackBar.open('An unexpected error occurred.', 'Close', { duration: 3000 });
-      this.isLoading = false;
-    }
+            return this._filterUsers(value);
+          })
+        );
+
+        this.filteredJobs = this.jobControl.valueChanges.pipe(
+          startWith(''),
+          map(value => this._filterJobs(value))
+        );
+
+        this.filterAssignments();
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading data:', error);
+        this.snackBar.open('Failed to load data. Please try again.', 'Close', { duration: 3000 });
+        this.isLoading = false;
+      }
+    });
   }
 
   private flattenAssignments(assignments: JobAssignment[]): { job: JobAssignment; user: JobUser }[] {
     return assignments.flatMap(job =>
-      job.jobUser.map(user => ({ job, user }))
+      (job.jobUser || []).map(user => ({ job, user }))
     );
   }
 
   private filterAssignments(): void {
+    let flattenedAssignments;
     if (this.selectedJob && this.selectedJob.id !== 0) {
-      this.filteredJobAssignment = this.flattenAssignments(
+      flattenedAssignments = this.flattenAssignments(
         this.jobAssignmentList.filter(job => job.id === this.selectedJob!.id)
       );
     } else {
-      this.filteredJobAssignment = this.flattenAssignments(this.jobAssignmentList);
+      flattenedAssignments = this.flattenAssignments(this.jobAssignmentList);
+    }
+
+    if (this.currentUser && this.currentUser.isTeamMember) {
+      this.filteredJobAssignment = flattenedAssignments.filter(
+        assignment => assignment.user.id === this.currentUser.id
+      );
+    } else {
+      this.filteredJobAssignment = flattenedAssignments;
     }
     this.cdr.detectChanges();
   }
@@ -182,7 +198,7 @@ export class JobAssignmentComponent implements OnInit {
           const updatedJob = {
             ...this.jobAssignmentList[jobIndex],
             jobUser: [
-              ...this.jobAssignmentList[jobIndex].jobUser,
+              ...(this.jobAssignmentList[jobIndex].jobUser || []),
               {
                 id: this.selectedUser!.id,
                 firstName: this.selectedUser!.firstName,
@@ -228,7 +244,7 @@ export class JobAssignmentComponent implements OnInit {
       next: () => {
         const updatedAssignment = {
           ...job,
-          jobUser: job.jobUser.filter(u => u.id !== user.id)
+          jobUser: (job.jobUser || []).filter(u => u.id !== user.id)
         };
         this.jobAssignmentList = this.jobAssignmentList.map(assignment =>
           assignment.id === job.id ? updatedAssignment : assignment
@@ -259,7 +275,7 @@ export class JobAssignmentComponent implements OnInit {
     this.filterAssignments();
 
     if (job && job.id !== 0) {
-      const assignedUserIds = job.jobUser.map(u => u.id);
+      const assignedUserIds = (job.jobUser || []).map(u => u.id);
       this.availableUsers = this.userList.filter(user => !assignedUserIds.includes(user.id));
 
       if (this.selectedUser && assignedUserIds.includes(this.selectedUser.id)) {
@@ -276,7 +292,7 @@ export class JobAssignmentComponent implements OnInit {
 
   onUserSelected(user: JobUser): void {
     if (this.selectedJob && this.selectedJob.id !== 0) {
-      const assignedUserIds = this.selectedJob.jobUser.map(u => u.id);
+      const assignedUserIds = (this.selectedJob.jobUser || []).map(u => u.id);
       if (user && user.id && assignedUserIds.includes(user.id)) {
         this.snackBar.open('This user is already assigned to the selected job.', 'Close', { duration: 3000 });
         this.userControl.setValue('');
@@ -288,10 +304,7 @@ export class JobAssignmentComponent implements OnInit {
 
     this.selectedUser = user;
     if (user && user.id) {
-      const selectedTeamMember = this.teamMembers.find(member => member.id === user.id);
-      if (selectedTeamMember) {
-        this.newAssignment.jobRole = selectedTeamMember.role;
-      }
+      this.newAssignment.jobRole = user.jobRole || '';
     } else {
       this.newAssignment.jobRole = '';
     }
@@ -299,7 +312,7 @@ export class JobAssignmentComponent implements OnInit {
 
   private _filterJobs(value: string | JobAssignment): JobAssignment[] {
     const filterValue = typeof value === 'string' ? value.toLowerCase() : (value.projectName || '').toLowerCase();
-    const filtered = this.jobAssignmentList.filter(job => (job.projectName || '').toLowerCase().includes(filterValue));
+    const filtered = this.jobsForDropdown.filter(job => (job.projectName || '').toLowerCase().includes(filterValue));
     return [
       { id: 0, projectName: '', jobUser: [] },
       ...filtered

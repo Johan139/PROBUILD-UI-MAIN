@@ -97,8 +97,6 @@ isGoogleMapsLoaded: boolean = false;
   sessionId: string = '';
   subscriptionActive: boolean = false;
   jobCardForm: FormGroup;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
   userRole: string | null = null;
   isVerified = false;
 
@@ -223,7 +221,7 @@ isGoogleMapsLoaded: boolean = false;
         this.checkSubscription();
       } else {
         this.isLoading = false;
-        this.errorMessage = 'Please log in to view your profile.';
+        this.snackBar.open('Please log in to view your profile.', 'Close', { duration: 3000 });
       }
     });
 
@@ -250,8 +248,6 @@ isGoogleMapsLoaded: boolean = false;
 
   loadProfile(): void {
     this.isLoading = true;
-    this.errorMessage = null;
-    this.successMessage = null;
     this.profileService.getProfile().pipe(
       catchError(err => {
         const currentUser = this.authService.currentUserSubject.value;
@@ -265,15 +261,15 @@ isGoogleMapsLoaded: boolean = false;
         const profileData = Array.isArray(data) ? data[0] : data;
         this.profile = profileData;
         this.profileForm.patchValue(profileData);
-        this.successMessage = 'Profile loaded successfully';
+        this.snackBar.open('Profile loaded successfully', 'Close', { duration: 3000 });
         this.isLoading = false;
         this.isVerified = profileData.isVerified ?? false;
         this.loadTeamMembers();
       },
       error: (error) => {
-        this.errorMessage = error.message?.includes('User not authenticated')
+        this.snackBar.open(error.message?.includes('User not authenticated')
           ? 'Please log in to view your profile.'
-          : 'Failed to load profile. Please try again.';
+          : 'Failed to load profile. Please try again.', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -357,7 +353,7 @@ isGoogleMapsLoaded: boolean = false;
   loadTeamMembers(): void {
     const currentUser = this.authService.currentUserSubject.value;
     if (!currentUser || !currentUser.id) {
-      this.errorMessage = 'User not fully loaded. Please try again.';
+      this.snackBar.open('User not fully loaded. Please try again.', 'Close', { duration: 3000 });
       return;
     }
     const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
@@ -370,7 +366,7 @@ isGoogleMapsLoaded: boolean = false;
       },
       error: (error) => {
         console.error('[ProfileComponent] Error loading team members:', error);
-        this.errorMessage = 'Failed to load team members.';
+        this.snackBar.open('Failed to load team members.', 'Close', { duration: 3000 });
       }
     });
   }
@@ -434,8 +430,6 @@ isGoogleMapsLoaded: boolean = false;
     console.log(this.profileForm)
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
-      this.errorMessage = null;
-      this.successMessage = null;
       this.profileForm.patchValue({
         SessionId: this.sessionId
       });
@@ -445,7 +439,7 @@ isGoogleMapsLoaded: boolean = false;
         next: (response: Profile) => {
           this.profile = response;
           this.profileForm.patchValue(response);
-          this.successMessage = 'Profile updated successfully';
+          this.snackBar.open('Profile updated successfully', 'Close', { duration: 3000 });
                   if(!this.subscriptionActive)
                   {
                      const selectedPackageValue = this.profileForm.value.subscriptionPackage;
@@ -470,12 +464,12 @@ isGoogleMapsLoaded: boolean = false;
         },
         error: (error) => {
           console.error('Error updating profile:', error);
-          this.errorMessage = 'Failed to update profile. Please try again.';
+          this.snackBar.open('Failed to update profile. Please try again.', 'Close', { duration: 3000 });
           this.isSaving = false;
         }
       });
     } else {
-      this.errorMessage = 'Please fill all required fields correctly.';
+      this.snackBar.open('Please fill all required fields correctly.', 'Close', { duration: 3000 });
     }
   }
 
@@ -530,7 +524,7 @@ isGoogleMapsLoaded: boolean = false;
       const newMember: TeamMember = this.teamForm.value;
       const inviterId = this.authService.currentUserSubject.value?.id;
       if (!inviterId) {
-        this.errorMessage = 'Cannot add team member: User not logged in.';
+        this.snackBar.open('Cannot add team member: User not logged in.', 'Close', { duration: 3000 });
         this.isSendingInvite = false;
         return;
       }
@@ -551,13 +545,13 @@ isGoogleMapsLoaded: boolean = false;
               panelClass: ['error-snackbar']
             });
           } else {
-            this.errorMessage = 'Failed to add team member.';
+            this.snackBar.open('Failed to add team member.', 'Close', { duration: 3000 });
           }
           this.isSendingInvite = false;
         }
       });
     } else {
-      this.errorMessage = 'Please fill all required fields correctly.';
+      this.snackBar.open('Please fill all required fields correctly.', 'Close', { duration: 3000 });
     }
   }
 
@@ -659,7 +653,7 @@ isGoogleMapsLoaded: boolean = false;
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
-    this.successMessage = `Switched to ${newRole} role`;
+    this.snackBar.open(`Switched to ${newRole} role`, 'Close', { duration: 3000 });
     console.log('Role switched to:', newRole);
     console.log('Visibility - Personal:', this.canViewPersonalInfo());
     console.log('Visibility - Company:', this.canViewCompanyDetails());

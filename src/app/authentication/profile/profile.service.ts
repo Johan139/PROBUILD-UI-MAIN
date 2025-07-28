@@ -80,7 +80,7 @@ export class ProfileService {
   }
 
   getTeamMemberProfile(userId: string): Observable<Profile> {
-    const url = `${this.teamsApiUrl}/members/${userId}`;
+    const url = `${this.teamsApiUrl}/members/profile/${userId}`;
     return this.http.get<Profile>(url, { headers: this.getHeaders() }).pipe(
       catchError(error => {
         console.error('Error fetching team member profile:', error);
