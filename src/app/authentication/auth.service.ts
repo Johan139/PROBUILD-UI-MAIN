@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map } from 'rxjs';
+import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
@@ -78,7 +78,7 @@ export class AuthService {
         headers: { 'Content-Type': 'application/json' },
       })
       .pipe(
-        tap((response) => this.handleSuccessfulLogin(response)),
+        switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
           if (error.status === 401) {
             // If the first login fails with 401, try the member login
@@ -90,12 +90,14 @@ export class AuthService {
       );
   }
 
-  private handleSuccessfulLogin(response: any): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+  private handleSuccessfulLogin(response: any): Observable<any> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return of(response);
+    }
 
     if (!response || typeof response !== 'object' || !response.token) {
       console.warn('Invalid response received. Skipping login logic.');
-      return;
+      return of(response);
     }
 
     const { token, refreshToken } = response;
@@ -112,14 +114,15 @@ export class AuthService {
       localStorage.setItem('userType', userType);
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
+      return of(response);
     } else {
-      this.fetchTeamMemberDetails(token).subscribe({
-        next: (memberDetails) => {
+      return this.fetchTeamMemberDetails(token).pipe(
+        tap((memberDetails) => {
           if (memberDetails && memberDetails.id) {
             this.loadUserPermissions(memberDetails.id);
           }
-        },
-      });
+        })
+      );
     }
   }
 
@@ -142,7 +145,7 @@ export class AuthService {
         headers: { 'Content-Type': 'application/json' },
       })
       .pipe(
-        tap((response) => this.handleSuccessfulLogin(response)),
+        switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
           return throwError(() => this.handleLoginError(error));
         })
@@ -294,12 +297,13 @@ export class AuthService {
       if (!teamInfo) {
         return throwError(() => new Error('Not a team member token'));
       }
-      const teamMemberId = teamInfo.split(':')[1];
+      const teamMemberId = teamInfo.split(':')[0];
 
       return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
         tap(memberDetails => {
           const user = {
             id: memberDetails.id,
+            inviterId: memberDetails.inviterId,
             firstName: memberDetails.firstName,
             lastName: memberDetails.lastName,
             role: memberDetails.role,

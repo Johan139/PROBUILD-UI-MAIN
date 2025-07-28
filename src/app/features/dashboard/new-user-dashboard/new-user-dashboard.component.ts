@@ -23,7 +23,7 @@ import { MatTableModule } from '@angular/material/table';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
-import { filter, take, switchMap } from 'rxjs/operators';
+import { filter, take, switchMap } from 'rxjs';
 import { of, combineLatest, forkJoin } from 'rxjs';
 import { TeamManagementService } from '../../../services/team-management.service';
 import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
@@ -146,7 +146,7 @@ export class NewUserDashboardComponent implements OnInit {
       this.authService.currentUser$,
       this.authService.userPermissions$
     ]).pipe(
-      filter(([user, permissions]) => !!user),
+      filter(([user, permissions]) => !!user && !!user.id),
       switchMap(([user, permissions]) => {
         const isTeamMember = !!user.inviterId;
         if (isTeamMember && permissions.includes('manageSubtaskNotes')) {
