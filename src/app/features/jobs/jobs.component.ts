@@ -138,7 +138,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public timelineService: TimelineService,
     private signalrService: SignalrService,
     private jobAssignmentService: JobAssignmentService,
-    private authService: AuthService,
+    public authService: AuthService,
     private weatherService: WeatherService,
     private weatherImpactService: WeatherImpactService
   ) {

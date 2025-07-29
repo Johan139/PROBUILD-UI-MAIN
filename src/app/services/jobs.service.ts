@@ -25,6 +25,14 @@ export class JobsService {
     return this.httpClient.get(BASE_URL+'/userId/'+userId, {headers:{'Content-Type': 'application/json'}})
   }
 
+  getAssignedJobsForTeamMember(userId: string): Observable<any> {
+    return this.httpClient.get(`${environment.BACKEND_URL}/Jobs/assigned/${userId}`, {headers:{'Content-Type': 'application/json'}})
+  }
+
+  getAssignedJobs(userId: string): Observable<any> {
+    return this.httpClient.get(`${environment.BACKEND_URL}/JobAssignment/GetAssignedUsers/${userId}`, {headers:{'Content-Type': 'application/json'}})
+  }
+
   getSubtasks(jobId: number) {
     return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
   }
@@ -39,9 +47,8 @@ export class JobsService {
       responseType: 'blob'
     });
   }
-  downloadNoteDocument(documentId: number): Observable<Blob> {
-    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
-  }
+
+
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
@@ -55,15 +62,19 @@ export class JobsService {
       headers: { 'Content-Type': 'application/json' }
     });
   }
+
   getJobSubtasks(jobId: number): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
   }
+
   getSpecificJob(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/Id/' +jobId)
   }
+
   GetBillOfMaterials(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'/processing-results/' +jobId)
   }
+
   GetBillOfMaterialsStatus(jobId: any):  Observable<any>  {
     return this.httpClient.get(BASE_URL+'processing-results/' +jobId)
   }
@@ -71,8 +82,22 @@ export class JobsService {
   setJobCard(jobForm:any){
     this.jobQuote = jobForm;
   }
+
   getJobCard(){
     return this.jobQuote;
   }
+
+  archiveJob(jobId: number): Observable<void> {
+    return this.httpClient.put<void>(`${BASE_URL}/${jobId}/archive`, {});
+  }
+
+  getArchivedJobs(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/archived`);
+  }
+
+  getDashboardJobs(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
+  }
+
 
 }

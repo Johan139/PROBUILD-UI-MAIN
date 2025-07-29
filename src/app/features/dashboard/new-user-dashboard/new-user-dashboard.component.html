@@ -10,6 +10,14 @@
           <mat-card-title>Welcome to Your ProBuildAI Dashboard</mat-card-title>
         </mat-card-header>
         <mat-card-content>
+          <div *ngIf="teams.length > 1">
+            <mat-form-field>
+              <mat-label>Select Team</mat-label>
+              <mat-select [(ngModel)]="selectedTeam" name="team">
+                <mat-option *ngFor="let team of teams" [value]="team">{{ team.inviterName }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
           <mat-divider></mat-divider>
 
           <p *ngIf="isSubContractor">
@@ -48,18 +56,31 @@
                   <th>Project</th>
                   <th>Task</th>
                   <th>Created</th>
+                  <th>Status</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let group of notes">
-                  <td>{{group.projectName}}</td>
+                <tr *ngFor="let note of notes">
+                  <td style="white-space: normal; word-break: break-word;">{{note.projectName}}</td>
                   <td style="white-space: normal; word-break: break-word;">
-                    {{ group.subtaskName }}
+                    {{ note.subtaskName }}
                   </td>
-                  <td>{{group.createdAt | date:'short'}}</td>
+                  <td style="white-space: normal; word-break: break-word;">{{note.createdAt | date:'short'}}</td>
+                  <td style="white-space: normal; word-break: break-word;">
+                   <span [ngClass]="{
+                     'status-archived': note.status === 'Archived',
+                     'status-approved': note.status === 'Approved',
+                     'status-rejected': note.status === 'Rejected',
+                     'status-pending': note.status === 'Pending'
+                   }">
+                     {{ note.status }}
+                   </span>
+                  </td>
                   <td>
-                    <button class="submit-btn delete-btn" (click)="openNoteDialog(group)" mat-raised-button>View</button>
+                    <button class="submit-btn delete-btn" (click)="openNoteDialog(note)" mat-raised-button [disabled]="openingNoteId === note.notes[0].id">
+                      {{ openingNoteId === note.notes[0].id ? 'Viewing...' : 'View' }}
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -77,73 +98,62 @@
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
-          <div *ngIf="userJobs.length === 0">
+          <div *ngIf="jobsLoading">
+            <p>Loading jobs...</p>
+          </div>
+          <div *ngIf="!jobsLoading && userJobs.length === 0">
             <p>No jobs assigned to you yet.</p>
           </div>
           <div class="job-scroll-container" *ngIf="userJobs.length > 0">
-            <table class="themed-table action-points-table">
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Created</th>
-                  <th>Progress</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let job of userJobs">
-                  <td>{{ job.projectName }}</td>
-                  <td>{{ job.createdAt | date: 'short' }}</td>
-                  <td>
-                    <div class="job-progress-bar">
-                      <div class="progress-fill" [style.width.%]="job.progress"></div>
-                    </div>
-                    <span class="progress-percent">{{ job.progress }}%</span>
-                  </td>
-                  <td>
-                    <button class="submit-btn delete-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <mat-table [dataSource]="userJobs" class="mat-elevation-z8">
+              <!-- Project Column -->
+              <ng-container matColumnDef="project">
+                <mat-header-cell *matHeaderCellDef>Project</mat-header-cell>
+                <mat-cell *matCellDef="let job">{{ job.projectName }}</mat-cell>
+              </ng-container>
+
+              <!-- Created Column -->
+              <ng-container matColumnDef="created">
+                <mat-header-cell *matHeaderCellDef>Created</mat-header-cell>
+                <mat-cell *matCellDef="let job">{{ job.createdAt | date: 'shortDate' }}</mat-cell>
+              </ng-container>
+
+              <!-- Progress Column -->
+              <ng-container matColumnDef="progress">
+                <mat-header-cell *matHeaderCellDef>Progress</mat-header-cell>
+                <mat-cell *matCellDef="let job">
+                  <div class="job-progress-bar">
+                    <div class="progress-fill" [style.width.%]="job.progress"></div>
+                  </div>
+                  <span class="progress-percent">{{ job.progress }}%</span>
+                </mat-cell>
+              </ng-container>
+
+              <!-- Actions Column -->
+              <ng-container matColumnDef="actions">
+                <mat-header-cell *matHeaderCellDef></mat-header-cell>
+                <mat-cell *matCellDef="let job">
+                  <button mat-icon-button [matMenuTriggerFor]="menu">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="loadJob(job.id)">View Job</button>
+                    <button mat-menu-item [disabled]="job.progress !== 100" (click)="archiveJob(job.id)">
+                      Archive Job
+                    </button>
+                  </mat-menu>
+                </mat-cell>
+              </ng-container>
+
+              <mat-header-row *matHeaderRowDef="jobDisplayedColumns"></mat-header-row>
+              <mat-row *matRowDef="let row; columns: jobDisplayedColumns;"></mat-row>
+            </mat-table>
           </div>
         </mat-card-content>
       </mat-card>
     </div>
   </div>
 </div>
-
-<ng-template #noteDetailDialog let-data>
-  <div class="note-detail-dialog">
-    <h2 mat-dialog-title>Note Details</h2>
-
-    <mat-dialog-content>
-
-      <p><strong>Project:</strong> {{ data.projectName }}</p>
-      <p><strong>Subtask ID:</strong> {{ data.jobSubtaskId }}</p>
-      <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
-
-      <p><strong>Messages:</strong></p>
-      <div class="chat-box-inside-dialog">
-        <div *ngFor="let note of data.notes" class="chat-message">
-          <div class="chat-bubble">
-            <div class="note-text">{{ note.noteText }}</div>
-            <div class="note-time">{{ note.createdAt | date:'short' }}</div>
-          </div>
-        </div>
-      </div>
-
-    </mat-dialog-content>
-
-    <mat-dialog-actions class="dialog-action-buttons" align="end">
-      <button mat-raised-button class="submit-btn delete-btn" (click)="startApproval(data)">Approve</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="rejectNote(data)">Reject</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
-      <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
-    </mat-dialog-actions>
-  </div>
-</ng-template>
-
 
 <!-- Documents Dialog -->
 <ng-template #documentsDialog>

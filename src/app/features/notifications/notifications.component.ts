@@ -56,12 +56,4 @@ export class NotificationsComponent implements OnInit {
       this.loadNotifications();
     }
   }
-
-  sendTestNotification(): void {
-    this.notificationsService.sendTestNotification().subscribe(() => {
-      this.currentPage = 1;
-      this.totalPages = Number.MAX_SAFE_INTEGER;
-      this.loadNotifications();
-    });
-  }
 }

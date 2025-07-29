@@ -1,0 +1,57 @@
+$primary-yellow: #fbd008;
+$darker-yellow: #e6bf00;
+$dark-gray: #333;
+
+.note-detail-dialog {
+    .mat-dialog-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .chat-box-inside-dialog {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    .dialog-action-buttons {
+        justify-content: flex-end;
+        gap: 8px;
+
+        .submit-btn.delete-btn {
+            background: $primary-yellow;
+            color: $dark-gray;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 0;
+            line-height: 1.5;
+
+            &:hover {
+                background: $darker-yellow;
+            }
+        }
+    }
+
+    .status-approved {
+        color: green;
+        font-weight: bold;
+    }
+
+    .status-rejected {
+        color: red;
+        font-weight: bold;
+    }
+
+    .status-archived {
+        color: grey;
+        font-weight: bold;
+    }
+    .status-pending {
+        color: grey;
+        font-weight: bold;
+    }
+}

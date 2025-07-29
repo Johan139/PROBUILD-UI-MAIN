@@ -8,9 +8,10 @@ import {MatInputModule} from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import {MatButton} from "@angular/material/button";
 import {HttpClient} from "@angular/common/http";
-import {Router} from "@angular/router";
+import {Router, ActivatedRoute} from "@angular/router";
 import { environment } from '../../../environments/environment';
 import {catchError, map, startWith} from 'rxjs/operators';
+import { InvitationService } from '../../services/invitation.service';
 import {Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
@@ -76,6 +77,7 @@ export class RegistrationComponent implements OnInit{
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
+  token: string | null = null;
   // Options for dropdowns
   constructionTypes = constructionTypes;
   trades = trades;
@@ -112,7 +114,15 @@ export class RegistrationComponent implements OnInit{
   certified = false;
   isLoading: boolean = false;
 
-  constructor(private formBuilder: FormBuilder, private httpClient: HttpClient, private router: Router,private stripeService: StripeService,private dialog: MatDialog) {
+  constructor(
+    private formBuilder: FormBuilder,
+    private httpClient: HttpClient,
+    private router: Router,
+    private stripeService: StripeService,
+    private dialog: MatDialog,
+    private route: ActivatedRoute,
+    private invitationService: InvitationService
+  ) {
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
@@ -139,10 +149,10 @@ export class RegistrationComponent implements OnInit{
   ngOnInit() {
     this.loadSubscriptionPackages();
     this.registrationForm = this.formBuilder.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
+      firstName: [{value: '', disabled: true}, Validators.required],
+      lastName: [{value: '', disabled: true}, Validators.required],
       phoneNumber: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      email: [{value: '', disabled: true}, [Validators.required, Validators.email]],
       password: [
         '',
         [
@@ -163,7 +173,7 @@ export class RegistrationComponent implements OnInit{
       vatNo: [''],
       userType: ['PERSONAL_USE', Validators.required],
 
-      constructionType: (''),
+      constructionType: ([]),
       country: ['', Validators.required],
       state: ['', Validators.required],
       city: ['', Validators.required],
@@ -175,11 +185,11 @@ export class RegistrationComponent implements OnInit{
       availability:(''),
 
       subscriptionPackage: ['', Validators.required],
-      projectPreferences: (''),
+      projectPreferences: ([]),
 
-      productsOffered:(''),
+      productsOffered:([]),
 
-      deliveryArea: (''),
+      deliveryArea: ([]),
       deliveryTime: (''),
       userName:(''),
     });
@@ -207,6 +217,44 @@ export class RegistrationComponent implements OnInit{
       this.user = value;
       this.selectedTrades = [];
       this.selectedSupplierTypes = [];
+    });
+
+    this.route.queryParams.subscribe(params => {
+      this.token = params['token'];
+      if (this.token) {
+        // When a token is present, remove required validators from fields that are not needed for invited users
+        const fieldsToUpdate = ['country', 'state', 'city', 'subscriptionPackage'];
+        fieldsToUpdate.forEach(fieldName => {
+          const control = this.registrationForm.get(fieldName);
+          if (control) {
+            control.clearValidators();
+            control.updateValueAndValidity();
+          }
+        });
+
+        this.invitationService.getInvitation(this.token).subscribe({
+          next: (data: any) => {
+            console.log('Invitation data:', data);
+            this.registrationForm.patchValue(data);
+            if (data.role) {
+              const userType = this.userTypes.find(t => t.display === data.role);
+              if (userType) {
+                this.registrationForm.get('userType')?.setValue(userType.value);
+                this.user = userType.value;
+              }
+            }
+            this.registrationForm.get('userType')?.disable();
+          },
+          error: () => {
+            this.alertMessage = 'Invalid or expired invitation token.';
+            this.showAlert = true;
+          }
+        });
+      } else {
+        this.registrationForm.get('firstName')?.enable();
+        this.registrationForm.get('lastName')?.enable();
+        this.registrationForm.get('email')?.enable();
+      }
     });
   }
 
@@ -320,6 +368,31 @@ export class RegistrationComponent implements OnInit{
   }
 
   onSubmit(): void {
+    if (this.token) {
+      if (this.registrationForm.valid) {
+        this.isLoading = true;
+        const data = {
+          token: this.token,
+          password: this.registrationForm.get('password')?.value,
+          phoneNumber: this.registrationForm.get('phoneNumber')?.value
+        };
+        this.invitationService.registerInvited(data).subscribe({
+          next: () => {
+            this.isLoading = false;
+            this.alertMessage = 'Registration successful. You can now log in.';
+            this.showAlert = true;
+            this.routeURL = 'login?type=member';
+          },
+          error: () => {
+            this.isLoading = false;
+            this.alertMessage = 'Failed to complete registration.';
+            this.showAlert = true;
+          }
+        });
+      }
+      return;
+    }
+
     const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
 
@@ -421,6 +494,50 @@ export class RegistrationComponent implements OnInit{
       disableClose: true,
       width: '400px'
     });
+  }
+
+  getConstructionTypeDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('constructionType')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.constructionTypes
+      .filter(type => selectedValues.includes(type.value))
+      .map(type => type.display)
+      .join(', ');
+  }
+
+  getProjectPreferencesDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('projectPreferences')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.preferenceOptions
+      .filter(pref => selectedValues.includes(pref.value))
+      .map(pref => pref.display)
+      .join(', ');
+  }
+
+  getProductsOfferedDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('productsOffered')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.supplierProducts
+      .filter(prod => selectedValues.includes(prod.value))
+      .map(prod => prod.display)
+      .join(', ');
+  }
+
+  getDeliveryAreaDisplayValue(): string {
+    const selectedValues = this.registrationForm.get('deliveryArea')?.value;
+    if (!selectedValues || selectedValues.length === 0) {
+      return '';
+    }
+    return this.deliveryAreas
+      .filter(area => selectedValues.includes(area.value))
+      .map(area => area.display)
+      .join(', ');
   }
 
   closeAlert(): void {

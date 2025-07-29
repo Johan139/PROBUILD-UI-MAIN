@@ -1,0 +1,13 @@
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+mat-dialog-content {
+  padding-top: 20px;
+}
+
+mat-dialog-actions {
+  justify-content: flex-end;
+}

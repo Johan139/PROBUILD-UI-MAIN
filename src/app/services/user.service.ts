@@ -1,27 +1,37 @@
 import { Injectable } from '@angular/core';
-import {environment} from "../../environments/environment";
-import {HttpClient} from "@angular/common/http";
+import { environment } from "../../environments/environment";
+import { HttpClient } from "@angular/common/http";
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { User } from '../models/user';
 
-const BASE_URL = `${environment.BACKEND_URL}/`;
+const BASE_URL = `${environment.BACKEND_URL}/Account`;
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: 'root'
 })
 export class UserService {
 
-  constructor(private httpClient : HttpClient) {
+    constructor(private httpClient: HttpClient) {
 
-  }
+    }
 
-  getUserQuotes(){
+    getUserById(id: string): Observable<User> {
+        return this.httpClient.get<User[]>(`${BASE_URL}/byUserId/${id}`).pipe(
+            map(users => users[0])
+        );
+    }
 
-  }
+    getUserQuotes() {
 
-  getUserBids(){
+    }
 
-  }
-  getUserProjects(userId: any){
+    getUserBids() {
 
-  }
+    }
+
+    getUserProjects(userId: any) {
+
+    }
 
 }

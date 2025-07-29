@@ -1,0 +1,16 @@
+export const PERMISSIONS = [
+  { name: 'Add Team Members', key: 'addTeamMembers' },
+  { name: 'Delete Team Members', key: 'deleteTeamMembers' },
+  { name: 'Edit Team Members', key: 'editTeamMembers' },
+  { name: 'Create Job Tasks', key: 'createJobTasks' },
+  { name: 'Delete Job Tasks', key: 'deleteJobTasks' },
+  { name: 'Edit Job Tasks', key: 'editJobTasks' },
+  { name: 'Create Job Subtasks', key: 'createJobSubtasks' },
+  { name: 'Delete Job Subtasks', key: 'deleteJobSubtasks' },
+  { name: 'Edit Job Subtasks', key: 'editJobSubtasks' },
+  { name: 'Create Jobs', key: 'createJobs' },
+  { name: 'Delete Jobs', key: 'deleteJobs' },
+  { name: 'Edit Jobs', key: 'editJobs' },
+  { name: 'Create Subtask Notes', key: 'createSubtaskNotes' },
+  { name: 'Manage Subtask Notes', key: 'manageSubtaskNotes' },
+];

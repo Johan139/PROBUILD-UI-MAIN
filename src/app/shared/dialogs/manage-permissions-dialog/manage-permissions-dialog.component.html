@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>Manage Permissions for {{ teamMemberName }}</h2>
+<mat-dialog-content [formGroup]="permissionsForm" class="permissions-grid">
+  <mat-checkbox *ngFor="let permission of permissions" [formControlName]="permission.key">
+    {{ permission.name }}
+  </mat-checkbox>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-button (click)="close()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="permissionsForm.pristine || !permissionsForm.valid">Save</button>
+</mat-dialog-actions>
