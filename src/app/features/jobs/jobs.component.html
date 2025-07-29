@@ -20,7 +20,7 @@
                   <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
                   <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
                 </span>
-                <button *ngIf="isProjectOwner" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
+                <button *ngIf="authService.hasPermission('editJobs')" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
                   <mat-icon>edit</mat-icon>
                 </button>
               </div>
@@ -84,7 +84,7 @@
   <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
     <div class="table-header">
       <h3>{{table.title}}</h3>
-      <button *ngIf="isProjectOwner" class="submit-btn" (click)="subtaskService.addSubtask(table)">
+      <button *ngIf="authService.hasPermission('createJobs')" class="submit-btn" (click)="subtaskService.addSubtask(table)">
         Add Subtask
       </button>
     </div>
@@ -121,7 +121,7 @@
             {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
           </td>
           <td>
-            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
+            <button *ngIf="authService.hasPermission('deleteJobs')" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
               Delete
             </button>
 

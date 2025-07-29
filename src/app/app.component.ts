@@ -52,6 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
   alertMessage: string = '';
   LoggedInName: string = '';
+  companyName: string = '';
   routeURL: string = '/';
   isLoading: boolean = false;
   isServicesExpanded: boolean = false;
@@ -86,25 +87,29 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+
 ngOnInit() {
   if (this.isBrowser) {
     this.authService.currentUser$.subscribe(user => {
-      if (user) {
-        const firstName = user.firstName || localStorage.getItem('firstName') || '';
-        const lastName = user.lastName || localStorage.getItem('lastName') || '';
-        this.LoggedInName = `${firstName} ${lastName}`.trim();
-      } else {
-        this.LoggedInName = '';
+        if (user) {
+          const firstName = user.firstName || localStorage.getItem('firstName') || '';
+          const lastName = user.lastName || localStorage.getItem('lastName') || '';
+          this.LoggedInName = `${firstName} ${lastName}`.trim();
+          this.companyName = user.companyName || localStorage.getItem('companyName') || '';
+        } else {
+          this.LoggedInName = '';
+          this.companyName = '';
       }
 
       // ✅ Set loggedIn reactively based on whether a user is present
       this.loggedIn = !!user;
     });
-
-    this.recentNotifications$ = this.notificationsService.notifications$;
-    this.notificationsService.getAllNotifications(1, 50).subscribe();
+      this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
+      this.recentNotifications$ = this.notificationsService.notifications$;
+      this.notificationsService.getAllNotifications(1, 50).subscribe();
+    }
   }
-}
+
 
   onNotificationsOpened(): void {
     this.notificationsService.markAsRead();

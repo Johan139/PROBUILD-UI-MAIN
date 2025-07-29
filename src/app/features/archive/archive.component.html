@@ -1,0 +1,108 @@
+<div class="dashboard-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Archive</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-tab-group>
+        <mat-tab label="Action Points">
+          <div *ngIf="isLoading" class="loading-container">
+            <app-loader></app-loader>
+          </div>
+
+          <div *ngIf="!isLoading && archivedNotes.length === 0" class="no-notes">
+            <p>No archived action points found.</p>
+          </div>
+
+          <table mat-table [dataSource]="archivedNotes" *ngIf="!isLoading && archivedNotes.length > 0" class="mat-elevation-z8">
+
+            <!-- Project Column -->
+            <ng-container matColumnDef="project">
+              <th mat-header-cell *matHeaderCellDef> Project </th>
+              <td mat-cell *matCellDef="let note"> {{note.projectName}} </td>
+            </ng-container>
+
+            <!-- Task Column -->
+            <ng-container matColumnDef="task">
+              <th mat-header-cell *matHeaderCellDef> Task </th>
+              <td mat-cell *matCellDef="let note"> {{note.subtaskName}} </td>
+            </ng-container>
+
+            <!-- Created Column -->
+            <ng-container matColumnDef="created">
+              <th mat-header-cell *matHeaderCellDef> Created </th>
+              <td mat-cell *matCellDef="let note"> {{note.createdAt | date:'short'}} </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef> Status </th>
+              <td mat-cell *matCellDef="let note">
+                <span [ngClass]="{
+                  'status-approved': getStatus(note) === 'Approved',
+                  'status-rejected': getStatus(note) === 'Rejected',
+                  'status-archived': getStatus(note) === 'Archived',
+                  'status-pending': getStatus(note) === 'Pending'
+                }">
+                  {{ getStatus(note) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- View Column -->
+            <ng-container matColumnDef="view">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let note">
+                <button mat-raised-button class="submit-btn delete-btn" (click)="openNoteDetail(note)" [disabled]="openingNoteId === note.notes[0].id">
+                  {{ openingNoteId === note.notes[0].id ? 'Viewing...' : 'View' }}
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+        </mat-tab>
+        <mat-tab label="Jobs">
+          <div *ngIf="isLoading" class="loading-container">
+            <app-loader></app-loader>
+          </div>
+
+          <div *ngIf="!isLoading && archivedJobs.length === 0" class="no-notes">
+            <p>No archived jobs found.</p>
+          </div>
+
+          <table mat-table [dataSource]="archivedJobs" *ngIf="!isLoading && archivedJobs.length > 0" class="mat-elevation-z8">
+
+            <!-- Project Name Column -->
+            <ng-container matColumnDef="projectName">
+              <th mat-header-cell *matHeaderCellDef> Project Name </th>
+              <td mat-cell *matCellDef="let job"> {{job.projectName}} </td>
+            </ng-container>
+
+            <!-- Job Type Column -->
+            <ng-container matColumnDef="jobType">
+              <th mat-header-cell *matHeaderCellDef> Job Type </th>
+              <td mat-cell *matCellDef="let job"> {{job.jobType}} </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef> Status </th>
+              <td mat-cell *matCellDef="let job"> {{job.status}} </td>
+            </ng-container>
+
+            <!-- Completion Date Column -->
+            <ng-container matColumnDef="completionDate">
+              <th mat-header-cell *matHeaderCellDef> Completion Date </th>
+              <td mat-cell *matCellDef="let job"> {{job.completionDate | date:'shortDate'}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="jobDisplayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: jobDisplayedColumns;"></tr>
+          </table>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -25,6 +25,7 @@ export const COUNTRIES = [
   { value: 'ISR', display: 'Israel', phonePattern: /^(\+972|0)5[0-9]{8}$/ },
   { value: 'LUX', display: 'Luxembourg', phonePattern: /^(\+352)?6[0-9]{8}$/ },
   { value: 'ISL', display: 'Iceland', phonePattern: /^(\+354)?[6-8][0-9]{6}$/ },
+  { value: 'ZAF', display: 'Republic of South Africa', phonePattern: /^(\+27|0)[678][0-9]{8}$/ },
 
   // Remaining Countries
   { value: 'AFG', display: 'Afghanistan' },
@@ -170,7 +171,6 @@ export const COUNTRIES = [
   { value: 'SVN', display: 'Slovenia' },
   { value: 'SLB', display: 'Solomon Islands' },
   { value: 'SOM', display: 'Somalia' },
-  { value: 'ZAF', display: 'South Africa' },
   { value: 'LKA', display: 'Sri Lanka' },
   { value: 'SDN', display: 'Sudan' },
   { value: 'SUR', display: 'Suriname' },

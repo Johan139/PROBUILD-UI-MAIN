@@ -47,6 +47,7 @@ $red: #DA4167;
   justify-content: space-between;
   align-items: center;
   padding-left: 24px;
+  padding-right: 6px;
   align-items: right;
   margin-top: 5px !important;
   border-radius: 5px !important;
@@ -102,8 +103,7 @@ mat-toolbar {
   background-color: $primary-yellow;
 }
 mat-sidenav-container {
-  //height: 100%;
-  height: calc(100vh - 65px);
+  height: calc(100vh - 115px);
 }
 .mat-sidenav, mat-sidenav {
   width: 150px;
@@ -111,11 +111,12 @@ mat-sidenav-container {
   border-radius: 0px;
   font-family: Orbitron, sans-serif ;
 }
-mat-sidenav-content{
+mat-sidenav-content {
   margin-left: 0 !important;
-  display: flex; /* Enables Flexbox */
-  // align-items: center; /* Centers vertically */
-  justify-content: center; /* Centers horizontally */
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  overflow: auto;
 }
 .alert-overlay {
   position: fixed;
@@ -223,6 +224,8 @@ footer {
 
 .notification-button {
   position: relative;
+  margin-left: 3px;
+  margin-right: 0px;
 }
 
 .notification-dot {
@@ -241,7 +244,7 @@ footer {
   font-family: 'Orbitron', sans-serif;
 }
 .nav-container {
-  height: calc(100vh - 64px); /* Adjust based on toolbar height */
+  height: calc(100vh - 114px); /* Adjust based on toolbar height */
   width: 100%; // Full width
 }
 .spacer {
@@ -253,6 +256,9 @@ footer {
   justify-content: space-between;
   align-items: flex-start;
   font-size: 18px;
+}
+.logged-in-name:hover {
+  cursor: pointer;
 }
 @media (max-width: 768px) {
   .sidenav {
@@ -267,4 +273,16 @@ footer {
 
 .unread-notification {
   border: 2px solid #fbd008;
+}
+
+.company-bar {
+  background-color: #ffe373;
+  color: black;
+  padding: 10px 20px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  height: 50px;
+  display: flex;
+  align-items: center;
 }

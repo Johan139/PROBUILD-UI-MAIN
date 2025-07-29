@@ -1,4 +1,5 @@
 import { Component, ElementRef, Inject, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
@@ -6,6 +7,16 @@ import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Profile, TeamMember, Document } from './profile.model';
 import { userTypes } from '../../data/user-types';
+import { TeamManagementService } from '../../services/team-management.service';
+import {
+  constructionTypes,
+  preferenceOptions,
+  supplierProducts,
+  deliveryAreas,
+  leadTimeDelivery,
+  availabilityOptions,
+  certificationOptions
+} from '../../data/registration-data';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -17,19 +28,22 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
-import { timeout } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { JobsService } from '../../services/jobs.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { PaymentPromptDialogComponent } from '../registration/payment-prompt-dialog.component';
+import { SharedModule } from '../../shared/shared.module';
+import { ManagePermissionsDialogComponent } from '../../shared/dialogs/manage-permissions-dialog/manage-permissions-dialog.component';
 const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-profile',
@@ -45,14 +59,17 @@ const BASE_URL = environment.BACKEND_URL;
     MatAutocompleteModule,
     MatDialogModule,
     MatTooltipModule,
+    MatSnackBarModule,
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
     MatTabsModule,
     MatTableModule,
     MatDialogModule,
+    MatMenuModule,
     NgForOf,
-    NgIf
+    NgIf,
+    SharedModule
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
@@ -69,6 +86,7 @@ isGoogleMapsLoaded: boolean = false;
   teamForm: FormGroup;
   isLoading = true;
   isSaving = false;
+  isSendingInvite = false;
   isBrowser: boolean;
   subscriptionPackages: { value: string, display: string, amount: number }[] = [];
   progress: number = 0;
@@ -79,35 +97,43 @@ isGoogleMapsLoaded: boolean = false;
   sessionId: string = '';
   subscriptionActive: boolean = false;
   jobCardForm: FormGroup;
-  errorMessage: string | null = null;
-  successMessage: string | null = null;
   userRole: string | null = null;
   isVerified = false;
 
-  availableRoles: string[] = userTypes
+  availableRoles: { value: string, display: string }[] = userTypes
     .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
-    .map(ut => ut.display);
+    .filter(ut => ut.value !== 'SUBCONTRACTOR')
+    .filter(ut => ut.value !== 'VENDOR');
 
   teamMembers: TeamMember[] = [];
+  activeTeamMembers: TeamMember[] = [];
+  deactivatedTeamMembers: TeamMember[] = [];
   documents: ProfileDocument[] = [];
-  displayedColumns: string[] = ['name', 'role', 'email', 'actions'];
+  displayedColumns: string[] = ['name', 'role', 'email', 'status', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
-    private hubConnection!: HubConnection;
+  constructionTypes = constructionTypes;
+  preferenceOptions = preferenceOptions;
+  supplierProducts = supplierProducts;
+  deliveryAreas = deliveryAreas;
+  leadTimeDelivery = leadTimeDelivery;
+  availabilityOptions = availabilityOptions;
+  certificationOptions = certificationOptions;
 
   alertMessage: string | undefined;
   showAlert: boolean | undefined;
 
   constructor(
     private profileService: ProfileService,
-    private authService: AuthService,
+    public authService: AuthService,
     private fb: FormBuilder,
-     private httpClient: HttpClient,
-     private stripeService: StripeService,
-     private dialog: MatDialog,
+    private stripeService: StripeService,
+    private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
-      @Inject(PLATFORM_ID) private platformId: Object
+      @Inject(PLATFORM_ID) private platformId: Object,
+          private snackBar: MatSnackBar,
+    private teamManagementService: TeamManagementService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -121,7 +147,7 @@ isGoogleMapsLoaded: boolean = false;
       companyName: [null],
       companyRegNo: [null],
       vatNo: [null],
-      constructionType: [null],
+      constructionType: [[]],
       nrEmployees: [null],
       yearsOfOperation: [null],
       certificationStatus: [null],
@@ -130,9 +156,9 @@ isGoogleMapsLoaded: boolean = false;
       trade: [null],
       SessionId :[null],
       supplierType: [null],
-      productsOffered: [null],
-      projectPreferences: [null],
-      deliveryArea: [null],
+      productsOffered: [[]],
+      projectPreferences: [[]],
+      deliveryArea: [[]],
       deliveryTime: [null],
       country: [null],
       state: [null],
@@ -150,7 +176,8 @@ isGoogleMapsLoaded: boolean = false;
     });
 
     this.teamForm = this.fb.group({
-      name: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
       role: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]]
     });
@@ -164,6 +191,7 @@ isGoogleMapsLoaded: boolean = false;
       this.domSanitizer.bypassSecurityTrustResourceUrl('app/assets/custom-svg/status-failed-svgrepo-com.svg')
     );
   }
+
   ngAfterViewInit(): void {
     this.addressControl.valueChanges.subscribe(value => {
       if (typeof value === 'string' && value.trim()) {
@@ -182,89 +210,62 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
+
   ngOnInit(): void {
     this.loadSubscriptionPackages();
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
-      console.log('User Role:', this.userRole);
-      console.log('User Data:', user);
-      if (user) {
+      if (user && user.id) {
         this.loadProfile();
-        this.loadTeamMembers();
         this.loadDocuments();
-      } else {
+        this.checkSubscription();
+      } else if (!this.authService.isLoggedIn()) {
         this.isLoading = false;
-        this.errorMessage = 'Please log in to view your profile.';
       }
     });
 
-        this.sessionId = uuidv4();
-        this.hubConnection = new HubConnectionBuilder()
-        .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
-          .configureLogging(LogLevel.Debug)
-          .build();
+    this.sessionId = uuidv4();
+    this.profileService.initializeSignalR();
 
-        this.hubConnection.on('ReceiveProgress', (progress: number) => {
-          const cappedProgress = Math.min(100, progress);
-          this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
-          console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
-        });
+    this.profileService.progress$.subscribe(progress => {
+      this.progress = progress;
+    });
 
-        this.hubConnection.on('UploadComplete', (fileCount: number) => {
-          this.isUploading = false;
-          this.resetFileInput();
-          console.log(`Server-to-Azure upload complete. Total ${this.uploadedFilesCount} file(s) uploaded.`);
-          console.log('Current uploadedFileUrls:', this.uploadedFileUrls);
-        });
+    this.profileService.uploadComplete$.subscribe(fileCount => {
+      this.isUploading = false;
+      this.resetFileInput();
+      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
+    });
 
-
-        const userId = localStorage.getItem('userId');
-        this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${userId}`)
-        .subscribe({
-          next: (res) => {
-            this.subscriptionActive = res.hasActive;
-            if (!res.hasActive) {
-              this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
-
-            }
-          },
-          error: (err) => {
-            console.error('Subscription check failed', err);
-            this.alertMessage = "Unable to verify subscription. Try again later.";
-            this.showAlert = true;
-          }
-        });
-
-        this.hubConnection
-          .start()
-          .then(() => console.log('SignalR connection established successfully'))
-          .catch(err => console.error('SignalR Connection Error:', err));
-
-          if (this.isBrowser) {
-            this.loadGoogleMapsScript().then(() => {
-              this.isGoogleMapsLoaded = true;
-              this.autocompleteService = new google.maps.places.AutocompleteService();
-            });
-          }
+    if (this.isBrowser) {
+      this.profileService.loadGoogleMapsScript().then(() => {
+        this.isGoogleMapsLoaded = true;
+        this.autocompleteService = new google.maps.places.AutocompleteService();
+      }).catch(err => console.error('Google Maps script loading error:', err));
+    }
   }
 
   loadProfile(): void {
     this.isLoading = true;
-    this.errorMessage = null;
-    this.successMessage = null;
-    this.profileService.getProfile().subscribe({
-      next: (data: Profile) => {
-        console.log('Profile Data:', data);
-        this.profile = data;
-        this.profileForm.patchValue(data[0]);
-        this.successMessage = 'Profile loaded successfully';
+    this.profileService.getProfile().pipe(
+      catchError(err => {
+        const currentUser = this.authService.currentUserSubject.value;
+        if (currentUser && currentUser.isTeamMember && currentUser.id) {
+          return this.profileService.getTeamMemberProfile(currentUser.id);
+        }
+        return throwError(() => err);
+      })
+    ).subscribe({
+      next: (data: Profile | Profile[]) => {
+        const profileData = Array.isArray(data) ? data[0] : data;
+        this.profile = profileData;
+        this.profileForm.patchValue(profileData);
         this.isLoading = false;
-        this.isVerified = data.isVerified ?? false;
+        this.isVerified = profileData.isVerified ?? false;
+        this.loadTeamMembers();
       },
       error: (error) => {
-        this.errorMessage = error.message === 'User not authenticated'
-          ? 'Please log in to view your profile.'
-          : 'Failed to load profile. Please try again.';
+        this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
     });
@@ -327,36 +328,40 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
-  loadGoogleMapsScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof google !== 'undefined' && google.maps) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
 
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
 
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        if (typeof google !== 'undefined' && google.maps) {
-          resolve();
-        } else {
-          reject('Google Maps API not available after load');
+  checkSubscription(): void {
+    this.profileService.hasActiveSubscription().subscribe({
+      next: (res) => {
+        this.subscriptionActive = res.hasActive;
+        if (!res.hasActive) {
+          this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
         }
-      };
-      script.onerror = reject;
-      document.head.appendChild(script);
+      },
+      error: (err) => {
+        console.error('Subscription check failed', err);
+        this.alertMessage = "Unable to verify subscription. Try again later.";
+        this.showAlert = true;
+      }
     });
   }
+
   loadTeamMembers(): void {
-    this.profileService.getTeamMembers().subscribe({
+    const currentUser = this.authService.currentUserSubject.value;
+    if (!currentUser || !currentUser.id) {
+      this.snackBar.open('User not fully loaded. Please try again.', 'Close', { duration: 3000 });
+      return;
+    }
+    const userId = currentUser.isTeamMember ? currentUser.inviterId : currentUser.id;
+    this.teamManagementService.getTeamMembers(userId).subscribe({
       next: (members: TeamMember[]) => {
         this.teamMembers = members;
+        this.activeTeamMembers = members.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
+        this.deactivatedTeamMembers = members.filter(m => m.status === 'Deactivated');
       },
       error: (error) => {
-        this.errorMessage = 'Failed to load team members.';
+        console.error('[ProfileComponent] Error loading team members:', error);
+        this.snackBar.open('Failed to load team members.', 'Close', { duration: 3000 });
       }
     });
   }
@@ -383,6 +388,7 @@ isGoogleMapsLoaded: boolean = false;
       }
     });
   }
+
   viewDocument(document: any): void {
     this.profileService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
@@ -419,8 +425,6 @@ isGoogleMapsLoaded: boolean = false;
     console.log(this.profileForm)
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
-      this.errorMessage = null;
-      this.successMessage = null;
       this.profileForm.patchValue({
         SessionId: this.sessionId
       });
@@ -430,7 +434,7 @@ isGoogleMapsLoaded: boolean = false;
         next: (response: Profile) => {
           this.profile = response;
           this.profileForm.patchValue(response);
-          this.successMessage = 'Profile updated successfully';
+          this.snackBar.open('Profile updated successfully', 'Close', { duration: 3000 });
                   if(!this.subscriptionActive)
                   {
                      const selectedPackageValue = this.profileForm.value.subscriptionPackage;
@@ -455,12 +459,12 @@ isGoogleMapsLoaded: boolean = false;
         },
         error: (error) => {
           console.error('Error updating profile:', error);
-          this.errorMessage = 'Failed to update profile. Please try again.';
+          this.snackBar.open('Failed to update profile. Please try again.', 'Close', { duration: 3000 });
           this.isSaving = false;
         }
       });
     } else {
-      this.errorMessage = 'Please fill all required fields correctly.';
+      this.snackBar.open('Please fill all required fields correctly.', 'Close', { duration: 3000 });
     }
   }
 
@@ -480,68 +484,72 @@ isGoogleMapsLoaded: boolean = false;
     });
     formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
     formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    // Remove connectionId since SignalR is disabled
     formData.append('sessionId', this.sessionId);
 
     this.progress = 0;
     this.isUploading = true;
-    console.log('Starting file upload without SignalR');
 
-    this.httpClient
-      .post<any>(BASE_URL + '/profile/UploadImage', formData, {
-        reportProgress: true,
-        observe: 'events',
-        headers: new HttpHeaders({ Accept: 'application/json' }),
-      })
-      .pipe(timeout(300000))
-      .subscribe({
-        next: (event) => {
-          if (event.type === HttpEventType.UploadProgress && event.total) {
-            // Use full 0-100% range since SignalR is disabled
-            this.progress = Math.round((100 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
-          } else if (event.type === HttpEventType.Response) {
-            console.log('Upload response:', event.body);
-            const newFilesCount = newFileNames.length;
-            this.uploadedFilesCount += newFilesCount;
-            if (event.body?.fileUrls) {
-              this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
-              console.log('Updated uploadedFileUrls after upload:', this.uploadedFileUrls);
-            } else {
-              console.error('No fileUrls returned in response:', event.body);
-            }
-            this.isUploading = false;
-            this.resetFileInput();
+    this.profileService.uploadImage(formData).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          this.progress = Math.round((100 * event.loaded) / event.total);
+        } else if (event.type === HttpEventType.Response) {
+          const newFilesCount = newFileNames.length;
+          this.uploadedFilesCount += newFilesCount;
+          if (event.body?.fileUrls) {
+            this.uploadedFileUrls = [...this.uploadedFileUrls, ...event.body.fileUrls];
           }
-        },
-        error: (error) => {
-          console.error('Upload error:', error);
-          this.progress = 0;
           this.isUploading = false;
-          this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
           this.resetFileInput();
-        },
-        complete: () => console.log('Client-to-API upload complete'),
-      });
+        }
+      },
+      error: (error) => {
+        console.error('Upload error:', error);
+        this.progress = 0;
+        this.isUploading = false;
+        this.uploadedFileNames = this.uploadedFileNames.filter(name => !newFileNames.includes(name));
+        this.resetFileInput();
+      }
+    });
   }
 
   addTeamMember(): void {
     if (this.teamForm.valid) {
+      this.isSendingInvite = true;
       const newMember: TeamMember = this.teamForm.value;
-      this.profileService.addTeamMember(newMember).subscribe({
+      const inviterId = this.authService.currentUserSubject.value?.id;
+      if (!inviterId) {
+        this.snackBar.open('Cannot add team member: User not logged in.', 'Close', { duration: 3000 });
+        this.isSendingInvite = false;
+        return;
+      }
+      this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
         next: (member: TeamMember) => {
-          this.teamMembers.push(member);
+          this.teamMembers = [...this.teamMembers, member];
+          this.loadTeamMembers();
           this.teamForm.reset();
-          this.successMessage = 'Team member added successfully';
+          this.snackBar.open('Team member invited successfully', 'Close', {
+            duration: 3000,
+          });
+          this.isSendingInvite = false;
         },
-        error: () => {
-          this.errorMessage = 'Failed to add team member.';
+        error: (error) => {
+          if (error.status === 409) {
+            this.snackBar.open(error.error.message, 'Close', {
+              duration: 5000,
+              panelClass: ['error-snackbar']
+            });
+          } else {
+            this.snackBar.open('Failed to add team member.', 'Close', { duration: 3000 });
+          }
+          this.isSendingInvite = false;
         }
       });
     } else {
-      this.errorMessage = 'Please fill all required fields correctly.';
+      this.snackBar.open('Please fill all required fields correctly.', 'Close', { duration: 3000 });
     }
   }
+
   resetFileInput(): void {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
@@ -549,28 +557,104 @@ isGoogleMapsLoaded: boolean = false;
       console.log('File input reset');
     }
   }
-  removeTeamMember(email: string): void {
-    this.profileService.removeTeamMember(email).subscribe({
-      next: () => {
-        this.teamMembers = this.teamMembers.filter(member => member.email !== email);
-        this.successMessage = 'Team member removed successfully';
-      },
-      error: () => {
-        this.errorMessage = 'Failed to remove team member.';
+
+  openConfirmationDialog(memberId: string, action: 'deactivate' | 'reactivate' | 'delete'): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: `Confirm ${action}`,
+        message: `Are you sure you want to ${action} this team member?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        switch (action) {
+          case 'deactivate':
+            this.deactivateTeamMember(memberId);
+            break;
+          case 'reactivate':
+            this.reactivateTeamMember(memberId);
+            break;
+          case 'delete':
+            this.deleteTeamMember(memberId);
+            break;
+        }
       }
     });
   }
-  ngOnDestroy(): void {
-    if (this.hubConnection) {
-      this.hubConnection.stop()
-        .then(() => console.log('SignalR connection stopped'))
-        .catch(err => console.error('Error stopping SignalR:', err));
-    }
+
+  openPermissionsDialog(teamMemberId: string, firstName: string, lastName: string): void {
+    this.teamManagementService.getPermissions(teamMemberId).subscribe(permissions => {
+      const dialogRef = this.dialog.open(ManagePermissionsDialogComponent, {
+        width: '500px',
+        data: {
+          teamMemberId,
+          teamMemberName: `${firstName} ${lastName}`,
+          permissions
+        }
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.snackBar.open('Permissions updated successfully', 'Close', {
+            duration: 3000
+          });
+        }
+      });
+    });
   }
+
+  deactivateTeamMember(id: string): void {
+    this.teamManagementService.deactivateTeamMember(id).subscribe({
+      next: () => {
+        const member = this.teamMembers.find(m => m.id === id);
+        if (member) {
+          member.status = 'Deactivated';
+          this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
+          this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
+        }
+        this.snackBar.open('Team member deactivated successfully', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to deactivate team member', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  reactivateTeamMember(id: string): void {
+    this.teamManagementService.reactivateTeamMember(id).subscribe({
+      next: () => {
+        this.loadTeamMembers();
+        this.snackBar.open('Team member reactivated successfully', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to reactivate team member', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  deleteTeamMember(id: string): void {
+    this.teamManagementService.removeTeamMember(id).subscribe({
+      next: () => {
+        this.teamMembers = this.teamMembers.filter(m => m.id !== id);
+        this.activeTeamMembers = this.teamMembers.filter(m => m.status !== 'Deactivated' && m.status !== 'Deleted');
+        this.deactivatedTeamMembers = this.teamMembers.filter(m => m.status === 'Deactivated');
+        this.snackBar.open('Team member permanently deleted', 'Close', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to delete team member', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.profileService.stopSignalR();
+  }
+
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
-    this.successMessage = `Switched to ${newRole} role`;
+    this.snackBar.open(`Switched to ${newRole} role`, 'Close', { duration: 3000 });
     console.log('Role switched to:', newRole);
     console.log('Visibility - Personal:', this.canViewPersonalInfo());
     console.log('Visibility - Company:', this.canViewCompanyDetails());
@@ -580,8 +664,9 @@ isGoogleMapsLoaded: boolean = false;
     console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
+  // TODO: Implement these methods based on user roles once development complete
   canViewPersonalInfo(): boolean {
-    return this.availableRoles.includes(this.userRole || '');
+    return true;
   }
 
   canViewCompanyDetails(): boolean {
@@ -601,7 +686,7 @@ isGoogleMapsLoaded: boolean = false;
   }
 
   canViewSubscription(): boolean {
-    return this.availableRoles.includes(this.userRole || '');
+    return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
 }

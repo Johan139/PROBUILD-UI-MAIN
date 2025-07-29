@@ -45,7 +45,7 @@ const Google_API = environment.Google_API;
   imports: [
     CommonModule,
 
-    ReactiveFormsModule,  
+    ReactiveFormsModule,
 
     MatFormField,
     MatSelectModule,
@@ -56,7 +56,7 @@ const Google_API = environment.Google_API;
     FormsModule,
     NgIf,
     NgFor,
-    
+
     // Angular Material Modules
     MatFormFieldModule,
     MatSelectModule,
@@ -226,13 +226,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         filter(user => !!user),
         take(1),
         switchMap(user => {
-            if (user && user.id) {
-                this.isLoading = true;
-                return this.jobService.getAllJobsByUserId(user.id);
+          if (user && user.id) {
+            this.isLoading = true;
+            // Check if the user is a team member (e.g., has an inviterId)
+            if (user.inviterId) {
+              return this.jobService.getAssignedJobsForTeamMember(user.id);
+            } else {
+              return this.jobService.getAllJobsByUserId(user.id);
             }
-            return of([]); // Return empty observable if no user
+          }
+          return of([]); // Return empty observable if no user
         })
-    ).subscribe({
+      ).subscribe({
         next: (response: any) => {
             if (response) {
                 this.jobListFull = response;

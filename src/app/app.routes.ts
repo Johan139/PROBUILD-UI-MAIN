@@ -24,9 +24,11 @@ import { PrivacyComponent } from './privacy.component';
 import { ResetPasswordComponent } from './authentication/reset-password.component/reset-password.component';
 import { MasterServicesAgreementComponent } from './master-services-agreement.component';
 import { SubscriptionConfirmationComponent } from './subscription-confirmation/subscription-confirmation.component';
+import { ArchiveComponent } from './features/archive/archive.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
+  {path:'archive', component:ArchiveComponent, canActivate: [AuthGuard] },
   {path:'login', component:LoginComponent },
   {path:'forgot-password', component:ForgotPasswordComponent },
   {path:'gant-chart', component:GanttChartComponent, canActivate: [AuthGuard] },

@@ -20,7 +20,7 @@ export class JobAssignmentService {
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     });
   }
-  
+
   getJobAssignment(): Observable<JobAssignment[]>  {
     const userId = this.authService.currentUserSubject.value?.id;
     if (!userId) {

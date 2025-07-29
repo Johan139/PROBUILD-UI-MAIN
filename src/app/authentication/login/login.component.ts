@@ -2,7 +2,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { environment } from '../../../environments/environment';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { NgIf } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -42,7 +42,8 @@ export class LoginComponent {
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', Validators.required],
@@ -67,47 +68,42 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       this.isLoading = true;
       const credentials = this.loginForm.value;
-      console.log(credentials)
       this.authService.login(credentials).subscribe({
         next: () => {
           this.isLoading = false;
           this.router.navigateByUrl('dashboard');
         },
-     error: (error: any) => {
-        this.isLoading = false;
-        this.showAlert = true;
+        error: (error: any) => {
+          this.isLoading = false;
+          this.showAlert = true;
 
-        let message = 'Login failed. Please try again.';
-        this.alertMessage = message;
-
-        if (error instanceof HttpErrorResponse) {
-          let backendError = error.error;
-
-          if (typeof backendError === 'string') {
-            try {
-              backendError = JSON.parse(backendError);
-            } catch {
-              backendError = {};
-            }
-          }
-
-          if (error.status === 401) {
-            this.alertMessage = backendError?.error || message;
-          } else if (error.status === 500) {
-            this.alertMessage = backendError?.error || 'Server error. Try again later.';
-          } else {
-            this.alertMessage = backendError?.error || message;
-          }
-        } else if (error instanceof Error) {
-          // Interceptor custom error (e.g. refresh token failed)
-          this.alertMessage = error.message || message;
-        } else {
+          let message = 'Invalid login credentials.';
           this.alertMessage = message;
-        }
 
-        console.log('Resolved alert message:', this.alertMessage);
-      }
+          if (error instanceof HttpErrorResponse) {
+            let backendError = error.error;
 
+            if (typeof backendError === 'string') {
+              try {
+                backendError = JSON.parse(backendError);
+              } catch {
+                backendError = {};
+              }
+            }
+
+            if (error.status === 401) {
+              this.alertMessage = backendError?.error || message;
+            } else if (error.status === 500) {
+              this.alertMessage = backendError?.error || 'Server error. Try again later.';
+            } else {
+              this.alertMessage = backendError?.error || message;
+            }
+          } else if (error instanceof Error) {
+            this.alertMessage = error.message || message;
+          } else {
+            this.alertMessage = message;
+          }
+        },
       });
     } else {
       this.showAlert = true;

@@ -135,10 +135,15 @@ mat-divider {
     background-color: $darker-yellow;
   }
 
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   &.delete-btn {
     background-color: #DA4167;
     color: $white;
-    
+
     &:hover {
       background-color: darken(#DA4167, 10%);
     }
@@ -175,6 +180,14 @@ mat-divider {
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
   width: 300px;
+}
+
+.job-role-field:not(.filled) input {
+  cursor: help;
+}
+
+.job-role-field.filled input {
+  cursor: default;
 }
 
 /* Inside job-assignment.component.scss */
