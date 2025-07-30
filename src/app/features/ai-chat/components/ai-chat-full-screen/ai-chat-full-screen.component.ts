@@ -125,9 +125,17 @@ export class AiChatFullScreenComponent implements OnInit {
     }
 
     if (role === 'model') {
-      // This regex removes variations of "Ready for the next prompt..." from the end of the string.
-      const removalRegex = /\s*"?Ready for the next prompt \d+\.?"?\s*$/i;
-      return content.replace(removalRegex, '');
+      let modifiedContent = content;
+
+      // Remove "To the esteemed client,"
+      const clientRegex = /^To the esteemed client,/i;
+      modifiedContent = modifiedContent.replace(clientRegex, '');
+
+      // This regex removes variations of "Ready for the next prompt..."
+      const removalRegex = /Ready for the next prompt \d+[\."\s]*/gi;
+      modifiedContent = modifiedContent.replace(removalRegex, '');
+
+      return modifiedContent.trim();
     }
 
     return content;
