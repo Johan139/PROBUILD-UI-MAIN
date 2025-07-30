@@ -23,7 +23,7 @@
           <div class="message-content">
             <ng-container [ngSwitch]="message.Role">
               <markdown *ngSwitchCase="'model'" [data]="message.Content"></markdown>
-              <pre *ngSwitchCase="'user'" class="user-prompt">{{ message.Content }}</pre>
+              <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content) }}</pre>
             </ng-container>
           </div>
         </div>

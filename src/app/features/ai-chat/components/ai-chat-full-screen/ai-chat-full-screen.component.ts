@@ -102,6 +102,24 @@ export class AiChatFullScreenComponent implements OnInit {
     });
   }
 
+  getDisplayContent(content: string): string {
+    const promptRegex1 = /^Prompt \d+: (.*)/s;
+    const promptRegex2 = /^Phase \d+: (.*)/s;
+
+    let match = content.match(promptRegex1);
+    if (!match) {
+      match = content.match(promptRegex2);
+    }
+
+    if (match && match[1] && content.length > 100) {
+      // The title is the first line of the matched group.
+      const title = match[1].split('\n')[0];
+      return title.trim();
+    }
+
+    return content;
+  }
+
   logDisplayName(prompt: any): boolean {
     console.log('Rendering prompt:', prompt.displayName);
     return true;
