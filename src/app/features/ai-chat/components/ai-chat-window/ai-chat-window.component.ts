@@ -7,19 +7,21 @@ import { takeUntil, take } from 'rxjs/operators';
 import { AsyncPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatMessage, Conversation } from '../../models/ai-chat.models';
-import { FileUploadService } from '../../../../services/file-upload.service';
+import { FileUploadService, UploadedFileInfo } from '../../../../services/file-upload.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MarkdownModule } from 'ngx-markdown';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
-@Component({
-  selector: 'app-ai-chat-window',
-  templateUrl: './ai-chat-window.component.html',
-  styleUrls: ['./ai-chat-window.component.scss'],
-  standalone: true,
-  imports: [NgIf, AsyncPipe, NgFor, NgClass, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule],
-})
-export class AiChatWindowComponent implements OnDestroy {
+ @Component({
+   selector: 'app-ai-chat-window',
+   templateUrl: './ai-chat-window.component.html',
+   styleUrls: ['./ai-chat-window.component.scss'],
+   standalone: true,
+   imports: [NgIf, AsyncPipe, NgFor, NgClass, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule],
+ })
+ export class AiChatWindowComponent implements OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
 
@@ -33,12 +35,16 @@ export class AiChatWindowComponent implements OnDestroy {
   private currentConversation: Conversation | null = null;
   private destroy$ = new Subject<void>();
   private files: File[] = [];
+ uploadedFileInfos: UploadedFileInfo[] = [];
+ isUploading = false;
+ progress = 0;
 
   constructor(
     public state: AiChatStateService,
     private aiChatService: AiChatService,
     private router: Router,
-    private fileUploadService: FileUploadService
+    private fileUploadService: FileUploadService,
+   private snackBar: MatSnackBar,
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
@@ -99,50 +105,45 @@ export class AiChatWindowComponent implements OnDestroy {
     });
   }
 
-  onFileSelected(event: any): void {
-    const files = event.target.files;
-    if (files.length > 0) {
-      this.files = Array.from(files);
-    }
-  }
+ onFileSelected(event: any): void {
+   const files = event.target.files;
+   if (files.length > 0) {
+     this.files = Array.from(files);
+     this.uploadFiles(this.files);
+   }
+ }
+
+ private uploadFiles(files: File[]): void {
+   this.isUploading = true;
+   this.progress = 0;
+
+   this.currentConversation$.pipe(take(1)).subscribe(conversation => {
+     if (conversation) {
+       this.fileUploadService.uploadFiles(files, conversation.Id).subscribe({
+         next: (uploadProgress) => {
+           this.progress = uploadProgress.progress;
+           this.isUploading = uploadProgress.isUploading;
+           if (!uploadProgress.isUploading && uploadProgress.files) {
+             this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
+             this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
+             this.files = [];
+           }
+         },
+         error: (error) => {
+           this.isUploading = false;
+           this.snackBar.open('File upload failed. Please try again.', 'Close', { duration: 3000 });
+           console.error('Upload error:', error);
+         }
+       });
+     } else {
+       this.isUploading = false;
+       this.snackBar.open('Cannot upload files: no active conversation.', 'Close', { duration: 3000 });
+     }
+   });
+ }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {
-    if (role === 'user') {
-      const failureRegex = /^Failure Prompt:/s;
-      if (failureRegex.test(content)) {
-        return 'Failure';
-      }
-
-      const promptRegex1 = /^Prompt \d+: (.*)/s;
-      const promptRegex2 = /^Phase \d+: (.*)/s;
-
-      let match = content.match(promptRegex1);
-      if (!match) {
-        match = content.match(promptRegex2);
-      }
-
-      if (match && match[1] && content.length > 100) {
-        // The title is the first line of the matched group.
-        const title = match[1].split('\n')[0];
-        return title.trim();
-      }
-
-    }
-    if (role === 'model') {
-      let modifiedContent = content;
-
-      // Remove "To the esteemed client,"
-      const clientRegex = /^To the esteemed client,/i;
-      modifiedContent = modifiedContent.replace(clientRegex, '');
-
-      // This regex removes variations of "Ready for the next prompt..."
-      const removalRegex = /Ready for the next prompt \d+[\."\s]*/gi;
-      modifiedContent = modifiedContent.replace(removalRegex, '');
-
-      return modifiedContent.trim();
-    }
-
-    return content;
+      return this.aiChatService.getDisplayContent(content, role);
   }
 
   goToFullScreen(): void {
@@ -150,4 +151,13 @@ export class AiChatWindowComponent implements OnDestroy {
     this.router.navigate(['/ai-chat']);
     this.state.setIsChatOpen(false);
   }
+ getUploadedFileNames(): string {
+     return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
+ }
+ 
+ viewUploadedFiles(): void {
+     this.state.documents$.pipe(take(1)).subscribe(documents => {
+         this.fileUploadService.viewUploadedFiles(documents);
+     });
+ }
 }

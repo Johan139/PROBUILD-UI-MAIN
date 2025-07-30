@@ -180,4 +180,42 @@ export class AiChatService {
       this.state.addMessage(response);
     });
   }
+  getDisplayContent(content: string, role: 'user' | 'model'): string {
+    if (role === 'user') {
+      const failureRegex = /^Failure Prompt:/s;
+      if (failureRegex.test(content)) {
+        return 'Failure';
+      }
+
+      const promptRegex1 = /^Prompt \d+: (.*)/s;
+      const promptRegex2 = /^Phase \d+: (.*)/s;
+
+      let match = content.match(promptRegex1);
+      if (!match) {
+        match = content.match(promptRegex2);
+      }
+
+      if (match && match[1] && content.length > 100) {
+        // The title is the first line of the matched group.
+        const title = match[1].split('\n')[0];
+        return title.trim();
+      }
+
+    }
+    if (role === 'model') {
+      let modifiedContent = content;
+
+      // Remove "To the esteemed client,"
+      const clientRegex = /^To the esteemed client,/i;
+      modifiedContent = modifiedContent.replace(clientRegex, '');
+
+      // This regex removes variations of "Ready for the next prompt..."
+      const removalRegex = /Ready for the next prompt \d+[\."\s]*/gi;
+      modifiedContent = modifiedContent.replace(removalRegex, '');
+
+      return modifiedContent.trim();
+    }
+
+    return content;
+  }
 }

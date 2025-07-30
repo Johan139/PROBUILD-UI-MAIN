@@ -157,6 +157,24 @@
       }
     }
   }
+ .upload-progress {
+   margin-bottom: 1rem;
+   p {
+     margin: 0 0 0.5rem 0;
+     font-size: 0.9rem;
+     color: #333;
+   }
+ }
+
+ .upload-complete {
+   margin-bottom: 1rem;
+   p {
+     margin: 0;
+     font-size: 0.9rem;
+     color: #28a745;
+     cursor: default;
+   }
+ }
 
   .welcome-screen {
     display: flex;

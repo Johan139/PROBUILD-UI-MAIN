@@ -5,6 +5,8 @@ import { Observable, Subject } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { UploadOptionsDialogComponent } from '../features/jobs/job-quote/upload-options-dialog.component';
 import { environment } from '../../environments/environment';
+import { DocumentsDialogComponent } from '../shared/dialogs/documents-dialog/documents-dialog.component';
+import { JobDocument } from '../models/JobDocument';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -101,5 +103,23 @@ export class FileUploadService {
       case 'xls': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       default: return 'application/octet-stream';
     }
+  }
+  viewUploadedFiles(documents: JobDocument[]): void {
+    const dialogRef = this.dialog.open(DocumentsDialogComponent, {
+      width: '800px',
+      data: { documents }
+    });
+
+    dialogRef.componentInstance.viewDocument.subscribe((document: JobDocument) => {
+      window.open(document.blobUrl, '_blank');
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      console.log('The dialog was closed');
+    });
+  }
+
+  getUploadedFileNames(uploadedFileInfos: UploadedFileInfo[]): string {
+    return uploadedFileInfos.map(file => file.name).join(', ');
   }
 }

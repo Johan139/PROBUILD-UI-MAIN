@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AiChatState, ChatMessage, Conversation } from '../models/ai-chat.models';
+import { JobDocument } from '../../../models/JobDocument';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +17,8 @@ export class AiChatStateService {
     conversations: [],
     activeConversationId: null,
     messages: [],
-    currentConversation: null
+    currentConversation: null,
+    documents: []
   };
 
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
@@ -35,6 +37,7 @@ export class AiChatStateService {
   conversations$ = this.state$.pipe(map(state => state.conversations), distinctUntilChanged());
   activeConversationId$ = this.state$.pipe(map(state => state.activeConversationId), distinctUntilChanged());
   messages$ = this.state$.pipe(map(state => state.messages), distinctUntilChanged());
+  documents$ = this.state$.pipe(map(state => state.documents), distinctUntilChanged());
 
   // State Updaters
   setIsChatOpen(isOpen: boolean): void {
@@ -101,6 +104,12 @@ export class AiChatStateService {
     this.updateState({ currentConversation: conversation });
   }
 
+  addDocuments(documents: JobDocument[]): void {
+      console.log('DELETE ME: [AiChatStateService] Adding documents:', documents);
+      const currentState = this.stateSubject.getValue();
+      this.updateState({ documents: [...currentState.documents, ...documents] });
+  }
+  
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };

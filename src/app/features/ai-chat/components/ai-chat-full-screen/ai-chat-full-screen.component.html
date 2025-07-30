@@ -71,6 +71,15 @@
           </div>
         </div>
         <div class="message-input-container">
+         <div *ngIf="isUploading" class="upload-progress">
+           <p>Upload Progress: {{ progress }}%</p>
+           <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+         </div>
+         <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+           <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+             {{ uploadedFileInfos.length }} file(s) uploaded successfully
+           </p>
+         </div>
           <form (ngSubmit)="sendMessage()">
             <input type="text"
                    [(ngModel)]="newMessageContent"
@@ -78,7 +87,10 @@
                    placeholder="Type your message..."
                    autocomplete="off">
             <button type="button" class="action-btn" (click)="onAttachFile()">
-              <mat-icon>attach_file</mat-icon>
+            <mat-icon>attach_file</mat-icon>
+            </button>
+            <button type="button" class="action-btn" (click)="viewUploadedFiles()">
+            <mat-icon>folder</mat-icon>
             </button>
             <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
             <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />

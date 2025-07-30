@@ -1,0 +1,26 @@
+<div class="documents-dialog">
+  <h2 mat-dialog-title>Documents</h2>
+  <mat-dialog-content>
+    <div *ngIf="documents.length === 0" class="no-documents">
+      <p>No documents available</p>
+    </div>
+    <div *ngIf="documents.length > 0" class="documents-list">
+      <div class="document-item" *ngFor="let doc of documents; let i = index">
+        <div class="document-info">
+          <span class="document-name">{{doc.fileName}}</span>
+          <span class="document-meta">{{doc.type}} - {{doc.size ? (doc.size | filesize) : ''}}</span>
+        </div>
+        <button class="view-btn-document" mat-button (click)="onView(doc)">
+          View
+        </button>
+      </div>
+    </div>
+  </mat-dialog-content>
+  <div mat-dialog-content>
+    <p>Please confirm that you have reviewed the documents before generating the job.</p>
+  </div>
+  <mat-dialog-actions>
+    <button class="submit-btn-document" mat-raised-button (click)="onCancel()">Cancel</button>
+    <button class="submit-btn-document" mat-flat-button color="primary" (click)="onConfirm()" [disabled]="!documents || documents.length === 0">Confirm</button>
+  </mat-dialog-actions>
+</div>

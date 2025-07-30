@@ -1,3 +1,5 @@
+import { JobDocument } from "../../../models/JobDocument";
+
 export interface ChatMessage {
   Id: number;
   ConversationId: string;
@@ -34,4 +36,5 @@ export interface AiChatState {
  activeConversationId: string | null;
  messages: ChatMessage[];
  currentConversation: Conversation | null;
+ documents: JobDocument[];
 }
