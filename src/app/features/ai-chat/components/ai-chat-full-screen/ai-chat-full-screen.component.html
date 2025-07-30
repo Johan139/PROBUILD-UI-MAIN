@@ -77,10 +77,11 @@
                    name="newMessageContent"
                    placeholder="Type your message..."
                    autocomplete="off">
-            <button type="button" class="action-btn" (click)="fileInput.click()">
+            <button type="button" class="action-btn" (click)="onAttachFile()">
               <mat-icon>attach_file</mat-icon>
             </button>
-            <input type="file" #fileInput style="display: none" (change)="onFileSelected($event, 'renovation')" multiple />
+            <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
+            <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
             <button type="submit" [disabled]="!newMessageContent.trim()">Send</button>
           </form>
         </div>

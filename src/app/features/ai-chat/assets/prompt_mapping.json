@@ -211,14 +211,14 @@
   },
   {
     "tradeName": "HIGHWAYS_STREETS_BRIDGES",
-    "promptFileName": "Highways_Street_Bridges_Subcontractor_Prompt.txt",
+    "promptFileName": "Highways_Streets_Bridges_Subcontractor_Prompt.txt",
     "displayName": "Highways Streets Bridges",
     "description": "To provide a comprehensive and detailed analysis and bid package for the Highways, Streets, and Bridges scope of work, based on the provided construction blueprints."
   },
   {
     "tradeName": "HVAC",
     "promptFileName": "HVAC_Mechanical_Subcontractor_Prompt.txt",
-    "displayName": "Hvac",
+    "displayName": "HVAC",
     "description": "Provide a comprehensive and detailed analysis and bid package for all HVAC and mechanical works, based solely on the provided construction blueprints."
   },
   {

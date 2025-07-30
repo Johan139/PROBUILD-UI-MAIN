@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
+import { FileUploadService } from '../../../../services/file-upload.service';
 import { Observable, combineLatest } from 'rxjs';
 import { map, take } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
@@ -20,6 +21,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule]
 })
 export class AiChatFullScreenComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
+
   conversations$: Observable<Conversation[]>;
   messages$: Observable<ChatMessage[]>;
   currentConversation$: Observable<Conversation | null>;
@@ -29,11 +33,13 @@ export class AiChatFullScreenComponent implements OnInit {
   selectedPrompt$: Observable<any | null>;
 
   newMessageContent = '';
+  files: File[] = [];
 
   constructor(
     private aiChatStateService: AiChatStateService,
     private aiChatService: AiChatService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private fileUploadService: FileUploadService
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
@@ -45,6 +51,9 @@ export class AiChatFullScreenComponent implements OnInit {
         const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
         return prompts.map(prompt => {
           const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
+          if (!match) {
+            console.log('Unmatched prompt:', prompt);
+          }
           const displayName = match ? match.displayName : prompt.tradeName;
           const description = match ? match.description : '';
           return { ...prompt, displayName, description };
@@ -100,16 +109,27 @@ export class AiChatFullScreenComponent implements OnInit {
     this.aiChatService.startConversation(`New conversation with ${prompt.tradeName}`, prompt.promptFileName, []);
   }
 
+  onAttachFile(): void {
+    this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
+      if (result === 'files') {
+        this.fileInput.nativeElement.click();
+      } else if (result === 'folder') {
+        this.folderInput.nativeElement.click();
+      }
+    });
+  }
+
   sendMessage(): void {
-    if (this.newMessageContent.trim() === '') {
+    if (this.newMessageContent.trim() === '' && this.files.length === 0) {
       return;
     }
     console.log('DELETE ME: [AiChatFullScreenComponent] Sending message...');
     this.aiChatStateService.activeConversationId$.pipe(take(1)).subscribe(currentConversationId => {
         if (currentConversationId) {
             console.log(`DELETE ME: [AiChatFullScreenComponent] Found active conversation ${currentConversationId}, sending message.`);
-            this.aiChatService.sendMessage(currentConversationId, this.newMessageContent);
+            this.aiChatService.sendMessage(currentConversationId, this.newMessageContent, this.files);
             this.newMessageContent = '';
+            this.files = [];
         } else {
             console.log('DELETE ME: [AiChatFullScreenComponent] No active conversation, cannot send message.');
         }
@@ -136,7 +156,7 @@ export class AiChatFullScreenComponent implements OnInit {
         const title = match[1].split('\n')[0];
         return title.trim();
       }
-    
+
     }
     if (role === 'model') {
       let modifiedContent = content;
@@ -155,9 +175,13 @@ export class AiChatFullScreenComponent implements OnInit {
     return content;
   }
 
-  onFileSelected(event: any, type: 'renovation' | 'subcontractor' | 'vendor'): void {
+  onFileSelected(event: any, type?: 'renovation' | 'subcontractor' | 'vendor'): void {
     const files = event.target.files;
     if (files.length > 0) {
+      if (!type) {
+        this.files = Array.from(files);
+        return;
+      }
       switch (type) {
         case 'renovation':
           this.aiChatService.startRenovationAnalysis(files);

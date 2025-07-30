@@ -22,6 +22,12 @@
 
   <footer class="chat-input-area">
     <form #form="ngForm" (ngSubmit)="sendMessage(form.value); form.reset()" class="chat-form">
+      <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
+      <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
+
+      <button type="button" class="attach-btn" (click)="onAttachFile()">
+        <span class="material-icons">attach_file</span>
+      </button>
       <textarea
         name="message"
         ngModel

@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -20,6 +20,9 @@ import { MarkdownModule } from 'ngx-markdown';
   imports: [NgIf, AsyncPipe, NgFor, NgClass, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule],
 })
 export class AiChatWindowComponent implements OnDestroy {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
+
   isChatOpen$: Observable<boolean>;
   messages$: Observable<ChatMessage[]>;
   isLoading$: Observable<boolean>;
@@ -70,6 +73,16 @@ export class AiChatWindowComponent implements OnDestroy {
     console.log('DELETE ME: [AiChatWindowComponent] Sending message...');
     this.aiChatService.sendMessage(this.conversationId, formValue.message, this.files);
     this.files = [];
+  }
+
+  onAttachFile(): void {
+    this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
+      if (result === 'files') {
+        this.fileInput.nativeElement.click();
+      } else if (result === 'folder') {
+        this.folderInput.nativeElement.click();
+      }
+    });
   }
 
   onFileSelected(event: any): void {
