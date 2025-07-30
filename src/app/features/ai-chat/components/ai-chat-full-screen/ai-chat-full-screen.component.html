@@ -22,8 +22,8 @@
           <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
           <div class="message-content">
             <ng-container [ngSwitch]="message.Role">
-              <markdown *ngSwitchCase="'model'" [data]="message.Content"></markdown>
-              <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content) }}</pre>
+              <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
+              <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
             </ng-container>
           </div>
         </div>

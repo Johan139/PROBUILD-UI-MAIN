@@ -102,19 +102,32 @@ export class AiChatFullScreenComponent implements OnInit {
     });
   }
 
-  getDisplayContent(content: string): string {
-    const promptRegex1 = /^Prompt \d+: (.*)/s;
-    const promptRegex2 = /^Phase \d+: (.*)/s;
+  getDisplayContent(content: string, role: 'user' | 'model'): string {
+    if (role === 'user') {
+      const failureRegex = /^Failure Prompt:/s;
+      if (failureRegex.test(content)) {
+        return 'Failure';
+      }
 
-    let match = content.match(promptRegex1);
-    if (!match) {
-      match = content.match(promptRegex2);
+      const promptRegex1 = /^Prompt \d+: (.*)/s;
+      const promptRegex2 = /^Phase \d+: (.*)/s;
+
+      let match = content.match(promptRegex1);
+      if (!match) {
+        match = content.match(promptRegex2);
+      }
+
+      if (match && match[1] && content.length > 100) {
+        // The title is the first line of the matched group.
+        const title = match[1].split('\n')[0];
+        return title.trim();
+      }
     }
 
-    if (match && match[1] && content.length > 100) {
-      // The title is the first line of the matched group.
-      const title = match[1].split('\n')[0];
-      return title.trim();
+    if (role === 'model') {
+      // This regex removes variations of "Ready for the next prompt..." from the end of the string.
+      const removalRegex = /\s*"?Ready for the next prompt \d+\.?"?\s*$/i;
+      return content.replace(removalRegex, '');
     }
 
     return content;
