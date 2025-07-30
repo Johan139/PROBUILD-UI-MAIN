@@ -104,9 +104,17 @@ export class AiChatFullScreenComponent implements OnInit {
 
   startConversationWithPrompt(prompt: Prompt): void {
     console.log('DELETE ME: [AiChatFullScreenComponent] Starting conversation with prompt:', prompt);
+    const tempConversation: Conversation = {
+      Id: '', // No ID yet
+      Title: `New conversation with ${prompt.tradeName}`,
+      messages: [],
+      promptFileName: prompt.promptFileName,
+      isArchived: false,
+      timestamp: new Date()
+    };
+    this.aiChatStateService.setCurrentConversation(tempConversation);
     this.aiChatStateService.setSelectedPrompt(prompt);
     this.aiChatStateService.setChatView('chat-window');
-    this.aiChatService.startConversation(`New conversation with ${prompt.tradeName}`, prompt.promptFileName, []);
   }
 
   onAttachFile(): void {

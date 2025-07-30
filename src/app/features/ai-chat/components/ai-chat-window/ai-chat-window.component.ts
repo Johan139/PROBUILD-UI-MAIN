@@ -2,11 +2,11 @@ import { Component, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
-import { Observable, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable, Subject, combineLatest } from 'rxjs';
+import { takeUntil, take } from 'rxjs/operators';
 import { AsyncPipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatMessage } from '../../models/ai-chat.models';
+import { ChatMessage, Conversation } from '../../models/ai-chat.models';
 import { FileUploadService } from '../../../../services/file-upload.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -27,8 +27,10 @@ export class AiChatWindowComponent implements OnDestroy {
   messages$: Observable<ChatMessage[]>;
   isLoading$: Observable<boolean>;
   selectedPrompt$: Observable<any | null>;
+  currentConversation$: Observable<Conversation | null>;
 
   private conversationId: string | null = null;
+  private currentConversation: Conversation | null = null;
   private destroy$ = new Subject<void>();
   private files: File[] = [];
 
@@ -42,10 +44,11 @@ export class AiChatWindowComponent implements OnDestroy {
     this.messages$ = this.state.messages$;
     this.isLoading$ = this.state.isLoading$;
     this.selectedPrompt$ = this.state.selectedPrompt$;
+    this.currentConversation$ = this.state.currentConversation$;
 
-    this.state.activeConversationId$.pipe(takeUntil(this.destroy$)).subscribe(id => {
-      console.log('DELETE ME: [AiChatWindowComponent] Active conversation ID changed to:', id);
-      this.conversationId = id;
+    this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(conversation => {
+      this.currentConversation = conversation;
+      this.conversationId = conversation ? conversation.Id : null;
     });
   }
 
@@ -63,16 +66,27 @@ export class AiChatWindowComponent implements OnDestroy {
 
   sendMessage(formValue: { message: string }): void {
     if ((!formValue.message || formValue.message.trim().length === 0) && this.files.length === 0) {
-      console.log('DELETE ME: [AiChatWindowComponent] Message is empty and no files, not sending.');
       return;
     }
-    if (!this.conversationId) {
-      console.log('DELETE ME: [AiChatWindowComponent] No active conversation, not sending.');
-      return;
+
+    if (this.currentConversation && !this.currentConversation.Id) {
+      this.selectedPrompt$.pipe(take(1)).subscribe(prompt => {
+        if (prompt) {
+          this.aiChatService.startConversation(formValue.message, prompt.promptFileName, this.files)
+            .subscribe(newConversation => {
+              if (newConversation) {
+                this.state.setCurrentConversation(newConversation);
+                this.state.addConversation(newConversation);
+                this.state.setActiveConversationId(newConversation.Id);
+              }
+            });
+          this.files = [];
+        }
+      });
+    } else if (this.conversationId) {
+      this.aiChatService.sendMessage(this.conversationId, formValue.message, this.files);
+      this.files = [];
     }
-    console.log('DELETE ME: [AiChatWindowComponent] Sending message...');
-    this.aiChatService.sendMessage(this.conversationId, formValue.message, this.files);
-    this.files = [];
   }
 
   onAttachFile(): void {
@@ -112,7 +126,7 @@ export class AiChatWindowComponent implements OnDestroy {
         const title = match[1].split('\n')[0];
         return title.trim();
       }
-    
+
     }
     if (role === 'model') {
       let modifiedContent = content;

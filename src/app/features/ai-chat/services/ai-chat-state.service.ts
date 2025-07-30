@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AiChatState, ChatMessage, Conversation } from '../models/ai-chat.models';
 
@@ -15,7 +15,8 @@ export class AiChatStateService {
     prompts: [],
     conversations: [],
     activeConversationId: null,
-    messages: []
+    messages: [],
+    currentConversation: null
   };
 
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
@@ -23,6 +24,7 @@ export class AiChatStateService {
 
   chatView$ = new BehaviorSubject<'prompt-selection' | 'chat-window'>('prompt-selection');
   selectedPrompt$ = new BehaviorSubject<any | null>(null);
+  currentConversation$ = this.state$.pipe(map(state => state.currentConversation), distinctUntilChanged());
 
   // Selectors
   isChatOpen$ = this.state$.pipe(map(state => state.isChatOpen), distinctUntilChanged());
@@ -93,6 +95,10 @@ export class AiChatStateService {
 
   setSelectedPrompt(prompt: any | null): void {
     this.selectedPrompt$.next(prompt);
+  }
+
+  setCurrentConversation(conversation: Conversation | null): void {
+    this.updateState({ currentConversation: conversation });
   }
 
   private updateState(partialState: Partial<AiChatState>): void {

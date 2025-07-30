@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AiChatStateService } from './ai-chat-state.service';
 import { catchError, map } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
 import { Conversation, Prompt } from '../models/ai-chat.models';
 import { environment } from "../../../../environments/environment";
 import { AuthService } from '../../../authentication/auth.service';
@@ -38,30 +38,38 @@ export class AiChatService {
       });
   }
 
-  startConversation(initialMessage: string, promptKey: string, blueprintUrls: string[]) {
+  startConversation(initialMessage: string, promptKey: string, files: File[]): Observable<Conversation | null> {
     console.log(`DELETE ME: [AiChatService] Starting conversation with promptKey: ${promptKey}`);
     this.state.setLoading(true);
     const userType = this.authService.getUserRole();
     console.log(`DELETE ME: [AiChatService] UserType for new conversation: ${userType}`);
-    const payload = { initialMessage, promptKey, blueprintUrls, userType };
-    console.log('DELETE ME: [AiChatService] Start conversation payload:', payload);
-    this.http.post<Conversation>(`${BASE_URL}/start`, payload)
+
+    const formData = new FormData();
+    formData.append('initialMessage', initialMessage);
+    formData.append('promptKey', promptKey);
+    formData.append('userType', userType as string);
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    return this.http.post<Conversation>(`${BASE_URL}/start`, formData)
       .pipe(
+        map(conversation => {
+          console.log('DELETE ME: [AiChatService] Successfully started conversation:', conversation);
+          if (conversation) {
+            this.state.addConversation(conversation);
+            this.state.setActiveConversationId(conversation.Id);
+          }
+          this.state.setLoading(false);
+          return conversation;
+        }),
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to start conversation:', err);
           this.state.setError('Failed to start conversation.');
           this.state.setLoading(false);
           return of(null);
         })
-      )
-      .subscribe(conversation => {
-        console.log('DELETE ME: [AiChatService] Successfully started conversation:', conversation);
-        if (conversation) {
-          this.state.addConversation(conversation);
-          this.state.setActiveConversationId(conversation.Id);
-        }
-        this.state.setLoading(false);
-      });
+      );
   }
 
   sendMessage(conversationId: string, message: string, files: File[] = []) {

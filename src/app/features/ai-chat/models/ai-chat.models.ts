@@ -9,10 +9,14 @@ export interface ChatMessage {
 
 export interface Conversation {
   Id: string;
-  UserId: string;
+  UserId?: string;
   Title: string;
-  CreatedAt: Date;
+  CreatedAt?: Date;
   ConversationSummary?: string;
+  messages?: ChatMessage[];
+  promptFileName?: string;
+  isArchived?: boolean;
+  timestamp?: Date;
 }
 
 export interface Prompt {
@@ -29,4 +33,5 @@ export interface AiChatState {
  conversations: Conversation[];
  activeConversationId: string | null;
  messages: ChatMessage[];
+ currentConversation: Conversation | null;
 }
