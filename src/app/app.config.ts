@@ -8,6 +8,7 @@ import { authInterceptor } from './authentication/http.interceptor';
 import { provideHttpClient, withFetch, withInterceptors} from "@angular/common/http";
 import { AuthService } from './authentication/auth.service';
 import { MarkdownModule } from 'ngx-markdown';
+import { FileUploadService } from './services/file-upload.service';
 
 export function initializeApp(authService: AuthService) {
   return () => authService.initialize();
@@ -35,6 +36,7 @@ export const appConfig: ApplicationConfig = {
       multi: true
     },
     Store,
+    FileUploadService,
     provideHttpClient(withInterceptors([authInterceptor]), withFetch()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes), provideClientHydration(), provideAnimationsAsync(),

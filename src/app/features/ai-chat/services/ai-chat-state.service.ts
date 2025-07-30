@@ -21,6 +21,9 @@ export class AiChatStateService {
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
   private readonly state$ = this.stateSubject.asObservable();
 
+  chatView$ = new BehaviorSubject<'prompt-selection' | 'chat-window'>('prompt-selection');
+  selectedPrompt$ = new BehaviorSubject<any | null>(null);
+
   // Selectors
   isChatOpen$ = this.state$.pipe(map(state => state.isChatOpen), distinctUntilChanged());
   isFullScreen$ = this.state$.pipe(map(state => state.isFullScreen), distinctUntilChanged());
@@ -82,6 +85,14 @@ export class AiChatStateService {
   setMessages(messages: ChatMessage[]): void {
     console.log('DELETE ME: [AiChatStateService] Setting messages:', messages);
     this.updateState({ messages });
+  }
+
+  setChatView(view: 'prompt-selection' | 'chat-window'): void {
+    this.chatView$.next(view);
+  }
+
+  setSelectedPrompt(prompt: any | null): void {
+    this.selectedPrompt$.next(prompt);
   }
 
   private updateState(partialState: Partial<AiChatState>): void {

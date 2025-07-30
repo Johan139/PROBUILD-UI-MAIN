@@ -36,6 +36,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
 import { AuthService } from '../../../authentication/auth.service';
+import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -103,7 +104,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   subscriptionActive: boolean = false;
   sessionId: string = '';
   private hubConnection!: HubConnection;
-  uploadedFileInfos: { name: string, url: string, type: string, size: number }[] = [];
+  uploadedFileInfos: UploadedFileInfo[] = [];
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
@@ -124,6 +125,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private dialog: MatDialog,
     private authService: AuthService,
     private quoteService: QuoteService,
+    private fileUploadService: FileUploadService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -173,7 +175,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
-      this.resetFileInput();
       console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
       console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
@@ -752,74 +753,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedUnit = unit;
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input?.files?.length) {
-      console.error('No files selected');
-      return;
-    }
 
-    const files = Array.from(input.files);
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('Blueprint', file);
-    });
-
-    formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
-    formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    formData.append('sessionId', this.sessionId);
-
-    this.progress = 0;
-    this.isUploading = true;
-
-    this.httpClient
-      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
-        reportProgress: true,
-        observe: 'events',
-        headers: new HttpHeaders({ Accept: 'application/json' }),
-      })
-      .pipe(timeout(300000))
-      .subscribe({
-        next: (httpEvent) => {
-          if (httpEvent.type === HttpEventType.UploadProgress && httpEvent.total) {
-            this.progress = Math.round((100 * httpEvent.loaded) / httpEvent.total);
-          } else if (httpEvent.type === HttpEventType.Response) {
-            if (httpEvent.body?.fileUrls && httpEvent.body.fileUrls.length > 0) {
-              const newFileInfos = httpEvent.body.fileUrls.map((url: string, index: number) => {
-                const file = files[index];
-                return {
-                  name: file.name,
-                  url: url,
-                  type: file.type || this.getFileType(file.name),
-                  size: file.size,
-                };
-              });
-              this.uploadedFileInfos = [...this.uploadedFileInfos, ...newFileInfos];
-            } else {
-               console.error('No fileUrls returned in response:', httpEvent.body);
-            }
-            this.isUploading = false;
-            this.resetFileInput();
-          }
-        },
-        error: (error) => {
-          console.error('Upload error:', error);
-          this.progress = 0;
-          this.isUploading = false;
-          this.resetFileInput();
-        },
-        complete: () => console.log('File upload process complete.'),
-      });
-  }
-
-  resetFileInput(): void {
-    if (this.fileInput.nativeElement) {
-      this.fileInput.nativeElement.value = '';
-    }
-    if (this.folderInput.nativeElement) {
-      this.folderInput.nativeElement.value = '';
-    }
-  }
 
   onCancel(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
@@ -884,9 +818,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openUploadDialog(): void {
-    const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
-
-    dialogRef.afterClosed().subscribe(result => {
+    this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
       if (result === 'files') {
         this.fileInput.nativeElement.click();
       } else if (result === 'folder') {
@@ -895,20 +827,21 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  getFileType(fileName: string): string {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'png': return 'image/png';
-      case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      case 'docx':
-      case 'doc': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'xlsx':
-      case 'xls': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      default: return 'application/octet-stream';
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files?.length) {
+      return;
     }
+    const files = Array.from(input.files);
+    this.fileUploadService.uploadFiles(files, this.sessionId).subscribe(upload => {
+      this.progress = upload.progress;
+      this.isUploading = upload.isUploading;
+      if (upload.files) {
+        this.uploadedFileInfos = [...this.uploadedFileInfos, ...upload.files];
+      }
+    });
   }
+
 
   getFileSize(url: string): number {
     try {

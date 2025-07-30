@@ -10,13 +10,14 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MarkdownModule } from 'ngx-markdown';
 import promptMapping from '../../assets/prompt_mapping.json';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-ai-chat-full-screen',
   templateUrl: './ai-chat-full-screen.component.html',
   styleUrls: ['./ai-chat-full-screen.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule]
+  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule]
 })
 export class AiChatFullScreenComponent implements OnInit {
   conversations$: Observable<Conversation[]>;
@@ -24,6 +25,8 @@ export class AiChatFullScreenComponent implements OnInit {
   currentConversation$: Observable<Conversation | null>;
   isLoading$: Observable<boolean>;
   prompts$: Observable<(Prompt & { displayName: string })[]>;
+  chatView$: Observable<'prompt-selection' | 'chat-window'>;
+  selectedPrompt$: Observable<any | null>;
 
   newMessageContent = '';
 
@@ -35,13 +38,16 @@ export class AiChatFullScreenComponent implements OnInit {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
     this.isLoading$ = this.aiChatStateService.isLoading$;
+    this.chatView$ = this.aiChatStateService.chatView$;
+    this.selectedPrompt$ = this.aiChatStateService.selectedPrompt$;
     this.prompts$ = this.aiChatStateService.prompts$.pipe(
       map(prompts => {
-        const mappingData: { tradeName: string, promptFileName: string, displayName: string }[] = promptMapping;
+        const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
         return prompts.map(prompt => {
           const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
           const displayName = match ? match.displayName : prompt.tradeName;
-          return { ...prompt, displayName };
+          const description = match ? match.description : '';
+          return { ...prompt, displayName, description };
         });
       }),
       map(prompts => {
@@ -73,16 +79,24 @@ export class AiChatFullScreenComponent implements OnInit {
     console.log('DELETE ME: [AiChatFullScreenComponent] Selecting conversation:', conversationId);
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
+    this.aiChatStateService.setSelectedPrompt(null);
+    this.aiChatStateService.setChatView('chat-window');
   }
 
   startNewConversation(): void {
     console.log('DELETE ME: [AiChatFullScreenComponent] Starting new conversation flow');
+    this.aiChatStateService.setChatView('prompt-selection');
+    this.aiChatStateService.setSelectedPrompt(null);
     this.aiChatStateService.setActiveConversationId(null);
+    this.aiChatStateService.setMessages([]);
     this.aiChatService.getMyPrompts();
+    console.log('DELETE ME: [AiChatFullScreenComponent] State reset for new conversation.');
   }
 
   startConversationWithPrompt(prompt: Prompt): void {
     console.log('DELETE ME: [AiChatFullScreenComponent] Starting conversation with prompt:', prompt);
+    this.aiChatStateService.setSelectedPrompt(prompt);
+    this.aiChatStateService.setChatView('chat-window');
     this.aiChatService.startConversation(`New conversation with ${prompt.tradeName}`, prompt.promptFileName, []);
   }
 

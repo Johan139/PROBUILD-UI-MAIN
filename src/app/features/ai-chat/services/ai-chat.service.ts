@@ -64,10 +64,17 @@ export class AiChatService {
       });
   }
 
-  sendMessage(conversationId: string, message: string) {
+  sendMessage(conversationId: string, message: string, files: File[] = []) {
     console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
-    this.http.post(`${BASE_URL}/${conversationId}/message`, { message })
+
+    const formData = new FormData();
+    formData.append('message', message);
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    this.http.post(`${BASE_URL}/${conversationId}/message`, formData)
       .pipe(
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to send message:', err);
