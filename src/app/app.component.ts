@@ -19,6 +19,8 @@ import { Observable, tap } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
 import { JobDataService } from './features/jobs/services/job-data.service';
+import { AiChatIconComponent } from './features/ai-chat/components/ai-chat-icon/ai-chat-icon.component';
+import { AiChatWindowComponent } from './features/ai-chat/components/ai-chat-window/ai-chat-window.component';
 
 @Component({
   selector: 'app-root',
@@ -42,7 +44,9 @@ import { JobDataService } from './features/jobs/services/job-data.service';
     AsyncPipe,
     NgFor,
     MatDividerModule,
-    SlicePipe
+    SlicePipe,
+    AiChatIconComponent,
+    AiChatWindowComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`

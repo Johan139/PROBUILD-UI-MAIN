@@ -1,0 +1,38 @@
+<div *ngIf="isChatOpen$ | async" class="chat-window">
+  <header class="chat-header">
+    <h2 class="chat-title">AI Assistant</h2>
+    <div class="header-actions">
+      <button (click)="goToFullScreen()" class="action-btn" aria-label="Full screen">
+        <span class="material-icons">fullscreen</span>
+      </button>
+      <button (click)="closeChat()" class="action-btn" aria-label="Close chat">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="chat-messages">
+    <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+      <p>{{ message.Content }}</p>
+    </div>
+    <div *ngIf="isLoading$ | async" class="loading-indicator">
+      <span></span><span></span><span></span>
+    </div>
+  </main>
+
+  <footer class="chat-input-area">
+    <form #form="ngForm" (ngSubmit)="sendMessage(form.value); form.reset()" class="chat-form">
+      <textarea
+        name="message"
+        ngModel
+        placeholder="Type your message..."
+        class="chat-input"
+        rows="1"
+        (keydown.enter)="sendMessage(form.value); form.reset(); $event.preventDefault()"
+      ></textarea>
+      <button type="submit" class="send-btn" [disabled]="!form.value.message || (isLoading$ | async)">
+        <span class="material-icons">send</span>
+      </button>
+    </form>
+  </footer>
+</div>

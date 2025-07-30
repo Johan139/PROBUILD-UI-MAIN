@@ -1,0 +1,62 @@
+<div class="full-screen-chat-container">
+  <!-- Left Column: Conversation List -->
+  <div class="conversations-list">
+    <button class="new-chat-btn" (click)="startNewConversation()">+ New Chat</button>
+    <div class="conversation-items">
+      <div *ngFor="let conversation of conversations$ | async"
+           class="conversation-item"
+           [class.active]="(currentConversation$ | async)?.Id === conversation.Id"
+           (click)="selectConversation(conversation.Id)">
+        <p class="conversation-title">{{ conversation.Title }}</p>
+        <p class="conversation-excerpt">{{ conversation.ConversationSummary }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Chat Area -->
+  <div class="chat-area">
+    <ng-container *ngIf="(currentConversation$ | async); else noConversation">
+      <!-- Message Display -->
+      <div class="message-history">
+        <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+         <p>{{ message.Content }}</p>
+        </div>
+        <div *ngIf="isLoading$ | async" class="message ai">
+          <p>Thinking...</p>
+        </div>
+      </div>
+
+      <!-- Message Input Form -->
+      <div class="message-input-container">
+        <form (ngSubmit)="sendMessage()">
+          <input type="text"
+                 [(ngModel)]="newMessageContent"
+                 name="newMessageContent"
+                 placeholder="Type your message..."
+                 autocomplete="off">
+          <button type="submit" [disabled]="!newMessageContent.trim()">Send</button>
+        </form>
+      </div>
+    </ng-container>
+
+    <ng-template #noConversation>
+      <div class="welcome-screen">
+        <h2>Welcome to Mason - your ProBuild AI Chatbot</h2>
+        <p>Select a conversation or start a new one.</p>
+        <div class="prompt-selection" *ngIf="(prompts$ | async) as prompts">
+            <div *ngIf="prompts.length > 0; else noPrompts">
+                <h3>Start a new chat with a prompt:</h3>
+                <div class="prompt-buttons">
+                    <button *ngFor="let prompt of prompts" (click)="startConversationWithPrompt(prompt)">
+                        {{ prompt.tradeName }}
+                    </button>
+                </div>
+            </div>
+            <ng-template #noPrompts>
+                <p>Click "New Chat" to get started.</p>
+            </ng-template>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</div>
