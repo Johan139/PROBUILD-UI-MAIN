@@ -79,6 +79,11 @@ export class AiChatStateService {
     this.updateState({ conversations: [...currentState.conversations, conversation] });
   }
 
+  setMessages(messages: ChatMessage[]): void {
+    console.log('DELETE ME: [AiChatStateService] Setting messages:', messages);
+    this.updateState({ messages });
+  }
+
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };

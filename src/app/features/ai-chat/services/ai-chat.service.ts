@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AiChatStateService } from './ai-chat-state.service';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Conversation, Prompt } from '../models/ai-chat.models';
 import { environment } from "../../../../environments/environment";
@@ -86,18 +86,26 @@ export class AiChatService {
   getConversation(conversationId: string) {
     console.log(`DELETE ME: [AiChatService] Getting conversation ${conversationId}`);
     this.state.setLoading(true);
-    this.http.get<Conversation>(`${BASE_URL}/${conversationId}`)
+    this.http.get<any[]>(`${BASE_URL}/${conversationId}`)
       .pipe(
+        map(messages => messages.map(m => ({
+          Id: m.id,
+          ConversationId: m.conversationId,
+          Role: m.role,
+          Content: m.content,
+          IsSummarized: m.isSummarized,
+          Timestamp: m.timestamp
+        }))),
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to fetch conversation:', err);
           this.state.setError('Failed to fetch conversation.');
           this.state.setLoading(false);
-          return of(null);
+          return of([]);
         })
       )
-      .subscribe(conversation => {
-        console.log('DELETE ME: [AiChatService] Successfully fetched conversation:', conversation);
-        // Handle conversation data
+      .subscribe(messages => {
+        console.log('DELETE ME: [AiChatService] Successfully fetched conversation:', messages);
+        this.state.setMessages(messages);
         this.state.setLoading(false);
       });
   }
@@ -105,8 +113,15 @@ export class AiChatService {
   getMyConversations() {
     console.log('DELETE ME: [AiChatService] Getting my conversations...');
     this.state.setLoading(true);
-    this.http.get<Conversation[]>(`${BASE_URL}/my-conversations`)
+    this.http.get<any[]>(`${BASE_URL}/my-conversations`)
       .pipe(
+        map(conversations => conversations.map(c => ({
+          Id: c.id,
+          UserId: c.userId,
+          Title: c.title,
+          CreatedAt: c.createdAt,
+          ConversationSummary: c.conversationSummary
+        } as Conversation))),
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to fetch conversations:', err);
           this.state.setError('Failed to fetch conversations.');

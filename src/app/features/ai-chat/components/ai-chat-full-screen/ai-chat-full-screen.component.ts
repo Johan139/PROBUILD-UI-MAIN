@@ -104,4 +104,5 @@ export class AiChatFullScreenComponent implements OnInit {
     console.log('Rendering prompt:', prompt.displayName);
     return true;
   }
+
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, OnDestroy, PLATFORM_ID } from '@angular/core';
-import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
@@ -15,7 +15,7 @@ import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-di
 import { MatDialog } from '@angular/material/dialog';
 import { NotificationsService } from './services/notifications.service';
 import { JobsService } from './services/jobs.service';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, filter } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
 import { JobDataService } from './features/jobs/services/job-data.service';
@@ -66,9 +66,15 @@ export class AppComponent implements OnInit, OnDestroy {
   isSidenavOpen = false;
   recentNotifications$!: Observable<Notification[]>;
   public hasUnreadNotifications$!: Observable<boolean>;
+  showAiChatIcon = true;
 
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.showAiChatIcon = !event.urlAfterRedirects.startsWith('/ai-chat');
+    });
 
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
