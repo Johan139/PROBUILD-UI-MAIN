@@ -7,6 +7,8 @@ import { map, take } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MarkdownModule } from 'ngx-markdown';
 import promptMapping from '../../assets/prompt_mapping.json';
 
 @Component({
@@ -14,7 +16,7 @@ import promptMapping from '../../assets/prompt_mapping.json';
   templateUrl: './ai-chat-full-screen.component.html',
   styleUrls: ['./ai-chat-full-screen.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule]
 })
 export class AiChatFullScreenComponent implements OnInit {
   conversations$: Observable<Conversation[]>;

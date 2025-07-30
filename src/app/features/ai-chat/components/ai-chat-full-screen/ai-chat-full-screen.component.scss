@@ -85,10 +85,21 @@
     flex-direction: column;
 
     .message {
+      display: flex;
+      align-items: flex-start;
       padding: 0.5rem 1rem;
       border-radius: 15px;
       margin-bottom: 0.5rem;
       max-width: 70%;
+
+      .chat-icon {
+        margin-right: 0.5rem;
+        margin-top: 0.2rem;
+      }
+
+      .message-content {
+        flex-grow: 1;
+      }
 
       &.user {
         background-color: #fbd008;
@@ -103,6 +114,10 @@
         align-self: flex-start;
         border-bottom-left-radius: 3px;
       }
+    }
+    .user-prompt {
+      color: black;
+      white-space: pre-wrap;
     }
   }
 

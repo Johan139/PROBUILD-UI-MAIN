@@ -50,6 +50,7 @@
     "jspdf-autotable": "^5.0.2",
     "marked": "^16.0.0",
     "ngx-infinite-scroll": "^18.0.0",
+    "ngx-markdown": "^18.1.0",
     "pro-build-ai": "file:",
     "rxjs": "~7.8.0",
     "serve-index": "^1.9.1",

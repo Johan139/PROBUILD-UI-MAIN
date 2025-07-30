@@ -19,7 +19,13 @@
       <!-- Message Display -->
       <div class="message-history">
         <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
-         <p>{{ message.Content }}</p>
+          <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+          <div class="message-content">
+            <ng-container [ngSwitch]="message.Role">
+              <markdown *ngSwitchCase="'model'" [data]="message.Content"></markdown>
+              <pre *ngSwitchCase="'user'" class="user-prompt">{{ message.Content }}</pre>
+            </ng-container>
+          </div>
         </div>
         <div *ngIf="isLoading$ | async" class="message ai">
           <p>Thinking...</p>
