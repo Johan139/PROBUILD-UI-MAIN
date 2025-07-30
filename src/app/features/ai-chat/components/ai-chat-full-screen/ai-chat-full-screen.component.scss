@@ -93,8 +93,9 @@
       max-width: 70%;
 
       .chat-icon {
-        margin-right: 0.5rem;
+        margin-right: 1rem;
         margin-top: 0.2rem;
+        flex-shrink: 0;
       }
 
       .message-content {
