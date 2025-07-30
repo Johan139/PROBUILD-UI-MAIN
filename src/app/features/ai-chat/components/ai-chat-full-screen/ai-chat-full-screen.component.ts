@@ -43,9 +43,11 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    console.log('DELETE ME: [AiChatFullScreenComponent] ngOnInit');
     this.aiChatService.getMyConversations();
     this.route.params.subscribe(params => {
       const conversationId = params['conversationId'];
+      console.log('DELETE ME: [AiChatFullScreenComponent] Route params changed:', params);
       if (conversationId) {
         this.selectConversation(conversationId);
       }
@@ -53,16 +55,19 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   selectConversation(conversationId: string): void {
+    console.log('DELETE ME: [AiChatFullScreenComponent] Selecting conversation:', conversationId);
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
   }
 
   startNewConversation(): void {
+    console.log('DELETE ME: [AiChatFullScreenComponent] Starting new conversation flow');
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatService.getMyPrompts();
   }
 
   startConversationWithPrompt(prompt: Prompt): void {
+    console.log('DELETE ME: [AiChatFullScreenComponent] Starting conversation with prompt:', prompt);
     this.aiChatService.startConversation(`New conversation with ${prompt.tradeName}`, prompt.promptFileName, []);
   }
 
@@ -70,11 +75,14 @@ export class AiChatFullScreenComponent implements OnInit {
     if (this.newMessageContent.trim() === '') {
       return;
     }
-
+    console.log('DELETE ME: [AiChatFullScreenComponent] Sending message...');
     this.aiChatStateService.activeConversationId$.pipe(take(1)).subscribe(currentConversationId => {
         if (currentConversationId) {
+            console.log(`DELETE ME: [AiChatFullScreenComponent] Found active conversation ${currentConversationId}, sending message.`);
             this.aiChatService.sendMessage(currentConversationId, this.newMessageContent);
             this.newMessageContent = '';
+        } else {
+            console.log('DELETE ME: [AiChatFullScreenComponent] No active conversation, cannot send message.');
         }
     });
   }

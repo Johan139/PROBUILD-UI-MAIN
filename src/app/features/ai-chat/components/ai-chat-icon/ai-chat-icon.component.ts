@@ -11,6 +11,7 @@ export class AiChatIconComponent {
   constructor(private state: AiChatStateService) {}
 
   openChat(): void {
+    console.log('DELETE ME: [AiChatIconComponent] Opening chat');
     this.state.setIsChatOpen(true);
   }
 }

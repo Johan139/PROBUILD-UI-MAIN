@@ -33,40 +33,57 @@ export class AiChatStateService {
 
   // State Updaters
   setIsChatOpen(isOpen: boolean): void {
+    console.log('DELETE ME: [AiChatStateService] Setting isChatOpen to:', isOpen);
     this.updateState({ isChatOpen: isOpen });
   }
 
   setIsFullScreen(isFullScreen: boolean): void {
+    console.log('DELETE ME: [AiChatStateService] Setting isFullScreen to:', isFullScreen);
     this.updateState({ isFullScreen });
   }
 
   setLoading(isLoading: boolean): void {
+    console.log('DELETE ME: [AiChatStateService] Setting isLoading to:', isLoading);
     this.updateState({ isLoading });
   }
 
   setError(error: string | null): void {
+    console.log('DELETE ME: [AiChatStateService] Setting error to:', error);
     this.updateState({ error });
   }
 
   setPrompts(prompts: Array<{ tradeName: string, promptFileName: string }>): void {
+    console.log('DELETE ME: [AiChatStateService] Setting prompts:', prompts);
     this.updateState({ prompts });
   }
 
   setConversations(conversations: Conversation[]): void {
+    console.log('DELETE ME: [AiChatStateService] Setting conversations:', conversations);
     this.updateState({ conversations });
   }
 
   setActiveConversationId(id: string | null): void {
+    console.log('DELETE ME: [AiChatStateService] Setting activeConversationId to:', id);
     this.updateState({ activeConversationId: id });
   }
 
   addMessage(message: ChatMessage): void {
+    console.log('DELETE ME: [AiChatStateService] Adding message:', message);
     const currentState = this.stateSubject.getValue();
     this.updateState({ messages: [...currentState.messages, message] });
   }
 
+  addConversation(conversation: Conversation): void {
+    console.log('DELETE ME: [AiChatStateService] Adding conversation:', conversation);
+    const currentState = this.stateSubject.getValue();
+    this.updateState({ conversations: [...currentState.conversations, conversation] });
+  }
+
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
-    this.stateSubject.next({ ...currentState, ...partialState });
+    const nextState = { ...currentState, ...partialState };
+    console.log('DELETE ME: [AiChatStateService] Updating state:', partialState);
+    console.log('DELETE ME: [AiChatStateService] New state:', nextState);
+    this.stateSubject.next(nextState);
   }
 }

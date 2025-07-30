@@ -33,27 +33,33 @@ export class AiChatWindowComponent implements OnDestroy {
     this.isLoading$ = this.state.isLoading$;
 
     this.state.activeConversationId$.pipe(takeUntil(this.destroy$)).subscribe(id => {
+      console.log('DELETE ME: [AiChatWindowComponent] Active conversation ID changed to:', id);
       this.conversationId = id;
     });
   }
 
   ngOnDestroy(): void {
+    console.log('DELETE ME: [AiChatWindowComponent] ngOnDestroy');
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   closeChat(): void {
+    console.log('DELETE ME: [AiChatWindowComponent] Closing chat');
     this.state.setIsChatOpen(false);
   }
 
   sendMessage(formValue: { message: string }): void {
     if (!formValue.message || formValue.message.trim().length === 0 || !this.conversationId) {
+      console.log('DELETE ME: [AiChatWindowComponent] Message is empty or no active conversation, not sending.');
       return;
     }
+    console.log('DELETE ME: [AiChatWindowComponent] Sending message...');
     this.aiChatService.sendMessage(this.conversationId, formValue.message);
   }
 
   goToFullScreen(): void {
+    console.log('DELETE ME: [AiChatWindowComponent] Navigating to full screen');
     this.router.navigate(['/ai-chat']);
     this.state.setIsChatOpen(false);
   }
