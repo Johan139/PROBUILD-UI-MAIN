@@ -38,20 +38,23 @@ export class FileUploadService {
     return dialogRef.afterClosed();
   }
 
-  uploadFiles(files: File[], sessionId: string, title: string = 'test', description: string = 'tester'): Observable<UploadProgress> {
+  uploadFiles(files: File[], sessionId: string, conversationId?: string): Observable<UploadProgress> {
     const formData = new FormData();
     files.forEach(file => {
-      formData.append('Blueprint', file);
+        formData.append('files', file); 
     });
 
-    formData.append('Title', title);
-    formData.append('Description', description);
-    formData.append('sessionId', sessionId);
+    let url = `${BASE_URL}/Jobs/UploadImage`;
+    if (conversationId) {
+        url = `${BASE_URL}/Chat/${conversationId}/upload`;
+    } else {
+        formData.append('sessionId', sessionId);
+    }
 
     const uploadSubject = new Subject<UploadProgress>();
 
     this.httpClient
-      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
+      .post<any>(url, formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ Accept: 'application/json' }),

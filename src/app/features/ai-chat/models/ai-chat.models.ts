@@ -16,6 +16,7 @@ export interface Conversation {
   CreatedAt?: Date;
   ConversationSummary?: string;
   messages?: ChatMessage[];
+  documents?: JobDocument[];
   promptFileName?: string;
   isArchived?: boolean;
   timestamp?: Date;

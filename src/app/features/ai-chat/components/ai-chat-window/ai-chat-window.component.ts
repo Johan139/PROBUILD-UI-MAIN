@@ -118,8 +118,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
    this.progress = 0;
 
    this.currentConversation$.pipe(take(1)).subscribe(conversation => {
-     if (conversation) {
-       this.fileUploadService.uploadFiles(files, conversation.Id).subscribe({
+     if (conversation && conversation.Id) {
+       // The upload service uses conversation.Id for both the sessionId and the conversationId parameter.
+       // - sessionId is required for all uploads to track the session.
+       // - conversationId routes the request to the new chat-specific endpoint.
+       this.fileUploadService.uploadFiles(files, conversation.Id, conversation.Id).subscribe({
          next: (uploadProgress) => {
            this.progress = uploadProgress.progress;
            this.isUploading = uploadProgress.isUploading;
@@ -154,7 +157,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
  getUploadedFileNames(): string {
      return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
  }
- 
+
  viewUploadedFiles(): void {
      this.state.documents$.pipe(take(1)).subscribe(documents => {
          this.fileUploadService.viewUploadedFiles(documents);

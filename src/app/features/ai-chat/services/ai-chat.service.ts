@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AiChatStateService } from './ai-chat-state.service';
 import { catchError, map } from 'rxjs/operators';
-import { of, Observable } from 'rxjs';
-import { Conversation, Prompt } from '../models/ai-chat.models';
+import { of, Observable, forkJoin } from 'rxjs';
+import { Conversation, Prompt, ChatMessage } from '../models/ai-chat.models';
 import { environment } from "../../../../environments/environment";
 import { AuthService } from '../../../authentication/auth.service';
+import { JobDocument } from '../../../models/JobDocument';
 
 const BASE_URL = `${environment.BACKEND_URL}/Chat`;
 
@@ -101,28 +102,36 @@ export class AiChatService {
   getConversation(conversationId: string) {
     console.log(`DELETE ME: [AiChatService] Getting conversation ${conversationId}`);
     this.state.setLoading(true);
-    this.http.get<any[]>(`${BASE_URL}/${conversationId}`)
-      .pipe(
-        map(messages => messages.map(m => ({
-          Id: m.id,
-          ConversationId: m.conversationId,
-          Role: m.role,
-          Content: m.content,
-          IsSummarized: m.isSummarized,
-          Timestamp: m.timestamp
-        }))),
-        catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to fetch conversation:', err);
-          this.state.setError('Failed to fetch conversation.');
-          this.state.setLoading(false);
-          return of([]);
-        })
-      )
-      .subscribe(messages => {
-        console.log('DELETE ME: [AiChatService] Successfully fetched conversation:', messages);
-        this.state.setMessages(messages);
+
+    const messages$ = this.http.get<any[]>(`${BASE_URL}/${conversationId}`).pipe(
+      map(messages => messages.map(m => ({
+        Id: m.id,
+        ConversationId: m.conversationId,
+        Role: m.role,
+        Content: m.content,
+        IsSummarized: m.isSummarized,
+        Timestamp: m.timestamp
+      } as ChatMessage)))
+    );
+
+    const documents$ = this.http.get<JobDocument[]>(`${BASE_URL}/${conversationId}/documents`);
+
+    forkJoin({ messages: messages$, documents: documents$ }).pipe(
+      catchError(err => {
+        console.error('DELETE ME: [AiChatService] Failed to fetch conversation data:', err);
+        this.state.setError('Failed to fetch conversation data.');
         this.state.setLoading(false);
-      });
+        return of(null);
+      })
+    ).subscribe(response => {
+      if (response) {
+        console.log('DELETE ME: [AiChatService] Successfully fetched conversation messages:', response.messages);
+        this.state.setMessages(response.messages || []);
+        console.log('DELETE ME: [AiChatService] Successfully fetched conversation documents:', response.documents);
+        this.state.setDocuments(response.documents || []);
+      }
+      this.state.setLoading(false);
+    });
   }
 
   getMyConversations() {

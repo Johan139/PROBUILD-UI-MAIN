@@ -109,6 +109,11 @@ export class AiChatStateService {
       const currentState = this.stateSubject.getValue();
       this.updateState({ documents: [...currentState.documents, ...documents] });
   }
+
+  setDocuments(documents: JobDocument[]): void {
+    console.log('DELETE ME: [AiChatStateService] Setting documents:', documents);
+    this.updateState({ documents });
+  }
   
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
