@@ -135,4 +135,34 @@ export class AiChatService {
         this.state.setLoading(false);
       });
   }
+
+  startRenovationAnalysis(files: FileList): void {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    this.http.post<any>(`${BASE_URL}/start-renovation-analysis`, formData).subscribe(response => {
+      this.state.addMessage(response);
+    });
+  }
+
+  startSubcontractorComparison(files: FileList): void {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    this.http.post<any>(`${BASE_URL}/start-subcontractor-comparison`, formData).subscribe(response => {
+      this.state.addMessage(response);
+    });
+  }
+
+  startVendorComparison(files: FileList): void {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    this.http.post<any>(`${BASE_URL}/start-vendor-comparison`, formData).subscribe(response => {
+      this.state.addMessage(response);
+    });
+  }
 }

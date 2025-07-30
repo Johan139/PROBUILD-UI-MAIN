@@ -122,8 +122,8 @@ export class AiChatFullScreenComponent implements OnInit {
         const title = match[1].split('\n')[0];
         return title.trim();
       }
+    
     }
-
     if (role === 'model') {
       let modifiedContent = content;
 
@@ -139,6 +139,23 @@ export class AiChatFullScreenComponent implements OnInit {
     }
 
     return content;
+  }
+
+  onFileSelected(event: any, type: 'renovation' | 'subcontractor' | 'vendor'): void {
+    const files = event.target.files;
+    if (files.length > 0) {
+      switch (type) {
+        case 'renovation':
+          this.aiChatService.startRenovationAnalysis(files);
+          break;
+        case 'subcontractor':
+          this.aiChatService.startSubcontractorComparison(files);
+          break;
+        case 'vendor':
+          this.aiChatService.startVendorComparison(files);
+          break;
+      }
+    }
   }
 
   logDisplayName(prompt: any): boolean {

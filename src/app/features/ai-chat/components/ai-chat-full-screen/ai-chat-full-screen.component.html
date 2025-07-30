@@ -58,6 +58,18 @@
                            {{ prompt.displayName }}
                        </button>
                    </ng-container>
+                   <button (click)="renovationAnalysisInput.click()">
+                       Renovation Analysis
+                   </button>
+                   <input type="file" #renovationAnalysisInput style="display: none" (change)="onFileSelected($event, 'renovation')" multiple />
+                   <button (click)="subcontractorComparisonInput.click()">
+                       Subcontractor Comparison
+                   </button>
+                   <input type="file" #subcontractorComparisonInput style="display: none" (change)="onFileSelected($event, 'subcontractor')" multiple />
+                   <button (click)="vendorComparisonInput.click()">
+                       Vendor Comparison
+                   </button>
+                   <input type="file" #vendorComparisonInput style="display: none" (change)="onFileSelected($event, 'vendor')" multiple />
                 </div>
             </div>
             <ng-template #noPrompts>
