@@ -7,6 +7,7 @@ import { map, take } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import promptMapping from '../../assets/prompt_mapping.json';
 
 @Component({
   selector: 'app-ai-chat-full-screen',
@@ -20,7 +21,7 @@ export class AiChatFullScreenComponent implements OnInit {
   messages$: Observable<ChatMessage[]>;
   currentConversation$: Observable<Conversation | null>;
   isLoading$: Observable<boolean>;
-  prompts$: Observable<Prompt[]>;
+  prompts$: Observable<(Prompt & { displayName: string })[]>;
 
   newMessageContent = '';
 
@@ -32,7 +33,19 @@ export class AiChatFullScreenComponent implements OnInit {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
     this.isLoading$ = this.aiChatStateService.isLoading$;
-    this.prompts$ = this.aiChatStateService.prompts$;
+    this.prompts$ = this.aiChatStateService.prompts$.pipe(
+      map(prompts => {
+        const mappingData: { tradeName: string, promptFileName: string, displayName: string }[] = promptMapping;
+        return prompts.map(prompt => {
+          const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
+          const displayName = match ? match.displayName : prompt.tradeName;
+          return { ...prompt, displayName };
+        });
+      }),
+      map(prompts => {
+        return prompts;
+      })
+    );
 
     this.currentConversation$ = combineLatest([
       this.aiChatStateService.conversations$,
@@ -85,5 +98,10 @@ export class AiChatFullScreenComponent implements OnInit {
             console.log('DELETE ME: [AiChatFullScreenComponent] No active conversation, cannot send message.');
         }
     });
+  }
+
+  logDisplayName(prompt: any): boolean {
+    console.log('Rendering prompt:', prompt.displayName);
+    return true;
   }
 }

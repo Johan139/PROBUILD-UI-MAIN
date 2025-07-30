@@ -47,9 +47,11 @@
             <div *ngIf="prompts.length > 0; else noPrompts">
                 <h3>Start a new chat with a prompt:</h3>
                 <div class="prompt-buttons">
-                    <button *ngFor="let prompt of prompts" (click)="startConversationWithPrompt(prompt)">
-                        {{ prompt.tradeName }}
-                    </button>
+                    <ng-container *ngFor="let prompt of prompts">
+                       <button (click)="startConversationWithPrompt(prompt)">
+                           {{ prompt.displayName }}
+                       </button>
+                   </ng-container>
                 </div>
             </div>
             <ng-template #noPrompts>
