@@ -114,7 +114,12 @@ export class AiChatService {
       } as ChatMessage)))
     );
 
-    const documents$ = this.http.get<JobDocument[]>(`${BASE_URL}/${conversationId}/documents`);
+    const documents$ = this.http.get<JobDocument[]>(`${BASE_URL}/${conversationId}/documents`).pipe(
+      catchError(error => {
+        console.warn(`Could not fetch documents for conversation ${conversationId}. This is expected if no documents are attached.`, error);
+        return of([]);
+      })
+    );
 
     forkJoin({ messages: messages$, documents: documents$ }).pipe(
       catchError(err => {
