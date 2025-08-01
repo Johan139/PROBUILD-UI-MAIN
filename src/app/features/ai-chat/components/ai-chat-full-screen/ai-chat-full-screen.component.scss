@@ -1,3 +1,14 @@
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
 :host {
   display: flex;
   height: 100%;
@@ -11,8 +22,8 @@
 }
 
 .conversations-list {
-  min-width: 300px;
-  max-width: 300px;
+  min-width: 350px;
+  max-width: 350px;
   border-right: 1px solid #ddd;
   display: flex;
   flex-direction: column;
@@ -21,18 +32,7 @@
 
   .new-chat-btn {
     width: 100%;
-    padding: 0.75rem;
-    background-color: #fbd008;
-    color: black;
-          border: 1px solid black;
-    border-radius: 5px;
-    cursor: pointer;
     margin-bottom: 1rem;
-    font-size: 1rem;
-
-    &:hover {
-      background-color: #e6bf00;
-    }
   }
 
   .conversation-items {
@@ -86,6 +86,11 @@
    cursor: pointer;
    font-size: 18px;
    visibility: hidden;
+   color: $dark-gray;
+
+   &:hover {
+     color: $black;
+   }
  }
 
  &:hover .edit-icon {
@@ -109,8 +114,18 @@
    display: flex;
    align-items: center;
 
+   .save-button {
+     color: green;
+   }
+
+   .cancel-button {
+     color: red;
+   }
+
    button {
      margin-left: 4px;
+     border: none;
+     background-color: transparent;
    }
  }
 }
@@ -185,19 +200,8 @@
       }
 
       button {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        background-color: #fbd008;
-        color: black;
-        border-radius: 20px;
         gap: 0.5rem;
         margin-right: 0.5rem;
-        cursor: pointer;
-
-        &:disabled {
-          background-color: #fbce08b9;
-          cursor: not-allowed;
-        }
       }
     }
   }
@@ -252,22 +256,40 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        color: #333;
         height: 5rem;
         width: 12rem;
         padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        background-color: #fff;
-        cursor: pointer;
-        transition: background-color 0.3s, box-shadow 0.3s;
         white-space: normal;
         word-wrap: break-word;
-        &:hover {
-          background-color: #f0f0f0;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
       }
+    }
+  }
+}
+
+.submit-btn {
+  background: $primary-yellow;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 500;
+  color: $dark-gray;
+  margin: 0 0.5rem;
+  border: none;
+
+  &:hover {
+    background: $darker-yellow;
+  }
+
+  &.publish-btn {
+    background: $primary-yellow;
+    &:hover {
+      background: $darker-yellow;
+    }
+  }
+
+  &.save-btn {
+    background: $secondary-yellow;
+    &:hover {
+      background: darken($secondary-yellow, 10%);
     }
   }
 }
