@@ -61,7 +61,6 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   constructor(
     public state: AiChatStateService,
     private aiChatService: AiChatService,
-    private aiChatStateService: AiChatStateService,
     private router: Router,
     private fileUploadService: FileUploadService,
     private snackBar: MatSnackBar,
@@ -114,9 +113,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     }
 
     const messageToSend = this.selectedPrompt ? '' : this.newMessageContent;
+    const currentConversationId = this.state.getCurrentConversationId();
 
-    if (this.conversationId) {
-      this.aiChatService.sendMessage(this.conversationId, messageToSend, this.files);
+    if (currentConversationId) {
+      this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files);
       this.newMessageContent = '';
       this.files = [];
       this.selectedPrompt = null;
@@ -236,9 +236,9 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   startNewConversation(): void {
     this.selectedPrompt = null;
     this.newMessageContent = '';
-    this.aiChatStateService.setSelectedPrompt(null);
-    this.aiChatStateService.setActiveConversationId(null);
-    this.aiChatStateService.setMessages([]);
+    this.state.setSelectedPrompt(null);
+    this.state.setActiveConversationId(null);
+    this.state.setMessages([]);
     this.aiChatService.getMyPrompts();
   }
 }

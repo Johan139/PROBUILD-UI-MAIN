@@ -1,10 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
-import { Observable, combineLatest } from 'rxjs';
-import { map, take, tap } from 'rxjs/operators';
+import { Observable, combineLatest, Subject } from 'rxjs';
+import { map, take, takeUntil, tap } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -25,9 +25,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   standalone: true,
   imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule]
 })
-export class AiChatFullScreenComponent implements OnInit {
+export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
+
+  private destroy$ = new Subject<void>();
+  conversationId: string | null = null;
 
   conversations$: Observable<Conversation[]>;
   messages$: Observable<ChatMessage[]>;
@@ -106,6 +109,15 @@ export class AiChatFullScreenComponent implements OnInit {
       }
     });
     this.aiChatStateService.documents$.subscribe(documents => this.documents = documents);
+
+    this.aiChatStateService.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(conversation => {
+      this.conversationId = conversation ? conversation.Id : null;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   selectConversation(conversationId: string): void {
@@ -144,16 +156,33 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   sendMessage(): void {
-    if (this.newMessageContent.trim() === '' && this.files.length === 0) {
+    if (this.isSendDisabled) {
       return;
     }
-    this.aiChatStateService.activeConversationId$.pipe(take(1)).subscribe(currentConversationId => {
-        if (currentConversationId) {
-            this.aiChatService.sendMessage(currentConversationId, this.newMessageContent, this.files);
+
+    const messageToSend = this.selectedPrompt ? '' : this.newMessageContent;
+    const currentConversationId = this.aiChatStateService.getCurrentConversationId();
+
+    if (currentConversationId) {
+      this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files);
+      this.newMessageContent = '';
+      this.files = [];
+      this.selectedPrompt = null;
+      this.aiChatStateService.setSelectedPrompt(null);
+    } else {
+      this.aiChatService.startConversation(messageToSend, this.selectedPrompt?.promptKey, this.files)
+        .subscribe(newConversation => {
+          if (newConversation) {
+            this.aiChatStateService.addConversation(newConversation);
+            this.aiChatStateService.setActiveConversationId(newConversation.Id);
+            this.aiChatStateService.setMessages(newConversation.messages ?? []);
             this.newMessageContent = '';
             this.files = [];
-        }
-    });
+            this.selectedPrompt = null;
+            this.aiChatStateService.setSelectedPrompt(null);
+          }
+        });
+    }
   }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {

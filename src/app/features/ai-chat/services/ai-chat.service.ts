@@ -100,13 +100,23 @@ export class AiChatService {
     console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
 
+    const userMessage: ChatMessage = {
+      Id: 0, // Temporary ID, backend will assign a real one
+      ConversationId: conversationId,
+      Role: 'user',
+      Content: message,
+      IsSummarized: false,
+      Timestamp: new Date()
+    };
+    this.state.addMessage(userMessage);
+
     const formData = new FormData();
     formData.append('message', message);
     files.forEach(file => {
       formData.append('files', file);
     });
 
-    this.http.post(`${BASE_URL}/${conversationId}/message`, formData)
+    this.http.post<ChatMessage>(`${BASE_URL}/${conversationId}/message`, formData)
       .pipe(
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to send message:', err);
@@ -116,8 +126,10 @@ export class AiChatService {
         })
       )
       .subscribe(response => {
-        console.log('DELETE ME: [AiChatService] Successfully sent message:', response);
-        // Handle response if necessary
+        if (response) {
+          console.log('DELETE ME: [AiChatService] Successfully sent message:', response);
+          this.state.addMessage(response);
+        }
         this.state.setLoading(false);
       });
   }
@@ -157,6 +169,7 @@ export class AiChatService {
         this.state.setMessages(response.messages || []);
         console.log('DELETE ME: [AiChatService] Successfully fetched conversation documents:', response.documents);
         this.state.setDocuments(response.documents || []);
+        this.state.setActiveConversationId(conversationId);
       }
       this.state.setLoading(false);
     });

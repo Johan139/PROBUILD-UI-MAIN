@@ -38,6 +38,9 @@ export class AiChatStateService {
   messages$ = this.state$.pipe(map(state => state.messages), distinctUntilChanged());
   documents$ = this.state$.pipe(map(state => state.documents), distinctUntilChanged());
 
+ getCurrentConversationId(): string | null {
+   return this.stateSubject.getValue().activeConversationId;
+ }
   // State Updaters
   setIsChatOpen(isOpen: boolean): void {
     console.log('DELETE ME: [AiChatStateService] Setting isChatOpen to:', isOpen);
