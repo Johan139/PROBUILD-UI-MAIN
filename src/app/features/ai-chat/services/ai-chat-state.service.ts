@@ -115,6 +115,20 @@ export class AiChatStateService {
     this.updateState({ documents });
   }
   
+ updateConversationTitle(conversationId: string, newTitle: string): void {
+   const currentState = this.stateSubject.getValue();
+   const updatedConversations = currentState.conversations.map(c =>
+     c.Id === conversationId ? { ...c, Title: newTitle } : c
+   );
+   this.updateState({ conversations: updatedConversations });
+
+   if (currentState.currentConversation?.Id === conversationId) {
+     this.updateState({
+       currentConversation: { ...currentState.currentConversation, Title: newTitle }
+     });
+   }
+ }
+
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };

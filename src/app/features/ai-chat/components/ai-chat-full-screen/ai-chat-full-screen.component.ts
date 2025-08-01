@@ -40,13 +40,15 @@ export class AiChatFullScreenComponent implements OnInit {
  uploadedFileInfos: UploadedFileInfo[] = [];
  isUploading = false;
  progress = 0;
+ editingConversationId: string | null = null;
+ editedTitle = '';
 
   constructor(
     private aiChatStateService: AiChatStateService,
     private aiChatService: AiChatService,
     private route: ActivatedRoute,
     private fileUploadService: FileUploadService,
-   private snackBar: MatSnackBar,
+    private snackBar: MatSnackBar
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
@@ -209,4 +211,36 @@ export class AiChatFullScreenComponent implements OnInit {
          this.fileUploadService.viewUploadedFiles(documents);
      });
  }
+
+ startEditing(conversation: Conversation): void {
+   this.editingConversationId = conversation.Id;
+   this.editedTitle = conversation.Title;
+ }
+
+ saveTitle(): void {
+   if (!this.editingConversationId) return;
+
+   if (this.editedTitle.length > 255) {
+     this.snackBar.open('Title cannot exceed 255 characters.', 'Close', { duration: 3000 });
+     return;
+   }
+
+   this.aiChatService.updateConversationTitle(this.editingConversationId, this.editedTitle).subscribe({
+     next: () => {
+       this.aiChatStateService.updateConversationTitle(this.editingConversationId!, this.editedTitle);
+       this.cancelEditing();
+     },
+     error: (error) => {
+       console.error('Error updating title:', error);
+       this.snackBar.open('Failed to update title. Please try again.', 'Close', { duration: 3000 });
+     }
+   });
+ }
+
+ cancelEditing(): void {
+   this.editingConversationId = null;
+   this.editedTitle = '';
+ }
+
 }
+

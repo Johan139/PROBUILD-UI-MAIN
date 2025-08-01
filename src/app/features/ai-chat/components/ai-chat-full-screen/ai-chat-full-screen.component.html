@@ -7,7 +7,25 @@
            class="conversation-item"
            [class.active]="(currentConversation$ | async)?.Id === conversation.Id"
            (click)="selectConversation(conversation.Id)">
-        <p class="conversation-title">{{ conversation.Title }}</p>
+        <div class="conversation-title-container">
+          <ng-container *ngIf="editingConversationId !== conversation.Id; else editMode">
+            <p class="conversation-title">{{ conversation.Title }}</p>
+            <mat-icon class="edit-icon" (click)="startEditing(conversation)">edit</mat-icon>
+          </ng-container>
+          <ng-template #editMode>
+            <div class="edit-container">
+              <input type="text" [(ngModel)]="editedTitle" (keyup.enter)="saveTitle()" class="edit-input" />
+              <div class="edit-actions">
+                <button mat-icon-button (click)="saveTitle()">
+                  <mat-icon>check</mat-icon>
+                </button>
+                <button mat-icon-button (click)="cancelEditing()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
         <p class="conversation-excerpt">{{ conversation.ConversationSummary }}</p>
       </div>
     </div>

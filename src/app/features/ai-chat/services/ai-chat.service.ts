@@ -165,6 +165,11 @@ export class AiChatService {
       });
   }
 
+  public updateConversationTitle(conversationId: string, newTitle: string): Observable<any> {
+    const body = { conversationId, newTitle };
+    return this.http.put(`${BASE_URL}/conversation/title`, body);
+  }
+
   startRenovationAnalysis(files: FileList): void {
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
