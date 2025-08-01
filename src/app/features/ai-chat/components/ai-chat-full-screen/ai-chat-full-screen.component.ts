@@ -108,6 +108,7 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   selectConversation(conversationId: string): void {
+    this.selectedPrompt = null;
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
     this.aiChatStateService.setSelectedPrompt(null);
@@ -115,6 +116,7 @@ export class AiChatFullScreenComponent implements OnInit {
 
   startNewConversation(): void {
     this.selectedPrompt = null;
+    this.newMessageContent = '';
     this.aiChatStateService.setSelectedPrompt(null);
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
