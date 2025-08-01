@@ -1,27 +1,31 @@
-import { Component, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
-import { Observable, Subject, combineLatest } from 'rxjs';
+import { Observable, Subject, map } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
-import { AsyncPipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatMessage, Conversation } from '../../models/ai-chat.models';
+import { ChatMessage, Conversation, Prompt } from '../../models/ai-chat.models';
 import { FileUploadService, UploadedFileInfo } from '../../../../services/file-upload.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MarkdownModule } from 'ngx-markdown';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDialog } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import promptMapping from '../../assets/prompt_mapping.json';
+import { JobDocument } from '../../../../models/JobDocument';
 
- @Component({
-   selector: 'app-ai-chat-window',
-   templateUrl: './ai-chat-window.component.html',
-   styleUrls: ['./ai-chat-window.component.scss'],
-   standalone: true,
-   imports: [NgIf, AsyncPipe, NgFor, NgClass, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule],
- })
- export class AiChatWindowComponent implements OnDestroy {
+@Component({
+  selector: 'app-ai-chat-window',
+  templateUrl: './ai-chat-window.component.html',
+  styleUrls: ['./ai-chat-window.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule],
+})
+export class AiChatWindowComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
 
@@ -30,27 +34,56 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   isLoading$: Observable<boolean>;
   selectedPrompt$: Observable<any | null>;
   currentConversation$: Observable<Conversation | null>;
+  prompts$: Observable<(Prompt & { displayName: string; description: string })[]>;
+  conversations$: Observable<Conversation[]>;
 
-  private conversationId: string | null = null;
-  private currentConversation: Conversation | null = null;
+   public isHistoryVisible = false;
+   private conversationId: string | null = null;
+   private currentConversation: Conversation | null = null;
   private destroy$ = new Subject<void>();
   private files: File[] = [];
- uploadedFileInfos: UploadedFileInfo[] = [];
- isUploading = false;
- progress = 0;
+  uploadedFileInfos: UploadedFileInfo[] = [];
+  isUploading = false;
+  progress = 0;
+  public newMessageContent = '';
+  public isPromptsPopupVisible = false;
+  public selectedPrompt: any | null = null;
+  public documents: JobDocument[] = [];
+
+  public get isSendDisabled(): boolean {
+    if (this.selectedPrompt) {
+      return this.documents.length === 0;
+    }
+    return !this.newMessageContent.trim();
+  }
 
   constructor(
     public state: AiChatStateService,
     private aiChatService: AiChatService,
     private router: Router,
     private fileUploadService: FileUploadService,
-   private snackBar: MatSnackBar,
+    private snackBar: MatSnackBar,
+    private cdRef: ChangeDetectorRef,
+    public dialog: MatDialog
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
     this.isLoading$ = this.state.isLoading$;
     this.selectedPrompt$ = this.state.selectedPrompt$;
     this.currentConversation$ = this.state.currentConversation$;
+    this.conversations$ = this.state.conversations$;
+
+     this.prompts$ = this.state.prompts$.pipe(
+       map(prompts => {
+        const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
+        return prompts.map(prompt => {
+          const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
+          const displayName = match ? match.displayName : prompt.tradeName;
+          const description = match ? match.description : '';
+          return { ...prompt, displayName, description };
+        });
+      })
+    );
 
     this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(conversation => {
       this.currentConversation = conversation;
@@ -58,39 +91,45 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     });
   }
 
-  ngOnDestroy(): void {
-    console.log('DELETE ME: [AiChatWindowComponent] ngOnDestroy');
+  ngOnInit(): void {
+    this.aiChatService.getMyPrompts();
+    this.state.documents$.subscribe(documents => this.documents = documents);
+    this.aiChatService.getMyConversations();
+  }
+
+   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   closeChat(): void {
-    console.log('DELETE ME: [AiChatWindowComponent] Closing chat');
     this.state.setIsChatOpen(false);
   }
 
-  sendMessage(formValue: { message: string }): void {
-    if ((!formValue.message || formValue.message.trim().length === 0) && this.files.length === 0) {
+  sendMessage(): void {
+    if (this.isSendDisabled) {
       return;
     }
 
-    if (this.currentConversation && !this.currentConversation.Id) {
-      this.selectedPrompt$.pipe(take(1)).subscribe(prompt => {
-        if (prompt) {
-          this.aiChatService.startConversation(formValue.message, prompt.promptFileName, this.files)
-            .subscribe(newConversation => {
-              if (newConversation) {
-                this.state.setCurrentConversation(newConversation);
-                this.state.addConversation(newConversation);
-                this.state.setActiveConversationId(newConversation.Id);
-              }
-            });
-          this.files = [];
-        }
-      });
-    } else if (this.conversationId) {
-      this.aiChatService.sendMessage(this.conversationId, formValue.message, this.files);
+    if (this.conversationId) {
+      this.aiChatService.sendMessage(this.conversationId, this.newMessageContent, this.files);
+      this.newMessageContent = '';
       this.files = [];
+      this.selectedPrompt = null;
+      this.state.setSelectedPrompt(null);
+    } else {
+      this.aiChatService.startConversation(this.newMessageContent, this.selectedPrompt?.promptKey, this.files)
+        .subscribe(newConversation => {
+          if (newConversation) {
+            this.state.addConversation(newConversation);
+            this.state.setActiveConversationId(newConversation.Id);
+            this.state.setMessages(newConversation.messages ?? []);
+            this.newMessageContent = '';
+            this.files = [];
+            this.selectedPrompt = null;
+            this.state.setSelectedPrompt(null);
+          }
+        });
     }
   }
 
@@ -149,9 +188,20 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   }
 
   goToFullScreen(): void {
-    console.log('DELETE ME: [AiChatWindowComponent] Navigating to full screen');
     this.router.navigate(['/ai-chat']);
     this.state.setIsChatOpen(false);
+  }
+
+  togglePromptsPopup(): void {
+    this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
+    this.cdRef.detectChanges();
+  }
+
+  selectPrompt(prompt: any): void {
+    this.newMessageContent = prompt.displayName;
+    this.selectedPrompt = prompt;
+    this.isPromptsPopupVisible = false;
+    this.state.setSelectedPrompt(prompt);
   }
  getUploadedFileNames(): string {
      return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
@@ -161,5 +211,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
      this.state.documents$.pipe(take(1)).subscribe(documents => {
          this.fileUploadService.viewUploadedFiles(documents);
      });
+ }
+ toggleHistory(): void {
+   this.isHistoryVisible = !this.isHistoryVisible;
+ }
+
+ loadConversation(conversationId: string): void {
+   this.aiChatService.getConversation(conversationId);
+   this.isHistoryVisible = false;
  }
 }

@@ -2,6 +2,9 @@
   <header class="chat-header">
     <h2 class="chat-title">AI Assistant</h2>
     <div class="header-actions">
+      <button (click)="toggleHistory()" class="action-btn" aria-label="Toggle history">
+        <span class="material-icons">history</span>
+      </button>
       <button (click)="goToFullScreen()" class="action-btn" aria-label="Full screen">
         <span class="material-icons">fullscreen</span>
       </button>
@@ -11,46 +14,71 @@
     </div>
   </header>
 
-  <main class="chat-messages">
-    <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
-      <p>{{ message.Content }}</p>
+  <div class="scroll-wrapper">
+    <div class="chat-window-container">
+      <div *ngIf="isHistoryVisible" class="chat-history-panel">
+        <h3>Conversation History</h3>
+        <ul>
+          <li *ngFor="let conversation of conversations$ | async" (click)="loadConversation(conversation.Id)">
+            {{ conversation.Title || 'Untitled Conversation' }}
+          </li>
+        </ul>
+      </div>
+      <div *ngIf="selectedPrompt" class="selected-prompt-display">
+        <h2>{{ selectedPrompt.displayName }}</h2>
+        <p>{{ selectedPrompt.description }}</p>
+      </div>
+      <div class="message-history">
+        <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+          <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+          <div class="message-content">
+            <ng-container [ngSwitch]="message.Role">
+              <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
+              <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
+            </ng-container>
+          </div>
+        </div>
+        <div *ngIf="isLoading$ | async" class="message ai">
+          <p>Thinking...</p>
+        </div>
+      </div>
     </div>
-    <div *ngIf="isLoading$ | async" class="loading-indicator">
-      <span></span><span></span><span></span>
+  </div>
+  <div class="message-input-container">
+    <div *ngIf="isUploading" class="upload-progress">
+      <p>Upload Progress: {{ progress }}%</p>
+      <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
     </div>
-  </main>
-
-  <footer class="chat-input-area">
-   <div *ngIf="isUploading" class="upload-progress">
-     <p>Upload Progress: {{ progress }}%</p>
-     <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
-   </div>
-   <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
-     <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
-       {{ uploadedFileInfos.length }} file(s) uploaded successfully
-     </p>
-   </div>
-    <form #form="ngForm" (ngSubmit)="sendMessage(form.value); form.reset()" class="chat-form">
+    <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+      <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+        {{ uploadedFileInfos.length }} file(s) uploaded successfully
+      </p>
+    </div>
+    <form (ngSubmit)="sendMessage()">
+      <button *ngIf="!selectedPrompt" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+        <mat-icon>tune</mat-icon>
+      </button>
+      <input *ngIf="!selectedPrompt" type="text"
+             id="chat-input"
+             [(ngModel)]="newMessageContent"
+             name="newMessageContent"
+             placeholder="Type your message..."
+             autocomplete="off">
+      <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
+      <button mat-raised-button type="button" class="action-btn submit-btn publish-btn" (click)="onAttachFile()">
+      <mat-icon>attach_file</mat-icon>
+      </button>
+      <button mat-raised-button type="button" class="action-btn submit-btn publish-btn" (click)="viewUploadedFiles()">
+      <mat-icon>folder</mat-icon>
+      </button>
       <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
       <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
-
-      <button type="button" class="attach-btn" (click)="onAttachFile()">
-      <span class="material-icons">attach_file</span>
-      </button>
-      <button type="button" class="attach-btn" (click)="viewUploadedFiles()">
-      <span class="material-icons">folder</span>
-      </button>
-      <textarea
-        name="message"
-        ngModel
-        placeholder="Type your message..."
-        class="chat-input"
-        rows="1"
-        (keydown.enter)="sendMessage(form.value); form.reset(); $event.preventDefault()"
-      ></textarea>
-      <button type="submit" class="send-btn" [disabled]="!form.value.message || (isLoading$ | async)">
-        <span class="material-icons">send</span>
-      </button>
     </form>
-  </footer>
+  </div>
+  <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
+    <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="selectPrompt(prompt)">
+      <div class="prompt-title">{{ prompt.displayName }}</div>
+      <div class="prompt-description">{{ prompt.description }}</div>
+    </div>
+  </div>
 </div>

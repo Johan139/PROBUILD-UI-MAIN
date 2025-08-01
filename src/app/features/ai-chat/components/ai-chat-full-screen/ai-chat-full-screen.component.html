@@ -35,12 +35,12 @@
   <div class="chat-area">
     <div class="scroll-wrapper">
       <div class="chat-window-container">
-          <header class="chat-header">
+          <!-- <header class="chat-header">
             <div class="prompt-info">
               <h2 class="chat-title">{{ (selectedPrompt$ | async)?.displayName }}</h2>
               <mat-icon [matTooltip]="(selectedPrompt$ | async)?.description">info_outline</mat-icon>
             </div>
-          </header>
+          </header> -->
           <div *ngIf="selectedPrompt" class="selected-prompt-display">
             <h2>{{ selectedPrompt.displayName }}</h2>
             <p>{{ selectedPrompt.description }}</p>
