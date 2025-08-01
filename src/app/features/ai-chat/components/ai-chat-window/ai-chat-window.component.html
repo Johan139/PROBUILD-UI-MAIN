@@ -20,7 +20,12 @@
   <div class="scroll-wrapper">
     <div class="chat-window-container">
       <div *ngIf="isHistoryVisible" class="chat-history-panel">
-        <h3>Conversation History</h3>
+        <div class="history-header">
+          <h3>Conversation History</h3>
+          <button (click)="sortConversations()" class="action-btn" aria-label="Sort conversations">
+            <span class="material-icons">{{ sortIcon }}</span>
+          </button>
+        </div>
         <ul>
           <li *ngFor="let conversation of conversations$ | async" (click)="loadConversation(conversation.Id)">
             <span class="conversation-title">{{ conversation.Title || 'Untitled Conversation' }}</span>

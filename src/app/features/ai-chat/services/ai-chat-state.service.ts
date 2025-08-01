@@ -66,7 +66,12 @@ export class AiChatStateService {
 
   setConversations(conversations: Conversation[]): void {
     console.log('DELETE ME: [AiChatStateService] Setting conversations:', conversations);
-    this.updateState({ conversations });
+    const sortedConversations = [...conversations].sort((a, b) => {
+      const dateA = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+      const dateB = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    this.updateState({ conversations: sortedConversations });
   }
 
   setActiveConversationId(id: string | null): void {
@@ -123,6 +128,16 @@ export class AiChatStateService {
      });
    }
  }
+
+  sortConversations(order: 'asc' | 'desc'): void {
+    const currentState = this.stateSubject.getValue();
+    const sortedConversations = [...currentState.conversations].sort((a, b) => {
+      const dateA = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+      const dateB = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+      return order === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+    this.updateState({ conversations: sortedConversations });
+  }
 
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();

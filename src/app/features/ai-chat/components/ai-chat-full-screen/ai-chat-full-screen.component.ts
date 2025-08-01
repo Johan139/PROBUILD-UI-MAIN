@@ -46,6 +46,7 @@ export class AiChatFullScreenComponent implements OnInit {
  public isPromptsPopupVisible = false;
  public selectedPrompt: any | null = null;
  public documents: JobDocument[] = [];
+ public sortOrder: 'asc' | 'desc' = 'desc';
 
  public get isSendDisabled(): boolean {
    if (this.selectedPrompt) {
@@ -112,6 +113,15 @@ export class AiChatFullScreenComponent implements OnInit {
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
     this.aiChatStateService.setSelectedPrompt(null);
+  }
+
+  public get sortIcon(): string {
+    return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  public sortConversations(): void {
+    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    this.aiChatStateService.sortConversations(this.sortOrder);
   }
 
   startNewConversation(): void {

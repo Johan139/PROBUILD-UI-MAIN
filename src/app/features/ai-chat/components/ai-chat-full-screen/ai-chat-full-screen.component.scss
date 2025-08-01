@@ -30,9 +30,28 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 1rem;
   background-color: #fff;
 
-  .new-chat-btn {
-    width: 100%;
+  .conversation-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
+
+    .new-chat-btn {
+      flex-grow: 1;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      color: #333;
+      margin-left: 0.5rem;
+
+      .material-icons {
+        font-size: 24px;
+      }
+    }
   }
 
   .conversation-items {

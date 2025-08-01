@@ -49,6 +49,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public isPromptsPopupVisible = false;
   public selectedPrompt: any | null = null;
   public documents: JobDocument[] = [];
+  public sortOrder: 'asc' | 'desc' = 'desc';
 
   public get isSendDisabled(): boolean {
     if (this.selectedPrompt) {
@@ -222,6 +223,15 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
    this.aiChatService.getConversation(conversationId);
     this.isHistoryVisible = false;
   }
+
+ public get sortIcon(): string {
+   return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+ }
+
+ public sortConversations(): void {
+   this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+   this.state.sortConversations(this.sortOrder);
+ }
 
   startNewConversation(): void {
     this.selectedPrompt = null;
