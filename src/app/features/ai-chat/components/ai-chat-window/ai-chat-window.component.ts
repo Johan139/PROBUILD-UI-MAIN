@@ -112,14 +112,16 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const messageToSend = this.selectedPrompt ? '' : this.newMessageContent;
+
     if (this.conversationId) {
-      this.aiChatService.sendMessage(this.conversationId, this.newMessageContent, this.files);
+      this.aiChatService.sendMessage(this.conversationId, messageToSend, this.files);
       this.newMessageContent = '';
       this.files = [];
       this.selectedPrompt = null;
       this.state.setSelectedPrompt(null);
     } else {
-      this.aiChatService.startConversation(this.newMessageContent, this.selectedPrompt?.promptKey, this.files)
+      this.aiChatService.startConversation(messageToSend, this.selectedPrompt?.promptKey, this.files)
         .subscribe(newConversation => {
           if (newConversation) {
             this.state.addConversation(newConversation);
@@ -199,7 +201,6 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   }
 
   selectPrompt(prompt: any): void {
-    this.newMessageContent = prompt.displayName;
     this.selectedPrompt = prompt;
     this.isPromptsPopupVisible = false;
     this.state.setSelectedPrompt(prompt);

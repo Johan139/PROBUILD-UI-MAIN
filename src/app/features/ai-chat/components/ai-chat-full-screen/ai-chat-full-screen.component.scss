@@ -58,6 +58,13 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       font-weight: bold;
       margin: 0 0 0.25rem 0;
       color: black;
+      flex-grow: 1;
+    }
+
+    .conversation-timestamp {
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-left: 1rem;
     }
 
     .conversation-excerpt {
@@ -175,6 +182,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       .message-content {
         flex-grow: 1;
       }
+
 
       &.user {
         background-color: #fbd008;

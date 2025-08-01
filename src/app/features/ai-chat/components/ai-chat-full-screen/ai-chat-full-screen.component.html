@@ -10,6 +10,7 @@
         <div class="conversation-title-container">
           <ng-container *ngIf="editingConversationId !== conversation.Id; else editMode">
             <p class="conversation-title">{{ conversation.Title }}</p>
+            <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'short' }}</span>
             <mat-icon class="edit-icon" (click)="startEditing(conversation)">edit</mat-icon>
           </ng-container>
           <ng-template #editMode>

@@ -23,7 +23,8 @@
         <h3>Conversation History</h3>
         <ul>
           <li *ngFor="let conversation of conversations$ | async" (click)="loadConversation(conversation.Id)">
-            {{ conversation.Title || 'Untitled Conversation' }}
+            <span class="conversation-title">{{ conversation.Title || 'Untitled Conversation' }}</span>
+            <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'short' }}</span>
           </li>
         </ul>
       </div>
@@ -58,7 +59,7 @@
       </p>
     </div>
     <form (ngSubmit)="sendMessage()">
-      <button *ngIf="!selectedPrompt" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+      <button *ngIf="!selectedPrompt" type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
         <mat-icon>tune</mat-icon>
       </button>
       <input *ngIf="!selectedPrompt" type="text"

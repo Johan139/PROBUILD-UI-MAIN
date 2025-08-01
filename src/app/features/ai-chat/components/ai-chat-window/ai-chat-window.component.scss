@@ -112,6 +112,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       word-wrap: break-word; /* Ensure long words break and wrap */
     }
 
+
     &.user-message {
       background-color: $primary-yellow;
       color: $dark-gray;
@@ -302,6 +303,9 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-bottom: 1px solid #eee;
     cursor: pointer;
     transition: background-color 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     &:hover {
       background-color: #e9ecef;

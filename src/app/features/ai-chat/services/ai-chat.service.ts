@@ -39,7 +39,7 @@ export class AiChatService {
       });
   }
 
-  startConversation(initialMessage: string, promptKey: string, files: File[]): Observable<Conversation | null> {
+  startConversation(initialMessage: string, promptKey: string | null, files: File[]): Observable<Conversation | null> {
     console.log(`DELETE ME: [AiChatService] Starting conversation with promptKey: ${promptKey}`);
     this.state.setLoading(true);
     const userType = this.authService.getUserRole();
@@ -47,19 +47,42 @@ export class AiChatService {
 
     const formData = new FormData();
     formData.append('initialMessage', initialMessage);
-    formData.append('promptKey', promptKey);
+    if (promptKey) {
+      formData.append('promptKey', promptKey);
+    }
     formData.append('userType', userType as string);
     files.forEach(file => {
       formData.append('files', file);
     });
 
-    return this.http.post<Conversation>(`${BASE_URL}/start`, formData)
+    return this.http.post<any>(`${BASE_URL}/start`, formData)
       .pipe(
-        map(conversation => {
+        map(response => {
+          if (!response) return null;
+
+          const conversation: Conversation = {
+            Id: response.id,
+            UserId: response.userId,
+            Title: response.title,
+            CreatedAt: response.createdAt,
+            ConversationSummary: response.conversationSummary,
+            messages: response.messages ? response.messages.map((m: any) => ({
+              Id: m.id,
+              ConversationId: m.conversationId,
+              Role: m.role,
+              Content: m.content,
+              IsSummarized: m.isSummarized,
+              Timestamp: m.timestamp
+            } as ChatMessage)) : []
+          };
+
           console.log('DELETE ME: [AiChatService] Successfully started conversation:', conversation);
           if (conversation) {
             this.state.addConversation(conversation);
             this.state.setActiveConversationId(conversation.Id);
+            if (conversation.messages && conversation.messages.length > 0) {
+              this.state.setMessages(conversation.messages);
+            }
           }
           this.state.setLoading(false);
           return conversation;
