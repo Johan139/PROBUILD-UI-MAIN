@@ -37,9 +37,9 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   prompts$: Observable<(Prompt & { displayName: string; description: string })[]>;
   conversations$: Observable<Conversation[]>;
 
-   public isHistoryVisible = false;
-   private conversationId: string | null = null;
-   private currentConversation: Conversation | null = null;
+  public isHistoryVisible = false;
+  private conversationId: string | null = null;
+  private currentConversation: Conversation | null = null;
   private destroy$ = new Subject<void>();
   private files: File[] = [];
   uploadedFileInfos: UploadedFileInfo[] = [];
@@ -60,6 +60,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   constructor(
     public state: AiChatStateService,
     private aiChatService: AiChatService,
+    private aiChatStateService: AiChatStateService,
     private router: Router,
     private fileUploadService: FileUploadService,
     private snackBar: MatSnackBar,
@@ -218,6 +219,15 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
 
  loadConversation(conversationId: string): void {
    this.aiChatService.getConversation(conversationId);
-   this.isHistoryVisible = false;
- }
+    this.isHistoryVisible = false;
+  }
+
+  startNewConversation(): void {
+    this.selectedPrompt = null;
+    this.newMessageContent = '';
+    this.aiChatStateService.setSelectedPrompt(null);
+    this.aiChatStateService.setActiveConversationId(null);
+    this.aiChatStateService.setMessages([]);
+    this.aiChatService.getMyPrompts();
+  }
 }

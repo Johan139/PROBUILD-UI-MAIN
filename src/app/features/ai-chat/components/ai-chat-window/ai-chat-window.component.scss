@@ -22,13 +22,20 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   box-shadow: $shadow;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   overflow: auto;
   resize: both;
   min-width: 300px;
   min-height: 400px;
   max-width: 80vw;
   max-height: 90vh;
+  direction: rtl;
+  transform: rotateX(180deg);
+}
+
+.chat-window > * {
+  direction: ltr;
+  transform: rotateX(180deg);
 }
 
 .chat-header {
