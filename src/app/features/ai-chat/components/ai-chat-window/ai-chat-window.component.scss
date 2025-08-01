@@ -161,6 +161,21 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       padding: 6px 12px;
       font-size: 0.9rem;
     }
+
+    button.action-btn.submit-btn {
+      padding: 0;
+      min-width: 40px; /* Override Angular Material's default min-width */
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px; /* Ensure consistent border-radius */
+
+      .mat-icon {
+        margin: 0; /* Remove any default margin on the icon */
+      }
+    }
   }
 }
 
