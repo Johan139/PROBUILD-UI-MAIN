@@ -24,7 +24,6 @@ export class AiChatStateService {
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
   private readonly state$ = this.stateSubject.asObservable();
 
-  chatView$ = new BehaviorSubject<'prompt-selection' | 'chat-window'>('prompt-selection');
   selectedPrompt$ = new BehaviorSubject<any | null>(null);
   currentConversation$ = this.state$.pipe(map(state => state.currentConversation), distinctUntilChanged());
 
@@ -92,10 +91,6 @@ export class AiChatStateService {
     this.updateState({ messages });
   }
 
-  setChatView(view: 'prompt-selection' | 'chat-window'): void {
-    this.chatView$.next(view);
-  }
-
   setSelectedPrompt(prompt: any | null): void {
     this.selectedPrompt$.next(prompt);
   }
@@ -114,7 +109,7 @@ export class AiChatStateService {
     console.log('DELETE ME: [AiChatStateService] Setting documents:', documents);
     this.updateState({ documents });
   }
-  
+
  updateConversationTitle(conversationId: string, newTitle: string): void {
    const currentState = this.stateSubject.getValue();
    const updatedConversations = currentState.conversations.map(c =>

@@ -67,7 +67,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   closeChat(): void {
     console.log('DELETE ME: [AiChatWindowComponent] Closing chat');
     this.state.setIsChatOpen(false);
-    this.state.setChatView('prompt-selection');
   }
 
   sendMessage(formValue: { message: string }): void {

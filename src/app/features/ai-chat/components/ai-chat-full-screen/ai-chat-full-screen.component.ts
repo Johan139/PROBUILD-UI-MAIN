@@ -1,14 +1,15 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
 import { Observable, combineLatest } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { map, take, tap } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { MarkdownModule } from 'ngx-markdown';
 import promptMapping from '../../assets/prompt_mapping.json';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -21,7 +22,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   templateUrl: './ai-chat-full-screen.component.html',
   styleUrls: ['./ai-chat-full-screen.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule]
+  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule]
 })
 export class AiChatFullScreenComponent implements OnInit {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -31,31 +32,32 @@ export class AiChatFullScreenComponent implements OnInit {
   messages$: Observable<ChatMessage[]>;
   currentConversation$: Observable<Conversation | null>;
   isLoading$: Observable<boolean>;
-  prompts$: Observable<(Prompt & { displayName: string })[]>;
-  chatView$: Observable<'prompt-selection' | 'chat-window'>;
+  prompts$: Observable<(Prompt & { displayName: string; description: string })[]>;
   selectedPrompt$: Observable<any | null>;
 
-  newMessageContent = '';
+   newMessageContent = '';
  files: File[] = [];
  uploadedFileInfos: UploadedFileInfo[] = [];
  isUploading = false;
  progress = 0;
  editingConversationId: string | null = null;
  editedTitle = '';
+ public isPromptsPopupVisible = false;
 
   constructor(
     private aiChatStateService: AiChatStateService,
     private aiChatService: AiChatService,
     private route: ActivatedRoute,
     private fileUploadService: FileUploadService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdRef: ChangeDetectorRef
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
     this.isLoading$ = this.aiChatStateService.isLoading$;
-    this.chatView$ = this.aiChatStateService.chatView$;
     this.selectedPrompt$ = this.aiChatStateService.selectedPrompt$;
     this.prompts$ = this.aiChatStateService.prompts$.pipe(
+      tap(prompts => console.log('Prompts loading:', prompts)),
       map(prompts => {
         const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
         return prompts.map(prompt => {
@@ -68,6 +70,7 @@ export class AiChatFullScreenComponent implements OnInit {
           return { ...prompt, displayName, description };
         });
       }),
+      tap(mappedPrompts => console.log('Mapped prompts:', mappedPrompts)),
       map(prompts => {
         return prompts;
       })
@@ -82,11 +85,11 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('DELETE ME: [AiChatFullScreenComponent] ngOnInit');
+    console.log('AiChatFullScreenComponent initialized');
     this.aiChatService.getMyConversations();
+    this.aiChatService.getMyPrompts();
     this.route.params.subscribe(params => {
       const conversationId = params['conversationId'];
-      console.log('DELETE ME: [AiChatFullScreenComponent] Route params changed:', params);
       if (conversationId) {
         this.selectConversation(conversationId);
       }
@@ -94,36 +97,16 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   selectConversation(conversationId: string): void {
-    console.log('DELETE ME: [AiChatFullScreenComponent] Selecting conversation:', conversationId);
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
     this.aiChatStateService.setSelectedPrompt(null);
-    this.aiChatStateService.setChatView('chat-window');
   }
 
   startNewConversation(): void {
-    console.log('DELETE ME: [AiChatFullScreenComponent] Starting new conversation flow');
-    this.aiChatStateService.setChatView('prompt-selection');
     this.aiChatStateService.setSelectedPrompt(null);
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
     this.aiChatService.getMyPrompts();
-    console.log('DELETE ME: [AiChatFullScreenComponent] State reset for new conversation.');
-  }
-
-  startConversationWithPrompt(prompt: Prompt): void {
-    console.log('DELETE ME: [AiChatFullScreenComponent] Starting conversation with prompt:', prompt);
-    const tempConversation: Conversation = {
-      Id: '', // No ID yet
-      Title: `New conversation with ${prompt.tradeName}`,
-      messages: [],
-      promptFileName: prompt.promptFileName,
-      isArchived: false,
-      timestamp: new Date()
-    };
-    this.aiChatStateService.setCurrentConversation(tempConversation);
-    this.aiChatStateService.setSelectedPrompt(prompt);
-    this.aiChatStateService.setChatView('chat-window');
   }
 
   onAttachFile(): void {
@@ -140,15 +123,11 @@ export class AiChatFullScreenComponent implements OnInit {
     if (this.newMessageContent.trim() === '' && this.files.length === 0) {
       return;
     }
-    console.log('DELETE ME: [AiChatFullScreenComponent] Sending message...');
     this.aiChatStateService.activeConversationId$.pipe(take(1)).subscribe(currentConversationId => {
         if (currentConversationId) {
-            console.log(`DELETE ME: [AiChatFullScreenComponent] Found active conversation ${currentConversationId}, sending message.`);
             this.aiChatService.sendMessage(currentConversationId, this.newMessageContent, this.files);
             this.newMessageContent = '';
             this.files = [];
-        } else {
-            console.log('DELETE ME: [AiChatFullScreenComponent] No active conversation, cannot send message.');
         }
     });
   }
@@ -242,5 +221,22 @@ export class AiChatFullScreenComponent implements OnInit {
    this.editedTitle = '';
  }
 
+ togglePromptsPopup(): void {
+   console.log('togglePromptsPopup called. Current visibility:', this.isPromptsPopupVisible);
+   this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
+   console.log('New visibility:', this.isPromptsPopupVisible);
+   this.cdRef.detectChanges();
+ }
+
+ selectPrompt(prompt: any): void {
+   this.newMessageContent = prompt.content;
+   this.isPromptsPopupVisible = false;
+ }
+
+ log(val: any): boolean {
+   console.log(val);
+   return val;
+ }
 }
+
 

@@ -33,63 +33,30 @@
 
   <!-- Right Column: Chat Area -->
   <div class="chat-area">
-    <ng-container *ngIf="(chatView$ | async) === 'prompt-selection'; else chatWindow">
-      <div class="welcome-screen">
-        <h2>Welcome to Mason - your ProBuild AI Chatbot</h2>
-        <p>Select a conversation or start a new one.</p>
-        <div class="prompt-selection" *ngIf="(prompts$ | async) as prompts">
-            <div *ngIf="prompts.length > 0; else noPrompts">
-                <h3>Start a new chat with a prompt:</h3>
-                <div class="prompt-buttons">
-                    <ng-container *ngFor="let prompt of prompts">
-                       <button mat-raised-button class="submit-btn publish-btn" (click)="startConversationWithPrompt(prompt)">
-                           {{ prompt.displayName }}
-                       </button>
-                   </ng-container>
-                   <button mat-raised-button class="submit-btn publish-btn" (click)="renovationAnalysisInput.click()">
-                       Renovation Analysis
-                   </button>
-                   <input type="file" #renovationAnalysisInput style="display: none" (change)="onFileSelected($event, 'renovation')" multiple />
-                   <button mat-raised-button class="submit-btn publish-btn" (click)="subcontractorComparisonInput.click()">
-                       Subcontractor Comparison
-                   </button>
-                   <input type="file" #subcontractorComparisonInput style="display: none" (change)="onFileSelected($event, 'subcontractor')" multiple />
-                   <button mat-raised-button class="submit-btn publish-btn" (click)="vendorComparisonInput.click()">
-                       Vendor Comparison
-                   </button>
-                   <input type="file" #vendorComparisonInput style="display: none" (change)="onFileSelected($event, 'vendor')" multiple />
-                </div>
-            </div>
-            <ng-template #noPrompts>
-                <p>Click "New Chat" to get started.</p>
-            </ng-template>
-        </div>
-      </div>
-    </ng-container>
-    <ng-template #chatWindow>
+    <div class="scroll-wrapper">
       <div class="chat-window-container">
-        <header class="chat-header">
-          <div class="prompt-info">
-            <h2 class="chat-title">{{ (selectedPrompt$ | async)?.displayName }}</h2>
-            <mat-icon [matTooltip]="(selectedPrompt$ | async)?.description">info_outline</mat-icon>
-          </div>
-        </header>
-        <div class="message-history">
-          <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
-            <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
-            <div class="message-content">
-              <ng-container [ngSwitch]="message.Role">
-                <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
-                <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
-              </ng-container>
+          <header class="chat-header">
+            <div class="prompt-info">
+              <h2 class="chat-title">{{ (selectedPrompt$ | async)?.displayName }}</h2>
+              <mat-icon [matTooltip]="(selectedPrompt$ | async)?.description">info_outline</mat-icon>
+            </div>
+          </header>
+          <div class="message-history">
+            <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+              <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+              <div class="message-content">
+                <ng-container [ngSwitch]="message.Role">
+                  <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
+                  <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
+                </ng-container>
+              </div>
+            </div>
+            <div *ngIf="isLoading$ | async" class="message ai">
+              <p>Thinking...</p>
             </div>
           </div>
-          <div *ngIf="isLoading$ | async" class="message ai">
-            <p>Thinking...</p>
-          </div>
         </div>
-      </div>
-    </ng-template>
+    </div>
     <div class="message-input-container">
       <div *ngIf="isUploading" class="upload-progress">
         <p>Upload Progress: {{ progress }}%</p>
@@ -101,7 +68,11 @@
         </p>
       </div>
       <form (ngSubmit)="sendMessage()">
+        <button mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+          <mat-icon>tune</mat-icon>
+        </button>
         <input type="text"
+               id="chat-input"
                [(ngModel)]="newMessageContent"
                name="newMessageContent"
                placeholder="Type your message..."
@@ -116,6 +87,12 @@
         <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
         <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
       </form>
+    </div>
+    <div class="prompts-popup" *ngIf="log(isPromptsPopupVisible)">
+      <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="selectPrompt(prompt)">
+        <div class="prompt-title">{{ prompt.displayName }}</div>
+        <div class="prompt-description">{{ prompt.description }}</div>
+      </div>
     </div>
   </div>
 </div>
