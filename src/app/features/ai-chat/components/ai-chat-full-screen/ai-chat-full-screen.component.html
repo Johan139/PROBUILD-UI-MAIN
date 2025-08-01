@@ -41,6 +41,10 @@
               <mat-icon [matTooltip]="(selectedPrompt$ | async)?.description">info_outline</mat-icon>
             </div>
           </header>
+          <div *ngIf="selectedPrompt" class="selected-prompt-display">
+            <h2>{{ selectedPrompt.displayName }}</h2>
+            <p>{{ selectedPrompt.description }}</p>
+          </div>
           <div class="message-history">
             <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
               <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
@@ -68,16 +72,16 @@
         </p>
       </div>
       <form (ngSubmit)="sendMessage()">
-        <button mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+        <button *ngIf="!selectedPrompt" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
           <mat-icon>tune</mat-icon>
         </button>
-        <input type="text"
+        <input *ngIf="!selectedPrompt" type="text"
                id="chat-input"
                [(ngModel)]="newMessageContent"
                name="newMessageContent"
                placeholder="Type your message..."
                autocomplete="off">
-        <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn" [disabled]="!newMessageContent.trim()">Send</button>
+        <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
         <button mat-raised-button type="button" class="action-btn submit-btn publish-btn" (click)="onAttachFile()">
         <mat-icon>attach_file</mat-icon>
         </button>

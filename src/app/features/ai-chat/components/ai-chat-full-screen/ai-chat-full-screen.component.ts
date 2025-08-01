@@ -15,6 +15,7 @@ import promptMapping from '../../assets/prompt_mapping.json';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { UploadedFileInfo } from '../../../../services/file-upload.service';
+import { JobDocument } from '../../../../models/JobDocument';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
@@ -43,6 +44,15 @@ export class AiChatFullScreenComponent implements OnInit {
  editingConversationId: string | null = null;
  editedTitle = '';
  public isPromptsPopupVisible = false;
+ public selectedPrompt: any | null = null;
+ public documents: JobDocument[] = [];
+
+ public get isSendDisabled(): boolean {
+   if (this.selectedPrompt) {
+     return this.documents.length === 0;
+   }
+   return !this.newMessageContent.trim();
+ }
 
   constructor(
     private aiChatStateService: AiChatStateService,
@@ -94,6 +104,7 @@ export class AiChatFullScreenComponent implements OnInit {
         this.selectConversation(conversationId);
       }
     });
+    this.aiChatStateService.documents$.subscribe(documents => this.documents = documents);
   }
 
   selectConversation(conversationId: string): void {
@@ -103,6 +114,7 @@ export class AiChatFullScreenComponent implements OnInit {
   }
 
   startNewConversation(): void {
+    this.selectedPrompt = null;
     this.aiChatStateService.setSelectedPrompt(null);
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
@@ -229,7 +241,8 @@ export class AiChatFullScreenComponent implements OnInit {
  }
 
  selectPrompt(prompt: any): void {
-   this.newMessageContent = prompt.content;
+   this.newMessageContent = prompt.displayName;
+   this.selectedPrompt = prompt;
    this.isPromptsPopupVisible = false;
  }
 

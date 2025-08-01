@@ -307,6 +307,10 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 }
+.send-button[disabled] {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 .more-options-btn {
   background: transparent;
   border: none;
@@ -355,5 +359,26 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       color: #666;
       margin-top: 0.25rem;
     }
+  }
+}
+
+.selected-prompt-display {
+  background-color: #f0f4f8;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1dce5;
+
+  h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+    color: #555;
   }
 }
