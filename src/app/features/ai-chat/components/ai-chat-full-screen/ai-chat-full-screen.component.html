@@ -98,7 +98,7 @@
         <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
       </form>
     </div>
-    <div class="prompts-popup" *ngIf="log(isPromptsPopupVisible)">
+    <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
       <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="selectPrompt(prompt)">
         <div class="prompt-title">{{ prompt.displayName }}</div>
         <div class="prompt-description">{{ prompt.description }}</div>

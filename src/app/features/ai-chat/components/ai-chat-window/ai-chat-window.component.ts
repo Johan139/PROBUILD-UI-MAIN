@@ -2,6 +2,7 @@ import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef 
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
+import { SignalrService } from '../../services/signalr.service';
 import { Observable, Subject, map } from 'rxjs';
 import { takeUntil, take } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -65,7 +66,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     private fileUploadService: FileUploadService,
     private snackBar: MatSnackBar,
     private cdRef: ChangeDetectorRef,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private signalrService: SignalrService
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
@@ -86,19 +88,26 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(conversation => {
+    this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
       this.currentConversation = conversation;
-      this.conversationId = conversation ? conversation.Id : null;
+      if (conversation && conversation.Id) {
+        this.conversationId = conversation.Id;
+        await this.signalrService.joinConversationGroup(this.conversationId);
+      } else {
+        this.conversationId = null;
+      }
     });
   }
 
   ngOnInit(): void {
+    this.signalrService.startConnection();
     this.aiChatService.getMyPrompts();
-    this.state.documents$.subscribe(documents => this.documents = documents);
+    this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
     this.aiChatService.getMyConversations();
   }
 
    ngOnDestroy(): void {
+    this.signalrService.stopConnection();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -219,9 +228,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
    this.isHistoryVisible = !this.isHistoryVisible;
  }
 
- loadConversation(conversationId: string): void {
+ async loadConversation(conversationId: string): Promise<void> {
    this.aiChatService.getConversation(conversationId);
-    this.isHistoryVisible = false;
+   this.isHistoryVisible = false;
+   await this.signalrService.joinConversationGroup(conversationId);
   }
 
  public get sortIcon(): string {

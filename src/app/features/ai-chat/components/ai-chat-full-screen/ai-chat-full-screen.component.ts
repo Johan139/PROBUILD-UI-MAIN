@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy 
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
+import { SignalrService } from '../../services/signalr.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
 import { Observable, combineLatest, Subject } from 'rxjs';
 import { map, take, takeUntil, tap } from 'rxjs/operators';
@@ -64,7 +65,8 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private fileUploadService: FileUploadService,
     private snackBar: MatSnackBar,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private signalrService: SignalrService
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
@@ -99,6 +101,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.signalrService.startConnection();
     console.log('AiChatFullScreenComponent initialized');
     this.aiChatService.getMyConversations();
     this.aiChatService.getMyPrompts();
@@ -108,23 +111,30 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
         this.selectConversation(conversationId);
       }
     });
-    this.aiChatStateService.documents$.subscribe(documents => this.documents = documents);
+    this.aiChatStateService.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
 
-    this.aiChatStateService.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(conversation => {
-      this.conversationId = conversation ? conversation.Id : null;
+    this.aiChatStateService.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
+      if (conversation && conversation.Id) {
+        this.conversationId = conversation.Id;
+        await this.signalrService.joinConversationGroup(this.conversationId);
+      } else {
+        this.conversationId = null;
+      }
     });
   }
 
   ngOnDestroy(): void {
+    this.signalrService.stopConnection();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  selectConversation(conversationId: string): void {
+  async selectConversation(conversationId: string): Promise<void> {
     this.selectedPrompt = null;
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
     this.aiChatStateService.setSelectedPrompt(null);
+    await this.signalrService.joinConversationGroup(conversationId);
   }
 
   public get sortIcon(): string {
@@ -287,10 +297,6 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
    this.isPromptsPopupVisible = false;
  }
 
- log(val: any): boolean {
-   console.log(val);
-   return val;
- }
 
  retryMessage(message: ChatMessage): void {
    this.aiChatStateService.deleteMessage(message.Id);

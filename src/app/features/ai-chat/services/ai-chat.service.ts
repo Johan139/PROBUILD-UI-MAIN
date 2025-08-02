@@ -144,8 +144,8 @@ export class AiChatService {
       .subscribe(response => {
         if (response) {
           console.log('DELETE ME: [AiChatService] Successfully sent message:', response);
-          this.state.deleteMessage(tempId);
-          this.state.addMessage(response);
+          // this.state.deleteMessage(tempId);
+          // this.state.addMessage(response);
         }
         this.state.setLoading(false);
       });

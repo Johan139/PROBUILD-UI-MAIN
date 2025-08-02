@@ -8,6 +8,18 @@ $light-gray: #d9d9d9;
 $white: #fff;
 $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
+@keyframes pulse-text {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
 :host {
   position: fixed;
   bottom: 20px;
@@ -125,6 +137,9 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       color: #333;
       align-self: flex-start;
       border-bottom-left-radius: 3px;
+    }
+    &.ai p {
+      animation: pulse-text 1.5s infinite;
     }
   }
   .user-prompt {

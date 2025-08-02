@@ -86,12 +86,36 @@ export class AiChatStateService {
     console.log('DELETE ME: [AiChatStateService] Adding message:', message);
     const currentState = this.stateSubject.getValue();
     let tempId = 0;
+
     if (isOptimistic) {
       // Create a temporary ID for optimistic updates
       tempId = Date.now();
       message = { ...message, Id: tempId, status: 'sent' };
     }
-    this.updateState({ messages: [...currentState.messages, message] });
+
+    const existingMessage = currentState.messages.find(m => {
+    // If both have valid IDs, check by ID
+    if (m.Id && message.Id && m.Id === message.Id) {
+      return true;
+    }
+    // If no ID or ID is 0, check by content and approximate timestamp
+    if (m.Content === message.Content &&
+        m.Role === message.Role &&
+        m.ConversationId === message.ConversationId) {
+      const timeDiff = Math.abs(new Date(m.Timestamp).getTime() - new Date(message.Timestamp).getTime());
+      return timeDiff < 5000; // Within 5 seconds
+    }
+    return false;
+    });
+
+    if (existingMessage) {
+      console.log('DELETE ME: [AiChatStateService] Message already exists, skipping:', message.Id);
+      return;
+    }
+
+    const updatedMessages = [...currentState.messages, message];
+    console.log('DELETE ME: [AiChatStateService] Updated messages array:', updatedMessages);
+    this.updateState({ messages: updatedMessages });
   }
 
   updateMessage(updatedMessage: ChatMessage): void {
