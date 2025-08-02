@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -26,7 +26,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   standalone: true,
   imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule]
 })
-export class AiChatFullScreenComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
@@ -122,6 +122,10 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy, AfterViewCh
         this.conversationId = null;
       }
     });
+
+    this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.scrollToBottom();
+    });
   }
 
   ngOnDestroy(): void {
@@ -130,17 +134,15 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy, AfterViewCh
     this.destroy$.complete();
   }
 
-  ngAfterViewChecked(): void {
-    this.scrollToBottom();
-  }
-
   private scrollToBottom(behavior: 'auto' | 'smooth' = 'auto'): void {
-    try {
-      this.messageContainer.nativeElement.scrollTo({
-        top: this.messageContainer.nativeElement.scrollHeight,
-        behavior: behavior
-      });
-    } catch (err) { }
+    setTimeout(() => {
+      try {
+        this.messageContainer.nativeElement.scrollTo({
+          top: this.messageContainer.nativeElement.scrollHeight,
+          behavior: behavior
+        });
+      } catch (err) { }
+    }, 0);
   }
 
   async selectConversation(conversationId: string): Promise<void> {
@@ -208,7 +210,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy, AfterViewCh
           }
         });
     }
-    this.scrollToBottom('smooth');
+    this.scrollToBottom();
   }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {

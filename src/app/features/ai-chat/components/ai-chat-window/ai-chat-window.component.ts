@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef, AfterViewChecked } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -27,7 +27,7 @@ import { AuthService } from '../../../../authentication/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule],
 })
-export class AiChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class AiChatWindowComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
@@ -114,6 +114,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy, AfterViewChecke
     });
 
     this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
+
+    this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.scrollToBottom();
+    });
   }
 
    ngOnDestroy(): void {
@@ -122,17 +126,19 @@ export class AiChatWindowComponent implements OnInit, OnDestroy, AfterViewChecke
     this.destroy$.complete();
   }
 
-  ngAfterViewChecked(): void {
-    this.scrollToBottom();
-  }
-
   private scrollToBottom(behavior: 'auto' | 'smooth' = 'auto'): void {
-    try {
-      this.messageContainer.nativeElement.scrollTo({
-        top: this.messageContainer.nativeElement.scrollHeight,
-        behavior: behavior
-      });
-    } catch (err) { }
+    setTimeout(() => {
+      try {
+        if (this.messageContainer && this.messageContainer.nativeElement) {
+          this.messageContainer.nativeElement.scrollTo({
+            top: this.messageContainer.nativeElement.scrollHeight,
+            behavior: behavior,
+          });
+        }
+      } catch (err) {
+        console.error('Error scrolling to bottom:', err);
+      }
+    }, 0);
   }
 
   closeChat(): void {
@@ -248,25 +254,25 @@ export class AiChatWindowComponent implements OnInit, OnDestroy, AfterViewChecke
          this.fileUploadService.viewUploadedFiles(documents);
      });
  }
- toggleHistory(): void {
-   this.isHistoryVisible = !this.isHistoryVisible;
- }
-
- async loadConversation(conversationId: string): Promise<void> {
-   this.aiChatService.getConversation(conversationId);
-   this.isHistoryVisible = false;
-   await this.signalrService.joinConversationGroup(conversationId);
-   this.scrollToBottom('auto');
+  toggleHistory(): void {
+    this.isHistoryVisible = !this.isHistoryVisible;
   }
 
- public get sortIcon(): string {
-   return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
- }
+  async loadConversation(conversationId: string): Promise<void> {
+    this.aiChatService.getConversation(conversationId);
+    this.isHistoryVisible = false;
+    await this.signalrService.joinConversationGroup(conversationId);
+    this.scrollToBottom('auto');
+   }
 
- public sortConversations(): void {
-   this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
-   this.state.sortConversations(this.sortOrder);
- }
+  public get sortIcon(): string {
+    return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  public sortConversations(): void {
+    this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    this.state.sortConversations(this.sortOrder);
+  }
 
   startNewConversation(): void {
     this.selectedPrompt = null;

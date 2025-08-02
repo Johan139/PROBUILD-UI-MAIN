@@ -40,12 +40,12 @@
   <!-- Right Column: Chat Area -->
   <div class="chat-area">
     <div class="scroll-wrapper">
-      <div class="chat-window-container">
+      <div class="chat-window-container" #messageContainer>
           <div *ngIf="selectedPrompt" class="selected-prompt-display">
             <h2>{{ selectedPrompt.displayName }}</h2>
             <p>{{ selectedPrompt.description }}</p>
           </div>
-          <div class="message-history" #messageContainer>
+          <div class="message-history">
             <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
               <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
               <div class="message-content">
