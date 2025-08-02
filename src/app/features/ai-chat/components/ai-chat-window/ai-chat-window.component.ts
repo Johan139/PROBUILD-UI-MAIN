@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef, AfterViewChecked } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -18,6 +18,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import promptMapping from '../../assets/prompt_mapping.json';
 import { JobDocument } from '../../../../models/JobDocument';
+import { AuthService } from '../../../../authentication/auth.service';
 
 @Component({
   selector: 'app-ai-chat-window',
@@ -26,9 +27,10 @@ import { JobDocument } from '../../../../models/JobDocument';
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule],
 })
-export class AiChatWindowComponent implements OnInit, OnDestroy {
+export class AiChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
   isChatOpen$: Observable<boolean>;
   messages$: Observable<ChatMessage[]>;
@@ -51,6 +53,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public selectedPrompt: any | null = null;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
+  public isLoggedIn = false;
 
   public get isSendDisabled(): boolean {
     if (this.selectedPrompt) {
@@ -67,7 +70,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private cdRef: ChangeDetectorRef,
     public dialog: MatDialog,
-    private signalrService: SignalrService
+    private signalrService: SignalrService,
+    private authService: AuthService
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
@@ -100,16 +104,35 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.signalrService.startConnection();
-    this.aiChatService.getMyPrompts();
+    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      this.isLoggedIn = !!user;
+      if (this.isLoggedIn) {
+        this.signalrService.startConnection();
+        this.aiChatService.getMyPrompts();
+        this.aiChatService.getMyConversations();
+      }
+    });
+
     this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
-    this.aiChatService.getMyConversations();
   }
 
    ngOnDestroy(): void {
     this.signalrService.stopConnection();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  ngAfterViewChecked(): void {
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(behavior: 'auto' | 'smooth' = 'auto'): void {
+    try {
+      this.messageContainer.nativeElement.scrollTo({
+        top: this.messageContainer.nativeElement.scrollHeight,
+        behavior: behavior
+      });
+    } catch (err) { }
   }
 
   closeChat(): void {
@@ -144,6 +167,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
           }
         });
     }
+    this.scrollToBottom('smooth');
   }
 
   onAttachFile(): void {
@@ -232,6 +256,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
    this.aiChatService.getConversation(conversationId);
    this.isHistoryVisible = false;
    await this.signalrService.joinConversationGroup(conversationId);
+   this.scrollToBottom('auto');
   }
 
  public get sortIcon(): string {

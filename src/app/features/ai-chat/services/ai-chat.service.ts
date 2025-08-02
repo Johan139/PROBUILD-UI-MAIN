@@ -21,6 +21,11 @@ export class AiChatService {
   ) { }
 
   getMyPrompts() {
+    if (!this.authService.isLoggedIn()) {
+      console.log('DELETE ME: [AiChatService] User not logged in, skipping getMyPrompts.');
+      this.state.setPrompts([]);
+      return;
+    }
     console.log('DELETE ME: [AiChatService] Getting my prompts...');
     this.state.setLoading(true);
     this.http.get<Prompt[]>(`${BASE_URL}/my-prompts`)
@@ -193,6 +198,11 @@ export class AiChatService {
   }
 
   getMyConversations() {
+    if (!this.authService.isLoggedIn()) {
+      console.log('DELETE ME: [AiChatService] User not logged in, skipping getMyConversations.');
+      this.state.setConversations([]);
+      return;
+    }
     console.log('DELETE ME: [AiChatService] Getting my conversations...');
     this.state.setLoading(true);
     this.http.get<any[]>(`${BASE_URL}/my-conversations`)

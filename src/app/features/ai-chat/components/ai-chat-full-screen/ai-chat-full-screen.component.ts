@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, AfterViewChecked } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -26,9 +26,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   standalone: true,
   imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule]
 })
-export class AiChatFullScreenComponent implements OnInit, OnDestroy {
+export class AiChatFullScreenComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
   private destroy$ = new Subject<void>();
   conversationId: string | null = null;
@@ -129,12 +130,26 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  ngAfterViewChecked(): void {
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(behavior: 'auto' | 'smooth' = 'auto'): void {
+    try {
+      this.messageContainer.nativeElement.scrollTo({
+        top: this.messageContainer.nativeElement.scrollHeight,
+        behavior: behavior
+      });
+    } catch (err) { }
+  }
+
   async selectConversation(conversationId: string): Promise<void> {
     this.selectedPrompt = null;
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
     this.aiChatStateService.setSelectedPrompt(null);
     await this.signalrService.joinConversationGroup(conversationId);
+    this.scrollToBottom('auto');
   }
 
   public get sortIcon(): string {
@@ -193,6 +208,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
           }
         });
     }
+    this.scrollToBottom('smooth');
   }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {

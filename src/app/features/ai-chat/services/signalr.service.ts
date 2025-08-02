@@ -22,6 +22,11 @@ export class SignalrService {
       return this.connectionPromise;
     }
 
+    if (!this.authService.isLoggedIn()) {
+      console.log('SignalR: User not logged in, skipping connection.');
+      return Promise.resolve();
+    }
+
     this.connectionPromise = (async () => {
       const token = await this.authService.getToken();
       const baseUrl = environment.BACKEND_URL.replace('/api', '');
@@ -53,9 +58,14 @@ export class SignalrService {
         console.error(`SignalR connection closed with error: ${error}`);
       });
 
-      console.log('SignalR: Starting connection...');
-      await this.hubConnection.start();
-      console.log('SignalR: Connection started successfully.');
+      try {
+        console.log('SignalR: Starting connection...');
+        await this.hubConnection.start();
+        console.log('SignalR: Connection started successfully.');
+      } catch (err) {
+        console.error('SignalR: Failed to start connection:', err);
+        this.connectionPromise = undefined; // Reset promise on failure
+      }
     })();
 
     return this.connectionPromise;
