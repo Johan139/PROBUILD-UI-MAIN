@@ -45,6 +45,18 @@ export class AiChatService {
     const userType = this.authService.getUserRole();
     console.log(`DELETE ME: [AiChatService] UserType for new conversation: ${userType}`);
 
+    const tempId = Date.now();
+    const userMessage: ChatMessage = {
+      Id: tempId,
+      ConversationId: '', // No conversation ID yet
+      Role: 'user',
+      Content: initialMessage,
+      IsSummarized: false,
+      Timestamp: new Date(),
+      status: 'sent'
+    };
+    this.state.addMessage(userMessage, true);
+
     const formData = new FormData();
     formData.append('initialMessage', initialMessage);
     if (promptKey) {
@@ -90,6 +102,7 @@ export class AiChatService {
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to start conversation:', err);
           this.state.setError('Failed to start conversation.');
+          this.state.updateMessageStatus(tempId, 'failed');
           this.state.setLoading(false);
           return of(null);
         })
@@ -100,15 +113,17 @@ export class AiChatService {
     console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
 
+    const tempId = Date.now();
     const userMessage: ChatMessage = {
-      Id: 0, // Temporary ID, backend will assign a real one
+      Id: tempId,
       ConversationId: conversationId,
       Role: 'user',
       Content: message,
       IsSummarized: false,
-      Timestamp: new Date()
+      Timestamp: new Date(),
+      status: 'sent'
     };
-    this.state.addMessage(userMessage);
+    this.state.addMessage(userMessage, true);
 
     const formData = new FormData();
     formData.append('message', message);
@@ -121,6 +136,7 @@ export class AiChatService {
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to send message:', err);
           this.state.setError('Failed to send message.');
+          this.state.updateMessageStatus(tempId, 'failed');
           this.state.setLoading(false);
           return of(null);
         })
@@ -128,6 +144,7 @@ export class AiChatService {
       .subscribe(response => {
         if (response) {
           console.log('DELETE ME: [AiChatService] Successfully sent message:', response);
+          this.state.deleteMessage(tempId);
           this.state.addMessage(response);
         }
         this.state.setLoading(false);

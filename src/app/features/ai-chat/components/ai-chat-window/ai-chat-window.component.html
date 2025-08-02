@@ -45,6 +45,12 @@
               <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
               <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
             </ng-container>
+            <div *ngIf="message.status === 'failed'" class="error-message">
+              <span>Failed to send message to Mason - please try again</span>
+              <button mat-icon-button (click)="retryMessage(message)">
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </div>
           </div>
         </div>
         <div *ngIf="isLoading$ | async" class="message ai">

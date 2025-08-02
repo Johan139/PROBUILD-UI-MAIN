@@ -82,10 +82,42 @@ export class AiChatStateService {
     this.updateState({ activeConversationId: id });
   }
 
-  addMessage(message: ChatMessage): void {
+  addMessage(message: ChatMessage, isOptimistic = false): void {
     console.log('DELETE ME: [AiChatStateService] Adding message:', message);
     const currentState = this.stateSubject.getValue();
+    let tempId = 0;
+    if (isOptimistic) {
+      // Create a temporary ID for optimistic updates
+      tempId = Date.now();
+      message = { ...message, Id: tempId, status: 'sent' };
+    }
     this.updateState({ messages: [...currentState.messages, message] });
+  }
+
+  updateMessage(updatedMessage: ChatMessage): void {
+    const currentState = this.stateSubject.getValue();
+    const messages = currentState.messages.map(message =>
+      message.Id === updatedMessage.Id ? updatedMessage : message
+    );
+    this.updateState({ messages });
+  }
+
+  updateMessageStatus(messageId: number, status: 'sent' | 'failed'): void {
+    const currentState = this.stateSubject.getValue();
+    const messages = currentState.messages.map(message =>
+      message.Id === messageId ? { ...message, status } : message
+    );
+    this.updateState({ messages });
+  }
+
+  deleteMessage(messageId: number): void {
+    const currentState = this.stateSubject.getValue();
+    const messages = currentState.messages.filter(message => message.Id !== messageId);
+    this.updateState({ messages });
+  }
+
+  clearError(): void {
+    this.updateState({ error: null });
   }
 
   addConversation(conversation: Conversation): void {

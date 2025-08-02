@@ -7,6 +7,7 @@ export interface ChatMessage {
   Content: string;
   IsSummarized: boolean;
   Timestamp: Date;
+  status?: 'sent' | 'failed';
 }
 
 export interface Conversation {

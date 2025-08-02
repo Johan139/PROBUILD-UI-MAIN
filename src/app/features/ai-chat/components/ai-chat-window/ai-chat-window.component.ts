@@ -241,4 +241,20 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.state.setMessages([]);
     this.aiChatService.getMyPrompts();
   }
+
+  retryMessage(message: ChatMessage): void {
+    this.state.deleteMessage(message.Id);
+    if (message.ConversationId) {
+      this.aiChatService.sendMessage(message.ConversationId, message.Content, []);
+    } else {
+      this.aiChatService.startConversation(message.Content, null, [])
+        .subscribe(newConversation => {
+          if (newConversation) {
+            this.state.addConversation(newConversation);
+            this.state.setActiveConversationId(newConversation.Id);
+            this.state.setMessages(newConversation.messages ?? []);
+          }
+        });
+    }
+  }
 }

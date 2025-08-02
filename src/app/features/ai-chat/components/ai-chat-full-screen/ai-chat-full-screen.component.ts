@@ -291,6 +291,22 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
    console.log(val);
    return val;
  }
+
+ retryMessage(message: ChatMessage): void {
+   this.aiChatStateService.deleteMessage(message.Id);
+   if (message.ConversationId) {
+     this.aiChatService.sendMessage(message.ConversationId, message.Content, []);
+   } else {
+     this.aiChatService.startConversation(message.Content, null, [])
+       .subscribe(newConversation => {
+         if (newConversation) {
+           this.aiChatStateService.addConversation(newConversation);
+           this.aiChatStateService.setActiveConversationId(newConversation.Id);
+           this.aiChatStateService.setMessages(newConversation.messages ?? []);
+         }
+       });
+   }
+ }
 }
 
 
