@@ -3,7 +3,7 @@ name: Build and Deploy to Azure Container App
 on:
   push:
     branches:
-      - dev
+      - development
 
 jobs:
   build-and-deploy:
@@ -44,10 +44,10 @@ jobs:
           push: true
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
 
-      # Deploy to Azure App Service
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: probuildai-backend
-          images: probuild.azurecr.io/probuildai-backend:${{ github.sha }}
-          slot-name: production  # Optional: Remove if not using slots
+      # ✅ Deploy to Azure Container App (UAT)
+      - name: Deploy to Azure Container App
+        run: |
+          az containerapp update \
+            --name qa-probuildai-ui \
+            --resource-group rg-Probuild \
+            --image probuild.azurecr.io/probuildai-ui:${{ github.sha }}

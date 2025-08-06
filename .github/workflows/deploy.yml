@@ -3,7 +3,7 @@ name: Build and Deploy Frontend to Azure Container App
 on:
   push:
     branches:
-      - master
+      - Development
 
 jobs:
   build-and-deploy-frontend:
@@ -34,26 +34,26 @@ jobs:
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
           no-cache: true
           build-args: |
-            BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api
+            BACKEND_URL=https://probuildai-backend-dev.internal.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api
             API_KEY=${{ secrets.API_KEY }}
 
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name probuildai-ui \
+            --name qa-probuildai-ui \
             --resource-group rg-Probuild \
             --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
             --set-env-vars \
-              "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
+              "BACKEND_URL=https://probuildai-backend-dev.internal.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
               "API_KEY=${{ secrets.API_KEY }}" \
               "GOOGLE_API=${{ secrets.GOOGLE_API }}" \
             --set ingress.targetPort=80
 
       - name: Check Container App Status
         run: |
-          az containerapp show --name probuildai-ui --resource-group rg-Probuild --query "properties.runningStatus" -o tsv
+          az containerapp show --name qa-probuildai-ui --resource-group rg-Probuild --query "properties.runningStatus" -o tsv
 
       - name: Check Container App Logs
         run: |
-          az containerapp logs show --name probuildai-ui --resource-group rg-Probuild --follow --tail 100
+          az containerapp logs show --name qa-probuildai-ui --resource-group rg-Probuild --follow --tail 100
         continue-on-error: true
