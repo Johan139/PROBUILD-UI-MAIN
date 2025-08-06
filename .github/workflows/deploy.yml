@@ -35,9 +35,11 @@ jobs:
           if [[ "${{ env.IS_PROD }}" == "true" ]]; then
             echo "APP_NAME=probuildai-ui" >> $GITHUB_ENV
             echo "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" >> $GITHUB_ENV
+            echo "NG_ENV=production" >> $GITHUB_ENV
           else
             echo "APP_NAME=qa-probuildai-ui" >> $GITHUB_ENV
             echo "BACKEND_URL=https://probuildai-backend-dev.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" >> $GITHUB_ENV
+            echo "NG_ENV=staging" >> $GITHUB_ENV
           fi
 
       - name: Build and push Docker image
@@ -51,6 +53,7 @@ jobs:
           build-args: |
             BACKEND_URL=${{ env.BACKEND_URL }}
             API_KEY=${{ secrets.API_KEY }}
+            NG_ENV=${{ env.NG_ENV }}
 
       - name: Deploy to Azure Container App
         run: |
