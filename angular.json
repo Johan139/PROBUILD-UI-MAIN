@@ -38,23 +38,24 @@
             ],
             "styles": [
               "src/styles.scss",
-              "node_modules/bootstrap/dist/css/bootstrap.min.css"
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css"
             ],
             "scripts": []
           },
           "configurations": {
             "staging": {
-    "budgets": [
-  {
-    "type": "initial",
-    "maximumWarning": "1.5MB",
-    "maximumError": "2.5MB"
-  },
-  {
-    "type": "anyComponentStyle",
-    "maximumWarning": "12kB",
-    "maximumError": "14kB"
-  }
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "2.5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "12kB",
+                  "maximumError": "14kB"
+                }
               ],
               "fileReplacements": [
                 {
@@ -65,17 +66,23 @@
               "outputHashing": "all"
             },
             "production": {
-      "budgets": [
-  {
-    "type": "initial",
-    "maximumWarning": "1.5MB",
-    "maximumError": "5MB"
-  },
-  {
-    "type": "anyComponentStyle",
-    "maximumWarning": "12kB",
-    "maximumError": "30kB"
-  }
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1.5MB",
+                  "maximumError": "5MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "12kB",
+                  "maximumError": "30kB"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.live.ts"
+                }
               ],
               "outputHashing": "all"
             },
@@ -101,6 +108,9 @@
             },
             "development": {
               "buildTarget": "ProBuildAI:build:development"
+            },
+            "staging": {
+              "buildTarget": "ProBuildAI:build:staging"
             }
           },
           "defaultConfiguration": "development"
