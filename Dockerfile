@@ -6,7 +6,7 @@ RUN rm -rf node_modules package-lock.json
 RUN npm install --legacy-peer-deps
  COPY . .
  RUN mkdir -p src/assets
- ARG BACKEND_URL="https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
+ ARG BACKEND_URL="https://probuildai-backend-dev.internal.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api"
  ARG API_KEY="ef306472fbed4ca9835115255241412"
  ENV BACKEND_URL=$BACKEND_URL
  ENV API_KEY=$API_KEY
