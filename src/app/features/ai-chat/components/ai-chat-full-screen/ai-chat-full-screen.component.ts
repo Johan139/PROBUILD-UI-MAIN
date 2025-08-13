@@ -4,8 +4,8 @@ import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
-import { Observable, combineLatest, Subject } from 'rxjs';
-import { map, take, takeUntil, tap } from 'rxjs/operators';
+import { Observable, combineLatest, Subject, ReplaySubject } from 'rxjs';
+import { map, take, takeUntil, tap, switchMap } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,14 +32,15 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
   private destroy$ = new Subject<void>();
+  private promptsSource = new ReplaySubject<(Prompt & { displayName: string; description: string; promptFileName: string; })[]>(1);
   conversationId: string | null = null;
 
   conversations$: Observable<Conversation[]>;
   messages$: Observable<ChatMessage[]>;
   currentConversation$: Observable<Conversation | null>;
   isLoading$: Observable<boolean>;
-  prompts$: Observable<(Prompt & { displayName: string; description: string })[]>;
-  selectedPrompt$: Observable<any | null>;
+  prompts$ = this.promptsSource.asObservable();
+  selectedPrompts$: Observable<string[]>;
 
    newMessageContent = '';
  files: File[] = [];
@@ -49,15 +50,17 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
  editingConversationId: string | null = null;
  editedTitle = '';
  public isPromptsPopupVisible = false;
- public selectedPrompt: any | null = null;
  public documents: JobDocument[] = [];
  public sortOrder: 'asc' | 'desc' = 'desc';
+ public promptSelectionState: { [key: string]: boolean } = {};
 
  public get isSendDisabled(): boolean {
-   if (this.selectedPrompt) {
-     return this.documents.length === 0;
-   }
-   return !this.newMessageContent.trim();
+  let selectedPrompts: string[] = [];
+  this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+  if (selectedPrompts.length > 0) {
+    return false;
+  }
+  return !this.newMessageContent.trim() && this.files.length === 0;
  }
 
   constructor(
@@ -72,26 +75,26 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.conversations$ = this.aiChatStateService.conversations$;
     this.messages$ = this.aiChatStateService.messages$;
     this.isLoading$ = this.aiChatStateService.isLoading$;
-    this.selectedPrompt$ = this.aiChatStateService.selectedPrompt$;
-    this.prompts$ = this.aiChatStateService.prompts$.pipe(
-      tap(prompts => console.log('Prompts loading:', prompts)),
+    this.selectedPrompts$ = this.aiChatStateService.selectedPrompts$;
+    this.aiChatStateService.prompts$.pipe(
+      takeUntil(this.destroy$),
       map(prompts => {
         const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
         return prompts.map(prompt => {
-          const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
+          const match = mappingData.find(m => m.promptFileName === prompt.promptKey);
           if (!match) {
             console.log('Unmatched prompt:', prompt);
           }
-          const displayName = match ? match.displayName : prompt.tradeName;
+          const displayName = match ? match.displayName : prompt.promptName;
           const description = match ? match.description : '';
-          return { ...prompt, displayName, description };
+          return { ...prompt, displayName, description, promptFileName: prompt.promptKey };
         });
       }),
-      tap(mappedPrompts => console.log('Mapped prompts:', mappedPrompts)),
-      map(prompts => {
-        return prompts;
+      tap(mappedPrompts => {
+        console.log('Mapped prompts:', mappedPrompts);
+        this.promptsSource.next(mappedPrompts);
       })
-    );
+    ).subscribe();
 
     this.currentConversation$ = combineLatest([
       this.aiChatStateService.conversations$,
@@ -106,6 +109,23 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     console.log('AiChatFullScreenComponent initialized');
     this.aiChatService.getMyConversations();
     this.aiChatService.getMyPrompts();
+
+    this.prompts$.pipe(
+      takeUntil(this.destroy$),
+      switchMap(allPrompts => {
+        console.log('Prompts received, initializing selection state:', allPrompts);
+        return this.selectedPrompts$.pipe(
+          map(selectedPrompts => ({ allPrompts, selectedPrompts }))
+        );
+      })
+    ).subscribe(({ allPrompts, selectedPrompts }) => {
+      this.promptSelectionState = allPrompts.reduce((acc, prompt) => {
+        acc[prompt.promptKey] = selectedPrompts.includes(prompt.promptKey);
+        return acc;
+      }, {} as { [key: string]: boolean });
+      console.log('Initial promptSelectionState:', this.promptSelectionState);
+    });
+
     this.route.params.subscribe(params => {
       const conversationId = params['conversationId'];
       if (conversationId) {
@@ -146,10 +166,8 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   async selectConversation(conversationId: string): Promise<void> {
-    this.selectedPrompt = null;
     this.aiChatStateService.setActiveConversationId(conversationId);
     this.aiChatService.getConversation(conversationId);
-    this.aiChatStateService.setSelectedPrompt(null);
     await this.signalrService.joinConversationGroup(conversationId);
     this.scrollToBottom('auto');
   }
@@ -164,9 +182,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   startNewConversation(): void {
-    this.selectedPrompt = null;
     this.newMessageContent = '';
-    this.aiChatStateService.setSelectedPrompt(null);
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
     this.aiChatService.getMyPrompts();
@@ -187,29 +203,27 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const messageToSend = this.selectedPrompt ? '' : this.newMessageContent;
+    const messageToSend = this.newMessageContent;
     const currentConversationId = this.aiChatStateService.getCurrentConversationId();
+    this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
+      if (currentConversationId) {
+        this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts);
+      } else {
+        this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files)
+          .subscribe(newConversation => {
+            if (newConversation) {
+              this.aiChatStateService.addConversation(newConversation);
+              this.aiChatStateService.setActiveConversationId(newConversation.Id);
+              this.aiChatStateService.setMessages(newConversation.messages ?? []);
+            }
+          });
+      }
+    });
 
-    if (currentConversationId) {
-      this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files);
-      this.newMessageContent = '';
-      this.files = [];
-      this.selectedPrompt = null;
-      this.aiChatStateService.setSelectedPrompt(null);
-    } else {
-      this.aiChatService.startConversation(messageToSend, this.selectedPrompt?.promptKey, this.files)
-        .subscribe(newConversation => {
-          if (newConversation) {
-            this.aiChatStateService.addConversation(newConversation);
-            this.aiChatStateService.setActiveConversationId(newConversation.Id);
-            this.aiChatStateService.setMessages(newConversation.messages ?? []);
-            this.newMessageContent = '';
-            this.files = [];
-            this.selectedPrompt = null;
-            this.aiChatStateService.setSelectedPrompt(null);
-          }
-        });
-    }
+    this.newMessageContent = '';
+    this.files = [];
+    this.aiChatStateService.setSelectedPrompts([]);
+    this.isPromptsPopupVisible = false;
     this.scrollToBottom();
   }
 
@@ -309,11 +323,23 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
    this.cdRef.detectChanges();
  }
 
- selectPrompt(prompt: any): void {
-   this.newMessageContent = prompt.displayName;
-   this.selectedPrompt = prompt;
+ confirmPrompts(): void {
    this.isPromptsPopupVisible = false;
  }
+
+togglePromptSelection(promptKey: string): void {
+    console.log(`Toggling selection for prompt: ${promptKey}`);
+  console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
+  this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
+      console.log(`State AFTER toggle for ${promptKey}:`, this.promptSelectionState[promptKey]);
+  console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
+    const newPrompts = currentPrompts.includes(promptKey)
+      ? currentPrompts.filter(p => p !== promptKey)
+      : [...currentPrompts, promptKey];
+    this.aiChatStateService.setSelectedPrompts(newPrompts);
+      console.log(`Updated selectedPrompts array:`, this.promptSelectionState);
+  });
+}
 
 
  retryMessage(message: ChatMessage): void {

@@ -34,9 +34,12 @@ import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/q
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatRadioModule } from '@angular/material/radio';
 import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
 import { AuthService } from '../../../authentication/auth.service';
 import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
+import { AnalysisService, AnalysisRequestDto } from '../services/analysis.service';
+
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -74,6 +77,7 @@ const Google_API = environment.Google_API;
     MatExpansionModule,
     MatIconModule,
     MatCheckboxModule,
+    MatRadioModule,
 
     // Custom Components and Pipes
     LoaderComponent,
@@ -115,6 +119,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   activeBidsDataSource = new MatTableDataSource<any>();
   activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
 
+  analysisType: 'Comprehensive' | 'Selected' = 'Comprehensive';
+  availablePrompts: any[] = [];
+  selectedPrompts = new FormControl([]);
+  analysisReport: string | null = null;
+  isAnalyzing: boolean = false;
+
   constructor(
     private formBuilder: FormBuilder,
     private jobService: JobsService,
@@ -125,7 +135,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private dialog: MatDialog,
     private authService: AuthService,
     private quoteService: QuoteService,
-    private fileUploadService: FileUploadService
+    private fileUploadService: FileUploadService,
+    private analysisService: AnalysisService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -254,6 +265,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.loadActiveBids();
+    this.loadPrompts();
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -467,44 +479,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   onSubmit(): void {
-    this.fetchDocuments();
-    const activeElement = document.activeElement as HTMLElement;
-
-      // 👇 Force validation to trigger
-  this.addressControl.markAsTouched();
-
-  // Optionally validate the entire form
-  this.jobCardForm.markAllAsTouched();
- if (this.jobCardForm.invalid || this.addressControl.invalid) {
-    return; // prevent proceeding
-  }
-
-    const dialogRef = this.dialog.open(this.documentsDialog);
-
-
-    dialogRef.afterClosed().subscribe(() => {
-      if (activeElement) {
-        activeElement.focus();
-      }
-    });
-        // const dialogRef = this.dialog.open(QuoteDocumentsDialogComponent, {
-        //   width: '600px',
-        //   maxHeight: '80vh',
-        //   autoFocus: true,
-        //   data: {
-        //     fileUrls: this.uploadedFileUrls // 👈 Pass them here
-        //   }
-        // });
-
-        // dialogRef.afterClosed().subscribe(result => {
-        //   if (result === true) {
-        //     // User accepted AI output and subtasks
-        //     this.performSaveJob();
-        //   } else {
-        //     // User cancelled
-        //   }
-        // });
-
+    if (this.analysisType === 'Comprehensive') {
+      this.performComprehensiveAnalysis();
+    } else {
+      this.performSelectedAnalysis();
+    }
   }
 
   performSaveJob(): void {
@@ -886,4 +865,61 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmDialog(): void {
     this.performSaveJob();
   }
+
+   loadPrompts(): void {
+    this.httpClient.get<any[]>('assets/prompt_mapping.json').subscribe(prompts => {
+      this.availablePrompts = prompts;
+    });
+  }
+
+  performComprehensiveAnalysis(): void {
+    const request: AnalysisRequestDto = {
+      analysisType: 'Comprehensive',
+      promptKeys: ['SYSTEM_COMPREHENSIVE_ANALYSIS'],
+      documentUrls: this.uploadedFileInfos.map(f => f.url)
+    };
+    this.performAnalysis(request);
+  }
+
+  performSelectedAnalysis(): void {
+    const selectedPromptKeys = this.selectedPrompts.value;
+    if (!selectedPromptKeys || selectedPromptKeys.length === 0) {
+      this.alertMessage = 'Please select at least one prompt for the analysis.';
+      this.showAlert = true;
+      return;
+    }
+
+    const request: AnalysisRequestDto = {
+      analysisType: 'Selected',
+      promptKeys: selectedPromptKeys,
+      documentUrls: this.uploadedFileInfos.map(f => f.url)
+    };
+    this.performAnalysis(request);
+  }
+
+  performAnalysis(request: AnalysisRequestDto): void {
+    this.isAnalyzing = true;
+    this.analysisReport = null;
+    this.analysisService.performAnalysis(request).subscribe({
+      next: (response) => {
+        this.analysisReport = response.report;
+        this.isAnalyzing = false;
+        // Open a dialog to show the report
+        this.dialog.open(this.documentsDialog, {
+          data: {
+            title: 'Analysis Report',
+            content: this.analysisReport
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Analysis failed', err);
+        this.alertMessage = 'Analysis failed. Please try again later.';
+        this.showAlert = true;
+        this.isAnalyzing = false;
+      }
+    });
+  }
 }
+
+

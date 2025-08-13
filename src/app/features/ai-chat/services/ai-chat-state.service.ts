@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
-import { AiChatState, ChatMessage, Conversation } from '../models/ai-chat.models';
+import { AiChatState, ChatMessage, Conversation, Prompt } from '../models/ai-chat.models';
 import { JobDocument } from '../../../models/JobDocument';
 
 @Injectable({
@@ -18,14 +18,15 @@ export class AiChatStateService {
     activeConversationId: null,
     messages: [],
     currentConversation: null,
-    documents: []
+    documents: [],
+    selectedPrompts: []
   };
 
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
   private readonly state$ = this.stateSubject.asObservable();
 
-  selectedPrompt$ = new BehaviorSubject<any | null>(null);
   currentConversation$ = this.state$.pipe(map(state => state.currentConversation), distinctUntilChanged());
+  selectedPrompts$ = this.state$.pipe(map(state => state.selectedPrompts || []), distinctUntilChanged());
 
   // Selectors
   isChatOpen$ = this.state$.pipe(map(state => state.isChatOpen), distinctUntilChanged());
@@ -62,7 +63,7 @@ export class AiChatStateService {
     this.updateState({ error });
   }
 
-  setPrompts(prompts: Array<{ tradeName: string, promptFileName: string }>): void {
+  setPrompts(prompts: Prompt[]): void {
     console.log('DELETE ME: [AiChatStateService] Setting prompts:', prompts);
     this.updateState({ prompts });
   }
@@ -155,8 +156,8 @@ export class AiChatStateService {
     this.updateState({ messages });
   }
 
-  setSelectedPrompt(prompt: any | null): void {
-    this.selectedPrompt$.next(prompt);
+  setSelectedPrompts(selectedPrompts: string[]): void {
+   this.updateState({ selectedPrompts });
   }
 
   setCurrentConversation(conversation: Conversation | null): void {

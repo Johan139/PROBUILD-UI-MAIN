@@ -33,9 +33,11 @@
           </li>
         </ul>
       </div>
-      <div *ngIf="selectedPrompt" class="selected-prompt-display">
-        <h2>{{ selectedPrompt.displayName }}</h2>
-        <p>{{ selectedPrompt.description }}</p>
+      <div *ngIf="((selectedPrompts$ | async) ?? []).length > 0" class="selected-prompt-display">
+        <h2>Selected Prompts</h2>
+        <ul>
+          <li *ngFor="let prompt of (prompts$ | async) | slice:0:1">{{ prompt.displayName }}</li>
+        </ul>
       </div>
       <div class="message-history">
         <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
@@ -70,10 +72,10 @@
       </p>
     </div>
     <form (ngSubmit)="sendMessage()">
-      <button *ngIf="!selectedPrompt" type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+      <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
         <mat-icon>tune</mat-icon>
       </button>
-      <input *ngIf="!selectedPrompt" type="text"
+      <input type="text"
              id="chat-input"
              [(ngModel)]="newMessageContent"
              name="newMessageContent"
@@ -91,9 +93,13 @@
     </form>
   </div>
   <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
-    <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="selectPrompt(prompt)">
-      <div class="prompt-title">{{ prompt.displayName }}</div>
-      <div class="prompt-description">{{ prompt.description }}</div>
+    <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" class="confirm-btn">Confirm</button>
+    <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="togglePromptSelection(prompt.promptFileName)">
+      <input type="checkbox" [checked]="promptSelectionState[prompt.promptFileName]" readonly>
+      <div class="prompt-details">
+        <div class="prompt-title">{{ prompt.displayName }}</div>
+        <div class="prompt-description">{{ prompt.description }}</div>
+      </div>
     </div>
   </div>
 </div>

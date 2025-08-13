@@ -351,10 +351,29 @@
             </mat-expansion-panel>
           </mat-accordion>
         </div>
+          <div class="form-row">
+            <mat-radio-group [(ngModel)]="analysisType" [ngModelOptions]="{standalone: true}">
+              <mat-radio-button value="Comprehensive">Analyze Blueprint</mat-radio-button>
+              <mat-radio-button value="Selected">Selected Analysis</mat-radio-button>
+            </mat-radio-group>
+          </div>
+
+          <div *ngIf="analysisType === 'Selected'" class="form-row">
+            <mat-form-field appearance="fill">
+              <mat-label>Select Prompts</mat-label>
+              <mat-select [formControl]="selectedPrompts" multiple>
+                <mat-option *ngFor="let prompt of availablePrompts" [value]="prompt.promptFileName">
+                  {{ prompt.displayName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
           <div class="form-row button-row">
             <div class="button-group">
-              <button mat-raised-button type="submit" [disabled]="!subscriptionActive" class="submit-btn">
-                Analyze Blueprint
+              <button mat-raised-button type="submit" [disabled]="!subscriptionActive || isAnalyzing" class="submit-btn">
+                <span *ngIf="!isAnalyzing">Analyze</span>
+                <span *ngIf="isAnalyzing">Analyzing...</span>
               </button>
               <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
             </div>

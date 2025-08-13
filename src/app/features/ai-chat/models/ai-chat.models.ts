@@ -24,8 +24,8 @@ export interface Conversation {
 }
 
 export interface Prompt {
-   tradeName: string;
-   promptFileName: string;
+   promptName: string;
+   promptKey: string;
 }
 
 export interface AiChatState {
@@ -39,4 +39,5 @@ export interface AiChatState {
  messages: ChatMessage[];
  currentConversation: Conversation | null;
  documents: JobDocument[];
+ selectedPrompts: string[];
 }

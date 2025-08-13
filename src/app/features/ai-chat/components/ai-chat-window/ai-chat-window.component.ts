@@ -35,10 +35,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   isChatOpen$: Observable<boolean>;
   messages$: Observable<ChatMessage[]>;
   isLoading$: Observable<boolean>;
-  selectedPrompt$: Observable<any | null>;
   currentConversation$: Observable<Conversation | null>;
-  prompts$: Observable<(Prompt & { displayName: string; description: string })[]>;
+  prompts$: Observable<(Prompt & { displayName: string; description: string; promptFileName: string; })[]>;
   conversations$: Observable<Conversation[]>;
+  selectedPrompts$: Observable<string[]>;
 
   public isHistoryVisible = false;
   private conversationId: string | null = null;
@@ -50,16 +50,18 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   progress = 0;
   public newMessageContent = '';
   public isPromptsPopupVisible = false;
-  public selectedPrompt: any | null = null;
+  public promptSelectionState: { [key: string]: boolean } = {};
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
   public isLoggedIn = false;
 
   public get isSendDisabled(): boolean {
-    if (this.selectedPrompt) {
-      return this.documents.length === 0;
+    let selectedPrompts: string[] = [];
+    this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+    if (selectedPrompts.length > 0) {
+      return false;
     }
-    return !this.newMessageContent.trim();
+    return !this.newMessageContent.trim() && this.files.length === 0;
   }
 
   constructor(
@@ -76,18 +78,18 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
     this.isLoading$ = this.state.isLoading$;
-    this.selectedPrompt$ = this.state.selectedPrompt$;
     this.currentConversation$ = this.state.currentConversation$;
     this.conversations$ = this.state.conversations$;
+    this.selectedPrompts$ = this.state.selectedPrompts$;
 
      this.prompts$ = this.state.prompts$.pipe(
        map(prompts => {
         const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
         return prompts.map(prompt => {
-          const match = mappingData.find(m => m.promptFileName === (prompt as any).promptKey);
-          const displayName = match ? match.displayName : prompt.tradeName;
+          const match = mappingData.find(m => m.promptFileName === prompt.promptKey);
+          const displayName = match ? match.displayName : prompt.promptName;
           const description = match ? match.description : '';
-          return { ...prompt, displayName, description };
+          return { ...prompt, displayName, description, promptFileName: prompt.promptKey };
         });
       })
     );
@@ -114,6 +116,15 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     });
 
     this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
+
+    this.selectedPrompts$.pipe(takeUntil(this.destroy$)).subscribe(selectedPrompts => {
+      this.prompts$.pipe(take(1)).subscribe(allPrompts => {
+        this.promptSelectionState = allPrompts.reduce((acc, prompt) => {
+          acc[prompt.promptKey] = selectedPrompts.includes(prompt.promptKey);
+          return acc;
+        }, {} as { [key: string]: boolean });
+      });
+    });
 
     this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.scrollToBottom();
@@ -150,29 +161,27 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const messageToSend = this.selectedPrompt ? '' : this.newMessageContent;
+    const messageToSend = this.newMessageContent;
     const currentConversationId = this.state.getCurrentConversationId();
+    this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
+      if (currentConversationId) {
+        this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts);
+      } else {
+        this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files)
+          .subscribe(newConversation => {
+            if (newConversation) {
+              this.state.addConversation(newConversation);
+              this.state.setActiveConversationId(newConversation.Id);
+              this.state.setMessages(newConversation.messages ?? []);
+            }
+          });
+      }
+    });
 
-    if (currentConversationId) {
-      this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files);
-      this.newMessageContent = '';
-      this.files = [];
-      this.selectedPrompt = null;
-      this.state.setSelectedPrompt(null);
-    } else {
-      this.aiChatService.startConversation(messageToSend, this.selectedPrompt?.promptKey, this.files)
-        .subscribe(newConversation => {
-          if (newConversation) {
-            this.state.addConversation(newConversation);
-            this.state.setActiveConversationId(newConversation.Id);
-            this.state.setMessages(newConversation.messages ?? []);
-            this.newMessageContent = '';
-            this.files = [];
-            this.selectedPrompt = null;
-            this.state.setSelectedPrompt(null);
-          }
-        });
-    }
+    this.newMessageContent = '';
+    this.files = [];
+    this.state.setSelectedPrompts([]);
+    this.isPromptsPopupVisible = false;
     this.scrollToBottom('smooth');
   }
 
@@ -240,10 +249,19 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.cdRef.detectChanges();
   }
 
-  selectPrompt(prompt: any): void {
-    this.selectedPrompt = prompt;
+  confirmPrompts(): void {
     this.isPromptsPopupVisible = false;
-    this.state.setSelectedPrompt(prompt);
+    // The selected prompts are already in selectedPromptKeys, so we just need to close the popup.
+    // The UI will update based on the selectedPromptKeys array.
+  }
+
+  togglePromptSelection(promptKey: string): void {
+    this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
+      const newPrompts = currentPrompts.includes(promptKey)
+        ? currentPrompts.filter(p => p !== promptKey)
+        : [...currentPrompts, promptKey];
+      this.state.setSelectedPrompts(newPrompts);
+    });
   }
  getUploadedFileNames(): string {
      return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
@@ -275,9 +293,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   }
 
   startNewConversation(): void {
-    this.selectedPrompt = null;
     this.newMessageContent = '';
-    this.state.setSelectedPrompt(null);
+    this.state.setSelectedPrompts([]);
     this.state.setActiveConversationId(null);
     this.state.setMessages([]);
     this.aiChatService.getMyPrompts();

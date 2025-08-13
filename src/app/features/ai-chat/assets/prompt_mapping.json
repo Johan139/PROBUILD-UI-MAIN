@@ -406,5 +406,41 @@
     "promptFileName": "Vendor_Comparison_Prompt.txt",
     "displayName": "Vendor Comparison",
     "description": "Compare vendor quotes for materials and equipment. This includes a detailed analysis of pricing, lead times, and product specifications to ensure the best value and timely delivery."
+  },
+  {
+    "tradeName": "SYSTEM",
+    "promptFileName": "SYSTEM_COMPREHENSIVE_ANALYSIS",
+    "displayName": "Full Blueprint Analysis",
+    "description": "Conduct a comprehensive analysis of construction blueprints, including scope identification, risk assessment, and value engineering opportunities. This system is designed to provide a detailed understanding of the project requirements and potential challenges."
+  },
+  {
+    "tradeName": "PERSONA",
+    "promptFileName": "sub-contractor-selected-prompt-master-prompt.txt",
+    "displayName": "Persona - Sub-Contractor Master",
+    "description": "This master prompt is designed to guide the AI in generating responses tailored to the specific needs and characteristics of subcontractors, ensuring that the analysis and bid packages are comprehensive and aligned with industry standards."
+  },
+  {
+    "tradeName": "SYSTEM",
+    "promptFileName": "ProBuildAI_Renovation_Prompt.txt",
+    "displayName": "System - Renovation Analysis",
+    "description": "Analyze renovation blueprints to identify scope, risks, and opportunities. This includes a detailed review of existing conditions, zoning compliance, and potential for value engineering."
+  },
+  {
+    "tradeName": "SYSTEM",
+    "promptFileName": "prompt-failure-corrective-action.txt",
+    "displayName": "System - Failure Correction",
+    "description": "This system is designed to identify and correct failures in the analysis process, ensuring that all aspects of the construction blueprints are thoroughly reviewed and addressed."
+  },
+  {
+    "tradeName": "SYSTEM",
+    "promptFileName": "prompt-revision.txt",
+    "displayName": "System - Prompt Revision",
+    "description": "This system is designed to revise and update prompts based on feedback and new requirements, ensuring that the analysis remains relevant and accurate."
+  },
+  {
+    "tradeName": "SYSTEM",
+    "promptFileName": "prompt-22-rebuttal.txt",
+    "displayName": "System - Prompt Rebuttal",
+    "description": "This system is designed to provide rebuttals to common objections and challenges faced during the analysis process, ensuring that all concerns are addressed and mitigated effectively."
   }
 ]

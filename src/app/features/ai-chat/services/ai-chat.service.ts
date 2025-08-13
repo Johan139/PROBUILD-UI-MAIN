@@ -44,7 +44,7 @@ export class AiChatService {
       });
   }
 
-  startConversation(initialMessage: string, promptKey: string | null, files: File[]): Observable<Conversation | null> {
+  startConversation(initialMessage: string, promptKey: string | null, files: File[], promptKeys?: string[]): Observable<Conversation | null> {
     console.log(`DELETE ME: [AiChatService] Starting conversation with promptKey: ${promptKey}`);
     this.state.setLoading(true);
     const userType = this.authService.getUserRole();
@@ -66,6 +66,9 @@ export class AiChatService {
     formData.append('initialMessage', initialMessage);
     if (promptKey) {
       formData.append('promptKey', promptKey);
+    }
+    if (promptKeys && promptKeys.length > 0) {
+      promptKeys.forEach(key => formData.append('promptKeys', key));
     }
     formData.append('userType', userType as string);
     files.forEach(file => {
@@ -114,7 +117,7 @@ export class AiChatService {
       );
   }
 
-  sendMessage(conversationId: string, message: string, files: File[] = []) {
+  sendMessage(conversationId: string, message: string, files: File[] = [], promptKeys: string[] = []) {
     console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
 
@@ -134,6 +137,9 @@ export class AiChatService {
     formData.append('message', message);
     files.forEach(file => {
       formData.append('files', file);
+    });
+    promptKeys.forEach(key => {
+      formData.append('promptKeys', key);
     });
 
     this.http.post<ChatMessage>(`${BASE_URL}/${conversationId}/message`, formData)
