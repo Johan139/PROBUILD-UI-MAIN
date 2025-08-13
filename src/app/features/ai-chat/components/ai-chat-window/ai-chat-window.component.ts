@@ -19,13 +19,14 @@ import { MatButtonModule } from '@angular/material/button';
 import promptMapping from '../../assets/prompt_mapping.json';
 import { JobDocument } from '../../../../models/JobDocument';
 import { AuthService } from '../../../../authentication/auth.service';
+import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
 
 @Component({
   selector: 'app-ai-chat-window',
   templateUrl: './ai-chat-window.component.html',
   styleUrls: ['./ai-chat-window.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe],
 })
 export class AiChatWindowComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -51,6 +52,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public newMessageContent = '';
   public isPromptsPopupVisible = false;
   public promptSelectionState: { [key: string]: boolean } = {};
+  public fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
   public isLoggedIn = false;
@@ -257,9 +259,18 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
 
   togglePromptSelection(promptKey: string): void {
     this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
-      const newPrompts = currentPrompts.includes(promptKey)
-        ? currentPrompts.filter(p => p !== promptKey)
-        : [...currentPrompts, promptKey];
+      const isSelected = currentPrompts.includes(promptKey);
+      let newPrompts: string[];
+
+      if (promptKey === this.fullBlueprintAnalysisPromptKey) {
+        newPrompts = isSelected ? [] : [this.fullBlueprintAnalysisPromptKey];
+      } else {
+        if (isSelected) {
+          newPrompts = currentPrompts.filter(p => p !== promptKey);
+        } else {
+          newPrompts = [...currentPrompts.filter(p => p !== this.fullBlueprintAnalysisPromptKey), promptKey];
+        }
+      }
       this.state.setSelectedPrompts(newPrompts);
     });
   }

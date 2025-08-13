@@ -44,7 +44,7 @@
           <div *ngIf="((selectedPrompts$ | async) ?? []).length > 0" class="selected-prompt-display">
             <h2>Selected Prompts</h2>
             <ul>
-              <li *ngFor="let prompt of (prompts$ | async) | slice:0:1">{{ prompt.displayName }}</li>
+              <li *ngFor="let prompt of (prompts$ | async) | selectedPrompts:(selectedPrompts$ | async)">{{ prompt.displayName }}</li>
             </ul>
           </div>
           <div class="message-history">
@@ -101,10 +101,14 @@
       </form>
     </div>
     <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
-      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" class="confirm-btn">Confirm</button>
-      <div *ngFor="let prompt of prompts$ | async" class="prompt-item" (click)="togglePromptSelection(prompt.promptKey)">
+      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" mat-raised-button color="primary" class="confirm-btn submit-btn">Confirm</button>
+      <div *ngFor="let prompt of prompts$ | async"
+           class="prompt-item"
+           [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
+           (click)="togglePromptSelection(prompt.promptKey)">
         <input type="checkbox"
                [checked]="promptSelectionState[prompt.promptKey]"
+               [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
                readonly>
         <div class="prompt-details">
           <div class="prompt-title">{{ prompt.displayName }}</div>

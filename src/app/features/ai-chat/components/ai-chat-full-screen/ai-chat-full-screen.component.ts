@@ -19,12 +19,14 @@ import { UploadedFileInfo } from '../../../../services/file-upload.service';
 import { JobDocument } from '../../../../models/JobDocument';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
+import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
+
 @Component({
   selector: 'app-ai-chat-full-screen',
   templateUrl: './ai-chat-full-screen.component.html',
   styleUrls: ['./ai-chat-full-screen.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule]
+  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
 })
 export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -53,6 +55,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
  public documents: JobDocument[] = [];
  public sortOrder: 'asc' | 'desc' = 'desc';
  public promptSelectionState: { [key: string]: boolean } = {};
+ public fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
 
  public get isSendDisabled(): boolean {
   let selectedPrompts: string[] = [];
@@ -327,19 +330,28 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
    this.isPromptsPopupVisible = false;
  }
 
-togglePromptSelection(promptKey: string): void {
+  togglePromptSelection(promptKey: string): void {
     console.log(`Toggling selection for prompt: ${promptKey}`);
-  console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
-  this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
+    console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
+    this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
       console.log(`State AFTER toggle for ${promptKey}:`, this.promptSelectionState[promptKey]);
-  console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
-    const newPrompts = currentPrompts.includes(promptKey)
-      ? currentPrompts.filter(p => p !== promptKey)
-      : [...currentPrompts, promptKey];
-    this.aiChatStateService.setSelectedPrompts(newPrompts);
-      console.log(`Updated selectedPrompts array:`, this.promptSelectionState);
-  });
-}
+      console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
+      const isSelected = currentPrompts.includes(promptKey);
+      let newPrompts: string[];
+
+      if (promptKey === this.fullBlueprintAnalysisPromptKey) {
+        newPrompts = isSelected ? [] : [this.fullBlueprintAnalysisPromptKey];
+      } else {
+        if (isSelected) {
+          newPrompts = currentPrompts.filter(p => p !== promptKey);
+        } else {
+          newPrompts = [...currentPrompts.filter(p => p !== this.fullBlueprintAnalysisPromptKey), promptKey];
+        }
+      }
+      this.aiChatStateService.setSelectedPrompts(newPrompts);
+      console.log(`Updated selectedPrompts array:`, newPrompts);
+    });
+  }
 
 
  retryMessage(message: ChatMessage): void {
