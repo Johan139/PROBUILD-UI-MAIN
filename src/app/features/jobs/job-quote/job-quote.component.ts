@@ -495,7 +495,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  performSaveJob(): void {
+  performSaveJob(callback?: (jobResponse: JobResponse) => void): void {
     if (!this.isBrowser) return;
 
     localStorage.setItem('Subtasks', '');
@@ -530,6 +530,15 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
     formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileInfos.map(f => f.url)));
+
+    // Append analysis type and prompts for the backend routing
+    formData.append('analysisType', this.analysisType);
+    if (this.analysisType === 'Selected') {
+      const selectedPromptKeys = this.selectedPrompts.value;
+      if (selectedPromptKeys && selectedPromptKeys.length > 0) {
+        selectedPromptKeys.forEach(key => formData.append('promptKeys', key));
+      }
+    }
 
     if (this.selectedPlace && this.selectedPlace.place_id) {
       const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
@@ -589,7 +598,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               formData.append('latitude', lat.toString());
               formData.append('longitude', lng.toString());
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
-              this.submitFormData(formData);
+              this.submitFormData(formData, callback);
             } else {
               console.warn('Latitude or Longitude undefined for place_id:', this.selectedPlace!.place_id);
               console.warn('Place types:', place.types);
@@ -607,29 +616,29 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                       console.log('Geocoding API returned - Latitude:', lat, 'Longitude:', lng);
                       formData.append('latitude', lat.toString());
                       formData.append('longitude', lng.toString());
-                      this.submitFormData(formData);
+                      this.submitFormData(formData, callback);
                     } else {
                       console.error('Geocoding API failed:', response.status);
-                      this.submitFormData(formData); // Proceed without lat/long
+                      this.submitFormData(formData, callback); // Proceed without lat/long
                     }
                   },
                   error: (error) => {
                     console.error('Geocoding API error:', error);
-                    this.submitFormData(formData); // Proceed without lat/long
+                    this.submitFormData(formData, callback); // Proceed without lat/long
                   }
                 });
             }
           } else {
             console.warn('Failed to fetch place details for lat/long:', status);
-            this.submitFormData(formData);
+            this.submitFormData(formData, callback);
           }
         }
       );
     } else {
-      this.submitFormData(formData);
+      this.submitFormData(formData, callback);
     }
   }
-  private submitFormData(formData: FormData): void {
+  private submitFormData(formData: FormData, callback?: (jobResponse: JobResponse) => void): void {
     this.progress = 0;
 
     this.httpClient
@@ -649,21 +658,24 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
             this.isLoading = false;
             const res = event.body;
             if (res) {
-              const responseParams = {
-                jobId: res.id,
-                operatingArea: res.operatingArea,
-                address: res.address,
-                documents: res.documents,
-                latitude : res.latitude,
-                longitude: res.longitude,
-                ...this.jobCardForm.value,
-              };
-              this.alertMessage = 'Job Quote Creation Successful';
-              this.showAlert = true;
-              this.uploadedFileInfos = [];
-              this.dialog.closeAll();
-              this.router.navigate(['view-quote'], { queryParams: responseParams });
-
+              if (callback) {
+                callback(res);
+              } else {
+                const responseParams = {
+                  jobId: res.id,
+                  operatingArea: res.operatingArea,
+                  address: res.address,
+                  documents: res.documents,
+                  latitude : res.latitude,
+                  longitude: res.longitude,
+                  ...this.jobCardForm.value,
+                };
+                this.alertMessage = 'Job Quote Creation Successful';
+                this.showAlert = true;
+                this.uploadedFileInfos = [];
+                this.dialog.closeAll();
+                this.router.navigate(['view-quote'], { queryParams: responseParams });
+              }
             }
           }
         },
@@ -876,12 +888,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   performComprehensiveAnalysis(): void {
-    const request: AnalysisRequestDto = {
-      analysisType: 'Comprehensive',
-      promptKeys: ['SYSTEM_COMPREHENSIVE_ANALYSIS'],
-      documentUrls: this.uploadedFileInfos.map(f => f.url)
-    };
-    this.performAnalysis(request);
+    this.performSaveJob();
   }
 
   performSelectedAnalysis(): void {
@@ -892,39 +899,24 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const request: AnalysisRequestDto = {
-      analysisType: 'Selected',
-      promptKeys: selectedPromptKeys,
-      documentUrls: this.uploadedFileInfos.map(f => f.url)
-    };
-    this.performAnalysis(request);
-  }
+    // Save the job first, then trigger the analysis in the callback.
+    this.performSaveJob((jobResponse) => {
+      // This code will run AFTER the job has been successfully created.
+      this.isAnalyzing = true;
+      this.analysisReport = null;
 
-  performAnalysis(request: AnalysisRequestDto): void {
-    this.isAnalyzing = true;
-    this.analysisReport = null;
-    this.analysisService.performAnalysis(request).subscribe({
-      next: (response) => {
-        this.analysisReport = response.report;
-        this.isAnalyzing = false;
-        // Open a dialog to show the report
-        const dialogRef = this.dialog.open(DocumentsDialogComponent, {
-          data: {
-            documents: this.documents
-          }
-        });
+      const request: AnalysisRequestDto = {
+        analysisType: 'Selected',
+        promptKeys: selectedPromptKeys,
+        documentUrls: this.uploadedFileInfos.map(f => f.url),
+        jobId: jobResponse.id, // Pass the new Job ID to the backend
+        userId: localStorage.getItem('userId') || ''
+      };
 
-
-        dialogRef.componentInstance.confirm.subscribe(() => {
-          this.confirmDialog();
-        });
-      },
-      error: (err) => {
-        console.error('Analysis failed', err);
-        this.alertMessage = 'Analysis failed. Please try again later.';
-        this.showAlert = true;
-        this.isAnalyzing = false;
-      }
+      // No need to call a separate performAnalysis method anymore.
+      // The redirection is handled by the successful save.
+      // The analysis will be processed in the background by Hangfire.
+      console.log('Job created, selected analysis will now run in the background.', request);
     });
   }
 

@@ -9,6 +9,8 @@ export interface AnalysisRequestDto {
   analysisType: string;
   promptKeys: string[];
   documentUrls: string[];
+  jobId?: number;
+  userId?: string;
 }
 
 export interface AnalysisResponse {
