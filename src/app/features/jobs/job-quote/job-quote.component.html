@@ -192,7 +192,7 @@
         </div>
         <div class="panel-wrapper">
           <mat-accordion multi>
-            <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel [expanded]="true" [disabled]="jobCardForm.get('generateDetailsWithAi')?.value">
               <mat-expansion-panel-header>
                 <mat-panel-title>Job Details</mat-panel-title>
                 <mat-panel-description>
@@ -200,6 +200,9 @@
                 </mat-panel-description>
               </mat-expansion-panel-header>
 
+ <div class="form-row">
+           <mat-checkbox formControlName="generateDetailsWithAi" matTooltip="When selected, the AI will generate the job details based on the provided context. The job detail fields will be disabled.">Generate Job Details with AI</mat-checkbox>
+         </div>
  <div class="form-row">
             <mat-form-field appearance="fill">
               <mat-label>Job Type</mat-label>
@@ -304,6 +307,38 @@
               </mat-error>
             </mat-form-field>
           </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+        </div>
+        <div class="panel-wrapper">
+          <mat-accordion multi>
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>User Context</mat-panel-title>
+                <mat-panel-description>
+                  Provide additional context for the AI analysis
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              <div class="form-row">
+                <mat-form-field appearance="fill" class="full-width">
+                  <mat-label>User Context</mat-label>
+                  <textarea matInput formControlName="userContextText" placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."></textarea>
+                </mat-form-field>
+              </div>
+              <div class="form-row">
+                <label for="userContextFile" class="custom-file-upload-label">
+                  <button mat-raised-button type="button" (click)="userContextFileInput.click()" class="submit-btn">
+                    <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                    Upload Context File
+                  </button>
+                </label>
+                <input type="file" #userContextFileInput hidden (change)="onUserContextFileSelected($event)" id="userContextFile">
+                <div *ngIf="userContextFile" class="upload-complete">
+                  <p [matTooltip]="userContextFile.name" matTooltipPosition="above">
+                    {{ userContextFile.name }} uploaded successfully
+                  </p>
+                </div>
+              </div>
             </mat-expansion-panel>
           </mat-accordion>
         </div>

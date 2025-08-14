@@ -8,7 +8,8 @@ import { environment } from "../../../../environments/environment";
 import { AuthService } from '../../../authentication/auth.service';
 import { JobDocument } from '../../../models/JobDocument';
 
-const BASE_URL = `${environment.BACKEND_URL}/Chat`;
+const CHAT_BASE_URL = `${environment.BACKEND_URL}/Chat`;
+const AI_BASE_URL = `${environment.BACKEND_URL}/Ai`;
 
 @Injectable({
   providedIn: 'root'
@@ -31,7 +32,7 @@ export class AiChatService {
     this.authService.currentUser$.pipe(
       take(1),
       switchMap(user => {
-        return this.http.get<any[]>(`${BASE_URL}/prompts`).pipe(
+        return this.http.get<any[]>(`${CHAT_BASE_URL}/prompts`).pipe(
           map(prompts => {
             const userRole = this.authService.getUserRole();
             const userTrades = user?.trades || [];
@@ -104,7 +105,7 @@ export class AiChatService {
       formData.append('files', file);
     });
 
-    return this.http.post<any>(`${BASE_URL}/start`, formData)
+    return this.http.post<any>(`${CHAT_BASE_URL}/start`, formData)
       .pipe(
         map(response => {
           if (!response) return null;
@@ -171,7 +172,7 @@ export class AiChatService {
       formData.append('promptKeys', key);
     });
 
-    this.http.post<ChatMessage>(`${BASE_URL}/${conversationId}/message`, formData)
+    this.http.post<ChatMessage>(`${CHAT_BASE_URL}/${conversationId}/message`, formData)
       .pipe(
         catchError(err => {
           console.error('DELETE ME: [AiChatService] Failed to send message:', err);
@@ -195,7 +196,7 @@ export class AiChatService {
     console.log(`DELETE ME: [AiChatService] Getting conversation ${conversationId}`);
     this.state.setLoading(true);
 
-    const messages$ = this.http.get<any[]>(`${BASE_URL}/${conversationId}`).pipe(
+    const messages$ = this.http.get<any[]>(`${CHAT_BASE_URL}/${conversationId}`).pipe(
       map(messages => messages.map(m => ({
         Id: m.id,
         ConversationId: m.conversationId,
@@ -206,7 +207,7 @@ export class AiChatService {
       } as ChatMessage)))
     );
 
-    const documents$ = this.http.get<JobDocument[]>(`${BASE_URL}/${conversationId}/documents`).pipe(
+    const documents$ = this.http.get<JobDocument[]>(`${CHAT_BASE_URL}/${conversationId}/documents`).pipe(
       catchError(error => {
         console.warn(`Could not fetch documents for conversation ${conversationId}. This is expected if no documents are attached.`, error);
         return of([]);
@@ -240,7 +241,7 @@ export class AiChatService {
     }
     console.log('DELETE ME: [AiChatService] Getting my conversations...');
     this.state.setLoading(true);
-    this.http.get<any[]>(`${BASE_URL}/my-conversations`)
+    this.http.get<any[]>(`${CHAT_BASE_URL}/my-conversations`)
       .pipe(
         map(conversations => conversations.map(c => ({
           Id: c.id,
@@ -265,7 +266,7 @@ export class AiChatService {
 
   public updateConversationTitle(conversationId: string, newTitle: string): Observable<any> {
     const body = { conversationId, newTitle };
-    return this.http.put(`${BASE_URL}/conversation/title`, body);
+    return this.http.put(`${CHAT_BASE_URL}/conversation/title`, body);
   }
 
   startRenovationAnalysis(files: FileList): void {
@@ -273,7 +274,7 @@ export class AiChatService {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-    this.http.post<any>(`${BASE_URL}/start-renovation-analysis`, formData).subscribe(response => {
+    this.http.post<any>(`${AI_BASE_URL}/renovation/analyze`, formData).subscribe(response => {
       this.state.addMessage(response);
     });
   }
@@ -283,7 +284,7 @@ export class AiChatService {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-    this.http.post<any>(`${BASE_URL}/start-subcontractor-comparison`, formData).subscribe(response => {
+    this.http.post<any>(`${AI_BASE_URL}/comparison/analyze`, formData).subscribe(response => {
       this.state.addMessage(response);
     });
   }
@@ -293,7 +294,7 @@ export class AiChatService {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-    this.http.post<any>(`${BASE_URL}/start-vendor-comparison`, formData).subscribe(response => {
+    this.http.post<any>(`${AI_BASE_URL}/comparison/analyze`, formData).subscribe(response => {
       this.state.addMessage(response);
     });
   }

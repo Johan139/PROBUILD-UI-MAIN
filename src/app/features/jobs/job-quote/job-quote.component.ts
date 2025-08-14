@@ -112,6 +112,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   sessionId: string = '';
   private hubConnection!: HubConnection;
   uploadedFileInfos: UploadedFileInfo[] = [];
+  userContextFile: File | null = null;
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
@@ -158,17 +159,17 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.jobCardForm = this.formBuilder.group({
       projectName: ['', Validators.required],
       date: ['', Validators.required],
-      jobType: ['', Validators.required],
-      quantity: ['', Validators.required],
-      wallStructure: ['', Validators.required],
-      wallInsulation: ['', Validators.required],
-      roofStructure: ['', Validators.required],
-      roofInsulation: ['', Validators.required],
-      foundation: ['', Validators.required],
-      finishes: ['', Validators.required],
-      electricalSupply: ['', Validators.required],
-      stories: ['', Validators.required],
-      buildingSize: ['', Validators.required],
+      jobType: [''],
+      quantity: [''],
+      wallStructure: [''],
+      wallInsulation: [''],
+      roofStructure: [''],
+      roofInsulation: [''],
+      foundation: [''],
+      finishes: [''],
+      electricalSupply: [''],
+      stories: [''],
+      buildingSize: [''],
       address: ['', Validators.required],
       blueprint: new FormControl(),
       firstName: ['', Validators.required],
@@ -177,6 +178,28 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       phone: ['', Validators.required],
       company: [''],
       position: [''],
+      userContextText: [''],
+      generateDetailsWithAi: [false],
+    });
+
+    this.jobCardForm.get('generateDetailsWithAi')?.valueChanges.subscribe(value => {
+      const jobDetailControls = [
+        'jobType', 'quantity', 'wallStructure', 'wallInsulation',
+        'roofStructure', 'roofInsulation', 'foundation', 'finishes',
+        'electricalSupply', 'stories', 'buildingSize'
+      ];
+
+      jobDetailControls.forEach(controlName => {
+        const control = this.jobCardForm.get(controlName);
+        if (value) {
+          control?.clearValidators();
+          control?.disable();
+        } else {
+          control?.setValidators([Validators.required]);
+          control?.enable();
+        }
+        control?.updateValueAndValidity();
+      });
     });
 
     this.hubConnection = new HubConnectionBuilder()
@@ -530,6 +553,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
     formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileInfos.map(f => f.url)));
+    formData.append('userContextText', formValue.userContextText);
+
+    if (this.userContextFile) {
+      formData.append('userContextFile', this.userContextFile, this.userContextFile.name);
+    }
+    formData.append('generateDetailsWithAi', formValue.generateDetailsWithAi);
 
     // Append analysis type and prompts for the backend routing
     formData.append('analysisType', this.analysisType);
@@ -840,6 +869,13 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         this.uploadedFileInfos = [...this.uploadedFileInfos, ...upload.files];
       }
     });
+  }
+
+  onUserContextFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input?.files?.length) {
+      this.userContextFile = input.files[0];
+    }
   }
 
 
