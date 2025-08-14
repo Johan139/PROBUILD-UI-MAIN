@@ -19,7 +19,7 @@ export class AiChatStateService {
     messages: [],
     currentConversation: null,
     documents: [],
-    selectedPrompts: []
+    selectedPrompts: [],
   };
 
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);

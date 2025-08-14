@@ -24,6 +24,6 @@ export class AnalysisService {
 
   performAnalysis(request: AnalysisRequestDto): Observable<AnalysisResponse> {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
-    return this.http.post<AnalysisResponse>(`${BASE_URL}/api/ProjectAnalysis/perform-selected`, request, { headers });
+    return this.http.post<AnalysisResponse>(`${BASE_URL}/ProjectAnalysis/perform-selected`, request, { headers });
   }
 }

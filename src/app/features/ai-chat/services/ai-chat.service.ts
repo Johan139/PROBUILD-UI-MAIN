@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AiChatStateService } from './ai-chat-state.service';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { of, Observable, forkJoin } from 'rxjs';
 import { Conversation, Prompt, ChatMessage } from '../models/ai-chat.models';
 import { environment } from "../../../../environments/environment";
@@ -28,20 +28,49 @@ export class AiChatService {
     }
     console.log('DELETE ME: [AiChatService] Getting my prompts...');
     this.state.setLoading(true);
-    this.http.get<Prompt[]>(`${BASE_URL}/my-prompts`)
-      .pipe(
-        catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to fetch prompts:', err);
-          this.state.setError('Failed to fetch prompts.');
-          this.state.setLoading(false);
-          return of([]);
-        })
-      )
-      .subscribe(prompts => {
-        console.log('DELETE ME: [AiChatService] Successfully fetched prompts:', prompts);
-        this.state.setPrompts(prompts);
-        this.state.setLoading(false);
-      });
+    this.authService.currentUser$.pipe(
+      take(1),
+      switchMap(user => {
+        return this.http.get<any[]>(`${BASE_URL}/prompts`).pipe(
+          map(prompts => {
+            const userRole = this.authService.getUserRole();
+            const userTrades = user?.trades || [];
+            const hiddenPrompts = [
+              "Subcontractor_Comparison_Prompt.txt",
+              "Vendor_Comparison_Prompt.txt",
+              "sub-contractor-selected-prompt-master-prompt.txt",
+              "prompt-failure-corrective-action.txt",
+              "prompt-revision.txt",
+              "prompt-22-rebuttal.txt"
+            ];
+            return prompts
+              .filter(prompt => {
+                const isRoleAllowed = prompt.allowedUserTypes.includes(userRole);
+                if (userRole === 'GENERAL_CONTRACTOR') {
+                  return isRoleAllowed;
+                }
+                const isTradeAllowed = prompt.associatedTrades.length === 0 || prompt.associatedTrades.some((trade: any) => userTrades.includes(trade));
+                return isRoleAllowed && isTradeAllowed;
+              })
+              .filter(prompt => !hiddenPrompts.includes(prompt.promptFileName))
+              .map(prompt => ({
+                promptName: prompt.displayName,
+                promptKey: prompt.promptFileName,
+                description: prompt.description
+              }));
+          })
+        );
+      }),
+      catchError(err => {
+        console.error('DELETE ME: [AiChatService] Failed to fetch prompts:', err);
+        this.state.setError('Failed to fetch prompts.');
+        return of([]);
+      })
+    ).subscribe(prompts => {
+      console.log('DELETE ME: [AiChatService] Successfully fetched prompts:', prompts);
+      this.state.setPrompts(prompts);
+      this.state.setLoading(false);
+    });
   }
 
   startConversation(initialMessage: string, promptKey: string | null, files: File[], promptKeys?: string[]): Observable<Conversation | null> {
@@ -300,6 +329,9 @@ export class AiChatService {
       // This regex removes variations of "Ready for the next prompt..."
       const removalRegex = /Ready for the next prompt \d+[\."\s]*/gi;
       modifiedContent = modifiedContent.replace(removalRegex, '');
+
+      const iAmDoneRegex = /I am Done[\.\s]*/gi;
+      modifiedContent = modifiedContent.replace(iAmDoneRegex, '');
 
       return modifiedContent.trim();
     }

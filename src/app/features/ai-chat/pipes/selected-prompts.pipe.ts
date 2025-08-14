@@ -6,7 +6,7 @@ import { Prompt } from '../models/ai-chat.models';
   standalone: true
 })
 export class SelectedPromptsPipe implements PipeTransform {
-  transform(prompts: (Prompt & { displayName: string; description: string; promptFileName: string; })[] | null, selectedPromptKeys: string[] | null): (Prompt & { displayName: string; description: string; promptFileName: string; })[] {
+  transform(prompts: Prompt[] | null, selectedPromptKeys: string[] | null): Prompt[] {
     if (!prompts || !selectedPromptKeys) {
       return [];
     }

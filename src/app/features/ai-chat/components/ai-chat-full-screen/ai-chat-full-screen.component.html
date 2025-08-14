@@ -44,7 +44,9 @@
           <div *ngIf="((selectedPrompts$ | async) ?? []).length > 0" class="selected-prompt-display">
             <h2>Selected Prompts</h2>
             <ul>
-              <li *ngFor="let prompt of (prompts$ | async) | selectedPrompts:(selectedPrompts$ | async)">{{ prompt.displayName }}</li>
+              <li *ngFor="let prompt of (prompts$ | async) | selectedPrompts:(selectedPrompts$ | async)">
+                {{ prompt.promptName }}
+              </li>
             </ul>
           </div>
           <div class="message-history">
@@ -100,20 +102,21 @@
         <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
       </form>
     </div>
-    <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
+    <div class="prompts-popup" *ngIf="isPromptsPopupVisible" #promptsPopup>
       <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" mat-raised-button color="primary" class="confirm-btn submit-btn">Confirm</button>
+      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-raised-button color="warn" class="clear-btn submit-btn">Clear</button>
       <div *ngFor="let prompt of prompts$ | async"
            class="prompt-item"
            [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
            (click)="togglePromptSelection(prompt.promptKey)">
-        <input type="checkbox"
-               [checked]="promptSelectionState[prompt.promptKey]"
-               [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
-               readonly>
-        <div class="prompt-details">
-          <div class="prompt-title">{{ prompt.displayName }}</div>
-          <div class="prompt-description">{{ prompt.description }}</div>
-        </div>
+           <div class="prompt-details">
+            <input type="checkbox"
+            [checked]="promptSelectionState[prompt.promptKey]"
+            [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
+            readonly>
+            <div class="prompt-title">{{ prompt.promptName }}</div>
+            <div class="prompt-description">{{ prompt.description }}</div>
+          </div>
       </div>
     </div>
   </div>

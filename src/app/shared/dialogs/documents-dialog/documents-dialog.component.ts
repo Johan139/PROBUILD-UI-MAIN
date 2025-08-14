@@ -6,6 +6,8 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { JobDocument } from '../../../models/JobDocument';
 import { FileSizePipe } from '../../../features/Documents/filesize.pipe';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-documents-dialog',
@@ -23,12 +25,13 @@ import { FileSizePipe } from '../../../features/Documents/filesize.pipe';
 })
 export class DocumentsDialogComponent {
   @Input() documents: JobDocument[] = [];
-  @Output() viewDocument = new EventEmitter<JobDocument>();
   @Output() confirm = new EventEmitter<void>();
+  private environment = environment;
 
   constructor(
     public dialogRef: MatDialogRef<DocumentsDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { documents: JobDocument[] }
+    @Inject(MAT_DIALOG_DATA) public data: { documents: JobDocument[] },
+    private http: HttpClient
   ) {
     if (data && data.documents) {
       this.documents = data.documents;
@@ -36,7 +39,14 @@ export class DocumentsDialogComponent {
   }
 
   onView(document: JobDocument): void {
-    this.viewDocument.emit(document);
+    this.http.post(`${this.environment.BACKEND_URL}/jobs/view`, { documentUrl: document.blobUrl }, { responseType: 'text' }).subscribe({
+      next: (url) => {
+        window.open(url, '_blank');
+      },
+      error: (err) => {
+        console.error('Error getting viewable URL', err);
+      }
+    });
   }
 
   onConfirm(): void {

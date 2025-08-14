@@ -66,7 +66,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-weight: 500;
   color: $black;
   margin: 0 0.5rem;
-  
+
   &:hover {
     background: $darker-yellow;
   }

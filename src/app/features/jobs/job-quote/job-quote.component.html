@@ -4,51 +4,7 @@
 
 </div>
 <div class="row job-quote-container">
-  <div *ngIf="!subscriptionActive" class="subscription-warning-container">
-    <div class="construction-warning">
-      <div class="warning-header">
-        <div class="warning-icon">
-          <svg viewBox="0 0 24 24" class="warning-triangle">
-            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-          </svg>
-        </div>
-        <div class="warning-title">
-          <h3>ACCESS RESTRICTED</h3>
-          <p>Construction Zone - Active Subscription Required</p>
-        </div>
-      </div>
-
-      <div class="warning-body">
-        <div class="warning-stripe"></div>
-        <div class="warning-content">
-          <h4>🚧 SUBSCRIPTION REQUIRED</h4>
-          <p>You need an active subscription to create new construction job quotes.</p>
-          <p>Subscribe now to access all ProBuild AI features and start generating professional quotes.</p>
-
-          <div class="restricted-features">
-            <h5>Restricted Features:</h5>
-            <ul>
-              <li>• Create New Job Quotes</li>
-              <li>• Generate Construction Estimates</li>
-              <li>• Access AI-Powered Analysis</li>
-              <li>• Upload Project Documents</li>
-            </ul>
-          </div>
-
-          <a href="/profile" class="subscribe-button">
-            <svg viewBox="0 0 24 24" class="button-icon">
-              <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
-            </svg>
-            Subscribe Now
-          </a>
-        </div>
-      </div>
-
-      <div class="warning-footer">
-        <div class="caution-tape"></div>
-      </div>
-    </div>
-  </div>
+  <app-subscription-warning [subscriptionActive]="subscriptionActive" [isLoading]="isLoading"></app-subscription-warning>
   <div class="col-md-4 form-col">
     <mat-card class="project-card">
       <mat-card-header>
@@ -353,8 +309,8 @@
         </div>
           <div class="form-row">
             <mat-radio-group [(ngModel)]="analysisType" [ngModelOptions]="{standalone: true}">
-              <mat-radio-button value="Comprehensive">Analyze Blueprint</mat-radio-button>
-              <mat-radio-button value="Selected">Selected Analysis</mat-radio-button>
+              <mat-radio-button value="Comprehensive">Full Blueprint Analysis</mat-radio-button>
+              <mat-radio-button value="Selected">Selected Blueprint Analysis</mat-radio-button>
             </mat-radio-group>
           </div>
 
@@ -362,8 +318,11 @@
             <mat-form-field appearance="fill">
               <mat-label>Select Prompts</mat-label>
               <mat-select [formControl]="selectedPrompts" multiple>
-                <mat-option *ngFor="let prompt of availablePrompts" [value]="prompt.promptFileName">
-                  {{ prompt.displayName }}
+                <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.promptKey">
+                  {{ prompt.promptName }}
+                  <span *ngIf="prompt.description" style="font-size: smaller; color: grey;">
+                    - {{ prompt.description }}
+                  </span>
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -371,10 +330,23 @@
 
           <div class="form-row button-row">
             <div class="button-group">
-              <button mat-raised-button type="submit" [disabled]="!subscriptionActive || isAnalyzing" class="submit-btn">
-                <span *ngIf="!isAnalyzing">Analyze</span>
-                <span *ngIf="isAnalyzing">Analyzing...</span>
-              </button>
+              <span class="button-wrapper"
+                    [matTooltip]="uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing.' : ''"
+                    [class.disabled-wrapper]="uploadedFileInfos.length === 0">
+                <button mat-raised-button type="submit"
+                        [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0"
+                        class="submit-btn">
+                  <span *ngIf="!isAnalyzing">Analyze</span>
+                  <span *ngIf="isAnalyzing">Analyzing...</span>
+                </button>
+              </span>
+                <span class="button-wrapper"
+                      [matTooltip]="uploadedFileInfos.length === 0 ? 'Blueprints need to be added before they can be viewed' : ''"
+                      [class.disabled-wrapper]="uploadedFileInfos.length === 0">
+                  <button mat-raised-button type="button" class="submit-btn" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
+                    View Uploaded Files
+                  </button>
+                </span>
               <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
             </div>
             <div class="upload-container">
@@ -382,15 +354,15 @@
                 <p>Upload Progress: {{ progress }}%</p>
                 <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
               </div>
-              <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
-                <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
-                  {{ uploadedFileInfos.length }} file(s) uploaded successfully
-                </p>
-              </div>
               <div class="custom-file-upload">
-                <button type="button" (click)="openUploadDialog()" class="upload-label submit-btn">
+                <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete upload-success-message">
+                  <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+                    {{ uploadedFileInfos.length }} file(s) uploaded successfully
+                  </p>
+                </div>
+                <button type="button" (click)="openUploadDialog()" mat-raised-button class="submit-btn">
                   <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                  Upload
+                  Upload Blueprints
                 </button>
                 <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
                 <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
@@ -409,42 +381,3 @@
   </div>
 </div>
 
-<ng-template #documentsDialog>
-  <div class="documents-dialog">
-    <h2 mat-dialog-title>Quote Documents</h2>
-    <mat-dialog-content>
-      <!-- Show loading indicator while fetching documents -->
-      <div *ngIf="isLoading" class="loading-documents">
-        <app-loader></app-loader>
-        <p>Loading documents...</p>
-      </div>
-      <!-- Show content only when not loading -->
-      <div *ngIf="!isLoading">
-        <div *ngIf="documents.length === 0 && !error" class="no-documents">
-          <p>No documents available for this quote.</p>
-        </div>
-        <div *ngIf="error" class="no-documents">
-          <p>{{error}}</p>
-        </div>
-        <div *ngIf="documents.length > 0" class="documents-list">
-          <div class="document-item" *ngFor="let doc of documents; let i = index">
-            <div class="document-info">
-              <span class="document-name">{{doc.displayName}}</span>
-              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
-            </div>
-            <button class="view-btn-document" mat-button (click)="viewDocument(doc)">
-              View
-            </button>
-          </div>
-        </div>
-      </div>
-    </mat-dialog-content>
-    <div mat-dialog-content>
-      <p>Please confirm that you have reviewed the documents before generating the job.</p>
-    </div>
-    <mat-dialog-actions>
-      <button class="submit-btn-document" mat-raised-button (click)="close()">Cancel</button>
-      <button class="submit-btn-document" mat-flat-button color="primary" (click)="confirmDialog()">Confirm</button>
-    </mat-dialog-actions>
-  </div>
-</ng-template>

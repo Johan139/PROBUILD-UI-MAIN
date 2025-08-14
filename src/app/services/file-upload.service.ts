@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subject } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { UploadOptionsDialogComponent } from '../features/jobs/job-quote/upload-options-dialog.component';
@@ -30,7 +31,8 @@ export class FileUploadService {
 
   constructor(
     private dialog: MatDialog,
-    private httpClient: HttpClient
+    private httpClient: HttpClient,
+    private snackBar: MatSnackBar
   ) { }
 
   openUploadOptionsDialog(): Observable<string | undefined> {
@@ -41,7 +43,7 @@ export class FileUploadService {
   uploadFiles(files: File[], sessionId: string, conversationId?: string): Observable<UploadProgress> {
     const formData = new FormData();
     files.forEach(file => {
-        formData.append('files', file); 
+        formData.append('Blueprint', file);
     });
 
     let url = `${BASE_URL}/Jobs/UploadImage`;
@@ -84,13 +86,40 @@ export class FileUploadService {
             uploadSubject.complete();
           }
         },
-        error: (error) => {
-          console.error('Upload error:', error);
+        error: (error: HttpErrorResponse) => {
+          this.handleUploadError(error);
           uploadSubject.next({ progress: 0, isUploading: false });
           uploadSubject.error(error);
         },
       });
       return uploadSubject.asObservable();
+  }
+
+  private handleUploadError(error: HttpErrorResponse): void {
+    let errorMessage = 'An unexpected error occurred. Please try again.';
+
+    if (error.error instanceof ErrorEvent) {
+      // Client-side or network error
+      errorMessage = `An error occurred: ${error.error.message}`;
+    } else if (error.status === 400) {
+      // Bad request from the server
+      if (error.error && typeof error.error.error === 'string') {
+        errorMessage = error.error.error;
+      } else {
+        errorMessage = 'Invalid request. Please check the uploaded files.';
+      }
+    } else if (error.status === 413) {
+      // Payload Too Large
+      errorMessage = 'The file size exceeds the 200MB limit. Please upload a smaller file.';
+    } else if (error.status === 500) {
+      // Internal Server Error
+      errorMessage = 'A server error occurred. Please try again later.';
+    }
+
+    this.snackBar.open(errorMessage, 'Close', {
+      duration: 5000,
+      panelClass: ['error-snackbar']
+    });
   }
 
   private getFileType(fileName: string): string {
@@ -113,9 +142,6 @@ export class FileUploadService {
       data: { documents }
     });
 
-    dialogRef.componentInstance.viewDocument.subscribe((document: JobDocument) => {
-      window.open(document.blobUrl, '_blank');
-    });
 
     dialogRef.afterClosed().subscribe(result => {
       console.log('The dialog was closed');

@@ -7,8 +7,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCardModule } from '@angular/material/card';
 import { MatDivider, MatDividerModule } from '@angular/material/divider';
 import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
-import { MatInput, MatInputModule } from '@angular/material/input';
-import { MatButton, MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -18,27 +18,30 @@ import { JobResponse } from '../../../models/jobdetails.response';
 import { JobsService } from '../../../services/jobs.service';
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { LoaderComponent } from '../../../loader/loader.component';
-import { timeout, debounceTime, switchMap, filter, take } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { timeout, switchMap, filter, take, map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
 import { formatDate } from '@angular/common';
 import { DatePipe } from '@angular/common';
-import { UploadDocument } from '../../../models/UploadDocument';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { QuoteService } from '../../quote/quote.service';
-import { MatCellDef, MatHeaderCellDef, MatRowDef, MatHeaderRowDef, MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/quote-documents-dialog.component';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
-import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
 import { AuthService } from '../../../authentication/auth.service';
 import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
 import { AnalysisService, AnalysisRequestDto } from '../services/analysis.service';
+import { AiChatService } from '../../ai-chat/services/ai-chat.service';
+import { AiChatStateService } from '../../ai-chat/services/ai-chat-state.service';
+import { Prompt } from '../../ai-chat/models/ai-chat.models';
+import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
+import { JobDocument } from '../../../models/JobDocument';
+import { DocumentsDialogComponent } from '../../../shared/dialogs/documents-dialog/documents-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
@@ -82,6 +85,7 @@ const Google_API = environment.Google_API;
     // Custom Components and Pipes
     LoaderComponent,
     FileSizePipe,
+    SubscriptionWarningComponent,
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
@@ -89,7 +93,6 @@ const Google_API = environment.Google_API;
 })
 export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   showAlert: boolean = false;
@@ -120,7 +123,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
 
   analysisType: 'Comprehensive' | 'Selected' = 'Comprehensive';
-  availablePrompts: any[] = [];
+  availablePrompts$: Observable<Prompt[]>;
   selectedPrompts = new FormControl([]);
   analysisReport: string | null = null;
   isAnalyzing: boolean = false;
@@ -136,10 +139,16 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private authService: AuthService,
     private quoteService: QuoteService,
     private fileUploadService: FileUploadService,
-    private analysisService: AnalysisService
+    private analysisService: AnalysisService,
+    private aiChatService: AiChatService,
+    private aiChatStateService: AiChatStateService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
+    const hiddenPromptsForJobQuote = ['SYSTEM_COMPREHENSIVE_ANALYSIS'];
+    this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
+      map(prompts => prompts.filter(p => !hiddenPromptsForJobQuote.includes(p.promptKey)))
+    );
   }
 
   async ngOnInit(): Promise<void> {
@@ -265,7 +274,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.loadActiveBids();
-    this.loadPrompts();
+    this.aiChatService.getMyPrompts();
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -866,12 +875,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.performSaveJob();
   }
 
-   loadPrompts(): void {
-    this.httpClient.get<any[]>('assets/prompt_mapping.json').subscribe(prompts => {
-      this.availablePrompts = prompts;
-    });
-  }
-
   performComprehensiveAnalysis(): void {
     const request: AnalysisRequestDto = {
       analysisType: 'Comprehensive',
@@ -905,11 +908,15 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         this.analysisReport = response.report;
         this.isAnalyzing = false;
         // Open a dialog to show the report
-        this.dialog.open(this.documentsDialog, {
+        const dialogRef = this.dialog.open(DocumentsDialogComponent, {
           data: {
-            title: 'Analysis Report',
-            content: this.analysisReport
+            documents: this.documents
           }
+        });
+
+
+        dialogRef.componentInstance.confirm.subscribe(() => {
+          this.confirmDialog();
         });
       },
       error: (err) => {
@@ -919,6 +926,21 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isAnalyzing = false;
       }
     });
+  }
+
+  public viewUploadedFiles(): void {
+    const documents: JobDocument[] = this.uploadedFileInfos.map((fileInfo, index) => ({
+      id: index, // Using index as a temporary unique ID
+      fileName: fileInfo.name,
+      blobUrl: fileInfo.url,
+      type: fileInfo.type,
+      sessionId: this.sessionId,
+      jobId: 0, // This might not be available yet
+      uploadedAt: new Date().toISOString(),
+      displayName: this.getDisplayName(fileInfo.name),
+      size: fileInfo.size
+    }));
+    this.fileUploadService.viewUploadedFiles(documents);
   }
 }
 

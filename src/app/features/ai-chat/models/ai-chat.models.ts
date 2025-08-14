@@ -26,6 +26,8 @@ export interface Conversation {
 export interface Prompt {
    promptName: string;
    promptKey: string;
+   displayName?: string;
+   description?: string;
 }
 
 export interface AiChatState {

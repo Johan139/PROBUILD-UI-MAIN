@@ -348,6 +348,10 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .selected-prompt-display {
+  position: -webkit-sticky; /* For Safari */
+  position: sticky;
+  top: 0;
+  z-index: 2;
   background-color: #f0f4f8;
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -361,10 +365,16 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: #333;
   }
 
-  p {
-    margin-bottom: 0;
+  ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
     font-size: 0.85rem;
     color: #555;
-    word-wrap: break-word; /* Ensure long descriptions wrap */
+    word-wrap: break-word;
   }
 }

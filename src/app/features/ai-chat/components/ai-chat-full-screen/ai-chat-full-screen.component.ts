@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
@@ -12,7 +12,6 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MarkdownModule } from 'ngx-markdown';
-import promptMapping from '../../assets/prompt_mapping.json';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { UploadedFileInfo } from '../../../../services/file-upload.service';
@@ -34,8 +33,9 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
   private destroy$ = new Subject<void>();
-  private promptsSource = new ReplaySubject<(Prompt & { displayName: string; description: string; promptFileName: string; })[]>(1);
+  private promptsSource = new ReplaySubject<Prompt[]>(1);
   conversationId: string | null = null;
+  @ViewChild('promptsPopup') promptsPopup!: ElementRef;
 
   conversations$: Observable<Conversation[]>;
   messages$: Observable<ChatMessage[]>;
@@ -81,21 +81,8 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.selectedPrompts$ = this.aiChatStateService.selectedPrompts$;
     this.aiChatStateService.prompts$.pipe(
       takeUntil(this.destroy$),
-      map(prompts => {
-        const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
-        return prompts.map(prompt => {
-          const match = mappingData.find(m => m.promptFileName === prompt.promptKey);
-          if (!match) {
-            console.log('Unmatched prompt:', prompt);
-          }
-          const displayName = match ? match.displayName : prompt.promptName;
-          const description = match ? match.description : '';
-          return { ...prompt, displayName, description, promptFileName: prompt.promptKey };
-        });
-      }),
-      tap(mappedPrompts => {
-        console.log('Mapped prompts:', mappedPrompts);
-        this.promptsSource.next(mappedPrompts);
+      tap(prompts => {
+        this.promptsSource.next(prompts);
       })
     ).subscribe();
 
@@ -326,6 +313,16 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
    this.cdRef.detectChanges();
  }
 
+ @HostListener('document:click', ['$event'])
+ onDocumentClick(event: MouseEvent): void {
+   if (this.isPromptsPopupVisible && this.promptsPopup && !this.promptsPopup.nativeElement.contains(event.target)) {
+     const targetElement = event.target as HTMLElement;
+     if (!targetElement.closest('.more-options-btn')) {
+       this.isPromptsPopupVisible = false;
+     }
+   }
+ }
+
  confirmPrompts(): void {
    this.isPromptsPopupVisible = false;
  }
@@ -351,6 +348,10 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       this.aiChatStateService.setSelectedPrompts(newPrompts);
       console.log(`Updated selectedPrompts array:`, newPrompts);
     });
+  }
+
+  clearPrompts(): void {
+    this.aiChatStateService.setSelectedPrompts([]);
   }
 
 

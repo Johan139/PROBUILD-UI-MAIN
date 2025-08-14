@@ -16,7 +16,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import promptMapping from '../../assets/prompt_mapping.json';
 import { JobDocument } from '../../../../models/JobDocument';
 import { AuthService } from '../../../../authentication/auth.service';
 import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
@@ -37,7 +36,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   messages$: Observable<ChatMessage[]>;
   isLoading$: Observable<boolean>;
   currentConversation$: Observable<Conversation | null>;
-  prompts$: Observable<(Prompt & { displayName: string; description: string; promptFileName: string; })[]>;
+  prompts$: Observable<Prompt[]>;
   conversations$: Observable<Conversation[]>;
   selectedPrompts$: Observable<string[]>;
 
@@ -84,17 +83,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.conversations$ = this.state.conversations$;
     this.selectedPrompts$ = this.state.selectedPrompts$;
 
-     this.prompts$ = this.state.prompts$.pipe(
-       map(prompts => {
-        const mappingData: { tradeName: string, promptFileName: string, displayName: string, description: string }[] = promptMapping;
-        return prompts.map(prompt => {
-          const match = mappingData.find(m => m.promptFileName === prompt.promptKey);
-          const displayName = match ? match.displayName : prompt.promptName;
-          const description = match ? match.description : '';
-          return { ...prompt, displayName, description, promptFileName: prompt.promptKey };
-        });
-      })
-    );
+     this.prompts$ = this.state.prompts$;
 
     this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
       this.currentConversation = conversation;
@@ -273,6 +262,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       }
       this.state.setSelectedPrompts(newPrompts);
     });
+  }
+
+  clearPrompts(): void {
+    this.state.setSelectedPrompts([]);
   }
  getUploadedFileNames(): string {
      return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
