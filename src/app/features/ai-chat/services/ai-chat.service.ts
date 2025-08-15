@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { AiChatStateService } from './ai-chat-state.service';
 import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { of, Observable, forkJoin } from 'rxjs';
-import { Conversation, Prompt, ChatMessage } from '../models/ai-chat.models';
+import { Conversation, ChatMessage } from '../models/ai-chat.models';
 import { environment } from "../../../../environments/environment";
 import { AuthService } from '../../../authentication/auth.service';
 import { JobDocument } from '../../../models/JobDocument';
@@ -174,7 +174,7 @@ export class AiChatService {
       );
   }
 
-  sendMessage(conversationId: string, message: string, files: File[] = [], promptKeys: string[] = []) {
+  sendMessage(conversationId: string, message: string, files: File[] = [], promptKeys: string[] = [], documentUrls: string[] = []) {
     console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
 
@@ -197,6 +197,9 @@ export class AiChatService {
     });
     promptKeys.forEach(key => {
       formData.append('promptKeys', key);
+    });
+    documentUrls.forEach(url => {
+      formData.append('documentUrls', url);
     });
 
     this.http.post<ChatMessage>(`${CHAT_BASE_URL}/${conversationId}/message`, formData)

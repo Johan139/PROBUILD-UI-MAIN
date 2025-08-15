@@ -48,6 +48,9 @@
                 {{ prompt.promptName }}
               </li>
             </ul>
+            <div *ngIf="(hasDocuments$ | async) && ((selectedPrompts$ | async) ?? []).length > 0" class="file-analysis-notification">
+              <p>Mason will analyze the files you have attached to this chat using these selected prompts</p>
+              </div>
           </div>
           <div class="message-history">
             <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">

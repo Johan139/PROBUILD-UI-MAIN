@@ -61,6 +61,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public get isSendDisabled(): boolean {
     let selectedPrompts: string[] = [];
     this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+    let hasDocuments = false;
+    this.hasDocuments$.pipe(take(1)).subscribe(docs => hasDocuments = docs);
 
     const hasText = this.newMessageContent.trim().length > 0;
     const hasFiles = this.files.length > 0;
@@ -70,8 +72,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       return false; // Always enable if there is text
     }
 
-    if (hasFiles && hasPrompts) {
-      return false; // Enable if there are files and prompts
+    if ((hasFiles || hasDocuments) && hasPrompts) {
+      return false; // Enable if there are files (new or existing) and prompts
     }
 
     return true; // Disable in all other cases
@@ -178,7 +180,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     const currentConversationId = this.state.getCurrentConversationId();
     this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
       if (currentConversationId) {
-        this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts);
+        const documentUrls = this.documents.map(doc => doc.blobUrl);
+        this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts, documentUrls);
       } else {
         this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files, selectedPrompts)
           .subscribe(newConversation => {
@@ -234,8 +237,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
          if (!uploadProgress.isUploading && uploadProgress.files) {
            this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
            this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
-           if (this.conversationId) {
-             this.aiChatService.getConversationDocuments(this.conversationId).subscribe(documents => {
+           const id = this.state.getCurrentConversationId();
+           if (id) {
+             this.aiChatService.getConversationDocuments(id).subscribe(documents => {
+               this.documents = documents;
                this.state.setDocuments(documents);
                this.cdRef.detectChanges();
              });
@@ -250,8 +255,9 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
      });
    };
 
-   if (this.conversationId) {
-     uploadAction(this.conversationId);
+   const currentConversationId = this.state.getCurrentConversationId();
+   if (currentConversationId) {
+     uploadAction(currentConversationId);
    } else {
      this.aiChatService.createConversation().subscribe(newConversation => {
        if (newConversation && newConversation.Id) {
