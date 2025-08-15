@@ -176,6 +176,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
     this.aiChatService.getMyPrompts();
+    this.aiChatStateService.setLoading(false);
   }
 
   onAttachFile(): void {
@@ -284,8 +285,18 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
  saveTitle(): void {
    if (!this.editingConversationId) return;
 
-   if (this.editedTitle.length > 255) {
-     this.snackBar.open('Title cannot exceed 255 characters.', 'Close', { duration: 3000 });
+   const trimmedTitle = this.editedTitle ? this.editedTitle.trim() : '';
+
+   if (trimmedTitle.length === 0) {
+     this.snackBar.open('Title cannot be empty.', 'Close', { duration: 3000 });
+     return;
+   }
+
+   this.editedTitle = trimmedTitle;
+
+   const originalConversation = this.aiChatStateService.getConversationById(this.editingConversationId);
+   if (originalConversation && originalConversation.Title === this.editedTitle) {
+     this.cancelEditing();
      return;
    }
 
@@ -304,6 +315,31 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
  cancelEditing(): void {
    this.editingConversationId = null;
    this.editedTitle = '';
+ }
+
+ onTitleInput(): void {
+   let currentTitle = this.editedTitle;
+   let correctedTitle = currentTitle;
+   let warningMessage = '';
+
+   if (correctedTitle.length > 50) {
+     correctedTitle = correctedTitle.substring(0, 50);
+     warningMessage = 'Title cannot exceed 50 characters.';
+   }
+
+   const invalidCharRegex = /[^a-zA-Z0-9\s]/g;
+   if (invalidCharRegex.test(correctedTitle)) {
+     correctedTitle = correctedTitle.replace(invalidCharRegex, '');
+     warningMessage = 'Title can only contain letters, numbers, and spaces.';
+   }
+
+   if (warningMessage) {
+     this.snackBar.open(warningMessage, 'Close', { duration: 3000 });
+   }
+
+   if (this.editedTitle !== correctedTitle) {
+     this.editedTitle = correctedTitle;
+   }
  }
 
  togglePromptsPopup(): void {

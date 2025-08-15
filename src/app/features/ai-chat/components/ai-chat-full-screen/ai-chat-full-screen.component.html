@@ -16,16 +16,16 @@
           <ng-container *ngIf="editingConversationId !== conversation.Id; else editMode">
             <p class="conversation-title">{{ conversation.Title }}</p>
             <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'short' }}</span>
-            <mat-icon class="edit-icon" (click)="startEditing(conversation)">edit</mat-icon>
+            <mat-icon class="edit-icon" (click)="startEditing(conversation); $event.stopPropagation()">edit</mat-icon>
           </ng-container>
           <ng-template #editMode>
             <div class="edit-container">
-              <input type="text" [(ngModel)]="editedTitle" (keyup.enter)="saveTitle()" class="edit-input" />
+              <input type="text" [(ngModel)]="editedTitle" (input)="onTitleInput()" (keyup.enter)="saveTitle()" class="edit-input" />
               <div class="edit-actions">
-                <button mat-icon-button class="save-button" (click)="saveTitle()">
+                <button mat-icon-button class="save-button" (click)="saveTitle(); $event.stopPropagation()">
                   <mat-icon>check</mat-icon>
                 </button>
-                <button mat-icon-button class="cancel-button" (click)="cancelEditing()">
+                <button mat-icon-button class="cancel-button" (click)="cancelEditing(); $event.stopPropagation()">
                   <mat-icon>close</mat-icon>
                 </button>
               </div>

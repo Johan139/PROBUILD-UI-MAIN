@@ -366,10 +366,10 @@
           <div class="form-row button-row">
             <div class="button-group">
               <span class="button-wrapper"
-                    [matTooltip]="uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing.' : ''"
-                    [class.disabled-wrapper]="uploadedFileInfos.length === 0">
+                    [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing.' : ''"
+                    [class.disabled-wrapper]="jobCardForm.invalid || uploadedFileInfos.length === 0">
                 <button mat-raised-button type="submit"
-                        [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0"
+                        [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0 || jobCardForm.invalid"
                         class="submit-btn">
                   <span *ngIf="!isAnalyzing">Analyze</span>
                   <span *ngIf="isAnalyzing">Analyzing...</span>

@@ -101,24 +101,24 @@ export class AppComponent implements OnInit, OnDestroy {
 ngOnInit() {
   if (this.isBrowser) {
     this.authService.currentUser$.subscribe(user => {
-        if (user) {
-          const firstName = user.firstName || localStorage.getItem('firstName') || '';
-          const lastName = user.lastName || localStorage.getItem('lastName') || '';
-          this.LoggedInName = `${firstName} ${lastName}`.trim();
-          this.companyName = user.companyName || localStorage.getItem('companyName') || '';
-        } else {
-          this.LoggedInName = '';
-          this.companyName = '';
-      }
-
-      // ✅ Set loggedIn reactively based on whether a user is present
       this.loggedIn = !!user;
+      if (user) {
+        const firstName = user.firstName || localStorage.getItem('firstName') || '';
+        const lastName = user.lastName || localStorage.getItem('lastName') || '';
+        this.LoggedInName = `${firstName} ${lastName}`.trim();
+        this.companyName = user.companyName || localStorage.getItem('companyName') || '';
+      } else {
+        this.LoggedInName = '';
+        this.companyName = '';
+      }
     });
-      this.loggedIn = JSON.parse(localStorage.getItem('loggedIn') || 'false');
+
+    if (this.loggedIn) {
       this.recentNotifications$ = this.notificationsService.notifications$;
       this.notificationsService.getAllNotifications(1, 50).subscribe();
     }
   }
+}
 
 
   onNotificationsOpened(): void {

@@ -42,9 +42,14 @@ export class AiChatStateService {
  getCurrentConversationId(): string | null {
    return this.stateSubject.getValue().activeConversationId;
  }
-  // State Updaters
-  setIsChatOpen(isOpen: boolean): void {
-    console.log('DELETE ME: [AiChatStateService] Setting isChatOpen to:', isOpen);
+
+  getConversationById(id: string): Conversation | undefined {
+    return this.stateSubject.getValue().conversations.find(c => c.Id === id);
+  }
+
+ // State Updaters
+ setIsChatOpen(isOpen: boolean): void {
+   console.log('DELETE ME: [AiChatStateService] Setting isChatOpen to:', isOpen);
     this.updateState({ isChatOpen: isOpen });
   }
 
@@ -175,19 +180,19 @@ export class AiChatStateService {
     this.updateState({ documents });
   }
 
- updateConversationTitle(conversationId: string, newTitle: string): void {
-   const currentState = this.stateSubject.getValue();
-   const updatedConversations = currentState.conversations.map(c =>
-     c.Id === conversationId ? { ...c, Title: newTitle } : c
-   );
-   this.updateState({ conversations: updatedConversations });
+  updateConversationTitle(conversationId: string, newTitle: string): void {
+    const currentState = this.stateSubject.getValue();
+    const updatedConversations = currentState.conversations.map(c =>
+      c.Id === conversationId ? { ...c, Title: newTitle } : c
+    );
+    this.updateState({ conversations: updatedConversations });
 
-   if (currentState.currentConversation?.Id === conversationId) {
-     this.updateState({
-       currentConversation: { ...currentState.currentConversation, Title: newTitle }
-     });
-   }
- }
+    if (currentState.currentConversation?.Id === conversationId) {
+      this.updateState({
+        currentConversation: { ...currentState.currentConversation, Title: newTitle }
+      });
+    }
+  }
 
   sortConversations(order: 'asc' | 'desc'): void {
     const currentState = this.stateSubject.getValue();

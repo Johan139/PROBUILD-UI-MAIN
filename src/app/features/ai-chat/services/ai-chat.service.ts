@@ -298,11 +298,17 @@ export class AiChatService {
       this.state.addMessage(response);
     });
   }
+
   getDisplayContent(content: string, role: 'user' | 'model'): string {
     if (role === 'user') {
       const failureRegex = /^Failure Prompt:/s;
       if (failureRegex.test(content)) {
         return 'Failure';
+      }
+
+      const criticalOutputRegex = /^CRITICAL OUTPUT REQUIREMENT:/s;
+      if (criticalOutputRegex.test(content)) {
+        return 'The start of your analysis with Mason';
       }
 
       const promptRegex1 = /^Prompt \d+: (.*)/s;
@@ -323,16 +329,20 @@ export class AiChatService {
     if (role === 'model') {
       let modifiedContent = content;
 
-      // Remove "To the esteemed client,"
+      const jsonRegex = /```json\s*\{[\s\S]*?\}\s*```/s;
+      modifiedContent = modifiedContent.replace(jsonRegex, '');
+
       const clientRegex = /^To the esteemed client,/i;
       modifiedContent = modifiedContent.replace(clientRegex, '');
 
-      // This regex removes variations of "Ready for the next prompt..."
       const removalRegex = /Ready for the next prompt \d+[\."\s]*/gi;
       modifiedContent = modifiedContent.replace(removalRegex, '');
 
       const iAmDoneRegex = /I am Done[\.\s]*/gi;
       modifiedContent = modifiedContent.replace(iAmDoneRegex, '');
+
+      const preparedByRegex = /^\s*(\*\*|)?Prepared By:(\*\*|)? Gemini,.*$/gim;
+      modifiedContent = modifiedContent.replace(preparedByRegex, '');
 
       return modifiedContent.trim();
     }
