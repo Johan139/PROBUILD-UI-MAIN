@@ -296,6 +296,10 @@ export class AiChatService {
     return this.http.put(`${CHAT_BASE_URL}/conversation/title`, body);
   }
 
+  getConversationDocuments(conversationId: string): Observable<JobDocument[]> {
+    return this.http.get<JobDocument[]>(`${CHAT_BASE_URL}/${conversationId}/documents`);
+  }
+
   startRenovationAnalysis(files: FileList): void {
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {

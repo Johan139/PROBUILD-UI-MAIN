@@ -21,6 +21,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { JobDataService } from './features/jobs/services/job-data.service';
 import { AiChatIconComponent } from './features/ai-chat/components/ai-chat-icon/ai-chat-icon.component';
 import { AiChatWindowComponent } from './features/ai-chat/components/ai-chat-window/ai-chat-window.component';
+import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.service';
 
 @Component({
   selector: 'app-root',
@@ -69,7 +70,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showAiChatIcon = true;
 
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService, private aiChatStateService: AiChatStateService) {
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
@@ -131,10 +132,10 @@ ngOnInit() {
     }
   }
 
-shouldShowHeaderButtons(): boolean {
-  const excludedRoutes = ['/login', '/register', '/confirm-email'];
-  return this.loggedIn && !excludedRoutes.includes(this.router.url.toLowerCase());
-}
+  shouldShowHeaderButtons(): boolean {
+    const excludedRoutes = ['/login', '/register', '/confirm-email'];
+    return this.loggedIn && !excludedRoutes.includes(this.router.url.toLowerCase());
+  }
 
   onBrowserClose(event: BeforeUnloadEvent ) {
     localStorage.setItem('loggedIn', 'false');
@@ -153,6 +154,7 @@ shouldShowHeaderButtons(): boolean {
     }
     this.showAlert = false;
   }
+
 logout(): void {
   const dialogRef = this.dialog.open(LogoutConfirmDialogComponent, {
     width: '320px',
@@ -177,6 +179,11 @@ logout(): void {
 
   navigateToJob(notification: any): void {
     this.jobDataService.navigateToJob(notification);
+  }
+
+  goToAiChatFullScreen(): void {
+    this.router.navigate(['/ai-chat']);
+    this.aiChatStateService.setIsChatOpen(false);
   }
 }
 

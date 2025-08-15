@@ -3,8 +3,8 @@ import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
-import { Observable, Subject, map } from 'rxjs';
-import { takeUntil, take } from 'rxjs/operators';
+import { Observable, Subject, of } from 'rxjs';
+import { takeUntil, take, map, tap, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatMessage, Conversation, Prompt } from '../../models/ai-chat.models';
@@ -39,11 +39,13 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   prompts$: Observable<Prompt[]>;
   conversations$: Observable<Conversation[]>;
   selectedPrompts$: Observable<string[]>;
+  hasDocuments$: Observable<boolean> = of(false);
 
   public isHistoryVisible = false;
   private conversationId: string | null = null;
   private currentConversation: Conversation | null = null;
   private destroy$ = new Subject<void>();
+  private selectConversation$ = new Subject<string>();
   private files: File[] = [];
   uploadedFileInfos: UploadedFileInfo[] = [];
   isUploading = false;
@@ -74,6 +76,12 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
 
     return true; // Disable in all other cases
   }
+
+  public get isInputDisabled(): boolean {
+   let selectedPrompts: string[] = [];
+   this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+   return selectedPrompts.length > 0;
+}
 
   constructor(
     public state: AiChatStateService,
@@ -107,12 +115,16 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.hasDocuments$ = this.state.documents$.pipe(
+      map(documents => documents.length > 0)
+    );
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.isLoggedIn = !!user;
       if (this.isLoggedIn) {
         this.signalrService.startConnection();
         this.aiChatService.getMyPrompts();
         this.aiChatService.getMyConversations();
+        this.setupConversationSelection();
       }
     });
 
@@ -222,7 +234,12 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
          if (!uploadProgress.isUploading && uploadProgress.files) {
            this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
            this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
-           this.files = [];
+           if (this.conversationId) {
+             this.aiChatService.getConversationDocuments(this.conversationId).subscribe(documents => {
+               this.state.setDocuments(documents);
+               this.cdRef.detectChanges();
+             });
+           }
          }
        },
        error: (error) => {
@@ -233,23 +250,22 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
      });
    };
 
-   this.currentConversation$.pipe(take(1)).subscribe(conversation => {
-     if (conversation && conversation.Id) {
-       uploadAction(conversation.Id);
-     } else {
-       this.aiChatService.createConversation().subscribe(newConversation => {
-         if (newConversation && newConversation.Id) {
-           this.state.addConversation(newConversation);
-           this.state.setActiveConversationId(newConversation.Id);
-           this.state.setMessages(newConversation.messages ?? []);
-           uploadAction(newConversation.Id);
-         } else {
-           this.isUploading = false;
-           this.snackBar.open('Could not start a new conversation to upload files.', 'Close', { duration: 3000 });
-         }
-       });
-     }
-   });
+   if (this.conversationId) {
+     uploadAction(this.conversationId);
+   } else {
+     this.aiChatService.createConversation().subscribe(newConversation => {
+       if (newConversation && newConversation.Id) {
+         this.state.addConversation(newConversation);
+         this.state.setActiveConversationId(newConversation.Id);
+         this.state.setMessages(newConversation.messages ?? []);
+         this.conversationId = newConversation.Id;
+         uploadAction(newConversation.Id);
+       } else {
+         this.isUploading = false;
+         this.snackBar.open('Could not start a new conversation to upload files.', 'Close', { duration: 3000 });
+       }
+     });
+   }
  }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {
@@ -298,20 +314,39 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
  }
 
  viewUploadedFiles(): void {
-     this.state.documents$.pipe(take(1)).subscribe(documents => {
+     if (this.conversationId) {
+       this.aiChatService.getConversationDocuments(this.conversationId).subscribe(documents => {
          this.fileUploadService.viewUploadedFiles(documents);
-     });
+       });
+     } else {
+       this.fileUploadService.viewUploadedFiles(this.documents);
+     }
  }
   toggleHistory(): void {
     this.isHistoryVisible = !this.isHistoryVisible;
   }
 
-  async loadConversation(conversationId: string): Promise<void> {
-    this.aiChatService.getConversation(conversationId);
+  loadConversation(conversationId: string): void {
+    this.selectConversation$.next(conversationId);
     this.isHistoryVisible = false;
-    await this.signalrService.joinConversationGroup(conversationId);
-    this.scrollToBottom('auto');
    }
+
+  private setupConversationSelection(): void {
+    this.selectConversation$.pipe(
+      tap(conversationId => {
+        this.state.setActiveConversationId(conversationId);
+        this.scrollToBottom('auto');
+      }),
+      switchMap(conversationId =>
+        this.aiChatService.getConversation(conversationId).pipe(
+          tap(async () => {
+            await this.signalrService.joinConversationGroup(conversationId);
+          })
+        )
+      ),
+      takeUntil(this.destroy$)
+    ).subscribe();
+  }
 
   public get sortIcon(): string {
     return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
@@ -327,6 +362,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.state.setSelectedPrompts([]);
     this.state.setActiveConversationId(null);
     this.state.setMessages([]);
+    this.state.setDocuments([]);
     this.aiChatService.getMyPrompts();
   }
 

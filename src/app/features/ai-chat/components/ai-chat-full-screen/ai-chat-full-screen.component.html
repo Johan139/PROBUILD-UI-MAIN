@@ -90,19 +90,25 @@
                [(ngModel)]="newMessageContent"
                name="newMessageContent"
                placeholder="Type your message..."
-               autocomplete="off">
+               autocomplete="off"
+               [disabled]="isInputDisabled"
+               [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''">
         <span class="button-wrapper"
               [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
               [class.disabled-wrapper]="isSendDisabled">
           <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
         </span>
-        <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()">
-        <mat-icon>attach_file</mat-icon>
-        </button>
         <span class="button-wrapper"
-              [matTooltip]="uploadedFileInfos.length === 0 ? 'No files uploaded' : ''"
-              [class.disabled-wrapper]="uploadedFileInfos.length === 0">
-          <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
+              [matTooltip]="(hasDocuments$ | async) ? 'Files have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach files'"
+              [class.disabled-wrapper]="hasDocuments$ | async">
+          <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
+            <mat-icon>attach_file</mat-icon>
+          </button>
+        </span>
+        <span class="button-wrapper"
+              [matTooltip]="!(hasDocuments$ | async) ? 'No files uploaded' : ''"
+              [class.disabled-wrapper]="!(hasDocuments$ | async)">
+          <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="viewUploadedFiles()" [disabled]="!(hasDocuments$ | async)">
             <mat-icon>folder</mat-icon>
           </button>
         </span>

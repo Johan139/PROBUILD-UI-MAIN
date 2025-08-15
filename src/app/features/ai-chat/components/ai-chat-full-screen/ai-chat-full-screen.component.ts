@@ -4,7 +4,7 @@ import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
-import { Observable, combineLatest, Subject, ReplaySubject } from 'rxjs';
+import { Observable, combineLatest, Subject, ReplaySubject, of } from 'rxjs';
 import { map, take, takeUntil, tap, switchMap } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
@@ -44,38 +44,45 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   isLoading$: Observable<boolean>;
   prompts$ = this.promptsSource.asObservable();
   selectedPrompts$: Observable<string[]>;
+  hasDocuments$: Observable<boolean> = of(false);
 
-   newMessageContent = '';
- files: File[] = [];
- uploadedFileInfos: UploadedFileInfo[] = [];
- isUploading = false;
- progress = 0;
- editingConversationId: string | null = null;
- editedTitle = '';
- public isPromptsPopupVisible = false;
- public documents: JobDocument[] = [];
- public sortOrder: 'asc' | 'desc' = 'desc';
- public promptSelectionState: { [key: string]: boolean } = {};
- public fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
+  newMessageContent = '';
+  files: File[] = [];
+  uploadedFileInfos: UploadedFileInfo[] = [];
+  isUploading = false;
+  progress = 0;
+  editingConversationId: string | null = null;
+  editedTitle = '';
+  public isPromptsPopupVisible = false;
+  public documents: JobDocument[] = [];
+  public sortOrder: 'asc' | 'desc' = 'desc';
+  public promptSelectionState: { [key: string]: boolean } = {};
+  public fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
 
- public get isSendDisabled(): boolean {
-   let selectedPrompts: string[] = [];
-   this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+  public get isSendDisabled(): boolean {
+    let selectedPrompts: string[] = [];
+    this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
 
-   const hasText = this.newMessageContent.trim().length > 0;
-   const hasFiles = this.files.length > 0;
-   const hasPrompts = selectedPrompts.length > 0;
+    const hasText = this.newMessageContent.trim().length > 0;
+    const hasFiles = this.files.length > 0;
+    const hasPrompts = selectedPrompts.length > 0;
 
-   if (hasText) {
-     return false; // Always enable if there is text
-   }
+    if (hasText) {
+      return false; // Always enable if there is text
+    }
 
-   if (hasFiles && hasPrompts) {
-     return false; // Enable if there are files and prompts
-   }
+    if (hasFiles && hasPrompts) {
+      return false; // Enable if there are files and prompts
+    }
 
-   return true; // Disable in all other cases
- }
+    return true; // Disable in all other cases
+  }
+
+  public get isInputDisabled(): boolean {
+      let selectedPrompts: string[] = [];
+      this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
+      return selectedPrompts.length > 0;
+  }
 
   constructor(
     private aiChatStateService: AiChatStateService,
@@ -104,9 +111,13 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     ]).pipe(
       map(([conversations, activeId]) => conversations.find(c => c.Id === activeId) || null)
     );
+
   }
 
   ngOnInit(): void {
+    this.hasDocuments$ = this.aiChatStateService.documents$.pipe(
+      map(documents => documents.length > 0)
+    );
     this.signalrService.startConnection();
     console.log('AiChatFullScreenComponent initialized');
     this.aiChatService.getMyConversations();
@@ -206,6 +217,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.newMessageContent = '';
     this.aiChatStateService.setActiveConversationId(null);
     this.aiChatStateService.setMessages([]);
+    this.aiChatStateService.setDocuments([]);
     this.aiChatService.getMyPrompts();
     this.aiChatStateService.setLoading(false);
   }
@@ -251,15 +263,15 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       return this.aiChatService.getDisplayContent(content, role);
   }
 
- onFileSelected(event: any, type?: 'renovation' | 'subcontractor' | 'vendor'): void {
+  onFileSelected(event: any, type?: 'renovation' | 'subcontractor' | 'vendor'): void {
    const files = event.target.files;
    if (files.length > 0) {
        this.files = Array.from(files);
        this.uploadFiles(this.files);
    }
- }
+  }
 
- private uploadFiles(files: File[]): void {
+  private uploadFiles(files: File[]): void {
    this.isUploading = true;
    this.progress = 0;
 
@@ -271,7 +283,12 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
          if (!uploadProgress.isUploading && uploadProgress.files) {
            this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
            this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
-           this.files = [];
+           if (this.conversationId) {
+             this.aiChatService.getConversationDocuments(this.conversationId).subscribe(documents => {
+               this.aiChatStateService.setDocuments(documents);
+               this.cdRef.detectChanges();
+             });
+           }
          }
        },
        error: (error) => {
@@ -282,169 +299,173 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
      });
    };
 
-   this.currentConversation$.pipe(take(1)).subscribe(conversation => {
-     if (conversation && conversation.Id) {
-       uploadAction(conversation.Id);
-     } else {
-       this.aiChatService.createConversation().subscribe(newConversation => {
-         if (newConversation && newConversation.Id) {
-           this.aiChatStateService.addConversation(newConversation);
-           this.aiChatStateService.setActiveConversationId(newConversation.Id);
-           this.aiChatStateService.setMessages(newConversation.messages ?? []);
-           uploadAction(newConversation.Id);
-         } else {
-           this.isUploading = false;
-           this.snackBar.open('Could not start a new conversation to upload files.', 'Close', { duration: 3000 });
-         }
-       });
-     }
-   });
- }
+   if (this.conversationId) {
+     uploadAction(this.conversationId);
+   } else {
+     this.aiChatService.createConversation().subscribe(newConversation => {
+       if (newConversation && newConversation.Id) {
+         this.aiChatStateService.addConversation(newConversation);
+         this.router.navigate(['/ai-chat', newConversation.Id]);
+         this.aiChatStateService.setActiveConversationId(newConversation.Id);
+         this.aiChatStateService.setMessages(newConversation.messages ?? []);
+         this.conversationId = newConversation.Id;
+         uploadAction(newConversation.Id);
+       } else {
+         this.isUploading = false;
+         this.snackBar.open('Could not start a new conversation to upload files.', 'Close', { duration: 3000 });
+       }
+     });
+   }
+  }
 
   logDisplayName(prompt: any): boolean {
     console.log('Rendering prompt:', prompt.displayName);
     return true;
   }
 
- getUploadedFileNames(): string {
-     return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
- }
+  getUploadedFileNames(): string {
+      return this.fileUploadService.getUploadedFileNames(this.uploadedFileInfos);
+  }
 
- viewUploadedFiles(): void {
-     this.aiChatStateService.documents$.pipe(take(1)).subscribe(documents => {
+  viewUploadedFiles(): void {
+     if (this.conversationId) {
+       this.aiChatService.getConversationDocuments(this.conversationId).subscribe(documents => {
          this.fileUploadService.viewUploadedFiles(documents);
-     });
- }
-
- startEditing(conversation: Conversation): void {
-   this.editingConversationId = conversation.Id;
-   this.editedTitle = conversation.Title;
- }
-
- saveTitle(): void {
-   if (!this.editingConversationId) return;
-
-   const trimmedTitle = this.editedTitle ? this.editedTitle.trim() : '';
-
-   if (trimmedTitle.length === 0) {
-     this.snackBar.open('Title cannot be empty.', 'Close', { duration: 3000 });
-     return;
-   }
-
-   this.editedTitle = trimmedTitle;
-
-   const originalConversation = this.aiChatStateService.getConversationById(this.editingConversationId);
-   if (originalConversation && originalConversation.Title === this.editedTitle) {
-     this.cancelEditing();
-     return;
-   }
-
-   this.aiChatService.updateConversationTitle(this.editingConversationId, this.editedTitle).subscribe({
-     next: () => {
-       this.aiChatStateService.updateConversationTitle(this.editingConversationId!, this.editedTitle);
-       this.cancelEditing();
-     },
-     error: (error) => {
-       console.error('Error updating title:', error);
-       this.snackBar.open('Failed to update title. Please try again.', 'Close', { duration: 3000 });
+       });
+     } else {
+       this.fileUploadService.viewUploadedFiles(this.documents);
      }
-   });
- }
+  }
 
- cancelEditing(): void {
-   this.editingConversationId = null;
-   this.editedTitle = '';
- }
+  startEditing(conversation: Conversation): void {
+    this.editingConversationId = conversation.Id;
+    this.editedTitle = conversation.Title;
+  }
 
- onTitleInput(): void {
-   let currentTitle = this.editedTitle;
-   let correctedTitle = currentTitle;
-   let warningMessage = '';
+  saveTitle(): void {
+    if (!this.editingConversationId) return;
 
-   if (correctedTitle.length > 50) {
-     correctedTitle = correctedTitle.substring(0, 50);
-     warningMessage = 'Title cannot exceed 50 characters.';
-   }
+    const trimmedTitle = this.editedTitle ? this.editedTitle.trim() : '';
 
-   const invalidCharRegex = /[^a-zA-Z0-9\s]/g;
-   if (invalidCharRegex.test(correctedTitle)) {
-     correctedTitle = correctedTitle.replace(invalidCharRegex, '');
-     warningMessage = 'Title can only contain letters, numbers, and spaces.';
-   }
+    if (trimmedTitle.length === 0) {
+      this.snackBar.open('Title cannot be empty.', 'Close', { duration: 3000 });
+      return;
+    }
 
-   if (warningMessage) {
-     this.snackBar.open(warningMessage, 'Close', { duration: 3000 });
-   }
+    this.editedTitle = trimmedTitle;
 
-   if (this.editedTitle !== correctedTitle) {
-     this.editedTitle = correctedTitle;
-   }
- }
+    const originalConversation = this.aiChatStateService.getConversationById(this.editingConversationId);
+    if (originalConversation && originalConversation.Title === this.editedTitle) {
+      this.cancelEditing();
+      return;
+    }
 
- togglePromptsPopup(): void {
-   console.log('togglePromptsPopup called. Current visibility:', this.isPromptsPopupVisible);
-   this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
-   console.log('New visibility:', this.isPromptsPopupVisible);
-   this.cdRef.detectChanges();
- }
-
- @HostListener('document:click', ['$event'])
- onDocumentClick(event: MouseEvent): void {
-   if (this.isPromptsPopupVisible && this.promptsPopup && !this.promptsPopup.nativeElement.contains(event.target)) {
-     const targetElement = event.target as HTMLElement;
-     if (!targetElement.closest('.more-options-btn')) {
-       this.isPromptsPopupVisible = false;
-     }
-   }
- }
-
- confirmPrompts(): void {
-   this.isPromptsPopupVisible = false;
- }
-
-  togglePromptSelection(promptKey: string): void {
-    console.log(`Toggling selection for prompt: ${promptKey}`);
-    console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
-    this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
-      console.log(`State AFTER toggle for ${promptKey}:`, this.promptSelectionState[promptKey]);
-      console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
-      const isSelected = currentPrompts.includes(promptKey);
-      let newPrompts: string[];
-
-      if (promptKey === this.fullBlueprintAnalysisPromptKey) {
-        newPrompts = isSelected ? [] : [this.fullBlueprintAnalysisPromptKey];
-      } else {
-        if (isSelected) {
-          newPrompts = currentPrompts.filter(p => p !== promptKey);
-        } else {
-          newPrompts = [...currentPrompts.filter(p => p !== this.fullBlueprintAnalysisPromptKey), promptKey];
-        }
+    this.aiChatService.updateConversationTitle(this.editingConversationId, this.editedTitle).subscribe({
+      next: () => {
+        this.aiChatStateService.updateConversationTitle(this.editingConversationId!, this.editedTitle);
+        this.cancelEditing();
+      },
+      error: (error) => {
+        console.error('Error updating title:', error);
+        this.snackBar.open('Failed to update title. Please try again.', 'Close', { duration: 3000 });
       }
-      this.aiChatStateService.setSelectedPrompts(newPrompts);
-      console.log(`Updated selectedPrompts array:`, newPrompts);
     });
   }
 
-  clearPrompts(): void {
-    this.aiChatStateService.setSelectedPrompts([]);
+  cancelEditing(): void {
+    this.editingConversationId = null;
+    this.editedTitle = '';
   }
 
+  onTitleInput(): void {
+    let currentTitle = this.editedTitle;
+    let correctedTitle = currentTitle;
+    let warningMessage = '';
 
- retryMessage(message: ChatMessage): void {
-   this.aiChatStateService.deleteMessage(message.Id);
-   if (message.ConversationId) {
-     this.aiChatService.sendMessage(message.ConversationId, message.Content, []);
-   } else {
-     this.aiChatService.startConversation(message.Content, null, [])
-       .subscribe(newConversation => {
-         if (newConversation) {
-           this.aiChatStateService.addConversation(newConversation);
-           this.aiChatStateService.setActiveConversationId(newConversation.Id);
-           this.aiChatStateService.setMessages(newConversation.messages ?? []);
-         }
-       });
-   }
- }
+    if (correctedTitle.length > 50) {
+      correctedTitle = correctedTitle.substring(0, 50);
+      warningMessage = 'Title cannot exceed 50 characters.';
+    }
+
+    const invalidCharRegex = /[^a-zA-Z0-9\s]/g;
+    if (invalidCharRegex.test(correctedTitle)) {
+      correctedTitle = correctedTitle.replace(invalidCharRegex, '');
+      warningMessage = 'Title can only contain letters, numbers, and spaces.';
+    }
+
+    if (warningMessage) {
+      this.snackBar.open(warningMessage, 'Close', { duration: 3000 });
+    }
+
+    if (this.editedTitle !== correctedTitle) {
+      this.editedTitle = correctedTitle;
+    }
+  }
+
+  togglePromptsPopup(): void {
+    console.log('togglePromptsPopup called. Current visibility:', this.isPromptsPopupVisible);
+    this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
+    console.log('New visibility:', this.isPromptsPopupVisible);
+    this.cdRef.detectChanges();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isPromptsPopupVisible && this.promptsPopup && !this.promptsPopup.nativeElement.contains(event.target)) {
+      const targetElement = event.target as HTMLElement;
+      if (!targetElement.closest('.more-options-btn')) {
+        this.isPromptsPopupVisible = false;
+      }
+    }
+  }
+
+  confirmPrompts(): void {
+    this.isPromptsPopupVisible = false;
+  }
+
+    togglePromptSelection(promptKey: string): void {
+      console.log(`Toggling selection for prompt: ${promptKey}`);
+      console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
+      this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
+        console.log(`State AFTER toggle for ${promptKey}:`, this.promptSelectionState[promptKey]);
+        console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
+        const isSelected = currentPrompts.includes(promptKey);
+        let newPrompts: string[];
+
+        if (promptKey === this.fullBlueprintAnalysisPromptKey) {
+          newPrompts = isSelected ? [] : [this.fullBlueprintAnalysisPromptKey];
+        } else {
+          if (isSelected) {
+            newPrompts = currentPrompts.filter(p => p !== promptKey);
+          } else {
+            newPrompts = [...currentPrompts.filter(p => p !== this.fullBlueprintAnalysisPromptKey), promptKey];
+          }
+        }
+        this.aiChatStateService.setSelectedPrompts(newPrompts);
+        console.log(`Updated selectedPrompts array:`, newPrompts);
+      });
+    }
+
+    clearPrompts(): void {
+      this.aiChatStateService.setSelectedPrompts([]);
+    }
+
+
+  retryMessage(message: ChatMessage): void {
+    this.aiChatStateService.deleteMessage(message.Id);
+    if (message.ConversationId) {
+      this.aiChatService.sendMessage(message.ConversationId, message.Content, []);
+    } else {
+      this.aiChatService.startConversation(message.Content, null, [])
+        .subscribe(newConversation => {
+          if (newConversation) {
+            this.aiChatStateService.addConversation(newConversation);
+            this.aiChatStateService.setActiveConversationId(newConversation.Id);
+            this.aiChatStateService.setMessages(newConversation.messages ?? []);
+          }
+        });
+    }
+  }
 }
 
 
