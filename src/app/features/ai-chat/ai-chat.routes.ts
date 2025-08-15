@@ -5,6 +5,11 @@ import { AuthGuard } from '../../authentication/auth.guard';
 export const AI_CHAT_ROUTES: Routes = [
   {
     path: '',
+    redirectTo: 'new',
+    pathMatch: 'full'
+  },
+  {
+    path: 'new',
     component: AiChatFullScreenComponent,
     canActivate: [AuthGuard]
   },

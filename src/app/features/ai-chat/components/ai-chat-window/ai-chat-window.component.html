@@ -94,19 +94,28 @@
       <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
         <mat-icon>tune</mat-icon>
       </button>
-      <input type="text"
-             id="chat-input"
-             [(ngModel)]="newMessageContent"
-             name="newMessageContent"
-             placeholder="Type your message..."
-             autocomplete="off">
-      <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
-      <button mat-raised-button type="button" class="action-btn submit-btn publish-btn" (click)="onAttachFile()">
+      <textarea id="chat-input"
+                [(ngModel)]="newMessageContent"
+                name="newMessageContent"
+                placeholder="Type your message..."
+                autocomplete="off"
+                (input)="autoResize($event)"
+                rows="1"></textarea>
+      <span class="button-wrapper"
+            [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
+            [class.disabled-wrapper]="isSendDisabled">
+        <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
+      </span>
+      <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()">
       <mat-icon>attach_file</mat-icon>
       </button>
-      <button mat-raised-button type="button" class="action-btn submit-btn publish-btn" (click)="viewUploadedFiles()">
-      <mat-icon>folder</mat-icon>
-      </button>
+      <span class="button-wrapper"
+            [matTooltip]="uploadedFileInfos.length === 0 ? 'No files uploaded' : ''"
+            [class.disabled-wrapper]="uploadedFileInfos.length === 0">
+        <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
+          <mat-icon>folder</mat-icon>
+        </button>
+      </span>
       <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
       <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
     </form>

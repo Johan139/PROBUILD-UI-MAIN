@@ -59,10 +59,20 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public get isSendDisabled(): boolean {
     let selectedPrompts: string[] = [];
     this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
-    if (selectedPrompts.length > 0) {
-      return false;
+
+    const hasText = this.newMessageContent.trim().length > 0;
+    const hasFiles = this.files.length > 0;
+    const hasPrompts = selectedPrompts.length > 0;
+
+    if (hasText) {
+      return false; // Always enable if there is text
     }
-    return !this.newMessageContent.trim() && this.files.length === 0;
+
+    if (hasFiles && hasPrompts) {
+      return false; // Enable if there are files and prompts
+    }
+
+    return true; // Disable in all other cases
   }
 
   constructor(
@@ -158,7 +168,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       if (currentConversationId) {
         this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts);
       } else {
-        this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files)
+        this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files, selectedPrompts)
           .subscribe(newConversation => {
             if (newConversation) {
               this.state.addConversation(newConversation);
@@ -174,6 +184,12 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.state.setSelectedPrompts([]);
     this.isPromptsPopupVisible = false;
     this.scrollToBottom('smooth');
+  }
+
+  autoResize(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
   onAttachFile(): void {
@@ -198,30 +214,40 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
    this.isUploading = true;
    this.progress = 0;
 
+   const uploadAction = (convId: string) => {
+     this.fileUploadService.uploadFiles(files, convId, convId).subscribe({
+       next: (uploadProgress) => {
+         this.progress = uploadProgress.progress;
+         this.isUploading = uploadProgress.isUploading;
+         if (!uploadProgress.isUploading && uploadProgress.files) {
+           this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
+           this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
+           this.files = [];
+         }
+       },
+       error: (error) => {
+         this.isUploading = false;
+         this.snackBar.open('File upload failed. Please try again.', 'Close', { duration: 3000 });
+         console.error('Upload error:', error);
+       }
+     });
+   };
+
    this.currentConversation$.pipe(take(1)).subscribe(conversation => {
      if (conversation && conversation.Id) {
-       // The upload service uses conversation.Id for both the sessionId and the conversationId parameter.
-       // - sessionId is required for all uploads to track the session.
-       // - conversationId routes the request to the new chat-specific endpoint.
-       this.fileUploadService.uploadFiles(files, conversation.Id, conversation.Id).subscribe({
-         next: (uploadProgress) => {
-           this.progress = uploadProgress.progress;
-           this.isUploading = uploadProgress.isUploading;
-           if (!uploadProgress.isUploading && uploadProgress.files) {
-             this.uploadedFileInfos = [...this.uploadedFileInfos, ...uploadProgress.files];
-             this.snackBar.open('Files uploaded successfully!', 'Close', { duration: 3000 });
-             this.files = [];
-           }
-         },
-         error: (error) => {
+       uploadAction(conversation.Id);
+     } else {
+       this.aiChatService.createConversation().subscribe(newConversation => {
+         if (newConversation && newConversation.Id) {
+           this.state.addConversation(newConversation);
+           this.state.setActiveConversationId(newConversation.Id);
+           this.state.setMessages(newConversation.messages ?? []);
+           uploadAction(newConversation.Id);
+         } else {
            this.isUploading = false;
-           this.snackBar.open('File upload failed. Please try again.', 'Close', { duration: 3000 });
-           console.error('Upload error:', error);
+           this.snackBar.open('Could not start a new conversation to upload files.', 'Close', { duration: 3000 });
          }
        });
-     } else {
-       this.isUploading = false;
-       this.snackBar.open('Cannot upload files: no active conversation.', 'Close', { duration: 3000 });
      }
    });
  }
