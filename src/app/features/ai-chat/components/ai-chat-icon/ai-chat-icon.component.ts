@@ -25,7 +25,6 @@ export class AiChatIconComponent implements OnInit {
   }
 
   openChat(): void {
-    console.log('DELETE ME: [AiChatIconComponent] Opening chat');
     this.state.setIsChatOpen(true);
   }
 }

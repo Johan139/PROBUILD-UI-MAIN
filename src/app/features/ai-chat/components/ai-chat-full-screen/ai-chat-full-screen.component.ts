@@ -122,7 +122,6 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       map(documents => documents.length > 0)
     );
     this.signalrService.startConnection();
-    console.log('AiChatFullScreenComponent initialized');
     this.aiChatService.getMyConversations();
     this.aiChatService.getMyPrompts();
     this.setupConversationSelection();
@@ -130,7 +129,6 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.prompts$.pipe(
       takeUntil(this.destroy$),
       switchMap(allPrompts => {
-        console.log('Prompts received, initializing selection state:', allPrompts);
         return this.selectedPrompts$.pipe(
           map(selectedPrompts => ({ allPrompts, selectedPrompts }))
         );
@@ -145,7 +143,6 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
         acc[prompt.id] = selectedPrompts.includes(prompt.id);
         return acc;
       }, {} as { [key: number]: boolean });
-      console.log('Initial promptSelectionState:', this.promptSelectionState);
     });
 
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -354,7 +351,6 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   logDisplayName(prompt: any): boolean {
-    console.log('Rendering prompt:', prompt.displayName);
     return true;
   }
 
@@ -444,9 +440,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   togglePromptsPopup(): void {
-    console.log('togglePromptsPopup called. Current visibility:', this.isPromptsPopupVisible);
     this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
-    console.log('New visibility:', this.isPromptsPopupVisible);
     this.cdRef.detectChanges();
   }
 

@@ -23,11 +23,9 @@ export class AiChatService {
 
   getMyPrompts() {
     if (!this.authService.isLoggedIn()) {
-      console.log('DELETE ME: [AiChatService] User not logged in, skipping getMyPrompts.');
       this.state.setPrompts([]);
       return;
     }
-    console.log('DELETE ME: [AiChatService] Getting my prompts...');
     this.state.setLoading(true);
     this.authService.currentUser$.pipe(
       take(1),
@@ -64,23 +62,18 @@ export class AiChatService {
         );
       }),
       catchError(err => {
-        console.error('DELETE ME: [AiChatService] Failed to fetch prompts:', err);
         this.state.setError('Failed to fetch prompts.');
         return of([]);
       })
     ).subscribe(prompts => {
-      console.log('DELETE ME: [AiChatService] Successfully fetched prompts:', prompts);
       this.state.setPrompts(prompts);
       this.state.setLoading(false);
     });
   }
 
   startConversation(initialMessage: string, promptKey: string | null, files: File[], promptKeys: string[] = []): Observable<Conversation | null> {
-    console.log(`DELETE ME: [AiChatService] Starting conversation with promptKey: ${promptKey}`);
     this.state.setLoading(true);
     const userType = this.authService.getUserRole();
-    console.log(`DELETE ME: [AiChatService] UserType for new conversation: ${userType}`);
-
     const tempId = Date.now();
     const userMessage: ChatMessage = {
       Id: tempId,
@@ -132,18 +125,10 @@ export class AiChatService {
             } as ChatMessage)) : []
           };
 
-          console.log('DELETE ME: [AiChatService] Successfully started conversation:', conversation);
-          this.state.addConversation(conversation);
-          this.state.setActiveConversationId(conversation.Id);
-          if (conversation.messages && conversation.messages.length > 0) {
-            this.state.setMessages(conversation.messages);
-          }
-
           this.state.setLoading(false);
           return of(conversation);
         }),
         catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to start conversation:', err);
           this.state.setError('Failed to start conversation.');
           this.state.updateMessageStatus(tempId, 'failed');
           this.state.setLoading(false);
@@ -168,7 +153,6 @@ export class AiChatService {
           return conversation;
         }),
         catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to create conversation:', err);
           this.state.setError('Failed to create conversation.');
           return of(null);
         })
@@ -176,7 +160,6 @@ export class AiChatService {
   }
 
   sendMessage(conversationId: string, message: string, files: File[] = [], promptKeys: string[] = [], documentUrls: string[] = []) {
-    console.log(`DELETE ME: [AiChatService] Sending message to conversation ${conversationId}: "${message}"`);
     this.state.setLoading(true);
 
     const tempId = Date.now();
@@ -206,7 +189,6 @@ export class AiChatService {
     this.http.post<ChatMessage>(`${CHAT_BASE_URL}/${conversationId}/message`, formData)
       .pipe(
         catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to send message:', err);
           this.state.setError('Failed to send message.');
           this.state.updateMessageStatus(tempId, 'failed');
           this.state.setLoading(false);
@@ -215,7 +197,6 @@ export class AiChatService {
       )
       .subscribe(response => {
         if (response) {
-          console.log('DELETE ME: [AiChatService] Successfully sent message:', response);
           // this.state.deleteMessage(tempId);
           // this.state.addMessage(response);
         }
@@ -224,7 +205,6 @@ export class AiChatService {
   }
 
   getConversation(conversationId: string): Observable<{ messages: ChatMessage[], documents: JobDocument[] } | null> {
-    console.log(`DELETE ME: [AiChatService] Getting conversation ${conversationId}`);
     this.state.setLoading(true);
 
     const messages$ = this.http.get<any[]>(`${CHAT_BASE_URL}/${conversationId}`).pipe(
@@ -247,16 +227,13 @@ export class AiChatService {
 
     return forkJoin({ messages: messages$, documents: documents$ }).pipe(
       map(response => {
-        console.log('DELETE ME: [AiChatService] Successfully fetched conversation messages:', response.messages);
         this.state.setMessages(response.messages || []);
-        console.log('DELETE ME: [AiChatService] Successfully fetched conversation documents:', response.documents);
         this.state.setDocuments(response.documents || []);
         this.state.setActiveConversationId(conversationId);
         this.state.setLoading(false);
         return response;
       }),
       catchError(err => {
-        console.error('DELETE ME: [AiChatService] Failed to fetch conversation data:', err);
         this.state.setError('Failed to fetch conversation data.');
         this.state.setLoading(false);
         return of(null);
@@ -266,11 +243,9 @@ export class AiChatService {
 
   getMyConversations() {
     if (!this.authService.isLoggedIn()) {
-      console.log('DELETE ME: [AiChatService] User not logged in, skipping getMyConversations.');
       this.state.setConversations([]);
       return;
     }
-    console.log('DELETE ME: [AiChatService] Getting my conversations...');
     this.state.setLoading(true);
     this.http.get<any[]>(`${CHAT_BASE_URL}/my-conversations`)
       .pipe(
@@ -282,14 +257,12 @@ export class AiChatService {
           ConversationSummary: c.conversationSummary
         } as Conversation))),
         catchError(err => {
-          console.error('DELETE ME: [AiChatService] Failed to fetch conversations:', err);
           this.state.setError('Failed to fetch conversations.');
           this.state.setLoading(false);
           return of([]);
         })
       )
       .subscribe(conversations => {
-        console.log('DELETE ME: [AiChatService] Successfully fetched conversations:', conversations);
         this.state.setConversations(conversations);
         this.state.setLoading(false);
       });

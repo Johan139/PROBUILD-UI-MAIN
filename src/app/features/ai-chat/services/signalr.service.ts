@@ -32,9 +32,6 @@ export class SignalrService {
       const baseUrl = environment.BACKEND_URL.replace('/api', '');
       const hubUrl = `${baseUrl}/chathub`;
 
-      console.log(`SignalR: Hub URL is ${hubUrl}`);
-      console.log(`SignalR: Token exists: ${!!token}`);
-
       this.hubConnection = new signalR.HubConnectionBuilder()
         .withUrl(hubUrl, {
           accessTokenFactory: () => {
@@ -48,8 +45,6 @@ export class SignalrService {
         .build();
 
       this.hubConnection.on('ReceiveMessage', (message: ChatMessage) => {
-        console.log('SignalR: Received message via SignalR:', message);
-        console.log('SignalR: Message structure:', JSON.stringify(message, null, 2));
         this.aiChatStateService.addMessage(message);
         console.log('SignalR: Added message to state service');
       });
@@ -79,12 +74,9 @@ export class SignalrService {
   }
 
   public async joinConversationGroup(conversationId: string): Promise<void> {
-    console.log(`SignalR: Attempting to join conversation group: ${conversationId}`);
     await this.startConnection();
     try {
-      console.log(`SignalR: Invoking JoinConversationGroup for ${conversationId}`);
       await this.hubConnection.invoke('JoinConversationGroup', conversationId);
-      console.log(`SignalR: Successfully invoked JoinConversationGroup for ${conversationId}`);
     } catch (err) {
       console.error(`SignalR: Error joining conversation group ${conversationId}:`, err);
     }

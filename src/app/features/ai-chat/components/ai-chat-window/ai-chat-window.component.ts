@@ -196,9 +196,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
           this.aiChatService.startConversation(messageToSend, selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null, this.files, selectedPromptKeys)
             .subscribe(newConversation => {
               if (newConversation) {
-                this.state.addConversation(newConversation);
-                this.state.setActiveConversationId(newConversation.Id);
-                this.state.setMessages(newConversation.messages ?? []);
+                this.selectConversation$.next(newConversation.Id);
               }
             });
         }
@@ -409,9 +407,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
       this.aiChatService.startConversation(message.Content, null, [])
         .subscribe(newConversation => {
           if (newConversation) {
-            this.state.addConversation(newConversation);
-            this.state.setActiveConversationId(newConversation.Id);
-            this.state.setMessages(newConversation.messages ?? []);
+            this.selectConversation$.next(newConversation.Id);
           }
         });
     }

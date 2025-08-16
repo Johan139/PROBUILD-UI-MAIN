@@ -49,32 +49,26 @@ export class AiChatStateService {
 
  // State Updaters
  setIsChatOpen(isOpen: boolean): void {
-   console.log('DELETE ME: [AiChatStateService] Setting isChatOpen to:', isOpen);
     this.updateState({ isChatOpen: isOpen });
   }
 
   setIsFullScreen(isFullScreen: boolean): void {
-    console.log('DELETE ME: [AiChatStateService] Setting isFullScreen to:', isFullScreen);
     this.updateState({ isFullScreen });
   }
 
   setLoading(isLoading: boolean): void {
-    console.log('DELETE ME: [AiChatStateService] Setting isLoading to:', isLoading);
     this.updateState({ isLoading });
   }
 
   setError(error: string | null): void {
-    console.log('DELETE ME: [AiChatStateService] Setting error to:', error);
     this.updateState({ error });
   }
 
   setPrompts(prompts: Prompt[]): void {
-    console.log('DELETE ME: [AiChatStateService] Setting prompts:', prompts);
     this.updateState({ prompts });
   }
 
   setConversations(conversations: Conversation[]): void {
-    console.log('DELETE ME: [AiChatStateService] Setting conversations:', conversations);
     const sortedConversations = [...conversations].sort((a, b) => {
       const dateA = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
       const dateB = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
@@ -84,12 +78,10 @@ export class AiChatStateService {
   }
 
   setActiveConversationId(id: string | null): void {
-    console.log('DELETE ME: [AiChatStateService] Setting activeConversationId to:', id);
     this.updateState({ activeConversationId: id });
   }
 
   addMessage(message: ChatMessage, isOptimistic = false): void {
-    console.log('DELETE ME: [AiChatStateService] Adding message:', message);
     const currentState = this.stateSubject.getValue();
     let tempId = 0;
 
@@ -115,12 +107,10 @@ export class AiChatStateService {
     });
 
     if (existingMessage) {
-      console.log('DELETE ME: [AiChatStateService] Message already exists, skipping:', message.Id);
       return;
     }
 
     const updatedMessages = [...currentState.messages, message];
-    console.log('DELETE ME: [AiChatStateService] Updated messages array:', updatedMessages);
     this.updateState({ messages: updatedMessages });
   }
 
@@ -151,13 +141,11 @@ export class AiChatStateService {
   }
 
   addConversation(conversation: Conversation): void {
-    console.log('DELETE ME: [AiChatStateService] Adding conversation:', conversation);
     const currentState = this.stateSubject.getValue();
     this.updateState({ conversations: [...currentState.conversations, conversation] });
   }
 
   setMessages(messages: ChatMessage[]): void {
-    console.log('DELETE ME: [AiChatStateService] Setting messages:', messages);
     this.updateState({ messages });
   }
 
@@ -170,13 +158,11 @@ export class AiChatStateService {
   }
 
   addDocuments(documents: JobDocument[]): void {
-      console.log('DELETE ME: [AiChatStateService] Adding documents:', documents);
       const currentState = this.stateSubject.getValue();
       this.updateState({ documents: [...currentState.documents, ...documents] });
   }
 
   setDocuments(documents: JobDocument[]): void {
-    console.log('DELETE ME: [AiChatStateService] Setting documents:', documents);
     this.updateState({ documents });
   }
 
@@ -207,8 +193,6 @@ export class AiChatStateService {
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };
-    console.log('DELETE ME: [AiChatStateService] Updating state:', partialState);
-    console.log('DELETE ME: [AiChatStateService] New state:', nextState);
     this.stateSubject.next(nextState);
   }
 }

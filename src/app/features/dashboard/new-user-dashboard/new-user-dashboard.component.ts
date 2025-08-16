@@ -135,7 +135,6 @@ export class NewUserDashboardComponent implements OnInit {
     if (this.authService.isTeamMember()) {
       this.teamManagementService.getMyTeams().subscribe(teams => {
         this.teams = teams;
-        console.log('Teams:', teams);
         if (teams && teams.length > 0) {
           this.selectedTeam = teams[0];
         }
@@ -150,13 +149,10 @@ export class NewUserDashboardComponent implements OnInit {
       switchMap(([user, permissions]) => {
         const isTeamMember = !!user.inviterId;
         if (isTeamMember && permissions.includes('manageSubtaskNotes')) {
-          console.log("Getting notes as team member");
           return this.noteService.getNotesForAssignedJobs(user.id);
         } else if (!isTeamMember) {
-          console.log("Getting notes as full user")
           return this.noteService.getNotesByUserId(user.id);
         } else {
-          console.log("Not getting any notes")
           return of([]);
         }
       })
