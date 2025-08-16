@@ -6,10 +6,10 @@ import { Prompt } from '../models/ai-chat.models';
   standalone: true
 })
 export class SelectedPromptsPipe implements PipeTransform {
-  transform(prompts: Prompt[] | null, selectedPromptKeys: string[] | null): Prompt[] {
-    if (!prompts || !selectedPromptKeys) {
+  transform(prompts: Prompt[] | null, selectedPromptIds: number[] | null): Prompt[] {
+    if (!prompts || !selectedPromptIds) {
       return [];
     }
-    return prompts.filter(p => selectedPromptKeys.includes(p.promptKey));
+    return prompts.filter(p => selectedPromptIds.includes(p.id));
   }
 }

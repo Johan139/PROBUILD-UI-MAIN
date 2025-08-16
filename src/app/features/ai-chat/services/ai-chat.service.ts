@@ -54,7 +54,8 @@ export class AiChatService {
                 return isRoleAllowed && isTradeAllowed;
               })
               .filter(prompt => !hiddenPrompts.includes(prompt.promptFileName))
-              .map(prompt => ({
+              .map((prompt, index) => ({
+                id: index + 1, // Generate a unique ID
                 promptName: prompt.displayName,
                 promptKey: prompt.promptFileName,
                 description: prompt.description
@@ -377,6 +378,12 @@ export class AiChatService {
 
       const preparedByRegex = /^\s*(\*\*|)?Prepared By:(\*\*|)? Gemini,.*$/gim;
       modifiedContent = modifiedContent.replace(preparedByRegex, '');
+
+      const fromGeminiRegex = /^\s*(\*\*From:\*\*|\*\*From\*\*:|From:)\s*Gemini.*$/gim;
+      modifiedContent = modifiedContent.replace(fromGeminiRegex, '');
+
+      const toRegex = /^\s*(\*\*To:\*\*|\*\*To\*\*:|To:)\s*.*$/gim;
+      modifiedContent = modifiedContent.replace(toRegex, '');
 
       return modifiedContent.trim();
     }

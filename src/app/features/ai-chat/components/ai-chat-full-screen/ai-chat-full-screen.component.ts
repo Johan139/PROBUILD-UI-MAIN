@@ -43,7 +43,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   currentConversation$: Observable<Conversation | null>;
   isLoading$: Observable<boolean>;
   prompts$ = this.promptsSource.asObservable();
-  selectedPrompts$: Observable<string[]>;
+  selectedPrompts$: Observable<number[]>;
   hasDocuments$: Observable<boolean> = of(false);
 
   newMessageContent = '';
@@ -56,11 +56,12 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   public isPromptsPopupVisible = false;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
-  public promptSelectionState: { [key: string]: boolean } = {};
-  public fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
+  public promptSelectionState: { [key: number]: boolean } = {};
+  public fullBlueprintAnalysisPromptId: number | null = null;
+  private fullBlueprintAnalysisPromptKey = 'SYSTEM_COMPREHENSIVE_ANALYSIS';
 
   public get isSendDisabled(): boolean {
-    let selectedPrompts: string[] = [];
+    let selectedPrompts: number[] = [];
     this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
     let hasDocuments = false;
     this.hasDocuments$.pipe(take(1)).subscribe(docs => hasDocuments = docs);
@@ -81,7 +82,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   public get isInputDisabled(): boolean {
-      let selectedPrompts: string[] = [];
+      let selectedPrompts: number[] = [];
       this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
       return selectedPrompts.length > 0;
   }
@@ -135,10 +136,15 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
         );
       })
     ).subscribe(({ allPrompts, selectedPrompts }) => {
+      const fullBlueprintPrompt = allPrompts.find(p => p.promptKey === this.fullBlueprintAnalysisPromptKey);
+      if (fullBlueprintPrompt) {
+        this.fullBlueprintAnalysisPromptId = fullBlueprintPrompt.id;
+      }
+
       this.promptSelectionState = allPrompts.reduce((acc, prompt) => {
-        acc[prompt.promptKey] = selectedPrompts.includes(prompt.promptKey);
+        acc[prompt.id] = selectedPrompts.includes(prompt.id);
         return acc;
-      }, {} as { [key: string]: boolean });
+      }, {} as { [key: number]: boolean });
       console.log('Initial promptSelectionState:', this.promptSelectionState);
     });
 
@@ -242,17 +248,23 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     const messageToSend = this.newMessageContent;
     const currentConversationId = this.aiChatStateService.getCurrentConversationId();
     this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
-      if (currentConversationId) {
-        const documentUrls = this.documents.map(doc => doc.blobUrl);
-        this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPrompts, documentUrls);
-      } else {
-        this.aiChatService.startConversation(messageToSend, selectedPrompts.length > 0 ? selectedPrompts[0] : null, this.files)
-          .subscribe(newConversation => {
-            if (newConversation) {
-              this.router.navigate(['/ai-chat', newConversation.Id]);
-            }
-          });
-      }
+      this.prompts$.pipe(take(1)).subscribe(allPrompts => {
+        const selectedPromptKeys = selectedPrompts
+          .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+          .filter((key): key is string => !!key);
+
+        if (currentConversationId) {
+          const documentUrls = this.documents.map(doc => doc.blobUrl);
+          this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
+        } else {
+          this.aiChatService.startConversation(messageToSend, selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null, this.files, selectedPromptKeys)
+            .subscribe(newConversation => {
+              if (newConversation) {
+                this.router.navigate(['/ai-chat', newConversation.Id]);
+              }
+            });
+        }
+      });
     });
 
     this.newMessageContent = '';
@@ -429,26 +441,32 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.isPromptsPopupVisible = false;
   }
 
-    togglePromptSelection(promptKey: string): void {
-      console.log(`Toggling selection for prompt: ${promptKey}`);
-      console.log(`State BEFORE toggle:`, JSON.stringify(this.promptSelectionState));
-      this.selectedPrompts$.pipe(take(1)).subscribe(currentPrompts => {
-        console.log(`State AFTER toggle for ${promptKey}:`, this.promptSelectionState[promptKey]);
-        console.log(`Full state object AFTER toggle:`, JSON.stringify(this.promptSelectionState));
-        const isSelected = currentPrompts.includes(promptKey);
-        let newPrompts: string[];
+    togglePromptSelection(promptId: number): void {
+      this.prompts$.pipe(take(1)).subscribe(allPrompts => {
+        const selectedPrompt = allPrompts.find(p => p.id === promptId);
+        if (!selectedPrompt) return;
 
-        if (promptKey === this.fullBlueprintAnalysisPromptKey) {
-          newPrompts = isSelected ? [] : [this.fullBlueprintAnalysisPromptKey];
-        } else {
-          if (isSelected) {
-            newPrompts = currentPrompts.filter(p => p !== promptKey);
+        const fullBlueprintPrompt = allPrompts.find(p => p.promptKey === this.fullBlueprintAnalysisPromptKey);
+
+        this.selectedPrompts$.pipe(take(1)).subscribe(currentPromptIds => {
+          const isSelected = currentPromptIds.includes(promptId);
+          let newPromptIds: number[];
+
+          if (selectedPrompt.promptKey === this.fullBlueprintAnalysisPromptKey) {
+            newPromptIds = isSelected ? [] : [promptId];
           } else {
-            newPrompts = [...currentPrompts.filter(p => p !== this.fullBlueprintAnalysisPromptKey), promptKey];
+            if (isSelected) {
+              newPromptIds = currentPromptIds.filter(id => id !== promptId);
+            } else {
+              let filteredIds = currentPromptIds;
+              if (fullBlueprintPrompt) {
+                filteredIds = filteredIds.filter(id => id !== fullBlueprintPrompt.id);
+              }
+              newPromptIds = [...filteredIds, promptId];
+            }
           }
-        }
-        this.aiChatStateService.setSelectedPrompts(newPrompts);
-        console.log(`Updated selectedPrompts array:`, newPrompts);
+          this.aiChatStateService.setSelectedPrompts(newPromptIds);
+        });
       });
     }
 

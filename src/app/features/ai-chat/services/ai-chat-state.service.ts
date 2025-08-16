@@ -161,7 +161,7 @@ export class AiChatStateService {
     this.updateState({ messages });
   }
 
-  setSelectedPrompts(selectedPrompts: string[]): void {
+  setSelectedPrompts(selectedPrompts: number[]): void {
    this.updateState({ selectedPrompts });
   }
 

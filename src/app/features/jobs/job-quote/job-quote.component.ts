@@ -563,9 +563,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     // Append analysis type and prompts for the backend routing
     formData.append('analysisType', this.analysisType);
     if (this.analysisType === 'Selected') {
-      const selectedPromptKeys = this.selectedPrompts.value;
-      if (selectedPromptKeys && selectedPromptKeys.length > 0) {
-        selectedPromptKeys.forEach(key => formData.append('promptKeys', key));
+      const selectedPromptIds = this.selectedPrompts.value as number[] | null;
+      if (selectedPromptIds && selectedPromptIds.length > 0) {
+        this.availablePrompts$.pipe(take(1)).subscribe(allPrompts => {
+          const selectedPromptKeys = selectedPromptIds
+            .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+            .filter((key): key is string => !!key);
+          selectedPromptKeys.forEach(key => formData.append('promptKeys', key));
+        });
       }
     }
 
@@ -928,8 +933,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   performSelectedAnalysis(): void {
-    const selectedPromptKeys = this.selectedPrompts.value;
-    if (!selectedPromptKeys || selectedPromptKeys.length === 0) {
+    const selectedPromptIds = this.selectedPrompts.value as number[] | null;
+    if (!selectedPromptIds || selectedPromptIds.length === 0) {
       this.alertMessage = 'Please select at least one prompt for the analysis.';
       this.showAlert = true;
       return;
@@ -943,7 +948,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const request: AnalysisRequestDto = {
         analysisType: 'Selected',
-        promptKeys: selectedPromptKeys,
+        promptKeys: [], // This will be populated after we map IDs to keys
         documentUrls: this.uploadedFileInfos.map(f => f.url),
         jobId: jobResponse.id, // Pass the new Job ID to the backend
         userId: localStorage.getItem('userId') || ''

@@ -24,6 +24,7 @@ export interface Conversation {
 }
 
 export interface Prompt {
+   id: number;
    promptName: string;
    promptKey: string;
    displayName?: string;
@@ -41,5 +42,5 @@ export interface AiChatState {
  messages: ChatMessage[];
  currentConversation: Conversation | null;
  documents: JobDocument[];
- selectedPrompts: string[];
+ selectedPrompts: number[];
 }

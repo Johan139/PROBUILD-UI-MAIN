@@ -124,13 +124,13 @@
       <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-raised-button color="warn" class="clear-btn submit-btn">Clear</button>
       <div *ngFor="let prompt of prompts$ | async"
            class="prompt-item"
-           [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
-           (click)="togglePromptSelection(prompt.promptKey)">
-           <div class="prompt-details">
-            <input type="checkbox"
-            [checked]="promptSelectionState[prompt.promptKey]"
-            [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptKey) && prompt.promptKey !== fullBlueprintAnalysisPromptKey"
-            readonly>
+           [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptId!) && prompt.id !== fullBlueprintAnalysisPromptId"
+           (click)="togglePromptSelection(prompt.id)">
+          <div class="prompt-details">
+           <input type="checkbox"
+           [checked]="promptSelectionState[prompt.id]"
+           [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptId!) && prompt.id !== fullBlueprintAnalysisPromptId"
+           readonly>
             <div class="prompt-title">{{ prompt.promptName }}</div>
             <div class="prompt-description">{{ prompt.description }}</div>
           </div>
