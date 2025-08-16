@@ -212,6 +212,13 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.scrollToBottom('smooth');
   }
 
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendMessage();
+    }
+  }
+
   autoResize(event: Event): void {
     const textarea = event.target as HTMLTextAreaElement;
     textarea.style.height = 'auto';

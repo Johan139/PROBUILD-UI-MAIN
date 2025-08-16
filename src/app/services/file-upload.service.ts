@@ -43,7 +43,8 @@ export class FileUploadService {
   uploadFiles(files: File[], sessionId: string, conversationId?: string): Observable<UploadProgress> {
     const formData = new FormData();
     files.forEach(file => {
-        formData.append('files', file);
+        const key = conversationId ? 'files' : 'Blueprint';
+        formData.append(key, file);
     });
 
     let url = `${BASE_URL}/Jobs/UploadImage`;

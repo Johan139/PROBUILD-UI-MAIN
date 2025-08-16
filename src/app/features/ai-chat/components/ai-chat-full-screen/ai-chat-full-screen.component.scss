@@ -262,12 +262,14 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     form {
       display: flex;
 
-      input {
+      input, textarea {
         flex-grow: 1;
         padding: 0.75rem;
         border: 1px solid #ccc;
         border-radius: 20px;
         margin-right: 0.5rem;
+        resize: none;
+        overflow-y: hidden;
       }
 
       input:disabled {

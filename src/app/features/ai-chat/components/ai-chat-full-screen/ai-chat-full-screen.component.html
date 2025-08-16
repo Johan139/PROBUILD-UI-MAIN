@@ -88,21 +88,23 @@
         <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
           <mat-icon>tune</mat-icon>
         </button>
-        <input type="text"
-               id="chat-input"
-               [(ngModel)]="newMessageContent"
-               name="newMessageContent"
-               placeholder="Type your message..."
-               autocomplete="off"
-               [disabled]="isInputDisabled"
-               [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''">
+        <textarea id="chat-input"
+                  [(ngModel)]="newMessageContent"
+                  name="newMessageContent"
+                  placeholder="Type your message..."
+                  autocomplete="off"
+                  (input)="autoResize($event)"
+                  (keydown)="onKeyDown($event)"
+                  rows="1"
+                  [disabled]="isInputDisabled"
+                  [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''"></textarea>
         <span class="button-wrapper"
               [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
               [class.disabled-wrapper]="isSendDisabled">
           <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
         </span>
         <span class="button-wrapper"
-              [matTooltip]="(hasDocuments$ | async) ? 'Files have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach files'"
+              [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach blueprints'"
               [class.disabled-wrapper]="hasDocuments$ | async">
           <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
             <mat-icon>attach_file</mat-icon>

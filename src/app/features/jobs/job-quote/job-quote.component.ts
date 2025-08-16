@@ -527,7 +527,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     const userId: string | null = localStorage.getItem('userId');
     const formData = new FormData();
     const formValue = this.jobCardForm.value;
-    const formattedDate = formatDate(formValue.date, 'MM/dd/yyyy', 'en-US');
+    const formattedDate = new Date(formValue.date).toISOString();
     formData.append('DesiredStartDate', formattedDate);
     formData.append('JobType', formValue.jobType);
     formData.append('ProjectName', formValue.projectName);
@@ -672,6 +672,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       this.submitFormData(formData, callback);
     }
   }
+
   private submitFormData(formData: FormData, callback?: (jobResponse: JobResponse) => void): void {
     this.progress = 0;
 
@@ -940,25 +941,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Save the job first, then trigger the analysis in the callback.
-    this.performSaveJob((jobResponse) => {
-      // This code will run AFTER the job has been successfully created.
-      this.isAnalyzing = true;
-      this.analysisReport = null;
-
-      const request: AnalysisRequestDto = {
-        analysisType: 'Selected',
-        promptKeys: [], // This will be populated after we map IDs to keys
-        documentUrls: this.uploadedFileInfos.map(f => f.url),
-        jobId: jobResponse.id, // Pass the new Job ID to the backend
-        userId: localStorage.getItem('userId') || ''
-      };
-
-      // No need to call a separate performAnalysis method anymore.
-      // The redirection is handled by the successful save.
-      // The analysis will be processed in the background by Hangfire.
-      console.log('Job created, selected analysis will now run in the background.', request);
-    });
+    this.performSaveJob();
   }
 
   public viewUploadedFiles(): void {

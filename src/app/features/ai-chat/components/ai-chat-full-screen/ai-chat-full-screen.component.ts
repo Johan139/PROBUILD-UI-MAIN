@@ -245,6 +245,16 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const hasText = this.newMessageContent.trim().length > 0;
+    if (!hasText && this.files.length === 0 && this.documents.length === 0) {
+      this.selectedPrompts$.pipe(take(1)).subscribe(prompts => {
+        if (prompts.length === 0) {
+          this.snackBar.open('Please type a message, upload a file, or select a prompt.', 'Close', { duration: 3000 });
+          return;
+        }
+      });
+    }
+
     const messageToSend = this.newMessageContent;
     const currentConversationId = this.aiChatStateService.getCurrentConversationId();
     this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
@@ -272,6 +282,13 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.aiChatStateService.setSelectedPrompts([]);
     this.isPromptsPopupVisible = false;
     this.scrollToBottom();
+  }
+
+  onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendMessage();
+    }
   }
 
   getDisplayContent(content: string, role: 'user' | 'model'): string {
@@ -418,6 +435,12 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     if (this.editedTitle !== correctedTitle) {
       this.editedTitle = correctedTitle;
     }
+  }
+
+  autoResize(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
   togglePromptsPopup(): void {

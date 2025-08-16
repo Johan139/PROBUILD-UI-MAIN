@@ -367,6 +367,9 @@ export class AiChatService {
       const jsonRegex = /```json\s*\{[\s\S]*?\}\s*```/s;
       modifiedContent = modifiedContent.replace(jsonRegex, '');
 
+      const jsonBackupRegex = /\{\s*"projectName":[\s\S]*?"buildingSize":\s*\d+\s*\}/s;
+      modifiedContent = modifiedContent.replace(jsonBackupRegex, '');
+
       const clientRegex = /^To the esteemed client,/i;
       modifiedContent = modifiedContent.replace(clientRegex, '');
 

@@ -103,6 +103,7 @@
                 placeholder="Type your message..."
                 autocomplete="off"
                 (input)="autoResize($event)"
+                (keydown)="onKeyDown($event)"
                 rows="1"
                 [disabled]="isInputDisabled"
                 [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''"></textarea>
@@ -112,7 +113,7 @@
         <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
       </span>
       <span class="button-wrapper"
-            [matTooltip]="(hasDocuments$ | async) ? 'Files have already been uploaded. Start a new conversation to upload new files.' : 'Attach files'"
+            [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload new files.' : 'Attach blueprints'"
             [class.disabled-wrapper]="hasDocuments$ | async">
         <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
           <mat-icon>attach_file</mat-icon>

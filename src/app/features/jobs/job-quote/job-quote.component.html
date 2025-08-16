@@ -355,9 +355,6 @@
               <mat-select [formControl]="selectedPrompts" multiple>
                 <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.id">
                   {{ prompt.promptName }}
-                  <span *ngIf="prompt.description" style="font-size: smaller; color: grey;">
-                    - {{ prompt.description }}
-                  </span>
                 </mat-option>
               </mat-select>
             </mat-form-field>
