@@ -42,7 +42,13 @@ mat-card {
   align-items: start;
   justify-content: center;   /* ensures the two columns sit centered */
 }
-
+.job-quote-container > app-subscription-warning {
+  grid-column: 1 / -1;         /* span across both columns */
+  justify-self: center;        /* center the grid item */
+  display: block;              
+  width: min(1200px, 100%);    /* “a little more width” – bump to taste */
+  margin: 0 0 8px 0;           /* small spacing below */
+}
 .form-col {
   grid-column: 1;
   display: flex;
@@ -692,7 +698,7 @@ mat-divider {
   .job-quote-card {
     max-width: 100%;
   }
-  .col-md-8-job-quote {
+.col-md-8-job-quote {
   grid-column: 2;
   display: flex;
   flex-direction: column;
