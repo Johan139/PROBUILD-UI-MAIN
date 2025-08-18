@@ -39,13 +39,10 @@ import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 
-const BASE_URL = environment.BACKEND_URL;
-
 @Component({
   selector: 'app-jobs',
   standalone: true,
   imports: [
-    AsyncPipe,
     FormsModule,
     ReactiveFormsModule,
     NgIf,
@@ -59,7 +56,6 @@ const BASE_URL = environment.BACKEND_URL;
     MatIconModule,
     MatTooltipModule,
     LoaderComponent,
-    GanttChartComponent,
     MatDialogModule,
     MatListModule,
     MatIconModule,
@@ -431,21 +427,27 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   closeAlert(): void {
     this.showAlert = false;
   }
+
   private checkProjectOwnerStatus(jobId: string, userId: string): void {
     if (!userId || !jobId) {
       this.isProjectOwner = false;
       return;
     }
 
-    this.jobAssignmentService.getJobAssignment().subscribe(assignments => {
-      const numericJobId = +jobId;
-      const jobAssignment = assignments.find(assignment => assignment.id === numericJobId);
-
-      if (jobAssignment) {
-        const user = jobAssignment.jobUser.find(u => u.id === userId);
-        this.isProjectOwner = !!user && user.jobRole === 'GENERAL_CONTRACTOR';
+    this.store.select(state => state.projectDetails).subscribe(projectDetails => {
+      if (projectDetails && projectDetails.userId === userId) {
+        this.isProjectOwner = true;
       } else {
-        this.isProjectOwner = false;
+        this.jobAssignmentService.getJobAssignment().subscribe(assignments => {
+          const numericJobId = +jobId;
+          const jobAssignment = assignments.find(assignment => assignment.id === numericJobId);
+          if (jobAssignment) {
+            const user = jobAssignment.jobUser.find(u => u.id === userId);
+            this.isProjectOwner = !!user;
+          } else {
+            this.isProjectOwner = false;
+          }
+        });
       }
     });
   }

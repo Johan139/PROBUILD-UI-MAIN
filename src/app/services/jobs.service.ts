@@ -48,7 +48,6 @@ export class JobsService {
     });
   }
 
-
   getJobDocuments(jobId: string): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
@@ -98,6 +97,4 @@ export class JobsService {
   getDashboardJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
   }
-
-
 }

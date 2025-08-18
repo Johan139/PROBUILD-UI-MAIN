@@ -7,8 +7,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCardModule } from '@angular/material/card';
 import { MatDivider, MatDividerModule } from '@angular/material/divider';
 import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
-import { MatInput, MatInputModule } from '@angular/material/input';
-import { MatButton, MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -18,24 +18,31 @@ import { JobResponse } from '../../../models/jobdetails.response';
 import { JobsService } from '../../../services/jobs.service';
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { LoaderComponent } from '../../../loader/loader.component';
-import { timeout, debounceTime, switchMap, filter, take } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { timeout, switchMap, filter, take, map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
 import { formatDate } from '@angular/common';
 import { DatePipe } from '@angular/common';
-import { UploadDocument } from '../../../models/UploadDocument';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { QuoteService } from '../../quote/quote.service';
-import { MatCellDef, MatHeaderCellDef, MatRowDef, MatHeaderRowDef, MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { QuoteDocumentsDialogComponent } from '../../../quote-documents-dialog/quote-documents-dialog.component';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
-import { UploadOptionsDialogComponent } from './upload-options-dialog.component';
+import { MatRadioModule } from '@angular/material/radio';
 import { AuthService } from '../../../authentication/auth.service';
+import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
+import { AnalysisService, AnalysisRequestDto } from '../services/analysis.service';
+import { AiChatService } from '../../ai-chat/services/ai-chat.service';
+import { AiChatStateService } from '../../ai-chat/services/ai-chat-state.service';
+import { Prompt } from '../../ai-chat/models/ai-chat.models';
+import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
+import { JobDocument } from '../../../models/JobDocument';
+import { DocumentsDialogComponent } from '../../../shared/dialogs/documents-dialog/documents-dialog.component';
+
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
@@ -73,10 +80,12 @@ const Google_API = environment.Google_API;
     MatExpansionModule,
     MatIconModule,
     MatCheckboxModule,
+    MatRadioModule,
 
     // Custom Components and Pipes
     LoaderComponent,
     FileSizePipe,
+    SubscriptionWarningComponent,
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
@@ -84,7 +93,6 @@ const Google_API = environment.Google_API;
 })
 export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   showAlert: boolean = false;
@@ -103,7 +111,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   subscriptionActive: boolean = false;
   sessionId: string = '';
   private hubConnection!: HubConnection;
-  uploadedFileInfos: { name: string, url: string, type: string, size: number }[] = [];
+  uploadedFileInfos: UploadedFileInfo[] = [];
+  userContextFile: File | null = null;
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
@@ -113,6 +122,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   private isGoogleMapsLoaded: boolean = false; // Track if Google Maps script is loaded
   activeBidsDataSource = new MatTableDataSource<any>();
   activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
+
+  analysisType: 'Comprehensive' | 'Selected' = 'Comprehensive';
+  availablePrompts$: Observable<Prompt[]>;
+  selectedPrompts = new FormControl([]);
+  analysisReport: string | null = null;
+  isAnalyzing: boolean = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -124,9 +139,17 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private dialog: MatDialog,
     private authService: AuthService,
     private quoteService: QuoteService,
+    private fileUploadService: FileUploadService,
+    private analysisService: AnalysisService,
+    private aiChatService: AiChatService,
+    private aiChatStateService: AiChatStateService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
+    const hiddenPromptsForJobQuote = ['SYSTEM_COMPREHENSIVE_ANALYSIS'];
+    this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
+      map(prompts => prompts.filter(p => !hiddenPromptsForJobQuote.includes(p.promptKey)))
+    );
   }
 
   async ngOnInit(): Promise<void> {
@@ -136,17 +159,17 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.jobCardForm = this.formBuilder.group({
       projectName: ['', Validators.required],
       date: ['', Validators.required],
-      jobType: ['', Validators.required],
-      quantity: ['', Validators.required],
-      wallStructure: ['', Validators.required],
-      wallInsulation: ['', Validators.required],
-      roofStructure: ['', Validators.required],
-      roofInsulation: ['', Validators.required],
-      foundation: ['', Validators.required],
-      finishes: ['', Validators.required],
-      electricalSupply: ['', Validators.required],
-      stories: ['', Validators.required],
-      buildingSize: ['', Validators.required],
+      jobType: [''],
+      quantity: [''],
+      wallStructure: [''],
+      wallInsulation: [''],
+      roofStructure: [''],
+      roofInsulation: [''],
+      foundation: [''],
+      finishes: [''],
+      electricalSupply: [''],
+      stories: [''],
+      buildingSize: [''],
       address: ['', Validators.required],
       blueprint: new FormControl(),
       firstName: ['', Validators.required],
@@ -155,6 +178,28 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       phone: ['', Validators.required],
       company: [''],
       position: [''],
+      userContextText: [''],
+      generateDetailsWithAi: [false],
+    });
+
+    this.jobCardForm.get('generateDetailsWithAi')?.valueChanges.subscribe(value => {
+      const jobDetailControls = [
+        'jobType', 'quantity', 'wallStructure', 'wallInsulation',
+        'roofStructure', 'roofInsulation', 'foundation', 'finishes',
+        'electricalSupply', 'stories', 'buildingSize'
+      ];
+
+      jobDetailControls.forEach(controlName => {
+        const control = this.jobCardForm.get(controlName);
+        if (value) {
+          control?.clearValidators();
+          control?.disable();
+        } else {
+          control?.setValidators([Validators.required]);
+          control?.enable();
+        }
+        control?.updateValueAndValidity();
+      });
     });
 
     this.hubConnection = new HubConnectionBuilder()
@@ -173,7 +218,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
-      this.resetFileInput();
       console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
       console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
@@ -253,6 +297,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.loadActiveBids();
+    this.aiChatService.getMyPrompts();
   }
 
   async ngAfterViewInit(): Promise<void> {
@@ -466,47 +511,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   onSubmit(): void {
-    this.fetchDocuments();
-    const activeElement = document.activeElement as HTMLElement;
-
-      // 👇 Force validation to trigger
-  this.addressControl.markAsTouched();
-
-  // Optionally validate the entire form
-  this.jobCardForm.markAllAsTouched();
- if (this.jobCardForm.invalid || this.addressControl.invalid) {
-    return; // prevent proceeding
+    if (this.analysisType === 'Comprehensive') {
+      this.performComprehensiveAnalysis();
+    } else {
+      this.performSelectedAnalysis();
+    }
   }
 
-    const dialogRef = this.dialog.open(this.documentsDialog);
-
-
-    dialogRef.afterClosed().subscribe(() => {
-      if (activeElement) {
-        activeElement.focus();
-      }
-    });
-        // const dialogRef = this.dialog.open(QuoteDocumentsDialogComponent, {
-        //   width: '600px',
-        //   maxHeight: '80vh',
-        //   autoFocus: true,
-        //   data: {
-        //     fileUrls: this.uploadedFileUrls // 👈 Pass them here
-        //   }
-        // });
-
-        // dialogRef.afterClosed().subscribe(result => {
-        //   if (result === true) {
-        //     // User accepted AI output and subtasks
-        //     this.performSaveJob();
-        //   } else {
-        //     // User cancelled
-        //   }
-        // });
-
-  }
-
-  performSaveJob(): void {
+  performSaveJob(callback?: (jobResponse: JobResponse) => void): void {
     if (!this.isBrowser) return;
 
     localStorage.setItem('Subtasks', '');
@@ -515,7 +527,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     const userId: string | null = localStorage.getItem('userId');
     const formData = new FormData();
     const formValue = this.jobCardForm.value;
-    const formattedDate = formatDate(formValue.date, 'MM/dd/yyyy', 'en-US');
+    const formattedDate = new Date(formValue.date).toISOString();
     formData.append('DesiredStartDate', formattedDate);
     formData.append('JobType', formValue.jobType);
     formData.append('ProjectName', formValue.projectName);
@@ -541,6 +553,26 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
     formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileInfos.map(f => f.url)));
+    formData.append('userContextText', formValue.userContextText);
+
+    if (this.userContextFile) {
+      formData.append('userContextFile', this.userContextFile, this.userContextFile.name);
+    }
+    formData.append('generateDetailsWithAi', formValue.generateDetailsWithAi);
+
+    // Append analysis type and prompts for the backend routing
+    formData.append('analysisType', this.analysisType);
+    if (this.analysisType === 'Selected') {
+      const selectedPromptIds = this.selectedPrompts.value as number[] | null;
+      if (selectedPromptIds && selectedPromptIds.length > 0) {
+        this.availablePrompts$.pipe(take(1)).subscribe(allPrompts => {
+          const selectedPromptKeys = selectedPromptIds
+            .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+            .filter((key): key is string => !!key);
+          selectedPromptKeys.forEach(key => formData.append('promptKeys', key));
+        });
+      }
+    }
 
     if (this.selectedPlace && this.selectedPlace.place_id) {
       const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
@@ -600,7 +632,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               formData.append('latitude', lat.toString());
               formData.append('longitude', lng.toString());
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
-              this.submitFormData(formData);
+              this.submitFormData(formData, callback);
             } else {
               console.warn('Latitude or Longitude undefined for place_id:', this.selectedPlace!.place_id);
               console.warn('Place types:', place.types);
@@ -618,29 +650,30 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                       console.log('Geocoding API returned - Latitude:', lat, 'Longitude:', lng);
                       formData.append('latitude', lat.toString());
                       formData.append('longitude', lng.toString());
-                      this.submitFormData(formData);
+                      this.submitFormData(formData, callback);
                     } else {
                       console.error('Geocoding API failed:', response.status);
-                      this.submitFormData(formData); // Proceed without lat/long
+                      this.submitFormData(formData, callback); // Proceed without lat/long
                     }
                   },
                   error: (error) => {
                     console.error('Geocoding API error:', error);
-                    this.submitFormData(formData); // Proceed without lat/long
+                    this.submitFormData(formData, callback); // Proceed without lat/long
                   }
                 });
             }
           } else {
             console.warn('Failed to fetch place details for lat/long:', status);
-            this.submitFormData(formData);
+            this.submitFormData(formData, callback);
           }
         }
       );
     } else {
-      this.submitFormData(formData);
+      this.submitFormData(formData, callback);
     }
   }
-  private submitFormData(formData: FormData): void {
+
+  private submitFormData(formData: FormData, callback?: (jobResponse: JobResponse) => void): void {
     this.progress = 0;
 
     this.httpClient
@@ -660,21 +693,24 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
             this.isLoading = false;
             const res = event.body;
             if (res) {
-              const responseParams = {
-                jobId: res.id,
-                operatingArea: res.operatingArea,
-                address: res.address,
-                documents: res.documents,
-                latitude : res.latitude,
-                longitude: res.longitude,
-                ...this.jobCardForm.value,
-              };
-              this.alertMessage = 'Job Quote Creation Successful';
-              this.showAlert = true;
-              this.uploadedFileInfos = [];
-              this.dialog.closeAll();
-              this.router.navigate(['view-quote'], { queryParams: responseParams });
-
+              if (callback) {
+                callback(res);
+              } else {
+                const responseParams = {
+                  jobId: res.id,
+                  operatingArea: res.operatingArea,
+                  address: res.address,
+                  documents: res.documents,
+                  latitude : res.latitude,
+                  longitude: res.longitude,
+                  ...this.jobCardForm.value,
+                };
+                this.alertMessage = 'Job Quote Creation Successful';
+                this.showAlert = true;
+                this.uploadedFileInfos = [];
+                this.dialog.closeAll();
+                this.router.navigate(['view-quote'], { queryParams: responseParams });
+              }
             }
           }
         },
@@ -752,74 +788,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedUnit = unit;
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input?.files?.length) {
-      console.error('No files selected');
-      return;
-    }
 
-    const files = Array.from(input.files);
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('Blueprint', file);
-    });
-
-    formData.append('Title', this.jobCardForm.get('Title')?.value || 'test');
-    formData.append('Description', this.jobCardForm.get('Description')?.value || 'tester');
-    formData.append('sessionId', this.sessionId);
-
-    this.progress = 0;
-    this.isUploading = true;
-
-    this.httpClient
-      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
-        reportProgress: true,
-        observe: 'events',
-        headers: new HttpHeaders({ Accept: 'application/json' }),
-      })
-      .pipe(timeout(300000))
-      .subscribe({
-        next: (httpEvent) => {
-          if (httpEvent.type === HttpEventType.UploadProgress && httpEvent.total) {
-            this.progress = Math.round((100 * httpEvent.loaded) / httpEvent.total);
-          } else if (httpEvent.type === HttpEventType.Response) {
-            if (httpEvent.body?.fileUrls && httpEvent.body.fileUrls.length > 0) {
-              const newFileInfos = httpEvent.body.fileUrls.map((url: string, index: number) => {
-                const file = files[index];
-                return {
-                  name: file.name,
-                  url: url,
-                  type: file.type || this.getFileType(file.name),
-                  size: file.size,
-                };
-              });
-              this.uploadedFileInfos = [...this.uploadedFileInfos, ...newFileInfos];
-            } else {
-               console.error('No fileUrls returned in response:', httpEvent.body);
-            }
-            this.isUploading = false;
-            this.resetFileInput();
-          }
-        },
-        error: (error) => {
-          console.error('Upload error:', error);
-          this.progress = 0;
-          this.isUploading = false;
-          this.resetFileInput();
-        },
-        complete: () => console.log('File upload process complete.'),
-      });
-  }
-
-  resetFileInput(): void {
-    if (this.fileInput.nativeElement) {
-      this.fileInput.nativeElement.value = '';
-    }
-    if (this.folderInput.nativeElement) {
-      this.folderInput.nativeElement.value = '';
-    }
-  }
 
   onCancel(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
@@ -884,9 +853,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openUploadDialog(): void {
-    const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
-
-    dialogRef.afterClosed().subscribe(result => {
+    this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
       if (result === 'files') {
         this.fileInput.nativeElement.click();
       } else if (result === 'folder') {
@@ -895,20 +862,28 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  getFileType(fileName: string): string {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'png': return 'image/png';
-      case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      case 'docx':
-      case 'doc': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'xlsx':
-      case 'xls': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      default: return 'application/octet-stream';
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input?.files?.length) {
+      return;
+    }
+    const files = Array.from(input.files);
+    this.fileUploadService.uploadFiles(files, this.sessionId).subscribe(upload => {
+      this.progress = upload.progress;
+      this.isUploading = upload.isUploading;
+      if (upload.files) {
+        this.uploadedFileInfos = [...this.uploadedFileInfos, ...upload.files];
+      }
+    });
+  }
+
+  onUserContextFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input?.files?.length) {
+      this.userContextFile = input.files[0];
     }
   }
+
 
   getFileSize(url: string): number {
     try {
@@ -953,4 +928,36 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   confirmDialog(): void {
     this.performSaveJob();
   }
+
+  performComprehensiveAnalysis(): void {
+    this.performSaveJob();
+  }
+
+  performSelectedAnalysis(): void {
+    const selectedPromptIds = this.selectedPrompts.value as number[] | null;
+    if (!selectedPromptIds || selectedPromptIds.length === 0) {
+      this.alertMessage = 'Please select at least one prompt for the analysis.';
+      this.showAlert = true;
+      return;
+    }
+
+    this.performSaveJob();
+  }
+
+  public viewUploadedFiles(): void {
+    const documents: JobDocument[] = this.uploadedFileInfos.map((fileInfo, index) => ({
+      id: index, // Using index as a temporary unique ID
+      fileName: fileInfo.name,
+      blobUrl: fileInfo.url,
+      type: fileInfo.type,
+      sessionId: this.sessionId,
+      jobId: 0, // This might not be available yet
+      uploadedAt: new Date().toISOString(),
+      displayName: this.getDisplayName(fileInfo.name),
+      size: fileInfo.size
+    }));
+    this.fileUploadService.viewUploadedFiles(documents);
+  }
 }
+
+

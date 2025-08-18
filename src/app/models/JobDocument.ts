@@ -5,4 +5,7 @@ export interface JobDocument {
     blobUrl: string;
     sessionId: string;
     uploadedAt: string;
+    displayName: string;
+    type?: string;
+    size?: number;
   }
