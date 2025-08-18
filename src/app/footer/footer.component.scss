@@ -1,0 +1,100 @@
+$primary-yellow: #fbd008;
+$lightgray: lightgray;
+$black: #000000;
+$dark-gray: #3b3b3b;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+$red: #DA4167;
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+mat-sidenav-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+mat-sidenav-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+router-outlet {
+  flex: 1;
+  display: block;
+}
+
+.main-footer {
+  padding: 1rem 2rem;
+  background-color: #f8f8f8;
+  font-size: 0.875rem;
+  color: #555;
+  border-top: 1px solid #ddd;
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  @media (min-width: 600px) {
+    // Keep centered alignment instead of flex-start
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+
+  .legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    a {
+      text-decoration: none;
+      color: #555;
+
+      &:hover {
+        text-decoration: underline;
+        color: #222;
+      }
+    }
+  }
+
+  .copyright {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+.social-icons {
+  display: flex;
+  gap: 2rem;
+
+  a {
+    color: #aaa; // muted grey base
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+
+    &.facebook:hover {
+      color: #1877F2; // Facebook blue
+    }
+
+    &.instagram:hover {
+      color: #E4405F; // Instagram pink
+    }
+
+    &.linkedin:hover {
+      color: #0A66C2; // LinkedIn blue
+    }
+
+    &.google:hover {
+      color: #4285F4; // Google blue
+    }
+  }
+}
+

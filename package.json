@@ -24,6 +24,7 @@
     "@angular/platform-server": "^18.2.0",
     "@angular/router": "^18.2.0",
     "@angular/ssr": "^18.2.0",
+    "@fortawesome/fontawesome-free": "^7.0.0",
     "@fullcalendar/angular": "^6.1.17",
     "@fullcalendar/core": "^6.1.17",
     "@fullcalendar/interaction": "^6.1.17",

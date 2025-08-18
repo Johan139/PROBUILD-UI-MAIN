@@ -1,9 +1,5 @@
-
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
-
-</div>
-<div class="row job-quote-container">
+<div class="page-center">
+  <!-- Subscription warning (full width at the top) -->
   <div *ngIf="!subscriptionActive" class="subscription-warning-container">
     <div class="construction-warning">
       <div class="warning-header">
@@ -49,340 +45,363 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4 form-col">
-    <mat-card class="project-card">
-      <mat-card-header>
-        <mat-card-title>YOUR JOBS</mat-card-title>
 
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider></mat-divider>
-        <div *ngIf="jobList.length > 0" class="job-list-container">
-          <div class="job-list-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Job Type</th>
-                  <th>Job Status</th>
-                  <th>Start Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let job of jobList" class="data-row"
-                    [ngClass]="{
-                      'published': job.status === 'PUBLISHED',
-                      'discarded': job.status === 'DISCARDED',
-                      'draft': job.status === 'NEW'
-                    }">
-                  <td>{{ job.projectName }}</td>
-                  <td>{{ job.jobType }}</td>
-                  <td>{{ job.status }}</td>
-                  <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
-                  <td>
-                    <button class="View-btn views-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div *ngIf="jobList.length == 0" class="no-more-jobs">
-          No more jobs to display.
-        </div>
-      </mat-card-content>
-    </mat-card>
-    <mat-card class="project-card-bids mt-3">
-      <mat-card-header>
-        <mat-card-title>ACTIVE BIDS</mat-card-title>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div *ngIf="activeBidsDataSource" class="job-list-container">
-          <div class="job-list-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Quote #</th>
-                  <th>Created By</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
-                  <td>{{ quote.number || 'N/A' }}</td>
-                  <td>{{ quote.createdBy || 'Unknown' }}</td>
-                  <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
-                  <td>${{ quote.total.toFixed(2) }}</td>
-                  <td>
-                    <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
-                      View
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
-          No active bids to display.
-        </div>
-      </mat-card-content>
-
-    </mat-card>
+  <div *ngIf="isLoading">
+    <app-loader></app-loader>
   </div>
-  <div class="col-md-8 d-flex justify-content-center">
-    <mat-card class="job-quote-card">
-      <mat-card-header>
-        <mat-card-title>Create New Job</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider class="mat-primary"></mat-divider>
 
-        <div class="house-options d-flex justify-content-center">
-          <button mat-raised-button (click)="populateHouse('wood')">Basic Wood House</button>
-          <button mat-raised-button (click)="populateHouse('brick')">Basic Brick House</button>
-        </div>
-        <br>
-        <form [formGroup]="jobCardForm" (ngSubmit)="onSubmit()">
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Project Name</mat-label>
-              <input matInput formControlName="projectName" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('projectName')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-<!-- Replace your existing address mat-form-field with this -->
-<mat-form-field appearance="fill">
-  <mat-label>Address</mat-label>
-
-  <input
-    #addressInput
-    matInput
-    [formControl]="addressControl"
-    [matAutocomplete]="auto"
-    placeholder="Enter an address"
-  />
-  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-    <mat-option *ngFor="let option of options" [value]="option">
-      {{ option.description }}
-    </mat-option>
-  </mat-autocomplete>
-    <mat-error *ngIf="addressControl.hasError('required') && addressControl.touched">
-    Mandatory Field: Address is required
-  </mat-error>
-</mat-form-field>
-          </div>
-          <div class="panel-wrapper">
-          <mat-accordion multi>
-            <mat-expansion-panel [expanded]="true">
-              <mat-expansion-panel-header>
-                <mat-panel-title>Client Details</mat-panel-title>
-                <mat-panel-description>
-                  Click to expand/collapse
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-
-              <!-- CLIENT DETAILS FORM FIELDS -->
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>First Name</mat-label>
-                  <input matInput formControlName="firstName" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
-                     Mandatory Field: First name is required.
-                  </mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill">
-                  <mat-label>Last Name</mat-label>
-                  <input matInput formControlName="lastName" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
-                     Mandatory Field: Last name is required.
-                  </mat-error>
-                </mat-form-field>
-
-                <mat-form-field appearance="fill">
-                  <mat-label>Email</mat-label>
-                  <input matInput formControlName="email" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
-                     Mandatory Field: Email address is required.
-                  </mat-error>
-                </mat-form-field>
-              </div>
-
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>Phone Number</mat-label>
-                  <input matInput formControlName="phone" placeholder=" " />
-                </mat-form-field>
-
-                <mat-form-field appearance="fill">
-                  <mat-label>Company Name</mat-label>
-                  <input matInput formControlName="company" placeholder=" " />
-                </mat-form-field>
-
-                <mat-form-field appearance="fill">
-                  <mat-label>Position/Title</mat-label>
-                  <input matInput formControlName="position" placeholder=" " />
-                </mat-form-field>
-              </div>
-
-            </mat-expansion-panel>
-          </mat-accordion>
-        </div>
-        <div class="panel-wrapper">
-          <mat-accordion multi>
-            <mat-expansion-panel [expanded]="true">
-              <mat-expansion-panel-header>
-                <mat-panel-title>Job Details</mat-panel-title>
-                <mat-panel-description>
-                  Click to expand/collapse
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-
- <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Job Type</mat-label>
-              <mat-select formControlName="jobType">
-                <mat-option value='HOUSE'>House</mat-option>
-                <mat-option value="COMPLEX">Complex</mat-option>
-                <mat-option value="ESTATE">Estate</mat-option>
-                <mat-option value="COMMERCIAL">Retail</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Quantity</mat-label>
-              <input matInput type="number" formControlName="quantity" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('quantity')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>Start Date</mat-label>
-              <input matInput formControlName="date" [matDatepicker]="picker" readonly>
-              <mat-hint>MM/DD/YYYY</mat-hint>
-              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Wall Structure</mat-label>
-              <mat-select formControlName="wallStructure">
-                <mat-option value="BRICK">Bricks</mat-option>
-                <mat-option value="PRECAST">Precast</mat-option>
-                <mat-option value="WOOD">Wood</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Wall Insulation</mat-label>
-              <mat-select formControlName="wallInsulation">
-                <mat-option value="NONE">None</mat-option>
-                <mat-option value="FOAM">Foam</mat-option>
-                <mat-option value="LINING">Lining</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Roof Structure</mat-label>
-              <mat-select formControlName="roofStructure">
-                <mat-option value="SHEET">Sheet Metal</mat-option>
-                <mat-option value="TILES">Tiles</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Roof Insulation</mat-label>
-              <mat-select formControlName="roofInsulation">
-                <mat-option value="FOAM">Foam</mat-option>
-                <mat-option value="LINING">Lining</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Foundation</mat-label>
-              <mat-select formControlName="foundation">
-                <mat-option value="CONCRETE">Concrete</mat-option>
-                <mat-option value="RAISED">Raised</mat-option>
-                <mat-option value="FLOATING">Floating</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Finishes</mat-label>
-              <mat-select formControlName="finishes">
-                <mat-option value="WOOD">Wood</mat-option>
-                <mat-option value="TRIM">Trim</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Electrical Supply</mat-label>
-              <input matInput type="number" formControlName="electricalSupply" placeholder=" " />
-              <span matSuffix> KW</span>
-              <mat-error *ngIf="jobCardForm.get('electricalSupply')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Stories</mat-label>
-              <input matInput type="number" formControlName="stories" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('stories')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Building Size</mat-label>
-              <div style="display: flex; align-items: center;">
-                <input matInput type="number" formControlName="buildingSize" placeholder=" " />
-                <mat-select [(value)]="selectedUnit" (selectionChange)="onUnitChange($event.value)" style="width: 80px; margin-left: 10px;">
-                  <mat-option value="sq ft">sq ft</mat-option>
-                  <mat-option value="sq m">sq m</mat-option>
-                </mat-select>
-              </div>
-              <mat-error *ngIf="jobCardForm.get('buildingSize')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-          </div>
-            </mat-expansion-panel>
-          </mat-accordion>
-        </div>
-          <div class="form-row button-row">
-            <div class="button-group">
-              <button mat-raised-button type="submit" [disabled]="!subscriptionActive" class="submit-btn">
-                Analyze Blueprint
-              </button>
-              <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
+  <div class="job-quote-container">
+    <!-- LEFT COLUMN -->
+    <div class="form-col">
+      <mat-card class="project-card">
+        <mat-card-header>
+          <mat-card-title>YOUR JOBS</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider></mat-divider>
+          <div *ngIf="jobList.length > 0" class="job-list-container">
+            <div class="job-list-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Job Type</th>
+                    <th>Job Status</th>
+                    <th>Start Date</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let job of jobList" class="data-row"
+                      [ngClass]="{
+                        'published': job.status === 'PUBLISHED',
+                        'discarded': job.status === 'DISCARDED',
+                        'draft': job.status === 'NEW'
+                      }">
+                    <td>{{ job.projectName }}</td>
+                    <td>{{ job.jobType }}</td>
+                    <td>{{ job.status }}</td>
+                    <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
+                    <td>
+                      <button class="View-btn views-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="upload-container">
-              <div *ngIf="isUploading" class="upload-progress">
-                <p>Upload Progress: {{ progress }}%</p>
-                <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
-              </div>
-              <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
-                <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
-                  {{ uploadedFileInfos.length }} file(s) uploaded successfully
-                </p>
-              </div>
-              <div class="custom-file-upload">
-                <button type="button" (click)="openUploadDialog()" class="upload-label submit-btn">
-                  <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                  Upload
+          </div>
+          <div *ngIf="jobList.length == 0" class="no-more-jobs">
+            No more jobs to display.
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="project-card-bids mt-3">
+        <mat-card-header>
+          <mat-card-title>ACTIVE BIDS</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div *ngIf="activeBidsDataSource" class="job-list-container">
+            <div class="job-list-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Quote #</th>
+                    <th>Created By</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
+                    <td>{{ quote.number || 'N/A' }}</td>
+                    <td>{{ quote.createdBy || 'Unknown' }}</td>
+                    <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
+                    <td>${{ quote.total.toFixed(2) }}</td>
+                    <td>
+                      <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
+            No active bids to display.
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-md-8-job-quote">
+      <mat-card class="job-quote-card">
+        <mat-card-header>
+          <mat-card-title>Create New Job</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider class="mat-primary"></mat-divider>
+
+          <div class="house-options d-flex justify-content-center">
+            <button mat-raised-button (click)="populateHouse('wood')">Basic Wood House</button>
+            <button mat-raised-button (click)="populateHouse('brick')">Basic Brick House</button>
+          </div>
+          <br>
+
+          <form [formGroup]="jobCardForm" (ngSubmit)="onSubmit()">
+            <div class="form-row">
+              <mat-form-field appearance="fill">
+                <mat-label>Project Name</mat-label>
+                <input matInput formControlName="projectName" placeholder=" " />
+                <mat-error *ngIf="jobCardForm.get('projectName')?.hasError('required')">
+                  Mandatory Field: Input Required.
+                </mat-error>
+              </mat-form-field>
+
+              <!-- Address -->
+              <mat-form-field appearance="fill">
+                <mat-label>Address</mat-label>
+                <input
+                  #addressInput
+                  matInput
+                  [formControl]="addressControl"
+                  [matAutocomplete]="auto"
+                  placeholder="Enter an address"
+                />
+                <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                  <mat-option *ngFor="let option of options" [value]="option">
+                    {{ option.description }}
+                  </mat-option>
+                </mat-autocomplete>
+                <mat-error *ngIf="addressControl.hasError('required') && addressControl.touched">
+                  Mandatory Field: Address is required
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="panel-wrapper">
+              <mat-accordion multi>
+                <mat-expansion-panel [expanded]="true">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Client Details</mat-panel-title>
+                    <mat-panel-description>Click to expand/collapse</mat-panel-description>
+                  </mat-expansion-panel-header>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>First Name</mat-label>
+                      <input matInput formControlName="firstName" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
+                        Mandatory Field: First name is required.
+                      </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Last Name</mat-label>
+                      <input matInput formControlName="lastName" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
+                        Mandatory Field: Last name is required.
+                      </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Email</mat-label>
+                      <input matInput formControlName="email" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
+                        Mandatory Field: Email address is required.
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Phone Number</mat-label>
+                      <input matInput formControlName="phone" placeholder=" " />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Name</mat-label>
+                      <input matInput formControlName="company" placeholder=" " />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Position/Title</mat-label>
+                      <input matInput formControlName="position" placeholder=" " />
+                    </mat-form-field>
+                  </div>
+                </mat-expansion-panel>
+              </mat-accordion>
+            </div>
+
+            <div class="panel-wrapper">
+              <mat-accordion multi>
+                <mat-expansion-panel [expanded]="true">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title>Job Details</mat-panel-title>
+                    <mat-panel-description>Click to expand/collapse</mat-panel-description>
+                  </mat-expansion-panel-header>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Job Type</mat-label>
+                      <mat-select formControlName="jobType">
+                        <mat-option value="HOUSE">House</mat-option>
+                        <mat-option value="COMPLEX">Complex</mat-option>
+                        <mat-option value="ESTATE">Estate</mat-option>
+                        <mat-option value="COMMERCIAL">Retail</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Quantity</mat-label>
+                      <input matInput type="number" formControlName="quantity" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('quantity')?.hasError('required')">
+                        Mandatory Field: Input Required.
+                      </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                      <mat-label>Start Date</mat-label>
+                      <input matInput formControlName="date" [matDatepicker]="picker" readonly>
+                      <mat-hint>MM/DD/YYYY</mat-hint>
+                      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                      <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Wall Structure</mat-label>
+                      <mat-select formControlName="wallStructure">
+                        <mat-option value="BRICK">Bricks</mat-option>
+                        <mat-option value="PRECAST">Precast</mat-option>
+                        <mat-option value="WOOD">Wood</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Wall Insulation</mat-label>
+                      <mat-select formControlName="wallInsulation">
+                        <mat-option value="NONE">None</mat-option>
+                        <mat-option value="FOAM">Foam</mat-option>
+                        <mat-option value="LINING">Lining</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Roof Structure</mat-label>
+                      <mat-select formControlName="roofStructure">
+                        <mat-option value="SHEET">Sheet Metal</mat-option>
+                        <mat-option value="TILES">Tiles</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Roof Insulation</mat-label>
+                      <mat-select formControlName="roofInsulation">
+                        <mat-option value="FOAM">Foam</mat-option>
+                        <mat-option value="LINING">Lining</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Foundation</mat-label>
+                      <mat-select formControlName="foundation">
+                        <mat-option value="CONCRETE">Concrete</mat-option>
+                        <mat-option value="RAISED">Raised</mat-option>
+                        <mat-option value="FLOATING">Floating</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Finishes</mat-label>
+                      <mat-select formControlName="finishes">
+                        <mat-option value="WOOD">Wood</mat-option>
+                        <mat-option value="TRIM">Trim</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Electrical Supply</mat-label>
+                      <input matInput type="number" formControlName="electricalSupply" placeholder=" " />
+                      <span matSuffix> KW</span>
+                      <mat-error *ngIf="jobCardForm.get('electricalSupply')?.hasError('required')">
+                        Mandatory Field: Input Required.
+                      </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Stories</mat-label>
+                      <input matInput type="number" formControlName="stories" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('stories')?.hasError('required')">
+                        Mandatory Field: Input Required.
+                      </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="fill">
+                      <mat-label>Building Size</mat-label>
+                      <div style="display: flex; align-items: center;">
+                        <input matInput type="number" formControlName="buildingSize" placeholder=" " />
+                        <mat-select [(value)]="selectedUnit" (selectionChange)="onUnitChange($event.value)" style="width: 80px; margin-left: 10px;">
+                          <mat-option value="sq ft">sq ft</mat-option>
+                          <mat-option value="sq m">sq m</mat-option>
+                        </mat-select>
+                      </div>
+                      <mat-error *ngIf="jobCardForm.get('buildingSize')?.hasError('required')">
+                        Mandatory Field: Input Required.
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+                </mat-expansion-panel>
+              </mat-accordion>
+            </div>
+
+            <div class="form-row button-row">
+              <div class="button-group">
+                <button mat-raised-button type="submit" [disabled]="!subscriptionActive" class="submit-btn">
+                  Analyze Blueprint
                 </button>
-                <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
-                <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
+                <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
+              </div>
+
+              <div class="upload-container">
+                <div *ngIf="isUploading" class="upload-progress">
+                  <p>Upload Progress: {{ progress }}%</p>
+                  <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+                </div>
+
+                <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+                  <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+                    {{ uploadedFileInfos.length }} file(s) uploaded successfully
+                  </p>
+                </div>
+
+                <div class="custom-file-upload">
+                  <button type="button" (click)="openUploadDialog()" class="upload-label submit-btn">
+                    <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                    Upload
+                  </button>
+                  <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
+                  <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
+                </div>
               </div>
             </div>
-          </div>
-        </form>
-      </mat-card-content>
-    </mat-card>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+    <!-- /RIGHT COLUMN -->
   </div>
 </div>
+
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>

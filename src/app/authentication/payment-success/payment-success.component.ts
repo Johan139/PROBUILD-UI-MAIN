@@ -15,13 +15,21 @@ export class PaymentSuccessComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       this.source = params['source'] || 'register';
     });
-  }
 
+
+  }
+ngAfterViewInit(): void
+{
+    if ((this.source ?? '').toLowerCase() === 'profile') {
+    this.router.navigate(['/profile'], {
+      queryParams: { subSuccess: 1 },
+      replaceUrl: true // avoid leaving the intermediate success page in history
+    });
+}
+}
   goToDashboard() {
     if (this.source === 'register') {
       this.router.navigate(['/login']);
-    } else if (this.source === 'Profile') {
-      this.router.navigate(['/dashboard']);
-    }
+    } 
   }
 }

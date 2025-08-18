@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, OnDestroy, PLATFORM_ID } from '@angular/core';
-import { Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterModule, RouterLink, RouterOutlet, NavigationEnd } from '@angular/router';
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
@@ -15,10 +15,12 @@ import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-di
 import { MatDialog } from '@angular/material/dialog';
 import { NotificationsService } from './services/notifications.service';
 import { JobsService } from './services/jobs.service';
-import { Observable, tap } from 'rxjs';
+import { filter, Observable, tap } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
 import { JobDataService } from './features/jobs/services/job-data.service';
+import { FooterComponent } from './footer/footer.component';
+
 
 @Component({
   selector: 'app-root',
@@ -42,7 +44,8 @@ import { JobDataService } from './features/jobs/services/job-data.service';
     AsyncPipe,
     NgFor,
     MatDividerModule,
-    SlicePipe
+    SlicePipe,
+    FooterComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`
@@ -60,11 +63,21 @@ export class AppComponent implements OnInit, OnDestroy {
   loggedIn = false;
   isBrowser: boolean = typeof window !== 'undefined';
   isSidenavOpen = false;
+  showFooter = true;
+
   recentNotifications$!: Observable<Notification[]>;
   public hasUnreadNotifications$!: Observable<boolean>;
 
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService) {
+            this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+    .subscribe((event: NavigationEnd) => {
+  this.showFooter = !event.urlAfterRedirects.includes('/login');
+  console.log('Footer visibility:', this.showFooter);
+  console.log('Current route:', event.urlAfterRedirects);
+
+});
 
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
@@ -90,6 +103,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 ngOnInit() {
   if (this.isBrowser) {
+
     this.authService.currentUser$.subscribe(user => {
         if (user) {
           const firstName = user.firstName || localStorage.getItem('firstName') || '';

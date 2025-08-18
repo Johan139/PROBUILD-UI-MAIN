@@ -7,11 +7,28 @@ $white: #fff;
 $shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 $darker-yellow: #e6bf00;
 
+
+.page-center {
+  /* If you know your toolbar/footer heights, set these CSS vars globally;
+     otherwise this still works well with the defaults. */
+  --app-header-h: 64px;   /* typical MatToolbar desktop */
+  --app-footer-h: 56px;
+
+  min-height: calc(100dvh - var(--app-header-h) - var(--app-footer-h));
+  display: flex;
+  align-items: center;   /* vertical center */
+  justify-content: center; /* horizontal center */
+  padding: 24px 16px;    /* breathing room */
+}
 .container {
   width: 95vw !important;
   margin-top: 2rem;
 }
-
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px; // space between buttons
+}
 .profile-card {
   background-color: $white;
   border: 1px solid $cyan;
