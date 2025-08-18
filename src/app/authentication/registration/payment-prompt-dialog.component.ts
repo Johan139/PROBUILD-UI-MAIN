@@ -70,7 +70,8 @@ export class PaymentPromptDialogComponent {
           userId: this.data.userId, 
           packageName: this.data.packageName,
           amount: this.data.amount,
-          source: this.data.source
+          source: this.data.source,
+          assignedUser:''
         }).subscribe({
           next: res => {
             console.log(res)

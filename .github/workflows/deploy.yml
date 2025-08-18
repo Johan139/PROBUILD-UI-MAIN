@@ -4,15 +4,10 @@ on:
   push:
     branches:
       - master
-      - Development
 
 jobs:
   build-and-deploy-frontend:
     runs-on: ubuntu-latest
-
-    env:
-      IS_PROD: ${{ github.ref == 'refs/heads/master' }}
-      IS_DEV: ${{ github.ref == 'refs/heads/Development' }}
 
     steps:
       - name: Check out code
@@ -24,23 +19,11 @@ jobs:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"0e6dc202-bcae-4b8b-b1de-a8f3a04341d6"}'
 
       - name: Log in to ACR
-        run: az acr login --name probuild
+        run: |
+          az acr login --name probuild
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Set Environment Variables
-        id: env-vars
-        run: |
-          if [[ "${{ env.IS_PROD }}" == "true" ]]; then
-            echo "APP_NAME=probuildai-ui" >> $GITHUB_ENV
-            echo "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" >> $GITHUB_ENV
-            echo "NG_ENV=production" >> $GITHUB_ENV
-          else
-            echo "APP_NAME=qa-probuildai-ui" >> $GITHUB_ENV
-            echo "BACKEND_URL=https://probuildai-backend-dev.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" >> $GITHUB_ENV
-            echo "NG_ENV=staging" >> $GITHUB_ENV
-          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -51,27 +34,26 @@ jobs:
           tags: probuild.azurecr.io/probuildai-ui:${{ github.sha }}
           no-cache: true
           build-args: |
-            BACKEND_URL=${{ env.BACKEND_URL }}
+            BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api
             API_KEY=${{ secrets.API_KEY }}
-            NG_ENV=${{ env.NG_ENV }}
 
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name ${{ env.APP_NAME }} \
+            --name probuildai-ui \
             --resource-group rg-Probuild \
             --image probuild.azurecr.io/probuildai-ui:${{ github.sha }} \
             --set-env-vars \
-              "BACKEND_URL=${{ env.BACKEND_URL }}" \
+              "BACKEND_URL=https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api" \
               "API_KEY=${{ secrets.API_KEY }}" \
               "GOOGLE_API=${{ secrets.GOOGLE_API }}" \
             --set ingress.targetPort=80
 
       - name: Check Container App Status
         run: |
-          az containerapp show --name ${{ env.APP_NAME }} --resource-group rg-Probuild --query "properties.runningStatus" -o tsv
+          az containerapp show --name probuildai-ui --resource-group rg-Probuild --query "properties.runningStatus" -o tsv
 
       - name: Check Container App Logs
         run: |
-          az containerapp logs show --name ${{ env.APP_NAME }} --resource-group rg-Probuild --follow --tail 100
+          az containerapp logs show --name probuildai-ui --resource-group rg-Probuild --follow --tail 100
         continue-on-error: true

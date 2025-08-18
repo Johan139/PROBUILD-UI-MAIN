@@ -47,6 +47,7 @@ export interface SubscriptionOption {
   subscription: string;
   amount: number;
 }
+
 @Component({
   selector: 'app-registration',
   standalone: true,
@@ -389,6 +390,103 @@ export class RegistrationComponent implements OnInit{
             this.showAlert = true;
           }
         });
+          //THE USER MUST BE REGISTERED IN THE USER TABLE AS WELL.
+    const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
+    const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+
+    if (!this.registrationForm.valid) {
+      this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
+      this.showAlert = true;
+      return;
+    }
+
+    // ✅ Open terms dialog before submitting
+    const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
+      disableClose: true,
+      width: '500px'
+    });
+
+    dialogRef.afterClosed().subscribe(userAgreed => {
+      if (!userAgreed) {
+        return; // Stop if user did not agree
+      }
+
+      this.isLoading = true;
+
+      const formValue = this.registrationForm.getRawValue();
+
+      if (this.user === 'SUBCONTRACTOR') {
+        formValue.trades = this.selectedTrades.map(trade => trade.value);
+      }
+
+      if (this.user === 'VENDOR') {
+        formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
+      }
+
+      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .pipe(
+        catchError((error) => {
+          this.isLoading = false;
+          if (error.status === 400) {
+            if (error.error[0]?.code === 'DuplicateUserName') {
+              this.alertMessage = 'You are already Registered, please proceed to Login';
+            } else {
+              this.alertMessage = 'Data is malformed. Please check all input fields.';
+            }
+          } else if (error.status === 500) {
+            this.alertMessage = 'Oops something went wrong, please try again later.';
+          } else {
+            this.alertMessage = 'An unexpected error occurred. Contact support@probuildai.com';
+          }
+          this.showAlert = true;
+          return of(null);
+        })
+      )
+      .subscribe((res: any) => {
+        this.isLoading = false;
+        if (res) {
+          this.alertMessage = 'Registration successful! Check your inbox for a verification email to activate your account.';
+          const userId = res.userId;
+          if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
+          {
+            this.routeURL = 'login';
+            this.showAlert = true;
+          }
+          else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
+          {
+            const userId = res.userId;
+            const packageName = this.registrationForm.value.subscriptionPackage;
+            // Trigger trial subscription
+            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
+              headers: { 'Content-Type': 'application/json' }
+            }).subscribe(() => {
+              this.alertMessage = 'Trial activated. Login to get started!';
+              this.routeURL = 'login';
+              this.showAlert = true;
+            });
+          }
+          else
+          {
+            this.dialog.open(PaymentPromptDialogComponent, {
+              data: {
+                userId,
+                packageName: selectedPackage?.value || 'Unknown',
+                amount: selectedPackage?.amount || 0,
+                source: 'register'
+              },
+              disableClose: true,
+              width: '400px'
+            });
+
+            this.showAlert = true;
+            this.routeURL = 'login';
+          }
+        }
+      });
+    });
+
       }
       return;
     }
@@ -449,7 +547,7 @@ export class RegistrationComponent implements OnInit{
       .subscribe((res: any) => {
         this.isLoading = false;
         if (res) {
-          this.alertMessage = 'Registration successful, please wait for account activation you shall be advised shortly';
+          this.alertMessage = 'Registration successful! Check your inbox for a verification email to activate your account.';
           const userId = res.userId;
           if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
           {
@@ -459,8 +557,9 @@ export class RegistrationComponent implements OnInit{
           else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
           {
             const userId = res.userId;
+            const packageName = this.registrationForm.value.subscriptionPackage;
             // Trigger trial subscription
-            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId }, {
+            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
               headers: { 'Content-Type': 'application/json' }
             }).subscribe(() => {
               this.alertMessage = 'Trial activated. Login to get started!';

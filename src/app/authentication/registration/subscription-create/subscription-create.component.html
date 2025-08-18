@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Choose a subscription</h2>
+
+<mat-dialog-content>
+  <div class="section" *ngIf="!data.isTeamMember">
+    <form [formGroup]="form">
+      <div *ngIf="data.notice" class="notice-chip">
+        {{ data.notice }}
+      </div>
+      <!-- NEW: who is this for? -->
+      <div class="full-width" style="margin-bottom: 12px;">
+        <label class="block mb-1">Apply to</label>
+        <mat-radio-group formControlName="forWhom">
+          <mat-radio-button value="self" [disabled]="hasActiveFor(data.userId)">
+            My account
+            <span *ngIf="hasActiveFor(data.userId)"></span>
+          </mat-radio-button>
+
+          <mat-radio-button value="team" class="ml-4" [disabled]="!(data.teamMembers?.length)">
+            Team member
+          </mat-radio-button>
+        </mat-radio-group>
+      </div>
+      <!-- Existing: package picker -->
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Subscription Package</mat-label>
+        <mat-select formControlName="subscriptionPackage" required>
+<mat-option *ngFor="let s of data.packages"
+            [value]="s"
+            [disabled]="hasActiveFor(data.userId) && ((data.teamMembers?.length ?? 0) === 0)">
+  {{ s.display }}
+</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="fill" class="full-width" *ngIf="form.value.forWhom === 'team'">
+        <mat-label>Select team member</mat-label>
+        <mat-select formControlName="teamMemberId" required>
+          <mat-option *ngFor="let m of data.teamMembers" [value]="m.id" [disabled]="hasActiveFor(m.id)">
+            {{ m.name || m.email || m.id }}
+            <span *ngIf="hasActiveFor(m.id)"></span>
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Inline error + disable confirm -->
+      <mat-hint *ngIf="hasActiveForAssignee()" style="color:#c62828;">
+        This user already has an active subscription ({{ data.activeByUserId?.[
+    form.value.forWhom === 'self' ? data.userId : form.value.teamMemberId
+  ]?.packageLabel }}). You can’t add another one.
+      </mat-hint>
+      <mat-hint *ngIf="form.value.forWhom === 'team' && hasActiveFor(form.value.teamMemberId)" style="color:#c62828;">
+        That team member already has an active subscription ({{ activeLabel(form.value.teamMemberId) }}).
+      </mat-hint>
+      <mat-dialog-actions align="end">
+        <button mat-button (click)="cancel()" class="submit-btn">Cancel</button>
+        <button mat-raised-button color="primary" (click)="save()" class="submit-btn"
+          [disabled]="data.packages.length === 0 || form.invalid || hasActiveFor(form.value.forWhom === 'team' ? form.value.teamMemberId : data.userId)">
+          Confirm
+        </button>
+      </mat-dialog-actions>

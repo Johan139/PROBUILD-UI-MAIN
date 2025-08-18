@@ -5,7 +5,7 @@
 </div>
 <div class="row job-quote-container">
   <app-subscription-warning [subscriptionActive]="subscriptionActive" [isLoading]="isLoading"></app-subscription-warning>
-  <div class="col-md-4 form-col">
+  <div class="col-md-4-job-quote form-col">
     <mat-card class="project-card">
       <mat-card-header>
         <mat-card-title>YOUR JOBS</mat-card-title>
@@ -54,49 +54,50 @@
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
 
-      <mat-card-content>
-        <div *ngIf="activeBidsDataSource" class="job-list-container">
-          <div class="job-list-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Quote #</th>
-                  <th>Created By</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
-                  <td>{{ quote.number || 'N/A' }}</td>
-                  <td>{{ quote.createdBy || 'Unknown' }}</td>
-                  <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
-                  <td>${{ quote.total.toFixed(2) }}</td>
-                  <td>
-                    <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
-                      View
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <mat-card-content>
+          <div *ngIf="activeBidsDataSource" class="job-list-container">
+            <div class="job-list-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Quote #</th>
+                    <th>Created By</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
+                    <td>{{ quote.number || 'N/A' }}</td>
+                    <td>{{ quote.createdBy || 'Unknown' }}</td>
+                    <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
+                    <td>${{ quote.total.toFixed(2) }}</td>
+                    <td>
+                      <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
-          No active bids to display.
-        </div>
-      </mat-card-content>
+          <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
+            No active bids to display.
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
 
-    </mat-card>
-  </div>
-  <div class="col-md-8 d-flex justify-content-center">
-    <mat-card class="job-quote-card">
-      <mat-card-header>
-        <mat-card-title>Create New Job</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider class="mat-primary"></mat-divider>
+    <!-- RIGHT COLUMN -->
+    <div class="col-md-8-job-quote">
+      <mat-card class="job-quote-card">
+        <mat-card-header>
+          <mat-card-title>Create New Job</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-divider class="mat-primary"></mat-divider>
 
         <div class="house-options d-flex justify-content-center">
           <button mat-raised-button (click)="populateHouse('wood')">Basic Wood House</button>
@@ -143,43 +144,42 @@
                 </mat-panel-description>
               </mat-expansion-panel-header>
 
-              <!-- CLIENT DETAILS FORM FIELDS -->
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>First Name</mat-label>
-                  <input matInput formControlName="firstName" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
-                     Mandatory Field: First name is required.
-                  </mat-error>
-                </mat-form-field>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>First Name</mat-label>
+                      <input matInput formControlName="firstName" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
+                        Mandatory Field: First name is required.
+                      </mat-error>
+                    </mat-form-field>
 
-                <mat-form-field appearance="fill">
-                  <mat-label>Last Name</mat-label>
-                  <input matInput formControlName="lastName" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
-                     Mandatory Field: Last name is required.
-                  </mat-error>
-                </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Last Name</mat-label>
+                      <input matInput formControlName="lastName" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
+                        Mandatory Field: Last name is required.
+                      </mat-error>
+                    </mat-form-field>
 
-                <mat-form-field appearance="fill">
-                  <mat-label>Email</mat-label>
-                  <input matInput formControlName="email" placeholder=" " />
-                  <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
-                     Mandatory Field: Email address is required.
-                  </mat-error>
-                </mat-form-field>
-              </div>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Email</mat-label>
+                      <input matInput formControlName="email" placeholder=" " />
+                      <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
+                        Mandatory Field: Email address is required.
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
 
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>Phone Number</mat-label>
-                  <input matInput formControlName="phone" placeholder=" " />
-                </mat-form-field>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Phone Number</mat-label>
+                      <input matInput formControlName="phone" placeholder=" " />
+                    </mat-form-field>
 
-                <mat-form-field appearance="fill">
-                  <mat-label>Company Name</mat-label>
-                  <input matInput formControlName="company" placeholder=" " />
-                </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Name</mat-label>
+                      <input matInput formControlName="company" placeholder=" " />
+                    </mat-form-field>
 
                 <mat-form-field appearance="fill">
                   <mat-label>Position/Title</mat-label>
@@ -406,6 +406,7 @@
     </mat-card>
   </div>
 </div>
+
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>

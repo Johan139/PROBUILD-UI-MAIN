@@ -15,26 +15,39 @@ body {
   background-color: #fff; /* White background */
 }
 
+.page-center {
+  width: 100%;
+  display: flex;
+  flex-direction: column;   /* <= was row */
+  align-items: center;      /* center the inner blocks */
+  padding: 0 12px;
+  margin-top: 6rem;
+}
+
 mat-card {
   background-color: white;
-  border: 1px solid #61A0AF; /* Retain cyan border */
+  border: 1px solid $cyan; /* Retain cyan border */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   border-radius: 8px; /* Rounded corners */
   padding: 16px; /* Inner padding */
 }
 
 .job-quote-container {
-  width: 80vw !important; /* Retain original width */
-  margin-top: 2rem;
-  display: flex; /* Ensure flexbox for side-by-side */
-  gap: 24px; /* Space between columns */
+  width: 100%;
+  max-width: 1700px;         /* tweak as you like */
+  margin: 2rem auto 0;       /* centers the grid */
+  display: grid;
+  grid-template-columns: 1fr 2fr;  /* left (jobs/bids), right (create) */
+  gap: 24px;
+  align-items: start;
+  justify-content: center;   /* ensures the two columns sit centered */
 }
 
 .form-col {
-  flex: 1; /* Left column takes equal space */
+  grid-column: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px; /* Space between cards */
+  gap: 24px;
 }
 
 .col-md-8 {
@@ -57,7 +70,7 @@ mat-card {
 
 .job-quote-card {
   width: 100%;
-  max-width: 1000px;
+  // max-width: 800px;
   height: auto;
   min-height: 600px; /* Ensure form fits */
 }
@@ -66,7 +79,7 @@ mat-card {
 mat-card-title {
   font-size: 1.5rem; /* Larger for prominence */
   font-weight: 700; /* Bolder */
-  color: #333; /* Darker text */
+  color: $dark-gray; /* Darker text */
   text-transform: uppercase; /* Professional */
   margin-bottom: 12px; /* Space below */
 }
@@ -78,17 +91,17 @@ table {
 }
 
 thead {
-  background-color: #FBD008; /* Matches projects */
-  color: #000000; /* Matches projects $black */
+  background-color: $primary-yellow; /* Matches projects */
+  color: $black; /* Matches projects $black */
 }
 
 th {
-  background-color: #FBD008; /* Matches projects */
-  color: #000000; /* Matches projects $black */
+  background-color: $primary-yellow; /* Matches projects */
+  color: $black; /* Matches projects $black */
   font-weight: 500; /* Matches projects */
   padding: 8px; /* Matches projects */
   text-align: left; /* Matches projects */
-  border-bottom: 2px solid #d9d9d9; /* Matches projects $light-gray */
+  border-bottom: 2px solid $light-gray; /* Matches projects $light-gray */
 }
 
 tr {
@@ -97,12 +110,12 @@ tr {
 
 td {
   padding: 8px; /* Matches projects */
-  border: 1px solid #d9d9d9; /* Matches projects $light-gray */
-  color: #000000; /* Matches projects $black */
+  border: 1px solid $light-gray; /* Matches projects $light-gray */
+  color: $black; /* Matches projects $black */
 }
 
 tr:hover {
-  background-color: #d9d9d9; /* Matches projects $light-gray */
+  background-color: $light-gray; /* Matches projects $light-gray */
 }
 
 /* Job Status Classes */
@@ -115,18 +128,19 @@ tr:hover {
 }
 
 .draft {
-  color: #61a0af !important; /* Retained as specific to this context */
+  color: $cyan !important; /* Retained as specific to this context */
 }
 
 /* Remove redundant border classes */
-.data-row-1, .data-row-2 {
+.data-row-1,
+.data-row-2 {
   border: none; /* Rely on table borders */
 }
 
 /* Pagination Buttons */
 .table-button {
   padding: 10px;
-  background-color: #FBD008; /* Retain yellow */
+  background-color: $primary-yellow; /* Retain yellow */
   border-radius: 6px; /* Rounded */
   border: none;
   transition: background-color 0.3s ease;
@@ -138,7 +152,7 @@ tr:hover {
 }
 
 .table-button:hover:not(:disabled) {
-  background-color: #e6bf00; /* Darker yellow */
+  background-color: $darker-yellow; /* Darker yellow */
 }
 
 .icon {
@@ -280,7 +294,7 @@ tr:hover {
   }
 
   &.delete-btn {
-    background: #fbd008;
+    background: $primary-yellow;
     color: $dark-gray;
     &:hover {
       background: $darker-yellow;
@@ -339,7 +353,7 @@ tr:hover {
 
   /* Customize the progress bar color */
   ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
-    background-color: #FBD008 !important; /* Retain yellow */
+    background-color: $primary-yellow !important; /* Retain yellow */
   }
 
   ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
@@ -422,7 +436,7 @@ mat-form-field {
 }
 
 .house-options button {
-  background: #FBD008; /* Retain yellow */
+  background: $primary-yellow; /* Retain yellow */
   color: #333; /* Darker text */
   border-radius: 8px; /* Rounded */
   padding: 10px 20px; /* Larger padding */
@@ -431,12 +445,12 @@ mat-form-field {
 }
 
 .house-options button:hover {
-  background: #e6bf00; /* Darker yellow */
+  background: $darker-yellow; /* Darker yellow */
 }
 
 /* General Button Styling */
 button[mat-raised-button] {
-  background-color: #FBD008; /* Retain yellow */
+  background-color: $primary-yellow; /* Retain yellow */
   color: #333; /* Darker text */
   font-weight: 500;
   border-radius: 8px; /* Rounded */
@@ -446,7 +460,7 @@ button[mat-raised-button] {
 }
 
 button[mat-raised-button]:hover {
-  background-color: #e6bf00; /* Darker yellow */
+  background-color: $darker-yellow; /* Darker yellow */
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
 }
 
@@ -485,7 +499,7 @@ button[mat-raised-button]:hover {
   }
 
   &.delete-btn {
-    background: #fbd008;
+    background: $primary-yellow;
     color: $dark-gray;
     &:hover {
       background: $darker-yellow;
@@ -525,7 +539,7 @@ button[mat-raised-button]:hover {
   align-items: center;
   gap: 10px; /* Space between icon and text */
   padding: 10px 20px; /* Larger padding */
-  background-color: #FBD008; /* Retain yellow */
+  background-color: $primary-yellow; /* Retain yellow */
   color: #333; /* Darker text */
   font-weight: 500;
   border-radius: 8px; /* Rounded corners */
@@ -547,7 +561,7 @@ button[mat-raised-button]:hover {
 }
 
 .upload-label:hover {
-  background-color: #e6bf00; /* Darker yellow */
+  background-color: $darker-yellow; /* Darker yellow */
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
 }
 
@@ -587,13 +601,13 @@ button[mat-raised-button]:hover {
 }
 
 .alert-modal button {
-  background-color: #FBD008; /* Retain yellow */
+  background-color: $primary-yellow; /* Retain yellow */
   color: #333; /* Darker text */
 }
 
 /* Divider */
 mat-divider {
-  background-color: #FCD02D; /* Retain yellow variant */
+  background-color: $secondary-yellow; /* Retain yellow variant */
   border: none;
   height: 2px;
   margin: 16px 0; /* More spacing */
@@ -613,7 +627,7 @@ mat-divider {
 ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
   background-color: white !important;
   border-radius: 6px;
-  border: 1px solid #61A0AF; /* Retain cyan */
+  border: 1px solid $cyan; /* Retain cyan */
 }
 
 /* Tooltip Styling for Uploaded File Names */
@@ -632,6 +646,7 @@ mat-divider {
     width: 95vw;
     flex-direction: column; /* Stack on mobile */
     gap: 16px; /* Reduced gap */
+    grid-template-columns: 1fr; /* Stack columns on mobile */
   }
 
   .form-row {
@@ -656,11 +671,13 @@ mat-divider {
     justify-content: flex-start; /* Align to the left */
   }
 
-  .upload-progress, .upload-complete {
+  .upload-progress,
+  .upload-complete {
     margin-right: 10px; /* Adjust spacing for mobile */
   }
 
-  .submit-btn, .cancel-btn {
+  .submit-btn,
+  .cancel-btn {
     width: 100%; /* Full width on mobile */
     max-width: 200px; /* Keep max width */
   }
@@ -670,9 +687,21 @@ mat-divider {
     width: 100%;
   }
 
-  .project-card, .project-card-bids, .job-quote-card {
+  .project-card,
+  .project-card-bids,
+  .job-quote-card {
     max-width: 100%;
   }
+  .col-md-8-job-quote {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+    .col-md-4-job-quote {
+        flex: 0 0 auto;
+        width: 100%;
+    }
 }
 
 .button-wrapper {

@@ -15,6 +15,7 @@ import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-di
 import { MatDialog } from '@angular/material/dialog';
 import { NotificationsService } from './services/notifications.service';
 import { JobsService } from './services/jobs.service';
+import { FooterComponent } from './footer/footer.component';
 import { Observable, tap, filter } from 'rxjs';
 import { Notification } from './models/notification';
 import { MatDividerModule } from '@angular/material/divider';
@@ -46,8 +47,10 @@ import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.se
     NgFor,
     MatDividerModule,
     SlicePipe,
+    FooterComponent,
     AiChatIconComponent,
     AiChatWindowComponent
+
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`
@@ -65,17 +68,28 @@ export class AppComponent implements OnInit, OnDestroy {
   loggedIn = false;
   isBrowser: boolean = typeof window !== 'undefined';
   isSidenavOpen = false;
+  showFooter = true;
+
   recentNotifications$!: Observable<Notification[]>;
   public hasUnreadNotifications$!: Observable<boolean>;
   showAiChatIcon = true;
 
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService, private aiChatStateService: AiChatStateService) {
+            this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+    .subscribe((event: NavigationEnd) => {
+  this.showFooter = !event.urlAfterRedirects.includes('/login');
+  console.log('Footer visibility:', this.showFooter);
+  console.log('Current route:', event.urlAfterRedirects);
+
+});
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.showAiChatIcon = !event.urlAfterRedirects.startsWith('/ai-chat');
     });
+
 
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
@@ -101,6 +115,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 ngOnInit() {
   if (this.isBrowser) {
+
     this.authService.currentUser$.subscribe(user => {
       this.loggedIn = !!user;
       if (user) {

@@ -195,7 +195,7 @@ export const COUNTRIES = [
   { value: 'UZB', display: 'Uzbekistan' },
   { value: 'VUT', display: 'Vanuatu' },
   { value: 'VEN', display: 'Venezuela' },
-  { value: 'VNM', display: 'Viet Nam' },
+  { value: 'VNM', display: 'Vietnam' },
   { value: 'YEM', display: 'Yemen' },
   { value: 'ZMB', display: 'Zambia' },
   { value: 'ZWE', display: 'Zimbabwe' },
