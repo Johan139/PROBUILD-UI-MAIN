@@ -91,6 +91,12 @@
         <span class="menu-item">NOTIFICATIONS</span>
       </button>
 
+      <button mat-flat-button class="menu-button custom-button" (click)="goToAiChatFullScreen(); sidenav.close()">
+        <span class="menu-item">AI CHAT</span>
+      </button>
+
+
+
       <!-- Services Toggle Button -->
       <button mat-flat-button class="menu-button custom-button" (click)="isServicesExpanded = !isServicesExpanded">
         <span class="menu-item">SERVICES</span>
@@ -184,3 +190,6 @@
     Show all notifications
   </button>
 </mat-menu>
+
+<app-ai-chat-icon *ngIf="showAiChatIcon"></app-ai-chat-icon>
+<app-ai-chat-window></app-ai-chat-window>

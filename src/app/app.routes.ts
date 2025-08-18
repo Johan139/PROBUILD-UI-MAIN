@@ -29,6 +29,10 @@ import { ArchiveComponent } from './features/archive/archive.component';
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
   {path:'archive', component:ArchiveComponent, canActivate: [AuthGuard] },
+  {
+    path: 'ai-chat',
+    loadChildren: () => import('./features/ai-chat/ai-chat.routes').then(m => m.AI_CHAT_ROUTES)
+  },
   {path:'login', component:LoginComponent },
   {path:'forgot-password', component:ForgotPasswordComponent },
   {path:'gant-chart', component:GanttChartComponent, canActivate: [AuthGuard] },

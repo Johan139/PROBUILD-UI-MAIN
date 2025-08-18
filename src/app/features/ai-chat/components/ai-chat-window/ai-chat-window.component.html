@@ -1,0 +1,133 @@
+<div *ngIf="(isChatOpen$ | async) && isLoggedIn" class="chat-window">
+  <header class="chat-header">
+    <h2 class="chat-title">Mason - your AI Assistant</h2>
+    <div class="header-actions">
+      <button (click)="startNewConversation()" class="action-btn" aria-label="New chat">
+        <span class="material-icons">add</span>
+      </button>
+      <button (click)="toggleHistory()" class="action-btn" aria-label="Toggle history">
+        <span class="material-icons">history</span>
+      </button>
+      <button (click)="goToFullScreen()" class="action-btn" aria-label="Full screen">
+        <span class="material-icons">fullscreen</span>
+      </button>
+      <button (click)="closeChat()" class="action-btn" aria-label="Close chat">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="scroll-wrapper">
+    <div class="chat-window-container" #messageContainer>
+      <div *ngIf="isHistoryVisible" class="chat-history-panel">
+        <div class="history-header">
+          <h3>Conversation History</h3>
+          <button (click)="sortConversations()" class="action-btn" aria-label="Sort conversations">
+            <span class="material-icons">{{ sortIcon }}</span>
+          </button>
+        </div>
+        <ul>
+          <li *ngFor="let conversation of conversations$ | async" (click)="loadConversation(conversation.Id)">
+            <span class="conversation-title">{{ conversation.Title || 'Untitled Conversation' }}</span>
+            <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'short' }}</span>
+          </li>
+        </ul>
+      </div>
+      <div *ngIf="((selectedPrompts$ | async) ?? []).length > 0" class="selected-prompt-display">
+        <h2>Selected Prompts</h2>
+        <ul>
+          <li *ngFor="let prompt of (prompts$ | async) | selectedPrompts:(selectedPrompts$ | async)">
+            {{ prompt.promptName }}
+          </li>
+        </ul>
+      </div>
+      <div *ngIf="(hasDocuments$ | async) && ((selectedPrompts$ | async) ?? []).length > 0" class="file-analysis-notification">
+        <p>Mason will analyze the files you have attached to this chat using these selected prompts</p>
+      </div>
+      <div class="message-history">
+        <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+          <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
+          <div class="message-content">
+            <ng-container [ngSwitch]="message.Role">
+              <markdown *ngSwitchCase="'model'" [data]="getDisplayContent(message.Content, 'model')"></markdown>
+              <pre *ngSwitchCase="'user'" class="user-prompt">{{ getDisplayContent(message.Content, 'user') }}</pre>
+            </ng-container>
+            <div *ngIf="message.status === 'failed'" class="error-message">
+              <span>Failed to send message to Mason - please try again</span>
+              <button mat-icon-button (click)="retryMessage(message)">
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="isLoading$ | async" class="message ai">
+          <p>Thinking...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="prompts-popup" *ngIf="isPromptsPopupVisible">
+    <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" mat-raised-button color="primary" class="confirm-btn submit-btn">Confirm</button>
+    <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-raised-button color="warn" class="clear-btn submit-btn">Clear</button>
+    <div *ngFor="let prompt of prompts$ | async"
+         class="prompt-item"
+         [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptId!) && prompt.id !== fullBlueprintAnalysisPromptId"
+         (click)="togglePromptSelection(prompt.id)">
+      <input type="checkbox"
+             [checked]="promptSelectionState[prompt.id]"
+             [disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptId!) && prompt.id !== fullBlueprintAnalysisPromptId"
+             readonly>
+      <div class="prompt-details">
+        <div class="prompt-title">{{ prompt.promptName }}</div>
+        <div class="prompt-description">{{ prompt.description }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="message-input-container">
+    <div *ngIf="isUploading" class="upload-progress">
+      <p>Upload Progress: {{ progress }}%</p>
+      <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+    </div>
+    <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete">
+      <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+        {{ uploadedFileInfos.length }} file(s) uploaded successfully
+      </p>
+    </div>
+    <form (ngSubmit)="sendMessage()">
+      <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+        <mat-icon>tune</mat-icon>
+      </button>
+      <textarea id="chat-input"
+                [(ngModel)]="newMessageContent"
+                name="newMessageContent"
+                placeholder="Type your message..."
+                autocomplete="off"
+                (input)="autoResize($event)"
+                (keydown)="onKeyDown($event)"
+                rows="1"
+                [disabled]="isInputDisabled"
+                [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''"></textarea>
+      <span class="button-wrapper"
+            [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
+            [class.disabled-wrapper]="isSendDisabled">
+        <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
+      </span>
+      <span class="button-wrapper"
+            [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload new files.' : 'Attach blueprints'"
+            [class.disabled-wrapper]="hasDocuments$ | async">
+        <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
+          <mat-icon>attach_file</mat-icon>
+        </button>
+      </span>
+      <span class="button-wrapper"
+            [matTooltip]="!(hasDocuments$ | async) ? 'No files uploaded' : ''"
+            [class.disabled-wrapper]="!(hasDocuments$ | async)">
+        <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="viewUploadedFiles()" [disabled]="!(hasDocuments$ | async)">
+          <mat-icon>folder</mat-icon>
+        </button>
+      </span>
+      <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
+      <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
+    </form>
+  </div>
+</div>
