@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-upload-options-dialog',
   templateUrl: './upload-options-dialog.component.html',
+    styleUrls: ['./upload-options-dialog.component.scss'],
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule],
 })

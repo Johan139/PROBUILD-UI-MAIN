@@ -3,7 +3,7 @@
   <p>You can upload individual files or a whole folder:</p>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button (click)="onNoClick()">Cancel</button>
-  <button mat-raised-button color="primary" [mat-dialog-close]="'files'">Upload Files</button>
-  <button mat-raised-button color="accent" [mat-dialog-close]="'folder'">Upload Folder</button>
+  <button mat-button class="submit-btn" (click)="onNoClick()">Cancel</button>
+  <button mat-raised-button class="submit-btn"  [mat-dialog-close]="'files'">Upload Files</button>
+  <button mat-raised-button class="submit-btn"  [mat-dialog-close]="'folder'">Upload Folder</button>
 </mat-dialog-actions>

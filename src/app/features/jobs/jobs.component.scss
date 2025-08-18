@@ -134,7 +134,7 @@ mat-divider {
 /* Chart Container */
 .chart-container {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   max-width: unset;
   padding: 1.5rem;
   background-color: #f9f9f9;

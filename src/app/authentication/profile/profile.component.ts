@@ -34,7 +34,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
-import { HttpEventType } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -53,6 +53,7 @@ import { SubscriptionCreateComponent } from '../registration/subscription-create
 import { ActivatedRoute, Router } from '@angular/router';
 
 const BASE_URL = environment.BACKEND_URL;
+
 interface SubscriptionPackage { value: string; amount: number; }
 export interface PaymentRecord {
   id: number;
@@ -183,7 +184,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
     private profileService: ProfileService,
     public authService: AuthService,
     private fb: FormBuilder,
-    
+    private httpClient: HttpClient,
     private stripeService: StripeService,
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
@@ -1090,7 +1091,25 @@ openSubscriptionCreateDialog(): void {
 
     this.profileForm.patchValue({ subscriptionPackage: pkg.value });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();
+         if(String(pkg?.value ?? "").toLowerCase().includes("Basic"))
+          {
+            //this.routeURL = 'login';
+            this.showAlert = true;
+          } else
+if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
 
+  const userId = String(localStorage.getItem('userId') ?? '');
+            const packageName = pkg.value;
+            // Trigger trial subscription
+            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
+              headers: { 'Content-Type': 'application/json' }
+            }).subscribe(() => {
+              this.alertMessage = 'Trial activated. Login to get started!';
+              //this.routeURL = 'login';
+              this.showAlert = true;
+            });
+}else
+{
     this.stripeService.createCheckoutSession({
       userId: String(localStorage.getItem('userId') ?? ''),
       packageName: pkg.value,
@@ -1101,7 +1120,9 @@ openSubscriptionCreateDialog(): void {
       next: res => window.location.assign(res.url),
       error: err => console.error('Checkout session error', err)
     });
+    }
   });
+
 }
 
 
