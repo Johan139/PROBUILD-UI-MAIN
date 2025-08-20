@@ -1,0 +1,34 @@
+/* Variables from the primary SCSS */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$cyan: #61a0af;
+$dark-gray: #333;
+$white: #fff;
+$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+$darker-yellow: #e6bf00;
+.full-width { width: 100%; }
+
+  .submit-btn {
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+    width: 200px;
+    margin-top: 10px;
+
+    &:hover {
+      background-color: $darker-yellow;
+    }
+  }
+.notice-chip {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: #fff8e1;
+  color: #5d4037;
+}
+/* for MDC-based Material (v15+), this helps too */
+:host ::ng-deep .mat-mdc-form-field { width: 100%; }
+

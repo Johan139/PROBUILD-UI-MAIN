@@ -134,7 +134,7 @@ mat-divider {
 /* Chart Container */
 .chart-container {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   max-width: unset;
   padding: 1.5rem;
   background-color: #f9f9f9;
@@ -405,8 +405,6 @@ textarea[matInput] {
   border-radius: 8px;
   border: 1px solid $light-gray;
     display: block;
-  min-width: max-content; // <--- This is critical
-  width: fit-content;
 }
 app-timeline {
   display: block;

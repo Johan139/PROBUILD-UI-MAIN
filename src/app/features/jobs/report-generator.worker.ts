@@ -185,7 +185,7 @@ addEventListener('message', async ({ data }) => {
             doc.setFont('helvetica', 'normal');
             let cleanItem = cleanTextForPDF(item);
             cleanItem = preventColonBreaks(cleanItem);
-            cleanItem = cleanNewlines(cleanItem); // Add this line
+            cleanItem = cleanNewlines(cleanItem);
             const itemLines = doc.splitTextToSize(`• ${cleanItem}`, usableWidth - 5);
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
             currentY += (itemLines.length * 5) + 2;

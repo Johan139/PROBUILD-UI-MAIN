@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>Choose a subscription</h2>
+
+<mat-dialog-content>
+  <div class="section" *ngIf="!data.isTeamMember">
+    <form [formGroup]="form">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Subscription Package</mat-label>
+
+        <!-- keep attributes on separate lines and close the tag with '>' -->
+        <mat-select
+          formControlName="subscriptionPackage"
+          required
+          (selectionChange)="onPackageChange($event.value)">
+          <mat-option
+            *ngFor="let s of data.packages"
+            [value]="s.value"
+            [disabled]="s.value === data.currentValue">
+            {{ s.display }}
+            <span *ngIf="s.value === data.currentValue"> — current</span>
+          </mat-option>
+        </mat-select>
+
+      </mat-form-field>
+    </form>
+
+    <!-- Preview area -->
+    <div *ngIf="previewLoading" class="mt-2">Calculating proration…</div>
+
+    <div *ngIf="!previewLoading && prorationPreview" class="mt-2">
+      <strong>Proration subtotal:</strong>
+      {{ formatCurrency(prorationPreview.prorationSubtotal, prorationPreview.currency) }}<br />
+      <strong>Today total:</strong>
+      {{ formatCurrency(prorationPreview.previewTotal, prorationPreview.currency) }}<br />
+      <small>Next billing: {{ prorationPreview.nextBillingDate | date:'medium' }}</small>
+
+      <ul class="mt-2">
+        <li *ngFor="let l of prorationPreview.prorationLines">
+          {{ l.description }} — {{ formatCurrency(l.amount, prorationPreview.currency) }}
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="previewError" class="mt-2" style="color:#c62828">
+      {{ previewError }}
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()" class="submit-btn">Cancel</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="save()"
+    [disabled]="data.packages.length === 0 || form.invalid"
+    cdkFocusInitial
+    class="submit-btn">
+    Confirm
+  </button>
+</mat-dialog-actions>

@@ -207,36 +207,28 @@ table {
     background-color: #f8d7da;
   }
 }
-
+button[mat-raised-button]:hover {
+  background-color: $darker-yellow; /* Darker yellow */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
+}
 // Buttons
 .submit-btn {
   background: $primary-yellow;
   border-radius: 10px;
   padding: 0px 16px;
-  font-weight: 500;
   color: $dark-gray;
   margin: 0 0.5rem;
-
-  &:hover {
-    background: $darker-yellow;
-  }
 
   &.quote-btn {
     background: $cyan;
     color: $white;
 
-    &:hover {
-      background: darken($cyan, 10%);
-    }
   }
 
   &.save-btn {
-    background: $secondary-yellow;
-    font-weight: 700;
+  background: $primary-yellow;
+        color: $dark-gray;
 
-    &:hover {
-      background: darken($secondary-yellow, 10%);
-    }
   }
 }
 

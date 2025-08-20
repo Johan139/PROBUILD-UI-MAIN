@@ -84,7 +84,7 @@ export class SortedBarChartComponent implements OnInit, OnChanges {
       .call(
         d3
           .axisLeft(this.y)
-          .tickFormat((y) => (y * 100).toFixed())
+          .tickFormat((y) => (Number(y) * 100).toFixed())
       )
       .call((g) => g.select('.domain').remove());
   }

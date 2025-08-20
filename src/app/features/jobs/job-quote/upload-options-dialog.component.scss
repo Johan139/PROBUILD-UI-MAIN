@@ -1,0 +1,24 @@
+  $primary-yellow: #FFC107;
+$secondary-yellow: #FFA000;
+$cyan: #00ACC1;
+$dark-gray: #333333;
+$white: #FFFFFF;
+$shadow: rgba(0, 0, 0, 0.2);
+$light-gray: #d9d9d9;
+$darker-yellow: #e6bf00;
+
+  
+  
+  .submit-btn {
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: background-color 0.3s ease;
+    width: 31%;
+    margin-top: 10px;
+
+    &:hover {
+      background-color: $darker-yellow;
+    }
+  }

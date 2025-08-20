@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { Store, INITIAL_STATE} from '../app/store/store.service'
@@ -7,6 +7,8 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { authInterceptor } from './authentication/http.interceptor';
 import { provideHttpClient, withFetch, withInterceptors} from "@angular/common/http";
 import { AuthService } from './authentication/auth.service';
+import { MarkdownModule } from 'ngx-markdown';
+import { FileUploadService } from './services/file-upload.service';
 
 export function initializeApp(authService: AuthService) {
   return () => authService.initialize();
@@ -34,8 +36,10 @@ export const appConfig: ApplicationConfig = {
       multi: true
     },
     Store,
+    FileUploadService,
     provideHttpClient(withInterceptors([authInterceptor]), withFetch()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes), provideClientHydration(), provideAnimationsAsync(),
+    importProvidersFrom(MarkdownModule.forRoot()),
   ]
 };

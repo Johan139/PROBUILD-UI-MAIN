@@ -107,11 +107,16 @@ export class AuthService {
 
     if (response.userId) {
       const { userId, firstName, lastName, userType } = response;
-      const user = { id: userId, firstName, lastName, userType };
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const companyName = payload.CompanyName || '';
+
+      const user = { id: userId, firstName, lastName, userType, companyName };
+
       localStorage.setItem('userId', userId);
       localStorage.setItem('firstName', firstName);
       localStorage.setItem('lastName', lastName);
       localStorage.setItem('userType', userType);
+      localStorage.setItem('companyName', companyName);
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
       return of(response);

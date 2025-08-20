@@ -6,6 +6,9 @@ import { Profile, TeamMember, Document, ProfileDocument } from './profile.model'
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth.service';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { SubscriptionOption } from '../registration/registration.component';
+import { PaymentRecord } from './profile.component';
+import { UserSubscription } from '../../models/UserSubscription';
 
 @Injectable({
   providedIn: 'root'
@@ -196,5 +199,36 @@ export class ProfileService {
       return throwError(() => new Error('User not logged in'));
     }
     return this.http.get<{ hasActive: boolean }>(`${environment.BACKEND_URL}/Account/has-active-subscription/${userId}`);
+  }
+
+  manageSubscriptions() : Observable<UserSubscription[]>
+  {
+  const userId = this.authService.currentUserSubject.value?.id;
+    const url = `${this.apiUrl}/managesubscriptions/${userId}`;
+
+    return this.http.get<UserSubscription[]>(url, { headers: this.getHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching profile:', error);
+          return throwError(() => new Error('Failed to load profile'));
+        })
+      );
+  }
+
+
+    getUserSubscription(): Observable<PaymentRecord[]> {
+    const userId = this.authService.currentUserSubject.value?.id;
+    if (!userId) {
+      console.error('No userId available');
+      return throwError(() => new Error('User not authenticated'));
+    }
+    const url = `${this.apiUrl}/getusersubscription/${userId}`;
+    return this.http.get<PaymentRecord[]>(url, { headers: this.getHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching profile:', error);
+          return throwError(() => new Error('Failed to load profile'));
+        })
+      );
   }
 }

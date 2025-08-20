@@ -19,7 +19,7 @@ import {ProjectsService} from "../../services/projects.service";
 })
 export class DashboardComponent implements OnInit{
     nrProjects: number = 0;
-    currentYear: number = new Date().getFullYear();
+
     
     constructor(private projectService: ProjectsService) {
     }

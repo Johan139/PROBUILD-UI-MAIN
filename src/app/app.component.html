@@ -1,35 +1,40 @@
-<div *ngIf="isLoading" class="loading-container">
-  <app-loader aria-label="Loading content"></app-loader>
-</div>
+<!-- PAGE WRAPPER -->
+<div class="page-wrapper">
 
-<!-- Header -->
-<mat-toolbar color="primary" class="header">
-  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
-    <mat-icon>menu</mat-icon>
-  </button>
-  <a routerLink="/dashboard" class="logo-link">
-    <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
-  </a>
-  <span class="spacer logged-in-name" routerLink="/profile">{{LoggedInName}}</span>
-  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
-    <mat-icon>notifications</mat-icon>
-    <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
-  </button>
-  <button *ngIf="shouldShowHeaderButtons()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
-    <mat-icon svgIcon="icons8-settings"></mat-icon>
-  </button>
-</mat-toolbar>
+  <!-- Loader -->
+  <div *ngIf="isLoading" class="loading-container">
+    <app-loader aria-label="Loading content"></app-loader>
+  </div>
 
-<!-- Company Name Bar -->
-<div *ngIf="companyName" class="company-bar">
-  <span>{{ companyName }}</span>
-</div>
+  <!-- Header -->
+  <mat-toolbar color="primary" class="header">
+    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <a routerLink="/dashboard" class="logo-link">
+      <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
+    </a>
+    <span class="spacer logged-in-name" routerLink="/profile">{{LoggedInName}}</span>
+    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
+      <mat-icon>notifications</mat-icon>
+      <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
+    </button>
+    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
+      <mat-icon svgIcon="icons8-settings"></mat-icon>
+    </button>
+  </mat-toolbar>
 
-<!-- Side Navigation and Content -->
-<mat-sidenav-container class="nav-container">
-  <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation" >
-    <mat-nav-list>
-      <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
+  <!-- Company Name Bar -->
+  <div *ngIf="companyName" class="company-bar">
+    <span>{{ companyName }}</span>
+  </div>
+
+  <!-- Sidenav Layout -->
+  <mat-sidenav-container class="nav-container">
+
+    <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation">
+      <mat-nav-list>
+ <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
         <span class="menu-item">HOME</span>
       </button>
 
@@ -38,7 +43,7 @@
       </button> -->
 
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
-        <span class="menu-item">JOBS</span>
+        <span class="menu-item">MY PROJECTS</span>
       </button>
 
       <button mat-flat-button class="menu-button custom-button" routerLink="/job-assignment" (click)="sidenav.close()">
@@ -91,58 +96,28 @@
         <span class="menu-item">NOTIFICATIONS</span>
       </button>
 
-      <!-- Services Toggle Button -->
-      <button mat-flat-button class="menu-button custom-button" (click)="isServicesExpanded = !isServicesExpanded">
-        <span class="menu-item">SERVICES</span>
-        <mat-icon class="expand-icon">{{ isServicesExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+      <button mat-flat-button class="menu-button custom-button" (click)="goToAiChatFullScreen(); sidenav.close()">
+        <span class="menu-item">AI CHAT</span>
       </button>
 
-      <!-- Submenu Items -->
-      <div *ngIf="isServicesExpanded" class="submenu">
-        <!-- Terms of Use -->
-        <ng-container *ngIf="loggedIn; else externalTerms">
-          <button mat-flat-button class="submenu custom-button" routerLink="/termsofuse" (click)="sidenav.close()">
-            <span class="menu-item">Terms of Use</span>
-          </button>
-        </ng-container>
-        <ng-template #externalTerms>
-          <a mat-flat-button class="submenu custom-button" href="/termsofuse" target="_blank" rel="noopener">
-            <span class="menu-item">Terms of Use</span>
-          </a>
-        </ng-template>
 
-        <!-- Privacy Policy -->
-        <ng-container *ngIf="loggedIn; else externalPrivacy">
-          <button mat-flat-button class="submenu custom-button" routerLink="/privacy" (click)="sidenav.close()">
-            <span class="menu-item">Privacy Policy</span>
-          </button>
-        </ng-container>
-        <ng-template #externalPrivacy>
-          <a mat-flat-button class="submenu custom-button" href="/privacy" target="_blank" rel="noopener">
-            <span class="menu-item">Privacy Policy</span>
-          </a>
-        </ng-template>
 
-        <!-- Master Services -->
-        <ng-container *ngIf="loggedIn; else externalMaster">
-          <button mat-flat-button class="submenu custom-button" routerLink="/masteragreement" (click)="sidenav.close()">
-            <span class="menu-item">Master Services</span>
-          </button>
-        </ng-container>
-        <ng-template #externalMaster>
-          <a mat-flat-button class="submenu custom-button" href="/masteragreement" target="_blank" rel="noopener">
-            <span class="menu-item">Master Services</span>
-          </a>
-        </ng-template>
-      </div>
-    </mat-nav-list>
-  </mat-sidenav>
+      </mat-nav-list>
+    </mat-sidenav>
 
-  <mat-sidenav-content>
+<mat-sidenav-content>
+  <div class="content-shell">
     <router-outlet></router-outlet>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+    <div  class="flex-spacer"></div> <!-- Pushes footer down -->
+    <app-footer *ngIf="showFooter"></app-footer>
+  </div>
+</mat-sidenav-content>
 
+  </mat-sidenav-container>
+
+</div>
+
+<!-- ALERT OVERLAY -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
@@ -153,6 +128,7 @@
   </div>
 </div>
 
+<!-- MENUS -->
 <mat-menu #menu="matMenu" class="no-btn">
   <button mat-menu-item routerLink="/profile">
     <mat-icon svgIcon="profile-circle"></mat-icon>
@@ -174,9 +150,7 @@
       </ng-container>
     </ng-container>
     <ng-template #noNotifications>
-      <button mat-menu-item>
-        <span>No recent notifications</span>
-      </button>
+      <button mat-menu-item><span>No recent notifications</span></button>
     </ng-template>
   </ng-container>
   <mat-divider></mat-divider>
@@ -184,3 +158,6 @@
     Show all notifications
   </button>
 </mat-menu>
+
+<app-ai-chat-icon *ngIf="showAiChatIcon"></app-ai-chat-icon>
+<app-ai-chat-window></app-ai-chat-window>
