@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { takeUntil, take, map, tap, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,7 +31,7 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
-
+  activeConversationId?: string;
   isChatOpen$: Observable<boolean>;
   messages$: Observable<ChatMessage[]>;
   isLoading$: Observable<boolean>;
@@ -298,7 +298,22 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.router.navigate(['/ai-chat']);
     this.state.setIsChatOpen(false);
   }
+ async openPopout() {
+  // use active conversation if available; otherwise 'new'
+  const convoId = this.state.getCurrentConversationId();;
 
+  const tree = this.router.createUrlTree(['/ai-chat', convoId]);
+  const url  = `${window.location.origin}${this.router.serializeUrl(tree)}`;
+
+  // name the window so repeated clicks focus the same popout
+  const features = [
+    'noopener', 'noreferrer',
+    'width=1100', 'height=800',
+    'menubar=no', 'toolbar=no', 'location=no', 'status=no'
+  ].join(',');
+
+  window.open(url, 'mason-popout', features);
+}
   togglePromptsPopup(): void {
     this.isPromptsPopupVisible = !this.isPromptsPopupVisible;
     this.cdRef.detectChanges();

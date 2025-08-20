@@ -1,3 +1,5 @@
+  /* Make <app-timeline> itself a container */
+
     .timeline-container {
       background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
       border: 1px solid #d9d9d9;
@@ -48,10 +50,13 @@
       color: #333;
     }
 
-    .timeline-legend {
-      display: flex;
-      gap: 1rem;
-    }
+.timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(0.4rem, 1.2cqi, 1.2rem);
+  font-size: clamp(0.85rem, 0.6cqi + .7rem, 1rem);
+}
 
     .legend-item {
       display: flex;
@@ -573,4 +578,10 @@
 .weather-icon {
   width: 24px;
   height: 24px;
+}
+@container timeline (max-width: 480px) {
+  .timeline-legend { gap: 0.5rem; }
+}
+@container timeline (min-width: 900px) {
+  .timeline-legend { gap: 1.5rem; }
 }

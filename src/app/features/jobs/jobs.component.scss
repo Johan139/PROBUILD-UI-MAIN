@@ -405,8 +405,6 @@ textarea[matInput] {
   border-radius: 8px;
   border: 1px solid $light-gray;
     display: block;
-  min-width: max-content; // <--- This is critical
-  width: fit-content;
 }
 app-timeline {
   display: block;

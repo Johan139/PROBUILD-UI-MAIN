@@ -81,7 +81,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     return true; // Disable in all other cases
   }
 
-  public get isInputDisabled(): boolean {
+   public get isInputDisabled(): boolean {
       let selectedPrompts: number[] = [];
       this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
       return selectedPrompts.length > 0;
@@ -117,11 +117,11 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
 
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.hasDocuments$ = this.aiChatStateService.documents$.pipe(
       map(documents => documents.length > 0)
     );
-    this.signalrService.startConnection();
+   await this.signalrService.startConnection();
     this.aiChatService.getMyConversations();
     this.aiChatService.getMyPrompts();
     this.setupConversationSelection();
@@ -170,9 +170,11 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.signalrService.stopConnection();
-    this.destroy$.next();
-    this.destroy$.complete();
+    const conversationId = this.aiChatStateService.getCurrentConversationId()?? "";
+    console.log(conversationId)
+  this.signalrService.leaveConversationGroup(conversationId);
+  this.destroy$.next();
+  this.destroy$.complete();
   }
 
   private scrollToBottom(behavior: 'auto' | 'smooth' = 'auto'): void {
@@ -454,9 +456,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     }
   }
 
-  confirmPrompts(): void {
-    this.isPromptsPopupVisible = false;
-  }
+
 
     togglePromptSelection(promptId: number): void {
       this.prompts$.pipe(take(1)).subscribe(allPrompts => {

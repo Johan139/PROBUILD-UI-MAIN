@@ -95,7 +95,7 @@
                   autocomplete="off"
                   (input)="autoResize($event)"
                   (keydown)="onKeyDown($event)"
-                  rows="1"
+                             rows="1"
                   [disabled]="isInputDisabled"
                   [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''"></textarea>
         <span class="button-wrapper"
@@ -122,7 +122,7 @@
       </form>
     </div>
     <div class="prompts-popup" *ngIf="isPromptsPopupVisible" #promptsPopup>
-      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="confirmPrompts()" mat-raised-button color="primary" class="confirm-btn submit-btn">Confirm</button>
+
       <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-raised-button color="warn" class="clear-btn submit-btn">Clear</button>
       <div *ngFor="let prompt of prompts$ | async"
            class="prompt-item"
