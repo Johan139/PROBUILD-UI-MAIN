@@ -170,9 +170,9 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    const conversationId = this.aiChatStateService.getCurrentConversationId()?? "";
-    console.log(conversationId)
-  this.signalrService.leaveConversationGroup(conversationId);
+  const conversationId = this.aiChatStateService.getCurrentConversationId()?? "";
+  //this.signalrService.leaveConversationGroup(conversationId);
+  this.signalrService.stopConnection();
   this.destroy$.next();
   this.destroy$.complete();
   }
@@ -265,6 +265,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
         if (currentConversationId) {
           const documentUrls = this.documents.map(doc => doc.blobUrl);
           this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
+          this.router.navigate(['/ai-chat', currentConversationId]);
         } else {
           this.aiChatService.startConversation(messageToSend, selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null, this.files, selectedPromptKeys)
             .subscribe(newConversation => {
