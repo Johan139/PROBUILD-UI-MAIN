@@ -25,75 +25,99 @@ export class AuthService {
 
   constructor() {}
 
+  // ---- helpers: safe JWT parsing (Base64URL) ----
+  private normalizeToken(token: string): string {
+    return token?.startsWith('Bearer ') ? token.slice(7).trim() : token;
+  }
+
+  private base64UrlToUtf8(b64url: string): string {
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+    const binary = atob(b64 + pad);
+    // UTF-8 safe decode
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    try {
+      return new TextDecoder().decode(bytes);
+    } catch {
+      // Fallback (ASCII)
+      return binary;
+    }
+  }
+
+  private parseJwt<T = any>(token: string | null): T | null {
+    if (!token) return null;
+    const clean = this.normalizeToken(token);
+    // header.payload.signature
+    if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(clean)) return null;
+    const parts = clean.split('.');
+    try {
+      const json = this.base64UrlToUtf8(parts[1]);
+      return JSON.parse(json) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private getExp(token: string | null): number | null {
+    const payload = this.parseJwt<any>(token);
+    return payload?.exp ?? null;
+  }
+
   public hasPermission(permissionKey: string): Observable<boolean> {
     const userRole = this.getUserRole();
     if (userRole === 'GENERAL_CONTRACTOR') {
       return new BehaviorSubject(true).asObservable();
     }
-    return this.userPermissions$.pipe(
-      map(permissions => permissions.includes(permissionKey))
-    );
+    return this.userPermissions$.pipe(map((permissions) => permissions.includes(permissionKey)));
   }
 
   async initialize(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
     const token = localStorage.getItem('accessToken');
-    if (!token) {
-      return; // No token, not logged in
-    }
+    if (!token) return;
 
     // Use the token as the source of truth to populate the user
     this.loadUserFromToken(token);
 
-    try {
-      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
-      const expiration = new Date(0);
-      expiration.setUTCSeconds(decodedToken.exp);
-
-      // Check if the token is expired and refresh it if necessary
-      if (expiration.valueOf() < Date.now()) {
-        console.log('Access token expired, attempting to refresh...');
-        try {
-          await firstValueFrom(this.refreshToken());
-          const newToken = localStorage.getItem('accessToken');
-          if (newToken) {
-            // Reload user data from the new token
-            this.loadUserFromToken(newToken);
-          }
-        } catch (err) {
-          console.error('Session expired. Logging out.', err);
-          this.logout();
-        }
-      }
-    } catch (err) {
-      console.error('Invalid token found. Logging out.', err);
+    const exp = this.getExp(token);
+    if (exp == null) {
+      console.error('Invalid token found. Logging out.');
       this.logout();
+      return;
+    }
+
+    const expiration = exp * 1000; // exp is in seconds
+    if (expiration < Date.now()) {
+      console.log('Access token expired, attempting to refresh...');
+      try {
+        await firstValueFrom(this.refreshToken());
+        const newToken = localStorage.getItem('accessToken');
+        if (newToken) this.loadUserFromToken(newToken);
+      } catch (err) {
+        console.error('Session expired. Logging out.', err);
+        this.logout();
+      }
     }
   }
 
   login(credentials: { email: string; password: string }): Observable<any> {
     return this.http
-      .post<any>(`${this.apiUrl}/login`, credentials, {
-        headers: { 'Content-Type': 'application/json' },
-      })
+      .post<any>(`${this.apiUrl}/login`, credentials, { headers: { 'Content-Type': 'application/json' } })
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
           if (error.status === 401) {
-            // If the first login fails with 401, try the member login
             return this.loginMember(credentials);
           }
-          // For other errors, show the error
           return throwError(() => this.handleLoginError(error));
         })
       );
   }
 
   private handleSuccessfulLogin(response: any): Observable<any> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return of(response);
-    }
+    if (!isPlatformBrowser(this.platformId)) return of(response);
 
     if (!response || typeof response !== 'object' || !response.token) {
       console.warn('Invalid response received. Skipping login logic.');
@@ -107,7 +131,7 @@ export class AuthService {
 
     if (response.userId) {
       const { userId, firstName, lastName, userType } = response;
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = this.parseJwt<any>(token) ?? {};
       const companyName = payload.CompanyName || '';
 
       const user = { id: userId, firstName, lastName, userType, companyName };
@@ -146,14 +170,10 @@ export class AuthService {
 
   loginMember(credentials: { email: string; password: string }): Observable<any> {
     return this.http
-      .post<any>(`${this.apiUrl}/login/member`, credentials, {
-        headers: { 'Content-Type': 'application/json' },
-      })
+      .post<any>(`${this.apiUrl}/login/member`, credentials, { headers: { 'Content-Type': 'application/json' } })
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
-        catchError((error: HttpErrorResponse) => {
-          return throwError(() => this.handleLoginError(error));
-        })
+        catchError((error: HttpErrorResponse) => throwError(() => this.handleLoginError(error)))
       );
   }
 
@@ -200,21 +220,24 @@ export class AuthService {
     const token = localStorage.getItem('accessToken');
     if (!token) return null;
 
-    try {
-      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
-      const expiration = new Date(0);
-      expiration.setUTCSeconds(decodedToken.exp);
-
-      if (expiration.valueOf() < Date.now() + 5000) {
-        await firstValueFrom(this.refreshToken());
-        return localStorage.getItem('accessToken');
-      }
-
-      return token;
-    } catch (err) {
-      console.error('Token decode failed:', err);
+    const exp = this.getExp(token);
+    if (exp == null) {
+      console.error('Token decode failed (invalid format).');
       return null;
     }
+
+    // Refresh if expiring within 5 seconds
+    if (exp * 1000 < Date.now() + 5000) {
+      try {
+        await firstValueFrom(this.refreshToken());
+        return localStorage.getItem('accessToken');
+      } catch (e) {
+        console.error('Refresh failed in getToken()', e);
+        return null;
+      }
+    }
+
+    return this.normalizeToken(token);
   }
 
   isLoggedIn(): boolean {
@@ -227,13 +250,8 @@ export class AuthService {
 
   isTeamMember(): boolean {
     const token = localStorage.getItem('accessToken');
-    if (!token) return false;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.isTeamMember === 'true';
-    } catch (e) {
-      return false;
-    }
+    const payload = this.parseJwt<any>(token);
+    return payload?.isTeamMember === 'true';
   }
 
   private loadUserFromToken(token: string): void {
@@ -249,80 +267,80 @@ export class AuthService {
       return;
     }
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-
-      if (payload.isTeamMember === 'true') {
-        const teamMemberId = payload.team.split(':')[0];
-        this.teamManagementService.getTeamMemberById(teamMemberId).subscribe({
-          next: (teamMember) => {
-            const user = {
-              id: teamMemberId,
-              inviterId: teamMember.inviterId,
-              firstName: teamMember.firstName,
-              lastName: teamMember.lastName,
-              email: teamMember.email,
-              userType: teamMember.role,
-              isTeamMember: true,
-            };
-            if (user.inviterId) {
-              this.currentUserSubject.next(user);
-            } else {
-              console.warn('Team member data is incomplete. Waiting for inviterId.');
-            }
-            this.loadUserPermissions(teamMemberId);
-          },
-          error: (err) => {
-            console.error('Failed to fetch team member details', err);
-            this.currentUserSubject.next(null);
-          },
-        });
-      } else {
-        const user = {
-          id: payload.UserId || localStorage.getItem('userId'),
-          userType: payload.UserType || localStorage.getItem('userType'),
-          firstName: payload.FirstName || localStorage.getItem('firstName'),
-          lastName: payload.LastName || localStorage.getItem('lastName'),
-          companyName: payload.CompanyName || localStorage.getItem('companyName'),
-        };
-        this.currentUserSubject.next(user);
-      }
-    } catch (err) {
-      console.error('Failed to decode token', err);
+    const payload = this.parseJwt<any>(token);
+    if (!payload) {
+      console.error('Failed to decode token');
       this.currentUserSubject.next(null);
+      return;
+    }
+
+    if (payload.isTeamMember === 'true') {
+      const teamMemberId = (payload.team || '').split(':')[0];
+      if (!teamMemberId) {
+        console.warn('Missing team member id in token');
+        this.currentUserSubject.next(null);
+        return;
+      }
+      this.teamManagementService.getTeamMemberById(teamMemberId).subscribe({
+        next: (teamMember) => {
+          const user = {
+            id: teamMemberId,
+            inviterId: teamMember.inviterId,
+            firstName: teamMember.firstName,
+            lastName: teamMember.lastName,
+            email: teamMember.email,
+            userType: teamMember.role,
+            isTeamMember: true,
+          };
+          if (user.inviterId) {
+            this.currentUserSubject.next(user);
+          } else {
+            console.warn('Team member data is incomplete. Waiting for inviterId.');
+          }
+          this.loadUserPermissions(teamMemberId);
+        },
+        error: (err) => {
+          console.error('Failed to fetch team member details', err);
+          this.currentUserSubject.next(null);
+        },
+      });
+    } else {
+      const user = {
+        id: payload.UserId || localStorage.getItem('userId'),
+        userType: payload.UserType || localStorage.getItem('userType'),
+        firstName: payload.FirstName || localStorage.getItem('firstName'),
+        lastName: payload.LastName || localStorage.getItem('lastName'),
+        companyName: payload.CompanyName || localStorage.getItem('companyName'),
+      };
+      this.currentUserSubject.next(user);
     }
   }
 
   fetchTeamMemberDetails(token: string): Observable<any> {
-    try {
-      const decodedToken: any = JSON.parse(atob(token.split('.')[1]));
-      const teamInfo = decodedToken.team;
-      if (!teamInfo) {
-        return throwError(() => new Error('Not a team member token'));
-      }
-      const teamMemberId = teamInfo.split(':')[0];
-
-      return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
-        tap(memberDetails => {
-          const user = {
-            id: memberDetails.id,
-            inviterId: memberDetails.inviterId,
-            firstName: memberDetails.firstName,
-            lastName: memberDetails.lastName,
-            role: memberDetails.role,
-          };
-          localStorage.setItem('userId', user.id);
-          localStorage.setItem('firstName', user.firstName);
-          localStorage.setItem('lastName', user.lastName);
-          localStorage.setItem('userType', user.role);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          this.currentUserSubject.next(user);
-        })
-      );
-    } catch (err) {
-      console.error('Failed to decode token or fetch team member details', err);
-      return throwError(() => new Error('Invalid token'));
+    const payload = this.parseJwt<any>(token);
+    const teamInfo = payload?.team;
+    if (!teamInfo) {
+      return throwError(() => new Error('Not a team member token'));
     }
+    const teamMemberId = teamInfo.split(':')[0];
+
+    return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
+      tap((memberDetails) => {
+        const user = {
+          id: memberDetails.id,
+          inviterId: memberDetails.inviterId,
+          firstName: memberDetails.firstName,
+          lastName: memberDetails.lastName,
+          role: memberDetails.role,
+        };
+        localStorage.setItem('userId', user.id);
+        localStorage.setItem('firstName', user.firstName);
+        localStorage.setItem('lastName', user.lastName);
+        localStorage.setItem('userType', user.role);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+      })
+    );
   }
 
   private loadUserPermissions(teamMemberId: string): void {
