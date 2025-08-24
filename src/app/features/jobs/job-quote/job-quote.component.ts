@@ -123,7 +123,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   activeBidsDataSource = new MatTableDataSource<any>();
   activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
 
-  analysisType: 'Comprehensive' | 'Selected' = 'Comprehensive';
+  analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
   availablePrompts$: Observable<Prompt[]>;
   selectedPrompts = new FormControl([]);
   analysisReport: string | null = null;
@@ -146,7 +146,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
-    const hiddenPromptsForJobQuote = ['SYSTEM_COMPREHENSIVE_ANALYSIS'];
+    const hiddenPromptsForJobQuote = ['SYSTEM_COMPREHENSIVE_ANALYSIS', 'SYSTEM_RENOVATION_ANALYSIS'];
     this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
       map(prompts => prompts.filter(p => !hiddenPromptsForJobQuote.includes(p.promptKey)))
     );
@@ -513,8 +513,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   onSubmit(): void {
     if (this.analysisType === 'Comprehensive') {
       this.performComprehensiveAnalysis();
-    } else {
+    } else if (this.analysisType === 'Selected') {
       this.performSelectedAnalysis();
+    } else {
+      this.performRenovationAnalysis();
     }
   }
 
@@ -941,6 +943,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.performSaveJob();
+  }
+
+  performRenovationAnalysis(): void {
     this.performSaveJob();
   }
 
