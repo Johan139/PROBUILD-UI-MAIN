@@ -176,6 +176,16 @@ export class JobDataService {
     );
 
     if (isRenovation) {
+      // First, create a map of Phase IDs (e.g., "R-1") to full names
+      const phaseMap = new Map<string, string>();
+      const phaseRegex = /### \*\*(Phase (R-\d+): (.*?)) Bill of Quantities\*\*/g;
+      let match;
+      while ((match = phaseRegex.exec(report)) !== null) {
+        const phaseId = match[2];
+        const fullName = match[3].trim();
+        phaseMap.set(phaseId, fullName);
+      }
+
       const timelineMatch = report.match(/### \*\*S-2: Project Timeline & Schedule\*\*([\s\S]*?)(?=### \*\*S-3:|$)/);
       if (!timelineMatch || !timelineMatch[1]) return [];
 
@@ -196,16 +206,19 @@ export class JobDataService {
         if (columns.length < 7) continue;
 
         const taskName = columns[1];
-        const phaseName = columns[2];
+        const phaseId = columns[2]; // This is "R-1", "R-2", etc.
         const duration = columns[3];
         const startDate = columns[4];
         const endDate = columns[5];
 
-        if (!taskGroupMap.has(phaseName)) {
-          taskGroupMap.set(phaseName, []);
+        // Use the map to get the full, descriptive name
+        const descriptivePhaseName = phaseMap.get(phaseId) || phaseId;
+
+        if (!taskGroupMap.has(descriptivePhaseName)) {
+          taskGroupMap.set(descriptivePhaseName, []);
         }
 
-        taskGroupMap.get(phaseName)?.push({
+        taskGroupMap.get(descriptivePhaseName)?.push({
           task: this.cleanTaskName(taskName),
           days: parseInt(duration, 10) || 0,
           startDate: startDate,
