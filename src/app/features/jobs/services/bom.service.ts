@@ -111,52 +111,101 @@ export class BomService {
       return null;
     };
 
-    const reportSections = fullResponse.split(
-      /(?=Ready for the next prompt \d+\.)/
+    const isRenovation = fullResponse.includes(
+      'This concludes the comprehensive project analysis for the renovation. Standing by.'
     );
 
-    for (const sectionText of reportSections) {
-      const promptNumberMatch = sectionText.match(
-        /Ready for the next prompt (\d+)\./
-      );
-      if (!promptNumberMatch) continue;
+    if (isRenovation) {
+      // For renovation prompts, only parse the detailed cost breakdown section
+      const costSummaryMatch = fullResponse.match(/### \*\*S-1: Detailed Cost Breakdown Summary\*\*([\s\S]*?)(?=### \*\*S-2:|$)/);
+      if (costSummaryMatch && costSummaryMatch[1]) {
+        const costSummaryText = costSummaryMatch[1];
+        const costLines = costSummaryText.trim().split('\n');
 
-      const promptNumber = parseInt(promptNumberMatch[1], 10);
-      const phaseName = promptTitles[promptNumber];
+        // Find all tables within the section
+        for (let i = 0; i < costLines.length; i++) {
+          if (costLines[i].trim().startsWith('|') && !costLines[i].includes('---')) {
+            const table = parseTableFromLines(costLines, i);
 
-      if (phaseName) {
-        const lines = sectionText.trim().split('\n');
+            // A table is considered a cost table if it has a "Total Cost" column OR both "Description" and "Amount" columns
+            const isCostTable = table && (
+              table.headers.some((h: string) => h.toLowerCase().includes('total cost')) ||
+              (table.headers.includes('Description') && table.headers.some((h: string) => h.includes('Amount')))
+            );
 
-        const bomTitleIndex = lines.findIndex((l) =>
-          l.includes('Materials Bill of Materials (BOM)')
-        );
-        if (bomTitleIndex !== -1) {
-          const table = parseTableFromLines(lines, bomTitleIndex + 1);
-          if (table) {
-            sections.push({
-              title: `${phaseName} - Bill of Materials`,
-              type: 'table',
-              ...table,
-            });
+            if (isCostTable) {
+              let tableTitle = 'Cost Breakdown'; // Default title
+              // Find the nearest preceding header to use as a title
+              for (let k = i - 1; k >= 0; k--) {
+                const trimmedLine = costLines[k].trim();
+                if (trimmedLine.startsWith('####') || trimmedLine.startsWith('### **Part B')) {
+                  tableTitle = trimmedLine.replace(/#|\*/g, '').trim();
+                  break;
+                }
+              }
+              sections.push({
+                title: tableTitle,
+                type: 'table',
+                ...table,
+              });
+              // Skip past the table we just parsed
+              if(table.content) {
+                i += table.content.length + 2;
+              }
+            }
           }
         }
+      }
+    } else {
+      // Existing logic for Full Analysis prompts
+      const reportSections = fullResponse.split(
+        /(?=Ready for the next prompt \d+\.)/
+      );
 
-        const subconTitleIndex = lines.findIndex((l) =>
-          l.includes('Subcontractor Cost Breakdown')
+      for (const sectionText of reportSections) {
+        const promptNumberMatch = sectionText.match(
+          /Ready for the next prompt (\d+)\./
         );
-        if (subconTitleIndex !== -1) {
-          const table = parseTableFromLines(lines, subconTitleIndex + 1);
-          if (table) {
-            sections.push({
-              title: `${phaseName} - Subcontractor Cost Breakdown`,
-              type: 'table',
-              ...table,
-            });
+        if (!promptNumberMatch) continue;
+
+        const promptNumber = parseInt(promptNumberMatch[1], 10);
+        const phaseName = promptTitles[promptNumber];
+
+        if (phaseName) {
+          const lines = sectionText.trim().split('\n');
+
+          const bomTitleIndex = lines.findIndex((l) =>
+            l.includes('Materials Bill of Materials (BOM)')
+          );
+          if (bomTitleIndex !== -1) {
+            const table = parseTableFromLines(lines, bomTitleIndex + 1);
+            if (table) {
+              sections.push({
+                title: `${phaseName} - Bill of Materials`,
+                type: 'table',
+                ...table,
+              });
+            }
+          }
+
+          const subconTitleIndex = lines.findIndex((l) =>
+            l.includes('Subcontractor Cost Breakdown')
+          );
+          if (subconTitleIndex !== -1) {
+            const table = parseTableFromLines(lines, subconTitleIndex + 1);
+            if (table) {
+              sections.push({
+                title: `${phaseName} - Subcontractor Cost Breakdown`,
+                type: 'table',
+                ...table,
+              });
+            }
           }
         }
       }
     }
 
+    // Global fallback for final cost breakdown
     const allLines = fullResponse.split('\n');
     let costBreakdownTitleIndex = -1;
 
@@ -174,14 +223,18 @@ export class BomService {
       }
     }
 
-    if (costBreakdownTitleIndex !== -1) {
+    if (costBreakdownTitleIndex !== -1 && isRenovation === false) {
       const table = parseTableFromLines(allLines, costBreakdownTitleIndex + 1);
       if (table) {
-        sections.push({
-          title: 'Total Cost Breakdown',
-          type: 'table',
-          ...table,
-        });
+        // Avoid duplicating if already found in renovation parse
+        const titleExists = sections.some(s => s.title.includes('Cost Breakdown'));
+        if (!titleExists) {
+          sections.push({
+            title: 'Total Cost Breakdown',
+            type: 'table',
+            ...table,
+          });
+        }
       }
     }
 
