@@ -218,11 +218,18 @@ export class JobDataService {
           taskGroupMap.set(descriptivePhaseName, []);
         }
 
+        const formatDateString = (dateStr: string) => {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '';
+          return date.toISOString().split('T')[0];
+        };
+
         taskGroupMap.get(descriptivePhaseName)?.push({
           task: this.cleanTaskName(taskName),
           days: parseInt(duration, 10) || 0,
-          startDate: startDate,
-          endDate: endDate,
+          startDate: formatDateString(startDate),
+          endDate: formatDateString(endDate),
           status: 'Pending',
           cost: 0,
           deleted: false,
@@ -270,11 +277,18 @@ export class JobDataService {
         if (!taskName) {
           continue;
         }
+        const formatDateString = (dateStr: string) => {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '';
+          return date.toISOString().split('T')[0];
+        };
+
         taskGroupMap.get(currentPhase)?.push({
           task: this.cleanTaskName(taskName),
           days: parseInt(duration, 10) || 0,
-          startDate: startDate,
-          endDate: endDate,
+          startDate: formatDateString(startDate),
+          endDate: formatDateString(endDate),
           status: 'Pending',
           cost: 0,
           deleted: false,
