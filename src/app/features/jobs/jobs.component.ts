@@ -157,20 +157,26 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.resetFileInput();
     });
 
-    this.route.queryParams.subscribe((params) => {
-      this.projectDetails = params;
-      this.startDateDisplay = new Date(
-        this.projectDetails.date
-      ).toISOString().split('T')[0];
-      this.jobDataService.fetchJobData(this.projectDetails);
+    this.route.queryParams.pipe(
+      take(1),
+      switchMap(params => {
+        this.jobDataService.fetchJobData(params);
+        return this.store.select(state => state.projectDetails);
+      }),
+      filter(projectDetails => !!projectDetails)
+    ).subscribe(projectDetails => {
+      this.projectDetails = projectDetails;
+      this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
 
       if (this.projectDetails?.jobId) {
         this.authService.currentUser$.pipe(
           filter(user => !!user),
           take(1)
         ).subscribe(user => {
-          this.currentUserId = user.id;
-          this.checkProjectOwnerStatus(this.projectDetails.jobId, user.id);
+          if (user) {
+            this.currentUserId = user.id;
+            this.checkProjectOwnerStatus(this.projectDetails.jobId, user.id);
+          }
         });
       }
     });
