@@ -118,6 +118,22 @@ export class JobDataService {
         } else if (result.source === 'bom' && result.markdown) {
           const parsedGroups = this.parseTimelineToTaskGroups(result.markdown);
           this.store.setState({ subtaskGroups: parsedGroups });
+
+          // Also extract isSelected flag and update projectDetails
+          try {
+            const jsonMatch = result.markdown.match(/```json([\s\S]*?)```/);
+            if (jsonMatch && jsonMatch[1]) {
+              const parsedJson = JSON.parse(jsonMatch[1]);
+              if (parsedJson.isSelected === 'true') {
+                const currentDetails = this.store.getState().projectDetails;
+                this.store.setState({
+                  projectDetails: { ...currentDetails, isSelected: true }
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing isSelected flag:', e);
+          }
         }
       },
       error: (err: any) => {
@@ -171,11 +187,67 @@ export class JobDataService {
     if (!report) return [];
 
     const taskGroupMap = new Map<string, any[]>();
+    let isSelected = false;
+    try {
+      const jsonMatch = report.match(/```json([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        const parsedJson = JSON.parse(jsonMatch[1]);
+        if (parsedJson.isSelected === 'true') {
+          isSelected = true;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing JSON for timeline:', e);
+    }
+
     const isRenovation = report.includes(
       'This concludes the comprehensive project analysis for the renovation. Standing by.'
     );
 
-    if (isRenovation) {
+    if (isSelected) {
+      const lines = report.split('\n');
+      let tableStarted = false;
+      let currentPhase = '';
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('| Phase | Task |')) {
+          tableStarted = true;
+          continue;
+        }
+        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+          continue;
+        }
+
+        const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+        if (columns.length < 6) continue;
+
+        const phaseRaw = columns[0].replace(/\*\*/g, '').trim();
+        if (phaseRaw) {
+          currentPhase = phaseRaw;
+        }
+
+        const taskName = columns[1];
+        const duration = columns[3];
+        const startDate = columns[4];
+        const endDate = columns[5];
+
+        if (!taskGroupMap.has(currentPhase)) {
+          taskGroupMap.set(currentPhase, []);
+        }
+
+        taskGroupMap.get(currentPhase)?.push({
+          task: this.cleanTaskName(taskName),
+          days: parseInt(duration, 10) || 0,
+          startDate: this.formatDateString(startDate),
+          endDate: this.formatDateString(endDate),
+          status: 'Pending',
+          cost: 0,
+          deleted: false,
+          accepted: false,
+        });
+      }
+    } else if (isRenovation) {
       // First, create a map of Phase IDs (e.g., "R-1") to full names
       const phaseMap = new Map<string, string>();
       const phaseRegex = /### \*\*(Phase (R-\d+): (.*?)) Bill of Quantities\*\*/g;
@@ -301,6 +373,13 @@ export class JobDataService {
       title: this.cleanTaskName(title),
       subtasks,
     }));
+  }
+
+  private formatDateString(dateStr: string): string {
+    if (!dateStr || dateStr.trim() === '-') return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
   }
 
   private cleanTaskName(name: string): string {

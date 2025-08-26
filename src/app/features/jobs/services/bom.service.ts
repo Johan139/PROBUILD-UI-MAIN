@@ -115,7 +115,50 @@ export class BomService {
       'This concludes the comprehensive project analysis for the renovation. Standing by.'
     );
 
-    if (isRenovation) {
+    let isSelected = false;
+    try {
+      const jsonMatch = fullResponse.match(/```json([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        const parsedJson = JSON.parse(jsonMatch[1]);
+        if (parsedJson.isSelected === 'true') {
+          isSelected = true;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing JSON from AI response:', e);
+    }
+
+    if (isSelected) {
+      const lines = fullResponse.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const trimmedLine = lines[i].trim();
+        if (trimmedLine.startsWith('|') && !trimmedLine.includes('---')) {
+          const table = parseTableFromLines(lines, i);
+          if (table && table.headers) {
+            const headers = table.headers.join(' ').toLowerCase();
+            let title = '';
+
+            if (headers.includes('task description') && headers.includes('total labor cost')) {
+              title = 'Labor Cost Breakdown';
+            } else if (headers.includes('item') && headers.includes('total cost')) {
+              title = 'Bill of Materials';
+            } else if (headers.includes('category') && headers.includes('amount')) {
+              title = 'Financial Summary';
+            }
+
+            if (title) {
+              sections.push({
+                title: title,
+                type: 'table',
+                ...table,
+              });
+              // Skip past the parsed table to avoid re-processing
+              i += table.content.length + 2;
+            }
+          }
+        }
+      }
+    } else if (isRenovation) {
       // For renovation prompts, only parse the detailed cost breakdown section
       const costSummaryMatch = fullResponse.match(/### \*\*S-1: Detailed Cost Breakdown Summary\*\*([\s\S]*?)(?=### \*\*S-2:|$)/);
       if (costSummaryMatch && costSummaryMatch[1]) {
