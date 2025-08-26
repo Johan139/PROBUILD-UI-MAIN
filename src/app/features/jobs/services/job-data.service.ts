@@ -228,9 +228,25 @@ export class JobDataService {
         }
 
         const taskName = columns[1];
-        const duration = columns[3];
-        const startDate = columns[4];
-        const endDate = columns[5];
+        const durationStr = columns[3];
+        let startDateStr = columns[4];
+        const endDateStr = columns[5];
+
+        // Filter out the "Total Project Duration" line by checking the task name column
+        if (phaseRaw.toLowerCase().replace(/\*/g, '').includes('total project duration')) {
+          continue;
+        }
+
+        const duration = parseInt(durationStr, 10) || 0;
+        let endDate = this.parseDate(endDateStr);
+        let startDate = this.parseDate(startDateStr);
+
+        if (!startDate && endDate && duration > 0) {
+          startDate = new Date(endDate);
+          startDate.setDate(endDate.getDate() - duration);
+        } else if (!startDate && endDate) {
+          startDate = endDate;
+        }
 
         if (!taskGroupMap.has(currentPhase)) {
           taskGroupMap.set(currentPhase, []);
@@ -238,9 +254,9 @@ export class JobDataService {
 
         taskGroupMap.get(currentPhase)?.push({
           task: this.cleanTaskName(taskName),
-          days: parseInt(duration, 10) || 0,
-          startDate: this.formatDateString(startDate),
-          endDate: this.formatDateString(endDate),
+          days: duration,
+          startDate: startDate ? this.formatDateToYYYYMMDD(startDate) : '',
+          endDate: endDate ? this.formatDateToYYYYMMDD(endDate) : '',
           status: 'Pending',
           cost: 0,
           deleted: false,
@@ -375,10 +391,15 @@ export class JobDataService {
     }));
   }
 
-  private formatDateString(dateStr: string): string {
-    if (!dateStr || dateStr.trim() === '-') return '';
+  private parseDate(dateStr: string): Date | null {
+    if (!dateStr || dateStr.trim() === '-' || dateStr.toLowerCase().includes('assumed complete')) {
+      return null;
+    }
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '';
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  private formatDateToYYYYMMDD(date: Date): string {
     return date.toISOString().split('T')[0];
   }
 
