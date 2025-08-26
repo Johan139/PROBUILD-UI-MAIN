@@ -23,33 +23,41 @@ export class ReportService {
       }
 
       const fullResponse = results[0].fullResponse;
-      const reportStartMarker = 'Ready for the next prompt 20.';
-      const reportEndMarker = 'Ready for the next prompt 21.';
-      let startIndex = fullResponse.indexOf(reportStartMarker);
-      if (startIndex === -1) {
+      let reportContent = '';
+      const isRenovation = fullResponse.includes(
+        'This concludes the comprehensive project analysis for the renovation. Standing by.'
+      );
+
+      if (isRenovation) {
+        const renovationMatch = fullResponse.match(/### \*\*S-3: Environmental Impact Report\*\*([\s\S]*?)(?=### \*\*S-4:|$|### \*\*Final Executive Briefing)/);
+        if (renovationMatch && renovationMatch[1]) {
+          reportContent = renovationMatch[1].trim();
+        }
+      } else {
+        const reportStartMarker = 'Ready for the next prompt 20.';
+        const reportEndMarker = 'Ready for the next prompt 21.';
+        let startIndex = fullResponse.indexOf(reportStartMarker);
+        if (startIndex !== -1) {
+          startIndex += reportStartMarker.length;
+          const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+          if (endIndex !== -1) {
+            reportContent = fullResponse.substring(startIndex, endIndex).trim();
+          }
+        }
+      }
+
+      if (!reportContent) {
         this.snackBar.open('Environmental report section not found.', 'Close', {
           duration: 3000,
         });
         return;
       }
-      startIndex += reportStartMarker.length;
-
-      const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
-      if (endIndex === -1) {
-        this.snackBar.open(
-          'End of environmental report section not found.',
-          'Close',
-          { duration: 3000 }
-        );
-        return;
-      }
-
-      let reportContent = fullResponse.substring(startIndex, endIndex).trim();
       const linesToRemove = [
         'Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.',
         '**Prepared By:** Gemini Sustainability Consulting',
         '**From:** Gemini - Sustainability Consultant & Estimator',
         '### **Phase 20: Environmental Lifecycle Report**',
+        'Ready for the next prompt 10.'
       ];
       linesToRemove.forEach((line) => {
         reportContent = reportContent
@@ -59,6 +67,9 @@ export class ReportService {
           )
           .trim();
       });
+
+      // Remove the dynamic introductory paragraph
+      reportContent = reportContent.replace(/As a Sustainability and Environmental Construction Analyst,[\s\S]*?\n\n/, '').trim();
 
       const parsedContent = await Promise.resolve(marked(reportContent));
 

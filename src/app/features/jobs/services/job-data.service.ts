@@ -170,74 +170,104 @@ export class JobDataService {
   ): { title: string; subtasks: any[] }[] {
     if (!report) return [];
 
-    const lines = report.split('\n');
     const taskGroupMap = new Map<string, any[]>();
-    let tableStarted = false;
-    const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
-    let currentPhase = '';
+    const isRenovation = report.includes(
+      'This concludes the comprehensive project analysis for the renovation. Standing by.'
+    );
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
+    if (isRenovation) {
+      const timelineMatch = report.match(/### \*\*S-2: Project Timeline & Schedule\*\*([\s\S]*?)(?=### \*\*S-3:|$)/);
+      if (!timelineMatch || !timelineMatch[1]) return [];
 
-      if (trimmedLine.startsWith('Ready for the next prompt 20')) {
-        break;
+      const lines = timelineMatch[1].trim().split('\n');
+      let tableStarted = false;
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('| Task ID')) {
+          tableStarted = true;
+          continue;
+        }
+        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+          continue;
+        }
+
+        const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+        if (columns.length < 7) continue;
+
+        const taskName = columns[1];
+        const phaseName = columns[2];
+        const duration = columns[3];
+        const startDate = columns[4];
+        const endDate = columns[5];
+
+        if (!taskGroupMap.has(phaseName)) {
+          taskGroupMap.set(phaseName, []);
+        }
+
+        taskGroupMap.get(phaseName)?.push({
+          task: this.cleanTaskName(taskName),
+          days: parseInt(duration, 10) || 0,
+          startDate: startDate,
+          endDate: endDate,
+          status: 'Pending',
+          cost: 0,
+          deleted: false,
+          accepted: false,
+        });
       }
+    } else {
+      // Existing logic for Full Analysis
+      const lines = report.split('\n');
+      let tableStarted = false;
+      const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+      let currentPhase = '';
 
-      if (!tableStarted && headerRegex.test(trimmedLine)) {
-        tableStarted = true;
-        continue;
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('Ready for the next prompt 20')) break;
+        if (!tableStarted && headerRegex.test(trimmedLine)) {
+          tableStarted = true;
+          continue;
+        }
+        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+          continue;
+        }
+
+        const columns = trimmedLine.split('|').map((c) => c.trim()).slice(1, -1);
+        if (columns.length < 6) continue;
+
+        let phaseRaw = columns[0];
+        const taskName = columns[1];
+        const duration = columns[2];
+        const startDate = columns[4];
+        const endDate = columns[5];
+
+        if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone')) {
+          continue;
+        }
+
+        const phaseName = phaseRaw.replace(/\*\*|\\/g, '').trim();
+        if (phaseName) {
+          currentPhase = phaseName;
+        }
+        if (!taskGroupMap.has(currentPhase)) {
+          taskGroupMap.set(currentPhase, []);
+        }
+        if (!taskName) {
+          continue;
+        }
+        taskGroupMap.get(currentPhase)?.push({
+          task: this.cleanTaskName(taskName),
+          days: parseInt(duration, 10) || 0,
+          startDate: startDate,
+          endDate: endDate,
+          status: 'Pending',
+          cost: 0,
+          deleted: false,
+          accepted: false,
+        });
       }
-
-      if (
-        !tableStarted ||
-        !trimmedLine.startsWith('|') ||
-        trimmedLine.includes('---')
-      ) {
-        continue;
-      }
-
-      const columns = trimmedLine
-        .split('|')
-        .map((c) => c.trim())
-        .slice(1, -1);
-      if (columns.length < 6) continue;
-
-      let phaseRaw = columns[0];
-      const taskName = columns[1];
-      const duration = columns[2];
-      const startDate = columns[4];
-      const endDate = columns[5];
-
-      if (
-        phaseRaw.includes('Financial Milestone') ||
-        taskName.includes('Financial Milestone')
-      ) {
-        continue;
-      }
-
-      const phaseName = phaseRaw.replace(/\*\*|\\/g, '').trim();
-      if (phaseName) {
-        currentPhase = phaseName;
-      }
-
-      if (!taskGroupMap.has(currentPhase)) {
-        taskGroupMap.set(currentPhase, []);
-      }
-
-      if (!taskName) {
-        continue;
-      }
-
-      taskGroupMap.get(currentPhase)?.push({
-        task: this.cleanTaskName(taskName),
-        days: parseInt(duration, 10) || 0,
-        startDate: startDate,
-        endDate: endDate,
-        status: 'Pending',
-        cost: 0,
-        deleted: false,
-        accepted: false,
-      });
     }
 
     return Array.from(taskGroupMap.entries()).map(([title, subtasks]) => ({
