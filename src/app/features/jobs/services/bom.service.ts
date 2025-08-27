@@ -164,7 +164,7 @@ export class BomService {
     } else if (isRenovation) {
       // Isolate the main cost breakdown and summary sections
       const costSectionRegex = /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
-      const summarySectionRegex = /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=Ready for the next prompt 8\.|---)/;
+      const summarySectionRegex = /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=\n###|$)/;
 
       const costSectionMatch = fullResponse.match(costSectionRegex);
       if (costSectionMatch && costSectionMatch[2]) {

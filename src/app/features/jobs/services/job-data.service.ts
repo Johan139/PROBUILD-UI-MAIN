@@ -124,12 +124,15 @@ export class JobDataService {
             const jsonMatch = result.markdown.match(/```json([\s\S]*?)```/);
             if (jsonMatch && jsonMatch[1]) {
               const parsedJson = JSON.parse(jsonMatch[1]);
+              const currentDetails = this.store.getState().projectDetails;
+              const newDetails = { ...currentDetails };
               if (parsedJson.isSelected === 'true') {
-                const currentDetails = this.store.getState().projectDetails;
-                this.store.setState({
-                  projectDetails: { ...currentDetails, isSelected: true }
-                });
+                newDetails.isSelected = true;
               }
+              if (parsedJson.isRenovation === 'true') {
+                newDetails.isRenovation = true;
+              }
+              this.store.setState({ projectDetails: newDetails });
             }
           } catch (e) {
             console.error('Error parsing isSelected flag:', e);
@@ -188,6 +191,7 @@ export class JobDataService {
 
     const taskGroupMap = new Map<string, any[]>();
     let isSelected = false;
+    let isRenovation = false;
     try {
       const jsonMatch = report.match(/```json([\s\S]*?)```/);
       if (jsonMatch && jsonMatch[1]) {
@@ -195,14 +199,16 @@ export class JobDataService {
         if (parsedJson.isSelected === 'true') {
           isSelected = true;
         }
+        if (parsedJson.isRenovation === 'true') {
+          isRenovation = true;
+        }
+      }
+      if (!isRenovation) { // Fallback check
+        isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(report);
       }
     } catch (e) {
       console.error('Error parsing JSON for timeline:', e);
     }
-
-    const isRenovation = report.includes(
-      'This concludes the comprehensive project analysis for the renovation. Standing by.'
-    );
 
     if (isSelected) {
       const lines = report.split('\n');
@@ -264,25 +270,16 @@ export class JobDataService {
         });
       }
     } else if (isRenovation) {
-      // First, create a map of Phase IDs (e.g., "R-1") to full names
-      const phaseMap = new Map<string, string>();
-      const phaseRegex = /### \*\*(Phase (R-\d+): (.*?)) Bill of Quantities\*\*/g;
-      let match;
-      while ((match = phaseRegex.exec(report)) !== null) {
-        const phaseId = match[2];
-        const fullName = match[3].trim();
-        phaseMap.set(phaseId, fullName);
-      }
+      const timelineMatch = report.match(/### \*\*(Part A: Detailed Task Schedule|S-2: Project Timeline & Schedule)\*\*([\s\S]*?)(?=### \*\*Part B:|### \*\*S-3:|$)/);
+      if (!timelineMatch || !timelineMatch[2]) return [];
 
-      const timelineMatch = report.match(/### \*\*S-2: Project Timeline & Schedule\*\*([\s\S]*?)(?=### \*\*S-3:|$)/);
-      if (!timelineMatch || !timelineMatch[1]) return [];
-
-      const lines = timelineMatch[1].trim().split('\n');
+      const lines = timelineMatch[2].trim().split('\n');
       let tableStarted = false;
+      let currentPhase = '';
 
       for (const line of lines) {
         const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('| Task ID')) {
+        if (trimmedLine.startsWith('| Task ID') || trimmedLine.startsWith('| **Pre-Construction**')) {
           tableStarted = true;
           continue;
         }
@@ -291,33 +288,36 @@ export class JobDataService {
         }
 
         const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
-        if (columns.length < 7) continue;
 
-        const taskName = columns[1];
-        const phaseId = columns[2]; // This is "R-1", "R-2", etc.
-        const duration = columns[3];
-        const startDate = columns[4];
-        const endDate = columns[5];
-
-        // Use the map to get the full, descriptive name
-        const descriptivePhaseName = phaseMap.get(phaseId) || phaseId;
-
-        if (!taskGroupMap.has(descriptivePhaseName)) {
-          taskGroupMap.set(descriptivePhaseName, []);
+        // Handle different table structures
+        let taskName, phaseId, duration, startDate, endDate;
+        if (columns.length >= 7) {
+          taskName = columns[1];
+          phaseId = columns[2];
+          duration = columns[3];
+          startDate = columns[4];
+          endDate = columns[5];
+        } else if (columns.length >= 6) {
+            const phaseRaw = columns[0].replace(/\*\*/g, '').trim();
+            if(phaseRaw) currentPhase = phaseRaw;
+            taskName = columns[1];
+            phaseId = currentPhase;
+            duration = columns[3];
+            startDate = columns[4];
+            endDate = columns[5];
+        } else {
+            continue;
         }
 
-        const formatDateString = (dateStr: string) => {
-          if (!dateStr) return '';
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return '';
-          return date.toISOString().split('T')[0];
-        };
+        if (!taskGroupMap.has(phaseId)) {
+          taskGroupMap.set(phaseId, []);
+        }
 
-        taskGroupMap.get(descriptivePhaseName)?.push({
+        taskGroupMap.get(phaseId)?.push({
           task: this.cleanTaskName(taskName),
           days: parseInt(duration, 10) || 0,
-          startDate: formatDateString(startDate),
-          endDate: formatDateString(endDate),
+          startDate: this.parseDate(startDate) ? this.formatDateToYYYYMMDD(this.parseDate(startDate)!) : '',
+          endDate: this.parseDate(endDate) ? this.formatDateToYYYYMMDD(this.parseDate(endDate)!) : '',
           status: 'Pending',
           cost: 0,
           deleted: false,

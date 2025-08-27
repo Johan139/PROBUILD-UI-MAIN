@@ -24,9 +24,21 @@ export class ReportService {
 
       const fullResponse = results[0].fullResponse;
       let reportContent = '';
-      const isRenovation = fullResponse.includes(
-        'This concludes the comprehensive project analysis for the renovation. Standing by.'
-      );
+      let isRenovation = false;
+      try {
+        const jsonMatch = fullResponse.match(/```json([\s\S]*?)```/);
+        if (jsonMatch && jsonMatch[1]) {
+          const parsedJson = JSON.parse(jsonMatch[1]);
+          if (parsedJson.isRenovation === 'true') {
+            isRenovation = true;
+          }
+        }
+        if (!isRenovation) { // Fallback check
+          isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(fullResponse);
+        }
+      } catch (e) {
+        console.error('Error parsing JSON from AI response for report:', e);
+      }
 
       if (isRenovation) {
         const renovationMatch = fullResponse.match(/### \*\*S-3: Environmental Impact Report\*\*([\s\S]*?)(?=### \*\*S-4:|$|### \*\*Final Executive Briefing)/);
