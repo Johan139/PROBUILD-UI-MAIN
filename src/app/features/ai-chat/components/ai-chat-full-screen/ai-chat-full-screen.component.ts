@@ -301,10 +301,14 @@ this.aiChatStateService.currentConversation$
     }, 0);
   }
 
-  selectConversation(conversationId: string): void {
-    this.router.navigate(['/ai-chat', conversationId]);
-    this.selectConversation$.next(conversationId);
-  }
+selectConversation(conversationId: string): void {
+  // ✅ Clear streaming messages before navigating
+  this.streamingMessages.clear();
+  this.streamingMessagesSubject.next(new Map());
+
+  this.router.navigate(['/ai-chat', conversationId]);
+  this.selectConversation$.next(conversationId);
+}
 
   private setupConversationSelection(): void {
     this.selectConversation$.pipe(
@@ -332,15 +336,21 @@ this.aiChatStateService.currentConversation$
     this.aiChatStateService.sortConversations(this.sortOrder);
   }
 
-  startNewConversation(): void {
-    this.router.navigate(['/ai-chat', 'new']);
-    this.newMessageContent = '';
-    this.aiChatStateService.setActiveConversationId(null);
-    this.aiChatStateService.setMessages([]);
-    this.aiChatStateService.setDocuments([]);
-    this.aiChatService.getMyPrompts();
-    this.aiChatStateService.setLoading(false);
-  }
+ startNewConversation(): void {
+  this.router.navigate(['/ai-chat', 'new']);
+  this.newMessageContent = '';
+  console.log('startNewConversation');
+
+  this.aiChatStateService.setActiveConversationId(null);
+  this.aiChatStateService.setMessages([]);
+  this.aiChatStateService.setDocuments([]);
+  this.aiChatService.getMyPrompts();
+  this.aiChatStateService.setLoading(false);
+
+  // ✅ Clear streaming messages
+  this.streamingMessages.clear();
+  this.streamingMessagesSubject.next(new Map());
+}
 
   onAttachFile(): void {
     this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
@@ -402,12 +412,14 @@ const currentConversationId = this.conversationId;
         .filter((key): key is string => !!key);
 
       if (currentConversationId) {
+          console.log('Existing conversation')
   const documentUrls = this.documents.map(doc => doc.blobUrl);
 
 
   this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
   this.router.navigate(['/ai-chat', currentConversationId]);
 } else {
+  console.log('New Conversation')
         // Create new conversation and join group before sending message
 this.aiChatService.startConversation(
   messageToSend,
