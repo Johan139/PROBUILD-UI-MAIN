@@ -111,10 +111,7 @@ export class BomService {
       return null;
     };
 
-    const isRenovation = fullResponse.includes(
-      'This concludes the comprehensive project analysis for the renovation. Standing by.'
-    );
-
+    let isRenovation = false;
     let isSelected = false;
     try {
       const jsonMatch = fullResponse.match(/```json([\s\S]*?)```/);
@@ -123,6 +120,12 @@ export class BomService {
         if (parsedJson.isSelected === 'true') {
           isSelected = true;
         }
+        if (parsedJson.isRenovation === 'true') {
+          isRenovation = true;
+        }
+      }
+      if (!isRenovation) { // Fallback check
+        isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(fullResponse);
       }
     } catch (e) {
       console.error('Error parsing JSON from AI response:', e);
@@ -159,44 +162,34 @@ export class BomService {
         }
       }
     } else if (isRenovation) {
-      // For renovation prompts, only parse the detailed cost breakdown section
-      const costSummaryMatch = fullResponse.match(/### \*\*S-1: Detailed Cost Breakdown Summary\*\*([\s\S]*?)(?=### \*\*S-2:|$)/);
-      if (costSummaryMatch && costSummaryMatch[1]) {
-        const costSummaryText = costSummaryMatch[1];
-        const costLines = costSummaryText.trim().split('\n');
+      // Isolate the main cost breakdown and summary sections
+      const costSectionRegex = /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
+      const summarySectionRegex = /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=\n###|$)/;
 
-        // Find all tables within the section
-        for (let i = 0; i < costLines.length; i++) {
-          if (costLines[i].trim().startsWith('|') && !costLines[i].includes('---')) {
-            const table = parseTableFromLines(costLines, i);
+      const costSectionMatch = fullResponse.match(costSectionRegex);
+      if (costSectionMatch && costSectionMatch[2]) {
+        // Split the cost breakdown section into individual R-tables
+        const rSections = costSectionMatch[2].split(/^(?=#### \*\*R-|^\*\*R-)/m);
+        for (const rSection of rSections) {
+          if (rSection.trim() === '') continue;
 
-            // A table is considered a cost table if it has a "Total Cost" column OR both "Description" and "Amount" columns
-            const isCostTable = table && (
-              table.headers.some((h: string) => h.toLowerCase().includes('total cost')) ||
-              (table.headers.includes('Description') && table.headers.some((h: string) => h.includes('Amount')))
-            );
+          const lines = rSection.trim().split('\n');
+          const titleLine = lines[0].trim();
+          const tableTitle = titleLine.replace(/#|\*/g, '').trim();
 
-            if (isCostTable) {
-              let tableTitle = 'Cost Breakdown'; // Default title
-              // Find the nearest preceding header to use as a title
-              for (let k = i - 1; k >= 0; k--) {
-                const trimmedLine = costLines[k].trim();
-                if (trimmedLine.startsWith('####') || trimmedLine.startsWith('### **Part B')) {
-                  tableTitle = trimmedLine.replace(/#|\*/g, '').trim();
-                  break;
-                }
-              }
-              sections.push({
-                title: tableTitle,
-                type: 'table',
-                ...table,
-              });
-              // Skip past the table we just parsed
-              if(table.content) {
-                i += table.content.length + 2;
-              }
-            }
+          const table = parseTableFromLines(lines, 1);
+          if (table) {
+            sections.push({ title: tableTitle, type: 'table', ...table });
           }
+        }
+      }
+
+      const summaryMatch = fullResponse.match(summarySectionRegex);
+      if (summaryMatch && summaryMatch[2]) {
+        const lines = summaryMatch[2].trim().split('\n');
+        const table = parseTableFromLines(lines, 0);
+        if (table) {
+          sections.push({ title: 'Project Cost Summary', type: 'table', ...table });
         }
       }
     } else {
