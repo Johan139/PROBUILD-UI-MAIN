@@ -24,6 +24,8 @@ export class AiChatStateService {
 
   private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
   private readonly state$ = this.stateSubject.asObservable();
+  private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
+private _messages = new BehaviorSubject<ChatMessage[]>([]);
 
   currentConversation$ = this.state$.pipe(map(state => state.currentConversation), distinctUntilChanged());
   selectedPrompts$ = this.state$.pipe(map(state => state.selectedPrompts || []), distinctUntilChanged());
@@ -189,7 +191,24 @@ export class AiChatStateService {
     });
     this.updateState({ conversations: sortedConversations });
   }
+pushFinalStreamedMessage(content: string): void {
+  const conversationId = this.getCurrentConversationId();
+  if (!conversationId) return;
 
+  const currentMessages = this.stateSubject.getValue().messages;
+
+  const newMessage: ChatMessage = {
+    Id: Date.now(), // temporary ID
+    ConversationId: conversationId,
+    Role: 'model',
+    Content: content,
+    IsSummarized: false,
+    Timestamp: new Date(),
+    status: 'sent'
+  };
+
+  this.setMessages([...currentMessages, newMessage]);
+}
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };
