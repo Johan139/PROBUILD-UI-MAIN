@@ -117,30 +117,44 @@ public streamingMessages$ = this.streamingMessagesSubject.asObservable();
 
      this.prompts$ = this.state.prompts$;
 
-    this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
-      this.currentConversation = conversation;
-      if (conversation && conversation.Id) {
-        this.conversationId = conversation.Id;
-        await this.signalrService.joinConversationGroup(this.conversationId);
-      } else {
-        this.conversationId = null;
-      }
+this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
+  this.currentConversation = conversation;
+  if (conversation && conversation.Id) {
+    this.conversationId = conversation.Id;
+
+    await this.signalrService.joinConversationGroup(this.conversationId);
+
+    this.ngZone.run(() => {
+      this.clearStreamingMessages();
+      this.lastChunkByCid.clear(); // ✅ clear this to avoid "stuck on old stream"
+      this.state.setActiveConversationId(conversation.Id);
+      this.scrollToBottom('auto');
     });
+  } else {
+    this.conversationId = null;
+  }
+});
+
   }
 
   ngOnInit(): void {
+
+   
     this.hasDocuments$ = this.state.documents$.pipe(
       map(documents => documents.length > 0)
     );
-    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      this.isLoggedIn = !!user;
-      if (this.isLoggedIn) {
-        this.signalrService.startConnection();
-        this.aiChatService.getMyPrompts();
-        this.aiChatService.getMyConversations();
-        this.setupConversationSelection();
-      }
+this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+  this.isLoggedIn = !!user;
+  if (this.isLoggedIn) {
+    this.signalrService.startConnection().then(() => {
+      this.registerStreamHandlers(); // ✅ Now the connection is ready
     });
+
+    this.aiChatService.getMyPrompts();
+    this.aiChatService.getMyConversations();
+    this.setupConversationSelection();
+  }
+});
 
     this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
 
@@ -160,92 +174,35 @@ public streamingMessages$ = this.streamingMessagesSubject.asObservable();
     this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.scrollToBottom();
     });
-if (!this.streamHandlerRegistered) {
-  this.streamHandlerRegistered = true;
-this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
-  console.log('[chunk]', { cid, chunk });
-  this.ngZone.run(() => {
-    const lastChunk = this.lastChunkByCid.get(cid);
-    if (lastChunk === chunk) return; // ✅ Skip duplicate
-    this.lastChunkByCid.set(cid, chunk);
 
-    if (!this.conversationId) {
-      this.conversationId = cid;
-    }
-
-    if (!this.streamingMessages.has(cid)) {
-      this.streamingMessages.set(cid, '');
-    }
-
-    const current = this.streamingMessages.get(cid)!;
-    this.streamingMessages.set(cid, current + chunk);
-    this.streamingMessagesSubject.next(new Map(this.streamingMessages));
-
-const activeConversationId = this.state.getCurrentConversationId();
-if (cid === activeConversationId) {
-  this.cdRef.detectChanges();
-  this.scrollToBottom('auto');
-}
-  });
-});
-}
-
-if (!this.streamEndHandlerRegistered) {
-  this.streamEndHandlerRegistered = true;
-let alreadyEndedFor: Set<string> = new Set();
-
-this.signalrService.onStreamEnd((cid: string) => {
-  if (alreadyEndedFor.has(cid)) return;
-  alreadyEndedFor.add(cid);
-  console.log('[streamEnd]', { cid, current: this.conversationId });
-  this.ngZone.run(() => {
-    // 👉 Ensure we’re pointing at this stream if it's the first one
-    if (!this.conversationId) {
-      this.conversationId = cid;
-    }
-
-    if (cid === this.conversationId) {
-      const message = this.streamingMessages.get(cid) || '';
-      if (message.trim().length) {
-        this.state.pushFinalStreamedMessage(message);
-      }
-      this.streamingMessages.delete(cid);
-this.streamingMessagesSubject.next(new Map(this.streamingMessages));
-
-     this.streamingMessages.delete(cid);
-this.streamingMessagesSubject.next(new Map(this.streamingMessages));
-
-      this.cdRef.detectChanges();
-      this.scrollToBottom('auto');
-    }
-  });
-});
-}
 
 this.combinedMessages$ = combineLatest([
-  this.state.messages$,
-  this.streamingMessages$.pipe(
-    map(() => this.currentStreamingMessage),
-    distinctUntilChanged()
-  )
+this.state.messages$,
+this.streamingMessages$,
+this.state.currentConversation$
 ]).pipe(
-  map(([messages, stream]) => {
-    const result: ChatMessage[] = [...messages];
+map(([messages, streamMap, convo]) => {
+const fallbackId = this.conversationId ?? ''; // fallback if currentConversation$ hasn't emitted yet
+const cid = convo?.Id ?? fallbackId;
+const stream = streamMap.get(cid) ?? '';
+const result: ChatMessage[] = [...messages];
 
-    if (stream?.trim()) {
-      const streamMsg: ChatMessage = {
-        Id: -1,
-        ConversationId: this.conversationId ?? '',
-        Role: 'model',
-        Content: stream,
-        IsSummarized: false,
-        Timestamp: new Date()
-      };
-      result.push(streamMsg);
-    }
 
-    return result.sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
-  })
+if (stream.trim()) {
+const streamMsg: ChatMessage = {
+Id: -1,
+ConversationId: cid,
+Role: 'model',
+Content: stream,
+IsSummarized: false,
+Timestamp: new Date()
+};
+result.push(streamMsg);
+}
+
+
+return result.sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
+})
 );
   }
 get currentStreamingMessage(): string {
@@ -284,6 +241,72 @@ get currentStreamingMessage(): string {
   closeChat(): void {
     this.state.setIsChatOpen(false);
   }
+private registerStreamHandlers(): void {
+if (!this.streamHandlerRegistered) {
+this.streamHandlerRegistered = true;
+
+
+this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
+console.log('[chunk]', { cid, chunk });
+
+
+this.ngZone.run(() => {
+const prev = this.streamingMessages.get(cid) || '';
+
+
+// ✅ Prevent duplicate trailing chunk (fixes the problem)
+if (prev.endsWith(chunk)) return;
+
+
+const updated = prev + chunk;
+this.streamingMessages.set(cid, updated);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+
+const activeConversationId = this.state.getCurrentConversationId();
+if (cid === activeConversationId) {
+this.cdRef.detectChanges();
+this.scrollToBottom('auto');
+}
+});
+});
+}
+
+if (!this.streamEndHandlerRegistered) {
+this.streamEndHandlerRegistered = true;
+let alreadyEndedFor: Set<string> = new Set();
+
+
+this.signalrService.onStreamEnd((cid: string) => {
+if (alreadyEndedFor.has(cid)) return;
+alreadyEndedFor.add(cid);
+console.log('[streamEnd]', { cid, current: this.conversationId });
+
+
+this.ngZone.run(() => {
+if (!this.conversationId) {
+this.conversationId = cid;
+}
+
+
+if (cid === this.conversationId) {
+const message = this.streamingMessages.get(cid) || '';
+if (message.trim().length) {
+this.state.pushFinalStreamedMessage(message);
+}
+
+
+this.streamingMessages.delete(cid);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+
+this.cdRef.detectChanges();
+this.scrollToBottom('auto');
+}
+});
+});
+}
+}
 
 sendMessage(): void {
         const currentStream = this.currentStreamingMessage.trim();
@@ -549,14 +572,19 @@ private setupConversationSelection(): void {
     this.state.sortConversations(this.sortOrder);
   }
 
-  startNewConversation(): void {
-    this.newMessageContent = '';
-    this.state.setSelectedPrompts([]);
-    this.state.setActiveConversationId(null);
-    this.state.setMessages([]);
-    this.state.setDocuments([]);
-    this.aiChatService.getMyPrompts();
-  }
+startNewConversation(): void {
+  this.newMessageContent = '';
+  this.state.setSelectedPrompts([]);
+  this.state.setActiveConversationId(null);
+  this.state.setMessages([]);
+  this.state.setDocuments([]);
+
+  this.clearStreamingMessages(); // ✅ Crucial: clear dangling chunks
+
+  this.lastChunkByCid.clear(); // optional, in case you use it
+
+  this.aiChatService.getMyPrompts();
+}
 
   retryMessage(message: ChatMessage): void {
     this.state.deleteMessage(message.Id);
