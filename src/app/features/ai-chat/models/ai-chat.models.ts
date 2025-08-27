@@ -22,6 +22,11 @@ export interface Conversation {
   isArchived?: boolean;
   timestamp?: Date;
 }
+export interface StartInitialReplyDto {
+  initialMessage: string;
+  promptKeys?: string[];
+  blueprintUrls?: string[];
+}
 
 export interface Prompt {
    id: number;

@@ -68,9 +68,19 @@
                 </div>
               </div>
             </div>
-            <div *ngIf="isLoading$ | async" class="message ai">
-              <p>Thinking...</p>
-            </div>
+<div *ngIf="currentStreamingMessage?.length" class="message ai-message">
+  <mat-icon class="chat-icon">smart_toy</mat-icon>
+  <div class="message-content">
+    <markdown [data]="currentStreamingMessage"></markdown>
+  </div>
+</div>
+
+
+<div *ngIf="(isLoading$ | async) && !currentStreamingMessage" class="message ai">
+
+  <p>Thinking...</p>
+</div>
+
           </div>
         </div>
     </div>
@@ -101,7 +111,12 @@
         <span class="button-wrapper"
               [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
               [class.disabled-wrapper]="isSendDisabled">
-          <button mat-raised-button color="primary" type="submit" class="submit-btn publish-btn send-button" [disabled]="isSendDisabled">Send</button>
+       <button mat-raised-button color="primary"
+        type="submit"
+        class="submit-btn publish-btn send-button"
+        [disabled]="isSendDisabled || (isResponding$ | async)">
+  Send
+</button>
         </span>
         <span class="button-wrapper"
               [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach blueprints'"

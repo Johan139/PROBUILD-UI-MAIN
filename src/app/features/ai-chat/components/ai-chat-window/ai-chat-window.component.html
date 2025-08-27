@@ -48,7 +48,7 @@
         <p>Mason will analyze the files you have attached to this chat using these selected prompts</p>
       </div>
       <div class="message-history">
-        <div *ngFor="let message of messages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
+        <div *ngFor="let message of combinedMessages$ | async" class="message" [ngClass]="{ 'user-message': message.Role === 'user', 'ai-message': message.Role === 'model' }">
           <mat-icon class="chat-icon">{{ message.Role === 'user' ? 'person' : 'smart_toy' }}</mat-icon>
           <div class="message-content">
             <ng-container [ngSwitch]="message.Role">

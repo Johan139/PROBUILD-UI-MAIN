@@ -108,4 +108,23 @@ export class SignalrService {
       }
     }
   }
+private streamChunkListener?: (conversationId: string, chunk: string) => void;
+
+onReceiveStreamChunk(callback: (conversationId: string, chunk: string) => void): void {
+  if (this.streamChunkListener) {
+    this.hubConnection?.off("ReceiveStreamChunk", this.streamChunkListener);
+  }
+  this.streamChunkListener = callback;
+  this.hubConnection?.on("ReceiveStreamChunk", this.streamChunkListener);
+}
+
+private streamEndListener?: (conversationId: string) => void;
+
+onStreamEnd(callback: (conversationId: string) => void): void {
+  if (this.streamEndListener) {
+    this.hubConnection?.off("StreamComplete", this.streamEndListener);
+  }
+  this.streamEndListener = callback;
+  this.hubConnection?.on("StreamComplete", this.streamEndListener);
+}
 }
