@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRadioModule } from '@angular/material/radio';
-export interface SubscriptionPackage { value: string; display: string; amount: number; }
+export interface SubscriptionPackage { value: string; display: string; amount: number; annualAmount:number }
 
 // dialog interfaces
 export interface SubscriptionDialogData {
@@ -17,12 +17,14 @@ export interface SubscriptionDialogData {
   teamMembers?: { id: string; name?: string; email?: string }[];
   activeByUserId?: Record<string, { subscriptionId: string; packageLabel?: string }>;
   notice?: string; // 👈
+  
 }
 
-
+export type BillingCycle = 'monthly' | 'yearly';
 export interface SubscriptionSelection {
   pkg: SubscriptionPackage;
-  assigneeUserId: string;               // either current user or chosen team member
+  assigneeUserId: string;     
+  billingCycle: BillingCycle;          
 }
 @Component({
   selector: 'app-subscription-create',
@@ -64,7 +66,8 @@ ngOnInit(): void {
   this.form = this.fb.group({
     subscriptionPackage: [currentPkg, Validators.required],
     forWhom: [selfBlocked ? 'team' : 'self', Validators.required],
-    teamMemberId: [null]
+    teamMemberId: [null],
+     billingCycle: ['monthly'] // default value
   });
 
   this.form.get('forWhom')!.valueChanges.subscribe(val => {
@@ -87,7 +90,9 @@ save(): void {
   if (this.form.invalid || this.hasActiveFor(assigneeUserId)) return;
 
   const pkg = this.form.value.subscriptionPackage as SubscriptionPackage;
-  this.dialogRef.close({ pkg, assigneeUserId });
+  const billingCycle = this.form.value.billingCycle as 'monthly' | 'yearly';
+
+  this.dialogRef.close({ pkg, assigneeUserId, billingCycle });
 }
 hasActiveForAssignee(): boolean {
   const forWhom = this.form.value.forWhom;
@@ -101,4 +106,5 @@ hasActiveForAssignee(): boolean {
       return `${amount.toFixed(2)} ${(currency || '').toUpperCase()}`;
     }
   }
+  
 }

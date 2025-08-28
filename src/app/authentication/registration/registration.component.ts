@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatGridListModule} from "@angular/material/grid-list";
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
-import {AsyncPipe, NgForOf, NgIf} from "@angular/common";
+import {AsyncPipe, CommonModule, NgForOf, NgIf} from "@angular/common";
 import { MatSelectModule} from "@angular/material/select";
 import {MatInputModule} from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,6 +26,7 @@ import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { MatRadioModule } from '@angular/material/radio';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
 import {
   constructionTypes,
@@ -47,12 +48,13 @@ export interface SubscriptionOption {
   subscription: string;
   amount: number;
 }
-
+export type BillingCycle = 'monthly' | 'yearly';
 @Component({
   selector: 'app-registration',
   standalone: true,
   imports: [
     MatCardModule,
+    CommonModule,
     MatGridListModule,
     MatGridListModule,
     ReactiveFormsModule,
@@ -69,6 +71,7 @@ export interface SubscriptionOption {
     AsyncPipe,
     MatCheckboxModule,
     MatChipsModule,
+    MatRadioModule,
     MatIconModule
   ],
   templateUrl: './registration.component.html',
@@ -92,7 +95,7 @@ export class RegistrationComponent implements OnInit{
   operationalYears = operationalYears;
   certificationOptions = certificationOptions;
 
-  subscriptionPackages: { value: string, display: string, amount: number }[] = [];
+  subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
 
   countries = COUNTRIES;
   states: { [key: string]: { value: string, display: string }[] } = STATES;
@@ -149,6 +152,7 @@ export class RegistrationComponent implements OnInit{
 
   ngOnInit() {
     this.loadSubscriptionPackages();
+
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
@@ -167,6 +171,7 @@ export class RegistrationComponent implements OnInit{
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
+      billingCycle: ['monthly'],
       latitude: [null],
       longitude: [null],
       formattedAddress: [''],
@@ -353,8 +358,9 @@ export class RegistrationComponent implements OnInit{
       next: (subscriptions) => {
         this.subscriptionPackages = subscriptions.map(s => ({
           value: s.subscription,
-          display: `${s.subscription} ($${s.amount.toFixed(2)})`,
-          amount: s.amount
+          display: `${s.subscription}`,
+          amount: s.amount,
+          annualAmount:s.annualAmount
         }));
       },
       error: (err) => {
@@ -369,6 +375,7 @@ export class RegistrationComponent implements OnInit{
   }
 
   onSubmit(): void {
+    
     if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;
@@ -469,12 +476,15 @@ export class RegistrationComponent implements OnInit{
           }
           else
           {
+            const billingCycle = this.registrationForm.value.billingCycle as 'monthly' | 'yearly';
+            console.log(billingCycle)
             this.dialog.open(PaymentPromptDialogComponent, {
               data: {
                 userId,
                 packageName: selectedPackage?.value || 'Unknown',
                 amount: selectedPackage?.amount || 0,
-                source: 'register'
+                source: 'register',
+                billingCycle: billingCycle
               },
               disableClose: true,
               width: '400px'
@@ -569,12 +579,14 @@ export class RegistrationComponent implements OnInit{
           }
           else
           {
+               const billingCycle = this.registrationForm.value.billingCycle as 'monthly' | 'yearly';
             this.dialog.open(PaymentPromptDialogComponent, {
               data: {
                 userId,
                 packageName: selectedPackage?.value || 'Unknown',
                 amount: selectedPackage?.amount || 0,
-                source: 'register'
+                source: 'register',
+                billingCycle: billingCycle
               },
               disableClose: true,
               width: '400px'

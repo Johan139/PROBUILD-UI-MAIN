@@ -28,6 +28,12 @@
             [value]="s"
             [disabled]="hasActiveFor(data.userId) && ((data.teamMembers?.length ?? 0) === 0)">
   {{ s.display }}
+  {{
+    form.value.billingCycle === 'yearly'
+      ? (s.annualAmount| currency:'USD':'symbol':'1.2-2')
+      : (s.amount | currency:'USD':'symbol':'1.2-2')
+  }}
+
 </mat-option>
         </mat-select>
       </mat-form-field>
@@ -40,7 +46,14 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
-
+<!-- NEW: Monthly / Yearly selection -->
+<div class="full-width" style="margin-bottom: 12px;">
+  <label class="block mb-1">Billing Cycle</label>
+  <mat-radio-group formControlName="billingCycle">
+    <mat-radio-button value="monthly">Monthly</mat-radio-button>
+    <mat-radio-button value="yearly" class="ml-4">Yearly</mat-radio-button>
+  </mat-radio-group>
+</div>
       <!-- Inline error + disable confirm -->
       <mat-hint *ngIf="hasActiveForAssignee()" style="color:#c62828;">
         This user already has an active subscription ({{ data.activeByUserId?.[

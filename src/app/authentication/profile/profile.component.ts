@@ -118,12 +118,13 @@ isGoogleMapsLoaded: boolean = false;
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
+  cancelTrail: boolean = false;
   isLoading = true;
   isSaving = false;
   rowBusy = new Set<string>();
   isSendingInvite = false;
   isBrowser: boolean;
-  subscriptionPackages: { value: string, display: string, amount: number }[] = [];
+  subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
   subscriptionuserPackages: { value: string, display: string, amount: number }[] = [];
   progress: number = 0;
   isUploading: boolean = false;
@@ -285,6 +286,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
+  
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
       if (user && user.id) {
@@ -297,7 +299,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
         this.isLoading = false;
       }
     });
-
+  console.log(this.subscriptionPackages)
      this.route.queryParamMap.pipe(take(1)).subscribe(params => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', { duration: 5000 });
@@ -405,10 +407,12 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
+        console.log(subscriptions)
         this.subscriptionPackages = subscriptions.map(s => ({
           value: s.subscription,
-          display: `${s.subscription} ($${s.amount.toFixed(2)})`,
-          amount: s.amount
+          display: `${s.subscription}`,
+          amount: s.amount,
+          annualAmount: s.annualAmount
         }));
       },
       error: (err) => {
@@ -464,9 +468,13 @@ manageSubscriptions(): void {
 
         const assignedUser = x.assignedUser ?? x.user ?? x.userEmail ?? x.customer_email ?? null;
         const assignedUserName = x.assignedUserName ?? x.user ?? x.userEmail ?? x.customer_email ?? null;
-        const status = x.status ?? x.subscriptionStatus ?? x.state ?? (x.canceled_at ? 'canceled' : null);
+
 
         const subscriptionId = x.subscriptionId ?? x.subscriptionID ?? x.id ?? x.subscription?.id ?? '';
+
+          const isTrial = x.isTrial === true || String(x.status ?? '').toLowerCase() === 'trialing';
+  let status = String(x.status ?? '').toLowerCase();
+  if (!status && isTrial) status = 'trialing';
 
         return { package: pkg, validUntil, amount, assignedUser, assignedUserName, status, subscriptionId };
       });
@@ -821,13 +829,36 @@ canManageRow(row: SubscriptionRow): boolean {
 cancelSubscription(row: SubscriptionRow): void {
   if (!this.canManageRow(row) || this.isInactiveRow(row)) return;
   const id = row.subscriptionId;
+
   if (!id) {
     this.snackBar.open('Missing subscription id.', 'Close', { duration: 2500 });
     return;
   }
 
-  this.rowBusy.add(id);
-this.stripeService.cancelSubscription(id).subscribe({
+
+  this.rowBusy.add(id!);
+this.stripeService.cancelSubscription(id!).subscribe({
+    next: () => {
+      this.snackBar.open('Subscription cancelled.', 'Close', { duration: 3000 });
+      this.manageSubscriptions(); // refresh table
+    },
+    error: (err) => {
+      console.error('cancelSubscriptionById failed', err);
+      this.snackBar.open('Failed to cancel subscription.', 'Close', { duration: 3000 });
+    },
+    //complete: () => this.rowBusy.delete(id),
+  });
+}
+canceltrailSubscription(row: string): void {
+
+  if (!row) {
+    this.snackBar.open('Missing subscription id.', 'Close', { duration: 2500 });
+    return;
+  }
+
+
+  this.rowBusy.add(row!);
+this.stripeService.cancelSubscription(row!).subscribe({
     next: () => {
       this.snackBar.open('Subscription cancelled.', 'Close', { duration: 3000 });
       this.manageSubscriptions(); // refresh table
@@ -927,48 +958,81 @@ private getRowPlanCode(row: SubscriptionRow): string | null {
 
   return match?.value ?? null;
 }
-
-openSubscriptionUpgradeDialog(subscription: SubscriptionRow): void {
-  const subscriptionId = subscription.subscriptionId ?? subscription['id'] ?? null;
-const assignedUser = subscription.assignedUser ?? subscription['assignedUser'] ?? null;
-  if (!subscriptionId) {
-    this.snackBar.open('Missing subscription id.', 'Close', { duration: 2500 });
+startCheckoutForUpgrade(
+  pkgCode: string,
+  assignedUser: string | null,
+  billingCycle: 'monthly' | 'yearly' = 'monthly',
+  subscriptionId: string 
+): void {
+  const pkgMeta = this.subscriptionPackages.find(p =>
+    String(p.value).toLowerCase() === String(pkgCode).toLowerCase()
+  );
+  if (!pkgMeta) {
+    this.snackBar.open('Unknown package selected.', 'Close', { duration: 3000 });
     return;
   }
- // 1) Prefer the plan from the clicked row
-  const currentValueFromRow = this.getRowPlanCode(subscription);
 
-  // 2) Fallbacks (your old behavior)
+  const userId = String(localStorage.getItem('userId') ?? '');
+  this.stripeService.createCheckoutSession({
+    userId,
+    packageName: pkgMeta.value,
+    amount: billingCycle === 'yearly' ? (pkgMeta.annualAmount ?? pkgMeta.amount) : pkgMeta.amount,
+    source: 'profile',           // 👈 makes intent explicit on backend
+    assignedUser: assignedUser ?? userId,
+    billingCycle
+  }).subscribe({
+    next: res => {window.location.assign(res.url); this.canceltrailSubscription(subscriptionId);},
+    error: err => {
+      console.error('Checkout session error', err);
+      this.snackBar.open('Failed to start checkout.', 'Close', { duration: 3500 });
+    }
+  });
+}
+openSubscriptionUpgradeDialog(subscription: SubscriptionRow): void {
+  const subscriptionId = subscription.subscriptionId ?? (subscription as any)['id'] ?? null;
+  const assignedUser   = subscription.assignedUser ?? (subscription as any)['assignedUser'] ?? null;
+
+  // Determine current plan code for preselect
+  const currentValueFromRow = this.getRowPlanCode(subscription);
   const currentValue =
     currentValueFromRow ??
     this.getActivePlanCode() ??
-    this.profileForm.get('subscriptionPackage')?.value ??
-    null;
+    this.profileForm.get('subscriptionPackage')?.value ?? null;
 
   const dialogRef = this.dialog.open(SubscriptionUpgradeComponent, {
     width: '600px',
     autoFocus: false,
     data: {
       packages: this.subscriptionPackages,
-      currentValue,                    // ✅ now comes from the row
+      currentValue,
       isTeamMember: this.authService.isTeamMember(),
-      subscriptionId,                  // the row’s subscription
+      subscriptionId,                 // MAY be null for trial
       userId: String(localStorage.getItem('userId') || '')
     }
   });
 
-  dialogRef.afterClosed().subscribe((selectedPackage?: string) => {
-    if (!selectedPackage) return;
+  // Expect either a string (pkgCode) or an object with pkgCode & billingCycle
+  dialogRef.afterClosed().subscribe((result?: string | { subscriptionPackage: string; billingCycle?: 'monthly'|'yearly' }) => {
+    if (!result) return;
 
-    // reflect selection (optional)
-    this.profileForm.patchValue({ subscriptionPackage: selectedPackage });
+    const pkgCode      = typeof result === 'string' ? result : result.subscriptionPackage;
+    const billingCycle = typeof result === 'string' ? 'monthly' : (result.billingCycle ?? 'monthly');
+console.log(pkgCode)
+    // reflect selection
+    this.profileForm.patchValue({ subscriptionPackage: pkgCode });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();
 
-    this.rowBusy.add(subscriptionId);
+    // 🔀 Branch: trial (no subscription) → Checkout; normal (has subscription) → API upgrade
+    if (subscriptionId.includes('trial')) {
+      this.startCheckoutForUpgrade(pkgCode, assignedUser, billingCycle,subscriptionId);
 
+      return;
+    }
+
+    this.rowBusy.add(subscriptionId);
     const payload: SubscriptionUpgradeDTO = {
       subscriptionId,
-      packageName: selectedPackage,
+      packageName: pkgCode,
       userId: String(localStorage.getItem('userId')),
       assignedUser
     };
@@ -1066,7 +1130,7 @@ openSubscriptionCreateDialog(): void {
         : teamBlockedCount > 0
           ? `${teamBlockedCount} team member${teamBlockedCount > 1 ? 's' : ''} already subscribed.`
           : null;
-
+  console.log(this.subscriptionPackages)
   this.dialog.open(SubscriptionCreateComponent, {
     width: '600px',
     autoFocus: false,
@@ -1080,14 +1144,14 @@ openSubscriptionCreateDialog(): void {
         name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
         email: m.email
       })),
-      activeByUserId: selfMap,   // 👈 same map you already generate
-      notice                    // 👈 new
+      activeByUserId: selfMap,   
+      notice                    
     }
   })
   .afterClosed()
-  .subscribe((sel?: { pkg: { value: string; amount: number }; assigneeUserId: string }) => {
+  .subscribe((sel?: { pkg: { value: string; amount: number }; assigneeUserId: string; billingCycle: 'monthly' | 'yearly'; annualAmount:number  }) => {
     if (!sel) return;
-    const { pkg, assigneeUserId } = sel;
+     const { pkg, assigneeUserId, billingCycle } = sel; 
 
     this.profileForm.patchValue({ subscriptionPackage: pkg.value });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();
@@ -1115,7 +1179,8 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
       packageName: pkg.value,
       amount: pkg.amount,
       source: 'profile',
-      assignedUser: assigneeUserId
+      assignedUser: assigneeUserId,
+      billingCycle
     }).subscribe({
       next: res => window.location.assign(res.url),
       error: err => console.error('Checkout session error', err)

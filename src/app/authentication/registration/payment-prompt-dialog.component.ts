@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { StripeService } from '../../services/StripeService';
-
+export type BillingCycle = 'monthly' | 'yearly';
 @Component({
   selector: 'app-payment-prompt-dialog',
   standalone: true,
@@ -58,20 +58,25 @@ import { StripeService } from '../../services/StripeService';
     }
   `]
 })
+
 export class PaymentPromptDialogComponent {
     constructor(
       private dialogRef: MatDialogRef<PaymentPromptDialogComponent>,
       private stripeService: StripeService,
-      @Inject(MAT_DIALOG_DATA) public data: {source: string, userId: string, packageName: string; amount: number }
+      @Inject(MAT_DIALOG_DATA) public data: {source: string, userId: string, packageName: string; amount: number, billingCycle: BillingCycle }
     ) {}
-  
+    ngOnInit() {
+      console.log(this.data.billingCycle)
+    }
     continueToPayment() {
+ console.log(this.data.billingCycle)
         this.stripeService.createCheckoutSession({
           userId: this.data.userId, 
           packageName: this.data.packageName,
           amount: this.data.amount,
           source: this.data.source,
-          assignedUser:''
+          assignedUser:'',
+          billingCycle: this.data.billingCycle
         }).subscribe({
           next: res => {
             console.log(res)
