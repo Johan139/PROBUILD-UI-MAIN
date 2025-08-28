@@ -41,9 +41,15 @@ export class ReportService {
       }
 
       if (isRenovation) {
-        const renovationMatch = fullResponse.match(/### \*\*S-3: Environmental Impact Report\*\*([\s\S]*?)(?=### \*\*S-4:|$|### \*\*Final Executive Briefing)/);
-        if (renovationMatch && renovationMatch[1]) {
-          reportContent = renovationMatch[1].trim();
+        const reportStartMarker = 'Ready for the next prompt 9.';
+        const reportEndMarker = 'Ready for the next prompt 10.';
+        let startIndex = fullResponse.indexOf(reportStartMarker);
+        if (startIndex !== -1) {
+          startIndex += reportStartMarker.length;
+          const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+          if (endIndex !== -1) {
+            reportContent = fullResponse.substring(startIndex, endIndex).trim();
+          }
         }
       } else {
         const reportStartMarker = 'Ready for the next prompt 20.';
