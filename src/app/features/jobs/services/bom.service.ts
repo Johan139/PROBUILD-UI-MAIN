@@ -162,8 +162,17 @@ export class BomService {
         }
       }
     } else if (isRenovation) {
+      const renovationPhaseMap: { [key: string]: string } = {
+        'R-1': 'R-1: Demolition & Hazardous Material Abatement',
+        'R-2': 'R-2: Structural Alterations & Repair',
+        'R-3': 'R-3: MEP Rough-In',
+        'R-4': 'R-4: Insulation & Drywall',
+        'R-5': 'R-5: Interior Finishes',
+        'R-6': 'R-6: Fixtures, Fittings & Equipment (FF&E)',
+      };
+
       // Isolate the main cost breakdown and summary sections
-      const costSectionRegex = /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
+      const costSectionRegex = /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown|Part A: Detailed Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
       const summarySectionRegex = /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=\n###|$)/;
 
       const costSectionMatch = fullResponse.match(costSectionRegex);
@@ -175,7 +184,12 @@ export class BomService {
 
           const lines = rSection.trim().split('\n');
           const titleLine = lines[0].trim();
-          const tableTitle = titleLine.replace(/#|\*/g, '').trim();
+          let tableTitle = titleLine.replace(/#|\*/g, '').trim();
+
+          const rNumberMatch = tableTitle.match(/(R-\d+)/);
+          if (rNumberMatch && renovationPhaseMap[rNumberMatch[1]]) {
+            tableTitle = renovationPhaseMap[rNumberMatch[1]];
+          }
 
           const table = parseTableFromLines(lines, 1);
           if (table) {

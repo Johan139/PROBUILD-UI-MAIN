@@ -270,6 +270,15 @@ export class JobDataService {
         });
       }
     } else if (isRenovation) {
+      const renovationPhaseMap: { [key: string]: string } = {
+        'R-1': 'R-1: Demolition & Hazardous Material Abatement',
+        'R-2': 'R-2: Structural Alterations & Repair',
+        'R-3': 'R-3: MEP Rough-In',
+        'R-4': 'R-4: Insulation & Drywall',
+        'R-5': 'R-5: Interior Finishes',
+        'R-6': 'R-6: Fixtures, Fittings & Equipment (FF&E)',
+      };
+
       const timelineMatch = report.match(/### \*\*(Part A: Detailed Task Schedule|S-2: Project Timeline & Schedule)\*\*([\s\S]*?)(?=### \*\*Part B:|### \*\*S-3:|$)/);
       if (!timelineMatch || !timelineMatch[2]) return [];
 
@@ -307,6 +316,15 @@ export class JobDataService {
             endDate = columns[5];
         } else {
             continue;
+        }
+
+        if (phaseId.trim() === '-') {
+            continue;
+        }
+
+        const rNumberMatch = phaseId.match(/(R-\d+)/);
+        if (rNumberMatch && renovationPhaseMap[rNumberMatch[1]]) {
+            phaseId = renovationPhaseMap[rNumberMatch[1]];
         }
 
         if (!taskGroupMap.has(phaseId)) {
