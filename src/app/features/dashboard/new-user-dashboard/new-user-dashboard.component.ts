@@ -359,17 +359,16 @@ export class NewUserDashboardComponent implements OnInit {
           return;
         }
 
-        const uniqueProjectsMap = new Map<string, any>();
-
         const nonArchivedJobs = jobs.filter(job => job.status !== 'ARCHIVED');
 
+        const uniqueJobsMap = new Map<number, any>();
         nonArchivedJobs.forEach(job => {
-          if (!uniqueProjectsMap.has(job.projectName)) {
-            uniqueProjectsMap.set(job.projectName, job);
+          if (!uniqueJobsMap.has(job.id)) {
+            uniqueJobsMap.set(job.id, job);
           }
         });
 
-        const uniqueJobs = Array.from(uniqueProjectsMap.values());
+        const uniqueJobs = Array.from(uniqueJobsMap.values());
 
         if (uniqueJobs.length === 0) {
           this.userJobs = [];

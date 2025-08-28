@@ -298,6 +298,10 @@ export class JobDataService {
 
         const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
 
+        if (columns.filter(c => c !== '').length <= 1) {
+            continue;
+        }
+
         // Handle different table structures
         let taskName, phaseId, duration, startDate, endDate;
         if (columns.length >= 7) {
@@ -315,6 +319,10 @@ export class JobDataService {
             startDate = columns[4];
             endDate = columns[5];
         } else {
+            continue;
+        }
+
+        if (taskName && taskName.toLowerCase().includes('project complete')) {
             continue;
         }
 
