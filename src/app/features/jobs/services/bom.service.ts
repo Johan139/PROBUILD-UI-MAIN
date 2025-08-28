@@ -273,14 +273,14 @@ export class BomService {
       }
     }
 
-    if (costBreakdownTitleIndex !== -1 && isRenovation === false) {
+    if (costBreakdownTitleIndex !== -1) {
       const table = parseTableFromLines(allLines, costBreakdownTitleIndex + 1);
       if (table) {
-        // Avoid duplicating if already found in renovation parse
-        const titleExists = sections.some(s => s.title.includes('Cost Breakdown'));
+        const title = allLines[costBreakdownTitleIndex].replace(/#|\*/g, '').trim();
+        const titleExists = sections.some(s => s.title === title);
         if (!titleExists) {
           sections.push({
-            title: 'Total Cost Breakdown',
+            title: 'Total Project Cost Breakdown',
             type: 'table',
             ...table,
           });
