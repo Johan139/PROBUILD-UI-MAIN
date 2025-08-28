@@ -23,33 +23,59 @@ export class ReportService {
       }
 
       const fullResponse = results[0].fullResponse;
-      const reportStartMarker = 'Ready for the next prompt 20.';
-      const reportEndMarker = 'Ready for the next prompt 21.';
-      let startIndex = fullResponse.indexOf(reportStartMarker);
-      if (startIndex === -1) {
+      let reportContent = '';
+      let isRenovation = false;
+      try {
+        const jsonMatch = fullResponse.match(/```json([\s\S]*?)```/);
+        if (jsonMatch && jsonMatch[1]) {
+          const parsedJson = JSON.parse(jsonMatch[1]);
+          if (parsedJson.isRenovation === 'true') {
+            isRenovation = true;
+          }
+        }
+        if (!isRenovation) { // Fallback check
+          isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(fullResponse);
+        }
+      } catch (e) {
+        console.error('Error parsing JSON from AI response for report:', e);
+      }
+
+      if (isRenovation) {
+        const reportStartMarker = 'Ready for the next prompt 9.';
+        const reportEndMarker = 'Ready for the next prompt 10.';
+        let startIndex = fullResponse.indexOf(reportStartMarker);
+        if (startIndex !== -1) {
+          startIndex += reportStartMarker.length;
+          const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+          if (endIndex !== -1) {
+            reportContent = fullResponse.substring(startIndex, endIndex).trim();
+          }
+        }
+      } else {
+        const reportStartMarker = 'Ready for the next prompt 20.';
+        const reportEndMarker = 'Ready for the next prompt 21.';
+        let startIndex = fullResponse.indexOf(reportStartMarker);
+        if (startIndex !== -1) {
+          startIndex += reportStartMarker.length;
+          const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
+          if (endIndex !== -1) {
+            reportContent = fullResponse.substring(startIndex, endIndex).trim();
+          }
+        }
+      }
+
+      if (!reportContent) {
         this.snackBar.open('Environmental report section not found.', 'Close', {
           duration: 3000,
         });
         return;
       }
-      startIndex += reportStartMarker.length;
-
-      const endIndex = fullResponse.indexOf(reportEndMarker, startIndex);
-      if (endIndex === -1) {
-        this.snackBar.open(
-          'End of environmental report section not found.',
-          'Close',
-          { duration: 3000 }
-        );
-        return;
-      }
-
-      let reportContent = fullResponse.substring(startIndex, endIndex).trim();
       const linesToRemove = [
         'Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.',
         '**Prepared By:** Gemini Sustainability Consulting',
         '**From:** Gemini - Sustainability Consultant & Estimator',
         '### **Phase 20: Environmental Lifecycle Report**',
+        'Ready for the next prompt 10.'
       ];
       linesToRemove.forEach((line) => {
         reportContent = reportContent
@@ -59,6 +85,9 @@ export class ReportService {
           )
           .trim();
       });
+
+      // Remove the dynamic introductory paragraph
+      reportContent = reportContent.replace(/As a Sustainability and Environmental Construction Analyst,[\s\S]*?\n\n/, '').trim();
 
       const parsedContent = await Promise.resolve(marked(reportContent));
 

@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import { SubscriptionUpgradeDTO } from '../authentication/profile/profile.component';
 import { UpgradePreviewRequest } from '../models/UpgradePreviewRequest';
 import { ProrationPreviewDto } from '../models/ProrationPreviewDto';
+import { BillingCycle } from '../authentication/registration/subscription-create/subscription-create.component';
 
 const BASE_URL = `${environment.BACKEND_URL}/stripe`;
 
@@ -17,6 +18,7 @@ export interface SubscriptionOption {
     subscription: string;
     amount: number;
     StripeProductId: string;
+    annualAmount: number
   }
 @Injectable({
   providedIn: 'root'
@@ -26,7 +28,7 @@ export class StripeService {
 
   constructor(private httpClient: HttpClient) {}
 
-  createCheckoutSession(subscription: {source:string,userId: string, packageName: string; amount: number, assignedUser: string }): Observable<{ url: string }> {
+  createCheckoutSession(subscription: {source:string,userId: string, packageName: string; amount: number, assignedUser: string, billingCycle: BillingCycle}): Observable<{ url: string }> {
     console.log(subscription)
     return this.httpClient.post<{ url: string }>(
       `${BASE_URL}/create-checkout-session`,

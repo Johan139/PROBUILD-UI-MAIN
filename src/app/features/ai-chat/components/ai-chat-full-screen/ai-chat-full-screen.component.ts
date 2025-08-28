@@ -1,10 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, OnDestroy, HostListener, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
 import { FileUploadService } from '../../../../services/file-upload.service';
-import { Observable, combineLatest, Subject, ReplaySubject, of } from 'rxjs';
+import { Observable, combineLatest, Subject, ReplaySubject, of, from, BehaviorSubject } from 'rxjs';
 import { map, take, takeUntil, tap, switchMap } from 'rxjs/operators';
 import { Conversation, ChatMessage, Prompt } from '../../models/ai-chat.models';
 import { CommonModule } from '@angular/common';
@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MarkdownModule } from 'ngx-markdown';
+import { Location as AngularLocation } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { UploadedFileInfo } from '../../../../services/file-upload.service';
@@ -32,27 +33,39 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
+  
   private destroy$ = new Subject<void>();
   private promptsSource = new ReplaySubject<Prompt[]>(1);
   conversationId: string | null = null;
   @ViewChild('promptsPopup') promptsPopup!: ElementRef;
   private selectConversation$ = new Subject<string>();
-
   conversations$: Observable<Conversation[]>;
+combinedMessages$!: Observable<ChatMessage[]>;
   messages$: Observable<ChatMessage[]>;
   currentConversation$: Observable<Conversation | null>;
-  isLoading$: Observable<boolean>;
+
   prompts$ = this.promptsSource.asObservable();
   selectedPrompts$: Observable<number[]>;
   hasDocuments$: Observable<boolean> = of(false);
 
+
+public streamingMessages: Map<string, string> = new Map();
   newMessageContent = '';
+streamingMessagesSubject = new BehaviorSubject<Map<string, string>>(new Map());
+streamingMessages$ = this.streamingMessagesSubject.asObservable();
+
+// ✅ Add here:
+isLoading$!: Observable<boolean>;
+isResponding$!: Observable<boolean>;
+
+
   files: File[] = [];
   uploadedFileInfos: UploadedFileInfo[] = [];
   isUploading = false;
   progress = 0;
   editingConversationId: string | null = null;
   editedTitle = '';
+  
   public isPromptsPopupVisible = false;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
@@ -91,15 +104,26 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     private aiChatStateService: AiChatStateService,
     private aiChatService: AiChatService,
     private route: ActivatedRoute,
+     private ngZone: NgZone,
     private router: Router,
+       private location: AngularLocation,
     private fileUploadService: FileUploadService,
     private snackBar: MatSnackBar,
     private cdRef: ChangeDetectorRef,
     private signalrService: SignalrService
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
+    
+  this.isLoading$ = this.aiChatStateService.isLoading$;
+
+this.isResponding$ = combineLatest([
+  this.isLoading$,
+  this.streamingMessages$.pipe(map(() => this.currentStreamingMessage.trim().length > 0))
+]).pipe(
+  map(([isLoading, isStreaming]) => isLoading || isStreaming)
+);
+    
     this.messages$ = this.aiChatStateService.messages$;
-    this.isLoading$ = this.aiChatStateService.isLoading$;
     this.selectedPrompts$ = this.aiChatStateService.selectedPrompts$;
     this.aiChatStateService.prompts$.pipe(
       takeUntil(this.destroy$),
@@ -121,8 +145,90 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.hasDocuments$ = this.aiChatStateService.documents$.pipe(
       map(documents => documents.length > 0)
     );
-   await this.signalrService.startConnection();
-    this.aiChatService.getMyConversations();
+await this.signalrService.startConnection();
+
+this.combinedMessages$ = combineLatest([
+  this.messages$,
+  this.streamingMessages$.pipe(map(() => this.currentStreamingMessage))
+]).pipe(
+  map(([messages, stream]) => {
+    const result: ChatMessage[] = [...messages];
+
+    if (stream?.trim()) {
+      const streamMsg: ChatMessage = {
+        Id: -1,
+        ConversationId: this.conversationId ?? '',
+        Role: 'model',
+        Content: stream,
+        IsSummarized: false,
+        Timestamp: new Date()
+      };
+      result.push(streamMsg);
+    }
+
+    // ✅ Sort by timestamp to ensure proper order
+    return result.sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
+  })
+);
+
+
+this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
+    console.log('[chunk]', { cid, chunk });
+  this.ngZone.run(() => {
+    // 👉 Adopt the stream's conversation id for the very first message
+    if (!this.conversationId) {
+      this.conversationId = cid;
+    }
+
+if (!this.streamingMessages.has(cid)) {
+  // 👇 Clear or initialize only on the first chunk
+  this.streamingMessages.set(cid, '');
+}
+
+const current = this.streamingMessages.get(cid)!;
+this.streamingMessages.set(cid, current + chunk);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+    // Only trigger UI update for the active one
+    if (cid === this.conversationId) {
+      this.cdRef.detectChanges();
+      this.scrollToBottom('auto');
+    }
+  });
+});
+
+
+let alreadyEndedFor: Set<string> = new Set();
+
+this.signalrService.onStreamEnd((cid: string) => {
+  if (alreadyEndedFor.has(cid)) return;
+  alreadyEndedFor.add(cid);
+  console.log('[streamEnd]', { cid, current: this.conversationId });
+  this.ngZone.run(() => {
+    // 👉 Ensure we’re pointing at this stream if it's the first one
+    if (!this.conversationId) {
+      this.conversationId = cid;
+    }
+
+    if (cid === this.conversationId) {
+      const message = this.streamingMessages.get(cid) || '';
+      if (message.trim().length) {
+        this.aiChatStateService.pushFinalStreamedMessage(message);
+      }
+      this.streamingMessages.delete(cid);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+     this.streamingMessages.delete(cid);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+      this.cdRef.detectChanges();
+      this.scrollToBottom('auto');
+    }
+  });
+});
+
+
+this.aiChatService.getMyConversations();
     this.aiChatService.getMyPrompts();
     this.setupConversationSelection();
 
@@ -155,14 +261,20 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     });
     this.aiChatStateService.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
 
-    this.aiChatStateService.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
-      if (conversation && conversation.Id) {
-        this.conversationId = conversation.Id;
-        await this.signalrService.joinConversationGroup(this.conversationId);
-      } else {
-        this.conversationId = null;
-      }
-    });
+this.aiChatStateService.currentConversation$
+  .pipe(takeUntil(this.destroy$))
+  .subscribe(async conversation => {
+    if (conversation && conversation.Id) {
+      this.conversationId = conversation.Id;
+      await this.signalrService.joinConversationGroup(this.conversationId);
+
+      // 👇 trigger a render in case chunks were buffered before ID existed
+      this.cdRef.detectChanges();
+      this.scrollToBottom('auto');
+    } else {
+      this.conversationId = null;
+    }
+});
 
     this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.scrollToBottom();
@@ -172,6 +284,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   const conversationId = this.aiChatStateService.getCurrentConversationId()?? "";
   //this.signalrService.leaveConversationGroup(conversationId);
+
   this.signalrService.stopConnection();
   this.destroy$.next();
   this.destroy$.complete();
@@ -188,10 +301,14 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  selectConversation(conversationId: string): void {
-    this.router.navigate(['/ai-chat', conversationId]);
-    this.selectConversation$.next(conversationId);
-  }
+selectConversation(conversationId: string): void {
+  // ✅ Clear streaming messages before navigating
+  this.streamingMessages.clear();
+  this.streamingMessagesSubject.next(new Map());
+
+  this.router.navigate(['/ai-chat', conversationId]);
+  this.selectConversation$.next(conversationId);
+}
 
   private setupConversationSelection(): void {
     this.selectConversation$.pipe(
@@ -202,7 +319,7 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       switchMap(conversationId =>
         this.aiChatService.getConversation(conversationId).pipe(
           tap(async () => {
-            await this.signalrService.joinConversationGroup(conversationId);
+           // await this.signalrService.joinConversationGroup(conversationId);
           })
         )
       ),
@@ -219,15 +336,21 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.aiChatStateService.sortConversations(this.sortOrder);
   }
 
-  startNewConversation(): void {
-    this.router.navigate(['/ai-chat', 'new']);
-    this.newMessageContent = '';
-    this.aiChatStateService.setActiveConversationId(null);
-    this.aiChatStateService.setMessages([]);
-    this.aiChatStateService.setDocuments([]);
-    this.aiChatService.getMyPrompts();
-    this.aiChatStateService.setLoading(false);
-  }
+ startNewConversation(): void {
+  this.router.navigate(['/ai-chat', 'new']);
+  this.newMessageContent = '';
+  console.log('startNewConversation');
+
+  this.aiChatStateService.setActiveConversationId(null);
+  this.aiChatStateService.setMessages([]);
+  this.aiChatStateService.setDocuments([]);
+  this.aiChatService.getMyPrompts();
+  this.aiChatStateService.setLoading(false);
+
+  // ✅ Clear streaming messages
+  this.streamingMessages.clear();
+  this.streamingMessagesSubject.next(new Map());
+}
 
   onAttachFile(): void {
     this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
@@ -238,51 +361,99 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
       }
     });
   }
+get currentStreamingMessage(): string {
+  const id = this.conversationId ?? '';
+  const direct = this.streamingMessages.get(id);
+  if (direct && direct.length) return direct;
 
+  // Fallback: first/new chat before conversationId is set.
+  if (!this.conversationId && this.streamingMessages.size > 0) {
+    // Show the most recently inserted stream buffer
+    const last = Array.from(this.streamingMessages.values()).pop();
+    return last ?? '';
+  }
+  return '';
+}
   sendMessage(): void {
-    if (this.isSendDisabled) {
-      return;
-    }
 
-    const hasText = this.newMessageContent.trim().length > 0;
-    if (!hasText && this.files.length === 0 && this.documents.length === 0) {
-      this.selectedPrompts$.pipe(take(1)).subscribe(prompts => {
-        if (prompts.length === 0) {
-          this.snackBar.open('Please type a message, upload a file, or select a prompt.', 'Close', { duration: 3000 });
-          return;
-        }
-      });
-    }
+      const currentStream = this.currentStreamingMessage.trim();
+  if (currentStream.length > 0) {
+    this.aiChatStateService.pushFinalStreamedMessage(currentStream);
+    const cid = this.conversationId ?? '';
+    this.streamingMessages.delete(cid);
+    this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+    this.cdRef.detectChanges();
+  }
 
-    const messageToSend = this.newMessageContent;
-    const currentConversationId = this.aiChatStateService.getCurrentConversationId();
-    this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
-      this.prompts$.pipe(take(1)).subscribe(allPrompts => {
-        const selectedPromptKeys = selectedPrompts
-          .map(id => allPrompts.find(p => p.id === id)?.promptKey)
-          .filter((key): key is string => !!key);
+  if (this.isSendDisabled) {
+    return;
+  }
 
-        if (currentConversationId) {
-          const documentUrls = this.documents.map(doc => doc.blobUrl);
-          this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
-          this.router.navigate(['/ai-chat', currentConversationId]);
-        } else {
-          this.aiChatService.startConversation(messageToSend, selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null, this.files, selectedPromptKeys)
-            .subscribe(newConversation => {
-              if (newConversation) {
-                this.router.navigate(['/ai-chat', newConversation.Id]);
-              }
-            });
-        }
-      });
+  this.cdRef.detectChanges();
+
+  const hasText = this.newMessageContent.trim().length > 0;
+  if (!hasText && this.files.length === 0 && this.documents.length === 0) {
+    this.selectedPrompts$.pipe(take(1)).subscribe(prompts => {
+      if (prompts.length === 0) {
+        this.snackBar.open('Please type a message, upload a file, or select a prompt.', 'Close', { duration: 3000 });
+        return;
+      }
     });
+  }
 
-    this.newMessageContent = '';
-    this.files = [];
-    this.aiChatStateService.setSelectedPrompts([]);
-    this.isPromptsPopupVisible = false;
+  const messageToSend = this.newMessageContent;
+this.conversationId = this.aiChatStateService.getCurrentConversationId();
+const currentConversationId = this.conversationId;
+
+  this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
+    this.prompts$.pipe(take(1)).subscribe(allPrompts => {
+      const selectedPromptKeys = selectedPrompts
+        .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+        .filter((key): key is string => !!key);
+
+      if (currentConversationId) {
+          console.log('Existing conversation')
+  const documentUrls = this.documents.map(doc => doc.blobUrl);
+
+
+  this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
+  this.router.navigate(['/ai-chat', currentConversationId]);
+} else {
+  console.log('New Conversation')
+        // Create new conversation and join group before sending message
+this.aiChatService.startConversation(
+  messageToSend,
+  selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null,
+  this.files,
+  selectedPromptKeys
+).subscribe(async newConversation => {
+  if (newConversation) {
+    this.conversationId = newConversation.Id;
+
+    await this.signalrService.joinConversationGroup(this.conversationId);
+
+    // ✅ Instead of adding only 1, refresh the entire list
+    this.aiChatService.getMyConversations(); // ⬅️ This will reload titles too
+
+    this.aiChatStateService.setMessages(newConversation.messages ?? []);
+
+    this.location.replaceState(`/ai-chat/${newConversation.Id}`);
+    this.selectConversation(newConversation.Id);
+
+    this.cdRef.detectChanges();
     this.scrollToBottom();
   }
+});
+      }
+    });
+  });
+
+  this.newMessageContent = '';
+  this.files = [];
+  this.aiChatStateService.setSelectedPrompts([]);
+  this.isPromptsPopupVisible = false;
+  this.scrollToBottom();
+}
 
   onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -375,6 +546,9 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     this.editingConversationId = conversation.Id;
     this.editedTitle = conversation.Title;
   }
+public get isStreaming(): boolean {
+  return this.currentStreamingMessage.trim().length > 0;
+}
 
   saveTitle(): void {
     if (!this.editingConversationId) return;

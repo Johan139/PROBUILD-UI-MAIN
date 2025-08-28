@@ -15,12 +15,24 @@
             *ngFor="let s of data.packages"
             [value]="s.value"
             [disabled]="s.value === data.currentValue">
-            {{ s.display }}
+                             {{ s.display }}
+                          {{
+            form.value.billingCycle === 'yearly'
+      ? (s.annualAmount| currency:'USD':'symbol':'1.2-2')
+      : (s.amount | currency:'USD':'symbol':'1.2-2')
+  }}
             <span *ngIf="s.value === data.currentValue"> — current</span>
           </mat-option>
         </mat-select>
 
       </mat-form-field>
+      <div class="full-width" style="margin-bottom: 12px;">
+  <label class="block mb-1">Billing Cycle</label>
+  <mat-radio-group formControlName="billingCycle">
+    <mat-radio-button value="monthly">Monthly</mat-radio-button>
+    <mat-radio-button value="yearly" class="ml-4">Yearly</mat-radio-button>
+  </mat-radio-group>
+</div>
     </form>
 
     <!-- Preview area -->

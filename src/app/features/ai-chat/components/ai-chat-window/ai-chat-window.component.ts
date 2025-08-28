@@ -1,9 +1,9 @@
-import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ElementRef, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiChatStateService } from '../../services/ai-chat-state.service';
 import { AiChatService } from '../../services/ai-chat.service';
 import { SignalrService } from '../../services/signalr.service';
-import { Observable, Subject, firstValueFrom, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { takeUntil, take, map, tap, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +19,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { JobDocument } from '../../../../models/JobDocument';
 import { AuthService } from '../../../../authentication/auth.service';
 import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
+import { combineLatest } from 'rxjs';
+import { distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-ai-chat-window',
@@ -40,7 +42,8 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   conversations$: Observable<Conversation[]>;
   selectedPrompts$: Observable<number[]>;
   hasDocuments$: Observable<boolean> = of(false);
-
+private streamHandlerRegistered = false;
+private streamEndHandlerRegistered = false;
   public isHistoryVisible = false;
   private conversationId: string | null = null;
   private currentConversation: Conversation | null = null;
@@ -58,7 +61,12 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
   public isLoggedIn = false;
-
+  
+public combinedMessages$!: Observable<ChatMessage[]>;
+public streamingMessages: Map<string, string> = new Map();
+private lastChunkByCid: Map<string, string> = new Map();
+public streamingMessagesSubject = new BehaviorSubject<Map<string, string>>(new Map());
+public streamingMessages$ = this.streamingMessagesSubject.asObservable();
   public get isSendDisabled(): boolean {
     let selectedPrompts: number[] = [];
     this.selectedPrompts$.pipe(take(1)).subscribe(prompts => selectedPrompts = prompts);
@@ -95,7 +103,10 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     private cdRef: ChangeDetectorRef,
     public dialog: MatDialog,
     private signalrService: SignalrService,
-    private authService: AuthService
+    private authService: AuthService,
+        private ngZone: NgZone
+    
+    
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
@@ -106,30 +117,44 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
 
      this.prompts$ = this.state.prompts$;
 
-    this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
-      this.currentConversation = conversation;
-      if (conversation && conversation.Id) {
-        this.conversationId = conversation.Id;
-        await this.signalrService.joinConversationGroup(this.conversationId);
-      } else {
-        this.conversationId = null;
-      }
+this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async conversation => {
+  this.currentConversation = conversation;
+  if (conversation && conversation.Id) {
+    this.conversationId = conversation.Id;
+
+    await this.signalrService.joinConversationGroup(this.conversationId);
+
+    this.ngZone.run(() => {
+      this.clearStreamingMessages();
+      this.lastChunkByCid.clear(); // ✅ clear this to avoid "stuck on old stream"
+      this.state.setActiveConversationId(conversation.Id);
+      this.scrollToBottom('auto');
     });
+  } else {
+    this.conversationId = null;
+  }
+});
+
   }
 
   ngOnInit(): void {
+
+   
     this.hasDocuments$ = this.state.documents$.pipe(
       map(documents => documents.length > 0)
     );
-    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      this.isLoggedIn = !!user;
-      if (this.isLoggedIn) {
-        this.signalrService.startConnection();
-        this.aiChatService.getMyPrompts();
-        this.aiChatService.getMyConversations();
-        this.setupConversationSelection();
-      }
+this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+  this.isLoggedIn = !!user;
+  if (this.isLoggedIn) {
+    this.signalrService.startConnection().then(() => {
+      this.registerStreamHandlers(); // ✅ Now the connection is ready
     });
+
+    this.aiChatService.getMyPrompts();
+    this.aiChatService.getMyConversations();
+    this.setupConversationSelection();
+  }
+});
 
     this.state.documents$.pipe(takeUntil(this.destroy$)).subscribe(documents => this.documents = documents);
 
@@ -149,8 +174,49 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.messages$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.scrollToBottom();
     });
+
+
+this.combinedMessages$ = combineLatest([
+this.state.messages$,
+this.streamingMessages$,
+this.state.currentConversation$
+]).pipe(
+map(([messages, streamMap, convo]) => {
+const fallbackId = this.conversationId ?? ''; // fallback if currentConversation$ hasn't emitted yet
+const cid = convo?.Id ?? fallbackId;
+const stream = streamMap.get(cid) ?? '';
+const result: ChatMessage[] = [...messages];
+
+
+if (stream.trim()) {
+const streamMsg: ChatMessage = {
+Id: -1,
+ConversationId: cid,
+Role: 'model',
+Content: stream,
+IsSummarized: false,
+Timestamp: new Date()
+};
+result.push(streamMsg);
+}
+
+
+return result.sort((a, b) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime());
+})
+);
+  }
+get currentStreamingMessage(): string {
+  const id = this.conversationId ?? '';
+  const direct = this.streamingMessages.get(id);
+  if (direct && direct.length) return direct;
+
+  if (!this.conversationId && this.streamingMessages.size > 0) {
+    const last = Array.from(this.streamingMessages.values()).pop();
+    return last ?? '';
   }
 
+  return '';
+}
    ngOnDestroy(): void {
     this.signalrService.stopConnection();
     this.destroy$.next();
@@ -175,40 +241,136 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
   closeChat(): void {
     this.state.setIsChatOpen(false);
   }
+private registerStreamHandlers(): void {
+if (!this.streamHandlerRegistered) {
+this.streamHandlerRegistered = true;
 
-  sendMessage(): void {
-    if (this.isSendDisabled) {
-      return;
-    }
 
-    const messageToSend = this.newMessageContent;
-    const currentConversationId = this.state.getCurrentConversationId();
-    this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
-      this.prompts$.pipe(take(1)).subscribe(allPrompts => {
-        const selectedPromptKeys = selectedPrompts
-          .map(id => allPrompts.find(p => p.id === id)?.promptKey)
-          .filter((key): key is string => !!key);
+this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
+console.log('[chunk]', { cid, chunk });
 
-        if (currentConversationId) {
-          const documentUrls = this.documents.map(doc => doc.blobUrl);
-          this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
-        } else {
-          this.aiChatService.startConversation(messageToSend, selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null, this.files, selectedPromptKeys)
-            .subscribe(newConversation => {
-              if (newConversation) {
-                this.selectConversation$.next(newConversation.Id);
-              }
-            });
-        }
-      });
-    });
 
-    this.newMessageContent = '';
-    this.files = [];
-    this.state.setSelectedPrompts([]);
-    this.isPromptsPopupVisible = false;
-    this.scrollToBottom('smooth');
+this.ngZone.run(() => {
+const prev = this.streamingMessages.get(cid) || '';
+
+
+// ✅ Prevent duplicate trailing chunk (fixes the problem)
+if (prev.endsWith(chunk)) return;
+
+
+const updated = prev + chunk;
+this.streamingMessages.set(cid, updated);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+
+const activeConversationId = this.state.getCurrentConversationId();
+if (cid === activeConversationId) {
+this.cdRef.detectChanges();
+this.scrollToBottom('auto');
+}
+});
+});
+}
+
+if (!this.streamEndHandlerRegistered) {
+this.streamEndHandlerRegistered = true;
+let alreadyEndedFor: Set<string> = new Set();
+
+
+this.signalrService.onStreamEnd((cid: string) => {
+if (alreadyEndedFor.has(cid)) return;
+alreadyEndedFor.add(cid);
+console.log('[streamEnd]', { cid, current: this.conversationId });
+
+
+this.ngZone.run(() => {
+if (!this.conversationId) {
+this.conversationId = cid;
+}
+
+
+if (cid === this.conversationId) {
+const message = this.streamingMessages.get(cid) || '';
+if (message.trim().length) {
+this.state.pushFinalStreamedMessage(message);
+}
+
+
+this.streamingMessages.delete(cid);
+this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+
+
+this.cdRef.detectChanges();
+this.scrollToBottom('auto');
+}
+});
+});
+}
+}
+
+sendMessage(): void {
+        const currentStream = this.currentStreamingMessage.trim();
+  if (currentStream.length > 0) {
+    this.state.pushFinalStreamedMessage(currentStream);
+    const cid = this.conversationId ?? '';
+    this.streamingMessages.delete(cid);
+    this.streamingMessagesSubject.next(new Map(this.streamingMessages));
+    this.cdRef.detectChanges();
   }
+  if (this.isSendDisabled) {
+    return;
+  }
+
+  const messageToSend = this.newMessageContent;
+  const currentConversationId = this.state.getCurrentConversationId();
+
+  this.selectedPrompts$.pipe(take(1)).subscribe(selectedPrompts => {
+    this.prompts$.pipe(take(1)).subscribe(allPrompts => {
+      const selectedPromptKeys = selectedPrompts
+        .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+        .filter((key): key is string => !!key);
+
+      if (currentConversationId) {
+  (async () => {
+    const documentUrls = this.documents.map(doc => doc.blobUrl);
+
+    await this.signalrService.joinConversationGroup(currentConversationId);
+
+    this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
+  })();
+} else {
+        this.aiChatService.startConversation(
+          messageToSend,
+          selectedPromptKeys.length > 0 ? selectedPromptKeys[0] : null,
+          this.files,
+          selectedPromptKeys
+        ).subscribe(async newConversation => {
+          if (newConversation) {
+            this.conversationId = newConversation.Id;
+
+            // ✅ Join SignalR before streaming starts
+            await this.signalrService.joinConversationGroup(this.conversationId);
+
+            this.state.addConversation(newConversation);
+            this.state.setActiveConversationId(newConversation.Id);
+
+            // ✅ Let streaming handle message delivery
+            this.selectConversation$.next(newConversation.Id);
+            this.cdRef.detectChanges();
+            this.scrollToBottom();
+          }
+        });
+      }
+    });
+  });
+
+  // 🔥 DO NOT finalize or clear the stream here!
+  this.newMessageContent = '';
+  this.files = [];
+  this.state.setSelectedPrompts([]);
+  this.isPromptsPopupVisible = false;
+  this.scrollToBottom('smooth');
+}
 
   onKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -378,23 +540,28 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.selectConversation$.next(conversationId);
     this.isHistoryVisible = false;
    }
-
-  private setupConversationSelection(): void {
-    this.selectConversation$.pipe(
-      tap(conversationId => {
-        this.state.setActiveConversationId(conversationId);
-        this.scrollToBottom('auto');
-      }),
-      switchMap(conversationId =>
-        this.aiChatService.getConversation(conversationId).pipe(
-          tap(async () => {
-            await this.signalrService.joinConversationGroup(conversationId);
-          })
-        )
-      ),
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
+private clearStreamingMessages(): void {
+  this.streamingMessages.clear();
+  this.streamingMessagesSubject.next(new Map());
+}
+private setupConversationSelection(): void {
+  this.selectConversation$.pipe(
+    switchMap(conversationId =>
+      this.aiChatService.getConversation(conversationId).pipe(
+      tap(async () => {
+  await this.signalrService.joinConversationGroup(conversationId);
+  this.conversationId = conversationId; // ✅ CRUCIAL: ensure stream handlers match ID
+  this.ngZone.run(() => {
+    this.clearStreamingMessages();
+    this.state.setActiveConversationId(conversationId);
+    this.scrollToBottom('auto');
+  });
+})
+      )
+    ),
+    takeUntil(this.destroy$)
+  ).subscribe();
+}
 
   public get sortIcon(): string {
     return this.sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
@@ -405,14 +572,19 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.state.sortConversations(this.sortOrder);
   }
 
-  startNewConversation(): void {
-    this.newMessageContent = '';
-    this.state.setSelectedPrompts([]);
-    this.state.setActiveConversationId(null);
-    this.state.setMessages([]);
-    this.state.setDocuments([]);
-    this.aiChatService.getMyPrompts();
-  }
+startNewConversation(): void {
+  this.newMessageContent = '';
+  this.state.setSelectedPrompts([]);
+  this.state.setActiveConversationId(null);
+  this.state.setMessages([]);
+  this.state.setDocuments([]);
+
+  this.clearStreamingMessages(); // ✅ Crucial: clear dangling chunks
+
+  this.lastChunkByCid.clear(); // optional, in case you use it
+
+  this.aiChatService.getMyPrompts();
+}
 
   retryMessage(message: ChatMessage): void {
     this.state.deleteMessage(message.Id);
