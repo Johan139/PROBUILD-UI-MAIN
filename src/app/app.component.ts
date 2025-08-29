@@ -116,6 +116,13 @@ export class AppComponent implements OnInit, OnDestroy {
 ngOnInit() {
   if (this.isBrowser) {
 
+   const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+    for (const event of events) {
+      window.addEventListener(event, () => {
+        this.authService.resetInactivityTimer();
+      });
+    }
+
     this.authService.currentUser$.subscribe(user => {
       this.loggedIn = !!user;
       if (user) {

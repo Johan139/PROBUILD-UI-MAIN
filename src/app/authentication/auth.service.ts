@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwErro
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -19,11 +20,12 @@ export class AuthService {
   public userRole: string | null = null;
   private _userPermissions = new BehaviorSubject<string[]>([]);
   public userPermissions$ = this._userPermissions.asObservable();
-
+  private inactivityTimeout: any;
+private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<any>(null);
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   // ---- helpers: safe JWT parsing (Base64URL) ----
   private normalizeToken(token: string): string {
@@ -63,7 +65,27 @@ export class AuthService {
     const payload = this.parseJwt<any>(token);
     return payload?.exp ?? null;
   }
+public startInactivityTimer(): void {
+  this.clearInactivityTimer();
 
+  if (!isPlatformBrowser(this.platformId)) return;
+
+  this.inactivityTimeout = setTimeout(() => {
+    console.warn('Auto-logout due to inactivity.');
+    this.logout();
+  }, this.INACTIVITY_LIMIT);
+}
+
+public clearInactivityTimer(): void {
+  if (this.inactivityTimeout) {
+    clearTimeout(this.inactivityTimeout);
+    this.inactivityTimeout = null;
+  }
+}
+
+public resetInactivityTimer(): void {
+  this.startInactivityTimer();
+}
   public hasPermission(permissionKey: string): Observable<boolean> {
     const userRole = this.getUserRole();
     if (userRole === 'GENERAL_CONTRACTOR') {
@@ -143,6 +165,7 @@ export class AuthService {
       localStorage.setItem('companyName', companyName);
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
+      this.startInactivityTimer(); 
       return of(response);
     } else {
       return this.fetchTeamMemberDetails(token).pipe(
@@ -182,6 +205,7 @@ export class AuthService {
   }
 
   logout(): void {
+      this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -193,6 +217,8 @@ export class AuthService {
       localStorage.removeItem('currentUser');
     }
     this.currentUserSubject.next(null);
+
+      this.router.navigate(['/login']);
   }
 
   refreshToken(): Observable<any> {
@@ -204,14 +230,25 @@ export class AuthService {
     this.refreshTokenSubject.next(null);
 
     const refreshToken = localStorage.getItem('refreshToken');
-    return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
-      tap((response: any) => {
-        this.isRefreshing = false;
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        this.refreshTokenSubject.next(response.accessToken);
-      })
-    );
+return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
+tap((response: any) => {
+  console.log('[DEBUG] Refresh token response:', response); // ADD THIS
+
+  if (!response || !response.accessToken || !response.refreshToken) {
+    throw new Error('Invalid refresh token response');
+  }
+
+  localStorage.setItem('accessToken', response.accessToken);
+  localStorage.setItem('refreshToken', response.refreshToken);
+  this.refreshTokenSubject.next(response.accessToken);
+}),
+  catchError((err) => {
+    console.error('Token refresh failed:', err);
+    this.logout();
+    return throwError(() => err);
+  })
+);
+    
   }
 
   async getToken(): Promise<string | null> {
