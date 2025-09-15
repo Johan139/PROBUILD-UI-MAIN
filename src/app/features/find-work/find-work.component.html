@@ -1,0 +1,43 @@
+<div class="find-work-container">
+  <div class="tabs">
+    <button (click)="setActiveTab('allJobs')" [class.active]="activeTab === 'allJobs'">All Jobs</button>
+    <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
+  </div>
+
+  <div class="view-switcher">
+    <button (click)="toggleView('map')" [class.active]="viewMode === 'map'">Map View</button>
+    <button (click)="toggleView('list')" [class.active]="viewMode === 'list'">List View</button>
+  </div>
+
+  <div [hidden]="viewMode !== 'map'">
+    <google-map
+      height="400px"
+      width="100%"
+      [center]="center"
+      [zoom]="zoom">
+      <map-marker
+        *ngFor="let position of markerPositions"
+        [position]="position"
+        [options]="markerOptions">
+      </map-marker>
+    </google-map>
+  </div>
+
+  <div [hidden]="viewMode !== 'list'">
+    <div *ngIf="activeTab === 'allJobs'">
+      <h2>All Jobs</h2>
+      <!-- Placeholder for job list -->
+      <ul class="job-list">
+        <li *ngFor="let job of jobs">{{ job.title }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="activeTab === 'myBids'">
+      <h2>My Bids</h2>
+      <!-- Placeholder for bids list -->
+      <ul class="job-list">
+        <li *ngFor="let job of myBids">{{ job.title }}</li>
+      </ul>
+    </div>
+  </div>
+</div>

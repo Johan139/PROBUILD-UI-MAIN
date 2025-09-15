@@ -13,7 +13,6 @@ const BASE_URL = `${environment.BACKEND_URL}/Account`;
 export class UserService {
 
     constructor(private httpClient: HttpClient) {
-
     }
 
     getUserById(id: string): Observable<User> {
@@ -23,15 +22,16 @@ export class UserService {
     }
 
     getUserQuotes() {
+    }
 
+    searchUsers(searchTerm: string): Observable<User[]> {
+        return this.httpClient.get<User[]>(`${BASE_URL}/search?term=${searchTerm}`);
     }
 
     getUserBids() {
-
     }
 
     getUserProjects(userId: any) {
-
     }
 
 }

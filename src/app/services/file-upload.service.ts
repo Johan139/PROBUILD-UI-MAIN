@@ -96,6 +96,7 @@ export class FileUploadService {
       return uploadSubject.asObservable();
   }
 
+
   private handleUploadError(error: HttpErrorResponse): void {
     let errorMessage = 'An unexpected error occurred. Please try again.';
 

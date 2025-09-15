@@ -1,16 +1,21 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RoleDisplayPipe } from './pipes/role-display.pipe';
+import { ContractSigningComponent } from '../features/contracts/contract-signing.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
-    RoleDisplayPipe
+    RoleDisplayPipe,
+    ContractSigningComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
   exports: [
-    RoleDisplayPipe
+    RoleDisplayPipe,
+    ContractSigningComponent
   ]
 })
 export class SharedModule { }

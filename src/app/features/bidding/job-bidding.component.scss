@@ -1,0 +1,96 @@
+$primary-yellow: #fbd008;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+:host {
+  display: block;
+  padding: 2rem;
+  font-family: sans-serif;
+}
+
+.bidding-container {
+  background-color: $white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: $shadow;
+
+  h1 {
+    color: $dark-gray;
+    margin-bottom: 1.5rem;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    input {
+      padding: 0.75rem;
+      border: 1px solid $light-gray;
+      border-radius: 4px;
+      flex-grow: 1;
+    }
+
+    .action-btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background-color: $primary-yellow;
+      color: $dark-gray;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s;
+
+      &:hover {
+        background-color: darken($primary-yellow, 10%);
+      }
+
+      &:disabled {
+        background-color: $light-gray;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .bids-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      cursor: pointer;
+      font-weight: 600;
+      color: $dark-gray;
+
+      &:hover {
+        background-color: #e9ecef;
+      }
+    }
+
+    tbody tr:hover {
+      background-color: #f5f5f5;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      background-color: #28a745;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+
+      &:hover {
+        background-color: darken(#28a745, 10%);
+      }
+    }
+  }
+}

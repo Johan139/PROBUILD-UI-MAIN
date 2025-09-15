@@ -6,8 +6,16 @@
       </mat-card-header>
       <mat-card-content>
 
+        <div *ngIf="showFeeReminder" class="alert alert-warning alert-dismissible fade show" role="alert">
+          <strong>Reminder:</strong> A finder's fee (5% for Subcontractors, 2.5% for Vendors) will be applied if you win this bid.
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" (click)="showFeeReminder = false"></button>
+        </div>
+
+        <div *ngIf="isFinalBiddingRound" class="alert alert-info" role="alert">
+          This is the final bidding round. You can either submit a revised offer or keep your original bid.
+        </div>
         <!-- Read-Only Toggle
-        <div class="d-flex justify-content-end mb-3">
+         <div class="d-flex justify-content-end mb-3">
           <button class="btn btn-outline-secondary" (click)="toggleReadOnly()">
             {{ readOnly ? 'Switch to Edit Mode' : 'Switch to Read-Only Mode' }}
           </button>
@@ -215,7 +223,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Action Buttons -->
           <div class="action-buttons mt-4 d-flex justify-content-between">
 
@@ -236,7 +244,10 @@
                 Save / Update Quote
               </button>
               <button class="btn btn-success me-2" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
-                Submit Quote
+                {{ isFinalBiddingRound ? 'Submit Final Offer' : 'Submit Quote' }}
+              </button>
+              <button *ngIf="isFinalBiddingRound" class="btn btn-secondary me-2" type="button" (click)="keepOriginalBid()" [disabled]="isSaving || readOnly || !jobId">
+                Keep Original Bid
               </button>
               <button class="btn btn-success me-2" type="button" (click)="onSubmit()" [disabled]="isSaving || readOnly">
                 Download Quote

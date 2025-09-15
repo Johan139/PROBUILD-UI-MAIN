@@ -1,3 +1,5 @@
+import { Portfolio } from "./portfolio";
+
 export class User {
   id!: string;
   firstName!: string;
@@ -8,4 +10,9 @@ export class User {
   companyName?: string;
   role?: string;
   inviterId?: string;
+  profilePictureUrl?: string;
+  phoneNumber?: string;
+  probuildRating?: number;
+  googleRating?: number;
+  portfolio?: Portfolio;
 }

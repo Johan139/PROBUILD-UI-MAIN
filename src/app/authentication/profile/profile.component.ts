@@ -79,7 +79,7 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
   imports: [
     ReactiveFormsModule,
     FormsModule,
-      CommonModule,  
+      CommonModule,
     MatCardModule,
     MatDividerModule,
     MatFormFieldModule,
@@ -108,7 +108,7 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
 })
 
 export class ProfileComponent implements OnInit {
-  
+
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
@@ -235,6 +235,8 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       latitude: [null],
       longitude: [null],
       googlePlaceId: [''],
+     notificationRadius: [100],
+     jobPreferences: [[]]
     });
 
     this.teamForm = this.fb.group({
@@ -286,7 +288,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
-  
+
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
       if (user && user.id) {
@@ -347,7 +349,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       })
     ).subscribe({
       next: (data: Profile | Profile[]) => {
-        const profileData = Array.isArray(data) ? data[0] : data;      
+        const profileData = Array.isArray(data) ? data[0] : data;
         this.profile = profileData;
         this.profileForm.patchValue(profileData);
         this.isLoading = false;
@@ -500,7 +502,7 @@ manageSubscriptions(): void {
                       ).trim().toLowerCase();
 
       const iAmTeamMember = this.authService.isTeamMember();
-       
+
       const isActive = (r: SubscriptionRow) =>
         String(r.status || '').toLowerCase() === 'active';
 
@@ -568,7 +570,7 @@ GetUserSubscription(): void {
       const activeCode = this.subscriptionuserPackages?.[0]?.value ?? null;
       if (activeCode) {
         // Prefer direct code match in your known packages
-        const match = this.subscriptionPackages.find(p => 
+        const match = this.subscriptionPackages.find(p =>
           p.value.toLowerCase() === activeCode.toLowerCase()
           || p.display.toLowerCase().startsWith(activeCode.toLowerCase()) // fallback if backend sends display text
         );
@@ -585,7 +587,7 @@ GetUserSubscription(): void {
   });
 }
 
-  
+
 
   loadTeamMembers(): void {
     const currentUser = this.authService.currentUserSubject.value;
@@ -962,7 +964,7 @@ startCheckoutForUpgrade(
   pkgCode: string,
   assignedUser: string | null,
   billingCycle: 'monthly' | 'yearly' = 'monthly',
-  subscriptionId: string 
+  subscriptionId: string
 ): void {
   const pkgMeta = this.subscriptionPackages.find(p =>
     String(p.value).toLowerCase() === String(pkgCode).toLowerCase()
@@ -1144,14 +1146,14 @@ openSubscriptionCreateDialog(): void {
         name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
         email: m.email
       })),
-      activeByUserId: selfMap,   
-      notice                    
+      activeByUserId: selfMap,
+      notice
     }
   })
   .afterClosed()
   .subscribe((sel?: { pkg: { value: string; amount: number }; assigneeUserId: string; billingCycle: 'monthly' | 'yearly'; annualAmount:number  }) => {
     if (!sel) return;
-     const { pkg, assigneeUserId, billingCycle } = sel; 
+     const { pkg, assigneeUserId, billingCycle } = sel;
 
     this.profileForm.patchValue({ subscriptionPackage: pkg.value });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();

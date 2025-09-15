@@ -1,0 +1,37 @@
+<div class="bidding-container">
+  <h1>Bids for {{ job?.name }}</h1>
+
+  <div class="toolbar">
+    <input type="text" placeholder="Filter by subcontractor" (keyup)="filterBids($any($event.target).value)">
+    <button (click)="selectFinalists()" [disabled]="selectedBids.size === 0">Select Finalists</button>
+    <button (click)="analyzeBids()" [disabled]="selectedBids.size === 0">Analyze Bids</button>
+  </div>
+
+  <div *ngIf="analysisResult" class="analysis-result">
+    <h2>Analysis Result</h2>
+    <pre>{{ analysisResult.message }}</pre>
+  </div>
+
+  <table class="bids-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th (click)="sortBids('subcontractorName')">Subcontractor</th>
+        <th (click)="sortBids('amount')">Amount</th>
+        <th (click)="sortBids('isFinalist')">Finalist</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let bid of filteredBids">
+        <td><input type="checkbox" (change)="toggleBidSelection(bid.id)" [checked]="selectedBids.has(bid.id)"></td>
+        <td>{{ bid.subcontractorName }}</td>
+        <td>{{ bid.amount | currency }}</td>
+        <td>{{ bid.isFinalist ? 'Yes' : 'No' }}</td>
+        <td>
+          <button (click)="awardJob(bid.id)">Award Job</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

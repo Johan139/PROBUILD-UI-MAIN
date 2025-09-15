@@ -65,27 +65,29 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     const payload = this.parseJwt<any>(token);
     return payload?.exp ?? null;
   }
-public startInactivityTimer(): void {
-  this.clearInactivityTimer();
 
-  if (!isPlatformBrowser(this.platformId)) return;
+  public startInactivityTimer(): void {
+    this.clearInactivityTimer();
 
-  this.inactivityTimeout = setTimeout(() => {
-    console.warn('Auto-logout due to inactivity.');
-    this.logout();
-  }, this.INACTIVITY_LIMIT);
-}
+    if (!isPlatformBrowser(this.platformId)) return;
 
-public clearInactivityTimer(): void {
-  if (this.inactivityTimeout) {
-    clearTimeout(this.inactivityTimeout);
-    this.inactivityTimeout = null;
+    this.inactivityTimeout = setTimeout(() => {
+      console.warn('Auto-logout due to inactivity.');
+      this.logout();
+    }, this.INACTIVITY_LIMIT);
   }
-}
 
-public resetInactivityTimer(): void {
-  this.startInactivityTimer();
-}
+  public clearInactivityTimer(): void {
+    if (this.inactivityTimeout) {
+      clearTimeout(this.inactivityTimeout);
+      this.inactivityTimeout = null;
+    }
+  }
+
+  public resetInactivityTimer(): void {
+    this.startInactivityTimer();
+  }
+
   public hasPermission(permissionKey: string): Observable<boolean> {
     const userRole = this.getUserRole();
     if (userRole === 'GENERAL_CONTRACTOR') {
@@ -165,7 +167,7 @@ public resetInactivityTimer(): void {
       localStorage.setItem('companyName', companyName);
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
-      this.startInactivityTimer(); 
+      this.startInactivityTimer();
       return of(response);
     } else {
       return this.fetchTeamMemberDetails(token).pipe(
@@ -230,25 +232,25 @@ public resetInactivityTimer(): void {
     this.refreshTokenSubject.next(null);
 
     const refreshToken = localStorage.getItem('refreshToken');
-return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
-tap((response: any) => {
-  console.log('[DEBUG] Refresh token response:', response); // ADD THIS
+    return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
+    tap((response: any) => {
+      console.log('[DEBUG] Refresh token response:', response); // ADD THIS
 
-  if (!response || !response.accessToken || !response.refreshToken) {
-    throw new Error('Invalid refresh token response');
-  }
+      if (!response || !response.accessToken || !response.refreshToken) {
+        throw new Error('Invalid refresh token response');
+      }
 
-  localStorage.setItem('accessToken', response.accessToken);
-  localStorage.setItem('refreshToken', response.refreshToken);
-  this.refreshTokenSubject.next(response.accessToken);
-}),
-  catchError((err) => {
-    console.error('Token refresh failed:', err);
-    this.logout();
-    return throwError(() => err);
-  })
-);
-    
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      this.refreshTokenSubject.next(response.accessToken);
+    }),
+      catchError((err) => {
+        console.error('Token refresh failed:', err);
+        this.logout();
+        return throwError(() => err);
+      })
+    );
+
   }
 
   async getToken(): Promise<string | null> {
@@ -283,6 +285,11 @@ tap((response: any) => {
 
   getUserRole(): string | null {
     return localStorage.getItem('userType');
+  }
+
+  getUserId(): string | null {
+    const user = this.currentUserSubject.getValue();
+    return user ? user.id : null;
   }
 
   isTeamMember(): boolean {
