@@ -41,6 +41,7 @@ import {
   operationalYears,
   certificationOptions
 } from '../../data/registration-data';
+import { RegistrationService } from '../../services/registration.service';
 
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -123,6 +124,7 @@ export class RegistrationComponent implements OnInit{
     private httpClient: HttpClient,
     private router: Router,
     private stripeService: StripeService,
+    private registrationService: RegistrationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
     private invitationService: InvitationService
@@ -152,7 +154,13 @@ export class RegistrationComponent implements OnInit{
 
   ngOnInit() {
     this.loadSubscriptionPackages();
-
+this.registrationService.getCountries().subscribe({
+  next: (countries) => {
+  },
+  error: (err) => {
+    console.error('Failed to load countries:', err);
+  }
+});
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
@@ -373,9 +381,47 @@ export class RegistrationComponent implements OnInit{
     if(selectedOption === "FULLY_LICENSED")
       this.certified = true;
   }
+getUserMetadata(): Observable<any> {
+  return this.httpClient.get('https://ipapi.co/json/');
+}
+
+
+private getOperatingSystem(): string {
+  const userAgent = navigator.userAgent;
+
+  // Windows
+  if (/Windows NT 10.0/.test(userAgent)) return "Windows 10 or 11";
+  if (/Windows NT 6.3/.test(userAgent)) return "Windows 8.1";
+  if (/Windows NT 6.2/.test(userAgent)) return "Windows 8";
+  if (/Windows NT 6.1/.test(userAgent)) return "Windows 7";
+  if (/Windows NT 6.0/.test(userAgent)) return "Windows Vista";
+  if (/Windows NT 5.1/.test(userAgent)) return "Windows XP";
+
+  // macOS
+  if (/Mac OS X 10[\._]15/.test(userAgent)) return "macOS Catalina";
+  if (/Mac OS X 11[\._]/.test(userAgent)) return "macOS Big Sur";
+  if (/Mac OS X 12[\._]/.test(userAgent)) return "macOS Monterey";
+  if (/Mac OS X 13[\._]/.test(userAgent)) return "macOS Ventura";
+  if (/Mac OS X 14[\._]/.test(userAgent)) return "macOS Sonoma or later";
+
+  // iOS
+  if (/iPhone/.test(userAgent)) return "iOS (iPhone)";
+  if (/iPad/.test(userAgent)) return "iOS (iPad)";
+
+  // Android
+  if (/Android/.test(userAgent)) {
+    const match = userAgent.match(/Android\s([0-9\.]+)/);
+    return match ? `Android ${match[1]}` : "Android";
+  }
+
+  // Linux
+  if (/Linux/.test(userAgent)) return "Linux";
+
+  return "Unknown OS";
+}
 
   onSubmit(): void {
-    
+
     if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;
@@ -430,8 +476,23 @@ export class RegistrationComponent implements OnInit{
         formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
       }
 
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
-        headers: { 'Content-Type': 'application/json' }
+
+// Just before sending formValue to the backend
+this.getUserMetadata().subscribe((metadata) => {
+console.log(metadata);
+  // Attach IP/location metadata
+formValue.ipAddress = metadata.ip;
+formValue.cityFromIP = metadata.city;
+formValue.regionFromIP = metadata.region; // changed
+formValue.countryFromIP = metadata.country_name;
+formValue.latitudeFromIP = metadata.latitude;
+formValue.longitudeFromIP = metadata.longitude;
+formValue.timezone = metadata.timezone;
+formValue.operatingSystem = this.getOperatingSystem();
+
+
+      
+      this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
       })
       .pipe(
         catchError((error) => {
@@ -496,7 +557,7 @@ export class RegistrationComponent implements OnInit{
         }
       });
     });
-
+});
       }
       return;
     }
@@ -533,7 +594,20 @@ export class RegistrationComponent implements OnInit{
         formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
       }
 
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
+
+// Just before sending formValue to the backend
+this.getUserMetadata().subscribe((metadata) => {
+  // Attach IP/location metadata
+formValue.ipAddress = metadata.ip;
+formValue.cityFromIP = metadata.city;
+formValue.regionFromIP = metadata.region; // changed
+formValue.countryFromIP = metadata.country_name;
+formValue.latitudeFromIP = metadata.latitude;
+formValue.longitudeFromIP = metadata.longitude;
+formValue.timezone = metadata.timezone;
+
+formValue.operatingSystem = this.getOperatingSystem();
+      this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
         headers: { 'Content-Type': 'application/json' }
       })
       .pipe(
@@ -597,6 +671,7 @@ export class RegistrationComponent implements OnInit{
           }
         }
       });
+    });
     });
   }
 
