@@ -79,30 +79,29 @@ export class LoginComponent {
 
           let message = 'Invalid login credentials.';
           this.alertMessage = message;
+console.log(error)
+let backendError = error.error;
 
-          if (error instanceof HttpErrorResponse) {
-            let backendError = error.error;
+// If it's a string, try parsing JSON; otherwise keep as-is
+if (typeof backendError === 'string') {
+  try {
+    backendError = JSON.parse(backendError);
+  } catch {
+    // fallback to wrapping string into object
+    backendError = { error: backendError };
+  }
+}
 
-            if (typeof backendError === 'string') {
-              try {
-                backendError = JSON.parse(backendError);
-              } catch {
-                backendError = {};
-              }
-            }
+// Ensure we always have something
+const backendMessage = backendError?.error || backendError?.message || message;
 
-            if (error.status === 401) {
-              this.alertMessage = backendError?.error || message;
-            } else if (error.status === 500) {
-              this.alertMessage = backendError?.error || 'Server error. Try again later.';
-            } else {
-              this.alertMessage = backendError?.error || message;
-            }
-          } else if (error instanceof Error) {
-            this.alertMessage = error.message || message;
-          } else {
-            this.alertMessage = message;
-          }
+if (error.status === 401) {
+  this.alertMessage = backendMessage;
+} else if (error.status === 500) {
+  this.alertMessage = backendMessage || 'Server error. Try again later.';
+} else {
+  this.alertMessage = backendMessage;
+}
         },
       });
     } else {
