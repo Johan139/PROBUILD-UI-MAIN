@@ -8,10 +8,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
 import { ConnectionService } from '../../services/connection.service';
 import { UserService } from '../../services/user.service';
 import { User } from '../../models/user';
 import { Connection } from '../../models/connection';
+import { AuthService } from '../../authentication/auth.service';
 
 @Component({
   selector: 'app-connections',
@@ -25,7 +27,8 @@ import { Connection } from '../../models/connection';
     MatButtonModule,
     MatListModule,
     MatCardModule,
-    MatIconModule
+    MatIconModule,
+    MatTableModule
   ],
   templateUrl: './connections.component.html',
   styleUrls: ['./connections.component.scss']
@@ -36,13 +39,19 @@ export class ConnectionsComponent implements OnInit {
   connections: Connection[] = [];
   incomingRequests: Connection[] = [];
   outgoingRequests: Connection[] = [];
+  currentUserId: string | null = null;
+  displayedColumns: string[] = ['companyName', 'trade', 'name', 'type', 'email', 'phoneNumber', 'constructionType', 'supplierType', 'productsOffered', 'country', 'city', 'action'];
 
   constructor(
     private connectionService: ConnectionService,
-    private userService: UserService
+    private userService: UserService,
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUserId = user ? user.id : null;
+    });
     this.loadConnections();
     this.loadIncomingRequests();
     this.loadOutgoingRequests();
@@ -51,7 +60,7 @@ export class ConnectionsComponent implements OnInit {
   searchUsers(): void {
     if (this.searchTerm.trim()) {
       this.userService.searchUsers(this.searchTerm).subscribe(results => {
-        this.searchResults = results;
+        this.searchResults = results.filter(user => user.id !== this.currentUserId);
       });
     } else {
       this.searchResults = [];

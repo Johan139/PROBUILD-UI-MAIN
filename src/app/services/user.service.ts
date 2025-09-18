@@ -25,7 +25,7 @@ export class UserService {
     }
 
     searchUsers(searchTerm: string): Observable<User[]> {
-        return this.httpClient.get<User[]>(`${BASE_URL}/search?term=${searchTerm}`);
+        return this.httpClient.get<User[]>(`${BASE_URL}/search?term=${encodeURIComponent(searchTerm)}`);
     }
 
     getUserBids() {

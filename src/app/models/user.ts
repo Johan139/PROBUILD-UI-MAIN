@@ -15,4 +15,10 @@ export class User {
   probuildRating?: number;
   googleRating?: number;
   portfolio?: Portfolio;
+  constructionType?: string;
+  trade?: string;
+  supplierType?: string;
+  productsOffered?: string;
+  country?: string;
+  city?: string;
 }
