@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -8,12 +8,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatDialog } from '@angular/material/dialog';
 import { ConnectionService } from '../../services/connection.service';
 import { UserService } from '../../services/user.service';
 import { User } from '../../models/user';
 import { Connection } from '../../models/connection';
 import { AuthService } from '../../authentication/auth.service';
+import { InvitationDialogComponent } from './invitation-dialog/invitation-dialog.component';
 
 @Component({
   selector: 'app-connections',
@@ -28,43 +31,78 @@ import { AuthService } from '../../authentication/auth.service';
     MatListModule,
     MatCardModule,
     MatIconModule,
-    MatTableModule
+    MatTableModule,
+    MatPaginatorModule
   ],
   templateUrl: './connections.component.html',
   styleUrls: ['./connections.component.scss']
 })
-export class ConnectionsComponent implements OnInit {
+export class ConnectionsComponent implements OnInit, AfterViewInit {
   searchTerm: string = '';
-  searchResults: User[] = [];
+  allUsers: User[] = [];
+  dataSource = new MatTableDataSource<User>([]);
   connections: Connection[] = [];
   incomingRequests: Connection[] = [];
   outgoingRequests: Connection[] = [];
   currentUserId: string | null = null;
   displayedColumns: string[] = ['companyName', 'trade', 'name', 'type', 'email', 'phoneNumber', 'constructionType', 'supplierType', 'productsOffered', 'country', 'city', 'action'];
+  showInviteMessage = false;
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(
     private connectionService: ConnectionService,
     private userService: UserService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef,
+    public dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.currentUserId = user ? user.id : null;
+      this.loadAllUsers();
     });
     this.loadConnections();
     this.loadIncomingRequests();
     this.loadOutgoingRequests();
   }
 
-  searchUsers(): void {
-    if (this.searchTerm.trim()) {
-      this.userService.searchUsers(this.searchTerm).subscribe(results => {
-        this.searchResults = results.filter(user => user.id !== this.currentUserId);
-      });
-    } else {
-      this.searchResults = [];
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
+  }
+
+  loadAllUsers(): void {
+    this.userService.getAllUsers().subscribe(users => {
+      this.allUsers = users.filter(user => user.id !== this.currentUserId);
+      this.dataSource.data = this.allUsers;
+      this.cdr.detectChanges();
+      this.dataSource.paginator = this.paginator;
+    });
+  }
+
+  applyFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSource.filter = filterValue.trim().toLowerCase();
+    this.showInviteMessage = this.dataSource.filteredData.length === 0 && filterValue.length > 0;
+
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
     }
+  }
+
+  openInvitationDialog(): void {
+    const dialogRef = this.dialog.open(InvitationDialogComponent, {
+      width: '400px',
+      data: { email: this.dataSource.filter }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Handle successful invitation
+        console.log('Invitation sent');
+      }
+    });
   }
 
   loadConnections(): void {
@@ -89,6 +127,13 @@ export class ConnectionsComponent implements OnInit {
     this.connectionService.requestConnection(userId).subscribe(() => {
       console.log('Request sent');
       this.loadOutgoingRequests();
+      // Visually indicate that a request has been sent, e.g., disable the button
+      const user = this.allUsers.find(u => u.id === userId);
+      if (user) {
+        // You might want to add a property to the user object to track this
+        // For now, we'll just log it. A more robust solution would update the UI.
+        console.log(`Connection request sent to ${user.firstName}`);
+      }
     });
   }
 

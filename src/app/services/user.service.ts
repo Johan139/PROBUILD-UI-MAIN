@@ -28,6 +28,10 @@ export class UserService {
         return this.httpClient.get<User[]>(`${BASE_URL}/search?term=${encodeURIComponent(searchTerm)}`);
     }
 
+    getAllUsers(): Observable<User[]> {
+        return this.httpClient.get<User[]>(`${BASE_URL}/users`);
+    }
+
     getUserBids() {
     }
 
