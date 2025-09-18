@@ -83,7 +83,14 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
   applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
+    const searchTerms = filterValue.trim().toLowerCase().split(/\s+/);
+
+    this.dataSource.filterPredicate = (data: User, filter: string) => {
+      const dataStr = Object.values(data).join(' ').toLowerCase();
+      return searchTerms.every(term => dataStr.includes(term));
+    };
+
+    this.dataSource.filter = filterValue;
     this.showInviteMessage = this.dataSource.filteredData.length === 0 && filterValue.length > 0;
 
     if (this.dataSource.paginator) {
@@ -93,8 +100,8 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
   openInvitationDialog(): void {
     const dialogRef = this.dialog.open(InvitationDialogComponent, {
-      width: '400px',
-      data: { email: this.dataSource.filter }
+      width: '800px',
+      data: { email: '' }
     });
 
     dialogRef.afterClosed().subscribe(result => {

@@ -16,4 +16,12 @@ export class InvitationService {
   inviteUser(invitationData: { email: string, firstName: string, lastName: string, phoneNumber?: string }): Observable<any> {
     return this.http.post(`${this.apiUrl}/invite`, invitationData);
   }
+
+  getInvitation(token: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/invitation/${token}`);
+  }
+
+  registerInvited(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register/invited`, data);
+  }
 }

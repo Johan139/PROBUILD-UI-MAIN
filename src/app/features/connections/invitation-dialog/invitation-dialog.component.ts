@@ -6,10 +6,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
 
 @Component({
   selector: 'app-invitation-dialog',
   templateUrl: './invitation-dialog.component.html',
+  styleUrls: ['./invitation-dialog.component.scss'],
   standalone: true,
   imports: [
     CommonModule,
@@ -17,7 +19,8 @@ import { CommonModule } from '@angular/common';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    TextFieldModule
   ],
 })
 export class InvitationDialogComponent {
@@ -33,7 +36,8 @@ export class InvitationDialogComponent {
       email: [data.email, [Validators.required, Validators.email]],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      phoneNumber: ['']
+      phoneNumber: [''],
+      message: ['']
     });
   }
 
