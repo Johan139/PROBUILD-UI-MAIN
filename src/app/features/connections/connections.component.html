@@ -145,7 +145,7 @@
           <table mat-table [dataSource]="connectionsDataSource">
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef> Name </th>
-              <td mat-cell *matCellDef="let conn"> {{ conn.user?.firstName }} {{ conn.user?.lastName }} </td>
+              <td mat-cell *matCellDef="let conn"> {{ conn.user?.firstName || conn.firstName }} {{ conn.user?.lastName || conn.lastName }} </td>
             </ng-container>
             <ng-container matColumnDef="email">
               <th mat-header-cell *matHeaderCellDef> Email </th>
@@ -154,11 +154,13 @@
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef> Status </th>
               <td mat-cell *matCellDef="let conn">
-                <ng-container *ngIf="conn.status === 'PENDING'">
-                  {{ conn.requesterId === currentUserId ? 'Request Sent' : 'Request Received' }}
-                </ng-container>
-                <ng-container *ngIf="conn.status === 'ACCEPTED'">
-                  Connected
+                <ng-container *ngIf="conn.isInSystem">
+                  <ng-container *ngIf="conn.status === 'PENDING'">
+                    {{ conn.requesterId === currentUserId ? 'Request Sent' : 'Request Received' }}
+                  </ng-container>
+                  <ng-container *ngIf="conn.status === 'ACCEPTED'">
+                    Connected
+                  </ng-container>
                 </ng-container>
                 <ng-container *ngIf="!conn.isInSystem">
                   Invited
