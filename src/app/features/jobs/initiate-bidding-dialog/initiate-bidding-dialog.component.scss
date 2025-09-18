@@ -1,0 +1,42 @@
+:host {
+  display: block;
+  padding: 20px;
+}
+
+.mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+mat-radio-group {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.trades-selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.trade-input-section .full-width {
+  width: 100%;
+}
+
+.selected-trades-display h4 {
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mat-dialog-actions {
+  justify-content: flex-end;
+  padding-top: 20px;
+}

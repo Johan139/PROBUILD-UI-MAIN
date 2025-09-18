@@ -9,34 +9,86 @@
     <button (click)="toggleView('list')" [class.active]="viewMode === 'list'">List View</button>
   </div>
 
-  <div [hidden]="viewMode !== 'map'">
+  <!-- Map View -->
+  <div [hidden]="viewMode !== 'map'" class="map-container">
+    <!-- Loading state -->
+    <div *ngIf="isMapLoading && !mapLoadError" class="map-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading map...</p>
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="mapLoadError" class="map-error">
+      <p>Failed to load Google Maps. Please check your API key and internet connection.</p>
+      <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Map component -->
     <google-map
-      height="400px"
+      *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError"
+      height="500px"
       width="100%"
       [center]="center"
-      [zoom]="zoom">
+      [zoom]="zoom"
+      [options]="mapOptions">
       <map-marker
-        *ngFor="let position of markerPositions"
-        [position]="position"
-        [options]="markerOptions">
+        *ngFor="let marker of markerPositions; trackBy: trackByMarkerId"
+        [position]="marker.position"
+        [options]="markerOptions"
+        [title]="marker.title"
+        (mapClick)="onMarkerClick(marker)">
       </map-marker>
     </google-map>
+
+    <!-- Map info panel -->
+    <div *ngIf="selectedJob" class="job-info-panel">
+      <div class="job-info-header">
+        <h3>{{ selectedJob.projectName }}</h3>
+        <button (click)="closeJobInfo()" class="close-btn">&times;</button>
+      </div>
+      <div class="job-info-content">
+        <p><strong>Description:</strong> {{ selectedJob.jobType }}</p>
+        <p><strong>Location:</strong> {{ selectedJob.city }}, {{ selectedJob.state }}</p>
+      </div>
+    </div>
   </div>
 
-  <div [hidden]="viewMode !== 'list'">
+  <!-- List View -->
+  <div [hidden]="viewMode !== 'list'" class="list-container">
     <div *ngIf="activeTab === 'allJobs'">
-      <h2>All Jobs</h2>
-      <!-- Placeholder for job list -->
-      <ul class="job-list">
-        <li *ngFor="let job of jobs">{{ job.title }}</li>
+      <h2>All Jobs ({{ jobs.length }})</h2>
+      <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
+      <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available.</div>
+      <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
+        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item">
+          <div class="job-header">
+            <h3>{{ job.projectName }}</h3>
+          </div>
+          <p class="job-description">{{ job.jobType }}</p>
+          <div class="job-location">
+            <span>📍 {{ job.city }}, {{ job.state }}</span>
+          </div>
+        </li>
       </ul>
     </div>
 
     <div *ngIf="activeTab === 'myBids'">
-      <h2>My Bids</h2>
-      <!-- Placeholder for bids list -->
-      <ul class="job-list">
-        <li *ngFor="let job of myBids">{{ job.title }}</li>
+      <h2>My Bids ({{ myBids.length }})</h2>
+      <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
+      <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet.</div>
+      <ul class="job-list" *ngIf="!bidsLoading && myBids.length > 0">
+        <li *ngFor="let job of myBids; trackBy: trackByJobId" class="job-item">
+          <div class="job-header">
+            <h3>{{ job.projectName }}</h3>
+          </div>
+          <p class="job-description">{{ job.jobType }}</p>
+          <div class="job-location">
+            <span>📍 {{ job.city }}, {{ job.state }}</span>
+          </div>
+          <div class="bid-status">
+            <span class="status-badge">Bid Submitted</span>
+          </div>
+        </li>
       </ul>
     </div>
   </div>

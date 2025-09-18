@@ -31,6 +31,7 @@
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/list": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
+    "@googlemaps/js-api-loader": "^1.16.10",
     "@microsoft/signalr": "^8.0.17",
     "@ngrx/effects": "^18.1.1",
     "@ngrx/entity": "^18.1.1",
