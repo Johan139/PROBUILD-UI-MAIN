@@ -88,14 +88,14 @@ export class ResetPasswordComponent implements OnInit {
         email: this.email,
         Password: this.resetForm.value.password
       };
-console.log(resetData)
+
     this.forgotPasswordService.resetPassword(resetData).subscribe({
         next: () => {
           this.success = 'Password successfully reset. You can now log in.';
           setTimeout(() => this.router.navigate(['/login']), 3000);
         },
         error: err => {
-          this.error = err.message;
+          this.error = err.error.error;
         }
       });
   }
