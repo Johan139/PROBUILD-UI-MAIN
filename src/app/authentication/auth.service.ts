@@ -1,6 +1,6 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map, of, switchMap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map, of, switchMap, filter, take } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
@@ -225,27 +225,35 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
 
   refreshToken(): Observable<any> {
     if (this.isRefreshing) {
-      return this.refreshTokenSubject.asObservable();
+      return this.refreshTokenSubject.pipe(
+        filter(token => token != null),
+        take(1)
+      );
     }
 
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
     const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      this.logout();
+      return throwError(() => new Error('No refresh token available.'));
+    }
+
     return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
-    tap((response: any) => {
-      console.log('[DEBUG] Refresh token response:', response); // ADD THIS
+      tap((response: any) => {
 
-      if (!response || !response.accessToken || !response.refreshToken) {
-        throw new Error('Invalid refresh token response');
-      }
-
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      this.refreshTokenSubject.next(response.accessToken);
-    }),
+        if (response && response.token && response.refreshToken) {
+          localStorage.setItem('accessToken', response.token);
+          localStorage.setItem('refreshToken', response.refreshToken);
+          this.loadUserFromToken(response.token);
+          this.refreshTokenSubject.next(response.token);
+        } else {
+          this.logout();
+          throw new Error('Invalid refresh token response');
+        }
+      }),
       catchError((err) => {
-        console.error('Token refresh failed:', err);
         this.logout();
         return throwError(() => err);
       })

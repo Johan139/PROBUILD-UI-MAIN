@@ -9,7 +9,7 @@ const BASE_URL = environment.BACKEND_URL;
   providedIn: 'root'
 })
 export class InvitationService {
-  private apiUrl = `${BASE_URL}/invitation`;
+  private apiUrl = `${BASE_URL}/Invitation`;
 
   constructor(private http: HttpClient) { }
 

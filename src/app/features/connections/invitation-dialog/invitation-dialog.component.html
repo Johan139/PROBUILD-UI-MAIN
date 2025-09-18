@@ -23,6 +23,6 @@
   </div>
 </div>
 <div mat-dialog-actions>
-  <button mat-stroked-button (click)="onNoClick()">Cancel</button>
+  <button mat-button (click)="onNoClick()">Cancel</button>
   <button mat-button [mat-dialog-close]="invitationForm.value" [disabled]="!invitationForm.valid">Invite</button>
 </div>

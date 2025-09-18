@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { Connection } from '../models/connection';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../authentication/auth.service';
+import { ConnectionDto } from '../features/connections/connections.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -16,26 +17,24 @@ export class ConnectionService {
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
-  getConnections(): Observable<Connection[]> {
-    return this.http.get<Connection[]>(this.apiUrl);
+  getConnections(): Observable<ConnectionDto[]> {
+    return this.http.get<ConnectionDto[]>(this.apiUrl);
   }
 
   getIncomingRequests(): Observable<Connection[]> {
-    const userId = this.authService.getUserId();
-    return this.getConnections().pipe(
-      map(connections => connections.filter(c => c.receiverId === userId && c.status === 'PENDING'))
-    );
+    return this.http.get<Connection[]>(`${this.apiUrl}/incoming`);
+  }
+
+  removeConnection(connectionId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${connectionId}/remove`, {});
   }
 
   getOutgoingRequests(): Observable<Connection[]> {
-    const userId = this.authService.getUserId();
-    return this.getConnections().pipe(
-      map(connections => connections.filter(c => c.requesterId === userId && c.status === 'PENDING'))
-    );
+    return this.http.get<Connection[]>(`${this.apiUrl}/outgoing`);
   }
 
   requestConnection(userId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/request`, { userId });
+    return this.http.post(`${this.apiUrl}/request`, { receiverId: userId });
   }
 
   acceptConnection(connectionId: string): Observable<any> {

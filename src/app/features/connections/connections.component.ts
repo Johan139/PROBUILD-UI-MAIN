@@ -17,6 +17,25 @@ import { User } from '../../models/user';
 import { Connection } from '../../models/connection';
 import { AuthService } from '../../authentication/auth.service';
 import { InvitationDialogComponent } from './invitation-dialog/invitation-dialog.component';
+import { InvitationService } from '../../services/invitation.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+export interface ConnectionDto {
+  id: string;
+  otherUserId?: string;
+  otherUserEmail?: string;
+  firstName?: string;
+  lastName?: string;
+  status: string;
+  isInSystem: boolean;
+  user?: User;
+  requesterId?: string;
+  receiverId?: string;
+}
+
+export interface DisplayUser extends User {
+  isInSystem: boolean;
+}
 
 @Component({
   selector: 'app-connections',
@@ -32,7 +51,8 @@ import { InvitationDialogComponent } from './invitation-dialog/invitation-dialog
     MatCardModule,
     MatIconModule,
     MatTableModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatSnackBarModule
   ],
   templateUrl: './connections.component.html',
   styleUrls: ['./connections.component.scss']
@@ -40,13 +60,17 @@ import { InvitationDialogComponent } from './invitation-dialog/invitation-dialog
 export class ConnectionsComponent implements OnInit, AfterViewInit {
   searchTerm: string = '';
   allUsers: User[] = [];
-  dataSource = new MatTableDataSource<User>([]);
-  connections: Connection[] = [];
-  incomingRequests: Connection[] = [];
-  outgoingRequests: Connection[] = [];
+  dataSource = new MatTableDataSource<DisplayUser>([]);
+  connectionsDataSource = new MatTableDataSource<ConnectionDto>([]);
+
+  allConnections: ConnectionDto[] = [];
+  connections: ConnectionDto[] = [];
+  invited: ConnectionDto[] = [];
   currentUserId: string | null = null;
   displayedColumns: string[] = ['companyName', 'trade', 'name', 'type', 'email', 'phoneNumber', 'constructionType', 'supplierType', 'productsOffered', 'country', 'city', 'action'];
+  connectionsColumns: string[] = ['name', 'email', 'status', 'action'];
   showInviteMessage = false;
+  hoveredUserId: string | null = null;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -55,17 +79,18 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
     private userService: UserService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private invitationService: InvitationService,
+    private snackBar: MatSnackBar
   ) { }
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
-      this.currentUserId = user ? user.id : null;
-      this.loadAllUsers();
+      if (user) {
+        this.currentUserId = user.id;
+        this.loadConnections();
+      }
     });
-    this.loadConnections();
-    this.loadIncomingRequests();
-    this.loadOutgoingRequests();
   }
 
   ngAfterViewInit() {
@@ -75,9 +100,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   loadAllUsers(): void {
     this.userService.getAllUsers().subscribe(users => {
       this.allUsers = users.filter(user => user.id !== this.currentUserId);
-      this.dataSource.data = this.allUsers;
-      this.cdr.detectChanges();
-      this.dataSource.paginator = this.paginator;
+      this.loadConnections();
     });
   }
 
@@ -106,41 +129,72 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Handle successful invitation
-        console.log('Invitation sent');
+        console.log('[ConnectionsComponent] Invitation dialog closed with result:', result);
+        console.log('[ConnectionsComponent] Calling invitationService.inviteUser...');
+        this.invitationService.inviteUser(result).subscribe({
+          next: (response) => {
+            console.log('[ConnectionsComponent] inviteUser call successful:', response);
+            this.snackBar.open('Invitation sent successfully!', 'Close', { duration: 3000 });
+            console.log('[ConnectionsComponent] Reloading connections...');
+            this.loadConnections();
+          },
+          error: (err) => {
+            console.error('[ConnectionsComponent] inviteUser call failed:', err);
+            this.snackBar.open(`Error: ${err.error?.message || 'An unknown error occurred'}`, 'Close', { duration: 5000 });
+          }
+        });
+      } else {
+        console.log('[ConnectionsComponent] Invitation dialog closed without result.');
       }
     });
   }
 
   loadConnections(): void {
-    this.connectionService.getConnections().subscribe(connections => {
-      this.connections = connections.filter(c => c.status === 'ACCEPTED');
+    this.connectionService.getConnections().subscribe((connections: ConnectionDto[]) => {
+      this.allConnections = connections;
+      console.log('All connections from backend:', this.allConnections);
+      this.connections = connections.filter(c => c.isInSystem);
+      this.invited = connections.filter(c => !c.isInSystem);
+      this.connections.forEach(conn => {
+        if (conn.otherUserId) {
+          this.userService.getUserById(conn.otherUserId).subscribe(user => {
+            conn.user = user;
+          });
+        }
+      });
+      this.connectionsDataSource.data = [...this.connections, ...this.invited];
+      console.log('Filtered invited users:', this.invited);
+      this.userService.getAllUsers().subscribe(users => {
+        this.allUsers = users.filter(user => user.id !== this.currentUserId);
+        this.updateDataSource();
+      });
     });
   }
 
-  loadIncomingRequests(): void {
-    this.connectionService.getIncomingRequests().subscribe(requests => {
-      this.incomingRequests = requests;
-    });
+  updateDataSource(): void {
+    const displayUsers: DisplayUser[] = this.allUsers.map(u => ({ ...u, isInSystem: true }));
+    const invitedUsers: DisplayUser[] = this.invited.map(i => ({
+      id: i.id,
+      email: i.otherUserEmail || '',
+      firstName: i.firstName,
+      lastName: i.lastName,
+      name: `${i.firstName} ${i.lastName}`,
+      isInSystem: false,
+      userType: 'Invited',
+    } as DisplayUser));
+
+    console.log('Processed invited users for display:', invitedUsers);
+
+    this.dataSource.data = [...displayUsers, ...invitedUsers];
+    this.cdr.detectChanges();
+    this.dataSource.paginator = this.paginator;
   }
 
-  loadOutgoingRequests(): void {
-    this.connectionService.getOutgoingRequests().subscribe(requests => {
-      this.outgoingRequests = requests;
-    });
-  }
 
   sendConnectionRequest(userId: string): void {
     this.connectionService.requestConnection(userId).subscribe(() => {
       console.log('Request sent');
-      this.loadOutgoingRequests();
-      // Visually indicate that a request has been sent, e.g., disable the button
-      const user = this.allUsers.find(u => u.id === userId);
-      if (user) {
-        // You might want to add a property to the user object to track this
-        // For now, we'll just log it. A more robust solution would update the UI.
-        console.log(`Connection request sent to ${user.firstName}`);
-      }
+      this.loadConnections();
     });
   }
 
@@ -148,14 +202,35 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
     this.connectionService.acceptConnection(connectionId).subscribe(() => {
       console.log('Request accepted');
       this.loadConnections();
-      this.loadIncomingRequests();
     });
   }
 
   declineConnectionRequest(connectionId: string): void {
     this.connectionService.declineConnection(connectionId).subscribe(() => {
       console.log('Request declined');
-      this.loadIncomingRequests();
+    });
+  }
+  isRequestSent(userId: string): boolean {
+    return this.allConnections.some(c => c.otherUserId === userId && c.status === 'PENDING' && c.requesterId === this.currentUserId);
+  }
+
+  isRequestReceived(userId: string): boolean {
+    return this.allConnections.some(c => c.otherUserId === userId && c.status === 'PENDING' && c.receiverId === this.currentUserId);
+  }
+
+  cancelConnectionRequest(userId: string): void {
+    const connection = this.allConnections.find(c => c.otherUserId === userId && c.status === 'PENDING');
+    if (connection) {
+      this.connectionService.declineConnection(connection.id).subscribe(() => {
+        console.log('Request cancelled');
+        this.loadConnections();
+      });
+    }
+  }
+  removeConnection(connectionId: string): void {
+    this.connectionService.declineConnection(connectionId).subscribe(() => {
+      console.log('Connection removed');
+      this.loadConnections();
     });
   }
 }
