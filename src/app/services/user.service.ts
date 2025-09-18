@@ -4,6 +4,7 @@ import { HttpClient } from "@angular/common/http";
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User } from '../models/user';
+import { UserAddress } from '../models/userAddress';
 
 const BASE_URL = `${environment.BACKEND_URL}/Account`;
 
@@ -19,6 +20,10 @@ export class UserService {
         return this.httpClient.get<User[]>(`${BASE_URL}/byUserId/${id}`).pipe(
             map(users => users[0])
         );
+    }
+
+    getUserAddress(): Observable<UserAddress> {
+        return this.httpClient.get<UserAddress>(`${BASE_URL}/address`);
     }
 
     getUserQuotes() {

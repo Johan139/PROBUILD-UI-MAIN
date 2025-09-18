@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
 import { Observable, Subject, takeUntil } from 'rxjs';
+import { UserService } from '../../services/user.service';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -65,7 +66,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   constructor(
     private jobsService: JobsService,
     private authService: AuthService,
-    private mapLoader: MapLoaderService
+    private mapLoader: MapLoaderService,
+    private userService: UserService
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
@@ -73,6 +75,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadJobs();
+    this.centerMapOnUserLocation();
   }
 
   ngOnDestroy(): void {
@@ -205,6 +208,40 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
       this.center = { lat: avgLat, lng: avgLng };
       this.zoom = 8;
+    }
+  }
+
+  private centerMapOnUserLocation(): void {
+    this.userService.getUserAddress()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (address) => {
+          if (address && address.latitude && address.longitude) {
+            this.center = {
+              lat: address.latitude,
+              lng: address.longitude
+            };
+            this.zoom = 10;
+          } else {
+            this.centerOnBrowserLocation();
+          }
+        },
+        error: (error) => {
+          console.error('Error fetching user address:', error);
+          this.centerOnBrowserLocation();
+        }
+      });
+  }
+
+  private centerOnBrowserLocation(): void {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        this.center = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        this.zoom = 10;
+      });
     }
   }
 
