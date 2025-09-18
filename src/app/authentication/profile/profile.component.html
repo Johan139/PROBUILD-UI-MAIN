@@ -208,14 +208,31 @@
                         </mat-form-field>
                       </div>
                       <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Country</mat-label>
-                          <input matInput formControlName="country" placeholder=" " />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>State</mat-label>
-                          <input matInput formControlName="state" placeholder=" " />
-                        </mat-form-field>
+<mat-form-field appearance="fill">
+  <mat-label>Country</mat-label>
+  <input matInput formControlName="country"
+         [matAutocomplete]="autoCountry"
+         (focus)="openCountryPanel()"
+         #countryAutoTrigger="matAutocompleteTrigger">
+  <mat-autocomplete #autoCountry="matAutocomplete" [displayWith]="countryDisplayFn">
+    <mat-option *ngFor="let country of filteredCountries | async" [value]="country.id">
+      {{ country.countryName }}
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>
+
+<mat-form-field appearance="fill">
+  <mat-label>State</mat-label>
+  <input matInput formControlName="state"
+         [matAutocomplete]="autoState"
+         (focus)="openStatePanel()"
+         #stateAutoTrigger="matAutocompleteTrigger">
+  <mat-autocomplete #autoState="matAutocomplete" [displayWith]="stateDisplayFn">
+    <mat-option *ngFor="let state of filteredStates | async" [value]="state.id">
+      {{ state.stateName }}
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>City</mat-label>
                           <input matInput formControlName="city" placeholder=" " />

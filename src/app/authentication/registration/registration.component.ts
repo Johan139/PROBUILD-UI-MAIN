@@ -28,6 +28,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import { ViewChild } from '@angular/core';
+import { combineLatest } from 'rxjs';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import {
   constructionTypes,
   trades,
@@ -79,6 +82,8 @@ export type BillingCycle = 'monthly' | 'yearly';
   styleUrl: './registration.component.scss'
 })
 export class RegistrationComponent implements OnInit{
+  @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
+    @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
@@ -98,11 +103,11 @@ export class RegistrationComponent implements OnInit{
 
   subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
 
-  countries = COUNTRIES;
-  states: { [key: string]: { value: string, display: string }[] } = STATES;
+  countries: any[] = [];
+states: any[] = [];
   filteredCountries: Observable<any[]> | undefined;
   filteredStates: Observable<any[]> | undefined;
-
+  
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
 
@@ -154,13 +159,7 @@ export class RegistrationComponent implements OnInit{
 
   ngOnInit() {
     this.loadSubscriptionPackages();
-this.registrationService.getCountries().subscribe({
-  next: (countries) => {
-  },
-  error: (err) => {
-    console.error('Failed to load countries:', err);
-  }
-});
+
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
@@ -210,22 +209,54 @@ this.registrationService.getCountries().subscribe({
 
     this.user = 'PERSONAL_USE';
 
-    // Update phone number validation based on country selection
-    this.filteredCountries = this.registrationForm.get('country')?.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filterCountries(value))
+  // Fetch countries
+  this.registrationService.getCountries().subscribe(countries => {
+    this.countries = countries;
+  });
+
+  // Fetch all states once
+this.registrationService.getAllStates().subscribe(allStates => {
+  console.log('All states:', allStates); // <-- Add this
+  this.states = allStates;
+
+    const countryCtrl = this.registrationForm.get('country')!;
+    const stateCtrl = this.registrationForm.get('state')!;
+
+this.filteredStates = combineLatest([
+  countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
+  stateCtrl.valueChanges.pipe(startWith(''))
+]).pipe(
+  map(([countryId, search]) => {
+    const term = (typeof search === 'string' ? search : '').toLowerCase();
+    if (!countryId) return [];
+
+    const normalizedCountryId = (countryId + '').toLowerCase();
+
+    const inCountry = this.states.filter(s =>
+      (s.countryId + '').toLowerCase() === normalizedCountryId
     );
 
-    this.registrationForm.get('country')?.valueChanges.subscribe(countryValue => {
-      const country = this.countries.find(c => c.display === countryValue);
-      if (country) {
-        this.updatePhoneNumberValidator(country.value);
-        this.filteredStates = this.registrationForm.get('state')?.valueChanges.pipe(
-          startWith(''),
-          map(value => this._filterStates(value, country.value))
-        );
-      }
-    });
+    console.log('🔎 Matching states for country ID:', normalizedCountryId, 'Found:', inCountry.length);
+
+    if (!term) return inCountry;
+
+    return inCountry.filter(s =>
+      (s.stateName ?? '').toLowerCase().includes(term) ||
+      (s.stateCode ?? '').toLowerCase().includes(term)
+    );
+  })
+);
+
+  });
+
+
+  // Countries filter
+  this.filteredCountries = this.registrationForm.get('country')!.valueChanges.pipe(
+    startWith(''),
+    map(value => this._filterCountries(value))
+  );
+
+
 
     this.registrationForm.get('userType')?.valueChanges.subscribe(value => {
       this.user = value;
@@ -272,6 +303,18 @@ this.registrationService.getCountries().subscribe({
     });
   }
 
+countryDisplayFn = (id: string) =>
+  this.countries.find(c => c.id === id)?.countryName ?? '';
+
+stateDisplayFn = (state: any) => {
+  if (typeof state === 'string') {
+    return this.states.find(s => s.id === state)?.stateName ?? '';
+  } else if (state && typeof state === 'object') {
+    return state.stateName || '';
+  }
+  return '';
+};
+
   addTrade(event: any): void {
     const value = (event.value || '').trim();
     if (value) {
@@ -283,7 +326,16 @@ this.registrationService.getCountries().subscribe({
     event.chipInput!.clear();
     this.registrationForm.get('tradeCtrl')!.setValue(null);
   }
-
+  openCountryPanel() {
+    const ctrl = this.registrationForm.get('country');
+    ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+    setTimeout(() => this.countryAutoTrigger?.openPanel());
+  }
+    openStatePanel() {
+    const ctrl = this.registrationForm.get('state');
+    ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+    setTimeout(() => this.stateAutoTrigger?.openPanel());
+  }
   removeTrade(trade: any): void {
     const index = this.selectedTrades.indexOf(trade);
     if (index >= 0) {
@@ -329,17 +381,16 @@ this.registrationService.getCountries().subscribe({
     this.supplierTypeCtrl.setValue(null);
   }
 
+private _filterCountries(value: string | null): any[] {
+  const filterValue = (value ?? '').toLowerCase();
+  if (!filterValue) return this.countries; // show all if nothing typed
+  return this.countries.filter(c =>
+    c.countryName.toLowerCase().includes(filterValue) ||
+    c.countryCode.toLowerCase().includes(filterValue)
+  );
+}
 
-  private _filterCountries(value: string): any[] {
-    const filterValue = value.toLowerCase();
-    return this.countries.filter(option => option.display.toLowerCase().includes(filterValue));
-  }
 
-  private _filterStates(value: string, countryCode: string): any[] {
-    const filterValue = value.toLowerCase();
-    const countryStates = this.states[countryCode] || [];
-    return countryStates.filter(option => option.display.toLowerCase().includes(filterValue));
-  }
 
   updatePhoneNumberValidator(countryCode: string) {
     const phoneNumberControl = this.registrationForm.get('phoneNumber');
@@ -479,7 +530,6 @@ private getOperatingSystem(): string {
 
 // Just before sending formValue to the backend
 this.getUserMetadata().subscribe((metadata) => {
-console.log(metadata);
   // Attach IP/location metadata
 formValue.ipAddress = metadata.ip;
 formValue.cityFromIP = metadata.city;
@@ -489,9 +539,16 @@ formValue.latitudeFromIP = metadata.latitude;
 formValue.longitudeFromIP = metadata.longitude;
 formValue.timezone = metadata.timezone;
 formValue.operatingSystem = this.getOperatingSystem();
+    
 
+// Ensure only the ID is sent
+if (typeof formValue.country === 'object') {
+  formValue.country = formValue.country?.id;
+}
+if (typeof formValue.state === 'object') {
+  formValue.state = formValue.state?.id;
+}
 
-      
       this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
       })
       .pipe(
