@@ -8,7 +8,7 @@
         <mat-card-header>
           <mat-card-title>Sign In</mat-card-title>
           <mat-card-subtitle>
-            Don't have an account? <a href="register">Sign up</a>
+            Don't have an account? <a class="sign-up-action" href="register">Sign up</a>
           </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
@@ -65,6 +65,13 @@
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button class="submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
+
+    <div *ngIf="showResendLink">
+    <div class="forgot-password-link-resend">
+      <a href="forgot-password">Resend Verification Email</a>
+    </div>
+    </div>
+
+    <button class="submit-btn" mat-raised-button (click)="closeAlert()">Close</button>
   </div>
 </div>

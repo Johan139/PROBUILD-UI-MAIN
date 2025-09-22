@@ -51,6 +51,11 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { SubscriptionUpgradeComponent } from '../subscription-upgrade/subscription-upgrade.component';
 import { SubscriptionCreateComponent } from '../registration/subscription-create/subscription-create.component';
 import { ActivatedRoute, Router } from '@angular/router';
+import { combineLatest, Observable, of } from 'rxjs';
+import { startWith, map } from 'rxjs/operators';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
+import { RegistrationService } from '../../services/registration.service';
+
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -108,7 +113,8 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
 })
 
 export class ProfileComponent implements OnInit {
-  
+  @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
+@ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
@@ -136,7 +142,10 @@ isGoogleMapsLoaded: boolean = false;
   jobCardForm: FormGroup;
   userRole: string | null = null;
   isVerified = false;
-
+countries: any[] = [];
+states: any[] = [];
+filteredCountries: Observable<any[]> = of([]);
+filteredStates: Observable<any[]> = of([]);
   availableRoles: { value: string, display: string }[] = userTypes
     .filter(ut => ut.value !== 'GENERAL_CONTRACTOR')
     .filter(ut => ut.value !== 'SUBCONTRACTOR')
@@ -190,6 +199,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private route: ActivatedRoute,
+        private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
         private jobsService: JobsService,
@@ -287,6 +297,45 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
   ngOnInit(): void {
     this.loadSubscriptionPackages();
   
+this.registrationService.getCountries().subscribe(countries => {
+  this.countries = countries;
+});
+
+this.registrationService.getAllStates().subscribe(allStates => {
+  this.states = allStates;
+
+  const countryCtrl = this.profileForm.get('country')!;
+  const stateCtrl = this.profileForm.get('state')!;
+
+  this.filteredStates = combineLatest([
+    countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
+    stateCtrl.valueChanges.pipe(startWith(''))
+  ]).pipe(
+    map(([countryId, search]) => {
+      const term = (typeof search === 'string' ? search : '').toLowerCase();
+      if (!countryId) return [];
+
+      const normalizedCountryId = (countryId + '').toLowerCase();
+      const inCountry = this.states.filter(s =>
+        (s.countryId + '').toLowerCase() === normalizedCountryId
+      );
+
+      return term
+        ? inCountry.filter(s =>
+            (s.stateName ?? '').toLowerCase().includes(term) ||
+            (s.stateCode ?? '').toLowerCase().includes(term)
+          )
+        : inCountry;
+    })
+  );
+});
+
+this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
+  startWith(''),
+  map(value => this._filterCountries(value))
+);
+
+
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
       if (user && user.id) {
@@ -333,33 +382,78 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       }).catch(err => console.error('Google Maps script loading error:', err));
     }
   }
+private _filterCountries(value: string | null): any[] {
+  const filterValue = (value ?? '').toLowerCase();
+  return !filterValue
+    ? this.countries
+    : this.countries.filter(c =>
+        c.countryName.toLowerCase().includes(filterValue) ||
+        c.countryCode.toLowerCase().includes(filterValue)
+      );
+}
+countryDisplayFn = (id: string) =>
+  this.countries.find(c => c.id === id)?.countryName ?? '';
 
-  loadProfile(): void {
-    this.isLoading = true;
-    this.profileService.getProfile().pipe(
-      catchError(err => {
-        const currentUser = this.authService.currentUserSubject.value;
-
-        if (currentUser && currentUser.isTeamMember && currentUser.id) {
-          return this.profileService.getTeamMemberProfile(currentUser.id);
-        }
-        return throwError(() => err);
-      })
-    ).subscribe({
-      next: (data: Profile | Profile[]) => {
-        const profileData = Array.isArray(data) ? data[0] : data;      
-        this.profile = profileData;
-        this.profileForm.patchValue(profileData);
-        this.isLoading = false;
-        this.isVerified = profileData.isVerified ?? false;
-        this.loadTeamMembers();
-      },
-      error: (error) => {
-        this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
-        this.isLoading = false;
-      }
-    });
+stateDisplayFn = (state: any) => {
+  if (typeof state === 'string') {
+    return this.states.find(s => s.id === state)?.stateName ?? '';
+  } else if (state && typeof state === 'object') {
+    return state.stateName || '';
   }
+  return '';
+};
+openCountryPanel() {
+  const ctrl = this.profileForm.get('country');
+  ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+  setTimeout(() => this.countryAutoTrigger?.openPanel());
+}
+
+openStatePanel() {
+  const ctrl = this.profileForm.get('state');
+  ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+  setTimeout(() => this.stateAutoTrigger?.openPanel());
+}
+  loadProfile(): void {
+  this.isLoading = true;
+  this.profileService.getProfile().pipe(
+    catchError(err => {
+      const currentUser = this.authService.currentUserSubject.value;
+      if (currentUser && currentUser.isTeamMember && currentUser.id) {
+        return this.profileService.getTeamMemberProfile(currentUser.id);
+      }
+      return throwError(() => err);
+    })
+  ).subscribe({
+    next: (data: Profile | Profile[]) => {
+      const profileData = Array.isArray(data) ? data[0] : data;
+      this.profile = profileData;
+
+      const { country, state } = profileData; // IDs from backend
+
+      // ⚠ Patch the form AFTER the country/state lists are loaded
+      const waitForLists = combineLatest([
+        this.registrationService.getCountries(),
+        this.registrationService.getAllStates()
+      ]);
+
+waitForLists.pipe(take(1)).subscribe(([countries, states]) => {
+  this.countries = countries;
+  this.states = states;
+
+  this.profileForm.patchValue(profileData);  // includes country & state IDs
+
+  this.isVerified = profileData.isVerified ?? false;
+  this.loadTeamMembers();
+  this.isLoading = false;
+});
+
+    },
+    error: () => {
+      this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
+      this.isLoading = false;
+    }
+  });
+}
   onAddressSelected(event: MatAutocompleteSelectedEvent): void {
     const selectedAddress = event.option.value;
     this.selectedPlace = selectedAddress;

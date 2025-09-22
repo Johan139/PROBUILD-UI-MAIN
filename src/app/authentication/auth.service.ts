@@ -130,7 +130,13 @@ public resetInactivityTimer(): void {
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
-          if (error.status === 401) {
+          console.log(error.status)
+          console.log(error.error)
+          if (error.status === 401 && error.error.error === "Email address has not been verified. Please check your inbox and spam folder.") {
+            return throwError(() => this.handleLoginError(error));
+          }
+          else if(error.status === 401)
+          {
             return this.loginMember(credentials);
           }
           return throwError(() => this.handleLoginError(error));
