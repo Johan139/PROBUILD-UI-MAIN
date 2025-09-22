@@ -50,7 +50,7 @@ export class ForgotPasswordComponent {
         next: () => {
           this.isLoading = false;
           this.showAlert = true;
-          this.alertMessage = 'Password reset link has been sent to your email.';
+          this.alertMessage = 'A password reset link has been sent to your email. Please check your inbox and spam folder.';
         },
         error: (error) => {
           this.isLoading = false;

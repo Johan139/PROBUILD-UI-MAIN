@@ -38,7 +38,7 @@ export class LoginComponent {
   alertMessage: string = '';
   isLoading: boolean = false;
   hidePassword: boolean = true;
-
+ showResendLink:boolean = true;
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
@@ -97,6 +97,11 @@ const backendMessage = backendError?.error || backendError?.message || message;
 
 if (error.status === 401) {
   this.alertMessage = backendMessage;
+   this.showResendLink = false;
+  if(backendMessage.includes("Email address has not been verified"))
+  {
+     this.showResendLink = true;
+  }
 } else if (error.status === 500) {
   this.alertMessage = backendMessage || 'Server error. Try again later.';
 } else {
@@ -105,6 +110,7 @@ if (error.status === 401) {
         },
       });
     } else {
+         this.showResendLink = false;
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
