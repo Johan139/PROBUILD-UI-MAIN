@@ -8,7 +8,6 @@ import { MapLoaderService } from '../../services/map-loader.service';
 import { Observable, Subject, takeUntil } from 'rxjs';
 import { UserService } from '../../services/user.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { JobDetailsDialogComponent } from './job-details-dialog/job-details-dialog.component';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -317,22 +316,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   onMarkerClick(marker: JobMarker): void {
-    const job = this.jobs.find(j => j.jobId === marker.jobId);
-    if (job) {
-      this.openJobDetailsDialog(job);
-    }
+    this.selectedJob = this.jobs.find(j => j.jobId === marker.jobId) || null;
   }
 
   closeJobInfo(): void {
     this.selectedJob = null;
   }
 
-  openJobDetailsDialog(job: Job): void {
-    this.dialog.open(JobDetailsDialogComponent, {
-      width: '600px',
-      data: { job: job }
-    });
-  }
 
   retryMapLoad(): void {
     this.mapLoadError = false;

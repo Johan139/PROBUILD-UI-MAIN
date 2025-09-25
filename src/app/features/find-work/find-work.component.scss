@@ -71,10 +71,21 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 
+  .map-view-wrapper {
+    display: flex;
+    gap: 20px;
+  }
+
   .map-container {
+    flex-grow: 1;
     position: relative;
     height: calc(100vh - 200px); // Adjust 200px based on the height of elements above the map
     margin-bottom: 20px;
+    transition: width 0.3s ease;
+
+    &.with-panel {
+      width: 60%;
+    }
 
     .map-loading, .map-error {
       height: 400px;
@@ -190,6 +201,40 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 
+  .job-details-panel {
+    width: 40%;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: $shadow;
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    animation: slideIn 1.0s ease;
+
+    .job-item {
+      padding: 15px;
+      border: 1px solid $light-gray;
+      border-radius: 8px;
+      background-color: $white;
+    }
+
+    .close-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid $light-gray;
+      background-color: $light-gray;
+      font-weight: 500;
+      color: $dark-gray;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: darken($light-gray, 5%);
+      }
+    }
+  }
+
   .list-container {
     h2 {
       color: $dark-gray;
@@ -282,6 +327,15 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   // Responsive design
