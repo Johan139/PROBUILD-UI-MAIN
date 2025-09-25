@@ -64,15 +64,18 @@
                   </ng-template>
                 </div>
               </div>
-               <div class="job-location">
+              <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
+              <div class="job-location">
                 <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
               </div>
-              <p class="job-description">{{ job.jobType | titlecase }}</p>
               <div class="job-dates">
-                <p *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
-                <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
-                <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
-                <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
+                <p class="job-posted-date" *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
+                <div class="job-expected-dates">
+                  <span class="provisional-label">Provisional:</span>
+                  <span *ngIf="job.potentialStartDate"><strong>Start:</strong> {{ job.potentialStartDate | date }}</span>
+                  <span *ngIf="job.potentialEndDate"><strong>End:</strong> {{ job.potentialEndDate | date }}</span>
+                  <span *ngIf="job.durationInDays"><strong>Duration:</strong> {{ job.durationInDays }} days</span>
+                </div>
               </div>
 
               <div class="job-trades">
@@ -102,9 +105,12 @@
               </div>
               <p class="job-description">{{ bid.job?.jobType | titlecase }}</p>
               <div class="job-dates">
-                <p *ngIf="bid.job?.potentialStartDate"><strong>Expected Start:</strong> {{ bid.job?.potentialStartDate | date }}</p>
-                <p *ngIf="bid.job?.potentialEndDate"><strong>Expected End:</strong> {{ bid.job?.potentialEndDate | date }}</p>
-                <p *ngIf="bid.job?.durationInDays"><strong>Expected Duration:</strong> {{ bid.job?.durationInDays }} days</p>
+                <div class="job-expected-dates">
+                  <span class="provisional-label">Provisional:</span>
+                  <span *ngIf="bid.job?.potentialStartDate"><strong>Start:</strong> {{ bid.job?.potentialStartDate | date }}</span>
+                  <span *ngIf="bid.job?.potentialEndDate"><strong>End:</strong> {{ bid.job?.potentialEndDate | date }}</span>
+                  <span *ngIf="bid.job?.durationInDays"><strong>Duration:</strong> {{ bid.job?.durationInDays }} days</span>
+                </div>
               </div>
               <div class="job-trades">
                 <span *ngFor="let trade of bid.job?.trades" class="trade-pill" [class.match]="trade === userTrade">

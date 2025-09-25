@@ -377,9 +377,8 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .job-description {
-          color: lighten($dark-gray, 20%);
           line-height: 1.6;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
           font-size: 14px;
         }
 
@@ -524,4 +523,24 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   &:hover {
     transform: scale(1.2);
   }
+}
+
+.job-posted-date {
+  margin-bottom: 4px;
+}
+
+.job-expected-dates {
+  display: flex;
+  justify-content: flex-start;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 2px;
+  font-size: 16px;
+  color: #333;
+}
+
+.provisional-label {
+  font-style: italic;
+  color: #666;
+  font-weight: 500;
 }

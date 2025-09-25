@@ -1,5 +1,5 @@
 // TODO: think about what to do if no geolocation available
-// TODO: think about filtering - client/server side - might be a pain to update down the line
+// TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
 // TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
 // TODO: hide this entire thing from general contractors (maybe?)
 import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
