@@ -115,6 +115,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    console.log('FindWorkComponent ngOnInit');
     this.loadJobs();
     this.centerOnBrowserLocation();
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
@@ -129,11 +130,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   onMapInitialized(map: google.maps.Map): void {
+    console.log('onMapInitialized called');
     this.map = map;
     console.log('Map initialized:', !!this.map);
 
     if (this.jobs.length > 0) {
+      console.log('Jobs data is available, calling updateMapMarkers from onMapInitialized');
       setTimeout(() => this.updateMapMarkers(), 100);
+    } else {
+      console.log('Jobs data is not yet available in onMapInitialized');
     }
   }
 
@@ -163,20 +168,37 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (jobs) => {
           console.log('Raw job data received:', jobs);
-          this.jobs = jobs.map(job => ({
-            ...job,
-            latitude: parseFloat(job.latitude as any),
-            longitude: parseFloat(job.longitude as any)
-          }));
+          if (!jobs || jobs.length === 0) {
+            console.warn('No jobs received from the service.');
+            this.jobs = [];
+            this.filteredJobs = [];
+          } else {
+            this.jobs = jobs.map(job => {
+              const lat = parseFloat(job.latitude as any);
+              const lng = parseFloat(job.longitude as any);
+              if (isNaN(lat) || isNaN(lng)) {
+                console.warn(`Invalid coordinates for job: ${job.projectName}`, { lat: job.latitude, lng: job.longitude });
+              }
+              return {
+                ...job,
+                latitude: lat,
+                longitude: lng
+              };
+            });
+            console.log('Processed jobs with parsed coordinates:', this.jobs);
+          }
+
           this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))];
-          this.getUserLocationAndCalculateDistances(); // This must be called before applyFilters
-          this.applyFilters();
+          this.getUserLocationAndCalculateDistances(); // This will now handle the filtering
           this.dataSource = new MatTableDataSource(this.filteredJobs);
           this.dataSource.paginator = this.paginator;
           this.jobsLoading = false;
 
           if (this.map) {
+            console.log('Map is already initialized, calling updateMapMarkers from loadJobs');
             setTimeout(() => this.updateMapMarkers(), 100);
+          } else {
+            console.log('Map is not yet initialized in loadJobs');
           }
         },
         error: (error) => {
@@ -244,7 +266,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       console.log('Marker library loaded');
       const { AdvancedMarkerElement, PinElement } = markerLibrary as google.maps.MarkerLibrary;
 
-      const jobsToMark = this.filteredJobs.filter(job => {
+      const jobsToMark = this.jobs.filter(job => { // TODO:Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
         const lat = job.latitude;
         const lng = job.longitude;
         return !isNaN(lat) && !isNaN(lng);
@@ -370,19 +392,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   private getUserLocationAndCalculateDistances(): void {
+    console.log('Getting user location to calculate distances...');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
         const userLat = position.coords.latitude;
         const userLng = position.coords.longitude;
+        console.log(`User location found: {lat: ${userLat}, lng: ${userLng}}`);
 
         this.jobs.forEach(job => {
           const jobLat = job.latitude;
           const jobLng = job.longitude;
           job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
         });
+        console.log('Distances calculated for all jobs:', this.jobs.map(j => j.distance));
 
-        this.sortJobsByDistance();
+        this.sortJobsByDistance(); // This will sort and then call applyFilters
+      }, (error) => {
+        console.error('Error getting user location:', error);
+        // If location fails, apply filters without distance
+        this.applyFilters();
       });
+    } else {
+      console.warn('Geolocation is not supported by this browser.');
+      // If geolocation is not supported, apply filters without distance
+      this.applyFilters();
     }
   }
 
@@ -396,7 +429,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = this.distanceUnit === 'km' ? 6371 : 3959; // Radius of the Earth in km or miles
+    const R = this.distanceUnit === 'mi' ? 3959 : 6371; // Radius of the Earth in miles or km
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =
@@ -412,8 +445,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   private sortJobsByDistance(): void {
+    console.log('Sorting jobs by distance...');
     this.jobs.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
-    this.applyFilters();
+    console.log('Jobs sorted.');
+    this.applyFilters(); // Apply filters AFTER sorting is complete
   }
 
   onMarkerClick(marker: JobMarker): void {
@@ -478,10 +513,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
+    console.log('Applying filters...');
     const selectedPrefs = Object.keys(this.selectedPreferences)
       .filter(key => this.selectedPreferences[key]);
 
     let filtered = [...this.jobs];
+    console.log(`Initial job count: ${filtered.length}`);
 
     if (selectedPrefs.length > 0) {
       filtered = filtered.filter(job => {
@@ -502,23 +539,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
 
     filtered = filtered.filter(job => job.distance === undefined || job.distance <= this.distance);
+    console.log(`After distance filter (${this.distance} ${this.distanceUnit}): ${filtered.length} jobs`);
 
-    if (this.selectedTrades.length > 0) {
+    if (this.selectedTrades && this.selectedTrades.length > 0) {
       filtered = filtered.filter(job =>
         job.trades.some(trade => this.selectedTrades.includes(trade))
       );
+      console.log(`After trades filter: ${filtered.length} jobs`);
     }
 
-    if (this.selectedJobTypes.length > 0) {
+    if (this.selectedJobTypes && this.selectedJobTypes.length > 0) {
       filtered = filtered.filter(job => {
         if (!job.jobPreferences) {
           return true;
         }
         return this.selectedJobTypes.some(pref => job.jobPreferences.includes(pref));
       });
+      console.log(`After job type filter: ${filtered.length} jobs`);
     }
 
     this.filteredJobs = filtered;
+    console.log(`Total filtered jobs: ${this.filteredJobs.length}`);
+    if (this.map) {
+      this.updateMapMarkers();
+    }
   }
 
   sortJobs(): void {
@@ -534,8 +578,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         });
         break;
       case 'postedDate':
-        // Assuming jobs have a postedDate property
-        // this.filteredJobs.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
+        // TODO: jobs have a created property, need to implement
+        // this.filteredJobs.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
         break;
     }
   }

@@ -17,17 +17,17 @@
           </div>
           <div class="filter-row">
             <mat-form-field>
-              <mat-label>Trades</mat-label>
-              <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
-                <mat-option *ngFor="let trade of allTrades" [value]="trade">{{trade | titlecase}}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field>
               <mat-label>Sort by</mat-label>
               <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
                 <mat-option value="distance">Distance</mat-option>
                 <mat-option value="startDate">Start Date</mat-option>
                 <mat-option value="postedDate">Recently Added</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Trades</mat-label>
+              <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
+                <mat-option *ngFor="let trade of allTrades" [value]="trade">{{trade | titlecase}}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field>
@@ -39,7 +39,7 @@
           </div>
         </div>
         <div *ngIf="activeTab === 'allJobs'">
-          <h2>All Jobs ({{ jobs.length }})</h2>
+          <h2>All Jobs ({{ filteredJobs.length }})</h2>
           <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
           <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
           <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
