@@ -16,6 +16,11 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     margin-bottom: 20px;
     gap: 5px;
+    align-items: center;
+
+    .filter-container {
+      margin-left: auto;
+    }
 
     button {
       padding: 10px 20px;
@@ -351,4 +356,22 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
     }
   }
+}
+
+.trade-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.trade-pill.match {
+  background-color: #4caf50;
+  color: #fff;
 }

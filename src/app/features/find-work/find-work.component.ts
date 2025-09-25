@@ -7,6 +7,12 @@ import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
 import { Observable, Subject, takeUntil } from 'rxjs';
 import { UserService } from '../../services/user.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { JobDetailsDialogComponent } from './job-details-dialog/job-details-dialog.component';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -19,7 +25,15 @@ interface JobMarker {
   templateUrl: './find-work.component.html',
   styleUrls: ['./find-work.component.scss'],
   standalone: true,
-  imports: [CommonModule, GoogleMapsModule],
+  imports: [
+    CommonModule,
+    GoogleMapsModule,
+    MatDialogModule,
+    MatMenuModule,
+    MatIconModule,
+    MatCheckboxModule,
+    FormsModule,
+  ],
   providers: [MapLoaderService],
 })
 export class FindWorkComponent implements OnInit, OnDestroy {
@@ -27,12 +41,21 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   // Data properties
   jobs: Job[] = [];
+  filteredJobs: Job[] = [];
   myBids: Job[] = [];
   selectedJob: Job | null = null;
+  selectedPreferences: { [key: string]: boolean } = {
+    'Short-term': false,
+    'Long-term': false,
+    'Contract-based': false,
+    'On-demand': false,
+  };
+  userTrade: string | undefined;
 
   // UI state
   viewMode: 'map' | 'list' = 'map';
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
+  distanceUnit: 'km' | 'mi' = 'km';
 
   // Loading states
   jobsLoading = false;
@@ -67,7 +90,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private jobsService: JobsService,
     private authService: AuthService,
     private mapLoader: MapLoaderService,
-    private userService: UserService
+    private userService: UserService,
+    public dialog: MatDialog
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
@@ -75,7 +99,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadJobs();
-    this.centerMapOnUserLocation();
+    this.centerOnBrowserLocation();
+    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
+      this.userTrade = user?.trade;
+    });
+    this.determineDistanceUnit();
   }
 
   ngOnDestroy(): void {
@@ -115,13 +143,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (jobs) => {
           this.jobs = jobs;
-          this.updateMapMarkers();
+          this.applyFilters();
           this.jobsLoading = false;
-
-          // Center map on jobs if available
-          if (jobs.length > 0) {
-            this.centerMapOnJobs();
-          }
+          this.getUserLocationAndCalculateDistances();
         },
         error: (error) => {
           console.error('Error loading jobs:', error);
@@ -173,7 +197,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   updateMapMarkers(): void {
-    this.markerPositions = this.jobs
+    this.markerPositions = this.filteredJobs
       .filter(job => job.latitude && job.longitude)
       .map(job => ({
         position: {
@@ -245,18 +269,69 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
   }
 
+  private getUserLocationAndCalculateDistances(): void {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        this.jobs.forEach(job => {
+          const jobLat = parseFloat(job.latitude);
+          const jobLng = parseFloat(job.longitude);
+          job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
+        });
+
+        this.sortJobsByDistance();
+      });
+    }
+  }
+
+  private determineDistanceUnit(): void {
+    const userLocale = navigator.language || (navigator as any).userLanguage;
+    if (userLocale === 'en-US' || userLocale === 'en-GB') {
+      this.distanceUnit = 'mi';
+    } else {
+      this.distanceUnit = 'km';
+    }
+  }
+
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = this.distanceUnit === 'km' ? 6371 : 3959; // Radius of the Earth in km or miles
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+
+  private sortJobsByDistance(): void {
+    this.jobs.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    this.applyFilters();
+  }
+
   onMarkerClick(marker: JobMarker): void {
     const job = this.jobs.find(j => j.jobId === marker.jobId);
     if (job) {
-      this.selectedJob = job;
-      // Center map on selected marker
-      this.center = marker.position;
-      this.zoom = Math.max(this.zoom, 12);
+      this.openJobDetailsDialog(job);
     }
   }
 
   closeJobInfo(): void {
     this.selectedJob = null;
+  }
+
+  openJobDetailsDialog(job: Job): void {
+    this.dialog.open(JobDetailsDialogComponent, {
+      width: '600px',
+      data: { job: job }
+    });
   }
 
   retryMapLoad(): void {
@@ -273,5 +348,22 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   trackByMarkerId(index: number, marker: JobMarker): string {
     return marker.jobId.toString();
+  }
+
+  applyFilters(): void {
+    const selectedPrefs = Object.keys(this.selectedPreferences)
+      .filter(key => this.selectedPreferences[key]);
+
+    if (selectedPrefs.length === 0) {
+      this.filteredJobs = [...this.jobs];
+    } else {
+      this.filteredJobs = this.jobs.filter(job => {
+        if (!job.jobPreferences) {
+          return true;
+        }
+        return selectedPrefs.some(pref => job.jobPreferences.includes(pref));
+      });
+    }
+    this.updateMapMarkers();
   }
 }

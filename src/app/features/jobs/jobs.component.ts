@@ -438,7 +438,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
+      if (result && result.biddingType) {
         this.projectDetails.biddingType = result.biddingType;
         this.projectDetails.requiredSubcontractorTypes = result.requiredSubcontractorTypes;
         this.projectDetails.status = 'BIDDING';

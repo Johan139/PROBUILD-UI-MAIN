@@ -2,11 +2,32 @@
   <div class="tabs">
     <button (click)="setActiveTab('allJobs')" [class.active]="activeTab === 'allJobs'">All Jobs</button>
     <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
+    <div class="filter-container">
+      <button mat-icon-button [matMenuTriggerFor]="menu" class="filter-button" matTooltip="More options">
+        <mat-icon>tune</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="$event.stopPropagation()">
+          <mat-checkbox [(ngModel)]="selectedPreferences['Short-term']" (ngModelChange)="applyFilters()">Short-term</mat-checkbox>
+        </button>
+        <button mat-menu-item (click)="$event.stopPropagation()">
+          <mat-checkbox [(ngModel)]="selectedPreferences['Long-term']" (ngModelChange)="applyFilters()">Long-term</mat-checkbox>
+        </button>
+        <button mat-menu-item (click)="$event.stopPropagation()">
+          <mat-checkbox [(ngModel)]="selectedPreferences['Contract-based']" (ngModelChange)="applyFilters()">Contract-based</mat-checkbox>
+        </button>
+        <button mat-menu-item (click)="$event.stopPropagation()">
+          <mat-checkbox [(ngModel)]="selectedPreferences['On-demand']" (ngModelChange)="applyFilters()">On-demand</mat-checkbox>
+        </button>
+      </mat-menu>
+    </div>
   </div>
 
-  <div class="view-switcher">
-    <button (click)="toggleView('map')" [class.active]="viewMode === 'map'">Map View</button>
-    <button (click)="toggleView('list')" [class.active]="viewMode === 'list'">List View</button>
+  <div class="controls">
+    <div class="view-switcher">
+      <button (click)="toggleView('map')" [class.active]="viewMode === 'map'">Map View</button>
+      <button (click)="toggleView('list')" [class.active]="viewMode === 'list'">List View</button>
+    </div>
   </div>
 
   <!-- Map View -->
@@ -39,18 +60,6 @@
         (mapClick)="onMarkerClick(marker)">
       </map-marker>
     </google-map>
-
-    <!-- Map info panel -->
-    <div *ngIf="selectedJob" class="job-info-panel">
-      <div class="job-info-header">
-        <h3>{{ selectedJob.projectName }}</h3>
-        <button (click)="closeJobInfo()" class="close-btn">&times;</button>
-      </div>
-      <div class="job-info-content">
-        <p><strong>Description:</strong> {{ selectedJob.jobType }}</p>
-        <p><strong>Location:</strong> {{ selectedJob.city }}, {{ selectedJob.state }}</p>
-      </div>
-    </div>
   </div>
 
   <!-- List View -->
@@ -58,15 +67,21 @@
     <div *ngIf="activeTab === 'allJobs'">
       <h2>All Jobs ({{ jobs.length }})</h2>
       <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
-      <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available.</div>
+      <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
       <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
-        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item">
+        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item" (click)="openJobDetailsDialog(job)">
           <div class="job-header">
             <h3>{{ job.projectName }}</h3>
+            <span class="job-distance" *ngIf="job.distance">{{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span>
           </div>
           <p class="job-description">{{ job.jobType }}</p>
           <div class="job-location">
-            <span>📍 {{ job.city }}, {{ job.state }}</span>
+            <span>📍 {{ job.address || job.city + ', ' + job.state }}</span>
+          </div>
+          <div class="job-trades">
+            <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
+              {{ trade }}
+            </span>
           </div>
         </li>
       </ul>
@@ -75,7 +90,7 @@
     <div *ngIf="activeTab === 'myBids'">
       <h2>My Bids ({{ myBids.length }})</h2>
       <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
-      <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet.</div>
+      <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet</div>
       <ul class="job-list" *ngIf="!bidsLoading && myBids.length > 0">
         <li *ngFor="let job of myBids; trackBy: trackByJobId" class="job-item">
           <div class="job-header">
@@ -83,7 +98,7 @@
           </div>
           <p class="job-description">{{ job.jobType }}</p>
           <div class="job-location">
-            <span>📍 {{ job.city }}, {{ job.state }}</span>
+            <span>📍 {{ job.address || job.city + ', ' + job.state }}</span>
           </div>
           <div class="bid-status">
             <span class="status-badge">Bid Submitted</span>

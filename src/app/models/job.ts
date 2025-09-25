@@ -28,4 +28,8 @@ export interface Job {
   googlePlaceId: string;
   description: string;
   title: string;
+  biddingType: string;
+  jobPreferences: string;
+  trades: string[];
+  distance?: number;
 }
