@@ -366,4 +366,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
     this.updateMapMarkers();
   }
+
+  hasTradeMatch(job: Job): boolean {
+    if (!this.userTrade || !job.trades) {
+      return true; // Default to true if no user trade or job trades are set
+    }
+    return job.trades.includes(this.userTrade);
+  }
 }

@@ -32,4 +32,7 @@ export interface Job {
   jobPreferences: string;
   trades: string[];
   distance?: number;
+  potentialStartDate?: Date;
+  potentialEndDate?: Date;
+  durationInDays?: number;
 }

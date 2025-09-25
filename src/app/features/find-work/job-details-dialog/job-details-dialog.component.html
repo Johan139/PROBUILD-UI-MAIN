@@ -4,17 +4,23 @@
     <mat-card-subtitle>{{ data.job.projectName }}</mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <p><strong>Description:</strong> {{ data.job.description }}</p>
-    <p><strong>Job Type:</strong> {{ data.job.jobType }}</p>
-    <p><strong>Status:</strong> {{ data.job.status }}</p>
-    <p><strong>Bidding Type:</strong> {{ data.job.biddingType }}</p>
     <p><strong>Address:</strong> {{ data.job.address }}</p>
+    <p *ngIf="data.job.description"><strong>Description:</strong> {{ data.job.description }}</p>
+    <p><strong>Job Type:</strong> {{ data.job.jobType | titlecase }}</p>
+    <!-- <p><strong>Status:</strong> {{ data.job.status }}</p> -->
+    <p *ngIf="data.job.potentialStartDate"><strong>Expected Start Date:</strong> {{ data.job.potentialStartDate | date }}</p>
+    <p *ngIf="data.job.potentialEndDate"><strong>Expected End Date:</strong> {{ data.job.potentialEndDate | date }}</p>
+    <p *ngIf="data.job.durationInDays"><strong>Expected Duration:</strong> {{ data.job.durationInDays }} days</p>
+
     <div class="job-trades">
       <strong>Trades:</strong>
       <span *ngFor="let trade of data.job.trades" class="trade-pill" [class.match]="trade === userTrade">
-        {{ trade }}
+        {{ trade | titlecase }}
       </span>
     </div>
+    <p *ngIf="!tradeMatch" class="trade-warning">
+      Your trade does not match up to anything required by this job.
+    </p>
   </mat-card-content>
   <mat-card-actions>
     <button mat-button (click)="onClose()">Close</button>

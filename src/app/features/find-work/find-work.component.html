@@ -69,20 +69,29 @@
       <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
       <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
       <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
-        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item" (click)="openJobDetailsDialog(job)">
+        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item">
           <div class="job-header">
             <h3>{{ job.projectName }}</h3>
             <span class="job-distance" *ngIf="job.distance">{{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span>
           </div>
-          <p class="job-description">{{ job.jobType }}</p>
-          <div class="job-location">
+           <div class="job-location">
             <span>📍 {{ job.address || job.city + ', ' + job.state }}</span>
           </div>
+          <p class="job-description">{{ job.jobType | titlecase }}</p>
+          <div class="job-dates">
+            <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
+            <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
+            <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
+          </div>
+
           <div class="job-trades">
             <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
-              {{ trade }}
+              {{ trade | titlecase }}
             </span>
           </div>
+          <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
+            Your trade does not match up to anything required by this job.
+          </p>
         </li>
       </ul>
     </div>
@@ -95,11 +104,25 @@
         <li *ngFor="let job of myBids; trackBy: trackByJobId" class="job-item">
           <div class="job-header">
             <h3>{{ job.projectName }}</h3>
+            <span class="job-distance" *ngIf="job.distance">{{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span>
           </div>
-          <p class="job-description">{{ job.jobType }}</p>
-          <div class="job-location">
+           <div class="job-location">
             <span>📍 {{ job.address || job.city + ', ' + job.state }}</span>
           </div>
+          <p class="job-description">{{ job.jobType | titlecase }}</p>
+          <div class="job-dates">
+            <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
+            <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
+            <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
+          </div>
+          <div class="job-trades">
+            <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
+              {{ trade | titlecase }}
+            </span>
+          </div>
+          <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
+            Your trade does not match up to anything required by this job.
+          </p>
           <div class="bid-status">
             <span class="status-badge">Bid Submitted</span>
           </div>

@@ -16,6 +16,7 @@ import { Subscription } from 'rxjs';
 })
 export class JobDetailsDialogComponent {
   userTrade: string | undefined;
+  tradeMatch: boolean = false;
   private userSubscription: Subscription;
 
   constructor(
@@ -25,7 +26,14 @@ export class JobDetailsDialogComponent {
   ) {
     this.userSubscription = this.authService.currentUser$.subscribe(user => {
       this.userTrade = user?.trade;
+      this.checkTradeMatch();
     });
+  }
+
+  checkTradeMatch(): void {
+    if (this.userTrade && this.data.job.trades) {
+      this.tradeMatch = this.data.job.trades.includes(this.userTrade);
+    }
   }
 
   ngOnDestroy(): void {
