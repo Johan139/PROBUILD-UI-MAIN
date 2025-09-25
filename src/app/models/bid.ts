@@ -1,3 +1,5 @@
+import { Job } from './job';
+
 export class Bid {
     id!: number;
     jobId!: string;
@@ -5,4 +7,6 @@ export class Bid {
     subcontractorName!: string;
     amount!: number;
     isFinalist!: boolean;
+    job?: Job;
+    status?: string;
   }

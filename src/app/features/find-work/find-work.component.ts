@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
 import { GoogleMapsModule } from '@angular/google-maps';
@@ -12,11 +12,17 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableDataSource } from '@angular/material/table';
+import { Bid } from '../../models/bid';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
   title: string;
   jobId: number;
+  marker?: google.maps.marker.AdvancedMarkerElement;
 }
 
 @Component({
@@ -32,16 +38,22 @@ interface JobMarker {
     MatIconModule,
     MatCheckboxModule,
     FormsModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatPaginatorModule,
   ],
   providers: [MapLoaderService],
 })
 export class FindWorkComponent implements OnInit, OnDestroy {
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  dataSource = new MatTableDataSource<Job>([]);
   private destroy$ = new Subject<void>();
 
   // Data properties
+  map!: google.maps.Map;
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
-  myBids: Job[] = [];
+  myBids: Bid[] = [];
   selectedJob: Job | null = null;
   selectedPreferences: { [key: string]: boolean } = {
     'Short-term': false,
@@ -50,9 +62,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     'On-demand': false,
   };
   userTrade: string | undefined;
+  searchTerm: string = '';
+  distance: number = 100;
+  allTrades: string[] = [];
+  selectedTrades: string[] = [];
+  sortBy: string = 'distance';
+  allJobTypes: string[] = ['Short-term', 'Long-term', 'Contract-based', 'On-demand'];
+  selectedJobTypes: string[] = [];
 
   // UI state
-  viewMode: 'map' | 'list' = 'map';
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
   distanceUnit: 'km' | 'mi' = 'km';
 
@@ -78,10 +96,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     mapTypeControl: false,
   };
 
-  markerOptions: google.maps.MarkerOptions = {
-    draggable: false,
-    animation: google.maps?.Animation?.DROP,
-  };
 
   markerPositions: JobMarker[] = [];
 
@@ -125,12 +139,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         } else {
           this.mapLoadError = false;
           // Update marker options with animation once Google Maps is loaded
-          if (window.google?.maps?.Animation) {
-            this.markerOptions = {
-              ...this.markerOptions,
-              animation: window.google.maps.Animation.DROP,
-            };
-          }
         }
       });
   }
@@ -142,7 +150,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (jobs) => {
           this.jobs = jobs;
+          this.allTrades = [...new Set(jobs.flatMap(job => job.trades))];
           this.applyFilters();
+          this.dataSource = new MatTableDataSource(this.filteredJobs);
+          this.dataSource.paginator = this.paginator;
           this.jobsLoading = false;
           this.getUserLocationAndCalculateDistances();
         },
@@ -175,10 +186,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       });
   }
 
-  toggleView(view: 'map' | 'list'): void {
-    this.viewMode = view;
-    this.selectedJob = null; // Clear selection when switching views
-  }
 
   setActiveTab(tab: 'allJobs' | 'myBids'): void {
     this.activeTab = tab;
@@ -196,16 +203,33 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   updateMapMarkers(): void {
-    this.markerPositions = this.filteredJobs
-      .filter(job => job.latitude && job.longitude)
-      .map(job => ({
-        position: {
-          lat: parseFloat(job.latitude),
-          lng: parseFloat(job.longitude)
-        },
-        title: job.projectName,
-        jobId: job.jobId
-      }));
+    this.markerPositions.forEach(marker => {
+      if (marker.marker) {
+        marker.marker.map = null;
+      }
+    });
+    this.markerPositions = [];
+    (google.maps.importLibrary("marker") as Promise<google.maps.MarkerLibrary>).then(({AdvancedMarkerElement}) => {
+      this.filteredJobs
+        .filter(job => job.latitude && job.longitude)
+        .forEach(job => {
+          const position = {
+            lat: parseFloat(job.latitude),
+            lng: parseFloat(job.longitude)
+          };
+          const marker = new AdvancedMarkerElement({
+            position,
+            title: job.projectName,
+          });
+          marker.addListener('gmp-click', () => this.onMarkerClick({jobId: job.jobId, position, title: marker.title}));
+          this.markerPositions.push({
+            position,
+            title: marker.title,
+            jobId: job.jobId,
+            marker: marker
+          });
+        });
+    });
   }
 
   private centerMapOnJobs(): void {
@@ -340,21 +364,117 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     return marker.jobId.toString();
   }
 
+  trackByBidId(index: number, bid: Bid): number {
+    return bid.id;
+  }
+
+  highlightMarker(jobId: number): void {
+    const marker = this.markerPositions.find(m => m.jobId === jobId);
+    if (marker && marker.marker) {
+      const pinElement = new google.maps.marker.PinElement({
+        background: '#FBBC04',
+        borderColor: '#000',
+        glyphColor: '#000',
+      });
+      marker.marker.content = pinElement.element;
+    }
+  }
+
+  unhighlightMarker(jobId: number): void {
+    const marker = this.markerPositions.find(m => m.jobId === jobId);
+    if (marker && marker.marker) {
+      const pinElement = new google.maps.marker.PinElement();
+      marker.marker.content = pinElement.element;
+    }
+  }
+
   applyFilters(): void {
     const selectedPrefs = Object.keys(this.selectedPreferences)
       .filter(key => this.selectedPreferences[key]);
 
-    if (selectedPrefs.length === 0) {
-      this.filteredJobs = [...this.jobs];
-    } else {
-      this.filteredJobs = this.jobs.filter(job => {
+    let filtered = [...this.jobs];
+
+    if (selectedPrefs.length > 0) {
+      filtered = filtered.filter(job => {
         if (!job.jobPreferences) {
           return true;
         }
         return selectedPrefs.some(pref => job.jobPreferences.includes(pref));
       });
     }
+
+    if (this.searchTerm) {
+      const lowercasedTerm = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(job =>
+        job.projectName.toLowerCase().includes(lowercasedTerm) ||
+        job.jobType.toLowerCase().includes(lowercasedTerm) ||
+        job.description.toLowerCase().includes(lowercasedTerm)
+      );
+    }
+
+    filtered = filtered.filter(job => job.distance === undefined || job.distance <= this.distance);
+
+    if (this.selectedTrades.length > 0) {
+      filtered = filtered.filter(job =>
+        job.trades.some(trade => this.selectedTrades.includes(trade))
+      );
+    }
+
+    if (this.selectedJobTypes.length > 0) {
+      filtered = filtered.filter(job => {
+        if (!job.jobPreferences) {
+          return true;
+        }
+        return this.selectedJobTypes.some(pref => job.jobPreferences.includes(pref));
+      });
+    }
+
+    this.filteredJobs = filtered;
     this.updateMapMarkers();
+  }
+
+  sortJobs(): void {
+    switch (this.sortBy) {
+      case 'distance':
+        this.filteredJobs.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+        break;
+      case 'startDate':
+        this.filteredJobs.sort((a, b) => {
+          const dateA = a.potentialStartDate ? new Date(a.potentialStartDate).getTime() : Infinity;
+          const dateB = b.potentialStartDate ? new Date(b.potentialStartDate).getTime() : Infinity;
+          return dateA - dateB;
+        });
+        break;
+      case 'postedDate':
+        // Assuming jobs have a postedDate property
+        // this.filteredJobs.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
+        break;
+    }
+  }
+
+  getStarRating(rating: number): string[] {
+    const stars: string[] = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+        stars.push('star');
+      } else if (i - 0.5 <= rating) {
+        stars.push('star_half');
+      } else {
+        stars.push('star_border');
+      }
+    }
+    return stars;
+  }
+
+  onJobClick(job: Job): void {
+    this.selectedJob = job;
+    if (job.latitude && job.longitude) {
+      this.center = {
+        lat: parseFloat(job.latitude),
+        lng: parseFloat(job.longitude)
+      };
+      this.zoom = 12;
+    }
   }
 
   hasTradeMatch(job: Job): boolean {

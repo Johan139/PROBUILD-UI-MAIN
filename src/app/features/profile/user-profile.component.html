@@ -61,7 +61,7 @@
       <mat-card-content>
         <div *ngIf="user.portfolio && user.portfolio.jobs.length > 0; else noPortfolio">
           <div *ngFor="let job of user.portfolio.jobs" class="portfolio-item">
-            <h4>{{ job.name }}</h4>
+            <h4>{{ job.projectName }}</h4>
             <p>{{ job.description }}</p>
           </div>
         </div>

@@ -2,157 +2,177 @@
   <div class="tabs">
     <button (click)="setActiveTab('allJobs')" [class.active]="activeTab === 'allJobs'">All Jobs</button>
     <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
-    <div class="filter-container">
-      <button mat-icon-button [matMenuTriggerFor]="menu" class="filter-button" matTooltip="More options">
-        <mat-icon>tune</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu">
-        <button mat-menu-item (click)="$event.stopPropagation()">
-          <mat-checkbox [(ngModel)]="selectedPreferences['Short-term']" (ngModelChange)="applyFilters()">Short-term</mat-checkbox>
-        </button>
-        <button mat-menu-item (click)="$event.stopPropagation()">
-          <mat-checkbox [(ngModel)]="selectedPreferences['Long-term']" (ngModelChange)="applyFilters()">Long-term</mat-checkbox>
-        </button>
-        <button mat-menu-item (click)="$event.stopPropagation()">
-          <mat-checkbox [(ngModel)]="selectedPreferences['Contract-based']" (ngModelChange)="applyFilters()">Contract-based</mat-checkbox>
-        </button>
-        <button mat-menu-item (click)="$event.stopPropagation()">
-          <mat-checkbox [(ngModel)]="selectedPreferences['On-demand']" (ngModelChange)="applyFilters()">On-demand</mat-checkbox>
-        </button>
-      </mat-menu>
-    </div>
   </div>
 
-  <div class="controls">
-    <div class="view-switcher">
-      <button (click)="toggleView('map')" [class.active]="viewMode === 'map'">Map View</button>
-      <button (click)="toggleView('list')" [class.active]="viewMode === 'list'">List View</button>
-    </div>
-  </div>
+  <div class="unified-view">
+    <div class="list-panel">
+      <div class="list-container">
+        <div class="search-container">
+          <input type="text" placeholder="Search by keyword..." [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()">
+        </div>
+        <div class="advanced-filters">
+          <div>
+            <label for="distance">Distance: {{ distance }} {{ distanceUnit }}</label>
+            <input type="range" id="distance" min="0" max="1000" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
+          </div>
+          <div class="filter-row">
+            <mat-form-field>
+              <mat-label>Trades</mat-label>
+              <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
+                <mat-option *ngFor="let trade of allTrades" [value]="trade">{{trade}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Sort by</mat-label>
+              <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
+                <mat-option value="distance">Distance</mat-option>
+                <mat-option value="startDate">Start Date</mat-option>
+                <mat-option value="postedDate">Recently Added</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Job Type</mat-label>
+              <mat-select multiple [(ngModel)]="selectedJobTypes" (ngModelChange)="applyFilters()">
+                <mat-option *ngFor="let type of allJobTypes" [value]="type">{{type}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+        <div *ngIf="activeTab === 'allJobs'">
+          <h2>All Jobs ({{ jobs.length }})</h2>
+          <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
+          <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
+          <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
+            <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId" class="job-item" (mouseenter)="highlightMarker(job.jobId)" (mouseleave)="unhighlightMarker(job.jobId)" (click)="onJobClick(job)">
+              <div class="job-header">
+                <h3>{{ job.projectName }}</h3>
+              </div>
+               <div class="job-location">
+                <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
+              </div>
+              <p class="job-description">{{ job.jobType | titlecase }}</p>
+              <div class="job-dates">
+                <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
+                <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
+                <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
+              </div>
 
-  <!-- Map View -->
-  <div [hidden]="viewMode !== 'map'" class="map-view-wrapper">
-    <div class="map-container" [class.with-panel]="selectedJob">
-      <!-- Loading state -->
-      <div *ngIf="isMapLoading && !mapLoadError" class="map-loading">
-        <div class="loading-spinner"></div>
-        <p>Loading map...</p>
+              <div class="job-trades">
+                <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
+                  {{ trade | titlecase }}
+                </span>
+              </div>
+              <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
+                Your trade does not match up to anything required by this job.
+              </p>
+            </li>
+          </ul>
+        </div>
+        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+
+        <div *ngIf="activeTab === 'myBids'">
+          <h2>My Bids ({{ myBids.length }})</h2>
+          <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
+          <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet</div>
+          <ul class="job-list" *ngIf="!bidsLoading && myBids.length > 0">
+            <li *ngFor="let bid of myBids; trackBy: trackByBidId" class="job-item">
+              <div class="job-header">
+                <h3>{{ bid.job?.projectName }}</h3>
+              </div>
+               <div class="job-location">
+                <span *ngIf="bid.job">📍 {{ bid.job.address || '' }} <span class="job-distance" *ngIf="bid.job.distance">- {{ bid.job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
+              </div>
+              <p class="job-description">{{ bid.job?.jobType | titlecase }}</p>
+              <div class="job-dates">
+                <p *ngIf="bid.job?.potentialStartDate"><strong>Expected Start:</strong> {{ bid.job?.potentialStartDate | date }}</p>
+                <p *ngIf="bid.job?.potentialEndDate"><strong>Expected End:</strong> {{ bid.job?.potentialEndDate | date }}</p>
+                <p *ngIf="bid.job?.durationInDays"><strong>Expected Duration:</strong> {{ bid.job?.durationInDays }} days</p>
+              </div>
+              <div class="job-trades">
+                <span *ngFor="let trade of bid.job?.trades" class="trade-pill" [class.match]="trade === userTrade">
+                  {{ trade | titlecase }}
+                </span>
+              </div>
+              <p *ngIf="bid.job && !hasTradeMatch(bid.job)" class="trade-warning">
+                Your trade does not match up to anything required by this job.
+              </p>
+              <div class="bid-status">
+                <span class="status-badge">{{ bid.status }}</span>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
-
-    <!-- Error state -->
-    <div *ngIf="mapLoadError" class="map-error">
-      <p>Failed to load Google Maps. Please check your API key and internet connection.</p>
-      <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
     </div>
+    <div class="map-panel">
+      <div class="map-view-wrapper">
+        <div class="map-container" [class.with-panel]="selectedJob">
+          <!-- Loading state -->
+          <div *ngIf="isMapLoading && !mapLoadError" class="map-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading map...</p>
+          </div>
 
-    <!-- Map component -->
-    <google-map
-      *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError"
-      height="80%"
-      width="100%"
-      [center]="center"
-      [zoom]="zoom"
-      [options]="mapOptions">
-      <map-marker
-        *ngFor="let marker of markerPositions; trackBy: trackByMarkerId"
-        [position]="marker.position"
-        [options]="markerOptions"
-        [title]="marker.title"
-        (mapClick)="onMarkerClick(marker)">
-      </map-marker>
-    </google-map>
-    </div>
-    <div *ngIf="selectedJob" class="job-details-panel">
-      <div class="job-item">
-        <div class="job-header">
-          <h3>{{ selectedJob.projectName }}</h3>
+        <!-- Error state -->
+        <div *ngIf="mapLoadError" class="map-error">
+          <p>Failed to load Google Maps. Please check your API key and internet connection.</p>
+          <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
         </div>
-        <div class="job-location">
-          <span>📍 {{ selectedJob.address || selectedJob.city + ', ' + selectedJob.state }} <span class="job-distance" *ngIf="selectedJob.distance">- {{ selectedJob.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
+
+        <!-- Map component -->
+        <google-map
+          *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError"
+          height="80%"
+          width="100%"
+          [center]="center"
+          [zoom]="zoom"
+          [options]="mapOptions">
+          <map-marker
+            *ngFor="let marker of markerPositions; trackBy: trackByMarkerId"
+            [position]="marker.position"
+            [title]="marker.title"
+            (mapClick)="onMarkerClick(marker)">
+          </map-marker>
+        </google-map>
         </div>
-        <p class="job-description">{{ selectedJob.jobType | titlecase }}</p>
-        <div class="job-dates">
-          <p *ngIf="selectedJob.potentialStartDate"><strong>Expected Start:</strong> {{ selectedJob.potentialStartDate | date }}</p>
-          <p *ngIf="selectedJob.potentialEndDate"><strong>Expected End:</strong> {{ selectedJob.potentialEndDate | date }}</p>
-          <p *ngIf="selectedJob.durationInDays"><strong>Expected Duration:</strong> {{ selectedJob.durationInDays }} days</p>
+        <div *ngIf="selectedJob" class="job-details-panel">
+          <div class="job-item">
+            <div class="job-header">
+              <h3>{{ selectedJob.projectName }}</h3>
+              <div class="client-info">
+                <span>{{ selectedJob.clientCompanyName }} ({{ selectedJob.clientName }})</span>
+                <ng-container *ngIf="selectedJob.clientRating; else newClient">
+                  <mat-icon *ngFor="let star of getStarRating(selectedJob.clientRating)" class="gold-star">{{ star }}</mat-icon>
+                  <span>({{ selectedJob.clientRating.toFixed(1) }})</span>
+                </ng-container>
+                <ng-template #newClient>
+                  <span class="new-tag">New</span>
+                </ng-template>
+              </div>
+            </div>
+            <div class="job-location">
+              <span>📍 {{ selectedJob.address || selectedJob.city + ', ' + selectedJob.state }} <span class="job-distance" *ngIf="selectedJob.distance">- {{ selectedJob.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
+            </div>
+            <p class="job-description">{{ selectedJob.jobType | titlecase }}</p>
+            <div class="job-dates">
+              <p *ngIf="selectedJob.potentialStartDate"><strong>Expected Start:</strong> {{ selectedJob.potentialStartDate | date }}</p>
+              <p *ngIf="selectedJob.potentialEndDate"><strong>Expected End:</strong> {{ selectedJob.potentialEndDate | date }}</p>
+              <p *ngIf="selectedJob.durationInDays"><strong>Expected Duration:</strong> {{ selectedJob.durationInDays }} days</p>
+            </div>
+            <div class="job-trades">
+              <span *ngFor="let trade of selectedJob.trades" class="trade-pill" [class.match]="trade === userTrade">
+                {{ trade | titlecase }}
+              </span>
+            </div>
+            <p *ngIf="!hasTradeMatch(selectedJob)" class="trade-warning">
+              Your trade does not match up to anything required by this job.
+            </p>
+            <p><strong>Bids:</strong> {{ selectedJob.numberOfBids }}</p>
+            <button (click)="closeJobInfo()" class="close-btn">Close</button>
+          </div>
         </div>
-        <div class="job-trades">
-          <span *ngFor="let trade of selectedJob.trades" class="trade-pill" [class.match]="trade === userTrade">
-            {{ trade | titlecase }}
-          </span>
-        </div>
-        <p *ngIf="!hasTradeMatch(selectedJob)" class="trade-warning">
-          Your trade does not match up to anything required by this job.
-        </p>
-        <button (click)="closeJobInfo()" class="close-btn">Close</button>
       </div>
-    </div>
-  </div>
-
-  <!-- List View -->
-  <div [hidden]="viewMode !== 'list'" class="list-container">
-    <div *ngIf="activeTab === 'allJobs'">
-      <h2>All Jobs ({{ jobs.length }})</h2>
-      <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
-      <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
-      <ul class="job-list" *ngIf="!jobsLoading && jobs.length > 0">
-        <li *ngFor="let job of jobs; trackBy: trackByJobId" class="job-item">
-          <div class="job-header">
-            <h3>{{ job.projectName }}</h3>
-          </div>
-           <div class="job-location">
-            <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
-          </div>
-          <p class="job-description">{{ job.jobType | titlecase }}</p>
-          <div class="job-dates">
-            <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
-            <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
-            <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
-          </div>
-
-          <div class="job-trades">
-            <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
-              {{ trade | titlecase }}
-            </span>
-          </div>
-          <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
-            Your trade does not match up to anything required by this job.
-          </p>
-        </li>
-      </ul>
-    </div>
-
-    <div *ngIf="activeTab === 'myBids'">
-      <h2>My Bids ({{ myBids.length }})</h2>
-      <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
-      <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet</div>
-      <ul class="job-list" *ngIf="!bidsLoading && myBids.length > 0">
-        <li *ngFor="let job of myBids; trackBy: trackByJobId" class="job-item">
-          <div class="job-header">
-            <h3>{{ job.projectName }}</h3>
-          </div>
-           <div class="job-location">
-            <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
-          </div>
-          <p class="job-description">{{ job.jobType | titlecase }}</p>
-          <div class="job-dates">
-            <p *ngIf="job.potentialStartDate"><strong>Expected Start:</strong> {{ job.potentialStartDate | date }}</p>
-            <p *ngIf="job.potentialEndDate"><strong>Expected End:</strong> {{ job.potentialEndDate | date }}</p>
-            <p *ngIf="job.durationInDays"><strong>Expected Duration:</strong> {{ job.durationInDays }} days</p>
-          </div>
-          <div class="job-trades">
-            <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
-              {{ trade | titlecase }}
-            </span>
-          </div>
-          <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
-            Your trade does not match up to anything required by this job.
-          </p>
-          <div class="bid-status">
-            <span class="status-badge">Bid Submitted</span>
-          </div>
-        </li>
-      </ul>
     </div>
   </div>
 </div>
+

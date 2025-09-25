@@ -35,4 +35,8 @@ export interface Job {
   potentialStartDate?: Date;
   potentialEndDate?: Date;
   durationInDays?: number;
+  clientName?: string;
+  clientCompanyName?: string;
+  clientRating?: number;
+  numberOfBids?: number;
 }
