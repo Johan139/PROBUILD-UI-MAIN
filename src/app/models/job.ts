@@ -23,8 +23,8 @@ export interface Job {
   state: string;
   postalCode: string;
   country: string;
-  latitude: string;
-  longitude: string;
+  latitude: number;
+  longitude: number;
   googlePlaceId: string;
   description: string;
   title: string;

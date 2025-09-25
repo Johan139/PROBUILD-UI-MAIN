@@ -19,7 +19,7 @@
             <mat-form-field>
               <mat-label>Trades</mat-label>
               <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
-                <mat-option *ngFor="let trade of allTrades" [value]="trade">{{trade}}</mat-option>
+                <mat-option *ngFor="let trade of allTrades" [value]="trade">{{trade | titlecase}}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field>
@@ -46,6 +46,17 @@
             <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId" class="job-item" (mouseenter)="highlightMarker(job.jobId)" (mouseleave)="unhighlightMarker(job.jobId)" (click)="onJobClick(job)">
               <div class="job-header">
                 <h3>{{ job.projectName }}</h3>
+                <div class="client-info">
+                  <span *ngIf="job.clientCompanyName">{{ job.clientCompanyName }} ({{ job.clientName }})</span>
+                  <span *ngIf="!job.clientCompanyName">{{ job.clientName }}</span>
+                  <ng-container *ngIf="job.clientRating; else newClient">
+                    <mat-icon *ngFor="let star of getStarRating(job.clientRating)" class="gold-star">{{ star }}</mat-icon>
+                    <span>({{ job.clientRating.toFixed(1) }})</span>
+                  </ng-container>
+                  <ng-template #newClient>
+                    <span class="new-tag">New</span>
+                  </ng-template>
+                </div>
               </div>
                <div class="job-location">
                 <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
@@ -126,50 +137,9 @@
           width="100%"
           [center]="center"
           [zoom]="zoom"
-          [options]="mapOptions">
-          <map-marker
-            *ngFor="let marker of markerPositions; trackBy: trackByMarkerId"
-            [position]="marker.position"
-            [title]="marker.title"
-            (mapClick)="onMarkerClick(marker)">
-          </map-marker>
+          [options]="mapOptions"
+          (mapInitialized)="onMapInitialized($event)">
         </google-map>
-        </div>
-        <div *ngIf="selectedJob" class="job-details-panel">
-          <div class="job-item">
-            <div class="job-header">
-              <h3>{{ selectedJob.projectName }}</h3>
-              <div class="client-info">
-                <span>{{ selectedJob.clientCompanyName }} ({{ selectedJob.clientName }})</span>
-                <ng-container *ngIf="selectedJob.clientRating; else newClient">
-                  <mat-icon *ngFor="let star of getStarRating(selectedJob.clientRating)" class="gold-star">{{ star }}</mat-icon>
-                  <span>({{ selectedJob.clientRating.toFixed(1) }})</span>
-                </ng-container>
-                <ng-template #newClient>
-                  <span class="new-tag">New</span>
-                </ng-template>
-              </div>
-            </div>
-            <div class="job-location">
-              <span>📍 {{ selectedJob.address || selectedJob.city + ', ' + selectedJob.state }} <span class="job-distance" *ngIf="selectedJob.distance">- {{ selectedJob.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
-            </div>
-            <p class="job-description">{{ selectedJob.jobType | titlecase }}</p>
-            <div class="job-dates">
-              <p *ngIf="selectedJob.potentialStartDate"><strong>Expected Start:</strong> {{ selectedJob.potentialStartDate | date }}</p>
-              <p *ngIf="selectedJob.potentialEndDate"><strong>Expected End:</strong> {{ selectedJob.potentialEndDate | date }}</p>
-              <p *ngIf="selectedJob.durationInDays"><strong>Expected Duration:</strong> {{ selectedJob.durationInDays }} days</p>
-            </div>
-            <div class="job-trades">
-              <span *ngFor="let trade of selectedJob.trades" class="trade-pill" [class.match]="trade === userTrade">
-                {{ trade | titlecase }}
-              </span>
-            </div>
-            <p *ngIf="!hasTradeMatch(selectedJob)" class="trade-warning">
-              Your trade does not match up to anything required by this job.
-            </p>
-            <p><strong>Bids:</strong> {{ selectedJob.numberOfBids }}</p>
-            <button (click)="closeJobInfo()" class="close-btn">Close</button>
-          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
-import { GoogleMapsModule } from '@angular/google-maps';
+import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
@@ -43,11 +43,14 @@ interface JobMarker {
     MatPaginatorModule,
   ],
   providers: [MapLoaderService],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class FindWorkComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   dataSource = new MatTableDataSource<Job>([]);
+  @ViewChild(GoogleMap) mapComponent!: GoogleMap;
   private destroy$ = new Subject<void>();
+  private markersNeedUpdate = false;
 
   // Data properties
   map!: google.maps.Map;
@@ -94,6 +97,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     streetViewControl: false,
     fullscreenControl: true,
     mapTypeControl: false,
+    mapId: 'DEMO_MAP_ID', // Required for Advanced Markers
   };
 
 
@@ -124,6 +128,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  onMapInitialized(map: google.maps.Map): void {
+    this.map = map;
+    console.log('Map initialized:', !!this.map);
+
+    if (this.jobs.length > 0) {
+      setTimeout(() => this.updateMapMarkers(), 100);
+    }
+  }
+
   private setupMapLoadingSubscription(): void {
     this.isApiLoaded$
       .pipe(takeUntil(this.destroy$))
@@ -149,13 +162,22 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (jobs) => {
-          this.jobs = jobs;
-          this.allTrades = [...new Set(jobs.flatMap(job => job.trades))];
+          console.log('Raw job data received:', jobs);
+          this.jobs = jobs.map(job => ({
+            ...job,
+            latitude: parseFloat(job.latitude as any),
+            longitude: parseFloat(job.longitude as any)
+          }));
+          this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))];
+          this.getUserLocationAndCalculateDistances(); // This must be called before applyFilters
           this.applyFilters();
           this.dataSource = new MatTableDataSource(this.filteredJobs);
           this.dataSource.paginator = this.paginator;
           this.jobsLoading = false;
-          this.getUserLocationAndCalculateDistances();
+
+          if (this.map) {
+            setTimeout(() => this.updateMapMarkers(), 100);
+          }
         },
         error: (error) => {
           console.error('Error loading jobs:', error);
@@ -203,82 +225,137 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   updateMapMarkers(): void {
+    console.log('updateMapMarkers called');
+    if (!this.map) {
+      console.log('Map not initialized, returning');
+      return;
+    }
+
+    console.log('Clearing existing markers...');
     this.markerPositions.forEach(marker => {
       if (marker.marker) {
         marker.marker.map = null;
       }
     });
     this.markerPositions = [];
-    (google.maps.importLibrary("marker") as Promise<google.maps.MarkerLibrary>).then(({AdvancedMarkerElement}) => {
-      this.filteredJobs
-        .filter(job => job.latitude && job.longitude)
-        .forEach(job => {
-          const position = {
-            lat: parseFloat(job.latitude),
-            lng: parseFloat(job.longitude)
-          };
+    console.log('Existing markers cleared');
+
+    google.maps.importLibrary("marker").then(markerLibrary => {
+      console.log('Marker library loaded');
+      const { AdvancedMarkerElement, PinElement } = markerLibrary as google.maps.MarkerLibrary;
+
+      const jobsToMark = this.filteredJobs.filter(job => {
+        const lat = job.latitude;
+        const lng = job.longitude;
+        return !isNaN(lat) && !isNaN(lng);
+      });
+      console.log(`Found ${jobsToMark.length} jobs with coordinates to mark`);
+
+      jobsToMark.forEach((job, index) => {
+        const position = {
+          lat: job.latitude,
+          lng: job.longitude
+        };
+        console.log(`Processing job #${index + 1}: ${job.projectName} at`, position);
+
+        const pinElement = new PinElement({
+          background: '#FF0000',
+          borderColor: '#FFFFFF',
+          glyphColor: '#FFFFFF',
+          scale: 1.2,
+        });
+        console.log('PinElement created for job', job.projectName);
+
+        try {
           const marker = new AdvancedMarkerElement({
             position,
+            map: this.map,
             title: job.projectName,
+            content: pinElement.element,
           });
-          marker.addListener('gmp-click', () => this.onMarkerClick({jobId: job.jobId, position, title: marker.title}));
+          console.log('AdvancedMarkerElement created for job', job.projectName);
+
+          marker.addListener('click', () => {
+            this.onMarkerClick({
+              jobId: job.jobId,
+              position,
+              title: job.projectName
+            });
+          });
+
           this.markerPositions.push({
             position,
-            title: marker.title,
+            title: job.projectName,
             jobId: job.jobId,
             marker: marker
           });
-        });
+        } catch (error) {
+          console.error(`Error creating marker for job ${job.projectName}:`, error);
+        }
+      });
+
+      console.log(`Finished processing. Created ${this.markerPositions.length} markers`);
+    }).catch(error => {
+      console.error('Error loading marker library:', error);
     });
   }
 
-  private centerMapOnJobs(): void {
-    if (this.jobs.length === 0) return;
 
-    const validJobs = this.jobs.filter(job =>
-      job.latitude && job.longitude
-    );
-
-    if (validJobs.length === 0) return;
-
-    if (validJobs.length === 1) {
-      // Single job - center on it
-      this.center = {
-        lat: parseFloat(validJobs[0].latitude),
-        lng: parseFloat(validJobs[0].longitude)
-      };
-      this.zoom = 12;
-    } else {
-      // Multiple jobs - calculate center
-      const avgLat = validJobs.reduce((sum, job) => sum + parseFloat(job.latitude), 0) / validJobs.length;
-      const avgLng = validJobs.reduce((sum, job) => sum + parseFloat(job.longitude), 0) / validJobs.length;
-
-      this.center = { lat: avgLat, lng: avgLng };
-      this.zoom = 8;
-    }
+  private createMarkerContent(job: Job): HTMLElement {
+    const content = document.createElement('div');
+    content.style.width = '20px';
+    content.style.height = '20px';
+    content.style.backgroundColor = 'red';
+    content.style.borderRadius = '50%';
+    content.style.border = '2px solid white';
+    content.style.cursor = 'pointer';
+    content.title = job.projectName;
+    return content;
   }
 
-  private centerMapOnUserLocation(): void {
-    this.userService.getUserAddress()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (address) => {
-          if (address && address.latitude && address.longitude) {
-            this.center = {
-              lat: address.latitude,
-              lng: address.longitude
-            };
-            this.zoom = 10;
-          } else {
-            this.centerOnBrowserLocation();
-          }
-        },
-        error: (error) => {
-          console.error('Error fetching user address:', error);
-          this.centerOnBrowserLocation();
-        }
-      });
-  }
+  // private centerMapOnJobs(): void {
+  //   if (this.jobs.length === 0) return;
+  //   const validJobs = this.jobs.filter(job =>
+  //     job.latitude && job.longitude
+  //   );
+  //   if (validJobs.length === 0) return;
+  //   if (validJobs.length === 1) {
+  //     // Single job - center on it
+  //     this.center = {
+  //       lat: parseFloat(validJobs[0].latitude),
+  //       lng: parseFloat(validJobs[0].longitude)
+  //     };
+  //     this.zoom = 12;
+  //   } else {
+  //     // Multiple jobs - calculate center
+  //     const avgLat = validJobs.reduce((sum, job) => sum + parseFloat(job.latitude), 0) / validJobs.length;
+  //     const avgLng = validJobs.reduce((sum, job) => sum + parseFloat(job.longitude), 0) / validJobs.length;
+  //     this.center = { lat: avgLat, lng: avgLng };
+  //     this.zoom = 8;
+  //   }
+  // }
+
+  // private centerMapOnUserLocation(): void {
+  //   this.userService.getUserAddress()
+  //     .pipe(takeUntil(this.destroy$))
+  //     .subscribe({
+  //       next: (address) => {
+  //         if (address && address.latitude && address.longitude) {
+  //           this.center = {
+  //             lat: address.latitude,
+  //             lng: address.longitude
+  //           };
+  //           this.zoom = 10;
+  //         } else {
+  //           this.centerOnBrowserLocation();
+  //         }
+  //       },
+  //       error: (error) => {
+  //         console.error('Error fetching user address:', error);
+  //         this.centerOnBrowserLocation();
+  //       }
+  //     });
+  // }
 
   private centerOnBrowserLocation(): void {
     if (navigator.geolocation) {
@@ -299,8 +376,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         const userLng = position.coords.longitude;
 
         this.jobs.forEach(job => {
-          const jobLat = parseFloat(job.latitude);
-          const jobLng = parseFloat(job.longitude);
+          const jobLat = job.latitude;
+          const jobLng = job.longitude;
           job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
         });
 
@@ -371,20 +448,32 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   highlightMarker(jobId: number): void {
     const marker = this.markerPositions.find(m => m.jobId === jobId);
     if (marker && marker.marker) {
-      const pinElement = new google.maps.marker.PinElement({
-        background: '#FBBC04',
-        borderColor: '#000',
-        glyphColor: '#000',
+      google.maps.importLibrary("marker").then((markerLib) => {
+        const { PinElement } = markerLib as any;
+        const pinElement = new PinElement({
+          background: '#FBBC04',
+          borderColor: '#000',
+          glyphColor: '#000',
+          scale: 1.3, // Slightly larger when highlighted
+        });
+        marker.marker!.content = pinElement.element;
       });
-      marker.marker.content = pinElement.element;
     }
   }
 
   unhighlightMarker(jobId: number): void {
     const marker = this.markerPositions.find(m => m.jobId === jobId);
     if (marker && marker.marker) {
-      const pinElement = new google.maps.marker.PinElement();
-      marker.marker.content = pinElement.element;
+      google.maps.importLibrary("marker").then((markerLib) => {
+        const { PinElement } = markerLib as any;
+        const pinElement = new PinElement({
+          background: '#ff0404ff',
+          borderColor: '#FFFFFF',
+          glyphColor: '#FFFFFF',
+          scale: 1.2,
+        });
+        marker.marker!.content = pinElement.element;
+      });
     }
   }
 
@@ -430,7 +519,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
 
     this.filteredJobs = filtered;
-    this.updateMapMarkers();
   }
 
   sortJobs(): void {
@@ -470,8 +558,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.selectedJob = job;
     if (job.latitude && job.longitude) {
       this.center = {
-        lat: parseFloat(job.latitude),
-        lng: parseFloat(job.longitude)
+        lat: job.latitude,
+        lng: job.longitude
       };
       this.zoom = 12;
     }

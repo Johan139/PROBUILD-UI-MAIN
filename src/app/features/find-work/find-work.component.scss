@@ -500,3 +500,11 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-weight: 500;
   margin-top: 10px;
 }
+
+::ng-deep .custom-marker {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.2);
+  }
+}
