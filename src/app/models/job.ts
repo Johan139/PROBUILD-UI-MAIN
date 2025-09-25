@@ -39,4 +39,6 @@ export interface Job {
   clientCompanyName?: string;
   clientRating?: number;
   numberOfBids?: number;
+  createdAt?: Date;
+  biddingStartDate?: Date;
 }

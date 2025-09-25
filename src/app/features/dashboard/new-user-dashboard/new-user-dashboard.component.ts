@@ -384,7 +384,7 @@ export class NewUserDashboardComponent implements OnInit {
             return {
               id: job.id,
               projectName: job.projectName,
-              createdAt: job.desiredStartDate,
+              createdAt: job.createdAt,
               progress,
               status: job.status
             };

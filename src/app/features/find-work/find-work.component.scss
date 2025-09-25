@@ -279,6 +279,23 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       input[type="range"] {
         width: 100%;
       }
+
+      .clear-filters-btn {
+        margin-left: 10px;
+        background-color: $white;
+        color: $dark-gray;
+        border: 1px solid $light-gray;
+        border-radius: 4px;
+        padding: 0 16px;
+        height: 30px;
+        line-height: 30px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background-color: darken($white, 5%);
+          border-color: darken($light-gray, 10%);
+        }
+      }
     }
 
     h2 {
