@@ -16,6 +16,9 @@
             <input type="range" id="distance" min="0" max="100000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()"> <!-- changed max to 100000 to test TODO: change it back to something that makes sense -->
           </div>
           <div class="filter-row">
+            <button mat-icon-button (click)="toggleSortDirection()" class="sort-direction-button">
+              <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </button>
             <mat-form-field>
               <mat-label>Sort by</mat-label>
               <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
@@ -60,7 +63,7 @@
                     <span>({{ job.clientRating.toFixed(1) }})</span>
                   </ng-container>
                   <ng-template #newClient>
-                    <span class="new-tag">New</span>
+                    <span class="new-tag" matTooltip="This user is new to the system and does not have a rating yet">New</span>
                   </ng-template>
                 </div>
               </div>
@@ -79,7 +82,7 @@
               </div>
 
               <div class="job-trades">
-                <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade">
+                <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="!hasTradeMatch(job)">
                   {{ trade | titlecase }}
                 </span>
               </div>
@@ -88,8 +91,8 @@
               </p>
             </li>
           </ul>
+          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
         </div>
-        <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
 
         <div *ngIf="activeTab === 'myBids'">
           <h2>My Bids ({{ myBids.length }})</h2>
@@ -113,7 +116,7 @@
                 </div>
               </div>
               <div class="job-trades">
-                <span *ngFor="let trade of bid.job?.trades" class="trade-pill" [class.match]="trade === userTrade">
+                <span *ngFor="let trade of bid.job?.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="bid.job && !hasTradeMatch(bid.job)">
                   {{ trade | titlecase }}
                 </span>
               </div>
@@ -125,6 +128,7 @@
               </div>
             </li>
           </ul>
+          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
         </div>
       </div>
     </div>

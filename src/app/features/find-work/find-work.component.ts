@@ -2,7 +2,7 @@
 // TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
 // TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
 // TODO: hide this entire thing from general contractors (maybe?)
-import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
 import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
@@ -22,6 +22,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { Bid } from '../../models/bid';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -46,13 +47,15 @@ interface JobMarker {
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
+    MatTooltipModule,
   ],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class FindWorkComponent implements OnInit, OnDestroy {
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChildren(MatPaginator) paginators = new QueryList<MatPaginator>();
   dataSource = new MatTableDataSource<Job>([]);
+  myBidsDataSource = new MatTableDataSource<Bid>([]);
   @ViewChild(GoogleMap) mapComponent!: GoogleMap;
   private destroy$ = new Subject<void>();
   private markersNeedUpdate = false;
@@ -77,6 +80,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   tradeCounts: { [trade: string]: number } = {};
   selectedTrades: string[] = [];
   sortBy: string = 'distance';
+  sortDirection: 'asc' | 'desc' = 'asc';
   allJobTypes: string[] = ['Short-term', 'Long-term', 'Contract-based', 'On-demand'];
   selectedJobTypes: string[] = [];
 
@@ -188,8 +192,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
           this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))].sort();
           this.getUserLocationAndCalculateDistances(); // This will now handle the filtering
-          this.dataSource = new MatTableDataSource(this.filteredJobs);
-          this.dataSource.paginator = this.paginator;
+          this.dataSource.data = this.filteredJobs;
+          if (this.paginators.toArray()[0]) {
+            this.dataSource.paginator = this.paginators.toArray()[0];
+          }
           this.jobsLoading = false;
 
           if (this.map) {
@@ -215,8 +221,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.jobsService.getBiddedJobs(userId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (jobs) => {
-          this.myBids = jobs;
+        next: (bids) => {
+          this.myBids = bids;
+          this.myBidsDataSource.data = this.myBids;
+          if (this.paginators.toArray()[1]) {
+            this.myBidsDataSource.paginator = this.paginators.toArray()[1];
+          }
           this.bidsLoading = false;
         },
         error: (error) => {
@@ -554,29 +564,37 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.selectedTrades = [];
     this.selectedJobTypes = [];
     this.sortBy = 'distance';
+    this.sortDirection = 'asc';
     this.applyFilters();
   }
 
   sortJobs(): void {
+    const direction = this.sortDirection === 'asc' ? 1 : -1;
+
     switch (this.sortBy) {
       case 'distance':
-        this.filteredJobs.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+        this.filteredJobs.sort((a, b) => ((a.distance ?? Infinity) - (b.distance ?? Infinity)) * direction);
         break;
       case 'startDate':
         this.filteredJobs.sort((a, b) => {
           const dateA = a.potentialStartDate ? new Date(a.potentialStartDate).getTime() : Infinity;
           const dateB = b.potentialStartDate ? new Date(b.potentialStartDate).getTime() : Infinity;
-          return dateA - dateB;
+          return (dateA - dateB) * direction;
         });
         break;
       case 'postedDate':
         this.filteredJobs.sort((a, b) => {
           const dateA = a.biddingStartDate ? new Date(a.biddingStartDate).getTime() : 0;
           const dateB = b.biddingStartDate ? new Date(b.biddingStartDate).getTime() : 0;
-          return dateB - dateA;
+          return (dateB - dateA) * direction;
         });
         break;
     }
+  }
+
+  toggleSortDirection(): void {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    this.sortJobs();
   }
 
   getStarRating(rating: number): string[] {
@@ -609,5 +627,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       return true; // Default to true if no user trade or job trades are set
     }
     return job.trades.includes(this.userTrade);
+  }
+
+  getTradeTooltip(trade: string): string {
+    if (this.userTrade && this.userTrade === trade) {
+      return `This job requires your trade: ${trade}`;
+    }
+    if (this.userTrade && this.userTrade !== trade) {
+      return `This job requires a different trade: ${trade}`;
+    }
+    return `Trade required: ${trade}`;
   }
 }
