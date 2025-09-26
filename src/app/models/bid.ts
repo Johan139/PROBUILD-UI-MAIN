@@ -9,4 +9,5 @@ export class Bid {
     isFinalist!: boolean;
     job?: Job;
     status?: string;
+    quoteId?: string;
   }

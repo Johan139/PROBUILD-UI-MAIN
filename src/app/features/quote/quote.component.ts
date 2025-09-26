@@ -302,9 +302,12 @@ export class QuoteComponent implements OnInit {
 
               this.isOwnQuote = currentUserId && quoteCreatorId && currentUserId === quoteCreatorId;
 
-              if (savedQuote.status === 'Submitted') {
+              if (savedQuote.status === 'Submitted' && params['edit'] !== 'true') {
                 this.readOnly = true;
                 this.quoteForm.disable();
+              } else {
+                this.readOnly = false;
+                this.quoteForm.enable();
               }
 
               this.cdr.detectChanges();

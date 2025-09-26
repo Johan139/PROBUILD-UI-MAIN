@@ -58,7 +58,9 @@
           <ul class="job-list" *ngIf="!jobsLoading && filteredJobs.length > 0">
             <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId" class="job-item" (mouseenter)="highlightMarker(job.jobId)" (mouseleave)="unhighlightMarker(job.jobId)" (click)="onJobClick(job)">
               <app-job-card [job]="job" [userTrade]="userTrade">
-                <button slot="actions" mat-raised-button color="accent" class="bid-button" (click)="openBidDialog(job.jobId, $event)">Bid</button>
+                <button slot="actions" mat-raised-button color="accent" class="bid-button" (click)="openBidDialog(job.jobId, $event)" [disabled]="hasBidded(job.jobId)">
+                  {{ hasBidded(job.jobId) ? 'Bid Submitted' : 'Bid' }}
+                </button>
               </app-job-card>
             </li>
           </ul>
@@ -71,7 +73,7 @@
           <div *ngIf="!bidsLoading && myBids.length === 0" class="no-jobs">You haven't placed any bids yet</div>
           <ul class="job-list" *ngIf="!bidsLoading && myBids.length > 0">
             <li *ngFor="let bid of myBids; trackBy: trackByBidId" class="job-item">
-              <app-job-card *ngIf="bid.job" [job]="bid.job" [userTrade]="userTrade" [showBidButton]="false"></app-job-card>
+              <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" [userTrade]="userTrade" [showBidButton]="false"></app-job-card>
               <div class="bid-status">
                 <span class="status-badge">{{ bid.status }}</span>
               </div>

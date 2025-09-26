@@ -9,7 +9,7 @@ const BASE_URL = environment.BACKEND_URL;
   providedIn: 'root'
 })
 export class BiddingService {
-  private apiUrl = `${BASE_URL}/Bidding`;
+  private apiUrl = `${BASE_URL}/Bids`;
 
   constructor(private http: HttpClient) { }
 
@@ -35,5 +35,9 @@ export class BiddingService {
 
   submitPdfBid(jobId: number, documentUrl: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/upload`, { jobId, documentUrl });
+  }
+
+  withdrawBid(bidId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${bidId}/withdraw`, {});
   }
 }

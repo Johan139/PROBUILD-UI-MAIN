@@ -23,12 +23,14 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableDataSource } from '@angular/material/table';
 import { Bid } from '../../models/bid';
+import { BiddingService } from '../../services/bidding.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
 import { BidOptionsDialogComponent } from './bid-options-dialog/bid-options-dialog.component';
 import { PdfUploadDialogComponent } from './pdf-upload-dialog/pdf-upload-dialog.component';
 import { Router } from '@angular/router';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -95,6 +97,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   // UI state
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
   distanceUnit: 'km' | 'mi' = 'km';
+  biddedJobIds = new Set<number>();
 
   // Loading states
   jobsLoading = false;
@@ -129,7 +132,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private mapLoader: MapLoaderService,
     private userService: UserService,
     public dialog: MatDialog,
-    private router: Router
+    private router: Router,
+    private biddingService: BiddingService
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
@@ -138,6 +142,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.selectedJobTypes = this.allJobTypes.map(t => t.value);
     this.loadJobs();
+    this.loadMyBids(); 
     this.centerOnBrowserLocation();
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.userTrade = user?.trade;
@@ -237,6 +242,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (bids) => {
           this.myBids = bids;
+          this.biddedJobIds = new Set(bids.map(b => b.jobId));
           this.myBidsDataSource.data = this.myBids;
           if (this.paginators.toArray()[1]) {
             this.myBidsDataSource.paginator = this.paginators.toArray()[1];
@@ -660,5 +666,49 @@ export class FindWorkComponent implements OnInit, OnDestroy {
        });
      }
    });
-  }
+ }
+
+ onViewQuote(bid: Bid): void {
+   if (bid && bid.quoteId) {
+     this.router.navigate(['/quote'], { queryParams: { quoteId: bid.quoteId } });
+   }
+ }
+
+ onWithdrawBid(bid: Bid): void {
+   const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+     width: '400px',
+     data: {
+       title: 'Confirm Withdrawal',
+       message: 'Are you sure you want to withdraw this bid? This action cannot be undone.'
+     }
+   });
+
+   dialogRef.afterClosed().subscribe(result => {
+     if (result) {
+       this.biddingService.withdrawBid(bid.id).subscribe({
+         next: () => {
+           const index = this.myBids.findIndex(b => b.id === bid.id);
+           if (index > -1) {
+             this.myBids[index].status = 'Withdrawn';
+             this.myBidsDataSource.data = [...this.myBids];
+           }
+         },
+         error: (err) => {
+           console.error('Failed to withdraw bid:', err);
+           // Optionally, show an error message to the user
+         }
+       });
+     }
+   });
+ }
+
+ onEditBid(bid: Bid): void {
+   if (bid && bid.quoteId) {
+     this.router.navigate(['/quote'], { queryParams: { quoteId: bid.quoteId, edit: true } });
+   }
+ }
+
+ hasBidded(jobId: number): boolean {
+   return this.biddedJobIds.has(jobId);
+ }
 }

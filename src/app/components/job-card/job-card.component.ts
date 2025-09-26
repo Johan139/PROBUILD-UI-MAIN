@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { Job } from '../../models/job';
+import { Bid } from '../../models/bid';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,6 +23,10 @@ export class JobCardComponent {
   @Input() job!: Job;
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
+  @Input() bid: Bid | null = null;
+  @Output() viewQuote = new EventEmitter<Bid>();
+  @Output() withdrawBid = new EventEmitter<Bid>();
+  @Output() editBid = new EventEmitter<Bid>();
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];
@@ -52,5 +57,26 @@ export class JobCardComponent {
       return `This job requires a different trade: ${trade}`;
     }
     return `Trade required: ${trade}`;
+  }
+
+  onViewQuoteClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.bid) {
+      this.viewQuote.emit(this.bid);
+    }
+  }
+
+  onWithdrawBidClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.bid) {
+      this.withdrawBid.emit(this.bid);
+    }
+  }
+
+  onEditBidClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.bid) {
+      this.editBid.emit(this.bid);
+    }
   }
 }

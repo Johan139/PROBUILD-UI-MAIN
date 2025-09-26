@@ -33,7 +33,12 @@
       {{ trade | titlecase }}
     </span>
   </div>
-  <ng-content select="[slot='actions']"></ng-content>
+  <div class="job-card-actions">
+    <button *ngIf="bid" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View Quote</button>
+    <button *ngIf="bid && bid.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <button *ngIf="bid && bid.status === 'Withdrawn'" mat-raised-button color="accent" (click)="onEditBidClick($event)">Edit & Resubmit</button>
+    <ng-content select="[slot='actions']"></ng-content>
+  </div>
 </div>
 <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
   Your trade does not match up to anything required by this job
