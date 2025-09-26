@@ -20,9 +20,11 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableDataSource } from '@angular/material/table';
 import { Bid } from '../../models/bid';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { JOB_TYPES } from '../../data/job-types';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -48,6 +50,7 @@ interface JobMarker {
     MatSelectModule,
     MatPaginatorModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
   ],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -81,7 +84,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   selectedTrades: string[] = [];
   sortBy: string = 'distance';
   sortDirection: 'asc' | 'desc' = 'asc';
-  allJobTypes: string[] = ['Short-term', 'Long-term', 'Contract-based', 'On-demand'];
+  allJobTypes = JOB_TYPES;
   selectedJobTypes: string[] = [];
 
   // UI state
@@ -93,6 +96,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   bidsLoading = false;
   isMapLoading = true;
   mapLoadError = false;
+  filtersLoading = true;
 
   // Map properties
   isApiLoaded$: Observable<boolean>;
@@ -126,6 +130,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.selectedJobTypes = this.allJobTypes.map(t => t.value);
     this.loadJobs();
     this.centerOnBrowserLocation();
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
@@ -191,8 +196,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           }
 
           this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))].sort();
+          this.selectedTrades = [...this.allTrades];
+          this.loadFiltersFromLocalStorage();
           this.getUserLocationAndCalculateDistances(); // This will now handle the filtering
           this.dataSource.data = this.filteredJobs;
+          this.filtersLoading = false;
           if (this.paginators.toArray()[0]) {
             this.dataSource.paginator = this.paginators.toArray()[0];
           }
@@ -536,19 +544,16 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }, {} as { [trade: string]: number });
 
 
-    if (this.selectedTrades && this.selectedTrades.length > 0) {
+    if (this.selectedTrades && this.selectedTrades.length > 0 && this.selectedTrades.length < this.allTrades.length) {
       filtered = filtered.filter(job =>
         job.trades.some(trade => this.selectedTrades.includes(trade))
       );
     }
 
-    if (this.selectedJobTypes && this.selectedJobTypes.length > 0) {
-      filtered = filtered.filter(job => {
-        if (!job.jobPreferences) {
-          return true;
-        }
-        return this.selectedJobTypes.some(pref => job.jobPreferences.includes(pref));
-      });
+    if (this.selectedJobTypes && this.selectedJobTypes.length > 0 && this.selectedJobTypes.length < this.allJobTypes.length) {
+      filtered = filtered.filter(job =>
+        job.jobType && this.selectedJobTypes.includes(job.jobType)
+      );
     }
 
     this.filteredJobs = filtered;
@@ -556,13 +561,14 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.map) {
       this.updateMapMarkers();
     }
+    this.saveFiltersToLocalStorage();
   }
 
   clearFilters(): void {
     this.searchTerm = '';
     this.distance = 100;
-    this.selectedTrades = [];
-    this.selectedJobTypes = [];
+    this.selectedTrades = [...this.allTrades];
+    this.selectedJobTypes = this.allJobTypes.map(t => t.value);
     this.sortBy = 'distance';
     this.sortDirection = 'asc';
     this.applyFilters();
@@ -620,6 +626,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       };
       this.zoom = 12;
     }
+
+  }
+
+
+  private saveFiltersToLocalStorage(): void {
+    const filters = {
+      distance: this.distance,
+      selectedTrades: this.selectedTrades,
+      selectedJobTypes: this.selectedJobTypes,
+      sortBy: this.sortBy,
+    };
+    localStorage.setItem('findWorkFilters', JSON.stringify(filters));
+  }
+
+  private loadFiltersFromLocalStorage(): void {
+    const savedFilters = localStorage.getItem('findWorkFilters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      this.distance = filters.distance ?? this.distance;
+      this.selectedTrades = filters.selectedTrades ?? [...this.allTrades];
+      this.selectedJobTypes = filters.selectedJobTypes ?? this.allJobTypes.map(t => t.value);
+      this.sortBy = filters.sortBy ?? this.sortBy;
+      }
   }
 
   hasTradeMatch(job: Job): boolean {

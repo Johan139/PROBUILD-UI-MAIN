@@ -386,7 +386,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
           display: flex;
           align-items: center;
           color: lighten($dark-gray, 5%);
-          font-size: 14px;
+          font-size: 16px;
         }
 
         .bid-status {
@@ -550,4 +550,15 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-right: -10px;
   background: none;
   border: none;
+}
+
+.centered-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }

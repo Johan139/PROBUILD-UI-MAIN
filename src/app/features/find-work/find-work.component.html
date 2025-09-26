@@ -4,7 +4,11 @@
     <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
   </div>
 
-  <div class="unified-view">
+  <div *ngIf="filtersLoading" class="centered-spinner-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!filtersLoading" class="unified-view">
     <div class="list-panel">
       <div class="list-container">
         <div class="search-container">
@@ -13,7 +17,7 @@
         <div class="advanced-filters">
           <div>
             <label for="distance">Distance: {{ distance }} {{ distanceUnit }}</label>
-            <input type="range" id="distance" min="0" max="100000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()"> <!-- changed max to 100000 to test TODO: change it back to something that makes sense -->
+            <input type="range" id="distance" min="0" max="100000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
           </div>
           <div class="filter-row">
             <button mat-icon-button (click)="toggleSortDirection()" class="sort-direction-button">
@@ -38,10 +42,10 @@
             <mat-form-field>
               <mat-label>Job Type</mat-label>
               <mat-select multiple [(ngModel)]="selectedJobTypes" (ngModelChange)="applyFilters()">
-                <mat-option *ngFor="let type of allJobTypes" [value]="type">{{type}}</mat-option>
+                <mat-option *ngFor="let type of allJobTypes" [value]="type.value">{{type.viewValue}}</mat-option>
               </mat-select>
             </mat-form-field>
-            <button mat-button class="clear-filters-btn" (click)="clearFilters()">Clear</button>
+            <button mat-button class="clear-filters-btn" (click)="clearFilters()">Reset</button>
           </div>
         </div>
         <div *ngIf="activeTab === 'allJobs'">
@@ -67,11 +71,11 @@
                   </ng-template>
                 </div>
               </div>
-              <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
               <div class="job-location">
                 <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
               </div>
               <div class="job-dates">
+                 <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
                 <p class="job-posted-date" *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
                 <div class="job-expected-dates">
                   <span class="provisional-label">Provisional:</span>
