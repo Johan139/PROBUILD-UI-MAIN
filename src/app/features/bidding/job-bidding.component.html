@@ -1,5 +1,5 @@
 <div class="bidding-container">
-  <h1>Bids for {{ job?.name }}</h1>
+  <h1>Bids for {{ job?.projectName }}</h1>
 
   <div class="toolbar">
     <input type="text" placeholder="Filter by subcontractor" (keyup)="filterBids($any($event.target).value)">

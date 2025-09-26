@@ -340,6 +340,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       margin: 0;
 
       .job-item {
+        position: relative;
         padding: 15px;
         border: 1px solid $light-gray;
         border-radius: 8px;
@@ -356,23 +357,34 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         .job-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           margin-bottom: 12px;
 
           h3 {
             margin: 0;
             color: $dark-gray;
             font-size: 18px;
+            font-weight: bold;
           }
 
-          .job-budget {
-            background-color: $primary-yellow;
-            color: $dark-gray;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 14px;
-            border: 1px solid $darker-yellow;
+          .client-info {
+            margin-top: 0;
+          }
+        }
+
+        .job-location {
+          margin-bottom: 10px;
+        }
+
+        .job-meta {
+          .job-dates {
+            p {
+              font-size: 16px;
+              margin-bottom: 4px;
+            }
+            .job-expected-dates {
+              font-size: 16px;
+            }
           }
         }
 
@@ -490,6 +502,35 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         height: 250px;
       }
     }
+  }
+}
+
+.job-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.job-trades {
+  flex: 1;
+}
+
+.job-card-actions {
+  margin-left: 15px;
+}
+
+.bid-button {
+  background-color: $primary-yellow;
+  color: $black;
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 5px 20px;
+  transition: background-color 0.3s ease;
+  border: none;
+
+  &:hover {
+    background-color: $darker-yellow;
   }
 }
 

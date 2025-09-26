@@ -74,28 +74,35 @@
               <div class="job-location">
                 <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} {{ distanceUnit }} away</span></span>
               </div>
-              <div class="job-dates">
-                 <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
-                <p class="job-posted-date" *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
-                <div class="job-expected-dates">
-                  <span class="provisional-label">Provisional:</span>
-                  <span *ngIf="job.potentialStartDate"><strong>Start:</strong> {{ job.potentialStartDate | date }}</span>
-                  <span *ngIf="job.potentialEndDate"><strong>End:</strong> {{ job.potentialEndDate | date }}</span>
-                  <span *ngIf="job.durationInDays"><strong>Duration:</strong> {{ job.durationInDays }} days</span>
+              <div class="job-meta">
+                <div class="job-dates">
+                  <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
+                  <p class="job-posted-date" *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
+                  <div class="job-expected-dates">
+                    <span class="provisional-label">Provisional:</span>
+                    <span *ngIf="job.potentialStartDate"><strong>Start:</strong> {{ job.potentialStartDate | date }}</span>
+                    <span *ngIf="job.potentialEndDate"><strong>End:</strong> {{ job.potentialEndDate | date }}</span>
+                    <span *ngIf="job.durationInDays"><strong>Duration:</strong> {{ job.durationInDays }} days</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="job-trades">
-                <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="!hasTradeMatch(job)">
-                  {{ trade | titlecase }}
-                </span>
+              <div class="job-footer">
+                <div class="job-trades">
+                  <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="!hasTradeMatch(job)">
+                    {{ trade | titlecase }}
+                  </span>
+                </div>
+                <div class="job-card-actions">
+                  <button mat-raised-button color="accent" class="bid-button" (click)="openBidDialog(job.jobId, $event)">Bid</button>
+                </div>
               </div>
               <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
                 Your trade does not match up to anything required by this job
               </p>
             </li>
           </ul>
-          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+          <mat-paginator [length]="filteredJobs.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
         </div>
 
         <div *ngIf="activeTab === 'myBids'">
@@ -132,7 +139,7 @@
               </div>
             </li>
           </ul>
-          <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+          <mat-paginator [length]="myBids.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
         </div>
       </div>
     </div>

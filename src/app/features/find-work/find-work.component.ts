@@ -25,6 +25,9 @@ import { MatTableDataSource } from '@angular/material/table';
 import { Bid } from '../../models/bid';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
+import { BidOptionsDialogComponent } from './bid-options-dialog/bid-options-dialog.component';
+import { PdfUploadDialogComponent } from './pdf-upload-dialog/pdf-upload-dialog.component';
+import { Router } from '@angular/router';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -123,7 +126,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private mapLoader: MapLoaderService,
     private userService: UserService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private router: Router
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
@@ -666,5 +670,25 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       return `This job requires a different trade: ${trade}`;
     }
     return `Trade required: ${trade}`;
+  }
+
+  openBidDialog(jobId: number, event: MouseEvent): void {
+   event.stopPropagation();
+
+   const dialogRef = this.dialog.open(BidOptionsDialogComponent, {
+     width: '600px',
+     data: { jobId: jobId }
+   });
+
+   dialogRef.afterClosed().subscribe(result => {
+     if (result === 'create') {
+       this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
+     } else if (result === 'upload') {
+       this.dialog.open(PdfUploadDialogComponent, {
+         width: '500px',
+         data: { jobId: jobId }
+       });
+     }
+   });
   }
 }

@@ -32,4 +32,8 @@ export class BiddingService {
   getBidsForJob(jobId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/${jobId}/bids`);
   }
+
+  submitPdfBid(jobId: number, documentUrl: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/upload`, { jobId, documentUrl });
+  }
 }

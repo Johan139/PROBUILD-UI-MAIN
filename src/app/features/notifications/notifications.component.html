@@ -19,7 +19,7 @@
       <p class="notification-message">
         <strong>{{ notification.projectName }}</strong> - {{ notification.senderFullName }}: {{ notification.message }}
         <span *ngIf="notification.message === 'You Won the Bid'" class="fee-reminder">
-          (Reminder: A finder's fee will be applied)
+          (Reminder: A fee will be applied)
         </span>
         <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
       </p>

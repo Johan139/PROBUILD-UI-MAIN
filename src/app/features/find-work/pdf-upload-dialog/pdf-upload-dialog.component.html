@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>Upload PDF Quote</h2>
+<mat-dialog-content>
+  <p>Please select a PDF file to upload as your quote. The maximum file size is 200MB.</p>
+  <input type="file" (change)="onFileSelected($event)" accept=".pdf" #fileInput>
+  <mat-progress-bar *ngIf="isUploading" [value]="uploadProgress"></mat-progress-bar>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onUpload()" [disabled]="!selectedFile || isUploading">Upload</button>
+</mat-dialog-actions>

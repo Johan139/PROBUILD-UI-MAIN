@@ -138,6 +138,9 @@ export class QuoteComponent implements OnInit {
 
 
     this.route.queryParams.subscribe(params => {
+      if (params['jobId']) {
+        this.jobId = params['jobId'];
+      }
       const userRoles = this.authService.currentUserSubject.value?.roles;
       this.isFinalBiddingRound = params['finalBiddingRound'] === 'true' &&
         (userRoles?.includes('Subcontractor') || userRoles?.includes('Vendor'));

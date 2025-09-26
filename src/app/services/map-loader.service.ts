@@ -33,7 +33,6 @@ export class MapLoaderService {
     }
 
     this.loader.importLibrary('maps').then(() => {
-      console.log('Google Maps API loaded successfully using js-api-loader.');
       this.isApiLoaded.next(true);
     }).catch(e => {
       console.error('Error loading Google Maps API:', e);
