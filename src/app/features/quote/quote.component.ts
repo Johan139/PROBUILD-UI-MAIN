@@ -21,6 +21,10 @@ import { LogoService } from '../../services/logo.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Job } from '../../models/job';
+import { JobsService } from '../../services/jobs.service';
+import { JobCardComponent } from '../../components/job-card/job-card.component';
 
 @Component({
   selector: 'app-quote',
@@ -40,15 +44,21 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     NgIf,
     FormsModule,
     MatDialogModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    JobCardComponent,
+    MatProgressSpinnerModule
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
   providers: [QuoteService],
 })
+
+
 export class QuoteComponent implements OnInit {
   quoteForm: FormGroup;
+  jobDetails: Job | null = null;
   isSaving = false;
+  jobDetailsLoading = false;
   logoUrl: string | null = null;
   isLogoSupported = true;
   dataSource = new MatTableDataSource<FormGroup>([]);
@@ -63,7 +73,7 @@ export class QuoteComponent implements OnInit {
   readOnly: boolean = false;
   isOwnQuote: boolean = false;
   isFinalBiddingRound = false;
-  showFeeReminder = true;
+  showFeeReminder = false;
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -77,7 +87,8 @@ export class QuoteComponent implements OnInit {
     private authService: AuthService,
     private quoteDataService: QuoteDataService,
     private logoService: LogoService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private jobsService: JobsService
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -139,7 +150,15 @@ export class QuoteComponent implements OnInit {
 
     this.route.queryParams.subscribe(params => {
       if (params['jobId']) {
+        this.showFeeReminder = true;
         this.jobId = params['jobId'];
+        this.jobDetailsLoading = true;
+        this.jobsService.getSpecificJob(this.jobId).subscribe(job => {
+          this.jobDetails = job;
+          this.jobDetailsLoading = false;
+        });
+      } else {
+        this.showFeeReminder = false;
       }
       const userRoles = this.authService.currentUserSubject.value?.roles;
       this.isFinalBiddingRound = params['finalBiddingRound'] === 'true' &&

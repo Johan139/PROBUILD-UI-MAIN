@@ -8,6 +8,15 @@ $shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 $darker-yellow: #e6bf00;
 $light-gray: #d9d9d9;
 
+.container-fluid {
+  padding: 20px;
+}
+
+.job-card-container {
+  position: sticky;
+  top: 20px;
+}
+
 .container {
   width: 95vw !important;
   margin: 2rem auto;
@@ -444,4 +453,15 @@ button.icon-btn {
     flex-direction: column;
     gap: 4px;
   }
+}
+
+.centered-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }

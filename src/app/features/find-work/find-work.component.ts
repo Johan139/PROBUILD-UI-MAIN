@@ -28,6 +28,7 @@ import { JOB_TYPES } from '../../data/job-types';
 import { BidOptionsDialogComponent } from './bid-options-dialog/bid-options-dialog.component';
 import { PdfUploadDialogComponent } from './pdf-upload-dialog/pdf-upload-dialog.component';
 import { Router } from '@angular/router';
+import { JobCardComponent } from '../../components/job-card/job-card.component';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -54,6 +55,7 @@ interface JobMarker {
     MatPaginatorModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
+    JobCardComponent,
   ],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -607,20 +609,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.sortJobs();
   }
 
-  getStarRating(rating: number): string[] {
-    const stars: string[] = [];
-    for (let i = 1; i <= 5; i++) {
-      if (i <= rating) {
-        stars.push('star');
-      } else if (i - 0.5 <= rating) {
-        stars.push('star_half');
-      } else {
-        stars.push('star_border');
-      }
-    }
-    return stars;
-  }
-
   onJobClick(job: Job): void {
     this.selectedJob = job;
     if (job.latitude && job.longitude) {
@@ -632,7 +620,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
 
   }
-
 
   private saveFiltersToLocalStorage(): void {
     const filters = {
@@ -653,23 +640,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.selectedJobTypes = filters.selectedJobTypes ?? this.allJobTypes.map(t => t.value);
       this.sortBy = filters.sortBy ?? this.sortBy;
       }
-  }
-
-  hasTradeMatch(job: Job): boolean {
-    if (!this.userTrade || !job.trades) {
-      return true; // Default to true if no user trade or job trades are set
-    }
-    return job.trades.includes(this.userTrade);
-  }
-
-  getTradeTooltip(trade: string): string {
-    if (this.userTrade && this.userTrade === trade) {
-      return `This job requires your trade: ${trade}`;
-    }
-    if (this.userTrade && this.userTrade !== trade) {
-      return `This job requires a different trade: ${trade}`;
-    }
-    return `Trade required: ${trade}`;
   }
 
   openBidDialog(jobId: number, event: MouseEvent): void {
