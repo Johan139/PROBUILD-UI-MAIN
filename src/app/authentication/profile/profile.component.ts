@@ -52,7 +52,7 @@ import { SubscriptionUpgradeComponent } from '../subscription-upgrade/subscripti
 import { SubscriptionCreateComponent } from '../registration/subscription-create/subscription-create.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, Observable, of } from 'rxjs';
-import { startWith, map } from 'rxjs/operators';
+import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 
@@ -414,58 +414,40 @@ openStatePanel() {
   ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
   setTimeout(() => this.stateAutoTrigger?.openPanel());
 }
-  loadProfile(): void {
+loadProfile(): void {
+  this.isLoading = true;
 
-    this.isLoading = true;
-    this.profileService.getProfile().pipe(
-      catchError(err => {
-        const currentUser = this.authService.currentUserSubject.value;
-
-        if (currentUser && currentUser.isTeamMember && currentUser.id) {
-          return this.profileService.getTeamMemberProfile(currentUser.id);
-        }
-        return throwError(() => err);
-      })
-    ).subscribe({
-      next: (data: Profile | Profile[]) => {
-        const profileData = Array.isArray(data) ? data[0] : data;
-        this.profile = profileData;
-        this.profileForm.patchValue(profileData);
-        this.isLoading = false;
-        this.isVerified = profileData.isVerified ?? false;
-        this.loadTeamMembers();
-      },
-      error: (error) => {
-        this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
-        this.isLoading = false;
-
+  this.profileService.getProfile().pipe(
+    catchError(err => {
+      const currentUser = this.authService.currentUserSubject.value;
+      if (currentUser && currentUser.isTeamMember && currentUser.id) {
+        return this.profileService.getTeamMemberProfile(currentUser.id);
       }
       return throwError(() => err);
-    })
-  ).subscribe({
-    next: (data: Profile | Profile[]) => {
+    }),
+    switchMap((data: Profile | Profile[]) => {
       const profileData = Array.isArray(data) ? data[0] : data;
       this.profile = profileData;
 
-      const { country, state } = profileData; // IDs from backend
-
-      // ⚠ Patch the form AFTER the country/state lists are loaded
-      const waitForLists = combineLatest([
+      // Load countries & states in parallel before patching form
+      return combineLatest([
         this.registrationService.getCountries(),
         this.registrationService.getAllStates()
-      ]);
+      ]).pipe(
+        take(1),
+        map(([countries, states]) => ({ profileData, countries, states }))
+      );
+    })
+  ).subscribe({
+    next: ({ profileData, countries, states }) => {
+      this.countries = countries;
+      this.states = states;
 
-waitForLists.pipe(take(1)).subscribe(([countries, states]) => {
-  this.countries = countries;
-  this.states = states;
+      this.profileForm.patchValue(profileData); // includes country & state IDs
+      this.isVerified = profileData.isVerified ?? false;
 
-  this.profileForm.patchValue(profileData);  // includes country & state IDs
-
-  this.isVerified = profileData.isVerified ?? false;
-  this.loadTeamMembers();
-  this.isLoading = false;
-});
-
+      this.loadTeamMembers();
+      this.isLoading = false;
     },
     error: () => {
       this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
@@ -473,6 +455,7 @@ waitForLists.pipe(take(1)).subscribe(([countries, states]) => {
     }
   });
 }
+
   onAddressSelected(event: MatAutocompleteSelectedEvent): void {
     const selectedAddress = event.option.value;
     this.selectedPlace = selectedAddress;

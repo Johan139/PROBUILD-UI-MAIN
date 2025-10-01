@@ -79,7 +79,7 @@ export class LoginComponent {
 
           let message = 'Invalid login credentials.';
           this.alertMessage = message;
-console.log(error)
+
 let backendError = error.error;
 
 // If it's a string, try parsing JSON; otherwise keep as-is
