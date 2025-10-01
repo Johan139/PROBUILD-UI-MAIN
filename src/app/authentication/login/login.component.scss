@@ -5,6 +5,7 @@ $darker-yellow: #e6bf00;
 $cyan: #61a0af;
 $black: #000000;
 $dark-gray: #333;
+$gray: #3B3B3B;
 $light-gray: #d9d9d9;
 $white: #fff;
 $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -225,8 +226,8 @@ mat-divider {
   text-align: right;
 
   a {
-    color: $cyan;
-    text-decoration: none;
+     color: $gray;
+    text-decoration: underline;
     font-size: small;
 
     &:hover {
@@ -235,6 +236,26 @@ mat-divider {
   }
 }
 
+.forgot-password-link-resend {
+  display: block;
+  margin-bottom: 2rem;
+  //text-align: right;
+
+  a {
+    color: $gray;
+    text-decoration: none;
+    font-size: small;
+      text-decoration: underline; 
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+.sign-up-action{
+  color: $gray !important;
+  text-decoration: underline !important;
+}
 /* Responsive Design */
 @media (max-width: 768px) {
   .fullcolumn {

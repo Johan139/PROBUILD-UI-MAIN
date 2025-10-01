@@ -14,25 +14,31 @@ export class ForgotPasswordService {
 
   requestPasswordReset(email: string): Observable<void> {
     return this.http.post<void>(this.apiUrl + '/account/forgotpassword', { email }).pipe(
-      catchError(this.handleError)
+     catchError((error: HttpErrorResponse) => {
+
+          return throwError(() => this.handleError(error));
+        })
     );
   }
   resetPassword(data: any): Observable<void> {
     return this.http.post<void>(this.apiUrl + '/account/resetpassword', data).pipe(
-      catchError(this.handleError)
+              catchError((error: HttpErrorResponse) => {
+
+          return throwError(() => this.handleError(error));
+        })
     );
   }
 
   
-  private handleError(error: HttpErrorResponse): Observable<never> {
-    let errorMessage = 'An unexpected error occurred. Please try again later.';
-    
-    if (error.status === 404) {
-      errorMessage = 'No account found with this email address.';
-    } else if (error.status === 500) {
-      errorMessage = 'Server error. Please try again later.';
+  private handleError(error: HttpErrorResponse): HttpErrorResponse {
+    let parsed = error.error;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch {
+        parsed = {};
+      }
     }
-    
-    return throwError(() => new Error(errorMessage));
+    return error;
   }
 }

@@ -28,6 +28,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import { ViewChild } from '@angular/core';
+import { combineLatest } from 'rxjs';
+import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import {
   constructionTypes,
   trades,
@@ -41,6 +44,7 @@ import {
   operationalYears,
   certificationOptions
 } from '../../data/registration-data';
+import { RegistrationService } from '../../services/registration.service';
 
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -78,6 +82,8 @@ export type BillingCycle = 'monthly' | 'yearly';
   styleUrl: './registration.component.scss'
 })
 export class RegistrationComponent implements OnInit{
+  @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
+    @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
@@ -97,11 +103,11 @@ export class RegistrationComponent implements OnInit{
 
   subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
 
-  countries = COUNTRIES;
-  states: { [key: string]: { value: string, display: string }[] } = STATES;
+  countries: any[] = [];
+states: any[] = [];
   filteredCountries: Observable<any[]> | undefined;
   filteredStates: Observable<any[]> | undefined;
-
+  
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
 
@@ -123,6 +129,7 @@ export class RegistrationComponent implements OnInit{
     private httpClient: HttpClient,
     private router: Router,
     private stripeService: StripeService,
+    private registrationService: RegistrationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
     private invitationService: InvitationService
@@ -202,22 +209,54 @@ export class RegistrationComponent implements OnInit{
 
     this.user = 'PERSONAL_USE';
 
-    // Update phone number validation based on country selection
-    this.filteredCountries = this.registrationForm.get('country')?.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filterCountries(value))
+  // Fetch countries
+  this.registrationService.getCountries().subscribe(countries => {
+    this.countries = countries;
+  });
+
+  // Fetch all states once
+this.registrationService.getAllStates().subscribe(allStates => {
+  console.log('All states:', allStates); // <-- Add this
+  this.states = allStates;
+
+    const countryCtrl = this.registrationForm.get('country')!;
+    const stateCtrl = this.registrationForm.get('state')!;
+
+this.filteredStates = combineLatest([
+  countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
+  stateCtrl.valueChanges.pipe(startWith(''))
+]).pipe(
+  map(([countryId, search]) => {
+    const term = (typeof search === 'string' ? search : '').toLowerCase();
+    if (!countryId) return [];
+
+    const normalizedCountryId = (countryId + '').toLowerCase();
+
+    const inCountry = this.states.filter(s =>
+      (s.countryId + '').toLowerCase() === normalizedCountryId
     );
 
-    this.registrationForm.get('country')?.valueChanges.subscribe(countryValue => {
-      const country = this.countries.find(c => c.display === countryValue);
-      if (country) {
-        this.updatePhoneNumberValidator(country.value);
-        this.filteredStates = this.registrationForm.get('state')?.valueChanges.pipe(
-          startWith(''),
-          map(value => this._filterStates(value, country.value))
-        );
-      }
-    });
+    console.log('🔎 Matching states for country ID:', normalizedCountryId, 'Found:', inCountry.length);
+
+    if (!term) return inCountry;
+
+    return inCountry.filter(s =>
+      (s.stateName ?? '').toLowerCase().includes(term) ||
+      (s.stateCode ?? '').toLowerCase().includes(term)
+    );
+  })
+);
+
+  });
+
+
+  // Countries filter
+  this.filteredCountries = this.registrationForm.get('country')!.valueChanges.pipe(
+    startWith(''),
+    map(value => this._filterCountries(value))
+  );
+
+
 
     this.registrationForm.get('userType')?.valueChanges.subscribe(value => {
       this.user = value;
@@ -264,6 +303,18 @@ export class RegistrationComponent implements OnInit{
     });
   }
 
+countryDisplayFn = (id: string) =>
+  this.countries.find(c => c.id === id)?.countryName ?? '';
+
+stateDisplayFn = (state: any) => {
+  if (typeof state === 'string') {
+    return this.states.find(s => s.id === state)?.stateName ?? '';
+  } else if (state && typeof state === 'object') {
+    return state.stateName || '';
+  }
+  return '';
+};
+
   addTrade(event: any): void {
     const value = (event.value || '').trim();
     if (value) {
@@ -275,7 +326,16 @@ export class RegistrationComponent implements OnInit{
     event.chipInput!.clear();
     this.registrationForm.get('tradeCtrl')!.setValue(null);
   }
-
+  openCountryPanel() {
+    const ctrl = this.registrationForm.get('country');
+    ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+    setTimeout(() => this.countryAutoTrigger?.openPanel());
+  }
+    openStatePanel() {
+    const ctrl = this.registrationForm.get('state');
+    ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+    setTimeout(() => this.stateAutoTrigger?.openPanel());
+  }
   removeTrade(trade: any): void {
     const index = this.selectedTrades.indexOf(trade);
     if (index >= 0) {
@@ -321,17 +381,16 @@ export class RegistrationComponent implements OnInit{
     this.supplierTypeCtrl.setValue(null);
   }
 
+private _filterCountries(value: string | null): any[] {
+  const filterValue = (value ?? '').toLowerCase();
+  if (!filterValue) return this.countries; // show all if nothing typed
+  return this.countries.filter(c =>
+    c.countryName.toLowerCase().includes(filterValue) ||
+    c.countryCode.toLowerCase().includes(filterValue)
+  );
+}
 
-  private _filterCountries(value: string): any[] {
-    const filterValue = value.toLowerCase();
-    return this.countries.filter(option => option.display.toLowerCase().includes(filterValue));
-  }
 
-  private _filterStates(value: string, countryCode: string): any[] {
-    const filterValue = value.toLowerCase();
-    const countryStates = this.states[countryCode] || [];
-    return countryStates.filter(option => option.display.toLowerCase().includes(filterValue));
-  }
 
   updatePhoneNumberValidator(countryCode: string) {
     const phoneNumberControl = this.registrationForm.get('phoneNumber');
@@ -373,9 +432,47 @@ export class RegistrationComponent implements OnInit{
     if(selectedOption === "FULLY_LICENSED")
       this.certified = true;
   }
+getUserMetadata(): Observable<any> {
+  return this.httpClient.get('https://ipapi.co/json/');
+}
+
+
+private getOperatingSystem(): string {
+  const userAgent = navigator.userAgent;
+
+  // Windows
+  if (/Windows NT 10.0/.test(userAgent)) return "Windows 10 or 11";
+  if (/Windows NT 6.3/.test(userAgent)) return "Windows 8.1";
+  if (/Windows NT 6.2/.test(userAgent)) return "Windows 8";
+  if (/Windows NT 6.1/.test(userAgent)) return "Windows 7";
+  if (/Windows NT 6.0/.test(userAgent)) return "Windows Vista";
+  if (/Windows NT 5.1/.test(userAgent)) return "Windows XP";
+
+  // macOS
+  if (/Mac OS X 10[\._]15/.test(userAgent)) return "macOS Catalina";
+  if (/Mac OS X 11[\._]/.test(userAgent)) return "macOS Big Sur";
+  if (/Mac OS X 12[\._]/.test(userAgent)) return "macOS Monterey";
+  if (/Mac OS X 13[\._]/.test(userAgent)) return "macOS Ventura";
+  if (/Mac OS X 14[\._]/.test(userAgent)) return "macOS Sonoma or later";
+
+  // iOS
+  if (/iPhone/.test(userAgent)) return "iOS (iPhone)";
+  if (/iPad/.test(userAgent)) return "iOS (iPad)";
+
+  // Android
+  if (/Android/.test(userAgent)) {
+    const match = userAgent.match(/Android\s([0-9\.]+)/);
+    return match ? `Android ${match[1]}` : "Android";
+  }
+
+  // Linux
+  if (/Linux/.test(userAgent)) return "Linux";
+
+  return "Unknown OS";
+}
 
   onSubmit(): void {
-    
+
     if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;
@@ -430,8 +527,29 @@ export class RegistrationComponent implements OnInit{
         formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
       }
 
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
-        headers: { 'Content-Type': 'application/json' }
+
+// Just before sending formValue to the backend
+this.getUserMetadata().subscribe((metadata) => {
+  // Attach IP/location metadata
+formValue.ipAddress = metadata.ip;
+formValue.cityFromIP = metadata.city;
+formValue.regionFromIP = metadata.region; // changed
+formValue.countryFromIP = metadata.country_name;
+formValue.latitudeFromIP = metadata.latitude;
+formValue.longitudeFromIP = metadata.longitude;
+formValue.timezone = metadata.timezone;
+formValue.operatingSystem = this.getOperatingSystem();
+    
+
+// Ensure only the ID is sent
+if (typeof formValue.country === 'object') {
+  formValue.country = formValue.country?.id;
+}
+if (typeof formValue.state === 'object') {
+  formValue.state = formValue.state?.id;
+}
+
+      this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
       })
       .pipe(
         catchError((error) => {
@@ -496,7 +614,7 @@ export class RegistrationComponent implements OnInit{
         }
       });
     });
-
+});
       }
       return;
     }
@@ -533,7 +651,20 @@ export class RegistrationComponent implements OnInit{
         formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
       }
 
-      this.httpClient.post(`${BASE_URL}/Account/register`, JSON.stringify(formValue), {
+
+// Just before sending formValue to the backend
+this.getUserMetadata().subscribe((metadata) => {
+  // Attach IP/location metadata
+formValue.ipAddress = metadata.ip;
+formValue.cityFromIP = metadata.city;
+formValue.regionFromIP = metadata.region; // changed
+formValue.countryFromIP = metadata.country_name;
+formValue.latitudeFromIP = metadata.latitude;
+formValue.longitudeFromIP = metadata.longitude;
+formValue.timezone = metadata.timezone;
+
+formValue.operatingSystem = this.getOperatingSystem();
+      this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
         headers: { 'Content-Type': 'application/json' }
       })
       .pipe(
@@ -597,6 +728,7 @@ export class RegistrationComponent implements OnInit{
           }
         }
       });
+    });
     });
   }
 
