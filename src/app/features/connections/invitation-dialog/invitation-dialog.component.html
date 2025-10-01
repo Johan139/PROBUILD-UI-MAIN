@@ -1,0 +1,28 @@
+<h1 mat-dialog-title>Invite User</h1>
+<div mat-dialog-content class="invitation-dialog-container" [formGroup]="invitationForm">
+  <div class="form-row">
+    <mat-form-field class="form-field">
+      <input matInput placeholder="First Name" formControlName="firstName">
+    </mat-form-field>
+    <mat-form-field class="form-field">
+      <input matInput placeholder="Last Name" formControlName="lastName">
+    </mat-form-field>
+  </div>
+  <div class="form-row">
+    <mat-form-field class="form-field">
+      <input matInput placeholder="Email" formControlName="email">
+    </mat-form-field>
+    <mat-form-field class="form-field">
+      <input matInput placeholder="Phone Number (Optional)" formControlName="phoneNumber">
+    </mat-form-field>
+  </div>
+  <div class="form-row">
+    <mat-form-field class="form-field full-width">
+      <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="5" placeholder="Optional Message" formControlName="message"></textarea>
+    </mat-form-field>
+  </div>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-button [mat-dialog-close]="invitationForm.value" [disabled]="!invitationForm.valid">Invite</button>
+</div>

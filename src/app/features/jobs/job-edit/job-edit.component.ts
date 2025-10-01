@@ -1,16 +1,19 @@
-import {Component, OnInit,  Inject, PLATFORM_ID, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import {SubTasks} from'../../../models/sub-tasks';
-import {ActivatedRoute, Router} from "@angular/router";
-import {NgForOf, NgIf, isPlatformBrowser} from "@angular/common";
-import {MatButton} from "@angular/material/button";
+import { Component, OnInit, Inject, PLATFORM_ID, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { SubTasks } from'../../../models/sub-tasks';
+import { ActivatedRoute, Router } from "@angular/router";
+import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
+import { MatButton } from "@angular/material/button";
 import { MatCard } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { GanttChartComponent } from '../../../components/gantt-chart/gantt-chart.component';
-import {SubtasksState} from '../../../state/subtasks.state';
-import {Store} from '../../../store/store.service';
+import { SubtasksState } from '../../../state/subtasks.state';
+import { Store } from '../../../store/store.service';
 import { WeatherService } from '../../../services/weather.service';
 import { JobsService } from '../../../services/jobs.service';
+import { BiddingService } from '../../../services/bidding.service';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
+import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog.component';
 
 @Component({
   selector: 'app-jobs',
@@ -45,12 +48,14 @@ export class JobEditComponent implements OnInit{
   isLoading: boolean = false;
   isBrowser: boolean;
   weatherData: any;
-  
+
   constructor(private route: ActivatedRoute,
               private jobsService: JobsService,
               private weatherService: WeatherService,
+              private biddingService: BiddingService,
               public store: Store<SubtasksState>,
               private router: Router,
+              public dialog: MatDialog,
               @Inject(PLATFORM_ID) private platformId: Object
             ) {
               this.isBrowser = isPlatformBrowser(this.platformId);
@@ -62,7 +67,7 @@ export class JobEditComponent implements OnInit{
       this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
     });
     this.initialStartDate = this.projectDetails.date;
-  
+
     const state = this.store.getState();
     if (!state.subtaskGroups) {
       this.store.setState({
@@ -71,9 +76,9 @@ export class JobEditComponent implements OnInit{
         ]
       });
     }
-    
+
     this.fetchWeather();
-    
+
     this.createTables();
 
     if (this.calculatedTables && state.subtaskGroups) {
@@ -88,7 +93,7 @@ export class JobEditComponent implements OnInit{
             ? { ...existingSubtask, ...matchingSubtask }
             : existingSubtask;
         });
-    
+
         return {
           ...group,
           subtasks: updatedSubtasks,
@@ -214,14 +219,14 @@ export class JobEditComponent implements OnInit{
       }
       return group;
     });
-  
+
     // Update the state
     this.store.setState({ subtaskGroups: updatedState });
-  
+
     // Optionally, reassign the updated subtasks back to the table for local consistency
     table.subtasks = updatedState.find(group => group.title === table.title)?.subtasks || [];
   }
-  
+
   addSubtask(table: any): void {
     const newSubtask = {
       task: '',
@@ -237,10 +242,10 @@ export class JobEditComponent implements OnInit{
       }
       return group;
     });
-  
+
     this.store.setState({ subtaskGroups: updatedState });
-  }  
-  
+  }
+
   updateSubtaskDates(table: any, index: number): void {
     const subtask = table.subtasks[index];
     if (subtask.days && subtask.startDate) {
@@ -253,7 +258,7 @@ export class JobEditComponent implements OnInit{
         const nextStartDate = new Date(endDate);
         nextStartDate.setDate(nextStartDate.getDate() + 1);
         nextSubtask.startDate = nextStartDate.toISOString().split('T')[0];
-  
+
         const nextEndDate = new Date(nextStartDate);
         nextEndDate.setDate(nextStartDate.getDate() + nextSubtask.days - 1);
         nextSubtask.endDate = nextEndDate.toISOString().split('T')[0];
@@ -261,7 +266,7 @@ export class JobEditComponent implements OnInit{
       }
     }
   }
-  
+
   fetchWeather(): void {
     const location = this.projectDetails.address;
     const date = this.startDateDisplay;
@@ -286,9 +291,9 @@ export class JobEditComponent implements OnInit{
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-  
+
     const dataInput = this.store.getState().subtaskGroups;
-  
+
     return {
       Id: this.projectDetails.jobId,
       ProjectName: this.projectDetails.projectName,
@@ -325,45 +330,51 @@ export class JobEditComponent implements OnInit{
       UserId: localStorage.getItem("userId")
     };
   }
-  
-  publish() { 
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
-  
-    this.store.setState({ subtaskGroups: updatedSubtaskGroups });
 
-    const dataInput = this.store.getState().subtaskGroups
-    console.log('Tasks in store for Published:', dataInput[0]);
-    console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("PUBLISHED");
+  publish() {
+   const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
+     width: '400px',
+     data: { requiredTrades: '', biddingType: 'PUBLIC' }
+   });
 
-    this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "Published Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
-  }
-  
+   dialogRef.afterClosed().subscribe(result => {
+     if (result) {
+       const projectData = this.prepareProjectData("BIDDING");
+       this.isLoading = true;
+       this.biddingService.startBidding(this.projectDetails.jobId, result.biddingType, result.requiredTrades.split(',').map((s: string) => s.trim())).subscribe({
+         next: () => {
+           this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
+             next: () => {
+               this.isLoading = false;
+               this.showAlert = true;
+               this.alertMessage = "Job is now in BIDDING status.";
+             },
+             error: err => {
+               this.isLoading = false;
+               this.showAlert = true;
+               this.alertMessage = 'An unexpected error occurred while updating the job. Contact support';
+               console.error('Error:', err);
+             }
+           });
+         },
+         error: err => {
+           this.isLoading = false;
+           this.showAlert = true;
+           this.alertMessage = 'An unexpected error occurred while starting the bidding process. Contact support';
+           console.error('Error:', err);
+         }
+       });
+     }
+   });
+ }
+
   closeAlert(): void {
     if (this.routeURL) {
       this.router.navigateByUrl(this.routeURL);
     }
     this.showAlert = false;
   }
-  
+
   saveOnly(){
     const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
       ...group,
@@ -371,7 +382,7 @@ export class JobEditComponent implements OnInit{
         ...subtask,
       }))
     }));
-  
+
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
 
     const dataInput = this.store.getState().subtaskGroups
@@ -402,7 +413,7 @@ export class JobEditComponent implements OnInit{
         ...subtask,
       }))
     }));
-  
+
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     console.log('UserId :: ', localStorage.getItem("userId"))
     const projectData = this.prepareProjectData("DISCARD");

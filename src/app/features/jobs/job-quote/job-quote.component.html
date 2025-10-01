@@ -207,10 +207,7 @@
             <mat-form-field appearance="fill">
               <mat-label>Job Type</mat-label>
               <mat-select formControlName="jobType">
-                <mat-option value='HOUSE'>House</mat-option>
-                <mat-option value="COMPLEX">Complex</mat-option>
-                <mat-option value="ESTATE">Estate</mat-option>
-                <mat-option value="COMMERCIAL">Retail</mat-option>
+                <mat-option *ngFor="let type of jobTypes" [value]="type.value">{{type.viewValue}}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field appearance="fill">

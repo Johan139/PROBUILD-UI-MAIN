@@ -505,6 +505,7 @@ export class JobDataService {
       documents: job.documents,
       latitude: job.latitude,
       longitude: job.longitude,
+      biddingType: job.biddingType,
     };
     this.router.navigate(['/view-quote'], { queryParams: params });
   });

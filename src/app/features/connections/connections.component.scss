@@ -1,0 +1,60 @@
+.connections-container {
+  padding: 20px;
+}
+
+mat-card {
+  margin-bottom: 20px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+table {
+  width: 100%;
+}
+
+.invite-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin: 16px 0;
+
+  p {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  button {
+    color: #ffc107;
+    line-height: 0;
+  }
+}
+
+.probuild-logo {
+  width: 36px;
+  height: 36px;
+  margin-left: 8px;
+}
+
+.action-container {
+  display: flex;
+  align-items: center;
+}
+
+.cancel-button {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+
+.action-button {
+  width: 160px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.mat-table .mat-stroked-button {
+  margin-right: 8px;
+}

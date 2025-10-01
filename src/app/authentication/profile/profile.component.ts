@@ -84,7 +84,7 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
   imports: [
     ReactiveFormsModule,
     FormsModule,
-      CommonModule,  
+      CommonModule,
     MatCardModule,
     MatDividerModule,
     MatFormFieldModule,
@@ -245,6 +245,8 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       latitude: [null],
       longitude: [null],
       googlePlaceId: [''],
+     notificationRadius: [100],
+     jobPreferences: [[]]
     });
 
     this.teamForm = this.fb.group({
@@ -296,7 +298,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
-  
+
 this.registrationService.getCountries().subscribe(countries => {
   this.countries = countries;
 });
@@ -334,7 +336,6 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
   startWith(''),
   map(value => this._filterCountries(value))
 );
-
 
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
@@ -414,12 +415,30 @@ openStatePanel() {
   setTimeout(() => this.stateAutoTrigger?.openPanel());
 }
   loadProfile(): void {
-  this.isLoading = true;
-  this.profileService.getProfile().pipe(
-    catchError(err => {
-      const currentUser = this.authService.currentUserSubject.value;
-      if (currentUser && currentUser.isTeamMember && currentUser.id) {
-        return this.profileService.getTeamMemberProfile(currentUser.id);
+
+    this.isLoading = true;
+    this.profileService.getProfile().pipe(
+      catchError(err => {
+        const currentUser = this.authService.currentUserSubject.value;
+
+        if (currentUser && currentUser.isTeamMember && currentUser.id) {
+          return this.profileService.getTeamMemberProfile(currentUser.id);
+        }
+        return throwError(() => err);
+      })
+    ).subscribe({
+      next: (data: Profile | Profile[]) => {
+        const profileData = Array.isArray(data) ? data[0] : data;
+        this.profile = profileData;
+        this.profileForm.patchValue(profileData);
+        this.isLoading = false;
+        this.isVerified = profileData.isVerified ?? false;
+        this.loadTeamMembers();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
+        this.isLoading = false;
+
       }
       return throwError(() => err);
     })
@@ -594,7 +613,7 @@ manageSubscriptions(): void {
                       ).trim().toLowerCase();
 
       const iAmTeamMember = this.authService.isTeamMember();
-       
+
       const isActive = (r: SubscriptionRow) =>
         String(r.status || '').toLowerCase() === 'active';
 
@@ -662,7 +681,7 @@ GetUserSubscription(): void {
       const activeCode = this.subscriptionuserPackages?.[0]?.value ?? null;
       if (activeCode) {
         // Prefer direct code match in your known packages
-        const match = this.subscriptionPackages.find(p => 
+        const match = this.subscriptionPackages.find(p =>
           p.value.toLowerCase() === activeCode.toLowerCase()
           || p.display.toLowerCase().startsWith(activeCode.toLowerCase()) // fallback if backend sends display text
         );
@@ -679,7 +698,7 @@ GetUserSubscription(): void {
   });
 }
 
-  
+
 
   loadTeamMembers(): void {
     const currentUser = this.authService.currentUserSubject.value;
@@ -1056,7 +1075,7 @@ startCheckoutForUpgrade(
   pkgCode: string,
   assignedUser: string | null,
   billingCycle: 'monthly' | 'yearly' = 'monthly',
-  subscriptionId: string 
+  subscriptionId: string
 ): void {
   const pkgMeta = this.subscriptionPackages.find(p =>
     String(p.value).toLowerCase() === String(pkgCode).toLowerCase()
@@ -1238,14 +1257,14 @@ openSubscriptionCreateDialog(): void {
         name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
         email: m.email
       })),
-      activeByUserId: selfMap,   
-      notice                    
+      activeByUserId: selfMap,
+      notice
     }
   })
   .afterClosed()
   .subscribe((sel?: { pkg: { value: string; amount: number }; assigneeUserId: string; billingCycle: 'monthly' | 'yearly'; annualAmount:number  }) => {
     if (!sel) return;
-     const { pkg, assigneeUserId, billingCycle } = sel; 
+     const { pkg, assigneeUserId, billingCycle } = sel;
 
     this.profileForm.patchValue({ subscriptionPackage: pkg.value });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();

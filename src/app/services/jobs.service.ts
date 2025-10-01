@@ -52,8 +52,12 @@ export class JobsService {
     return this.httpClient.get<any[]>(`${BASE_URL}/documents/` +jobId);
   }
 
-  getAllJobs() {
-    this.httpClient.get(BASE_URL)
+  getAllJobs(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/public`);
+  }
+
+  getBiddedJobs(userId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/bidded/${userId}`);
   }
 
   saveSubtasks(subtaskList: any[], userId: string | null): Observable<any> {

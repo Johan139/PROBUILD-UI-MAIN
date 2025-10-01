@@ -1,3 +1,5 @@
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { Store } from '../../../store/store.service';
 import { SubtasksState, Subtask } from '../../../state/subtasks.state';
@@ -15,7 +17,8 @@ export class SubtaskService {
     private store: Store<SubtasksState>,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private jobsService: JobsService
+    private jobsService: JobsService,
+    private http: HttpClient
   ) {}
 
   addSubtask(table: any): void {
@@ -287,5 +290,8 @@ export class SubtaskService {
           );
         },
       });
+  }
+  publishJob(jobId: number, job: any): Observable<any> {
+    return this.jobsService.updateJob(job, jobId);
   }
 }

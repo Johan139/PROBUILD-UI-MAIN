@@ -104,11 +104,11 @@ mat-toolbar {
 }
 
 mat-sidenav-content {
-  flex: 1 1 auto; 
+  flex: 1 1 auto;
   display: flex;
-  flex-direction: column; 
-  overflow: auto; 
-  padding: 16px; 
+  flex-direction: column;
+  overflow: auto;
+  padding: 0;
 }
 
 .content-shell {
@@ -118,14 +118,13 @@ mat-sidenav-content {
 }
 
 router-outlet {
-  flex: 1 0 auto;
 }
 
 app-footer {
-  width: 100%; 
-  background-color: #f8f9fa; 
+  width: 100%;
+  background-color: #f8f9fa;
   padding: 1rem 0;
-  margin-top: auto; 
+  margin-top: auto;
 }
 
 
@@ -139,7 +138,6 @@ app-footer {
 mat-sidenav-content {
   margin-left: 0 !important;
   display: flex;
-  justify-content: center;
   height: 100%;
   overflow: auto;
 }

@@ -1,4 +1,3 @@
-// src/app/authentication/http.interceptor.ts
 import { isPlatformBrowser } from '@angular/common';
 import { HttpRequest, HttpHandlerFn, HttpEvent, HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { PLATFORM_ID, inject } from '@angular/core';
@@ -25,28 +24,26 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
   return next(req).pipe(
     catchError((error: any) => {
-      // Skip refresh logic for /login and /refresh-token
       const isAuthEndpoint = req.url.includes('/login') || req.url.includes('/refresh-token');
 
       if (error instanceof HttpErrorResponse && error.status === 401 && !isAuthEndpoint) {
         return authService.refreshToken().pipe(
-          switchMap((token: any) => {
-            if (!token || !token.accessToken) {
-              console.warn('Refresh token failed or returned invalid token.');
+          switchMap((tokenResponse: any) => {
+            if (!tokenResponse || !tokenResponse.token) {
               authService.logout();
               return throwError(() => new Error('Unable to refresh access token.'));
             }
 
-            const newReq = req.clone({
+            req = req.clone({
               setHeaders: {
-                Authorization: `Bearer ${token.accessToken}`
+                Authorization: `Bearer ${tokenResponse.token}`
               }
             });
-            return next(newReq);
+            return next(req);
           }),
-          catchError((err) => {
+          catchError((refreshErr) => {
             authService.logout();
-            return throwError(() => err);
+            return throwError(() => refreshErr);
           })
         );
       }

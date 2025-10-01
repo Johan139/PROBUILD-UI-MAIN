@@ -96,6 +96,7 @@ export class FileUploadService {
       return uploadSubject.asObservable();
   }
 
+
   private handleUploadError(error: HttpErrorResponse): void {
     let errorMessage = 'An unexpected error occurred. Please try again.';
 
@@ -151,5 +152,40 @@ export class FileUploadService {
 
   getUploadedFileNames(uploadedFileInfos: UploadedFileInfo[]): string {
     return uploadedFileInfos.map(file => file.name).join(', ');
+  }
+
+  uploadQuotePdf(file: File, jobId: number): Observable<number | { url: string }> {
+    const formData = new FormData();
+    formData.append('quote', file);
+    const uniqueSessionId = `job-${jobId}-quote-${new Date().getTime()}`;
+    formData.append('sessionId', uniqueSessionId);
+
+    const uploadSubject = new Subject<number | { url: string }>();
+
+    this.httpClient.post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
+      reportProgress: true,
+      observe: 'events',
+    }).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          const progress = Math.round(100 * event.loaded / event.total);
+          uploadSubject.next(progress);
+        } else if (event.type === HttpEventType.Response) {
+          const fileUrl = event.body?.fileUrls?.[0];
+          if (fileUrl) {
+            uploadSubject.next({ url: fileUrl });
+            uploadSubject.complete();
+          } else {
+            uploadSubject.error('File URL not found in response');
+          }
+        }
+      },
+      error: (error) => {
+        this.handleUploadError(error);
+        uploadSubject.error(error);
+      }
+    });
+
+    return uploadSubject.asObservable();
   }
 }

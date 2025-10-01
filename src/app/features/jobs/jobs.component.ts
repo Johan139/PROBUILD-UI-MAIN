@@ -38,6 +38,7 @@ import { JobAssignmentService } from './job-assignment/job-assignment.service';
 import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
+import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 
 @Component({
   selector: 'app-jobs',
@@ -429,6 +430,26 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.location.back();
   }
 
+
+  publishJob(): void {
+    const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
+      width: '400px',
+      data: {}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.biddingType) {
+        this.projectDetails.biddingType = result.biddingType;
+        this.projectDetails.requiredSubcontractorTypes = result.requiredSubcontractorTypes;
+        this.projectDetails.status = 'BIDDING';
+        this.subtaskService.publishJob(this.projectDetails.jobId, this.projectDetails).subscribe(() => {
+          this.snackBar.open('Job published successfully!', 'Close', {
+            duration: 3000
+          });
+        });
+      }
+    });
+  }
 
   closeAlert(): void {
     this.showAlert = false;

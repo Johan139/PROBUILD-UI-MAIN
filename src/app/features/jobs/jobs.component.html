@@ -142,29 +142,29 @@
 
           <!-- Action Buttons -->
           <div class="action-buttons">
-            <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="subtaskService.publish()">
+            <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="publishJob()" matTooltip="Make this job available for bidding by subcontractors and vendors">
               Publish Job
             </button>
-            <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()" matTooltip="Save the current state of the job and subtasks without publishing">
               Save Job
             </button>
-            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()">
+            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()" matTooltip="Discard all changes and revert the job to its last saved state">
               Discard Job
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
+            <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()" matTooltip="View all documents associated with this job">
               View Documents
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
+            <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
               View Bill of Materials
             </button>
-            <button *ngIf="!projectDetails.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport">
+            <button *ngIf="!projectDetails.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
               <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
               <span *ngIf="isGeneratingReport">Generating...</span>
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()">
+            <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()" matTooltip="Return to the previous page">
               Back
             </button>
-            <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()">
+            <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()" matTooltip="Mark all subtasks as approved">
                Accept All Subtasks
             </button>
           </div>

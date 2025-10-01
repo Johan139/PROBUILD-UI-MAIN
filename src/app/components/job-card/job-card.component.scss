@@ -1,0 +1,139 @@
+/* Variables from Projects/Jobs theme */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    color: $dark-gray;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .client-info {
+    margin-top: 0;
+  }
+}
+
+.client-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+
+  .gold-star {
+    color: $primary-yellow;
+  }
+
+  .new-tag {
+    background-color: $primary-yellow;
+    color: $dark-gray;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+}
+
+.job-location {
+  display: flex;
+  align-items: center;
+  color: lighten($dark-gray, 5%);
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.job-distance {
+  font-style: italic;
+  color: #555;
+}
+
+.job-meta {
+  .job-dates {
+    p {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    .job-expected-dates {
+      font-size: 16px;
+    }
+  }
+}
+
+.job-description {
+  line-height: 1.6;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.job-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.job-trades {
+  flex: 1;
+}
+
+.trade-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+  background-color: #e0e0e0;
+  color: #333;
+
+  &.match {
+    background-color: #4caf50;
+    color: #fff;
+  }
+
+  &.greyed-out {
+    opacity: 0.6;
+  }
+}
+
+.trade-warning {
+  color: #d32f2f;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.job-posted-date {
+  margin-bottom: 4px;
+}
+
+.job-expected-dates {
+  display: flex;
+  justify-content: flex-start;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 2px;
+  font-size: 16px;
+  color: #333;
+}
+
+.provisional-label {
+  font-style: italic;
+  color: #666;
+  font-weight: 500;
+}

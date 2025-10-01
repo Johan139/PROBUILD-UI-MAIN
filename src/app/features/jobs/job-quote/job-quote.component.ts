@@ -42,6 +42,7 @@ import { Prompt } from '../../ai-chat/models/ai-chat.models';
 import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
 import { JobDocument } from '../../../models/JobDocument';
 import { DocumentsDialogComponent } from '../../../shared/dialogs/documents-dialog/documents-dialog.component';
+import { JOB_TYPES } from '../../../data/job-types';
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
@@ -128,6 +129,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPrompts = new FormControl([]);
   analysisReport: string | null = null;
   isAnalyzing: boolean = false;
+  jobTypes = JOB_TYPES;
 
   constructor(
     private formBuilder: FormBuilder,

@@ -25,10 +25,22 @@ import { ResetPasswordComponent } from './authentication/reset-password.componen
 import { MasterServicesAgreementComponent } from './master-services-agreement.component';
 import { SubscriptionConfirmationComponent } from './subscription-confirmation/subscription-confirmation.component';
 import { ArchiveComponent } from './features/archive/archive.component';
+import { UnsubscribeComponent } from './authentication/unsubscribe/unsubscribe.component';
+import { ConnectionsComponent } from './features/connections/connections.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
+  {path:'unsubscribe', component:UnsubscribeComponent },
   {path:'archive', component:ArchiveComponent, canActivate: [AuthGuard] },
+  {
+    path: 'find-work',
+    loadComponent: () => import('./features/find-work/find-work.component').then(m => m.FindWorkComponent)
+  },
+  {
+    path: 'connections',
+    component: ConnectionsComponent,
+    canActivate: [AuthGuard]
+  },
   {
     path: 'ai-chat',
     loadChildren: () => import('./features/ai-chat/ai-chat.routes').then(m => m.AI_CHAT_ROUTES)

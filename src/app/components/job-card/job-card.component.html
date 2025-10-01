@@ -1,0 +1,45 @@
+<div class="job-header">
+  <h3>{{ job.projectName }}</h3>
+  <div class="client-info">
+    <span *ngIf="job.clientCompanyName">{{ job.clientCompanyName }} ({{ job.clientName }})</span>
+    <span *ngIf="!job.clientCompanyName">{{ job.clientName }}</span>
+    <ng-container *ngIf="job.clientRating; else newClient">
+      <mat-icon *ngFor="let star of getStarRating(job.clientRating)" class="gold-star">{{ star }}</mat-icon>
+      <span>({{ job.clientRating.toFixed(1) }})</span>
+    </ng-container>
+    <ng-template #newClient>
+      <span class="new-tag" matTooltip="This user is new to the system and does not have a rating yet">New</span>
+    </ng-template>
+  </div>
+</div>
+<div class="job-location">
+  <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} mi away</span></span>
+</div>
+<div class="job-meta">
+  <div class="job-dates">
+    <p class="job-description"><strong>Job Type:</strong> {{ job.jobType | titlecase }}</p>
+    <p class="job-posted-date" *ngIf="job.biddingStartDate"><strong>Posted:</strong> {{ job.biddingStartDate | date }}</p>
+    <div class="job-expected-dates">
+      <span class="provisional-label">Provisional:</span>
+      <span *ngIf="job.potentialStartDate"><strong>Start:</strong> {{ job.potentialStartDate | date }}</span>
+      <span *ngIf="job.potentialEndDate"><strong>End:</strong> {{ job.potentialEndDate | date }}</span>
+      <span *ngIf="job.durationInDays"><strong>Duration:</strong> {{ job.durationInDays }} days</span>
+    </div>
+  </div>
+</div>
+<div class="job-footer">
+  <div class="job-trades">
+    <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="!hasTradeMatch(job)">
+      {{ trade | titlecase }}
+    </span>
+  </div>
+  <div class="job-card-actions">
+    <button *ngIf="bid" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View Quote</button>
+    <button *ngIf="bid && bid.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <button *ngIf="bid && bid.status === 'Withdrawn'" mat-raised-button color="accent" (click)="onEditBidClick($event)">Edit & Resubmit</button>
+    <ng-content select="[slot='actions']"></ng-content>
+  </div>
+</div>
+<p *ngIf="!hasTradeMatch(job)" class="trade-warning">
+  Your trade does not match up to anything required by this job
+</p>
