@@ -25,6 +25,7 @@ export class JobCardComponent {
   @Input() showBidButton: boolean = true;
   @Input() bid: Bid | null = null;
   @Output() viewQuote = new EventEmitter<Bid>();
+  @Output() viewPdf = new EventEmitter<string>();
   @Output() withdrawBid = new EventEmitter<Bid>();
   @Output() editBid = new EventEmitter<Bid>();
 
@@ -63,6 +64,13 @@ export class JobCardComponent {
     event.stopPropagation();
     if (this.bid) {
       this.viewQuote.emit(this.bid);
+    }
+  }
+
+  onViewPdfClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.bid && this.bid.documentUrl) {
+      this.viewPdf.emit(this.bid.documentUrl);
     }
   }
 

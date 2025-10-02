@@ -3,12 +3,12 @@
     <mat-spinner></mat-spinner>
   </div>
   <div class="row" *ngIf="!jobDetailsLoading">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="job-card-container" *ngIf="jobDetails">
         <app-job-card [job]="jobDetails"></app-job-card>
       </div>
     </div>
-    <div class="col-md-8">
+    <div class="col-md-6">
       <mat-card>
         <mat-card-header>
           <mat-card-title class="professional-title">Job Quote</mat-card-title>
@@ -268,6 +268,9 @@
           </form>
         </mat-card-content>
       </mat-card>
+    </div>
+    <div class="col-md-3">
+      <app-pdf-viewer [documents]="quoteDocuments"></app-pdf-viewer>
     </div>
   </div>
 </div>

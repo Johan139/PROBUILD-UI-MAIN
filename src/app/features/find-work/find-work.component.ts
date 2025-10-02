@@ -26,9 +26,8 @@ import { Bid } from '../../models/bid';
 import { BiddingService } from '../../services/bidding.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
-import { BidOptionsDialogComponent } from './bid-options-dialog/bid-options-dialog.component';
-import { PdfUploadDialogComponent } from './pdf-upload-dialog/pdf-upload-dialog.component';
 import { Router } from '@angular/router';
+import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
@@ -142,7 +141,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.selectedJobTypes = this.allJobTypes.map(t => t.value);
     this.loadJobs();
-    this.loadMyBids(); 
+    this.loadMyBids();
     this.centerOnBrowserLocation();
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.userTrade = user?.trade;
@@ -649,29 +648,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   openBidDialog(jobId: number, event: MouseEvent): void {
-   event.stopPropagation();
+    event.stopPropagation();
 
-   const dialogRef = this.dialog.open(BidOptionsDialogComponent, {
-     width: '600px',
-     data: { jobId: jobId }
-   });
+    const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
+      width: '800px',
+      data: { jobId: jobId }
+    });
 
-   dialogRef.afterClosed().subscribe(result => {
-     if (result === 'create') {
-       this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
-     } else if (result === 'upload') {
-       this.dialog.open(PdfUploadDialogComponent, {
-         width: '500px',
-         data: { jobId: jobId }
-       });
-     }
-   });
- }
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'create') {
+        this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
+      } else if (result) {
+        this.loadMyBids();
+      }
+    });
+  }
 
  onViewQuote(bid: Bid): void {
    if (bid && bid.quoteId) {
      this.router.navigate(['/quote'], { queryParams: { quoteId: bid.quoteId } });
    }
+ }
+
+ onViewPdf(url: string): void {
+   window.open(url, '_blank');
  }
 
  onWithdrawBid(bid: Bid): void {

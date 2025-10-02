@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Submit a Bid</h2>
+
+<div *ngIf="!selection">
+  <div class="options-container">
+    <p>How would you like to submit your bid?</p>
+    <button mat-raised-button color="primary" (click)="selectOption('create')">Create Quote with Probuild</button>
+    <button mat-raised-button (click)="selectOption('upload')">Upload PDF Quote</button>
+  </div>
+</div>
+
+<div *ngIf="selection === 'upload'">
+  <mat-stepper [linear]="true" #stepper>
+    <mat-step [completed]="currentStep > 1">
+      <ng-template matStepLabel>Upload Quote</ng-template>
+      <div class="step-container">
+        <p>Please select a PDF file to upload as your quote. The maximum file size is 200MB.</p>
+        <input type="file" (change)="onFileSelected($event)" accept=".pdf" #fileInput>
+        <mat-progress-bar *ngIf="isUploading" [value]="uploadProgress"></mat-progress-bar>
+      </div>
+    </mat-step>
+    <mat-step [completed]="currentStep > 2">
+      <ng-template matStepLabel>Review Quote</ng-template>
+      <div class="step-container">
+        <p>Please review your uploaded quote to ensure it's correct before submitting.</p>
+        <app-pdf-viewer *ngIf="uploadedFileUrl" [documents]="[{ url: uploadedFileUrl, name: 'Quote' }]"></app-pdf-viewer>
+      </div>
+    </mat-step>
+    <mat-step>
+      <ng-template matStepLabel>Submit Bid</ng-template>
+      <div class="step-container">
+        <p>You're all set. Click the button below to submit your bid.</p>
+      </div>
+    </mat-step>
+  </mat-stepper>
+</div>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="stepper.next()" *ngIf="selection === 'upload' && stepper.selectedIndex === 1">Next</button>
+  <button mat-raised-button color="primary" (click)="submitBid()" *ngIf="selection === 'upload' && stepper.selectedIndex === 2">Submit Bid</button>
+</mat-dialog-actions>

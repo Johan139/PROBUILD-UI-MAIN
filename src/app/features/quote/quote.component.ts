@@ -25,6 +25,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Job } from '../../models/job';
 import { JobsService } from '../../services/jobs.service';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
+import { BidsService } from '../../services/bids.service';
 
 @Component({
   selector: 'app-quote',
@@ -46,7 +48,8 @@ import { JobCardComponent } from '../../components/job-card/job-card.component';
     MatDialogModule,
     MatCheckboxModule,
     JobCardComponent,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    PdfViewerComponent
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
@@ -74,6 +77,7 @@ export class QuoteComponent implements OnInit {
   isOwnQuote: boolean = false;
   isFinalBiddingRound = false;
   showFeeReminder = false;
+ quoteDocuments: { url: string, name: string }[] = [];
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -88,7 +92,8 @@ export class QuoteComponent implements OnInit {
     private quoteDataService: QuoteDataService,
     private logoService: LogoService,
     private dialog: MatDialog,
-    private jobsService: JobsService
+    private jobsService: JobsService,
+    private bidsService: BidsService
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -156,6 +161,7 @@ export class QuoteComponent implements OnInit {
         this.jobsService.getSpecificJob(this.jobId).subscribe(job => {
           this.jobDetails = job;
           this.jobDetailsLoading = false;
+          this.loadQuoteDocuments();
         });
       } else {
         this.showFeeReminder = false;
@@ -293,6 +299,7 @@ export class QuoteComponent implements OnInit {
               this.hasFlatTotal = !!savedQuote.flatTotalValue;
               this.jobId = savedQuote.jobID;
 
+              this.loadQuoteDocuments();
               this.updateQuoteRows(savedQuote.rows);
               this.isSaving = false;
 
@@ -1181,4 +1188,17 @@ export class QuoteComponent implements OnInit {
       },
     });
   }
+
+ loadQuoteDocuments(): void {
+   if (this.jobId) {
+     this.bidsService.getBidsForJob(this.jobId).subscribe(bids => {
+       this.quoteDocuments = bids
+         .filter((bid: any) => bid.documentUrl)
+         .map((bid: any) => ({
+           url: bid.documentUrl,
+           name: `Quote from ${bid.user.firstName} ${bid.user.lastName}`
+         }));
+     });
+   }
+ }
 }

@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.pdf-viewer-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #2c2c2c;
+  color: #ffffff;
+}
+
+mat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #000000;
+}
+
+.document-selector {
+  flex-grow: 1;
+  margin-left: 16px;
+}
+
+.document-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+mat-card-content {
+  flex-grow: 1;
+  padding: 16px;
+  overflow: auto;
+}
+
+.pdf-container {
+  height: 100%;
+  background-color: #3c3c3c;
+}
+
+iframe {
+  border: none;
+}
+
+.pdf-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #000000;
+}

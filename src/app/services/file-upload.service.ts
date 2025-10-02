@@ -8,6 +8,7 @@ import { UploadOptionsDialogComponent } from '../features/jobs/job-quote/upload-
 import { environment } from '../../environments/environment';
 import { DocumentsDialogComponent } from '../shared/dialogs/documents-dialog/documents-dialog.component';
 import { JobDocument } from '../models/JobDocument';
+import * as uuid from 'uuid';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -23,6 +24,7 @@ export interface UploadProgress {
     isUploading: boolean;
     files?: UploadedFileInfo[];
 }
+
 
 @Injectable({
   providedIn: 'root'
@@ -156,13 +158,13 @@ export class FileUploadService {
 
   uploadQuotePdf(file: File, jobId: number): Observable<number | { url: string }> {
     const formData = new FormData();
-    formData.append('quote', file);
-    const uniqueSessionId = `job-${jobId}-quote-${new Date().getTime()}`;
-    formData.append('sessionId', uniqueSessionId);
+    formData.append('Quote', file);
+    formData.append('jobId', jobId.toString());
+    formData.append('sessionId', uuid.v4());
 
     const uploadSubject = new Subject<number | { url: string }>();
 
-    this.httpClient.post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
+    this.httpClient.post<any>(`${BASE_URL}/Quotes/Upload`, formData, {
       reportProgress: true,
       observe: 'events',
     }).subscribe({
@@ -171,7 +173,7 @@ export class FileUploadService {
           const progress = Math.round(100 * event.loaded / event.total);
           uploadSubject.next(progress);
         } else if (event.type === HttpEventType.Response) {
-          const fileUrl = event.body?.fileUrls?.[0];
+          const fileUrl = event.body?.url;
           if (fileUrl) {
             uploadSubject.next({ url: fileUrl });
             uploadSubject.complete();

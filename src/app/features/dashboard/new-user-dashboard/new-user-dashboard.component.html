@@ -132,7 +132,7 @@
               <!-- Status Column -->
               <ng-container matColumnDef="status">
                 <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-                <mat-cell *matCellDef="let job">{{ job.status }}</mat-cell>
+                <mat-cell *matCellDef="let job">{{ job.status | titlecase}}</mat-cell>
               </ng-container>
 
               <!-- Actions Column -->

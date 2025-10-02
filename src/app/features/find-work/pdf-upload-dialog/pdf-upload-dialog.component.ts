@@ -4,7 +4,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { FileUploadService } from '../../../services/file-upload.service';
-import { BiddingService } from '../../../services/bidding.service'; // This will be created later
+import { BiddingService } from '../../../services/bidding.service';
 
 @Component({
   selector: 'app-pdf-upload-dialog',
@@ -43,8 +43,6 @@ export class PdfUploadDialogComponent {
     }
 
     this.isUploading = true;
-    // Note: We will need a new method in FileUploadService for this
-    // For now, we'll assume it exists and call it.
     this.fileUploadService.uploadQuotePdf(this.selectedFile, this.data.jobId).subscribe({
       next: (event) => {
         if (typeof event === 'number') {
