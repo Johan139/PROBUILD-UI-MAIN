@@ -14,7 +14,7 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'ID', display: 'Idaho' },
     { value: 'IL', display: 'Illinois' },
     { value: 'IN', display: 'Indiana' },
-    { value: 'IA', display: 'Iowa' },
+    { value: 'IA', display: 'Iowa' }, 
     { value: 'KS', display: 'Kansas' },
     { value: 'KY', display: 'Kentucky' },
     { value: 'LA', display: 'Louisiana' },
