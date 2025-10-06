@@ -137,3 +137,22 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   color: #666;
   font-weight: 500;
 }
+
+.job-card-actions {
+  ::ng-deep button {
+    background-color: $primary-yellow;
+    color: $black;
+    font-weight: bold;
+    border-radius: 20px;
+    padding: 0 24px;
+    height: 40px;
+    line-height: 40px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: $darker-yellow;
+    }
+  }
+}

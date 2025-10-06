@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { Job } from '../../models/job';
 import { Bid } from '../../models/bid';
+import { Quote } from '../../features/quote/quote.model';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,10 +25,11 @@ export class JobCardComponent {
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
   @Input() bid: Bid | null = null;
-  @Output() viewQuote = new EventEmitter<Bid>();
+  @Input() quote: Quote | null = null;
+  @Output() viewQuote = new EventEmitter<Quote | Bid>();
   @Output() viewPdf = new EventEmitter<string>();
-  @Output() withdrawBid = new EventEmitter<Bid>();
-  @Output() editBid = new EventEmitter<Bid>();
+  @Output() withdrawBid = new EventEmitter<Quote | Bid>();
+  @Output() editBid = new EventEmitter<Quote | Bid>();
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];
@@ -62,8 +64,8 @@ export class JobCardComponent {
 
   onViewQuoteClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.bid) {
-      this.viewQuote.emit(this.bid);
+    if (this.quote) {
+      this.viewQuote.emit(this.quote);
     }
   }
 
@@ -76,14 +78,18 @@ export class JobCardComponent {
 
   onWithdrawBidClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.bid) {
+    if (this.quote) {
+      this.withdrawBid.emit(this.quote);
+    } else if (this.bid) {
       this.withdrawBid.emit(this.bid);
     }
   }
 
   onEditBidClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.bid) {
+    if (this.quote) {
+      this.editBid.emit(this.quote);
+    } else if (this.bid) {
       this.editBid.emit(this.bid);
     }
   }

@@ -209,7 +209,7 @@ export class QuoteComponent implements OnInit {
       this.hasDiscount = !!quote.discountValue;
       this.hasFlatTotal = !!quote.flatTotalValue;
       this.hasAmountPaid = !!quote.amountPaid;
-      this.jobId = quote.jobId;
+      this.jobId = quote.jobID;
 
       //Check if its the logged in user`s quote
       const currentUserId = this.authService.currentUserSubject.value?.id;
@@ -299,6 +299,10 @@ export class QuoteComponent implements OnInit {
               this.hasFlatTotal = !!savedQuote.flatTotalValue;
               this.jobId = savedQuote.jobID;
 
+              if (this.jobId) {
+                this.loadJobDetails(this.jobId);
+              }
+
               this.loadQuoteDocuments();
               this.updateQuoteRows(savedQuote.rows);
               this.isSaving = false;
@@ -335,6 +339,20 @@ export class QuoteComponent implements OnInit {
         }
       });
     }
+  }
+
+  loadJobDetails(jobId: string): void {
+    this.jobDetailsLoading = true;
+    this.jobsService.getSpecificJob(jobId).subscribe({
+      next: (job) => {
+        this.jobDetails = job;
+        this.jobDetailsLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load job details:', err);
+        this.jobDetailsLoading = false;
+      }
+    });
   }
 
   updateQuoteRows(items: any[]) {
@@ -647,7 +665,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
       version: formValue.version || undefined, // Let backend calculate version
       status: 'Draft',
       logoId: formValue.logoId || null,
@@ -772,7 +790,7 @@ export class QuoteComponent implements OnInit {
         extraCosts: [],
         createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
         createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-        jobId: this.jobId,
+        jobID: this.jobId,
         version: formValue.version,
         status: 'Draft', // intentionally leave as Draft until we change it
         logoId: formValue.logoId || null,
@@ -1143,7 +1161,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
     };
 
     if (this.hasExtraCost) {

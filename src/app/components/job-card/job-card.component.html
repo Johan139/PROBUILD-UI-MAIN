@@ -34,10 +34,10 @@
     </span>
   </div>
   <div class="job-card-actions">
-    <button *ngIf="bid && bid.quoteId" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View Quote</button>
+    <button *ngIf="quote" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View Quote</button>
     <button *ngIf="bid && bid.documentUrl" mat-raised-button color="primary" (click)="onViewPdfClick($event)">View PDF</button>
-    <button *ngIf="bid && bid.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
-    <button *ngIf="bid && bid.status === 'Withdrawn'" mat-raised-button color="accent" (click)="onEditBidClick($event)">Edit & Resubmit</button>
+    <button *ngIf="bid && bid.status === 'Submitted' || quote && quote.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <button *ngIf="bid && bid.status === 'Withdrawn' || quote && quote.status === 'Withdrawn'" mat-raised-button color="accent" (click)="onEditBidClick($event)">Edit & Resubmit</button>
     <ng-content select="[slot='actions']"></ng-content>
   </div>
 </div>
