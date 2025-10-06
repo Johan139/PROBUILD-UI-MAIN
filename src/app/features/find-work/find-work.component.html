@@ -57,10 +57,15 @@
           </div>
           <ul class="job-list" *ngIf="!jobsLoading && filteredJobs.length > 0">
             <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId" class="job-item" (mouseenter)="highlightMarker(job.jobId)" (mouseleave)="unhighlightMarker(job.jobId)" (click)="onJobClick(job)">
-              <app-job-card [job]="job" [userTrade]="userTrade" [quote]="getQuoteForJob(job.jobId)" (viewQuote)="onViewQuote($event)">
-                <div slot="actions">
-                  <button *ngIf="!getQuoteForJob(job.jobId)" mat-raised-button color="primary" (click)="openBidDialog(job.jobId, $event)">Bid</button>
-                </div>
+              <app-job-card
+                [job]="job"
+                [userTrade]="userTrade"
+                [quote]="getQuoteForJob(job.jobId)"
+                [bid]="getBidForJob(job.jobId)"
+                (viewQuote)="onViewQuote($event)"
+                (withdrawBid)="onWithdrawBid($event)"
+                (editBid)="onEditBid($event)"
+                [showBidButton]="!getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)">
               </app-job-card>
             </li>
           </ul>
@@ -79,10 +84,8 @@
           <div *ngIf="!bidsLoading && myBidsDataSource.data.length === 0" class="no-jobs">You haven't placed any bids yet</div>
           <ul class="job-list" *ngIf="!bidsLoading && myBidsDataSource.data.length > 0">
             <li *ngFor="let bid of myBidsDataSource.connect() | async; trackBy: trackByBidId" class="job-item">
-              <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" [quote]="getQuoteForBid(bid)" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" [userTrade]="userTrade" [showBidButton]="false"></app-job-card>
-              <div class="bid-status">
-                <span class="status-badge">{{ bid.status }}</span>
-              </div>
+              <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" [quote]="getQuoteForBid(bid)" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" [userTrade]="userTrade" [showBidButton]="false">
+              </app-job-card>
             </li>
           </ul>
           <mat-paginator [length]="myBidsDataSource.data.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>

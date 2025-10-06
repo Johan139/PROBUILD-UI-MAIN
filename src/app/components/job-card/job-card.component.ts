@@ -93,4 +93,8 @@ export class JobCardComponent {
       this.editBid.emit(this.bid);
     }
   }
+
+  getStatusClass(status: string): string {
+    return `status-${status.toLowerCase()}`;
+  }
 }

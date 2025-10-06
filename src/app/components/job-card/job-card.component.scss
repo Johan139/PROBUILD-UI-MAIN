@@ -112,6 +112,37 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+  color: $white;
+
+  &.status-draft {
+    background-color: $cyan;
+  }
+
+  &.status-submitted {
+    background-color: #ff9800;
+  }
+
+  &.status-accepted {
+    background-color: #4caf50;
+  }
+
+  &.status-rejected {
+    background-color: #f44336;
+  }
+
+  &.status-withdrawn {
+    background-color: #9e9e9e; 
+  }
+}
+
 .trade-warning {
   color: #d32f2f;
   font-weight: 500;

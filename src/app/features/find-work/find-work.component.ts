@@ -751,6 +751,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     return this.myQuotes.find(q => q.jobID === jobId.toString()) || null;
   }
 
+  getBidForJob(jobId: number): Bid | null {
+    return this.myBids.find(b => b.jobId.toString() === jobId.toString()) || null;
+  }
+
  onViewQuote(item: Bid | Quote): void {
    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
    if (quoteId) {
