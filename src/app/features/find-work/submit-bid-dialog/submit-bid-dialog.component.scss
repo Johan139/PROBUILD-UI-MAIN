@@ -8,3 +8,7 @@
   gap: 15px;
   padding: 20px;
 }
+
+::ng-deep .mat-step-header .mat-step-icon-selected {
+  background-color: #fbd008 !important;
+}

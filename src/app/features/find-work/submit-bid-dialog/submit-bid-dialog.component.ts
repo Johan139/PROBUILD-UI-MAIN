@@ -39,6 +39,7 @@ export class SubmitBidDialogComponent implements OnInit {
   isUploading = false;
   uploadProgress = 0;
   uploadedFileUrl: string | null = null;
+  uploadComplete = false;
 
   constructor(
     public dialogRef: MatDialogRef<SubmitBidDialogComponent>,
@@ -62,7 +63,6 @@ export class SubmitBidDialogComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
-      this.onUpload();
     }
   }
 
@@ -79,6 +79,7 @@ export class SubmitBidDialogComponent implements OnInit {
         } else if (event.url) {
           this.uploadedFileUrl = event.url;
           this.isUploading = false;
+          this.uploadComplete = true;
           this.stepper.next();
           this.snackBar.open('File uploaded successfully', 'Close', {
             duration: 3000
