@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { Job } from '../../models/job';
 import { Bid } from '../../models/bid';
 import { Quote } from '../../features/quote/quote.model';
@@ -6,7 +6,6 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { title } from 'process';
 
 @Component({
   selector: 'app-job-card',
@@ -20,7 +19,7 @@ import { title } from 'process';
     MatTooltipModule
   ]
 })
-export class JobCardComponent {
+export class JobCardComponent  {
   @Input() job!: Job;
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
@@ -30,6 +29,8 @@ export class JobCardComponent {
   @Output() viewPdf = new EventEmitter<string>();
   @Output() withdrawBid = new EventEmitter<Quote | Bid>();
   @Output() editBid = new EventEmitter<Quote | Bid>();
+
+
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];
@@ -66,6 +67,8 @@ export class JobCardComponent {
     event.stopPropagation();
     if (this.quote) {
       this.viewQuote.emit(this.quote);
+    } else if (this.bid) {
+      this.viewQuote.emit(this.bid);
     }
   }
 

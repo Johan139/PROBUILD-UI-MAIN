@@ -75,13 +75,18 @@
         <div *ngIf="activeTab === 'myBids'">
           <h2>My Bids ({{ myBidsDataSource.data.length }})</h2>
           <div class="filter-buttons">
-            <button mat-raised-button [color]="quoteStatusFilter === 'All' ? 'primary' : ''" (click)="quoteStatusFilter = 'All'; applyQuoteFilter()">All</button>
-            <button mat-raised-button [color]="quoteStatusFilter === 'Draft' ? 'primary' : ''" (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()">Draft</button>
-            <button mat-raised-button [color]="quoteStatusFilter === 'Submitted' ? 'primary' : ''" (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()">Submitted</button>
-            <button mat-raised-button [color]="quoteStatusFilter === 'Rejected' ? 'primary' : ''" (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()">Rejected</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'All'" (click)="quoteStatusFilter = 'All'; applyQuoteFilter()">All</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Draft'" (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()">Draft</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Submitted'" (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()">Submitted</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Rejected'" (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()">Rejected</button>
           </div>
           <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
-          <div *ngIf="!bidsLoading && myBidsDataSource.data.length === 0" class="no-jobs">You haven't placed any bids yet</div>
+          <div *ngIf="!bidsLoading && myBidsDataSource.data.length === 0" class="no-jobs">
+            <span *ngIf="quoteStatusFilter === 'All'">You haven't placed any bids yet</span>
+            <span *ngIf="quoteStatusFilter === 'Draft'">You have no draft bids</span>
+            <span *ngIf="quoteStatusFilter === 'Submitted'">You have no submitted bids</span>
+            <span *ngIf="quoteStatusFilter === 'Rejected'">You have no rejected bids</span>
+          </div>
           <ul class="job-list" *ngIf="!bidsLoading && myBidsDataSource.data.length > 0">
             <li *ngFor="let bid of myBidsDataSource.connect() | async; trackBy: trackByBidId" class="job-item">
               <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" [quote]="getQuoteForBid(bid)" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" [userTrade]="userTrade" [showBidButton]="false">

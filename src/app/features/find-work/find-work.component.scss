@@ -417,6 +417,35 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
   }
 
+  .filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .filter-pill {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: $dark-gray;
+    background-color: #e0e0e0;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: darken(#e0e0e0, 10%);
+    }
+
+    &.active {
+      background-color: $primary-yellow;
+      color: $black;
+      font-weight: bold;
+    }
+  }
+
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
