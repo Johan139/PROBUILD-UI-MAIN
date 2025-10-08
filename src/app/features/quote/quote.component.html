@@ -270,7 +270,9 @@
       </mat-card>
     </div>
     <div class="col-md-3" *ngIf="quoteDocuments && quoteDocuments.length > 0">
-      <app-pdf-viewer [documents]="quoteDocuments"></app-pdf-viewer>
+      <div *ngFor="let doc of quoteDocuments">
+        <app-pdf-viewer [document]="doc"></app-pdf-viewer>
+      </div>
     </div>
   </div>
 </div>

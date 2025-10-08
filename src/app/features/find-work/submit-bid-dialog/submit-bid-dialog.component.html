@@ -23,7 +23,7 @@
       <ng-template matStepLabel>Review Quote</ng-template>
       <div class="step-container">
         <p>Please review your uploaded quote to ensure it's correct before submitting.</p>
-        <app-pdf-viewer *ngIf="uploadedFileUrl" [documents]="[{ url: uploadedFileUrl, name: 'Quote' }]"></app-pdf-viewer>
+        <app-pdf-viewer *ngIf="uploadedFileUrl" [document]="{ url: uploadedFileUrl, name: 'Quote' }"></app-pdf-viewer>
       </div>
     </mat-step>
     <mat-step>

@@ -1,42 +1,36 @@
 <mat-card class="pdf-viewer-card">
   <mat-card-header>
-    <mat-card-title>Job Documents</mat-card-title>
-    <div class="document-selector">
-      <ng-container *ngIf="documents.length > 1; else singleDocument">
-        <mat-form-field appearance="fill">
-          <mat-label>Document</mat-label>
-          <mat-select [value]="selectedDocument" (valueChange)="onDocumentChange($event)">
-            <mat-option *ngFor="let doc of documents" [value]="doc">
-              {{ doc.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </ng-container>
-      <ng-template #singleDocument>
-        <span *ngIf="selectedDocument" class="document-name">{{ selectedDocument.name }}</span>
-      </ng-template>
+    <mat-card-title>{{ selectedBlueprint?.name || document?.name }}</mat-card-title>
+    <div class="header-controls">
+      <div *ngIf="blueprints.length > 1" class="dropdown-container">
+        <select (change)="onPdfSelectionChange($event)">
+          <option *ngFor="let blueprint of blueprints" [value]="blueprint.pdfUrl" [selected]="blueprint === selectedBlueprint">
+            {{ blueprint.name }}
+          </option>
+        </select>
+      </div>
+      <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" (valueChange)="onViewModeChange($event)" class="view-toggle">
+        <mat-button-toggle value="pdf" class="toggle-button"><mat-icon>picture_as_pdf</mat-icon> PDF View</mat-button-toggle>
+        <mat-button-toggle value="interactive" class="toggle-button"><mat-icon>layers</mat-icon> Interactive</mat-button-toggle>
+      </mat-button-toggle-group>
     </div>
   </mat-card-header>
-  <mat-card-content>
-    <div class="pdf-container">
-      <ng2-pdfjs-viewer
-        *ngIf="selectedDocument"
-        [pdfSrc]="selectedDocument.url"
-        [page]="page"
-        (pageChange)="onPageChange($event)"
-        (onPagesInit)="onTotalPages($event)">
-      </ng2-pdfjs-viewer>
+
+  <mat-card-content class="pdf-container" #viewerContainer>
+    <ng2-pdfjs-viewer *ngIf="viewMode === 'pdf'" [pdfSrc]="pdfSrc" [page]="page" (onPagesInit)="onPdfTotalPages($event)"></ng2-pdfjs-viewer>
+
+    <div *ngIf="viewMode === 'interactive'" class="interactive-container">
+      <div *ngIf="isImageLoading" class="loading-spinner"><mat-spinner></mat-spinner></div>
+      <div class="panzoom-content" #panzoomContent>
+        <img [src]="currentImageUrl" (load)="onImageLoad($event)" *ngIf="currentImageUrl" [hidden]="isImageLoading" alt="Blueprint Page"/>
+        <app-blueprint-overlay *ngIf="(overlayState.isOverlayVisible$ | async) && imageDimensions" [imageDimensions]="imageDimensions"></app-blueprint-overlay>
+      </div>
     </div>
   </mat-card-content>
-  <mat-card-actions class="pdf-actions">
-    <button mat-button (click)="prevPage()" [disabled]="page <= 1">
-      <mat-icon>keyboard_arrow_left</mat-icon>
-      Previous
-    </button>
-    <span>{{ page }} / {{ totalPages }}</span>
-    <button mat-button (click)="nextPage()" [disabled]="page >= totalPages">
-      Next
-      <mat-icon>keyboard_arrow_right</mat-icon>
-    </button>
-  </mat-card-actions>
+
+  <!-- <mat-card-actions class="pdf-actions">
+    <button mat-button (click)="setPage(page - 1)" [disabled]="page <= 1"><mat-icon>keyboard_arrow_left</mat-icon> Previous</button>
+    <span>Page {{ page }} / {{ totalPages }}</span>
+    <button mat-button (click)="setPage(page + 1)" [disabled]="page >= totalPages">Next <mat-icon>keyboard_arrow_right</mat-icon></button>
+  </mat-card-actions> -->
 </mat-card>

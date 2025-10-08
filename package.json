@@ -38,6 +38,7 @@
     "@ngrx/entity": "^18.1.1",
     "@ngrx/store": "^18.1.1",
     "@ngrx/store-devtools": "^18.1.1",
+    "@panzoom/panzoom": "^4.6.0",
     "@popperjs/core": "^2.11.8",
     "@stripe/stripe-js": "^7.3.0",
     "@types/jspdf": "^2.0.0",

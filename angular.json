@@ -30,10 +30,16 @@
               "src/favicon.ico",
               "src/app/assets",
               "src/app/assets/custom-svg",
+              "src/assets",
               {
                 "glob": "**/*",
                 "input": "public",
                 "output": "/assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ng2-pdfjs-viewer/pdfjs",
+                "output": "/assets/pdfjs"
               }
             ],
             "styles": [

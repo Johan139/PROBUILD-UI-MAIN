@@ -11,7 +11,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { jsPDF } from 'jspdf';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
@@ -49,7 +49,8 @@ import { BidsService } from '../../services/bids.service';
     MatCheckboxModule,
     JobCardComponent,
     MatProgressSpinnerModule,
-    PdfViewerComponent
+    PdfViewerComponent,
+    CommonModule
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
