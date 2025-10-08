@@ -70,11 +70,13 @@ mat-card-header {
   background-color: #333;
   color: #fff;
   border: 1px solid #555;
-  padding: 0.4rem 0.8rem; 
-  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: 100px;
 
   &.active {
     background-color: #007bff;
@@ -131,6 +133,27 @@ mat-card-header {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
+}
+
+.pop-out-icon {
+  color: #fff;
+  background-color: #333;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #555;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #444;
+  }
+
+  mat-icon {
+    font-size: 20px;
+  }
 }
 
 .pdf-actions {

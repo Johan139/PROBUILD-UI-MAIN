@@ -1,4 +1,5 @@
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2 } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,9 +9,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PdfJsViewerModule, PagesInfo } from 'ng2-pdfjs-viewer';
 import Panzoom from '@panzoom/panzoom';
 import { PanzoomObject } from '@panzoom/panzoom/dist/src/types';
-import { BlueprintOverlayComponent } from '../blueprint-overlay/blueprint-overlay.component'; // Adjust path
-import { BlueprintAnalysisData } from '../../models/blueprint.model'; // Adjust path
-import { OverlayStateService } from '../../services/overlay-state.service'; // Adjust path
+import { BlueprintOverlayComponent } from '../blueprint-overlay/blueprint-overlay.component';
+import { BlueprintAnalysisData } from '../../models/blueprint.model';
+import { OverlayStateService } from '../../services/overlay-state.service';
 
 export interface BlueprintDocument {
   name: string; pdfUrl: string; pageImageUrls: string[]; analysisData: BlueprintAnalysisData; totalPages: number;
@@ -42,7 +43,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   private isResizing = false;
   private lastDownX = 0;
 
-  constructor(public overlayState: OverlayStateService, private renderer: Renderer2) {}
+  constructor(public overlayState: OverlayStateService, private renderer: Renderer2, private router: Router) {}
 
   get pdfSrc(): string | Blob | Uint8Array {
     return this.selectedBlueprint?.pdfUrl || this.document?.url || '';
@@ -146,5 +147,16 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @HostListener('window:mouseup')
   onResizeEnd(): void {
     this.isResizing = false;
+  }
+
+  openPopout(): void {
+    const tree = this.router.createUrlTree(['/blueprint-test']);
+    const url = `${window.location.origin}${this.router.serializeUrl(tree)}`;
+    const features = [
+      'noopener', 'noreferrer',
+      'width=1200', 'height=900',
+      'menubar=no', 'toolbar=no', 'location=no', 'status=no'
+    ].join(',');
+    window.open(url, 'probuild-blueprint-popout', features);
   }
 }

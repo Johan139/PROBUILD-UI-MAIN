@@ -12,6 +12,9 @@
         <mat-button-toggle value="pdf" class="toggle-button" (click)="onViewModeChange('pdf')"><mat-icon>picture_as_pdf</mat-icon> PDF View</mat-button-toggle>
         <mat-button-toggle value="interactive" class="toggle-button" (click)="onViewModeChange('interactive')"><mat-icon>layers</mat-icon> Interactive</mat-button-toggle>
       </mat-button-toggle-group>
+      <button mat-icon-button (click)="openPopout()" class="pop-out-icon">
+        <mat-icon>open_in_new</mat-icon>
+      </button>
     </div>
   </mat-card-header>
 
