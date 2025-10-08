@@ -13,6 +13,8 @@
   flex-direction: column;
   height: 100%;
   background-color: transparent;
+  position: relative;
+  min-width: 300px; /* Prevent resizing to be too small */
 }
 
 mat-card-header {
@@ -24,14 +26,13 @@ mat-card-header {
   border-bottom: 1px solid #444;
 }
 
-.mat-card-title {
-  font-size: 1.1rem;
-  font-weight: 500;
-}
 .header-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .dropdown-container {
@@ -69,7 +70,8 @@ mat-card-header {
   background-color: #333;
   color: #fff;
   border: 1px solid #555;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem; 
+  font-size: 0.9rem;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -138,4 +140,14 @@ mat-card-header {
   padding: 0.5rem;
   background-color: #1e1e1e;
   border-top: 1px solid #444;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
 }

@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +28,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @Input() blueprints: BlueprintDocument[] = [];
   @ViewChild('viewerContainer') viewerContainer!: ElementRef;
   @ViewChild('panzoomContent') panzoomContent!: ElementRef;
+  @ViewChild('pdfViewerCard') pdfViewerCard!: ElementRef;
 
   selectedBlueprint: BlueprintDocument | null = null;
   viewMode: 'pdf' | 'interactive' = 'pdf';
@@ -38,8 +39,10 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   currentImageUrl: string | null = null;
   imageDimensions: { width: number, height: number } | null = null;
   private panzoomInstance: PanzoomObject | null = null;
+  private isResizing = false;
+  private lastDownX = 0;
 
-  constructor(public overlayState: OverlayStateService) {}
+  constructor(public overlayState: OverlayStateService, private renderer: Renderer2) {}
 
   get pdfSrc(): string | Blob | Uint8Array {
     return this.selectedBlueprint?.pdfUrl || this.document?.url || '';
@@ -109,11 +112,39 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
 
   onViewModeChange(newMode: 'pdf' | 'interactive'): void {
       this.viewMode = newMode;
-      this.setPage(1); 
+      this.setPage(1);
       if (newMode === 'interactive') {
           if (!this.panzoomInstance) {
               setTimeout(() => this.initializePanzoom(), 0);
           }
       }
+  }
+
+  onResizeStart(event: MouseEvent): void {
+    if (!this.pdfViewerCard?.nativeElement) {
+      return;
+    }
+    this.isResizing = true;
+    this.lastDownX = event.clientX;
+    event.preventDefault();
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onResize(event: MouseEvent): void {
+    if (!this.isResizing || !this.pdfViewerCard?.nativeElement) {
+      return;
+    }
+
+    const offset = this.lastDownX - event.clientX;
+    const newWidth = this.pdfViewerCard.nativeElement.offsetWidth + offset;
+
+    this.renderer.setStyle(this.pdfViewerCard.nativeElement, 'width', `${newWidth}px`);
+
+    this.lastDownX = event.clientX;
+  }
+
+  @HostListener('window:mouseup')
+  onResizeEnd(): void {
+    this.isResizing = false;
   }
 }

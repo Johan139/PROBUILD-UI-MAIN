@@ -1,6 +1,5 @@
-<mat-card class="pdf-viewer-card">
+<mat-card class="pdf-viewer-card" #pdfViewerCard>
   <mat-card-header>
-    <mat-card-title>{{ selectedBlueprint?.name || document?.name }}</mat-card-title>
     <div class="header-controls">
       <div *ngIf="blueprints.length > 1" class="dropdown-container">
         <select (change)="onPdfSelectionChange($event)">
@@ -9,9 +8,9 @@
           </option>
         </select>
       </div>
-      <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" (valueChange)="onViewModeChange($event)" class="view-toggle">
-        <mat-button-toggle value="pdf" class="toggle-button"><mat-icon>picture_as_pdf</mat-icon> PDF View</mat-button-toggle>
-        <mat-button-toggle value="interactive" class="toggle-button"><mat-icon>layers</mat-icon> Interactive</mat-button-toggle>
+      <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" class="view-toggle">
+        <mat-button-toggle value="pdf" class="toggle-button" (click)="onViewModeChange('pdf')"><mat-icon>picture_as_pdf</mat-icon> PDF View</mat-button-toggle>
+        <mat-button-toggle value="interactive" class="toggle-button" (click)="onViewModeChange('interactive')"><mat-icon>layers</mat-icon> Interactive</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
   </mat-card-header>
@@ -33,4 +32,5 @@
     <span>Page {{ page }} / {{ totalPages }}</span>
     <button mat-button (click)="setPage(page + 1)" [disabled]="page >= totalPages">Next <mat-icon>keyboard_arrow_right</mat-icon></button>
   </mat-card-actions> -->
+  <div class="resize-handle" (mousedown)="onResizeStart($event)"></div>
 </mat-card>
