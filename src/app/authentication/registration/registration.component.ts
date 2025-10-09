@@ -587,7 +587,7 @@ if (typeof formValue.state === 'object') {
             this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
               headers: { 'Content-Type': 'application/json' }
             }).subscribe(() => {
-              this.alertMessage = 'Trial activated. Login to get started!';
+              this.alertMessage = 'Your trial account is now active. Please confirm your email and sign in to begin.';
               this.routeURL = 'login';
               this.showAlert = true;
             });
@@ -703,7 +703,7 @@ formValue.operatingSystem = this.getOperatingSystem();
             this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
               headers: { 'Content-Type': 'application/json' }
             }).subscribe(() => {
-              this.alertMessage = 'Trial activated. Login to get started!';
+              this.alertMessage = 'Your trial account is now active. Please confirm your email and sign in to begin.';
               this.routeURL = 'login';
               this.showAlert = true;
             });

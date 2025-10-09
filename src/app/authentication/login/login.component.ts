@@ -111,6 +111,7 @@ if (error.status === 401) {
       });
     } else {
          this.showResendLink = false;
+         
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
@@ -118,5 +119,22 @@ if (error.status === 401) {
 
   closeAlert(): void {
     this.showAlert = false;
+  }
+  resendEmail()
+  {
+     const credentials = this.loginForm.value;
+    this.authService.resendverificationemail(credentials.email).subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.router.navigateByUrl('login');
+  this.showResendLink = false;
+      this.showAlert = true;
+      this.alertMessage = 'Verification email sent successfully. Please check your inbox and spam folder.';
+        },
+        error: (error: any) => {  
+                this.showAlert = true;
+      this.alertMessage = 'An error occured. Please contact support.';
+        },
+      });
   }
 }

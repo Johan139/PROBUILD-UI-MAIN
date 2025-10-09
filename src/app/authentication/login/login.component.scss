@@ -19,7 +19,15 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   align-items: center;
   min-height: 100vh;
 }
-
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: $gray;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
 .row {
   width: 100%;
   display: flex;
