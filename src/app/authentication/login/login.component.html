@@ -66,11 +66,13 @@
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
 
-    <div *ngIf="showResendLink">
-    <div class="forgot-password-link-resend">
-      <a href="forgot-password">Resend Verification Email</a>
-    </div>
-    </div>
+<div *ngIf="showResendLink">
+  <div class="forgot-password-link-resend">
+    <button type="button" class="link-button" (click)="resendEmail()">
+      Resend Verification Email
+    </button>
+  </div>
+</div>
 
     <button class="submit-btn" mat-raised-button (click)="closeAlert()">Close</button>
   </div>
