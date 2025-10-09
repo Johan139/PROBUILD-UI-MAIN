@@ -34,6 +34,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @ViewChild('panzoomContent') panzoomContent!: ElementRef;
   @ViewChild('pdfViewerCard') pdfViewerCard!: ElementRef;
   @ViewChild('externalPdfViewer') externalPdfViewer: any;
+  @ViewChild('sidebarToggle') sidebarToggle!: ElementRef;
 
   @Input() selectedBlueprint: BlueprintDocument | null = null;
   viewMode: 'pdf' | 'interactive' = 'pdf';
@@ -103,7 +104,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   selectBlueprint(blueprint: BlueprintDocument): void {
     this.selectedBlueprint = blueprint;
     this.totalPages = this.selectedBlueprint.totalPages;
-    this.viewMode = 'interactive'; // Default to interactive for blueprints
+    this.viewMode = 'interactive'; // Default to interactive for blueprints TODO: Maybe change this, can get annoying between toggles
     this.setPage(1);
     this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData);
   }
@@ -120,7 +121,10 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     if (this.viewMode === 'interactive') {
         this.initializePanzoom();
     }
+
+    this.hidePageInput();
   }
+
   ngOnDestroy(): void { this.panzoomInstance?.destroy(); }
 
   initializePanzoom(): void {
@@ -152,13 +156,16 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   onPdfTotalPages(pagesInfo: PagesInfo): void { this.totalPages = pagesInfo.pagesCount; }
 
   onViewModeChange(newMode: 'pdf' | 'interactive'): void {
-      this.viewMode = newMode;
-      this.setPage(1);
-      if (newMode === 'interactive') {
-          if (!this.panzoomInstance) {
-              setTimeout(() => this.initializePanzoom(), 0);
-          }
+    this.viewMode = newMode;
+    this.setPage(1);
+    if (newMode === 'interactive') {
+      if (!this.panzoomInstance) {
+        setTimeout(() => this.initializePanzoom(), 0);
       }
+    } else if (newMode === 'pdf') {
+      // Hide page input when switching to PDF view
+      setTimeout(() => this.hidePageInput(), 500);
+    }
   }
 
   onResizeStart(event: MouseEvent): void {
@@ -243,5 +250,38 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     setTimeout(() => {
       this.externalPdfViewer.refresh();
     }, 100);
+  }
+
+  private hidePageInput(): void {
+    const attemptHide = (retries = 0, maxRetries = 10) => {
+      const iframe = document.querySelector('ng2-pdfjs-viewer iframe') as HTMLIFrameElement;
+      if (iframe) {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            const pageInput = iframeDoc.querySelector('#toolbarViewerLeft .loadingInput.start.toolbarHorizontalGroup');
+            if (pageInput) {
+              const style = iframeDoc.createElement('style');
+              style.textContent = `
+                #toolbarViewerLeft .loadingInput.start.toolbarHorizontalGroup {
+                  display: none !important;
+                }
+              `;
+              iframeDoc.head.appendChild(style);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Cannot access PDF viewer iframe (likely CORS issue):', e);
+        }
+      }
+
+      if (retries < maxRetries) {
+        const delay = retries === 0 ? 0 : Math.min(100 * retries, 500);
+        setTimeout(() => attemptHide(retries + 1, maxRetries), delay);
+      }
+    };
+
+    attemptHide();
   }
 }

@@ -9,19 +9,25 @@
             </option>
           </select>
         </div>
-        <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" class="view-toggle">
-          <mat-button-toggle value="pdf" class="toggle-button" (click)="onViewModeChange('pdf')" matTooltip="Switch to PDF View" matTooltipShowDelay="500"><mat-icon>picture_as_pdf</mat-icon> PDF View</mat-button-toggle>
-          <mat-button-toggle value="interactive" class="toggle-button" (click)="onViewModeChange('interactive')" matTooltip="Switch to Interactive View" matTooltipShowDelay="500"><mat-icon>layers</mat-icon> Interactive</mat-button-toggle>
+        <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" class="view-toggle" [hideSingleSelectionIndicator]="true">
+          <mat-button-toggle value="pdf" class="toggle-button-left" (click)="onViewModeChange('pdf')" matTooltip="Switch to PDF View" matTooltipShowDelay="500">
+            <mat-icon>picture_as_pdf</mat-icon> PDF View
+          </mat-button-toggle>
+          <mat-button-toggle value="interactive" class="toggle-button-right" (click)="onViewModeChange('interactive')" matTooltip="Switch to Interactive View" matTooltipShowDelay="500">
+            <mat-icon>layers</mat-icon> Interactive
+          </mat-button-toggle>
         </mat-button-toggle-group>
-        <button mat-icon-button (click)="openPopout()" class="pop-out-icon" matTooltip="Pop out viewer" matTooltipShowDelay="500">
-          <mat-icon>open_in_new</mat-icon>
-        </button>
-        <button mat-icon-button (click)="openInNewTab()" class="pop-out-icon" matTooltip="Open PDF in new tab" matTooltipShowDelay="500">
-          <mat-icon>open_in_browser</mat-icon>
-        </button>
-        <button mat-icon-button (click)="toggleVisibility()" class="visibility-toggle" matTooltip="{{ isVisible ? 'Hide Viewer' : 'Show Viewer' }}" matTooltipShowDelay="500">
-          <mat-icon>{{ isVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
-        </button>
+        <div class="action-buttons">
+          <!-- <button mat-icon-button (click)="openPopout()" class="pop-out-icon" matTooltip="Pop out viewer" matTooltipShowDelay="500">
+            <mat-icon>open_in_new</mat-icon>
+          </button> -->
+          <button mat-icon-button (click)="openInNewTab()" class="pop-out-icon" matTooltip="Open PDF in new tab" matTooltipShowDelay="500">
+            <mat-icon>open_in_browser</mat-icon>
+          </button>
+          <button mat-icon-button (click)="toggleVisibility()" class="pop-out-icon" matTooltip="{{ isVisible ? 'Hide Viewer' : 'Show Viewer' }}" matTooltipShowDelay="500">
+            <mat-icon>{{ isVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
       </div>
     </mat-card-header>
 
@@ -65,7 +71,7 @@
     <div class="resize-handle" (mousedown)="onResizeStart($event)"></div>
   </mat-card>
 
-  <div *ngIf="!isVisible" class="sidebar-toggle" (click)="toggleVisibility()">
+  <div #sidebarToggle *ngIf="!isVisible" class="sidebar-toggle" (click)="toggleVisibility()" matTooltip="Show Viewer" matTooltipShowDelay="500">
     <mat-icon>visibility</mat-icon>
   </div>
 </div>
