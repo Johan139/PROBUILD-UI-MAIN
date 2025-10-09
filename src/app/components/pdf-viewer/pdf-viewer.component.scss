@@ -156,6 +156,46 @@ mat-card-header {
   }
 }
 
+.visibility-toggle {
+  color: #fff;
+  background-color: #333;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #555;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #444;
+  }
+
+  mat-icon {
+    font-size: 20px;
+  }
+}
+
+.sidebar-toggle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 1rem;
+  cursor: pointer;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  z-index: 101;
+
+  &:hover {
+    background-color: #444;
+  }
+}
+
 .pdf-actions {
   display: flex;
   justify-content: center;
