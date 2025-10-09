@@ -18,7 +18,8 @@
           </mat-button-toggle>
         </mat-button-toggle-group>
         <div class="action-buttons">
-          <!-- TODO: Need to come back and fix this, popout is not bringing the component with it <button mat-icon-button (click)="openPopout()" class="pop-out-icon" matTooltip="Pop out viewer" matTooltipShowDelay="500">
+          <!-- TODO: Need to come back and fix this, popout is not bringing the component with it  -->
+          <!--<button mat-icon-button (click)="openPopout()" class="pop-out-icon" matTooltip="Pop out viewer" matTooltipShowDelay="500">
             <mat-icon>open_in_new</mat-icon>
           </button> -->
           <button mat-icon-button (click)="openInNewTab()" class="pop-out-icon" matTooltip="Open PDF in new tab" matTooltipShowDelay="500" *ngIf="viewMode !== 'interactive'">
@@ -36,6 +37,7 @@
         <ng2-pdfjs-viewer
         *ngIf="viewMode === 'pdf'"
         [pdfSrc]="pdfSrc"
+        [page]="page"
         [viewerId]="'pdfViewer'"
         [showDownload]="true"
         [showPrint]="true"
@@ -57,17 +59,18 @@
       <div *ngIf="viewMode === 'interactive'" class="interactive-container">
         <div *ngIf="isImageLoading" class="loading-spinner"><mat-spinner></mat-spinner></div>
         <div class="panzoom-content" #panzoomContent>
-          <img [src]="currentImageUrl" (load)="onImageLoad($event)" *ngIf="currentImageUrl" [hidden]="isImageLoading" alt="Blueprint Page"/>
+          <img [src]="displayedImageUrl" *ngIf="displayedImageUrl" alt="Blueprint Page"/>
+          <img [src]="currentImageUrl" (load)="onImageLoad($event)" *ngIf="currentImageUrl !== displayedImageUrl" style="display: none;"/>
           <app-blueprint-overlay *ngIf="(overlayState.isOverlayVisible$ | async) && imageDimensions" [imageDimensions]="imageDimensions"></app-blueprint-overlay>
         </div>
       </div>
     </mat-card-content>
 
-    <!-- <mat-card-actions class="pdf-actions">
+    <mat-card-actions class="pdf-actions">
       <button mat-button (click)="setPage(page - 1)" [disabled]="page <= 1"><mat-icon>keyboard_arrow_left</mat-icon> Previous</button>
       <span>Page {{ page }} / {{ totalPages }}</span>
       <button mat-button (click)="setPage(page + 1)" [disabled]="page >= totalPages">Next <mat-icon>keyboard_arrow_right</mat-icon></button>
-    </mat-card-actions> -->
+    </mat-card-actions>
     <div class="resize-handle" (mousedown)="onResizeStart($event)"></div>
   </mat-card>
 

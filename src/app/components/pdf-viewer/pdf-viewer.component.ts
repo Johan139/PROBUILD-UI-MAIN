@@ -42,6 +42,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   page = 1;
   totalPages = 1;
   currentImageUrl: string | null = null;
+  displayedImageUrl: string | null = null;
   imageDimensions: { width: number, height: number } | null = null;
   private panzoomInstance: PanzoomObject | null = null;
   private isResizing = false;
@@ -108,7 +109,9 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.selectedBlueprint = blueprint;
     this.totalPages = this.selectedBlueprint.totalPages;
     this.viewMode = 'interactive'; // Default to interactive for blueprints TODO: Maybe change this, can get annoying between toggles
-    this.setPage(1);
+    this.page = 1;
+    this.currentImageUrl = this.selectedBlueprint.pageImageUrls[0];
+    this.displayedImageUrl = this.currentImageUrl;
     console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
     this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData);
   }
@@ -147,6 +150,8 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
         this.imageDimensions = null;
         this.currentImageUrl = this.selectedBlueprint.pageImageUrls[this.page - 1];
         this.panzoomInstance?.reset();
+      } else {
+        // This will trigger the page change in the ng2-pdfjs-viewer
       }
     }
   }
@@ -154,6 +159,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   onImageLoad(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     this.isImageLoading = false;
+    this.displayedImageUrl = this.currentImageUrl;
     this.imageDimensions = { width: imgElement.naturalWidth, height: imgElement.naturalHeight };
     console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
   }
