@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2 } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2, HostBinding } from '@angular/core';
 import { Router } from '@angular/router';
 import { PdfViewerStateService } from '../../services/pdf-viewer-state.service';
 import { CommonModule } from '@angular/common';
@@ -34,7 +34,6 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @ViewChild('panzoomContent') panzoomContent!: ElementRef;
   @ViewChild('pdfViewerCard') pdfViewerCard!: ElementRef;
   @ViewChild('externalPdfViewer') externalPdfViewer: any;
-  @ViewChild('sidebarToggle') sidebarToggle!: ElementRef;
 
   @Input() selectedBlueprint: BlueprintDocument | null = null;
   viewMode: 'pdf' | 'interactive' = 'pdf';
@@ -49,6 +48,10 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   private lastDownX = 0;
   private windowCounter = 0;
   isPoppedOut = false;
+  @HostBinding('class.hidden')
+  get isHidden() {
+    return !this.isVisible;
+  }
   isVisible = true;
   externalWindow = false;
   showPdfViewer = true;

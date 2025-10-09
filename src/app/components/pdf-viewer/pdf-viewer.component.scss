@@ -2,10 +2,17 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  transition: width 0.3s ease, min-width 0.3s ease;
   background-color: #2a2a2a;
   color: #fff;
   border-radius: 8px;
   overflow: hidden;
+
+  &.hidden {
+    width: 0;
+    min-width: 0;
+    overflow: visible;
+  }
 }
 
 .pdf-viewer-card {
@@ -173,11 +180,11 @@ mat-card-header {
 .sidebar-toggle {
   position: fixed;
   right: 0;
-  top: 50%;
+  top: 25%;
   transform: translateY(-50%);
   background-color: #333;
   color: #fff;
-  padding: 1rem;
+  padding: 0.5rem;
   cursor: pointer;
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
@@ -186,6 +193,10 @@ mat-card-header {
 
   &:hover {
     background-color: #444;
+  }
+
+  mat-icon {
+    transform: translateY(2px);
   }
 }
 

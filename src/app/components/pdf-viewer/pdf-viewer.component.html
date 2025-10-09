@@ -1,5 +1,5 @@
 <div>
-  <mat-card class="pdf-viewer-card" #pdfViewerCard *ngIf="isVisible">
+  <mat-card class="pdf-viewer-card" #pdfViewerCard [hidden]="!isVisible">
     <mat-card-header>
       <div class="header-controls">
         <div *ngIf="blueprints.length > 1" class="dropdown-container">
