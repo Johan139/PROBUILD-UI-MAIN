@@ -17,11 +17,13 @@ export class OverlayStateService {
 
   setBlueprintData(data: BlueprintAnalysisData): void { this._blueprintData.next(data); }
   toggleOverlayVisibility(): void { this._isOverlayVisible.next(!this._isOverlayVisible.value); }
+  setOverlayVisibility(isVisible: boolean): void { this._isOverlayVisible.next(isVisible); }
   selectElement(element: SelectableElement): void {
     if (this._selectedElement.value?.id === element?.id) {
-      this._selectedElement.next(null); 
+      this._selectedElement.next(null);
     } else {
       this._selectedElement.next(element);
     }
   }
 }
+

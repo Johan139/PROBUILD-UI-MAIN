@@ -109,6 +109,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.totalPages = this.selectedBlueprint.totalPages;
     this.viewMode = 'interactive'; // Default to interactive for blueprints TODO: Maybe change this, can get annoying between toggles
     this.setPage(1);
+    console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
     this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData);
   }
 
@@ -154,6 +155,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     const imgElement = event.target as HTMLImageElement;
     this.isImageLoading = false;
     this.imageDimensions = { width: imgElement.naturalWidth, height: imgElement.naturalHeight };
+    console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
   }
 
   onPdfTotalPages(pagesInfo: PagesInfo): void { this.totalPages = pagesInfo.pagesCount; }
@@ -162,10 +164,12 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.viewMode = newMode;
     this.setPage(1);
     if (newMode === 'interactive') {
+      this.overlayState.setOverlayVisibility(true);
       if (!this.panzoomInstance) {
         setTimeout(() => this.initializePanzoom(), 0);
       }
     } else if (newMode === 'pdf') {
+      this.overlayState.setOverlayVisibility(false);
       // Hide page input when switching to PDF view
       setTimeout(() => this.hidePageInput(), 500);
     }
