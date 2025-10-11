@@ -15,7 +15,7 @@ export class OverlayStateService {
   private readonly _selectedElement = new BehaviorSubject<SelectableElement>(null);
   public readonly selectedElement$: Observable<SelectableElement> = this._selectedElement.asObservable();
 
-  setBlueprintData(data: BlueprintAnalysisData): void { this._blueprintData.next(data); }
+  setBlueprintData(data: BlueprintAnalysisData | null): void { this._blueprintData.next(data); }
   toggleOverlayVisibility(): void { this._isOverlayVisible.next(!this._isOverlayVisible.value); }
   setOverlayVisibility(isVisible: boolean): void { this._isOverlayVisible.next(isVisible); }
   selectElement(element: SelectableElement): void {

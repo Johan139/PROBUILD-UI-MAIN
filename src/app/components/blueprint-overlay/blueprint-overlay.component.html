@@ -1,6 +1,6 @@
 <svg *ngIf="blueprintData$ | async as data" [attr.viewBox]="'0 0 ' + imageDimensions.width + ' ' + imageDimensions.height" class="blueprint-svg-overlay">
   <ng-container *ngFor="let room of data.rooms">
-    <polygon [attr.points]="getPolygonPoints(room.polygonPoints)" [attr.fill]="getRoomColor(room.id)" [matTooltip]="room.name" (click)="onElementClick(room)" [class.selected]="(selectedElement$ | async)?.id === room.id" class="room-shape" />
+    <polygon [attr.points]="getPolygonPoints(room.polygon)" [attr.fill]="getRoomColor(room.id)" [matTooltip]="room.name" (click)="onElementClick(room)" [class.selected]="(selectedElement$ | async)?.id === room.id" class="room-shape" />
   </ng-container>
   <ng-container *ngFor="let fixture of data.fixtures">
     <rect [attr.x]="fixture.boundingBox.x" [attr.y]="fixture.boundingBox.y" [attr.width]="fixture.boundingBox.width" [attr.height]="fixture.boundingBox.height" [matTooltip]="fixture.type" (click)="onElementClick(fixture)" [class.selected]="(selectedElement$ | async)?.id === fixture.id" class="fixture-shape" />

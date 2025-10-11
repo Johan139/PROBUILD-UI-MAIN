@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Observable } from 'rxjs';
 import { OverlayStateService, SelectableElement } from '../../services/overlay-state.service';
-import { BlueprintAnalysisData, Point } from '../../models/blueprint.model';
+import { BlueprintAnalysisData, Point, Room } from '../../models/blueprint.model';
 
 @Component({
   selector: 'app-blueprint-overlay',
@@ -31,4 +31,20 @@ export class BlueprintOverlayComponent {
     return "#" + "00000".substring(0, 6 - c.length) + c;
   }
   onElementClick(element: SelectableElement): void { this.overlayState.selectElement(element); }
+
+  public static transformBlueprintData(data: any): BlueprintAnalysisData {
+    if (data && data.rooms) {
+      data.rooms.forEach((room: Room) => {
+        if (room.textLabels && room.textLabels.length > 0) {
+          room.name = room.textLabels[0].text.replace('\n', ' ');
+        } else {
+          room.name = 'Unknown';
+        }
+        if (room.polygonPoints) {
+          room.polygon = room.polygonPoints;
+        }
+      });
+    }
+    return data as BlueprintAnalysisData;
+  }
 }

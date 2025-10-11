@@ -4,8 +4,20 @@ export interface BoundingBox {
 export interface Point {
   x: number; y: number;
 }
+export interface TextLabel {
+  text: string;
+  position: Point;
+}
+
 export interface Room {
-  id: string; name: string; boundingBox: BoundingBox; polygonPoints: Point[];
+  id: string;
+  name: string; // derived from textLabels
+  boundingBox: BoundingBox;
+  polygon: Point[]; // derived from polygonPoints
+  textLabels?: TextLabel[];
+  centerPoint?: Point;
+  polygonPoints?: Point[];
+  areaInSquareFeet?: number;
 }
 export interface Fixture {
   id: string; type: string; roomId: string; boundingBox: BoundingBox;

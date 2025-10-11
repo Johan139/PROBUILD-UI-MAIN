@@ -17,7 +17,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BlueprintDocument {
-  name: string; pdfUrl: string; pageImageUrls: string[]; analysisData: BlueprintAnalysisData; totalPages: number;
+  name: string; pdfUrl: string; pageImageUrls: string[]; analysisData: { [page: number]: BlueprintAnalysisData }; totalPages: number;
 }
 
 @Component({
@@ -113,7 +113,11 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.currentImageUrl = this.selectedBlueprint.pageImageUrls[0];
     this.displayedImageUrl = this.currentImageUrl;
     console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
-    this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData);
+    if (this.selectedBlueprint.analysisData[1]) {
+      this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData[1]);
+    } else {
+      this.overlayState.setBlueprintData(null);
+    }
   }
 
   onPdfSelectionChange(event: Event): void {
@@ -150,6 +154,8 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
         this.imageDimensions = null;
         this.currentImageUrl = this.selectedBlueprint.pageImageUrls[this.page - 1];
         this.panzoomInstance?.reset();
+        const newPageData = this.selectedBlueprint.analysisData[pageNumber];
+        this.overlayState.setBlueprintData(newPageData || null);
       } else {
         // This will trigger the page change in the ng2-pdfjs-viewer
       }
