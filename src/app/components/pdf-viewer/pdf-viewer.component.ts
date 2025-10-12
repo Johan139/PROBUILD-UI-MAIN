@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2, HostBinding } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2, HostBinding, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { PdfViewerStateService } from '../../services/pdf-viewer-state.service';
 import { CommonModule } from '@angular/common';
@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FormsModule } from '@angular/forms';
 import { PdfJsViewerModule, PagesInfo } from 'ng2-pdfjs-viewer';
 import Panzoom from '@panzoom/panzoom';
 import { PanzoomObject } from '@panzoom/panzoom/dist/src/types';
@@ -23,7 +24,7 @@ export interface BlueprintDocument {
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
-  imports: [ CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule ],
+  imports: [ CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule ],
   templateUrl: './pdf-viewer.component.html',
   styleUrls: ['./pdf-viewer.component.scss']
 })
@@ -36,6 +37,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @ViewChild('externalPdfViewer') externalPdfViewer: any;
 
   @Input() selectedBlueprint: BlueprintDocument | null = null;
+  @Output() panzoomInstanceCreated = new EventEmitter<PanzoomObject>();
   viewMode: 'pdf' | 'interactive' = 'pdf';
   isBlueprintLoaded = false;
   isImageLoading = false;
@@ -44,7 +46,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   currentImageUrl: string | null = null;
   displayedImageUrl: string | null = null;
   imageDimensions: { width: number, height: number } | null = null;
-  private panzoomInstance: PanzoomObject | null = null;
+  public panzoomInstance: PanzoomObject | null = null;
   private isResizing = false;
   private lastDownX = 0;
   private windowCounter = 0;
@@ -57,6 +59,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   externalWindow = false;
   showPdfViewer = true;
   externalViewerId = '';
+  showAdjustmentControls = false;
 
   constructor(
     public overlayState: OverlayStateService,
@@ -143,6 +146,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
       const elem = this.panzoomContent.nativeElement;
       this.panzoomInstance = Panzoom(elem, { maxScale: 10, minScale: 0.3, canvas: true });
       this.viewerContainer.nativeElement.addEventListener('wheel', this.panzoomInstance.zoomWithWheel);
+      this.panzoomInstanceCreated.emit(this.panzoomInstance);
     }
   }
 

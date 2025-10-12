@@ -1,9 +1,58 @@
-:host { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.blueprint-svg-overlay { width: 100%; height: 100%; }
-.room-shape, .fixture-shape {
-  pointer-events: all; cursor: pointer; fill-opacity: 0.3; stroke: #ff4081;
-  vector-effect: non-scaling-stroke; stroke-width: 2px; transition: fill-opacity 0.2s ease-in-out;
-  &:hover { fill-opacity: 0.5; }
-  &.selected { fill-opacity: 0.6; stroke: #ffff00; stroke-width: 4px; }
+:host {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
-.fixture-shape { fill: #3f51b5; stroke: #ffffff; stroke-width: 1px; }
+
+.overlay-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.blueprint-svg-overlay {
+  width: 100%;
+  height: 100%;
+}
+
+.room-shape, .fixture-shape {
+  pointer-events: all;
+  cursor: pointer;
+  fill-opacity: 0.2;
+  stroke: #ff4081;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 2px;
+  transition: fill-opacity 0.2s ease-in-out;
+
+  &:hover {
+    fill-opacity: 0.5;
+  }
+
+  &.selected {
+    fill-opacity: 0.6;
+    stroke: #ffff00;
+    stroke-width: 4px;
+  }
+}
+
+.fixture-shape {
+  fill: #3f51b5;
+  stroke: #ffffff;
+  stroke-width: 1px;
+}
+
+.coordinate-tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  pointer-events: none;
+  transform: translate(15px, 15px); /* Offset from the cursor */
+  white-space: nowrap;
+  z-index: 100;
+}
