@@ -27,6 +27,9 @@ export class OverlayStateService {
   public readonly scale$: Observable<number> = this._scale.asObservable();
   public get scale(): number { return this._scale.value; }
 
+  private readonly _cursorPosition = new BehaviorSubject<{ x: number; y: number }>({ x: 0, y: 0 });
+  public readonly cursorPosition$: Observable<{ x: number; y: number }> = this._cursorPosition.asObservable();
+
   setBlueprintData(data: BlueprintAnalysisData | null): void { this._blueprintData.next(data); }
   toggleOverlayVisibility(): void { this._isOverlayVisible.next(!this._isOverlayVisible.value); }
   setOverlayVisibility(isVisible: boolean): void { this._isOverlayVisible.next(isVisible); }
@@ -51,6 +54,9 @@ export class OverlayStateService {
   setScale(event: Event | number): void {
     const value = typeof event === 'number' ? event : parseFloat((event.target as HTMLInputElement).value);
     this._scale.next(value);
+  }
+  setCursorPosition(position: { x: number; y: number }): void {
+    this._cursorPosition.next(position);
   }
 }
 

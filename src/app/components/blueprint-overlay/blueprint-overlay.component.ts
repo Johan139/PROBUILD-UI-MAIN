@@ -20,8 +20,7 @@ export class BlueprintOverlayComponent {
   offsetX$: Observable<number>;
   offsetY$: Observable<number>;
   scale$: Observable<number>;
-  cursorPosition = { x: 0, y: 0 };
-
+ 
   constructor(public overlayState: OverlayStateService) {
     this.blueprintData$ = this.overlayState.blueprintData$;
     this.selectedElement$ = this.overlayState.selectedElement$;
@@ -45,9 +44,9 @@ export class BlueprintOverlayComponent {
     point.x = event.clientX;
     point.y = event.clientY;
     const transformedPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
-    this.cursorPosition = { x: Math.round(transformedPoint.x), y: Math.round(transformedPoint.y) };
+    this.overlayState.setCursorPosition({ x: Math.round(transformedPoint.x), y: Math.round(transformedPoint.y) });
   }
-
+ 
   public static transformBlueprintData(data: any): BlueprintAnalysisData {
     if (data && data.rooms) {
       data.rooms.forEach((room: Room) => {

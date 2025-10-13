@@ -64,10 +64,15 @@
         <div class="panzoom-content" #panzoomContent>
           <img [src]="displayedImageUrl" *ngIf="displayedImageUrl" alt="Blueprint Page"/>
           <img [src]="currentImageUrl" (load)="onImageLoad($event)" *ngIf="currentImageUrl !== displayedImageUrl" style="display: none;"/>
-          <app-blueprint-overlay
-            *ngIf="(overlayState.isOverlayVisible$ | async) && imageDimensions"
-            [imageDimensions]="imageDimensions"
-          ></app-blueprint-overlay>
+          <div class="overlay-wrapper">
+            <app-blueprint-overlay
+              *ngIf="(overlayState.isOverlayVisible$ | async) && imageDimensions"
+              [imageDimensions]="imageDimensions"
+            ></app-blueprint-overlay>
+          </div>
+        </div>
+        <div class="coordinate-display" *ngIf="overlayState.cursorPosition$ | async as cursorPos">
+          X: {{ cursorPos.x }}, Y: {{ cursorPos.y }}
         </div>
       </div>
     </mat-card-content>
