@@ -1,0 +1,631 @@
+{
+  "metadata": {
+    "pageType": "site_plan",
+    "scale": "1' = 30'-0\"",
+    "imageWidth": 3300,
+    "imageHeight": 2550,
+    "drawingTitle": "HERNANDEZ RESIDENCE",
+    "projectAddress": "216 SHELF ROCK ROAD\nGEORGETOWN, TEXAS",
+    "sheetNumber": "Site Plan",
+    "country": "USA",
+    "buildingCode": null,
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "9/8/2023",
+    "revisionHistory": []
+  },
+  "rooms": [],
+  "walls": [],
+  "openings": [],
+  "roofPlan": null,
+  "elevationDetails": null,
+  "sitePlanDetails": {
+    "lotNumber": "4",
+    "blockNumber": "H",
+    "totalLotArea": "43,838 SF",
+    "buildingFootprint": {
+      "id": "bf_001",
+      "area": null,
+      "polygon": [
+        {
+          "x": 1403,
+          "y": 669
+        },
+        {
+          "x": 1944,
+          "y": 669
+        },
+        {
+          "x": 1944,
+          "y": 804
+        },
+        {
+          "x": 2043,
+          "y": 804
+        },
+        {
+          "x": 2043,
+          "y": 1251
+        },
+        {
+          "x": 1827,
+          "y": 1251
+        },
+        {
+          "x": 1827,
+          "y": 1395
+        },
+        {
+          "x": 1262,
+          "y": 1395
+        },
+        {
+          "x": 1262,
+          "y": 1109
+        },
+        {
+          "x": 1117,
+          "y": 1109
+        },
+        {
+          "x": 1117,
+          "y": 997
+        },
+        {
+          "x": 1262,
+          "y": 997
+        },
+        {
+          "x": 1262,
+          "y": 878
+        },
+        {
+          "x": 1403,
+          "y": 878
+        },
+        {
+          "x": 1403,
+          "y": 669
+        }
+      ]
+    },
+    "propertyLines": [
+      {
+        "id": "pl_001",
+        "length": "231.51'",
+        "lengthInches": 2778.12,
+        "bearing": "N 20D 54' 51\" W",
+        "line": [
+          {
+            "x": 481,
+            "y": 425
+          },
+          {
+            "x": 401,
+            "y": 642
+          }
+        ]
+      },
+      {
+        "id": "pl_002",
+        "length": "274.46'",
+        "lengthInches": 3293.52,
+        "bearing": "N 68D 02' 16\" E",
+        "line": [
+          {
+            "x": 481,
+            "y": 425
+          },
+          {
+            "x": 2356,
+            "y": 526
+          }
+        ]
+      },
+      {
+        "id": "pl_003",
+        "length": "22.53'",
+        "lengthInches": 270.36,
+        "bearing": "S 21D 00' 52\" E",
+        "line": [
+          {
+            "x": 2356,
+            "y": 526
+          },
+          {
+            "x": 2420,
+            "y": 547
+          }
+        ]
+      },
+      {
+        "id": "pl_004",
+        "length": "272.66'",
+        "lengthInches": 3271.92,
+        "bearing": "S 43D 08' 16\" W",
+        "line": [
+          {
+            "x": 401,
+            "y": 642
+          },
+          {
+            "x": 1500,
+            "y": 2186
+          }
+        ]
+      }
+    ],
+    "easements": [
+      {
+        "id": "easement_001",
+        "type": "TEMPORARY EASEMENT",
+        "width": "35'",
+        "polygon": [
+          {
+            "x": 401,
+            "y": 642
+          },
+          {
+            "x": 481,
+            "y": 425
+          },
+          {
+            "x": 757,
+            "y": 454
+          },
+          {
+            "x": 677,
+            "y": 671
+          },
+          {
+            "x": 401,
+            "y": 642
+          }
+        ]
+      },
+      {
+        "id": "easement_002",
+        "type": "P. U. E.",
+        "width": "10'",
+        "polygon": [
+          {
+            "x": 2470,
+            "y": 880
+          },
+          {
+            "x": 2404,
+            "y": 1269
+          },
+          {
+            "x": 2351,
+            "y": 1259
+          },
+          {
+            "x": 2421,
+            "y": 877
+          },
+          {
+            "x": 2470,
+            "y": 880
+          }
+        ]
+      }
+    ],
+    "setbacks": [
+      {
+        "id": "setback_001",
+        "type": "BUILDING LINE",
+        "distance": "10'",
+        "line": [
+          {
+            "x": 551,
+            "y": 435
+          },
+          {
+            "x": 2300,
+            "y": 520
+          }
+        ]
+      },
+      {
+        "id": "setback_002",
+        "type": "BUILDING LINE",
+        "distance": "10'",
+        "line": [
+          {
+            "x": 512,
+            "y": 655
+          },
+          {
+            "x": 1412,
+            "y": 2174
+          }
+        ]
+      },
+      {
+        "id": "setback_003",
+        "type": "BUILDING LINE",
+        "distance": "20'",
+        "line": [
+          {
+            "x": 519,
+            "y": 442
+          },
+          {
+            "x": 440,
+            "y": 658
+          }
+        ]
+      },
+      {
+        "id": "setback_004",
+        "type": "BUILDING SETBACK",
+        "distance": null,
+        "line": [
+          {
+            "x": 2307,
+            "y": 612
+          },
+          {
+            "x": 2235,
+            "y": 1228
+          }
+        ]
+      }
+    ],
+    "driveways": [
+      {
+        "id": "driveway_001",
+        "material": null,
+        "polygon": [
+          {
+            "x": 1262,
+            "y": 1395
+          },
+          {
+            "x": 1827,
+            "y": 1395
+          },
+          {
+            "x": 1851,
+            "y": 1422
+          },
+          {
+            "x": 1827,
+            "y": 1547
+          },
+          {
+            "x": 1940,
+            "y": 1600
+          },
+          {
+            "x": 2042,
+            "y": 1555
+          },
+          {
+            "x": 2102,
+            "y": 1492
+          },
+          {
+            "x": 2137,
+            "y": 1419
+          },
+          {
+            "x": 2095,
+            "y": 1332
+          },
+          {
+            "x": 1852,
+            "y": 1326
+          },
+          {
+            "x": 1827,
+            "y": 1338
+          },
+          {
+            "x": 1262,
+            "y": 1395
+          }
+        ]
+      }
+    ],
+    "utilities": [
+      {
+        "id": "util_001",
+        "type": "PROPANE LOCATION",
+        "position": {
+          "x": 1968,
+          "y": 1283
+        }
+      },
+      {
+        "id": "util_002",
+        "type": "WATER METER",
+        "position": {
+          "x": 2207,
+          "y": 997
+        }
+      }
+    ],
+    "roadways": [
+      {
+        "id": "road_001",
+        "name": "SHELF ROCK ROAD",
+        "curves": [
+          {
+            "id": "curve_001",
+            "radius": "25.00'",
+            "arcLength": "23.54'",
+            "chordBearing": "S 06D 09' 31\" W",
+            "chordDistance": "22.68'",
+            "deltaAngle": "53D 56' 46\""
+          },
+          {
+            "id": "curve_002",
+            "radius": "60.00'",
+            "arcLength": "83.44'",
+            "chordBearing": "S 06D 38' 05\" E",
+            "chordDistance": "76.87'",
+            "deltaAngle": "79D 40' 31\""
+          }
+        ]
+      }
+    ],
+    "topography": [],
+    "landscaping": []
+  },
+  "fireAndLifeSafety": {},
+  "fixtures": [],
+  "dimensions": [
+    {
+      "id": "dim_001",
+      "text": "146'-10\"",
+      "start": {
+        "x": 401,
+        "y": 412
+      },
+      "end": {
+        "x": 2356,
+        "y": 513
+      },
+      "lengthInches": 1762
+    },
+    {
+      "id": "dim_002",
+      "text": "106'-0\"",
+      "start": {
+        "x": 1117,
+        "y": 536
+      },
+      "end": {
+        "x": 2043,
+        "y": 593
+      },
+      "lengthInches": 1272
+    },
+    {
+      "id": "dim_003",
+      "text": "40'-8\"",
+      "start": {
+        "x": 1117,
+        "y": 551
+      },
+      "end": {
+        "x": 1476,
+        "y": 572
+      },
+      "lengthInches": 488
+    },
+    {
+      "id": "dim_004",
+      "text": "32'-6\"",
+      "start": {
+        "x": 1476,
+        "y": 572
+      },
+      "end": {
+        "x": 1756,
+        "y": 586
+      },
+      "lengthInches": 390
+    },
+    {
+      "id": "dim_005",
+      "text": "60'-4\"",
+      "start": {
+        "x": 1756,
+        "y": 586
+      },
+      "end": {
+        "x": 2043,
+        "y": 593
+      },
+      "lengthInches": 724
+    },
+    {
+      "id": "dim_006",
+      "text": "67'-3\"",
+      "start": {
+        "x": 2043,
+        "y": 593
+      },
+      "end": {
+        "x": 2356,
+        "y": 526
+      },
+      "lengthInches": 807
+    },
+    {
+      "id": "dim_007",
+      "text": "72'-7\"",
+      "start": {
+        "x": 2056,
+        "y": 804
+      },
+      "end": {
+        "x": 2056,
+        "y": 1251
+      },
+      "lengthInches": 871
+    },
+    {
+      "id": "dim_008",
+      "text": "20'-3\"",
+      "start": {
+        "x": 2073,
+        "y": 878
+      },
+      "end": {
+        "x": 2073,
+        "y": 997
+      },
+      "lengthInches": 243
+    },
+    {
+      "id": "dim_009",
+      "text": "27'-6\"",
+      "start": {
+        "x": 2073,
+        "y": 997
+      },
+      "end": {
+        "x": 2073,
+        "y": 1162
+      },
+      "lengthInches": 330
+    },
+    {
+      "id": "dim_010",
+      "text": "12'-0\"",
+      "start": {
+        "x": 2095,
+        "y": 1332
+      },
+      "end": {
+        "x": 2042,
+        "y": 1419
+      },
+      "lengthInches": 144
+    },
+    {
+      "id": "dim_011",
+      "text": "21'-1\"",
+      "start": {
+        "x": 1827,
+        "y": 1547
+      },
+      "end": {
+        "x": 1940,
+        "y": 1600
+      },
+      "lengthInches": 253
+    },
+    {
+      "id": "dim_012",
+      "text": "10'-0\"",
+      "start": {
+        "x": 1827,
+        "y": 1568
+      },
+      "end": {
+        "x": 1827,
+        "y": 1629
+      },
+      "lengthInches": 120
+    }
+  ],
+  "annotations": [
+    {
+      "id": "anno_001",
+      "type": "TEXT",
+      "text": "SITE PLAN",
+      "position": {
+        "x": 1817,
+        "y": 1823
+      }
+    },
+    {
+      "id": "anno_002",
+      "type": "TEXT",
+      "text": "LOT SQUARE FOOTAGE = 43,838 SF",
+      "position": {
+        "x": 1820,
+        "y": 1918
+      }
+    },
+    {
+      "id": "anno_003",
+      "type": "TEXT",
+      "text": "216 SHELF ROCK ROAD",
+      "position": {
+        "x": 1835,
+        "y": 2062
+      }
+    },
+    {
+      "id": "anno_004",
+      "type": "TEXT",
+      "text": "BLOCK H, LOT 4",
+      "position": {
+        "x": 1835,
+        "y": 2139
+      }
+    },
+    {
+      "id": "anno_005",
+      "type": "TEXT",
+      "text": "WILLIAMSON COUNTY, TEXAS",
+      "position": {
+        "x": 1835,
+        "y": 2191
+      }
+    },
+    {
+      "id": "anno_006",
+      "type": "TEXT",
+      "text": "HOUSE",
+      "position": {
+        "x": 1600,
+        "y": 1007
+      }
+    },
+    {
+      "id": "anno_007",
+      "type": "TEXT",
+      "text": "DRIVEWAY",
+      "position": {
+        "x": 1563,
+        "y": 1284
+      }
+    },
+    {
+      "id": "anno_008",
+      "type": "SYMBOL",
+      "text": "NORTH",
+      "position": {
+        "x": 2217,
+        "y": 2131
+      }
+    }
+  ],
+  "structuralElements": [],
+  "symbols": [
+    {
+      "id": "symbol_001",
+      "type": "NORTH_ARROW",
+      "boundingBox": {
+        "x": 2167,
+        "y": 1968,
+        "width": 102,
+        "height": 142
+      },
+      "text": "NORTH"
+    }
+  ],
+  "gridLines": [],
+  "specialFeatures": [],
+  "mepSystems": {},
+  "detailViews": [],
+  "schedules": [],
+  "extractedText": []
+}

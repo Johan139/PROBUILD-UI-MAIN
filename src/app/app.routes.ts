@@ -27,6 +27,8 @@ import { SubscriptionConfirmationComponent } from './subscription-confirmation/s
 import { ArchiveComponent } from './features/archive/archive.component';
 import { UnsubscribeComponent } from './authentication/unsubscribe/unsubscribe.component';
 import { ConnectionsComponent } from './features/connections/connections.component';
+import { BlueprintTestPageComponent } from './features/testing/blueprint-test-page/blueprint-test-page.component';
+import { PdfViewerPopoutComponent } from './components/pdf-viewer/pdf-viewer-popout/pdf-viewer-popout.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -82,5 +84,7 @@ export const routes: Routes = [
       {path:'jobselection', component:JobSelectionComponent, canActivate: [AuthGuard] },
     ]
   },
+  {path:'blueprint-test', component:BlueprintTestPageComponent, canActivate: [AuthGuard] },
+  {path:'pdf-viewer-popout', component:PdfViewerPopoutComponent, canActivate: [AuthGuard] },
   { path:'profile', component: ProfileComponent, canActivate: [AuthGuard] }
 ];
