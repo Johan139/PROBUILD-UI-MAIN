@@ -17,6 +17,11 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "src"
+              ]
+            },
             "outputPath": "dist/pro-build-ai",
             "index": "src/index.html",
             "browser": "src/main.ts",
@@ -43,7 +48,7 @@
               }
             ],
             "styles": [
-              "src/styles.scss",
+              "src/styles/styles.scss",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css"
             ],
@@ -51,6 +56,9 @@
           },
           "configurations": {
             "staging": {
+              "stylePreprocessorOptions": {
+                "includePaths": ["src"]
+              },
               "budgets": [
                 {
                   "type": "initial",
@@ -72,6 +80,9 @@
               "outputHashing": "all"
             },
             "production": {
+              "stylePreprocessorOptions": {
+                "includePaths": ["src"]
+              },
               "budgets": [
                 {
                   "type": "initial",
@@ -93,6 +104,9 @@
               "outputHashing": "all"
             },
             "development": {
+              "stylePreprocessorOptions": {
+                "includePaths": ["src"]
+              },
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,

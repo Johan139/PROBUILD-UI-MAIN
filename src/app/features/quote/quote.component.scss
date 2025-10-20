@@ -1,12 +1,6 @@
-/* Variables from the profile SCSS */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
-$light-gray: #d9d9d9;
+:host {
+  --cyan-desaturated: hsl(190 32% 88%);
+}
 
 .container-fluid {
   padding: 20px;
@@ -15,6 +9,11 @@ $light-gray: #d9d9d9;
 .job-card-container {
   position: sticky;
   top: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
 }
 
 .container {
@@ -24,9 +23,9 @@ $light-gray: #d9d9d9;
 }
 
 .quote-card {
-  background-color: $white;
-  border: 1px solid $cyan;
-  box-shadow: $shadow;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-2);
   border-radius: 8px;
   padding: 16px;
   height: auto;
@@ -36,7 +35,7 @@ $light-gray: #d9d9d9;
   }
 
   mat-card-header {
-    background-color: $secondary-yellow;
+    background-color: var(--color-primary);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     padding: 16px;
@@ -45,13 +44,13 @@ $light-gray: #d9d9d9;
   mat-card-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: $dark-gray;
+    color: var(--color-text-inverse);
     text-transform: uppercase;
     margin-bottom: 12px;
   }
 
   mat-divider {
-    background-color: $secondary-yellow;
+    background-color: var(--color-primary);
     border: none;
     height: 2px;
     margin: 16px 0;
@@ -82,15 +81,15 @@ mat-form-field {
   min-width: 0;
 
   ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-    background-color: $white !important;
+    background-color: var(--color-surface) !important;
     border-radius: 6px;
-    border: 1px solid $cyan;
+    border: 1px solid var(--color-border);
   }
 
   ::ng-deep .mdc-floating-label {
     position: static !important;
     font-size: 0.9rem;
-    color: $dark-gray;
+    color: var(--color-text);
   }
 
   ::ng-deep .mdc-text-field .mdc-floating-label {
@@ -101,19 +100,22 @@ mat-form-field {
 textarea.mat-input-element,
 textarea.form-control {
   min-height: 80px;
-  border: 1px solid $cyan;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
   padding: 8px;
   resize: vertical;
 }
 
 input.form-control,
 input.form-control-sm {
-  border: 1px solid $cyan;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 8px;
   font-size: 0.9rem;
-  color: $dark-gray;
+  color: var(--color-text);
+  background-color: var(--color-surface);
 }
 
 .input-group {
@@ -121,11 +123,11 @@ input.form-control-sm {
   align-items: center;
 
   .input-group-text {
-    border: 1px solid $cyan;
+    border: 1px solid var(--color-border);
     border-right: none;
     border-radius: 6px 0 0 6px;
     padding: 8px;
-    background-color: lighten($cyan, 45%);
+    background-color: var(--cyan-desaturated);
   }
 
   input {
@@ -142,7 +144,7 @@ input.form-control-sm {
 .items-table-container {
   width: 100%;
   max-width: 100%;
-  background-color: $white;
+  background-color: var(--color-surface);
   border-radius: 8px;
   padding: 1rem;
   overflow-y: auto;
@@ -155,16 +157,16 @@ input.form-control-sm {
 
   th, td {
     padding: 8px;
-    border: 1px solid $light-gray;
-    color: $dark-gray;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
     box-sizing: border-box;
   }
 
   th {
-    background-color: $primary-yellow;
+    background-color: var(--color-primary);
     font-weight: 500;
     text-align: left;
-    border-bottom: 2px solid $light-gray;
+    border-bottom: 2px solid var(--color-border);
   }
 
   td {
@@ -172,7 +174,7 @@ input.form-control-sm {
   }
 
   tr:hover {
-    background-color: $light-gray;
+    background-color: var(--color-surface-hover);
   }
 
   /* Column-specific widths */
@@ -194,7 +196,7 @@ input.form-control-sm {
       min-width: 120px;
     }
     &[matColumnDef="remove"] {
-      width: 10%;
+      width: 5%;
       min-width: 50px;
     }
   }
@@ -206,16 +208,16 @@ input.form-control-sm {
 }
 
 .mat-mdc-table {
-  background-color: $white;
+  background-color: var(--color-surface);
 }
 
 .totals-section {
-  background: lighten($cyan, 45%);
+  background: var(--color-canvas);
   padding: 16px;
   border-radius: 8px;
   margin-top: 20px;
   font-weight: 500;
-  color: $dark-gray;
+  color: var(--color-text);
 
   div {
     margin-bottom: 8px;
@@ -235,31 +237,33 @@ input.form-control-sm {
 .extra-cost-buttons .btn-link {
   font-size: 0.8rem;
   padding: 2px 8px;
-  background-color: $primary-yellow;
-  color: $dark-gray;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
   border-radius: 4px;
   line-height: 1.2;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: $darker-yellow;
+    background-color: var(--color-primary-hover);
   }
 }
 
 .action-section {
   margin-top: 32px;
   text-align: right;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+
+  button {
+    margin-left: 8px;
+  }
 }
 
 button.mat-raised-button,
 button.btn {
-  background-color: $primary-yellow;
-  color: $dark-gray;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-weight: 500;
-  transition: background Lawyer;
-  color: $dark-gray;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
   border-radius: 8px;
   padding: 10px 20px;
   font-weight: 500;
@@ -267,7 +271,7 @@ button.btn {
   min-width: 120px;
 
   &:hover {
-    background-color: $darker-yellow;
+    background-color: var(--color-primary-hover);
   }
 
   &[disabled] {
@@ -277,24 +281,24 @@ button.btn {
 }
 
 button.btn-outline-primary {
-  border: 1px solid $cyan;
-  color: $cyan;
+  border: 1px solid var(--brand-cyan-500);
+  color: var(--brand-cyan-500);
   background-color: transparent;
   padding: 8px 16px;
 
   &:hover {
-    background-color: lighten($cyan, 40%);
+    background-color: var(--cyan-desaturated);
   }
 }
 
 button[mat-icon-button] {
-  color: $dark-gray;
+  color: var(--color-text);
   width: 36px;
   height: 36px;
   line-height: 36px;
 
   &:hover {
-    color: $cyan;
+    color: var(--brand-cyan-500);
   }
 }
 
@@ -302,7 +306,7 @@ button.icon-btn {
   background: none;
   border: none;
   padding: 4px;
-  color: $dark-gray;
+  color: var(--color-text);
   cursor: pointer;
 
   mat-icon {
@@ -313,22 +317,22 @@ button.icon-btn {
   }
 
   &:hover {
-    color: $cyan;
+    color: var(--brand-cyan-500);
   }
 }
 
 .placeholder {
   width: 120px;
   height: 120px;
-  border: 2px dashed $cyan;
+  border: 2px dashed var(--brand-cyan-500);
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   margin-bottom: 12px;
   font-size: 14px;
-  color: $dark-gray;
-  background-color: $white;
+  color: var(--color-text);
+  background-color: var(--color-surface);
   border-radius: 6px;
 }
 
@@ -353,7 +357,7 @@ button.icon-btn {
   font-weight: bold;
   align-self: center;
   margin-left: 8px;
-  color: $dark-gray;
+  color: var(--color-text);
 }
 
 @media print {

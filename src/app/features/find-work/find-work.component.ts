@@ -2,7 +2,7 @@
 // TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
 // TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
 // TODO: hide this entire thing from general contractors (maybe?)
-import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList, effect } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
 import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
@@ -34,6 +34,10 @@ import { QuoteService } from '../../features/quote/quote.service';
 import { Quote } from '../quote/quote.model';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
+import { ThemeService } from '../../theme.service';
+
+const lightMapId = 'cfb7ea445a870af896b65c20';
+const darkMapId = 'cfb7ea445a870af82d9def4b';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -67,6 +71,7 @@ interface JobMarker {
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
+
 export class FindWorkComponent implements OnInit, OnDestroy {
   @ViewChildren(MatPaginator) paginators = new QueryList<MatPaginator>();
   dataSource = new MatTableDataSource<Job>([]);
@@ -111,6 +116,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   jobsLoading = false;
   bidsLoading = false;
   isMapLoading = true;
+  isMapVisible = true;
   mapLoadError = false;
   filtersLoading = true;
 
@@ -118,6 +124,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
+
+  applyMapTheme(theme: 'light' | 'dark') {
+
+    const newMapId = theme === 'dark' ? darkMapId : lightMapId;
+
+    console.log(`Applying mapId: ${newMapId}`);
+    this.mapOptions = { ...this.mapOptions, mapId: newMapId };
+
+    if (this.map) {
+    // Force map to re-render with new theme
+    const currentCenter = this.map.getCenter();
+    const currentZoom = this.map.getZoom();
+
+    this.map.setOptions({ mapId: newMapId });
+
+    // Sometimes needed to force refresh
+    google.maps.event.trigger(this.map, 'resize');
+    if (currentCenter) {
+      this.map.setCenter(currentCenter);
+      this.map.setZoom(currentZoom || this.zoom);
+    }
+  }
+}
 
   mapOptions: google.maps.MapOptions = {
     zoomControl: true,
@@ -128,9 +157,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     streetViewControl: false,
     fullscreenControl: true,
     mapTypeControl: false,
-    mapId: 'DEMO_MAP_ID', // Required for Advanced Markers
+    mapId: lightMapId,
+    disableDefaultUI: false,
+    gestureHandling: 'greedy',
+    styles: []
   };
-
 
   markerPositions: JobMarker[] = [];
 
@@ -142,10 +173,23 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private router: Router,
     private biddingService: BiddingService,
-    private quoteService: QuoteService
+    private quoteService: QuoteService,
+    private themeService: ThemeService
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
+
+    effect(() => {
+      const isDark = this.themeService.isDarkMode();
+      this.applyMapTheme(isDark ? 'dark' : 'light');
+
+      if (this.map) {
+      this.applyMapTheme(isDark ? 'dark' : 'light');
+    } else {
+      const mapId = isDark ? darkMapId : lightMapId;
+      this.mapOptions = { ...this.mapOptions, mapId };
+    }
+  });
   }
 
   ngOnInit(): void {
@@ -255,7 +299,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     });
   }
 
-
   applyQuoteFilter(): void {
     const combined: Bid[] = [];
     const processedJobIds = new Set<string>();
@@ -312,7 +355,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   updateMapMarkers(): void {
     if (!this.map) {
-      console.log('Map not initialized, returning');
       return;
     }
 
@@ -377,18 +419,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     });
   }
 
-
-  private createMarkerContent(job: Job): HTMLElement {
-    const content = document.createElement('div');
-    content.style.width = '20px';
-    content.style.height = '20px';
-    content.style.backgroundColor = 'red';
-    content.style.borderRadius = '50%';
-    content.style.border = '2px solid white';
-    content.style.cursor = 'pointer';
-    content.title = job.projectName;
-    return content;
-  }
 
   // private centerMapOnJobs(): void {
   //   if (this.jobs.length === 0) return;
@@ -458,7 +488,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
         });
 
-        this.sortJobsByDistance(); // This will sort and then call applyFilters
+        this.sortJobsByDistance();
       }, (error) => {
         console.error('Error getting user location:', error);
         // If location fails, apply filters without distance
@@ -508,15 +538,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.selectedJob = null;
   }
 
-
   retryMapLoad(): void {
     this.mapLoadError = false;
     this.isMapLoading = true;
-    // The MapLoaderService will handle the retry logic
     window.location.reload();
   }
 
-  // TrackBy functions for performance
   trackByJobId(index: number, job: Job): number {
     return job.jobId;
   }
@@ -662,7 +689,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       };
       this.zoom = 12;
     }
-
   }
 
   private saveFiltersToLocalStorage(): void {

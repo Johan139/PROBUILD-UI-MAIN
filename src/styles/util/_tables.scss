@@ -1,0 +1,29 @@
+// ==========================================================================
+// TABLE STYLES
+// ==========================================================================
+//
+// Styles for tables
+
+.themed-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+    font-weight: var(--fw-semibold);
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 2px solid var(--color-border);
+  }
+
+  td {
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+  }
+
+  tr:hover {
+    background-color: var(--color-surface-hover);
+  }
+}

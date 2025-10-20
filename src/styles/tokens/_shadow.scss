@@ -1,0 +1,16 @@
+// ==========================================================================
+// SHADOW & ELEVATION TOKENS
+// ==========================================================================
+//
+// Consistent elevation system using box-shadows. The actual shadow
+// values (colors, offsets) are defined as CSS variables in `_colors.scss`
+// to allow for easy theming. This file applies those variables, might
+// be redundant tbh
+
+:root {
+  // Note: The `--elevation-*` variables are defined in `_colors.scss`
+  // to allow them to be themed for light/dark modes
+  --shadow-1: var(--elevation-1);
+  --shadow-2: var(--elevation-2);
+  --shadow-3: var(--elevation-3);
+}

@@ -1,0 +1,62 @@
+// ==========================================================================
+// CHAT STYLES
+// ==========================================================================
+//
+// Styles for the chat interface
+
+.chat-window {
+  width: 500px;
+  height: 600px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+
+  .chat-title {
+    margin: 0;
+    font-size: var(--fs-4);
+    font-weight: var(--fw-semibold);
+  }
+}
+
+.message-history {
+  flex-grow: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  max-width: 80%;
+
+  &.user-message {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+    align-self: flex-end;
+    border-bottom-right-radius: 3px;
+  }
+
+  &.ai-message {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: 3px;
+  }
+}

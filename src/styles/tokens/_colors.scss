@@ -1,0 +1,88 @@
+// ==========================================================================
+// COLOR TOKENS
+// ==========================================================================
+//
+//
+// Do not use raw hex values in components. Instead, use the semantic variables
+// (e.g., `var(--color-surface)`) to ensure components adapt to theming.
+
+:root {
+  /* Brand */
+  --brand-yellow-primary: #FCD109;
+  --brand-yellow-accent:  #FFE473;
+
+  /* Accent */
+  --brand-cyan-500: #61A0AF;
+
+  /* Grays (dark) */
+  --gray-900: #1E2329;
+  --gray-800: #2A2F35;
+  --gray-700: #3B4046;
+  --gray-600: #4B5563;
+  --gray-500: #6B7280;
+
+  /* Neutrals (light) */
+  --gray-400: #9CA3AF;
+  --gray-300: #D1D5DB;
+  --gray-200: #E5E7EB;
+  --gray-100: #F5F7F8;
+  --white:     #FFFFFF;
+
+  /* -------- LIGHT THEME (default) -------- */
+  --color-canvas: var(--gray-100);
+  --color-surface: var(--white);
+  --color-surface-subtle: #FAFAFA;
+  --color-surface-hover: var(--gray-100);
+  --color-border: var(--gray-200);
+
+  --color-text:            #111827; /* primary */
+  --color-text-muted:      #4B5563; /* secondary */
+  --color-text-inverse:    #111827; /* text on primary yellow */
+
+  --color-primary:         var(--brand-yellow-primary);
+  --color-primary-hover:   #e6bf00;
+  --color-primary-active:  #c8a900;
+  --color-primary-disabled:#f0e6a8;
+
+  --color-accent:          var(--color-text-muted);
+
+  /* Functional */
+  --color-focus:  #2563EB;
+  --color-danger: #DC2626;
+  --color-warning:#F59E0B;
+  --color-success:#16A34A;
+
+  /* Elevation / shadow (unified names) */
+  --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
+  --shadow-2: 0 2px 8px 0 hsla(220 3% 15% / 0.08);
+  --shadow-3: 0 8px 24px 0 hsla(220 3% 15% / 0.12);
+}
+
+// --------------------------------------------------------------------------
+// DARK THEME
+// --------------------------------------------------------------------------
+// Overrides for the dark theme. Applied by adding `.theme-dark` to
+// the `<body>` element
+
+.theme-dark {
+  --color-canvas: var(--gray-900);
+  --color-surface: var(--gray-800);
+  --color-surface-subtle: hsl(215 11% 15%);
+  --color-surface-hover:  hsl(215 11% 25%);
+  --color-border: var(--gray-700);
+
+  --color-text:         #F9FAFB;
+  --color-text-muted:   #9CA3AF;
+  --color-text-inverse: var(--gray-900);
+
+  /* Functional */
+  --color-focus:  #2563EB;
+  --color-danger: #DC2626;
+  --color-warning:#F59E0B;
+  --color-success:#16A34A;
+
+  /* Dark shadows */
+  --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);
+  --shadow-2: 0 2px 8px 0 hsla(220 3% 5% / 0.70);
+  --shadow-3: 0 8px 24px 0 hsla(220 3% 5% / 0.80);
+}

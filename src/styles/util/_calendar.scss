@@ -1,0 +1,38 @@
+// ==========================================================================
+// CALENDAR STYLES
+// ==========================================================================
+//
+// Styles for the FullCalendar component
+
+.fc {
+  .fc-toolbar {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+  }
+
+  .fc-button {
+    background-color: var(--color-primary) !important;
+    color: var(--color-text-on-primary) !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-2) var(--space-4) !important;
+
+    &:hover {
+      background-color: var(--brand-yellow-accent) !important;
+    }
+  }
+
+  .fc-daygrid-day {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .fc-event {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1);
+  }
+}

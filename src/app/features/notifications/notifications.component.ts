@@ -4,11 +4,13 @@ import { NotificationsService } from '../../services/notifications.service';
 import { AuthService } from '../../authentication/auth.service';
 import { Notification } from '../../models/notification';
 import { JobDataService } from '../jobs/services/job-data.service';
+import { UserService } from '../../services/user.service';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './notifications.component.html',
   styleUrls: ['./notifications.component.scss'],
   providers: [DatePipe]
@@ -25,7 +27,8 @@ export class NotificationsComponent implements OnInit {
     private notificationsService: NotificationsService,
     public authService: AuthService,
     private datePipe: DatePipe,
-    private jobDataService: JobDataService
+    private jobDataService: JobDataService,
+    private userService: UserService
   ) { }
 
   ngOnInit(): void {
@@ -55,5 +58,33 @@ export class NotificationsComponent implements OnInit {
       this.currentPage--;
       this.loadNotifications();
     }
+  }
+
+  trackByNotif = (_: number, n: any) => n.id ?? n.timestamp ?? _;
+
+  getInitials(name?: string | null): string {
+    return this.userService.getInitials(name);
+  }
+
+  // open + mark read + navigate
+  onOpen(n: Notification) {
+    if ((n as any).unread && this.notificationsService.markRead) {
+      this.notificationsService.markRead(n.id).subscribe({ next: () => (n as any).unread = false });
+    }
+    this.navigateToJob(n);
+  }
+
+  // top “Show” selector snaps to page 1
+  goToFirstPage(): void {
+    this.currentPage = 1;
+    this.loadNotifications();
+  }
+
+  // mark all read button
+  markAllRead(): void {
+    if (!this.notificationsService.markAllRead) return;
+    this.notificationsService.markAllRead().subscribe(() => {
+      this.paginatedNotifications.forEach(n => (n as any).unread = false);
+    });
   }
 }

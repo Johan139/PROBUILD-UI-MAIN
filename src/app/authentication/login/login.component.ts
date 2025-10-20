@@ -1,4 +1,3 @@
-// src/app/login.component.ts
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { environment } from '../../../environments/environment';
@@ -13,6 +12,7 @@ import { LoaderComponent } from '../../loader/loader.component';
 import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -27,6 +27,7 @@ import { HttpErrorResponse } from '@angular/common/http';
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
+    RouterLink,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],

@@ -1,11 +1,15 @@
-<h2 mat-dialog-title>{{ data.title }}</h2>
-<mat-dialog-content>
-  <p>{{ data.message }}</p>
-  <mat-form-field *ngIf="data.input" class="full-width">
-    <textarea matInput [(ngModel)]="reason" placeholder="Reason"></textarea>
-  </mat-form-field>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button class="dialog-btn return-btn" (click)="onCancel()">Cancel</button>
-  <button mat-button class="dialog-btn confirm-btn" (click)="onConfirm()">Confirm</button>
-</mat-dialog-actions>
+<div class="confirm-dialog" role="dialog" aria-labelledby="cd-title" aria-describedby="cd-desc">
+  <h2 id="cd-title" mat-dialog-title class="cd-title">{{ data.title }}</h2>
+
+  <mat-dialog-content id="cd-desc" class="cd-content">
+    <p class="cd-message">{{ data.message }}</p>
+    <mat-form-field *ngIf="data.input" class="cd-field">
+      <textarea matInput [(ngModel)]="reason" placeholder="Reason" cdkFocusInitial></textarea>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="cd-actions">
+    <button mat-button class="btn btn-ghost" (click)="onCancel()">Cancel</button>
+    <button mat-button class="btn btn-primary" (click)="onConfirm()">Confirm</button>
+  </mat-dialog-actions>
+</div>

@@ -1,7 +1,6 @@
 
 <div *ngIf="isLoading">
   <app-loader></app-loader>
-
 </div>
 <div class="row job-quote-container">
   <app-subscription-warning [subscriptionActive]="subscriptionActive" [isLoading]="isLoading"></app-subscription-warning>
@@ -84,7 +83,7 @@
             </div>
           </div>
           <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
-            No active bids to display.
+            No active bids to display
           </div>
         </mat-card-content>
       </mat-card>
@@ -407,7 +406,7 @@
                   Toggle Overlay
                 </button>
               </mat-toolbar>
-              <app-pdf-viewer [blueprints]="activeBlueprints" [document]="activeDocument"></app-pdf-viewer>
+              <!-- <app-pdf-viewer [blueprints]="activeBlueprints" [document]="activeDocument"></app-pdf-viewer> TODO: Reenable once complete -->
             </div>
           </div>
         </form>

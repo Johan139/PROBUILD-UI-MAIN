@@ -27,6 +27,8 @@ import { JobsService } from '../../services/jobs.service';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
 import { BidsService } from '../../services/bids.service';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
   selector: 'app-quote',
@@ -50,7 +52,9 @@ import { BidsService } from '../../services/bids.service';
     JobCardComponent,
     MatProgressSpinnerModule,
     PdfViewerComponent,
-    CommonModule
+    CommonModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
@@ -66,7 +70,6 @@ export class QuoteComponent implements OnInit {
   logoUrl: string | null = null;
   isLogoSupported = true;
   dataSource = new MatTableDataSource<FormGroup>([]);
-  displayedColumns: string[] = ['description', 'quantity', 'unitPrice', 'total', 'remove'];
   hasAmountPaid = false;
   hasExtraCost = false;
   hasTax = false;
@@ -418,6 +421,14 @@ export class QuoteComponent implements OnInit {
 
   get quoteRows(): FormArray {
     return this.quoteForm.get('quoteRows') as FormArray;
+  }
+
+  get displayedColumns(): string[] {
+    const columns = ['description', 'quantity', 'unitPrice', 'total'];
+    if (this.quoteRows.length > 1) {
+      columns.push('remove');
+    }
+    return columns;
   }
 
   addRow(): void {

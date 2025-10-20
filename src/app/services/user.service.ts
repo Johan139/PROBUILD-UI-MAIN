@@ -43,4 +43,14 @@ export class UserService {
     getUserProjects(userId: any) {
     }
 
+    getInitials(name: string | null | undefined): string {
+      if (!name) return '?';
+      return name.split(' ')
+             .filter(Boolean)
+             .map(n => n[0])
+             .slice(0, 2)
+             .join('')
+             .toUpperCase();
+    }
+
 }

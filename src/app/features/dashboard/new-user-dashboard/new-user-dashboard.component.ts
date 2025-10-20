@@ -64,6 +64,7 @@ export class NewUserDashboardComponent implements OnInit {
   isSubContractor: boolean = false;
   userJobs: {id: number, projectName: string, createdAt: string, progress: number, status: string }[] = [];
   jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
+  notesDisplayedColumns: string[] = ['project', 'task', 'created', 'status', 'action'];
   jobsLoading: boolean = false;
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;

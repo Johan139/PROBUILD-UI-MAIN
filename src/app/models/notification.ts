@@ -5,4 +5,5 @@ export interface Notification {
   jobId: number;
   projectName: string;
   senderFullName: string;
+  unread?: boolean;
 }

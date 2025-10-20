@@ -1,0 +1,34 @@
+// ==========================================================================
+// PILL STYLES
+// ==========================================================================
+//
+// Styles for pill-style badges
+
+.pill {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-6);
+  font-weight: var(--fw-semibold);
+  text-transform: capitalize;
+}
+
+.pill-success {
+  background-color: var(--color-success);
+  color: var(--white);
+}
+
+.pill-warning {
+  background-color: var(--color-warning);
+  color: var(--color-text-on-primary);
+}
+
+.pill-danger {
+  background-color: var(--color-danger);
+  color: var(--white);
+}
+
+.pill-info {
+  background-color: var(--color-focus);
+  color: var(--white);
+}

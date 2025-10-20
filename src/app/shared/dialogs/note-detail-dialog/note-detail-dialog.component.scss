@@ -1,57 +1,197 @@
-$primary-yellow: #fbd008;
-$darker-yellow: #e6bf00;
-$dark-gray: #333;
+@use 'styles/util/mixins' as u;
 
-.note-detail-dialog {
-    .mat-dialog-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .chat-box-inside-dialog {
-        max-height: 300px;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        padding: 10px;
-        margin-bottom: 15px;
-    }
-
-    .dialog-action-buttons {
-        justify-content: flex-end;
-        gap: 8px;
-
-        .submit-btn.delete-btn {
-            background: $primary-yellow;
-            color: $dark-gray;
-            border-radius: 6px;
-            padding: 4px 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin: 0;
-            line-height: 1.5;
-
-            &:hover {
-                background: $darker-yellow;
-            }
-        }
-    }
-
-    .status-approved {
-        color: green;
-        font-weight: bold;
-    }
-
-    .status-rejected {
-        color: red;
-        font-weight: bold;
-    }
-
-    .status-archived {
-        color: grey;
-        font-weight: bold;
-    }
-    .status-pending {
-        color: grey;
-        font-weight: bold;
-    }
+.note-dialog {
+  width: min(840px, 96vw);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-pop);
+  color: var(--color-text);
 }
+
+/* Header */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+
+  .title {
+    margin: 0;
+    font: var(--fw-bold) var(--fs-xl)/var(--lh-tight) var(--font-sans);
+    letter-spacing: .2px;
+    color: var(--color-text);
+  }
+}
+
+/* Status badge (compact pill) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.badge.is-approved { background: color-mix(in oklab, var(--color-success) 18%, transparent); }
+.badge.is-rejected { background: color-mix(in oklab, var(--color-danger) 18%, transparent); }
+.badge.is-archived { background: color-mix(in oklab, var(--color-neutral) 16%, transparent); }
+.badge.is-pending  { background: color-mix(in oklab, var(--color-warning) 18%, transparent); }
+
+/* Body */
+.dialog-body {
+  padding: var(--space-5);
+  max-height: 70vh;
+  overflow: auto;
+}
+
+/* Definition list -> grid */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-4);
+
+  .meta-item {
+    dt {
+      font-size: var(--fs-sm);
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+    dd {
+      margin: 0;
+      color: var(--color-text);
+      font-weight: var(--fw-medium);
+      word-break: break-word;
+    }
+  }
+
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+}
+
+/* Messages section */
+.section-title {
+  margin: var(--space-2) 0 var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  letter-spacing: .2px;
+}
+
+.message-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  max-height: 48vh;
+}
+
+.message {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.avatar {
+  width: var(--space-9); height: var(--space-9);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+  overflow: hidden;
+  padding-inline: 2px;
+}
+
+.avatar__text {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(12px, calc(var(--avatar-size) * 0.48), 18px);
+  line-height: 1;
+  letter-spacing: 0;
+  transform: translateX(-0.25px);
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.bubble {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-3);
+  overflow-wrap: anywhere;
+
+  .bubble-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-bottom: 4px;
+
+    .author { font-weight: var(--fw-semibold); color: var(--color-text); }
+    .time   { color: var(--color-text-muted); font-size: var(--fs-xs); }
+  }
+
+  .bubble-text { color: var(--color-text); }
+}
+
+/* Rejection block */
+.rejection-text {
+  background: color-mix(in oklab, var(--color-danger) 10%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  color: var(--color-text);
+}
+
+/* Actions: sticky visual + compact buttons */
+.dialog-actions {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  background:
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-surface) 0%, transparent), var(--color-surface));
+  display: flex;
+  gap: var(--space-2);
+
+  .btn {
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-weight: var(--fw-semibold);
+    border: 1px solid transparent;
+    @include u.interactive-states;
+    &[disabled] { opacity: .6; cursor: not-allowed; }
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--gray-900);
+  }
+  .btn-danger {
+    background: color-mix(in oklab, var(--color-danger) 85%, var(--color-primary) 0%);
+    color: #fff;
+  }
+  .btn-neutral {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+}
+
+/* Status text */
+.status-text { font-weight: var(--fw-semibold); }

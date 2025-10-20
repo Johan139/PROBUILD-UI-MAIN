@@ -1,0 +1,82 @@
+// ==========================================================================
+// UTILITY CLASSES
+// ==========================================================================
+//
+// Low-level, single-purpose utility classes
+
+// --------------------------------------------------------------------------
+// ACCESSIBILITY
+// --------------------------------------------------------------------------
+// Hides an element visually while keeping it accessible to screen readers
+
+.u-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// --------------------------------------------------------------------------
+// LAYOUT & SPACING
+// --------------------------------------------------------------------------
+// Margin and padding utilities based on the spacing token scale
+// Format: .u-{property}{side}-{space}
+// Example: .u-mt-4 (margin-top: var(--space-4))
+
+$properties: (
+  "m": "margin",
+  "p": "padding"
+);
+
+$sides: (
+  "t": "top",
+  "b": "bottom",
+  "l": "left",
+  "r": "right",
+  "x": ("left", "right"),
+  "y": ("top", "bottom")
+);
+
+$spaces: (
+  "0": 0,
+  "1": var(--space-1),
+  "2": var(--space-2),
+  "3": var(--space-3),
+  "4": var(--space-4),
+  "5": var(--space-5),
+  "6": var(--space-6),
+  "8": var(--space-8),
+  "12": var(--space-12),
+  "16": var(--space-16)
+);
+
+@each $prop-abbr, $prop-full in $properties {
+  @each $side-abbr, $side-fulls in $sides {
+    @each $space-key, $space-value in $spaces {
+      .u-#{$prop-abbr}#{$side-abbr}-#{$space-key} {
+        @if type-of($side-fulls) == "list" {
+          @each $side in $side-fulls {
+            #{$prop-full}-#{$side}: $space-value !important;
+          }
+        } @else {
+          #{$prop-full}-#{$side-fulls}: $space-value !important;
+        }
+      }
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// TYPOGRAPHY
+// --------------------------------------------------------------------------
+
+.u-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

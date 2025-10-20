@@ -114,7 +114,7 @@
 
         <!-- Map component -->
         <google-map
-          *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError"
+          *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError && isMapVisible"
           height="80%"
           width="100%"
           [center]="center"

@@ -1,209 +1,264 @@
-/* Variables from the primary SCSS */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
+@use 'styles/util/mixins' as u;
+
+/* Page shell */
+:host {
+  display: block;
+  background: transparent;
+  color: var(--color-text);
+}
 
 .assignments-container {
-  margin-top: 2rem;
+  width: 100%;
+  max-width: 1700px;
+  margin: 2rem auto 0;
+  padding-inline: var(--space-4);
 }
 
-.themed-table {
-  width: 100%; /* Ensure table takes full width of its container */
-  box-shadow: $shadow;
-  overflow-x: auto; /* Allow horizontal scrolling if needed */
-  text-align-last: center;
-
-  th {
-    background-color: $primary-yellow;
-    text-align: left;
-    padding: 12px; /* Increase padding for better readability */
-    font-size: 1rem;
-  }
-
-  td {
-    border: 3px solid #D9D9D9;
-    padding: 12px; /* Increase padding */
-    font-size: 0.9rem;
-  }
-
-  tbody {
-    tr {
-      &:nth-child(even) {
-        background-color: #f9f9f9;
-      }
-
-      &:hover {
-        background-color: #f1f1f1;
-      }
-    }
-  }
-}
-
-.no-border {
-  ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-    background-color: transparent !important;
-    border: none !important;
-  }
-}
-
-// Reusing styles from reference pages
+/* Card */
 .container {
-  width: 90vw; /* Slightly reduce width for better centering */
-  max-width: 1200px; /* Set a max-width to prevent overly wide layouts on large screens */
-  margin: 2rem auto; /* Center the container */
+  width: min(1200px, 95vw);
+  margin: 2rem auto;
 }
 
 .profile-card {
-  background-color: $white;
-  border: 1px solid $cyan;
-  box-shadow: $shadow;
-  border-radius: 8px;
-  padding: 24px; /* Increase padding for better spacing */
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-6);
 }
 
 mat-card-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: $dark-gray;
+  font: var(--fw-extrabold) var(--fs-lg)/var(--lh-tight) var(--font-sans);
+  color: var(--color-text);
   text-transform: uppercase;
-  margin-bottom: 12px;
+  letter-spacing: .02em;
+  margin-bottom: var(--space-3);
 }
 
 mat-divider {
-  background-color: $secondary-yellow;
-  border: none;
+  background: var(--color-primary);
+  border: 0;
   height: 2px;
-  margin: 16px 0;
+  margin: var(--space-4) 0;
 }
 
+/* Sections */
 .section {
-  margin-bottom: 2rem; /* Add spacing between sections */
+  margin-bottom: var(--space-8);
 
   h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
+    font: var(--fw-bold) var(--fs-lg)/var(--lh-tight) var(--font-sans);
+    color: var(--color-text);
     text-transform: uppercase;
-    margin-bottom: 16px;
+    letter-spacing: .02em;
+    margin-bottom: var(--space-4);
   }
 }
 
+/* Form row */
 .form-row {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center; /* Align items vertically */
-  margin-bottom: 20px;
-  gap: 20px;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 
-  /* Ensure form fields take up equal space */
   mat-form-field {
-    flex: 1 1 30%; /* Each field takes roughly 1/3 of the row */
-    min-width: 200px; /* Minimum width to prevent fields from being too narrow */
+    flex: 1 1 30%;
+    min-width: 200px;
   }
 }
 
-/* Style for the job selection dropdown */
+/* Job selection width guard */
 .job-selection {
   mat-form-field {
-    width: 100%; /* Make the dropdown take the full width of its container */
-    max-width: 400px; /* Set a reasonable max-width */
+    width: 100%;
+    max-width: 420px;
   }
 }
 
-/* Style for the table container */
+/* Material form tweaks */
+.no-border {
+  ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+:host {
+  /* subtle rounded inputs everywhere here */
+  --mdc-outlined-text-field-container-shape: var(--radius-sm);
+}
+
+::ng-deep .mdc-floating-label {
+  position: static !important;
+  font-size: .9rem;
+  color: var(--color-text);
+}
+::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background: var(--color-surface) !important;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+}
+
+/* Table wrapper */
 .table-container {
   width: 100%;
-  overflow-x: auto; /* Ensure table is scrollable on small screens */
+  overflow-x: auto;
 }
 
-.submit-btn {
-  background-color: $primary-yellow;
-  color: $dark-gray;
-  font-weight: 500;
-  border-radius: 8px;
+/* Themed table */
+.themed-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: var(--radius-md);
+  overflow: hidden; /* clip sticky header radius */
+  box-shadow: var(--shadow-1);
+  text-align-last: center;
+
+  thead, th {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+  }
+
+  th {
+    text-align: left;
+    font-weight: var(--fw-semibold);
+    padding: 12px;
+    border-bottom: 2px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  tr {
+    transition: background-color .2s ease;
+  }
+
+  td {
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    vertical-align: middle;
+  }
+
+  tbody tr:nth-child(even) {
+    background: var(--color-surface-subtle);
+  }
+
+  tbody tr:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+/* Buttons */
+.submit-btn,
+.button-container .submit-btn,
+.action-item .delete-btn,
+button[mat-raised-button] {
+  background: var(--color-primary);
+  color: var(--color-text-inverse) !important;
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-md);
   padding: 10px 20px;
-  transition: background-color 0.3s ease;
-  text-align: center;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,.08);
+  @include u.interactive-states;
 
-  &:hover {
-    background-color: $darker-yellow;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &.delete-btn {
-    background-color: #DA4167;
-    color: $white;
-
-    &:hover {
-      background-color: darken(#DA4167, 10%);
-    }
-  }
+  &:hover { background: var(--color-primary-hover); box-shadow: 0 3px 6px rgba(0,0,0,.12); }
+  &:disabled { background: #ccc; color: #666; cursor: not-allowed; box-shadow: none; }
 }
 
-/* Style for the button container */
+/* Destructive variation */
+.submit-btn.delete-btn,
+.action-item .delete-btn {
+  background: var(--color-danger);
+  color: var(--color-text);
+
+  &:hover { background: color-mix(in oklab, var(--color-danger) 85%, black); }
+}
+
+/* Inline button group */
 .button-container {
   display: flex;
-  justify-content: flex-start; /* Align buttons to the left */
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  justify-content: flex-start;
 }
 
-.alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+/* Action list items (within table or forms) */
+.action-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  span {
+    font-size: .9rem;
+    color: var(--color-text);
+  }
+
+  .delete-btn {
+    padding: 6px 12px;
+    font-size: .85rem;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* Job role cursor cues */
+.job-role-field {
+  &.filled input { cursor: default; }
+  &:not(.filled) input { cursor: help; }
+}
+
+/* Alert modal */
+.alert-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
   z-index: 1000;
 }
 
 .alert-modal {
-  background-color: $white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  width: 320px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
   text-align: center;
-  width: 300px;
+
+  p { margin-bottom: var(--space-4); }
+  button { background: var(--color-primary); color: var(--color-text); }
 }
 
-.job-role-field:not(.filled) input {
-  cursor: help;
+/* Hover/focus rings for a11y */
+.submit-btn:focus-visible,
+.button-container button:focus-visible,
+.action-item .delete-btn:focus-visible,
+.nav-item:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent);
 }
 
-.job-role-field.filled input {
-  cursor: default;
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }
 
-/* Inside job-assignment.component.scss */
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+/* Responsive */
+@media (max-width: 1024px) {
+  .assignments-container { padding-inline: var(--space-3); }
+}
 
-  span {
-    font-size: 0.9rem;
-    color: $dark-gray;
-  }
-
-  .delete-btn {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-  }
+@media (max-width: 768px) {
+  .form-row { flex-direction: column; align-items: stretch; }
+  .profile-card { padding: var(--space-5); }
+  .alert-modal { width: min(92vw, 360px); }
 }

@@ -110,11 +110,29 @@ export class NotificationsService {
       );
     }
 
-  markAsRead(): void {
-    const allNotificationIds = this.notificationsSubject.value.map(n => n.id);
-    this.seenNotificationIds = [...new Set([...this.seenNotificationIds, ...allNotificationIds])];
-    this.saveSeenNotifications();
-    this.hasUnreadNotifications$.next(false);
+  markRead(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/mark-as-read`, {}).pipe(
+      tap(() => {
+        const currentNotifications = this.notificationsSubject.value;
+        const notification = currentNotifications.find(n => n.id === id);
+        if (notification) {
+          notification.unread = false;
+        }
+        this.notificationsSubject.next([...currentNotifications]);
+        this.checkForUnreadNotifications();
+      })
+    );
+  }
+
+  markAllRead(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/mark-all-as-read`, {}).pipe(
+      tap(() => {
+        const currentNotifications = this.notificationsSubject.value;
+        currentNotifications.forEach(n => n.unread = false);
+        this.notificationsSubject.next([...currentNotifications]);
+        this.hasUnreadNotifications$.next(false);
+      })
+    );
   }
 
   private checkForUnreadNotifications(): void {
