@@ -11,7 +11,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { jsPDF } from 'jspdf';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
@@ -25,6 +25,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Job } from '../../models/job';
 import { JobsService } from '../../services/jobs.service';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
+import { BidsService } from '../../services/bids.service';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
   selector: 'app-quote',
@@ -46,7 +50,11 @@ import { JobCardComponent } from '../../components/job-card/job-card.component';
     MatDialogModule,
     MatCheckboxModule,
     JobCardComponent,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    PdfViewerComponent,
+    CommonModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
@@ -62,7 +70,6 @@ export class QuoteComponent implements OnInit {
   logoUrl: string | null = null;
   isLogoSupported = true;
   dataSource = new MatTableDataSource<FormGroup>([]);
-  displayedColumns: string[] = ['description', 'quantity', 'unitPrice', 'total', 'remove'];
   hasAmountPaid = false;
   hasExtraCost = false;
   hasTax = false;
@@ -74,6 +81,7 @@ export class QuoteComponent implements OnInit {
   isOwnQuote: boolean = false;
   isFinalBiddingRound = false;
   showFeeReminder = false;
+ quoteDocuments: { url: string, name: string }[] = [];
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -88,7 +96,8 @@ export class QuoteComponent implements OnInit {
     private quoteDataService: QuoteDataService,
     private logoService: LogoService,
     private dialog: MatDialog,
-    private jobsService: JobsService
+    private jobsService: JobsService,
+    private bidsService: BidsService
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -156,6 +165,7 @@ export class QuoteComponent implements OnInit {
         this.jobsService.getSpecificJob(this.jobId).subscribe(job => {
           this.jobDetails = job;
           this.jobDetailsLoading = false;
+          this.loadQuoteDocuments();
         });
       } else {
         this.showFeeReminder = false;
@@ -203,7 +213,7 @@ export class QuoteComponent implements OnInit {
       this.hasDiscount = !!quote.discountValue;
       this.hasFlatTotal = !!quote.flatTotalValue;
       this.hasAmountPaid = !!quote.amountPaid;
-      this.jobId = quote.jobId;
+      this.jobId = quote.jobID;
 
       //Check if its the logged in user`s quote
       const currentUserId = this.authService.currentUserSubject.value?.id;
@@ -293,6 +303,11 @@ export class QuoteComponent implements OnInit {
               this.hasFlatTotal = !!savedQuote.flatTotalValue;
               this.jobId = savedQuote.jobID;
 
+              if (this.jobId) {
+                this.loadJobDetails(this.jobId);
+              }
+
+              this.loadQuoteDocuments();
               this.updateQuoteRows(savedQuote.rows);
               this.isSaving = false;
 
@@ -328,6 +343,20 @@ export class QuoteComponent implements OnInit {
         }
       });
     }
+  }
+
+  loadJobDetails(jobId: string): void {
+    this.jobDetailsLoading = true;
+    this.jobsService.getSpecificJob(jobId).subscribe({
+      next: (job) => {
+        this.jobDetails = job;
+        this.jobDetailsLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load job details:', err);
+        this.jobDetailsLoading = false;
+      }
+    });
   }
 
   updateQuoteRows(items: any[]) {
@@ -392,6 +421,14 @@ export class QuoteComponent implements OnInit {
 
   get quoteRows(): FormArray {
     return this.quoteForm.get('quoteRows') as FormArray;
+  }
+
+  get displayedColumns(): string[] {
+    const columns = ['description', 'quantity', 'unitPrice', 'total'];
+    if (this.quoteRows.length > 1) {
+      columns.push('remove');
+    }
+    return columns;
   }
 
   addRow(): void {
@@ -640,7 +677,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
       version: formValue.version || undefined, // Let backend calculate version
       status: 'Draft',
       logoId: formValue.logoId || null,
@@ -765,7 +802,7 @@ export class QuoteComponent implements OnInit {
         extraCosts: [],
         createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
         createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-        jobId: this.jobId,
+        jobID: this.jobId,
         version: formValue.version,
         status: 'Draft', // intentionally leave as Draft until we change it
         logoId: formValue.logoId || null,
@@ -1136,7 +1173,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
     };
 
     if (this.hasExtraCost) {
@@ -1181,4 +1218,17 @@ export class QuoteComponent implements OnInit {
       },
     });
   }
+
+ loadQuoteDocuments(): void {
+   if (this.jobId) {
+     this.bidsService.getBidsForJob(this.jobId).subscribe(bids => {
+       this.quoteDocuments = bids
+         .filter((bid: any) => bid.documentUrl)
+         .map((bid: any) => ({
+           url: bid.documentUrl,
+           name: `Quote from ${bid.user.firstName} ${bid.user.lastName}`
+         }));
+     });
+   }
+ }
 }

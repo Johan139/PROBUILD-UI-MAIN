@@ -1,0 +1,16 @@
+// ==========================================================================
+// Z-INDEX TOKENS
+// ==========================================================================
+//
+// Consistent stacking order layers
+
+:root {
+  --z-index-deep-background: -1; // For elements behind the main content
+  --z-index-base: 1;             // Default layer for most elements
+  --z-index-content: 10;         // For important content elements
+  --z-index-sticky: 100;         // For sticky headers or sidebars
+  --z-index-overlay: 400;        // For dropdowns, popovers
+  --z-index-modal: 500;          // For modal dialogs and their backdrops
+  --z-index-toast: 600;          // For toasts and snackbars
+  --z-index-tooltip: 700;        // For tooltips
+}

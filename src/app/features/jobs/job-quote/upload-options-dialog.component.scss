@@ -1,24 +1,67 @@
-  $primary-yellow: #FFC107;
-$secondary-yellow: #FFA000;
-$cyan: #00ACC1;
-$dark-gray: #333333;
-$white: #FFFFFF;
-$shadow: rgba(0, 0, 0, 0.2);
-$light-gray: #d9d9d9;
-$darker-yellow: #e6bf00;
+@use 'styles/util/mixins' as u;
 
-  
-  
-  .submit-btn {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    border-radius: 8px;
-    padding: 10px 20px;
-    transition: background-color 0.3s ease;
-    width: 31%;
-    margin-top: 10px;
+:host ::ng-deep .mat-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 20px;
+}
 
-    &:hover {
-      background-color: $darker-yellow;
-    }
+.button-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.submit-btn {
+  --btn-bg: var(--color-primary, #FFC107);
+  --btn-bg-hover: var(--color-primary-hover, #e6bf00);
+  --btn-text: var(--color-text-inverse, #111827);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-1, 0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: background-color 0.25s ease, box-shadow 0.25s ease, transform 0.05s ease;
+
+  &:hover {
+    background-color: var(--btn-bg-hover);
+    box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, 0.15));
   }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    background-color: var(--color-border, #d9d9d9);
+    color: var(--color-text-muted, #666);
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.7;
+  }
+
+  /* Optional: subtle focus ring */
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 35%, transparent);
+  }
+}
+
+.cancel-btn {
+  --btn-bg: transparent;
+  --btn-bg-hover: var(--color-primary-hover, #e6bf00);
+  --btn-text: var(--color-primary, #FFC107);
+  color: var(--btn-text);
+  font-weight: 600;
+}

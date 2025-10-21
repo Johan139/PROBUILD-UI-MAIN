@@ -1,10 +1,10 @@
-import { Component, OnInit, Inject, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy, PLATFORM_ID, effect } from '@angular/core';
 import { NavigationEnd, Router, RouterModule, RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatCardModule } from "@angular/material/card";
 import { MatSidenav, MatSidenavModule } from "@angular/material/sidenav";
-import { NgIf, NgOptimizedImage, isPlatformBrowser, AsyncPipe, NgFor, DatePipe, SlicePipe } from "@angular/common";
-import { MatNavList } from "@angular/material/list";
+import { NgIf, NgOptimizedImage, isPlatformBrowser, NgFor, DatePipe } from "@angular/common";
+import { MatListModule, MatNavList } from "@angular/material/list";
 import { MatIconModule, MatIconRegistry } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { LoaderComponent } from './loader/loader.component';
@@ -13,16 +13,24 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { AuthService } from './authentication/auth.service';
 import { LogoutConfirmDialogComponent } from './authentication/logout-confirm-dialog/logout-confirm-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
-import { NotificationsService } from './services/notifications.service';
-import { JobsService } from './services/jobs.service';
 import { FooterComponent } from './footer/footer.component';
-import { Observable, tap, filter } from 'rxjs';
-import { Notification } from './models/notification';
+import { filter } from 'rxjs';
 import { MatDividerModule } from '@angular/material/divider';
-import { JobDataService } from './features/jobs/services/job-data.service';
 import { AiChatIconComponent } from './features/ai-chat/components/ai-chat-icon/ai-chat-icon.component';
 import { AiChatWindowComponent } from './features/ai-chat/components/ai-chat-window/ai-chat-window.component';
 import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.service';
+import { MatTooltip } from '@angular/material/tooltip';
+import { NotificationsMenuComponent } from './components/notifications-menu/notifications-menu.component';
+import { ThemeService } from './theme.service';
+
+type NavItem = {
+  label: string;
+  icon: string;            // Material icon name or svgIcon id
+  route?: string | any[];  // string or routerLink array
+  action?: () => void;     // optional handler
+  aria?: string;
+  tooltip: string;
+};
 
 @Component({
   selector: 'app-root',
@@ -43,17 +51,19 @@ import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.se
     NgOptimizedImage,
     RouterModule,
     MatIconModule,
-    AsyncPipe,
     NgFor,
     MatDividerModule,
-    SlicePipe,
     FooterComponent,
     AiChatIconComponent,
-    AiChatWindowComponent
+    AiChatWindowComponent,
+    MatTooltip,
+    MatListModule,
+    MatIconModule,
+    NotificationsMenuComponent
 
 ],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'], // Fixed typo from `styleUrl` to `styleUrls`
+  styleUrls: ['./app.component.scss'],
   providers: [DatePipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -69,13 +79,43 @@ export class AppComponent implements OnInit, OnDestroy {
   isBrowser: boolean = typeof window !== 'undefined';
   isSidenavOpen = false;
   showFooter = true;
-
-  recentNotifications$!: Observable<Notification[]>;
-  public hasUnreadNotifications$!: Observable<boolean>;
   showAiChatIcon = true;
+  isRouterOutletVisible = true;
 
+  navItems: NavItem[] = [
+    { label: 'Home',            icon: 'home',            route: ['/dashboard'],      tooltip: 'Return to the main dashboard' },
+    { label: 'My Jobs',         icon: 'folder',          route: ['/job-quote'],      tooltip: 'View and manage your ongoing jobs' },
+    { label: 'Job Assignment',  icon: 'assignment_ind',  route: ['/job-assignment'], tooltip: 'Assign jobs to your team members' },
+    { label: 'Calendar',        icon: 'calendar_today',  route: ['/calendar'],       tooltip: 'Access your schedule and calendar events' },
+    { label: 'My Quotes',       icon: 'description',     route: ['/quotes'],         tooltip: 'Review your existing quotes' },
+    { label: 'New Quote',       icon: 'note_add',        route: ['/quote'],          tooltip: 'Create a new quote' },
+    { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' },
+    { label: 'Find Work',       icon: 'travel_explore',  route: ['/find-work'],      tooltip: 'Search for new work opportunities' },
+    { label: 'Connections',     icon: 'group',           route: ['/connections'],    tooltip: 'Manage your professional connections' },
+    { label: 'Archive',         icon: 'inventory_2',     route: ['/archive'],        tooltip: 'Access your archived projects and records' },
+    { label: 'Notifications',   icon: 'notifications',   route: ['/notifications'],  tooltip: 'View your latest notifications' },
+    { label: 'AI Chat',         icon: 'smart_toy',       action: () => this.goToAiChatFullScreen(), tooltip: 'Open the AI-powered chat assistant' },
+  ];
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object,private dialog: MatDialog,  private authService: AuthService, private router: Router, matIconRegistry: MatIconRegistry, domSanitizer: DomSanitizer, public notificationsService: NotificationsService, private jobsService: JobsService, private datePipe: DatePipe, private jobDataService: JobDataService, private aiChatStateService: AiChatStateService) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private dialog: MatDialog,
+    private authService: AuthService,
+    private router: Router,
+    matIconRegistry: MatIconRegistry,
+    domSanitizer: DomSanitizer,
+    private aiChatStateService: AiChatStateService,
+    public themeService: ThemeService
+  ) {
+    effect(() => {
+      // This effect will run whenever isDarkMode changes
+      this.themeService.isDarkMode(); 
+      if (this.isBrowser) {
+        this.isRouterOutletVisible = false;
+        setTimeout(() => (this.isRouterOutletVisible = true), 0);
+      }
+    });
+
             this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
     .subscribe((event: NavigationEnd) => {
@@ -90,9 +130,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.showAiChatIcon = !event.urlAfterRedirects.startsWith('/ai-chat');
     });
 
-
     this.isBrowser = isPlatformBrowser(this.platformId);
-    this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
 
     matIconRegistry.addSvgIcon(
       'icons8-settings',
@@ -112,10 +150,8 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-
 ngOnInit() {
   if (this.isBrowser) {
-
    const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
     for (const event of events) {
       window.addEventListener(event, () => {
@@ -136,17 +172,8 @@ ngOnInit() {
       }
     });
 
-    if (this.loggedIn) {
-      this.recentNotifications$ = this.notificationsService.notifications$;
-      this.notificationsService.getAllNotifications(1, 50).subscribe();
-    }
   }
 }
-
-
-  onNotificationsOpened(): void {
-    this.notificationsService.markAsRead();
-  }
 
   ngOnDestroy() {
     if (this.isBrowser) {
@@ -199,13 +226,14 @@ logout(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
   }
 
-  navigateToJob(notification: any): void {
-    this.jobDataService.navigateToJob(notification);
-  }
 
   goToAiChatFullScreen(): void {
     this.router.navigate(['/ai-chat']);
     this.aiChatStateService.setIsChatOpen(false);
+  }
+
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 }
 

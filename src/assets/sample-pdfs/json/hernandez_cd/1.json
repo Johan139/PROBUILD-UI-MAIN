@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "pageType": "floor_plan",
+    "scale": "3/32\" = 1'-0\"",
+    "imageWidth": 5100,
+    "imageHeight": 3300,
+    "drawingTitle": "HERNANDEZ RESIDENCE",
+    "projectAddress": "216 SHELF ROCK ROAD\nGEORGETOWN, TEXAS",
+    "sheetNumber": "A-1",
+    "country": "USA",
+    "buildingCode": null,
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "9/8/2023",
+    "revisionHistory": []
+  },
+  "rooms": [
+    {
+      "id": "room_master_bath",
+      "textLabels": [
+        {
+          "text": "MASTER BATH",
+          "position": { "x": 3600, "y": 1769 }
+        }
+      ],
+      "polygonPoints": [
+        { "x": 3389, "y": 1540 },
+        { "x": 3936, "y": 1540 },
+        { "x": 3936, "y": 2056 },
+        { "x": 3574, "y": 2056 },
+        { "x": 3574, "y": 2005 },
+        { "x": 3546, "y": 2005 },
+        { "x": 3546, "y": 2056 },
+        { "x": 3389, "y": 2056 }
+      ]
+    }
+  ]
+}

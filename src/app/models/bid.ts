@@ -10,4 +10,5 @@ export class Bid {
     job?: Job;
     status?: string;
     quoteId?: string;
+    documentUrl?: string;
   }

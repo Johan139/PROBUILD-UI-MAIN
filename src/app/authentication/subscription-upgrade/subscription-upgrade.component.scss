@@ -1,27 +1,48 @@
-/* Variables from the primary SCSS */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
+@use 'styles/util/mixins' as u;
+
+/* Utility */
 .full-width { width: 100%; }
 
-  .submit-btn {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    border-radius: 8px;
-    padding: 10px 20px;
-    transition: background-color 0.3s ease;
-    width: 200px;
-    margin-top: 10px;
+/* Primary action button */
+.submit-btn {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: 0;
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 20px;
+  width: 200px;
+  margin-top: 10px;
+  font-weight: var(--fw-semibold, 600);
+  box-shadow: var(--shadow-1);
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+  @include u.interactive-states;
 
-    &:hover {
-      background-color: $darker-yellow;
-    }
+  &:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-2); }
+  &:active { transform: translateY(1px); }
+  &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+
+  /* Subtle focus ring for keyboard users */
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent), var(--shadow-2);
   }
+}
 
-/* for MDC-based Material (v15+), this helps too */
+/* Stretch Angular Material fields to full width */
 :host ::ng-deep .mat-mdc-form-field { width: 100%; }
 
+:host ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: none;
+}
+:host ::ng-deep .mdc-text-field--focused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

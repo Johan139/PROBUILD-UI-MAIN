@@ -1,0 +1,79 @@
+// ==========================================================================
+// LAYOUT UTILITIES
+// ==========================================================================
+//
+// Utility classes for Flexbox and Grid
+
+// Flexbox utilities
+.u-flex {
+  display: flex;
+}
+
+.u-flex-row {
+  flex-direction: row;
+}
+
+.u-flex-col {
+  flex-direction: column;
+}
+
+.u-justify-start {
+  justify-content: flex-start;
+}
+
+.u-justify-center {
+  justify-content: center;
+}
+
+.u-justify-end {
+  justify-content: flex-end;
+}
+
+.u-justify-between {
+  justify-content: space-between;
+}
+
+.u-items-start {
+  align-items: flex-start;
+}
+
+.u-items-center {
+  align-items: center;
+}
+
+.u-items-end {
+  align-items: flex-end;
+}
+
+// Grid utilities
+.u-grid {
+  display: grid;
+}
+
+.u-grid-cols-1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.u-grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.u-grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.u-gap-1 {
+  gap: var(--space-1);
+}
+
+.u-gap-2 {
+  gap: var(--space-2);
+}
+
+.u-gap-3 {
+  gap: var(--space-3);
+}
+
+.u-gap-4 {
+  gap: var(--space-4);
+}

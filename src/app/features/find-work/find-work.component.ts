@@ -2,14 +2,14 @@
 // TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
 // TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
 // TODO: hide this entire thing from general contractors (maybe?)
-import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList, effect } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
 import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { forkJoin, Observable, Subject, takeUntil } from 'rxjs';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { UserService } from '../../services/user.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -26,11 +26,18 @@ import { Bid } from '../../models/bid';
 import { BiddingService } from '../../services/bidding.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
-import { BidOptionsDialogComponent } from './bid-options-dialog/bid-options-dialog.component';
-import { PdfUploadDialogComponent } from './pdf-upload-dialog/pdf-upload-dialog.component';
 import { Router } from '@angular/router';
+import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { QuoteService } from '../../features/quote/quote.service';
+import { Quote } from '../quote/quote.model';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterModule } from '@angular/router';
+import { ThemeService } from '../../theme.service';
+
+const lightMapId = 'cfb7ea445a870af896b65c20';
+const darkMapId = 'cfb7ea445a870af82d9def4b';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -58,10 +65,13 @@ interface JobMarker {
     MatTooltipModule,
     MatProgressSpinnerModule,
     JobCardComponent,
+    MatButtonModule,
+    RouterModule,
   ],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
+
 export class FindWorkComponent implements OnInit, OnDestroy {
   @ViewChildren(MatPaginator) paginators = new QueryList<MatPaginator>();
   dataSource = new MatTableDataSource<Job>([]);
@@ -76,6 +86,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
   myBids: Bid[] = [];
+  myQuotes: Quote[] = [];
+  quoteStatusFilter: 'All' | 'Draft' | 'Submitted' | 'Rejected' = 'All';
   selectedJob: Job | null = null;
   selectedPreferences: { [key: string]: boolean } = {
     'Short-term': false,
@@ -98,11 +110,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
   distanceUnit: 'km' | 'mi' = 'km';
   biddedJobIds = new Set<number>();
+  draftQuotes = new Map<string, string>();
 
   // Loading states
   jobsLoading = false;
   bidsLoading = false;
   isMapLoading = true;
+  isMapVisible = true;
   mapLoadError = false;
   filtersLoading = true;
 
@@ -110,6 +124,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
+
+  applyMapTheme(theme: 'light' | 'dark') {
+
+    const newMapId = theme === 'dark' ? darkMapId : lightMapId;
+
+    console.log(`Applying mapId: ${newMapId}`);
+    this.mapOptions = { ...this.mapOptions, mapId: newMapId };
+
+    if (this.map) {
+    // Force map to re-render with new theme
+    const currentCenter = this.map.getCenter();
+    const currentZoom = this.map.getZoom();
+
+    this.map.setOptions({ mapId: newMapId });
+
+    // Sometimes needed to force refresh
+    google.maps.event.trigger(this.map, 'resize');
+    if (currentCenter) {
+      this.map.setCenter(currentCenter);
+      this.map.setZoom(currentZoom || this.zoom);
+    }
+  }
+}
 
   mapOptions: google.maps.MapOptions = {
     zoomControl: true,
@@ -120,9 +157,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     streetViewControl: false,
     fullscreenControl: true,
     mapTypeControl: false,
-    mapId: 'DEMO_MAP_ID', // Required for Advanced Markers
+    mapId: lightMapId,
+    disableDefaultUI: false,
+    gestureHandling: 'greedy',
+    styles: []
   };
-
 
   markerPositions: JobMarker[] = [];
 
@@ -133,16 +172,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private userService: UserService,
     public dialog: MatDialog,
     private router: Router,
-    private biddingService: BiddingService
+    private biddingService: BiddingService,
+    private quoteService: QuoteService,
+    private themeService: ThemeService
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
+
+    effect(() => {
+      const isDark = this.themeService.isDarkMode();
+      this.applyMapTheme(isDark ? 'dark' : 'light');
+
+      if (this.map) {
+      this.applyMapTheme(isDark ? 'dark' : 'light');
+    } else {
+      const mapId = isDark ? darkMapId : lightMapId;
+      this.mapOptions = { ...this.mapOptions, mapId };
+    }
+  });
   }
 
   ngOnInit(): void {
     this.selectedJobTypes = this.allJobTypes.map(t => t.value);
     this.loadJobs();
-    this.loadMyBids(); 
     this.centerOnBrowserLocation();
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
       this.userTrade = user?.trade;
@@ -184,97 +236,125 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   loadJobs(): void {
     this.jobsLoading = true;
-    this.jobsService.getAllJobs()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (jobs) => {
-          if (!jobs || jobs.length === 0) {
-            console.warn('No jobs received from the service.');
-            this.jobs = [];
-            this.filteredJobs = [];
-          } else {
-            this.jobs = jobs.map(job => {
-              const lat = parseFloat(job.latitude as any);
-              const lng = parseFloat(job.longitude as any);
-              if (isNaN(lat) || isNaN(lng)) {
-              }
-              return {
-                ...job,
-                latitude: lat,
-                longitude: lng
-              };
-            });
-          }
-
-          this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))].sort();
-          this.selectedTrades = [...this.allTrades];
-          this.loadFiltersFromLocalStorage();
-          this.getUserLocationAndCalculateDistances(); // This will now handle the filtering
-          this.dataSource.data = this.filteredJobs;
-          this.filtersLoading = false;
-          if (this.paginators.toArray()[0]) {
-            this.dataSource.paginator = this.paginators.toArray()[0];
-          }
-          this.jobsLoading = false;
-
-          if (this.map) {
-            setTimeout(() => this.updateMapMarkers(), 100);
-          } else {
-          }
-        },
-        error: (error) => {
-          console.error('Error loading jobs:', error);
-          this.jobsLoading = false;
-        }
-      });
-  }
-
-  loadMyBids(): void {
     const userId = this.authService.getUserId();
     if (!userId) {
-      console.warn('User not authenticated');
+      this.jobsLoading = false;
       return;
     }
 
-    this.bidsLoading = true;
-    this.jobsService.getBiddedJobs(userId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (bids) => {
-          this.myBids = bids;
-          this.biddedJobIds = new Set(bids.map(b => b.jobId));
-          this.myBidsDataSource.data = this.myBids;
-          if (this.paginators.toArray()[1]) {
-            this.myBidsDataSource.paginator = this.paginators.toArray()[1];
-          }
-          this.bidsLoading = false;
-        },
-        error: (error) => {
-          console.error('Error loading bids:', error);
-          this.bidsLoading = false;
+    const jobs$ = this.jobsService.getAllJobs();
+    const quotes$ = this.quoteService.getAllQuotes();
+    const bids$ = this.jobsService.getBiddedJobs(userId);
+
+    forkJoin([jobs$, quotes$, bids$]).pipe(takeUntil(this.destroy$)).subscribe({
+      next: ([jobs, quotes, bids]) => {
+        if (!jobs || jobs.length === 0) {
+          this.jobs = [];
+          this.filteredJobs = [];
+        } else {
+          this.jobs = jobs.map(job => {
+            const lat = parseFloat(job.latitude as any);
+            const lng = parseFloat(job.longitude as any);
+            if (isNaN(lat) || isNaN(lng)) {
+            }
+            return {
+              ...job,
+              latitude: lat,
+              longitude: lng
+            };
+          });
         }
-      });
+
+        this.myQuotes = quotes;
+        this.draftQuotes.clear();
+        quotes.forEach(quote => {
+          if (quote.status === 'Draft' && quote.jobID) {
+            this.draftQuotes.set(quote.jobID, quote.id!);
+          }
+        });
+
+        this.myBids = bids;
+        this.biddedJobIds = new Set(bids.map(b => b.jobId));
+
+        this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))].sort();
+        this.selectedTrades = [...this.allTrades];
+        this.loadFiltersFromLocalStorage();
+        this.getUserLocationAndCalculateDistances();
+        this.applyQuoteFilter();
+
+        this.dataSource.data = this.filteredJobs;
+        this.filtersLoading = false;
+        if (this.paginators.toArray()[0]) {
+          this.dataSource.paginator = this.paginators.toArray()[0];
+        }
+        this.jobsLoading = false;
+
+        if (this.map) {
+          setTimeout(() => this.updateMapMarkers(), 100);
+        }
+      },
+      error: (error) => {
+        this.jobsLoading = false;
+      }
+    });
   }
 
+  applyQuoteFilter(): void {
+    const combined: Bid[] = [];
+    const processedJobIds = new Set<string>();
+
+    this.myQuotes.forEach(quote => {
+      if (quote.jobID) {
+        const job = this.jobs.find(j => j.jobId === parseInt(quote.jobID!));
+        if (job) {
+          combined.push({
+            id: 0, // Placeholder
+            jobId: quote.jobID.toString(),
+            subcontractorId: this.authService.getUserId()!,
+            subcontractorName: this.authService.currentUserSubject.value?.firstName + ' ' + this.authService.currentUserSubject.value?.lastName,
+            amount: quote.total,
+            status: quote.status!,
+            isFinalist: false,
+            quoteId: quote.id ?? undefined,
+            documentUrl: '',
+            job: job
+          });
+          processedJobIds.add(quote.jobID);
+        }
+      }
+    });
+
+    this.myBids.forEach(bid => {
+      if (!processedJobIds.has(bid.jobId.toString())) {
+        combined.push(bid);
+      }
+    });
+
+    let filtered = combined;
+    if (this.quoteStatusFilter !== 'All') {
+      filtered = combined.filter(item => item.status === this.quoteStatusFilter);
+    }
+
+    this.myBidsDataSource.data = filtered;
+    const paginator = this.paginators.toArray()[1];
+    if (paginator) {
+      this.myBidsDataSource.paginator = paginator;
+    }
+  }
 
   setActiveTab(tab: 'allJobs' | 'myBids'): void {
     this.activeTab = tab;
-    this.selectedJob = null; // Clear selection when switching tabs
+    this.selectedJob = null;
 
-    if (tab === 'allJobs') {
-      if (this.jobs.length === 0) {
-        this.loadJobs();
-      }
-    } else {
-      if (this.myBids.length === 0) {
-        this.loadMyBids();
-      }
+    if (tab === 'allJobs' && this.jobs.length === 0) {
+      this.loadJobs();
+    } else if (tab === 'myBids' && this.myBids.length === 0 && this.myQuotes.length === 0) {
+      this.loadJobs();
     }
   }
 
   updateMapMarkers(): void {
     if (!this.map) {
-      console.log('Map not initialized, returning');
       return;
     }
 
@@ -293,7 +373,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     google.maps.importLibrary("marker").then(markerLibrary => {
       const { AdvancedMarkerElement, PinElement } = markerLibrary as google.maps.MarkerLibrary;
 
-      const jobsToMark = this.jobs.filter(job => { // TODO:Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
+      const jobsToMark = this.jobs.filter(job => { // Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
         const lat = job.latitude;
         const lng = job.longitude;
         return !isNaN(lat) && !isNaN(lng);
@@ -335,22 +415,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.markerClusterer.addMarkers(markers);
 
     }).catch(error => {
-      console.error('Error loading marker library:', error);
+      console.error('Error loading marker library');
     });
   }
 
-
-  private createMarkerContent(job: Job): HTMLElement {
-    const content = document.createElement('div');
-    content.style.width = '20px';
-    content.style.height = '20px';
-    content.style.backgroundColor = 'red';
-    content.style.borderRadius = '50%';
-    content.style.border = '2px solid white';
-    content.style.cursor = 'pointer';
-    content.title = job.projectName;
-    return content;
-  }
 
   // private centerMapOnJobs(): void {
   //   if (this.jobs.length === 0) return;
@@ -420,7 +488,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
         });
 
-        this.sortJobsByDistance(); // This will sort and then call applyFilters
+        this.sortJobsByDistance();
       }, (error) => {
         console.error('Error getting user location:', error);
         // If location fails, apply filters without distance
@@ -470,15 +538,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.selectedJob = null;
   }
 
-
   retryMapLoad(): void {
     this.mapLoadError = false;
     this.isMapLoading = true;
-    // The MapLoaderService will handle the retry logic
     window.location.reload();
   }
 
-  // TrackBy functions for performance
   trackByJobId(index: number, job: Job): number {
     return job.jobId;
   }
@@ -500,7 +565,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           background: '#fbd008',
           borderColor: '#000',
           glyphColor: '#000',
-          scale: 1.3, // Slightly larger when highlighted
+          scale: 1.3,
         });
         marker.marker!.content = pinElement.element;
       });
@@ -624,7 +689,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       };
       this.zoom = 12;
     }
-
   }
 
   private saveFiltersToLocalStorage(): void {
@@ -649,32 +713,52 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   openBidDialog(jobId: number, event: MouseEvent): void {
-   event.stopPropagation();
+    event.stopPropagation();
 
-   const dialogRef = this.dialog.open(BidOptionsDialogComponent, {
-     width: '600px',
-     data: { jobId: jobId }
-   });
+    const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
+      width: '800px',
+      data: { jobId: jobId }
+    });
 
-   dialogRef.afterClosed().subscribe(result => {
-     if (result === 'create') {
-       this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
-     } else if (result === 'upload') {
-       this.dialog.open(PdfUploadDialogComponent, {
-         width: '500px',
-         data: { jobId: jobId }
-       });
-     }
-   });
- }
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'create') {
+        this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
+      } else if (result) {
+        this.loadJobs();
+      }
+    });
+  }
 
- onViewQuote(bid: Bid): void {
-   if (bid && bid.quoteId) {
-     this.router.navigate(['/quote'], { queryParams: { quoteId: bid.quoteId } });
+  getDraftQuoteId(jobId: number): string | undefined {
+    return this.draftQuotes.get(jobId.toString());
+  }
+
+  getQuoteForBid(bid: Bid): Quote | null {
+    return this.myQuotes.find(q => q.id === bid.quoteId) ?? null;
+  }
+
+  getQuoteForJob(jobId: number): Quote | null {
+    const quote = this.myQuotes.find(q => q.jobID?.toString() === jobId.toString()) || null;
+    return quote;
+  }
+
+  getBidForJob(jobId: number): Bid | null {
+    const bid = this.myBids.find(b => b.jobId?.toString() === jobId.toString()) || null;
+    return bid;
+  }
+
+ onViewQuote(item: Bid | Quote): void {
+   const quoteId = 'quoteId' in item ? item.quoteId : item.id;
+   if (quoteId) {
+     this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId } });
    }
  }
 
- onWithdrawBid(bid: Bid): void {
+ onViewPdf(url: string): void {
+   window.open(url, '_blank');
+ }
+
+ onWithdrawBid(item: Bid | Quote): void {
    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
      width: '400px',
      data: {
@@ -685,26 +769,25 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
    dialogRef.afterClosed().subscribe(result => {
      if (result) {
-       this.biddingService.withdrawBid(bid.id).subscribe({
-         next: () => {
-           const index = this.myBids.findIndex(b => b.id === bid.id);
-           if (index > -1) {
-             this.myBids[index].status = 'Withdrawn';
-             this.myBidsDataSource.data = [...this.myBids];
-           }
-         },
-         error: (err) => {
-           console.error('Failed to withdraw bid:', err);
-           // Optionally, show an error message to the user
-         }
-       });
+       if ('quoteId' in item) { // It's a Bid
+         this.biddingService.withdrawBid(item.id).subscribe({
+           next: () => this.loadJobs(),
+           error: (err) => console.error('Failed to withdraw bid:', err)
+         });
+       } else { // It's a Quote
+         this.quoteService.changeStatus(item.id?.toString()!, 'Withdrawn').subscribe({
+           next: () => this.loadJobs(),
+           error: (err) => console.error('Failed to withdraw quote:', err)
+         });
+       }
      }
    });
  }
 
- onEditBid(bid: Bid): void {
-   if (bid && bid.quoteId) {
-     this.router.navigate(['/quote'], { queryParams: { quoteId: bid.quoteId, edit: true } });
+ onEditBid(item: Bid | Quote): void {
+   const quoteId = 'quoteId' in item ? item.quoteId : item.id;
+   if (quoteId) {
+     this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId, edit: true } });
    }
  }
 

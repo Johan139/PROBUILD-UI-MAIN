@@ -7,20 +7,25 @@
   </div>
 
   <!-- Header -->
-  <mat-toolbar color="primary" class="header">
-    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
+  <mat-toolbar class="header" role="banner">
+    <button *ngIf="loggedIn" mat-icon-button (click)="sidenav.toggle()" aria-label="Toggle navigation menu">
       <mat-icon>menu</mat-icon>
     </button>
-    <a routerLink="/dashboard" class="logo-link">
-      <img ngSrc="assets/logo.png" alt="Company Logo" height="50" width="150">
+
+    <a routerLink="/dashboard" class="logo-link" aria-label="ProBuild AI Home">
+      <img ngSrc="assets/logo.png" alt="Company Logo" height="40" width="140">
     </a>
-    <span class="spacer logged-in-name" routerLink="/profile">{{LoggedInName}}</span>
-    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button [matMenuTriggerFor]="notificationMenu" (menuOpened)="onNotificationsOpened()" aria-label="Toggle notifications menu" class="notification-button">
-      <mat-icon>notifications</mat-icon>
-      <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
+
+    <span class="spacer"></span>
+
+    <app-notifications-menu *ngIf="loggedIn"></app-notifications-menu>
+
+    <button *ngIf="loggedIn" mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Open user menu">
+      <mat-icon>settings</mat-icon>
     </button>
-    <button *ngIf="shouldShowHeaderButtons()" mat-icon-button aria-label="Logout" [matMenuTriggerFor]="menu">
-      <mat-icon svgIcon="icons8-settings"></mat-icon>
+
+    <button *ngIf="!loggedIn" mat-icon-button [matMenuTriggerFor]="guestMenu" aria-label="Open settings menu">
+      <mat-icon>settings</mat-icon>
     </button>
   </mat-toolbar>
 
@@ -31,139 +36,54 @@
 
   <!-- Sidenav Layout -->
   <mat-sidenav-container class="nav-container">
-
-    <mat-sidenav #sidenav mode="push" [opened]="isSidenavOpen" class="sidenav" role="navigation">
-      <mat-nav-list>
-        <button mat-flat-button class="menu-button custom-button" routerLink="/dashboard" (click)="sidenav.close()">
-          <span class="menu-item">HOME</span>
-        </button>
-
-      <!-- <button mat-flat-button class="menu-button custom-button" routerLink="/projects" (click)="sidenav.close()">
-        <span class="menu-item">PROJECTS</span>
-      </button> -->
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/job-quote" (click)="sidenav.close()">
-        <span class="menu-item">MY JOBS</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/job-assignment" (click)="sidenav.close()">
-        <span class="menu-item">JOB ASSIGNMENT</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/calendar" (click)="sidenav.close()">
-        <span class="menu-item">CALENDAR</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/quotes" (click)="sidenav.close()">
-        <span class="menu-item">MY QUOTES</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/quote" (click)="sidenav.close()">
-        <span class="menu-item">NEW QUOTE</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/jobselection" (click)="sidenav.close()">
-        <span class="menu-item">AVAILABLE JOBS</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/find-work" (click)="sidenav.close()">
-        <span class="menu-item">FIND WORK</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/connections" (click)="sidenav.close()">
-        <span class="menu-item">CONNECTIONS</span>
-      </button>
-
-      <!--TODO: Implement available jobs, request for bid, archive, open bids, and bids -->
-      <!--
-      <button mat-flat-button class="menu-button custom-button" routerLink="/availablejobs" (click)="sidenav.close()">
-        <span class="menu-item">AVAILABLE JOBS</span>
-      </button>
-      -->
-      <!--
-      <button mat-flat-button class="menu-button custom-button" routerLink="/requestforbid" (click)="sidenav.close()">
-        <span class="menu-item">REQUEST FOR BID</span>
-      </button>
-      -->
-      <button mat-flat-button class="menu-button custom-button" routerLink="/archive" (click)="sidenav.close()">
-        <span class="menu-item">ARCHIVE</span>
-      </button>
-
-      <!--
-      <button mat-flat-button class="menu-button custom-button" routerLink="/openbids" (click)="sidenav.close()">
-        <span class="menu-item">OPEN BIDS</span>
-      </button>
-      -->
-
-      <!-- <button mat-flat-button class="menu-button custom-button" routerLink="/bids" (click)="sidenav.close()">
-        <span class="menu-item">BIDS</span>
-      </button>
-      -->
-
-      <button mat-flat-button class="menu-button custom-button" routerLink="/notifications" (click)="sidenav.close()">
-        <span class="menu-item">NOTIFICATIONS</span>
-      </button>
-
-      <button mat-flat-button class="menu-button custom-button" (click)="goToAiChatFullScreen(); sidenav.close()">
-        <span class="menu-item">AI CHAT</span>
-      </button>
-
-
-
-      </mat-nav-list>
+    <mat-sidenav #sidenav mode="side"
+                 [opened]="isSidenavOpen"
+                 class="sidenav"
+                 [class.is-collapsed]="isSidenavOpen"
+                 role="navigation"
+                 aria-label="Primary">
+     <mat-nav-list class="nav-list" [disableRipple]="true">
+      <a mat-list-item [disableRipple]="true"
+       class="nav-item"
+       *ngFor="let item of navItems"
+       [routerLink]="item.route"
+       (click)="item.action?.()"
+       [routerLinkActive]="'is-active'"
+       [matTooltip]="item.tooltip"
+       matTooltipShowDelay="500"
+       matTooltipPosition="right">
+       <mat-icon matListItemIcon class="nav-icon">{{ item.icon }}</mat-icon>
+       <div matListItemTitle class="nav-label">{{ item.label }}</div>
+      </a>
+  </mat-nav-list>
     </mat-sidenav>
 
-<mat-sidenav-content>
-  <div class="content-shell">
-    <router-outlet></router-outlet>
-    <div  class="flex-spacer"></div> <!-- Pushes footer down -->
-    <app-footer *ngIf="showFooter"></app-footer>
-  </div>
-</mat-sidenav-content>
+    <mat-sidenav-content>
+      <div class="content-shell">
+        <router-outlet *ngIf="isRouterOutletVisible"></router-outlet>
+        <div class="flex-spacer"></div>
+        <app-footer *ngIf="showFooter"></app-footer>
+      </div>
+    </mat-sidenav-content>
 
   </mat-sidenav-container>
-
-</div>
-
-<!-- ALERT OVERLAY -->
-<div *ngIf="showAlert" class="alert-overlay">
-  <div class="alert-modal">
-    <p>{{ alertMessage }}</p>
-    <div class="form-row">
-      <button class="no-btn" mat-raised-button (click)="cancelalert()">No</button>
-      <button mat-raised-button (click)="closeAlert()">Yes</button>
-    </div>
-  </div>
 </div>
 
 <!-- MENUS -->
-<mat-menu #menu="matMenu" class="no-btn">
-  <button mat-menu-item routerLink="/profile">
-    <mat-icon svgIcon="profile-circle"></mat-icon>
-    Profile
-  </button>
-  <button mat-menu-item (click)="logout()">
-    <mat-icon svgIcon="logout"></mat-icon>
-    Logout
+<mat-menu #userMenu="matMenu">
+  <button mat-menu-item routerLink="/profile"><mat-icon>person</mat-icon>Profile</button>
+  <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon>Logout</button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="toggleTheme()">
+    <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    <span>{{ themeService.isDarkMode() ? 'Light Mode' : 'Dark Mode' }}</span>
   </button>
 </mat-menu>
 
-<mat-menu #notificationMenu="matMenu">
-  <ng-container *ngIf="(recentNotifications$ | async) as notifications">
-    <ng-container *ngIf="notifications && notifications.length > 0; else noNotifications">
-      <ng-container *ngFor="let notification of notifications | slice:0:5">
-        <button mat-menu-item (click)="navigateToJob(notification)">
-          <span>{{ notification.senderFullName }} - {{ notification.projectName }}: {{ notification.message }}</span>
-        </button>
-      </ng-container>
-    </ng-container>
-    <ng-template #noNotifications>
-      <button mat-menu-item><span>No recent notifications</span></button>
-    </ng-template>
-  </ng-container>
-  <mat-divider></mat-divider>
-  <button mat-menu-item routerLink="/notifications">
-    Show all notifications
+<mat-menu #guestMenu="matMenu">
+  <button mat-menu-item (click)="toggleTheme()">
+    <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    <span>{{ themeService.isDarkMode() ? 'Light Mode' : 'Dark Mode' }}</span>
   </button>
 </mat-menu>
 

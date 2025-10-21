@@ -69,7 +69,7 @@
           </div>
 
           <div *ngIf="!isLoading && archivedJobs.length === 0" class="no-notes">
-            <p>No archived jobs found.</p>
+            <p>No archived jobs found</p>
           </div>
 
           <table mat-table [dataSource]="archivedJobs" *ngIf="!isLoading && archivedJobs.length > 0" class="mat-elevation-z8">

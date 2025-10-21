@@ -1,0 +1,125 @@
+// ==========================================================================
+// SCSS MIXINS
+// ==========================================================================
+//
+// Reusable SCSS mixins to encapsulate common patterns
+
+// --------------------------------------------------------------------------
+// ACCESSIBILITY: FOCUS RING
+// --------------------------------------------------------------------------
+// Consistent, highly visible focus ring for keyboard navigation
+
+@mixin focus-ring($offset: 2px) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: $offset;
+  border-radius: var(--radius-md); // Ensure the outline follows the element's curve
+}
+
+// --------------------------------------------------------------------------
+// UI PATTERN: CARD
+// --------------------------------------------------------------------------
+// Standard "card" container style
+
+@mixin card-style {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  transition: box-shadow .2s ease, border-color .2s ease;
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+    box-shadow: var(--shadow-3);
+  }
+}
+
+// --------------------------------------------------------------------------
+// TYPOGRAPHY: TEXT TRUNCATION
+// --------------------------------------------------------------------------
+// Clamps text to a specified number of lines with an ellipsis
+
+@mixin clamp-lines($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// --------------------------------------------------------------------------
+// LAYOUT: RESPONSIVE CONTAINER
+// --------------------------------------------------------------------------
+// Creates a centered container with a max-width and horizontal padding
+
+@mixin container($max-width: 1440px) {
+  width: 100%;
+  max-width: $max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-6);
+  padding-right: var(--space-6);
+}
+
+// --------------------------------------------------------------------------
+// MEDIA QUERY: REDUCED MOTION
+// --------------------------------------------------------------------------
+// Disables transitions and animations for users who prefer reduced motion
+
+@mixin prefers-reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// MEDIA QUERY: BREAKPOINTS
+// --------------------------------------------------------------------------
+// Mixin for responsive breakpoints
+
+@mixin breakpoint($point) {
+  @if $point == desktop {
+    @media (min-width: 1440px) { @content; }
+  }
+  @else if $point == laptop {
+    @media (min-width: 1024px) { @content; }
+  }
+  @else if $point == tablet {
+    @media (min-width: 768px) { @content; }
+  }
+  @else if $point == mobile {
+    @media (max-width: 767px) { @content; }
+  }
+}
+
+// --------------------------------------------------------------------------
+// INTERACTIVE STATES
+// --------------------------------------------------------------------------
+// Mixin to apply hover, active, and focus-visible states for interactive elements
+
+@mixin interactive-states($focus-offset: 2px) {
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, filter .2s ease;
+  &:hover { filter: brightness(0.98); }
+  &:active { filter: brightness(0.96); }
+  &:focus-visible { @include focus-ring($focus-offset); }
+}
+
+// --------------------------------------------------------------------------
+// AUTHENTICATION CARD
+// --------------------------------------------------------------------------
+
+@mixin auth-card {
+  @include card-style;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  max-width: 600px;
+  margin-inline: auto;
+  padding: 0;
+}

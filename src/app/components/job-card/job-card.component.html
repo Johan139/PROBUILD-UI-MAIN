@@ -32,12 +32,15 @@
     <span *ngFor="let trade of job.trades" class="trade-pill" [class.match]="trade === userTrade" [matTooltip]="getTradeTooltip(trade)" [class.greyed-out]="!hasTradeMatch(job)">
       {{ trade | titlecase }}
     </span>
+    <div *ngIf="quote?.status || bid?.status" class="status-pill-container">
+      <span class="status-pill" [ngClass]="getStatusClass(quote?.status || bid!.status!)" matTooltip="This is the current status of your quote for this job">{{ quote?.status || bid?.status }}</span>
+    </div>
   </div>
   <div class="job-card-actions">
-    <button *ngIf="bid" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View Quote</button>
-    <button *ngIf="bid && bid.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
-    <button *ngIf="bid && bid.status === 'Withdrawn'" mat-raised-button color="accent" (click)="onEditBidClick($event)">Edit & Resubmit</button>
-    <ng-content select="[slot='actions']"></ng-content>
+    <button *ngIf="quote || (bid && bid.quoteId)" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View & Edit Quote</button>
+    <button *ngIf="bid && bid.documentUrl" mat-raised-button color="primary" (click)="onViewPdfClick($event)">View PDF</button>
+    <button *ngIf="quote?.status === 'Submitted' || bid?.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <ng-content *ngIf="showBidButton" select="[slot='actions']"></ng-content>
   </div>
 </div>
 <p *ngIf="!hasTradeMatch(job)" class="trade-warning">
