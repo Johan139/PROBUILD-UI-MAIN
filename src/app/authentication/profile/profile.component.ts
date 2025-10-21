@@ -52,7 +52,7 @@ import { SubscriptionUpgradeComponent } from '../subscription-upgrade/subscripti
 import { SubscriptionCreateComponent } from '../registration/subscription-create/subscription-create.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, Observable, of } from 'rxjs';
-import { startWith, map } from 'rxjs/operators';
+import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 
@@ -84,7 +84,7 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
   imports: [
     ReactiveFormsModule,
     FormsModule,
-      CommonModule,  
+      CommonModule,
     MatCardModule,
     MatDividerModule,
     MatFormFieldModule,
@@ -245,6 +245,8 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       latitude: [null],
       longitude: [null],
       googlePlaceId: [''],
+     notificationRadius: [100],
+     jobPreferences: [[]]
     });
 
     this.teamForm = this.fb.group({
@@ -296,7 +298,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
-  
+
 this.registrationService.getCountries().subscribe(countries => {
   this.countries = countries;
 });
@@ -334,7 +336,6 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
   startWith(''),
   map(value => this._filterCountries(value))
 );
-
 
     this.authService.currentUser$.subscribe(user => {
       this.userRole = this.authService.getUserRole();
@@ -413,8 +414,9 @@ openStatePanel() {
   ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
   setTimeout(() => this.stateAutoTrigger?.openPanel());
 }
-  loadProfile(): void {
+loadProfile(): void {
   this.isLoading = true;
+
   this.profileService.getProfile().pipe(
     catchError(err => {
       const currentUser = this.authService.currentUserSubject.value;
@@ -422,31 +424,30 @@ openStatePanel() {
         return this.profileService.getTeamMemberProfile(currentUser.id);
       }
       return throwError(() => err);
-    })
-  ).subscribe({
-    next: (data: Profile | Profile[]) => {
+    }),
+    switchMap((data: Profile | Profile[]) => {
       const profileData = Array.isArray(data) ? data[0] : data;
       this.profile = profileData;
 
-      const { country, state } = profileData; // IDs from backend
-
-      // ⚠ Patch the form AFTER the country/state lists are loaded
-      const waitForLists = combineLatest([
+      // Load countries & states in parallel before patching form
+      return combineLatest([
         this.registrationService.getCountries(),
         this.registrationService.getAllStates()
-      ]);
+      ]).pipe(
+        take(1),
+        map(([countries, states]) => ({ profileData, countries, states }))
+      );
+    })
+  ).subscribe({
+    next: ({ profileData, countries, states }) => {
+      this.countries = countries;
+      this.states = states;
 
-waitForLists.pipe(take(1)).subscribe(([countries, states]) => {
-  this.countries = countries;
-  this.states = states;
+      this.profileForm.patchValue(profileData); // includes country & state IDs
+      this.isVerified = profileData.isVerified ?? false;
 
-  this.profileForm.patchValue(profileData);  // includes country & state IDs
-
-  this.isVerified = profileData.isVerified ?? false;
-  this.loadTeamMembers();
-  this.isLoading = false;
-});
-
+      this.loadTeamMembers();
+      this.isLoading = false;
     },
     error: () => {
       this.snackBar.open('Failed to load profile. Please try again.', 'Close', { duration: 3000 });
@@ -454,6 +455,7 @@ waitForLists.pipe(take(1)).subscribe(([countries, states]) => {
     }
   });
 }
+
   onAddressSelected(event: MatAutocompleteSelectedEvent): void {
     const selectedAddress = event.option.value;
     this.selectedPlace = selectedAddress;
@@ -594,7 +596,7 @@ manageSubscriptions(): void {
                       ).trim().toLowerCase();
 
       const iAmTeamMember = this.authService.isTeamMember();
-       
+
       const isActive = (r: SubscriptionRow) =>
         String(r.status || '').toLowerCase() === 'active';
 
@@ -662,7 +664,7 @@ GetUserSubscription(): void {
       const activeCode = this.subscriptionuserPackages?.[0]?.value ?? null;
       if (activeCode) {
         // Prefer direct code match in your known packages
-        const match = this.subscriptionPackages.find(p => 
+        const match = this.subscriptionPackages.find(p =>
           p.value.toLowerCase() === activeCode.toLowerCase()
           || p.display.toLowerCase().startsWith(activeCode.toLowerCase()) // fallback if backend sends display text
         );
@@ -679,7 +681,7 @@ GetUserSubscription(): void {
   });
 }
 
-  
+
 
   loadTeamMembers(): void {
     const currentUser = this.authService.currentUserSubject.value;
@@ -1056,7 +1058,7 @@ startCheckoutForUpgrade(
   pkgCode: string,
   assignedUser: string | null,
   billingCycle: 'monthly' | 'yearly' = 'monthly',
-  subscriptionId: string 
+  subscriptionId: string
 ): void {
   const pkgMeta = this.subscriptionPackages.find(p =>
     String(p.value).toLowerCase() === String(pkgCode).toLowerCase()
@@ -1238,14 +1240,14 @@ openSubscriptionCreateDialog(): void {
         name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
         email: m.email
       })),
-      activeByUserId: selfMap,   
-      notice                    
+      activeByUserId: selfMap,
+      notice
     }
   })
   .afterClosed()
   .subscribe((sel?: { pkg: { value: string; amount: number }; assigneeUserId: string; billingCycle: 'monthly' | 'yearly'; annualAmount:number  }) => {
     if (!sel) return;
-     const { pkg, assigneeUserId, billingCycle } = sel; 
+     const { pkg, assigneeUserId, billingCycle } = sel;
 
     this.profileForm.patchValue({ subscriptionPackage: pkg.value });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();

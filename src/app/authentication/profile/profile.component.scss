@@ -1,354 +1,184 @@
-/* Variables from the primary SCSS */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
-
-
 .page-center {
-  /* If you know your toolbar/footer heights, set these CSS vars globally;
-     otherwise this still works well with the defaults. */
-  --app-header-h: 64px;   /* typical MatToolbar desktop */
+  --app-header-h: 64px;
   --app-footer-h: 56px;
-
   min-height: calc(100dvh - var(--app-header-h) - var(--app-footer-h));
   display: flex;
-  align-items: center;   /* vertical center */
-  justify-content: center; /* horizontal center */
-  padding: 24px 16px;    /* breathing room */
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
 }
-.container {
-  width: 95vw !important;
-  margin-top: 2rem;
-}
-.actions-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px; // space between buttons
-}
+.container { width: min(1200px, 95vw) !important; }
+.fullcolumn { width: 100%; }
+
+/* Card */
 .profile-card {
-  background-color: $white;
-  border: 1px solid $cyan;
-  box-shadow: $shadow;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 70%, var(--color-border));
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
   padding: 16px;
-  height: auto;
 
   mat-card-title {
     font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
+    font-weight: 800;
+    color: var(--color-text);
     text-transform: uppercase;
-    margin-bottom: 12px;
+    letter-spacing: .02em;
   }
 
   mat-divider {
-    background-color: $secondary-yellow;
-    border: none;
-    height: 2px;
-    margin: 16px 0;
+    background-color: var(--color-primary);
+    height: 2px; margin: 12px 0 4px; border: 0;
   }
 }
 
-.profile-content {
-  margin-top: 16px;
+.profile-content { margin-top: 10px; }
+
+/* Tabs */
+::ng-deep .mat-mdc-tab-header {
+  --tab-radius: 10px;
+  .mdc-tab { padding-inline: 18px; }
+  .mdc-tab__text-label { font-weight: 600; color: var(--color-text); }
+  .mdc-tab-indicator__content--underline {
+    border-top-left-radius: var(--tab-radius);
+    border-top-right-radius: var(--tab-radius);
+    border-color: var(--color-primary) !important;
+  }
 }
 
+/* Sections */
 .section {
+  margin-top: 20px;
   h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
+    margin: 0 0 12px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-text);
     text-transform: uppercase;
-    margin-bottom: 12px;
+    letter-spacing: .02em;
   }
 }
 
+/* Form grid */
 .form-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
-  gap: 20px;
+
+  > * { grid-column: span 6; }
+  mat-table, .upload-container { grid-column: 1 / -1; }
+
+  @media (max-width: 900px) { > * { grid-column: 1 / -1; } }
 
   mat-form-field {
-    flex: 1;
     width: 100%;
 
-    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-      background-color: $white !important;
-      border-radius: 6px;
-      border: 1px solid $cyan;
+    ::ng-deep .mdc-text-field--filled {
+      background: var(--color-surface) !important;
+      border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+      border-radius: 8px;
     }
-    ::ng-deep .mdc-floating-label {
-      position: static !important;
-      font-size: 0.9rem;
-      color: $dark-gray;
-    }
-    ::ng-deep .mdc-text-field .mdc-floating-label {
-      transform: translateY(-60%) !important;
+
+    ::ng-deep .mdc-floating-label { color: var(--color-text); font-weight: 600; }
+
+    ::ng-deep .mdc-text-field--focused:not(.mdc-text-field--disabled) {
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 35%, transparent);
+      border-color: var(--color-primary) !important;
     }
   }
 
-  /* Fix for mat-select dropdown positioning */
-  ::ng-deep .mat-mdc-select-panel {
-    max-height: 256px;
-    overflow-y: auto;
-    margin-top: 4px;
-    transform: translateY(0) !important;
-    position: absolute !important;
-    z-index: 1000;
+  ::ng-deep .custom-select-panel {
+    border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+    border-radius: 10px !important;
+    max-height: 300px !important;
+    .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text { font-weight: 700; }
   }
-  .custom-file-upload input[type="file"] {
-    display: none; /* Ensure input is hidden */
-    opacity: 0; /* Additional layer of hiding */
-    width: 0; /* Prevent any residual space */
-    height: 0; /* Prevent any residual space */
+
+  .upload-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center; gap: 16px;
   }
+
+  .upload-progress, .upload-complete {
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+
+    p { margin: 0 0 6px; color: var(--color-text); font-size: .9rem; }
+
+    ::ng-deep mat-progress-bar { height: 8px; border-radius: 4px; }
+    ::ng-deep .mdc-linear-progress__bar-inner { background-color: var(--color-primary) !important; }
+  }
+
   .custom-file-upload {
-    position: relative;
-    display: inline-block;
-  }
-  .custom-file-upload {
-    position: relative;
-    display: inline-block;
-    text-align: center;
+    display: inline-flex; align-items: center; gap: 10px;
 
     .upload-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 20px;
-      background-color: $primary-yellow;
-      color: $dark-gray;
-      font-weight: 500;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-      box-sizing: border-box;
-
-      &:hover {
-        background-color: $darker-yellow;
-      }
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-weight: 700; border-radius: 10px; cursor: pointer;
+      transition: background-color .2s ease, box-shadow .2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      &:hover { background: var(--color-primary-hover); }
     }
 
-    input[type="file"] {
-      display: none;
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .file-info {
-      font: 0.9rem sans-serif;
-      color: $dark-gray;
-      margin-top: 0.5rem;
-
-      a {
-        color: $cyan;
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-  }
-
-  .submit-btn {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    border-radius: 8px;
-    padding: 10px 20px;
-    transition: background-color 0.3s ease;
-    width: 200px;
-    margin-top: 10px;
-
-    &:hover {
-      background-color: $darker-yellow;
-    }
-  }
-
-  .success-message {
-    color: #4caf50;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #4caf50;
-    border-radius: 4px;
-    background-color: #e8f5e9;
-  }
-
-  .error-message {
-    color: #f44336;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #f44336;
-    border-radius: 4px;
-    background-color: #ffebee;
-  }
-
-  button[disabled] {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  mat-checkbox {
-    margin-left: 10px;
+    input[type="file"] { display: none; width: 0; height: 0; opacity: 0; }
   }
 }
 
-.mat-elevation-z8 {
-  margin-top: 20px;
-  border: 1px solid $cyan;
-  border-radius: 8px;
-  overflow: hidden;
-
-  mat-header-cell, mat-cell {
-    padding: 10px;
-    color: $dark-gray;
-  }
-
-  mat-header-cell {
-    background-color: $secondary-yellow;
-    font-weight: 700;
-  }
-
-  mat-row:hover {
-    background-color: lighten($cyan, 40%);
-  }
-
-  mat-icon-button {
-    color: $dark-gray;
-
-    &:hover {
-      color: $cyan;
-    }
-  }
-
-}
-.upload-complete {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-right: 15px; /* Space to the left of the upload button */
-  background-color: #e6ffe6; /* Light green background for success */
-  padding: 8px; /* Add padding for better appearance */
-  border-radius: 6px; /* Rounded corners */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-
-  p {
-    margin: 0; /* Remove default margin */
-    font-size: 12px; /* Smaller text */
-    color: #2e7d32; /* Dark green text for success */
-  }
-}
-.upload-label {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* Space between icon and text */
-  padding: 10px 20px; /* Larger padding */
-  background-color: #FBD008; /* Retain yellow */
-  color: #333; /* Darker text */
-  font-weight: 500;
-  border-radius: 8px; /* Rounded corners */
-  cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  box-sizing: border-box; /* Include padding in width */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-}
-
-.upload-label:hover {
-  background-color: #e6bf00; /* Darker yellow */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
-}
-
+/* Buttons */
 .submit-btn {
-  background: $primary-yellow;
-  color: $dark-gray;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  transition: background-color .2s ease;
+  &:hover { background: var(--color-primary-hover); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
 
-  &:hover {
-    background: $darker-yellow;
+/* Tables */
+.mat-elevation-z8 {
+  border: 1px solid color-mix(in oklab, var(--color-accent) 55%, var(--color-border));
+  border-radius: 10px; overflow: hidden;
+
+  mat-header-cell, mat-cell { padding: 10px 12px; color: var(--color-text); }
+  mat-header-cell { background: var(--color-primary); color: var(--color-text-inverse); font-weight: 800; }
+  mat-row:hover { background-color: color-mix(in oklab, var(--color-accent) 12%, transparent); }
+
+  .actions-cell {
+    display: inline-flex; align-items: center; gap: 10px;
+    button.submit-btn { padding: 8px 12px; border-radius: 8px; }
   }
 }
-.upload-icon {
-  height: 24px;
-  width: 24px;
-  max-height: 32px;
-  max-width: 32px;
-  object-fit: contain;
-  vertical-align: middle;
+
+/* Misc */
+.upload-icon { width: 22px; height: 22px; object-fit: contain; }
+[matTooltip] { cursor: help; }
+
+.success-message, .error-message {
+  border-radius: 8px; padding: 10px 12px; font-weight: 600;
 }
+.success-message {
+  color: #2e7d32; background: #e9f6ea; border: 1px solid #2e7d32;
+}
+.error-message {
+  color: #d32f2f; background: #fdecea; border: 1px solid #d32f2f;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 12px;
-
-    mat-form-field {
-      flex: none;
-      width: 100%;
-    }
-
-    .custom-file-upload .upload-label {
-      padding: 8px 16px;
-    }
-
-    .submit-btn {
-      padding: 8px 16px;
-    }
-  }
-
-  .section h3 {
-    font-size: 1.2rem;
-  }
-  .upload-icon {
-    height: 20px;
-    width: 20px;
-  }
-  .mat-elevation-z8 {
-    mat-header-cell, mat-cell {
-      padding: 8px;
-      font-size: 0.9rem;
-    }
-  }
-  .upload-container {
-    display: flex;
-    align-items: center; /* Align progress bar and upload button vertically */
-    gap: 15px; /* Space between progress bar and upload button */
-  }
-  .upload-progress {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-right: 15px; /* Space to the left of the upload button */
-    background-color: #f9f9f9; /* Light background for contrast */
-    padding: 8px; /* Add padding for better appearance */
-    border-radius: 6px; /* Rounded corners */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-
-    p {
-      margin: 0 0 5px 0; /* Space below the text */
-      font-size: 12px; /* Smaller text */
-      color: #333; /* Darker text */
-    }
-
-    mat-progress-bar {
-      width: 150px; /* Slightly smaller for better fit */
-      height: 8px; /* Thinner bar */
-      border-radius: 4px; /* Rounded edges */
-    }
-
-    /* Customize the progress bar color */
-    ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
-      background-color: #FBD008 !important; /* Retain yellow */
-    }
-
-    ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
-      background-color: #e0e0e0 !important; /* Light gray buffer */
-    }
-  }
-
+  .profile-card { padding: 12px; }
+  .section h3 { font-size: 1.1rem; }
+  .submit-btn { padding: 8px 14px; }
+  .upload-icon { width: 20px; height: 20px; }
+  .mat-elevation-z8 mat-header-cell,
+  .mat-elevation-z8 mat-cell { padding: 8px; font-size: .95rem; }
 }

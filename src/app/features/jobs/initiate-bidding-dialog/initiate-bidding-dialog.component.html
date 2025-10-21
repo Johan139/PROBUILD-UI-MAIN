@@ -1,0 +1,41 @@
+<h1 mat-dialog-title>Initiate Bidding</h1>
+<div mat-dialog-content [formGroup]="form">
+  <p>Choose the bidding type and trades you need for this project</p>
+
+  <mat-radio-group formControlName="biddingType" aria-label="Select a bidding type">
+    <mat-radio-button value="PUBLIC" matTooltip="Your job will be visible to all subcontractors and vendors">Public</mat-radio-button>
+    <mat-radio-button value="CONNECTIONS_ONLY" matTooltip="Your job will only be visible to your connections">Connections Only</mat-radio-button>
+  </mat-radio-group>
+
+  <div class="trades-selection-container">
+    <div class="trade-input-section">
+      <mat-form-field class="full-width" appearance="fill">
+        <mat-label>Add Trades</mat-label>
+        <input matInput
+               placeholder="Type to search trades..."
+               [formControl]="tradeCtrl"
+               [matAutocomplete]="autoTrade">
+        <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selected($event)">
+          <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
+            {{trade.display}}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+    </div>
+    <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
+      <h4>Selected Trades:</h4>
+      <div class="chips-wrapper">
+        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="remove(trade)" [removable]="true">
+          {{trade.display}}
+          <button matChipRemove>
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      </div>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-button (click)="onConfirm()" [disabled]="!form.valid" [matTooltip]="form.valid ? '' : 'Please select a bidding type and at least one subcontractor type.'">Confirm</button>
+</div>

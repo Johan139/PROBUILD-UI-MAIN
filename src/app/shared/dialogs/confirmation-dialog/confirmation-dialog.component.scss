@@ -1,48 +1,76 @@
-h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
+@use 'styles/util/mixins' as u;
+
+:host {
+  --field-shape: var(--radius-sm);
+  --mdc-outlined-text-field-container-shape: var(--field-shape);
 }
 
-p {
-  font-size: 1rem;
-  color: #555;
-  line-height: 1.5;
-  margin-bottom: 16px;
+.confirm-dialog {
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
-mat-dialog-actions {
-  display: flex;
-  gap: 12px;
-  padding-top: 16px;
+.cd-title {
+  margin: 0;
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  font: var(--fw-bold) var(--fs-xl)/var(--lh-tight) var(--font-sans);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.dialog-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+.cd-content {
+  padding: var(--space-5);
+  p.cd-message {
+    margin: 0 0 var(--space-4);
+    color: var(--color-text);
+  }
 }
 
-.return-btn {
-  background-color: #FBD008; /* Yellow */
-  color: #333;
-}
-
-.return-btn:hover {
-  background-color: #e6bf00; /* Darker yellow */
-}
-
-.confirm-btn {
-  background-color: #FBD008; /* Red */
-  color: #333;
-}
-
-.confirm-btn:hover {
-  background-color: #e6bf00; /* Darker red */
-}
-
-.full-width {
+.cd-field {
   width: 100%;
+  textarea[matInput] {
+    min-height: 96px;
+    resize: vertical;
+  }
+}
+
+.cd-actions {
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+  background:
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-surface) 0%, transparent), var(--color-surface));
+}
+
+/* Buttons */
+.btn {
+  border-radius: var(--radius-sm);
+  font-weight: var(--fw-semibold);
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  @include u.interactive-states;
+
+  &.btn-primary {
+    background: var(--color-primary);
+    color: var(--gray-900);
+  }
+
+  &.btn-danger {
+    background: color-mix(in oklab, var(--color-danger) 85%, var(--color-primary) 0%);
+    color: #fff;
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  @include u.interactive-states;
+}
+
+/* Compact on small screens */
+@media (max-width: 640px) {
+  .cd-title { padding: var(--space-4) var(--space-4) var(--space-2); }
+  .cd-content { padding: var(--space-4); }
+  .cd-actions { padding: var(--space-2) var(--space-4) var(--space-4); }
 }

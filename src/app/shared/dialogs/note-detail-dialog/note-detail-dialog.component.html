@@ -1,37 +1,96 @@
-<div class="note-detail-dialog">
-  <h2 mat-dialog-title>Note Details</h2>
+<div class="note-dialog" role="dialog" aria-label="Note details">
+  <!-- Header -->
+  <header class="dialog-header">
+    <h2 class="title">Note Details</h2>
+    <span class="badge"
+          [ngClass]="{
+            'is-approved': getStatus(data.notes[0]) === 'Approved',
+            'is-rejected': getStatus(data.notes[0]) === 'Rejected',
+            'is-archived': getStatus(data.notes[0]) === 'Archived',
+            'is-pending':  getStatus(data.notes[0]) === 'Pending'
+          }">
+      {{ getStatus(data.notes[0]) }}
+    </span>
+  </header>
 
-  <mat-dialog-content>
-
-    <p><strong>Project:</strong> {{ data.projectName }}</p>
-    <p><strong>Subtask:</strong> {{ data.subtaskName }}</p>
-    <p><strong>Created:</strong> {{ data.createdAt | date:'medium' }}</p>
-    <p><strong>Status:</strong>
-        <span [ngClass]="'status-' + getStatus(data.notes[0]).toLowerCase()">
-          {{ getStatus(data.notes[0]) }}
-        </span>
-      </p>
-
-    <p><strong>Messages:</strong></p>
-    <div class="chat-box-inside-dialog">
-      <div *ngFor="let note of data.notes" class="chat-message">
-        <div class="chat-bubble">
-          <div class="note-text">
-            {{ note.createdAt | date:'short' }} - <strong>{{ getUserName(note.createdByUserId) }}</strong>: {{ note.noteText }}
-          </div>
-        </div>
+  <!-- Body -->
+  <mat-dialog-content class="dialog-body">
+    <!-- Meta -->
+    <dl class="meta-grid">
+      <div class="meta-item">
+        <dt>Project</dt>
+        <dd>{{ data.projectName }}</dd>
       </div>
-    </div>
+      <div class="meta-item">
+        <dt>Subtask</dt>
+        <dd>{{ data.subtaskName }}</dd>
+      </div>
+      <div class="meta-item">
+        <dt>Created</dt>
+        <dd>{{ data.createdAt | date:'medium' }}</dd>
+      </div>
+      <div class="meta-item">
+        <dt>Status</dt>
+        <dd>
+          <span class="status-text">{{ getStatus(data.notes[0]) }}</span>
+        </dd>
+      </div>
+    </dl>
 
-    <p *ngIf="data.notes[0].rejectionReason"><strong>Rejection Reason:</strong> {{ data.notes[0].rejectionReason }}</p>
+    <!-- Messages -->
+    <section class="messages">
+      <h3 class="section-title">Messages</h3>
+      <ul class="message-list">
+        <li class="message" *ngFor="let note of data.notes">
+          <div class="avatar" aria-hidden="true">
+           <span class="avatar__text">{{ getInitials(getUserName(note.createdByUserId)) }}</span>
+          </div>
+          <div class="bubble">
+            <div class="bubble-header">
+              <span class="author">{{ getUserName(note.createdByUserId) }}</span>
+              <span class="time">{{ note.createdAt | date:'short' }}</span>
+            </div>
+            <div class="bubble-text">
+              {{ note.noteText }}
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
 
+    <section *ngIf="data.notes[0].rejectionReason" class="rejection">
+      <h3 class="section-title">Rejection Reason</h3>
+      <p class="rejection-text">{{ data.notes[0].rejectionReason }}</p>
+    </section>
   </mat-dialog-content>
 
-  <mat-dialog-actions class="dialog-action-buttons" align="end">
-    <button mat-raised-button class="submit-btn delete-btn" *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived" (click)="startApproval(data.notes[0])">Approve</button>
-    <button mat-raised-button class="submit-btn delete-btn" *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived" (click)="rejectNote(data.notes[0])">Reject</button>
-    <button mat-raised-button class="submit-btn delete-btn" *ngIf="(data.notes[0].approved || data.notes[0].rejected) && authService.hasPermission('manageSubtaskNotes') && !data.isArchived" (click)="archiveNote(data.notes[0])">Archive</button>
-    <button mat-raised-button class="submit-btn delete-btn" (click)="openDocumentsDialog(data)">View Image</button>
-    <button mat-raised-button class="submit-btn delete-btn" (click)="Close()">Close</button>
+  <!-- Actions -->
+  <mat-dialog-actions class="dialog-actions" align="end">
+    <button mat-flat-button class="btn btn-primary"
+            *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
+            (click)="startApproval(data.notes[0])">
+      Approve
+    </button>
+
+    <button mat-flat-button class="btn btn-danger"
+            *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
+            (click)="rejectNote(data.notes[0])">
+      Reject
+    </button>
+
+    <button mat-flat-button class="btn btn-neutral"
+            *ngIf="(data.notes[0].approved || data.notes[0].rejected) &&
+                   authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
+            (click)="archiveNote(data.notes[0])">
+      Archive
+    </button>
+
+    <button mat-flat-button class="btn btn-ghost" (click)="openDocumentsDialog(data)">
+      View Image
+    </button>
+
+    <button mat-flat-button class="btn btn-ghost" (click)="Close()">
+      Close
+    </button>
   </mat-dialog-actions>
 </div>

@@ -1,0 +1,881 @@
+{
+  "metadata": {
+    "pageType": "structural",
+    "scale": "24X36 SHEET: 1/4\" = 1'-0\"",
+    "imageWidth": 1046,
+    "imageHeight": 2500,
+    "drawingTitle": "HERNANDEZ RESIDENCE-FRAMING",
+    "projectAddress": "216 SHELF ROCK ROAD GEORGETOWN, TX",
+    "sheetNumber": "S-0",
+    "country": "USA",
+    "buildingCode": "2015 (IRC) INTERNATIONAL RESIDENTIAL CODE, 2015 (IBC) INTERNATIONAL BUILDING CODE",
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "08/31/2022",
+    "revisionHistory": []
+  },
+  "rooms": [],
+  "walls": [],
+  "openings": [],
+  "roofPlan": {
+    "overallPitch": null,
+    "roofMaterial": null,
+    "eaves": [],
+    "ridges": [],
+    "hips": [],
+    "valleys": [
+      {
+        "id": "valley_001",
+        "size": "2X10 VALLEY",
+        "sizeInches": 9.25,
+        "position": {
+          "x": 361,
+          "y": 1401
+        }
+      }
+    ],
+    "gutters": [],
+    "downspouts": [],
+    "penetrations": []
+  },
+  "elevationDetails": {
+    "levels": [],
+    "exteriorFinishes": []
+  },
+  "sitePlanDetails": {},
+  "fireAndLifeSafety": {},
+  "fixtures": [],
+  "dimensions": [],
+  "annotations": [
+    {
+      "id": "anno_001",
+      "text": "2X6 @ 24\" O.C.",
+      "type": "note",
+      "boundingBox": {
+        "x": 305,
+        "y": 551,
+        "width": 64,
+        "height": 13
+      },
+      "position": {
+        "x": 337,
+        "y": 557
+      }
+    },
+    {
+      "id": "anno_002",
+      "text": "3-PLY 1 3/4\" X 11 7/8\" LVL AT TOP OF BARREL CEILING",
+      "type": "note",
+      "boundingBox": {
+        "x": 313,
+        "y": 570,
+        "width": 259,
+        "height": 14
+      },
+      "position": {
+        "x": 442,
+        "y": 577
+      }
+    },
+    {
+      "id": "anno_003",
+      "text": "SW6",
+      "type": "shear_wall_mark",
+      "boundingBox": {
+        "x": 102,
+        "y": 307,
+        "width": 22,
+        "height": 17
+      },
+      "position": {
+        "x": 113,
+        "y": 315
+      }
+    },
+    {
+      "id": "anno_004",
+      "text": "COLLAR TIE @ 48\" O.C., TYP",
+      "type": "note",
+      "boundingBox": {
+        "x": 622,
+        "y": 1184,
+        "width": 105,
+        "height": 26
+      },
+      "position": {
+        "x": 674,
+        "y": 1197
+      }
+    },
+    {
+      "id": "anno_005",
+      "text": "3-PLY RAFTER UNDER WALL ABOVE",
+      "type": "note",
+      "boundingBox": {
+        "x": 339,
+        "y": 1284,
+        "width": 177,
+        "height": 12
+      },
+      "position": {
+        "x": 428,
+        "y": 1290
+      }
+    }
+  ],
+  "structuralElements": [
+    {
+      "id": "struct_001",
+      "type": "beam",
+      "material": "LVL",
+      "size": "3-PLY 1 3/4\" X 11 7/8\"",
+      "sizeInches": 11.875,
+      "plys": 3,
+      "position": {
+        "x": 442,
+        "y": 577
+      }
+    },
+    {
+      "id": "struct_002",
+      "type": "joist",
+      "material": "WOOD",
+      "size": "2X6 @ 24\" O.C.",
+      "sizeInches": 5.5,
+      "plys": 1,
+      "spacingInches": 24,
+      "position": {
+        "x": 337,
+        "y": 557
+      }
+    },
+    {
+      "id": "struct_003",
+      "type": "header",
+      "material": "WOOD",
+      "size": "2-PLY 2X10",
+      "sizeInches": 9.25,
+      "plys": 2,
+      "position": {
+        "x": 232,
+        "y": 554
+      }
+    },
+    {
+      "id": "struct_004",
+      "type": "holdown",
+      "manufacturer": "SIMPSON",
+      "model": "STHD14",
+      "position": {
+        "x": 240,
+        "y": 1045
+      }
+    },
+    {
+      "id": "struct_005",
+      "type": "shear_wall",
+      "mark": "SW6",
+      "sheathing": "19/32\" PLYWOOD",
+      "maxShearLbsPerFt": 500,
+      "n nailingEdges": "6\"",
+      "position": {
+        "x": 113,
+        "y": 315
+      }
+    },
+    {
+      "id": "struct_006",
+      "type": "collar_tie",
+      "material": "WOOD",
+      "spacingInches": 48,
+      "position": {
+        "x": 674,
+        "y": 1197
+      }
+    }
+  ],
+  "symbols": [
+    {
+      "id": "sym_001",
+      "type": "detail_callout",
+      "detailSheet": "SD-1",
+      "detailNumber": "20",
+      "boundingBox": {
+        "x": 86,
+        "y": 661,
+        "width": 25,
+        "height": 23
+      },
+      "position": {
+        "x": 98,
+        "y": 672
+      }
+    },
+    {
+      "id": "sym_002",
+      "type": "detail_callout",
+      "detailSheet": "SD-1",
+      "detailNumber": "SD-1",
+      "boundingBox": {
+        "x": 245,
+        "y": 509,
+        "width": 29,
+        "height": 26
+      },
+      "position": {
+        "x": 259,
+        "y": 522
+      }
+    }
+  ],
+  "gridLines": [],
+  "specialFeatures": [],
+  "mepSystems": {},
+  "detailViews": [
+    {
+      "id": "detail_001",
+      "title": "TYPICAL BEAM POCKET",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 196,
+        "y": 75,
+        "width": 111,
+        "height": 135
+      },
+      "components": []
+    },
+    {
+      "id": "detail_002",
+      "title": "BRICK SUPPORTED WOOD FRAMING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 242,
+        "y": 230,
+        "width": 204,
+        "height": 142
+      },
+      "components": []
+    },
+    {
+      "id": "detail_003",
+      "title": "LOOSE LINTEL AT BRICK VENEER",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 222,
+        "y": 386,
+        "width": 204,
+        "height": 146
+      },
+      "components": []
+    },
+    {
+      "id": "detail_004",
+      "title": "ROOF BRACE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 454,
+        "y": 205,
+        "width": 133,
+        "height": 143
+      },
+      "components": []
+    },
+    {
+      "id": "detail_005",
+      "title": "TYPICAL ROOF-CEILING FRAMING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 605,
+        "y": 218,
+        "width": 226,
+        "height": 140
+      },
+      "components": []
+    },
+    {
+      "id": "detail_006",
+      "title": "SHEAR TRANSFER ELEVATION AND SCHEDULE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 70,
+        "y": 390,
+        "width": 234,
+        "height": 140
+      },
+      "components": []
+    },
+    {
+      "id": "detail_007",
+      "title": "MULTI-PLY BEAM CONNECTION",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 319,
+        "y": 398,
+        "width": 132,
+        "height": 133
+      },
+      "components": []
+    },
+    {
+      "id": "detail_008",
+      "title": "CEILING JOIST/BEAM HANGER SCHEDULE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 461,
+        "y": 402,
+        "width": 219,
+        "height": 131
+      },
+      "components": []
+    },
+    {
+      "id": "detail_009",
+      "title": "POST LOAD CONNECTOR SPACING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 686,
+        "y": 402,
+        "width": 230,
+        "height": 128
+      },
+      "components": []
+    },
+    {
+      "id": "detail_010",
+      "title": "SHEARWALL/HOLDOWN SCHEDULE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 82,
+        "y": 551,
+        "width": 233,
+        "height": 127
+      },
+      "components": []
+    },
+    {
+      "id": "detail_011",
+      "title": "KNEE BRACE AT CEILING BEAM",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 75,
+        "y": 583,
+        "width": 178,
+        "height": 136
+      },
+      "components": []
+    },
+    {
+      "id": "detail_012",
+      "title": "TYP SPAN TABLE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 321,
+        "y": 588,
+        "width": 134,
+        "height": 136
+      },
+      "components": []
+    },
+    {
+      "id": "detail_013",
+      "title": "FASTENER SCHEDULE (BASED ON IRC.R602.3(1))",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 467,
+        "y": 582,
+        "width": 213,
+        "height": 135
+      },
+      "components": []
+    },
+    {
+      "id": "detail_014",
+      "title": "GABLE END ROOF FRAMING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 692,
+        "y": 591,
+        "width": 149,
+        "height": 133
+      },
+      "components": []
+    },
+    {
+      "id": "detail_015",
+      "title": "KNEE BRACE CONNECTION DETAIL",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 850,
+        "y": 591,
+        "width": 105,
+        "height": 131
+      },
+      "components": []
+    },
+    {
+      "id": "detail_016",
+      "title": "TYPICAL HEADER FRAMING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 84,
+        "y": 743,
+        "width": 171,
+        "height": 144
+      },
+      "components": []
+    },
+    {
+      "id": "detail_017",
+      "title": "FRONT ELEVATION APA PORTAL FRAME",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 286,
+        "y": 737,
+        "width": 287,
+        "height": 224
+      },
+      "components": []
+    },
+    {
+      "id": "detail_018",
+      "title": "SECTION",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 586,
+        "y": 737,
+        "width": 139,
+        "height": 169
+      },
+      "components": []
+    },
+    {
+      "id": "detail_019",
+      "title": "KNEE BRACE AT CEILING HEIGHT CHANGE",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 739,
+        "y": 738,
+        "width": 141,
+        "height": 154
+      },
+      "components": []
+    },
+    {
+      "id": "detail_020",
+      "title": "HIP ROOF FRAMING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 892,
+        "y": 737,
+        "width": 101,
+        "height": 151
+      },
+      "components": []
+    },
+    {
+      "id": "detail_021",
+      "title": "ALLOWABLE STUD NOTCHING AND BORING",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 86,
+        "y": 913,
+        "width": 167,
+        "height": 76
+      },
+      "components": []
+    },
+    {
+      "id": "detail_022",
+      "title": "APA PORTAL FRAME",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 277,
+        "y": 969,
+        "width": 242,
+        "height": 161
+      },
+      "components": []
+    },
+    {
+      "id": "detail_023",
+      "title": "BEAM AT DISCONTINUOUS TOP PLATES",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 546,
+        "y": 923,
+        "width": 128,
+        "height": 92
+      },
+      "components": []
+    },
+    {
+      "id": "detail_024",
+      "title": "STHD HOLDOWN INSTALLATION",
+      "detailCalloutId": null,
+      "boundingBox": {
+        "x": 701,
+        "y": 926,
+        "width": 110,
+        "height": 84
+      },
+      "components": []
+    }
+  ],
+  "schedules": [
+    {
+      "id": "schedule_001",
+      "title": "SHEAR TRANSFER ELEVATION AND SCHEDULE",
+      "headers": [
+        "MAX. SHEAR (LBS/FT)",
+        "SHEAR WALL MARK",
+        "HOLDOWN",
+        "PLYWOOD SHEATHING",
+        "NAILING SCHEDULE (O.C.) - PANEL EDGES",
+        "NAILING SCHEDULE (O.C.) - FIELD"
+      ],
+      "rows": [
+        [
+          "500",
+          "SW6",
+          "STHD10",
+          "19/32\" PLYWOOD",
+          "6\"",
+          "12\""
+        ],
+        [
+          "750",
+          "SW8",
+          "STHD14",
+          "19/32\" PLYWOOD",
+          "4\"",
+          "12\""
+        ],
+        [
+          "900",
+          "SW10",
+          "STHD14",
+          "19/32\" PLYWOOD",
+          "3\"",
+          "12\""
+        ],
+        [
+          "1000",
+          "SW12",
+          "STHD14",
+          "19/32\" PLYWOOD",
+          "2\"",
+          "12\""
+        ]
+      ],
+      "boundingBox": {
+        "x": 178,
+        "y": 427,
+        "width": 133,
+        "height": 99
+      }
+    },
+    {
+      "id": "schedule_002",
+      "title": "CEILING JOIST/BEAM HANGER SCHEDULE",
+      "headers": [
+        "HANGER MARK",
+        "JOIST/BEAM SIZE",
+        "JOIST/BEAM PLYS",
+        "JOIST/BEAM MEMBER TYPE",
+        "BEAM DEPTH",
+        "HANGER TYPE",
+        "NAILS - BEAM",
+        "NAILS - JOIST"
+      ],
+      "rows": [
+        [
+          "LUS26",
+          "2X6",
+          "2",
+          "LUMBER",
+          "5 1/2\"",
+          "LUS26Z",
+          "10d SHORT",
+          "10d SHORT"
+        ],
+        [
+          "LUS28",
+          "2X8",
+          "2",
+          "LUMBER",
+          "7 1/4\"",
+          "LUS28Z",
+          "10d SHORT",
+          "10d SHORT"
+        ],
+        [
+          "LUS210",
+          "2X10",
+          "2",
+          "LUMBER",
+          "9 1/4\"",
+          "LUS210Z",
+          "10d SHORT",
+          "10d SHORT"
+        ],
+        [
+          "LUS212",
+          "2X12",
+          "2",
+          "LUMBER",
+          "11 1/4\"",
+          "LUS212Z",
+          "10d SHORT",
+          "10d SHORT"
+        ],
+        [
+          "LUS410",
+          "2X10",
+          "4",
+          "LUMBER",
+          "9 1/4\"",
+          "LUS410Z",
+          "10d SHORT",
+          "10d SHORT"
+        ],
+        [
+          "LUS412",
+          "2X12",
+          "4",
+          "LUMBER",
+          "11 1/4\"",
+          "LUS412Z",
+          "10d SHORT",
+          "10d SHORT"
+        ]
+      ],
+      "boundingBox": {
+        "x": 465,
+        "y": 435,
+        "width": 216,
+        "height": 95
+      }
+    },
+    {
+      "id": "schedule_003",
+      "title": "SHEARWALL/HOLDOWN SCHEDULE",
+      "headers": [
+        "SHEARWALL MARK",
+        "MAX SHEAR (LBS/FT)",
+        "HOLDOWN",
+        "NAILING (O.C.) - EDGES",
+        "NAILING (O.C.) - FIELD",
+        "PLYWOOD SHEATHING"
+      ],
+      "rows": [
+        [
+          "SW6",
+          "500",
+          "STHD10",
+          "6\"",
+          "12\"",
+          "19/32\" PLYWOOD"
+        ],
+        [
+          "SW8",
+          "750",
+          "STHD14",
+          "4\"",
+          "12\"",
+          "19/32\" PLYWOOD"
+        ],
+        [
+          "SW10",
+          "900",
+          "STHD14",
+          "3\"",
+          "12\"",
+          "19/32\" PLYWOOD"
+        ],
+        [
+          "SW12",
+          "1000",
+          "STHD14",
+          "2\"",
+          "12\"",
+          "19/32\" PLYWOOD"
+        ]
+      ],
+      "boundingBox": {
+        "x": 86,
+        "y": 622,
+        "width": 234,
+        "height": 100
+      }
+    },
+    {
+      "id": "schedule_004",
+      "title": "TYP SPAN TABLE",
+      "headers": [
+        "MEMBER SIZE (IN)",
+        "STUD SPAN (FT)",
+        "BEAM SPAN (FT)",
+        "RAFTER SPAN (FT)",
+        "JOIST SPAN (FT)"
+      ],
+      "rows": [
+        [
+          "2X4",
+          "10",
+          "5",
+          "8",
+          "6"
+        ],
+        [
+          "2X6",
+          "12",
+          "8",
+          "12",
+          "10"
+        ],
+        [
+          "2X8",
+          "14",
+          "12",
+          "14",
+          "12"
+        ],
+        [
+          "2X10",
+          "16",
+          "16",
+          "16",
+          "14"
+        ],
+        [
+          "2X12",
+          "18",
+          "18",
+          "18",
+          "16"
+        ]
+      ],
+      "boundingBox": {
+        "x": 328,
+        "y": 622,
+        "width": 128,
+        "height": 97
+      }
+    },
+    {
+      "id": "schedule_005",
+      "title": "FASTENER SCHEDULE (BASED ON IRC.R602.3(1))",
+      "headers": [
+        "CONNECTION",
+        "FASTENER TYPE",
+        "SPACING (IN O.C.)",
+        "NOTES"
+      ],
+      "rows": [
+        [
+          "RAFTER OR JOIST TO TOP PLATE",
+          "3-10d (T)",
+          "16\" O.C.",
+          "ALTERNATE: 1-H1 SIMPSON OR EQ."
+        ],
+        [
+          "JOIST TO JOIST OR JOIST TO RAFTER (HEADER)",
+          "3-10d (T)",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "RIM JOIST TO TOP PLATE",
+          "8d",
+          "7\" O.C.",
+          "N/A"
+        ],
+        [
+          "JOIST TO JOIST OR JOIST TO RAFTER (TAIL)",
+          "3-10d (T)",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "STUD TO TOP PLATE (TYPICAL)",
+          "2-16d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "STUD TO BOTTOM PLATE",
+          "2-16d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "TOP PLATE LAP",
+          "3-10d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "TOP PLATE SPLICE (W/ STRAP)",
+          "STRAP PER PLAN",
+          "STRAP PER PLAN",
+          "N/A"
+        ],
+        [
+          "TOP PLATE TO RAFTER/JOIST (FLAT)",
+          "10d",
+          "16\" O.C.",
+          "N/A"
+        ],
+        [
+          "TOP PLATE TO RIDGE (W/STRAP)",
+          "STRAP PER PLAN",
+          "STRAP PER PLAN",
+          "N/A"
+        ],
+        [
+          "HEADER TO WALL PLATE",
+          "3-10d/PLY",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "TRIMMER TO HEADER",
+          "2-16d",
+          "24\" O.C.",
+          "N/A"
+        ],
+        [
+          "TRIMMER TO BOTTOM PLATE",
+          "4-10d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "PURLIN TO RAFTER",
+          "2-16d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "BLOCKING TO PLATE",
+          "2-16d",
+          "N/A",
+          "N/A"
+        ],
+        [
+          "SHEATHING TO FRAMING",
+          "8d",
+          "PER SCHEDULE",
+          "12\" O.C. IN FIELD, UNO"
+        ]
+      ],
+      "boundingBox": {
+        "x": 469,
+        "y": 622,
+        "width": 213,
+        "height": 171
+      }
+    }
+  ],
+  "extractedText": []
+}

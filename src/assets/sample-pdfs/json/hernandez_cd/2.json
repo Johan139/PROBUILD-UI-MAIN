@@ -1,0 +1,339 @@
+{
+  "metadata": {
+    "pageType": "elevation",
+    "scale": "1/8\" = 1'-0\"",
+    "imageWidth": 3300,
+    "imageHeight": 2550,
+    "drawingTitle": "HERNANDEZ RESIDENCE",
+    "projectAddress": "216 SHELF ROCK ROAD\nGEORGETOWN, TEXAS",
+    "sheetNumber": "A-2",
+    "country": "USA",
+    "buildingCode": null,
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "9/8/2023",
+    "revisionHistory": []
+  },
+  "rooms": [],
+  "walls": [],
+  "openings": [],
+  "roofPlan": null,
+  "elevationDetails": {
+    "levels": [
+      {
+        "id": "level_001",
+        "name": "1ST F.F.",
+        "elevation": "0'-0\"",
+        "elevationInches": 0,
+        "position": { "y": 1221 }
+      },
+      {
+        "id": "level_002",
+        "name": "1ST FLR. PLT.",
+        "elevation": "N/A",
+        "elevationInches": null,
+        "position": { "y": 1108 }
+      },
+      {
+        "id": "level_003",
+        "name": "10'-1 1/8\" PLT. HT.",
+        "elevation": "10'-1 1/8\"",
+        "elevationInches": 121.125,
+        "position": { "y": 994 }
+      },
+      {
+        "id": "level_004",
+        "name": "11'-1 1/8\" PLT. HT.",
+        "elevation": "11'-1 1/8\"",
+        "elevationInches": 133.125,
+        "position": { "y": 918 }
+      },
+      {
+        "id": "level_005",
+        "name": "13'-1 1/8\" PLT. HT.",
+        "elevation": "13'-1 1/8\"",
+        "elevationInches": 157.125,
+        "position": { "y": 822 }
+      },
+      {
+        "id": "level_006",
+        "name": "1ST F.F.",
+        "elevation": "0'-0\"",
+        "elevationInches": 0,
+        "position": { "y": 2409 }
+      },
+      {
+        "id": "level_007",
+        "name": "1ST FLR. PLT.",
+        "elevation": "N/A",
+        "elevationInches": null,
+        "position": { "y": 2296 }
+      },
+      {
+        "id": "level_008",
+        "name": "10'-1 1/8\" PLT. HT.",
+        "elevation": "10'-1 1/8\"",
+        "elevationInches": 121.125,
+        "position": { "y": 2182 }
+      },
+      {
+        "id": "level_009",
+        "name": "11'-1 1/8\" PLT. HT.",
+        "elevation": "11'-1 1/8\"",
+        "elevationInches": 133.125,
+        "position": { "y": 2106 }
+      }
+    ],
+    "exteriorFinishes": [
+      {
+        "id": "finish_stone_001",
+        "material": "STONE PER SPECS",
+        "areaPolygon": [
+          { "x": 648, "y": 994 },
+          { "x": 1211, "y": 994 },
+          { "x": 1211, "y": 1221 },
+          { "x": 648, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stone_002",
+        "material": "STONE PER SPECS",
+        "areaPolygon": [
+          { "x": 1358, "y": 822 },
+          { "x": 1947, "y": 822 },
+          { "x": 1947, "y": 1221 },
+          { "x": 1358, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stone_003",
+        "material": "STONE PER SPECS",
+        "areaPolygon": [
+          { "x": 2095, "y": 994 },
+          { "x": 2420, "y": 994 },
+          { "x": 2420, "y": 1221 },
+          { "x": 2095, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stucco_001",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 381, "y": 994 },
+          { "x": 648, "y": 994 },
+          { "x": 648, "y": 1221 },
+          { "x": 381, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stucco_002",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 1211, "y": 822 },
+          { "x": 1358, "y": 822 },
+          { "x": 1358, "y": 1221 },
+          { "x": 1211, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stucco_003",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 1947, "y": 822 },
+          { "x": 2095, "y": 822 },
+          { "x": 2095, "y": 1221 },
+          { "x": 1947, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stucco_004",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 2420, "y": 918 },
+          { "x": 2966, "y": 918 },
+          { "x": 2966, "y": 1221 },
+          { "x": 2420, "y": 1221 }
+        ]
+      },
+      {
+        "id": "finish_stucco_005",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 381, "y": 2106 },
+          { "x": 2966, "y": 2106 },
+          { "x": 2966, "y": 2409 },
+          { "x": 381, "y": 2409 }
+        ]
+      }
+    ]
+  },
+  "sitePlanDetails": null,
+  "fireAndLifeSafety": [],
+  "fixtures": [],
+  "dimensions": [],
+  "annotations": [
+    {
+      "id": "anno_001",
+      "type": "TEXT",
+      "text": "A\nA-2",
+      "position": { "x": 639, "y": 1403 }
+    },
+    {
+      "id": "anno_002",
+      "type": "TEXT",
+      "text": "FRONT ELEVATION\nSCALE: 1/8\" = 1'-0\"",
+      "position": { "x": 686, "y": 1400 }
+    },
+    {
+      "id": "anno_003",
+      "type": "TEXT",
+      "text": "B\nA-2",
+      "position": { "x": 639, "y": 2495 }
+    },
+    {
+      "id": "anno_004",
+      "type": "TEXT",
+      "text": "REAR ELEVATION\nSCALE: 1/8\" = 1'-0\"",
+      "position": { "x": 686, "y": 2492 }
+    },
+    {
+      "id": "anno_005",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 769, "y": 662 }
+    },
+    {
+      "id": "anno_006",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1782, "y": 427 }
+    },
+    {
+      "id": "anno_007",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 2603, "y": 662 }
+    },
+    {
+      "id": "anno_008",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1756, "y": 1709 }
+    },
+    {
+      "id": "anno_009",
+      "type": "TEXT",
+      "text": "SHINGLES\nPER SPECS\n(TYP)",
+      "position": { "x": 1133, "y": 743 }
+    },
+    {
+      "id": "anno_010",
+      "type": "TEXT",
+      "text": "STUCCO PER\nSPECS (TYP.)",
+      "position": { "x": 328, "y": 195 }
+    },
+    {
+      "id": "anno_011",
+      "type": "TEXT",
+      "text": "COACH LIGHT\n@ 6'-0\" A.F.F.",
+      "position": { "x": 286, "y": 305 }
+    },
+    {
+      "id": "anno_012",
+      "type": "TEXT",
+      "text": "8\" STUCCO HEADER\nOVER GARAGE DOORS\n(TYP.)",
+      "position": { "x": 490, "y": 927 }
+    },
+    {
+      "id": "anno_013",
+      "type": "TEXT",
+      "text": "4\" STUCCO\nSILL (TYP.)",
+      "position": { "x": 794, "y": 1059 }
+    },
+    {
+      "id": "anno_014",
+      "type": "TEXT",
+      "text": "STONE PER SPECS\n(TYP.)",
+      "position": { "x": 930, "y": 1301 }
+    },
+    {
+      "id": "anno_015",
+      "type": "TEXT",
+      "text": "8\" STUCCO-\nHEADER OVER\nWINDOWS (TYP.)",
+      "position": { "x": 1215, "y": 756 }
+    },
+    {
+      "id": "anno_016",
+      "type": "TEXT",
+      "text": "SOLID STONE-\nHEADER OVER\nENTRY (TYP.)",
+      "position": { "x": 1587, "y": 936 }
+    },
+    {
+      "id": "anno_017",
+      "type": "TEXT",
+      "text": "12\"x24\" OPENINGS\nW/ STONE HEADER\nABV. & STONE SILL\nBELOW (TYP.)",
+      "position": { "x": 1606, "y": 599 }
+    },
+    {
+      "id": "anno_018",
+      "type": "TEXT",
+      "text": "4\" METAL\nBRACKETS\n(TYP.)",
+      "position": { "x": 2244, "y": 880 }
+    },
+    {
+      "id": "anno_019",
+      "type": "TEXT",
+      "text": "COACH LIGHT\n@ 7'-6\" A.F.F.",
+      "position": { "x": 2043, "y": 956 }
+    },
+    {
+      "id": "anno_020",
+      "type": "TEXT",
+      "text": "STUCCO PER\nSPECS (TYP.)",
+      "position": { "x": 2727, "y": 1309 }
+    },
+    {
+      "id": "anno_021",
+      "type": "TEXT",
+      "text": "8\" STUCCO HEADER\nOVER OUTDOOR LIVING",
+      "position": { "x": 1045, "y": 2043 }
+    },
+    {
+      "id": "anno_022",
+      "type": "TEXT",
+      "text": "GARAGE DOORS,\nPER SPECS",
+      "position": { "x": 2727, "y": 2351 }
+    }
+  ],
+  "structuralElements": [],
+  "symbols": [],
+  "gridLines": [],
+  "specialFeatures": [],
+  "mepSystems": {},
+  "detailViews": [],
+  "schedules": [
+    {
+      "id": "schedule_brick_calcs",
+      "title": "BRICK CALCULATIONS",
+      "headers": [
+        "SIDE",
+        "TOTAL S.F.",
+        "WDW/DR S.F.",
+        "AVAIL. S.F.",
+        "MASONRY S.F.",
+        "STUCCO S.F.",
+        "MASONRY %",
+        "STUCCO %"
+      ],
+      "rows": [
+        ["FRONT", "1093", "327", "766", "397", "369", "52%", "48%"],
+        ["LEFT", "668", "59", "609", "183", "426", "30%", "70%"],
+        ["RIGHT", "661", "235", "426", "33", "393", "8%", "92%"],
+        ["REAR", "1087", "378", "709", "0", "709", "0%", "100%"],
+        ["HOUSE", "3509", "999", "2510", "613", "1897", "24%", "76%"]
+      ],
+      "boundingBox": { "x": 371, "y": 269, "width": 2611, "height": 386 }
+    }
+  ],
+  "extractedText": []
+}

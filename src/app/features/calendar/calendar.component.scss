@@ -1,127 +1,189 @@
-/* Variables from profile.component.scss */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
+@use 'styles/util/mixins' as u;
 
-.container {
-  width: 95vw !important;
-  margin-top: 2rem;
+/* Page shell */
+:host {
+  display: block;
+  background: transparent;
+  color: var(--color-text);
 }
 
+/* Container */
+.container {
+  width: min(1200px, 95vw) !important;
+  margin: 2rem auto 0;
+  padding-inline: var(--space-4);
+}
+
+/* Card */
 .calendar-card {
-  background-color: $white;
-  border: 1px solid $cyan;
-  box-shadow: $shadow;
-  border-radius: 8px;
-  padding: 16px;
-  height: auto;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-5);
 
   mat-card-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
+    font: var(--fw-extrabold) var(--fs-lg)/var(--lh-tight) var(--font-sans);
+    color: var(--color-text);
     text-transform: uppercase;
-    margin-bottom: 12px;
+    letter-spacing: .02em;
+    margin-bottom: var(--space-3);
   }
 
   mat-divider {
-    background-color: $secondary-yellow;
-    border: none;
+    background: var(--color-primary);
+    border: 0;
     height: 2px;
-    margin: 16px 0;
+    margin: var(--space-4) 0;
   }
 }
 
-.calendar-content {
-  margin-top: 16px;
-}
+.calendar-content { margin-top: var(--space-4); }
+.calendar-controls { margin-bottom: var(--space-5); }
 
-.calendar-controls {
-  margin-bottom: 20px;
-}
-
+/* Primary action */
 .add-event-btn {
-  background-color: $primary-yellow;
-  color: $dark-gray;
-  font-weight: 500;
-  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-md);
   padding: 10px 20px;
-  transition: background-color 0.3s ease;
   width: 200px;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,.08);
+  @include u.interactive-states;
 
-  &:hover {
-    background-color: $darker-yellow;
-  }
+  &:hover { background: var(--color-primary-hover); box-shadow: 0 3px 6px rgba(0,0,0,.12); }
+  &:focus-visible { outline: 0; box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent); }
+}
+
+/* Inline alerts */
+.success-message,
+.error-message {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: var(--radius-sm);
+  font-size: .95rem;
 }
 
 .success-message {
-  color: #4caf50;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #4caf50;
-  border-radius: 4px;
-  background-color: #e8f5e9;
+  color: color-mix(in oklab, var(--color-success) 80%, black);
+  background: color-mix(in oklab, var(--color-success) 12%, white);
+  border: 1px solid color-mix(in oklab, var(--color-success) 50%, var(--color-border));
 }
 
 .error-message {
-  color: #f44336;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #f44336;
-  border-radius: 4px;
-  background-color: #ffebee;
+  color: color-mix(in oklab, var(--color-danger) 80%, black);
+  background: color-mix(in oklab, var(--color-danger) 10%, white);
+  border: 1px solid color-mix(in oklab, var(--color-danger) 55%, var(--color-border));
 }
 
+/* FullCalendar (fc) overrides */
 ::ng-deep .fc {
+  /* Toolbar shell */
   .fc-toolbar {
-    background-color: $white;
-    border: 1px solid $cyan;
-    border-radius: 8px;
-    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    gap: var(--space-3);
   }
 
+  /* Buttons */
   .fc-button {
-    background-color: $primary-yellow !important;
-    color: $dark-gray !important;
-    border: none !important;
-    border-radius: 8px !important;
+    background: var(--color-primary) !important;
+    color: var(--color-text-inverse) !important;
+    border: 0 !important;
+    border-radius: var(--radius-sm) !important;
     padding: 8px 16px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    transition: background-color .2s ease, box-shadow .2s ease !important;
 
-    &:hover {
-      background-color: $darker-yellow !important;
-    }
+    &:hover { background: var(--color-primary-hover) !important; box-shadow: 0 2px 4px rgba(0,0,0,.12); }
+    &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+    &:focus-visible { outline: 0; box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent); }
+  }
+
+  /* Date grid + borders */
+  .fc-scrollgrid,
+  .fc-daygrid,
+  .fc-timegrid {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: clip;
+  }
+
+  .fc-col-header-cell,
+  .fc-timegrid-axis,
+  .fc-daygrid-day,
+  .fc-timegrid-slot {
+    border-color: var(--color-border);
+  }
+
+  /* Day cells */
+  .fc-col-header-cell {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    font-weight: var(--fw-semibold);
   }
 
   .fc-daygrid-day {
-    background-color: $white;
-    border: 1px solid $cyan;
+    background: var(--color-surface);
+    transition: background-color .15s ease;
+
+    &:hover { background: var(--color-surface-hover); }
   }
 
-  .fc-event {
-    background-color: $cyan;
-    color: $white;
-    border-radius: 4px;
-    padding: 4px;
+  /* Today highlight */
+  .fc-day-today {
+    background: color-mix(in oklab, var(--color-accent) 12%, transparent) !important;
+  }
+
+  /* Events */
+  .fc-event,
+  .fc-timegrid-event {
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 75%, var(--color-border));
+    border-radius: var(--radius-sm);
+    padding: 2px 4px;
+
+    .fc-event-main { padding: 2px 4px; }
+  }
+
+  /* Popovers */
+  .fc-popover {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-3);
+
+    .fc-popover-header {
+      background: var(--color-surface-subtle);
+      color: var(--color-text);
+      border-bottom: 1px solid var(--color-border);
+      border-top-left-radius: var(--radius-md);
+      border-top-right-radius: var(--radius-md);
+    }
   }
 }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 768px) {
-  .calendar-controls {
-    .add-event-btn {
-      padding: 8px 16px;
-      width: 100%;
-    }
+  .calendar-controls .add-event-btn {
+    padding: 8px 16px;
+    width: 100%;
   }
 
-  ::ng-deep .fc {
-    .fc-toolbar {
-      flex-direction: column;
-      gap: 10px;
-    }
+  ::ng-deep .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
   }
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }

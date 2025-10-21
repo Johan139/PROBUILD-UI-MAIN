@@ -1,334 +1,170 @@
-$primary-yellow: #fbd008;
-$lightgray: lightgray;
-$black: #000000;
-$dark-gray: #3b3b3b;
-$white: #fff;
-$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-$red: #DA4167;
+@use 'styles/util/mixins' as u;
 
-// Style the mat-menu to match the theme
-.mat-mdc-menu-panel {
-  border-radius: 5px; // Match the border-radius of other elements
-  box-shadow: $shadow; // Add a subtle shadow for depth
-  background-color: $dark-gray !important;
-  color: $dark-gray !important;
-  --mat-menu-container-color: $dark-gray !important;
-  --mat-app-surface-container : $dark-gray !important;
-}
-
-// Style the menu items for readability
-.mat-mdc-menu-item {
-  font-family: 'Orbitron', sans-serif; // Match the font of the sidenav
-  padding: 10px 16px; // Match the padding of the sidenav buttons
-  display: flex;
-  align-items: center; // Align icon and text vertically
-
-  cursor: pointer;
-}
-
-// Style the icons inside the menu items
-.mat-mdc-menu-item .mat-icon {
-  color: $dark-gray !important; // Match the icon color of other elements
-  margin-right: 8px; // Add spacing between icon and text
-}
-
-// Add a hover effect for menu items
-.mat-mdc-menu-item:hover {
-  background-color: darken($lightgray, 10%) !important; // Slightly darker yellow on hover
-}
-
-.sidenav {
-  min-width: 200px;
-  background-color: $dark-gray;
-}
-.submenu {
+:host, .page-wrapper {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding-left: 24px;
-  padding-right: 6px;
-  align-items: right;
-  margin-top: 5px !important;
-  border-radius: 5px !important;
-  width: 99% !important;
-  color: #3b3b3b !important;
-  border: none;
-  transition: background-color 0.3s;
-}
-.submenu-button {
-  background-color: $primary-yellow !important;
-  color: $dark-gray !important;
-  font-weight: bold;
-  width: 99%;
-  text-align: center;
-  margin: 8px 0;
-  padding: 10px;
-  box-sizing: border-box;
-  background: $primary-yellow;
-  box-shadow: 0 0 0 3px $primary-yellow,
-                inset 0 0 0 3px $dark-gray;
-  border-radius: 5px;
-}
-
-.expand-icon {
-  margin-left: auto;
-}
-.custom-button {
-  background-color: $primary-yellow !important;
-  color: $dark-gray !important;
-  font-weight: bold;
-  width: 100%;
-  text-align: center;
-  margin: 8px 0;
-  padding: 10px;
-  box-sizing: border-box;
-  background: $primary-yellow;
-  box-shadow: 0 0 0 3px $primary-yellow,
-                inset 0 0 0 3px $dark-gray;
-  border-radius: 5px;
-}
-.menu-row {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 4px; // optional: keeps arrow from hugging the edge
-}
-.custom-button .menu-item {
-  font-size: 16px;
-}
-
-mat-toolbar {
-  background-color: $primary-yellow;
-}
-
-mat-sidenav-content {
-  flex: 1 1 auto; 
-  display: flex;
-  flex-direction: column; 
-  overflow: auto; 
-  padding: 16px; 
-}
-
-.content-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 95vh; // fills the whole screen height
-}
-
-router-outlet {
-  flex: 1 0 auto;
-}
-
-app-footer {
-  width: 100%; 
-  background-color: #f8f9fa; 
-  padding: 1rem 0;
-  margin-top: auto; 
-}
-
-
-
-.mat-sidenav, mat-sidenav {
-  width: 150px;
-  background-color: $dark-gray !important;
-  border-radius: 0px;
-  font-family: Orbitron, sans-serif ;
-}
-mat-sidenav-content {
-  margin-left: 0 !important;
-  display: flex;
-  justify-content: center;
-  height: 100%;
-  overflow: auto;
-}
-.alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: $black;
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.alert-modal {
-  background-color: $white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px $black;
-  text-align: center;
-  width: 300px;
-}
-
-.alert-modal p {
-  margin-bottom: 20px;
-}
-
-.alert-modal button {
-  background: $red;
-  color: $white;
-}
-
-.mat-mdc-menu-panel {
-  background-color: $dark-gray;
-}
-
-.content {
-  height: calc(100vh - 98px);
-  border-radius: 10px;
-  margin: 16px;
-  margin-left: 32px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  font-size: 2rem;
-  color: $lightgray;
-}
-img:hover{
-  cursor: pointer;
-}
-mat-icon, .menu-item {
-  color: $dark-gray !important;
-}
-footer {
-  position: fixed;
-  width: 100%;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding-left: 50px;
-  mat-icon:hover {
-    cursor: pointer;
-  }
- }
- .menu-button{
-  display: flex;
-  align-items: center; /* Vertically align icon and text */
-  //justify-content: flex-start; /* Align content to the left */
-  margin-top: 10px !important;
-  border-radius: 5px !important;
-  width: 90% !important;
-  background-color: $primary-yellow !important;
-  color: $dark-gray !important;
-  padding: 10px 16px; /* Padding inside the button */
-  border: none; /* Remove default button border */
-  margin: 10px 10px 10px 10px; /* Reduced vertical spacing between buttons */
-  transition: background-color 0.3s; /* Smooth hover effect */
- }
- .form-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 20px;
-}
-.logout-btn{
-  background: none;
-  border: none;
-}
-.icon {
-  width: 2em;
-  height: auto;
-}
-
-
-
-
-.notification-button {
-  position: relative;
-  margin-left: 3px;
-  margin-right: 0px;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 8px;
-  height: 8px;
-  background-color: red;
-  border-radius: 50%;
-}
-.sidenav {
-  width: 200px;
-  background-color: var(--black);
-  color: var(--white);
-  font-family: 'Orbitron', sans-serif;
-}
-.page-wrapper {
   height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  overflow: hidden;
 }
 
-mat-toolbar,
+.header {
+  background: var(--color-primary);
+  color: var(--gray-900);
+  border-bottom: var(--space-1) solid color-mix(in oklab, var(--color-primary) 60%, transparent);
+  .spacer { flex: 1 1 auto; }
+  button[mat-icon-button] { color: var(--gray-900); }
+  .logo-link img { display: block; }
+}
+
 .company-bar {
-  flex-shrink: 0;
-}
-.content-wrapper {
+  min-height: var(--space-11);
   display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  background: var(--color-canvas);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
 
-.footer-spacer {
-  flex-grow: 1; /* pushes footer to bottom */
+  .collapse-btn {
+    margin-left: auto;
+    color: var(--color-text);
+  }
 }
 
 .nav-container {
   flex: 1 1 auto;
   width: 100%;
   min-height: 0;
-  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-
-
-
-
-.spacer {
-  flex: 1 1 auto;
+mat-sidenav {
+  box-sizing: border-box;
+  overflow-x: hidden; /* keep internal scroll only vertical */
+  border-radius: 0;
 }
-.logged-in-name{
+
+mat-sidenav-content {
   display: flex;
-  flex-direction: row-reverse;
-  justify-content: space-between;
-  align-items: flex-start;
-  font-size: 18px;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden; /* no horizontal scroll allowed */
 }
-.logged-in-name:hover {
-  cursor: pointer;
+
+/* Sidebar */
+.sidenav {
+  width: 240px;
+  background: var(--gray-800);
+  color: #fff;
+
+  &.is-collapsed { width: 72px; }
 }
+
+.nav-list {
+  padding-block: var(--space-2);
+}
+
+.sidenav,
+.nav-list,
+.nav-item {
+  overflow-x: hidden;
+}
+
+.nav-item {
+  /* full-row button look */
+  height: 44px;
+  border-radius: var(--radius-sm);
+  margin: 2px var(--space-2);
+  color: rgba(255,255,255,.92);
+  text-decoration: none;
+  @include u.interactive-states;
+
+  /* icon + label colors on dark surface */
+  .nav-icon { color: rgba(255,255,255,.92); }
+  .nav-label { color: rgba(255,255,255,.92); }
+
+  /* hover background */
+  &:hover { background: rgba(255,255,255,.06); }
+
+  /* active left rail + subtle bg */
+  &.is-active {
+  background: var(--gray-900) !important;
+  border-inline-start: 4px solid var(--color-primary);
+  padding-inline-start: calc(16px - 4px); /* keep label aligned */
+}
+  &.is-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 24px;
+    background: var(--color-primary) !important;
+    border-radius: 0 4px 4px 0;
+  }
+}
+
+/* collapsed rail: center icons, hide labels, keep tooltips */
+.sidenav.is-collapsed .nav-item {
+  justify-content: center;
+  .nav-label { display: none; }
+}
+
+.content-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: var(--space-4);
+}
+
+/* Footer pinned to bottom via flex in content-shell */
+.flex-spacer { flex: 1 1 auto; }
+
+/* Responsive tweaks */
 @media (max-width: 768px) {
-  .sidenav {
-    width: 150px;
-  }
-
-  .logo-link img {
-    width: 120px;
-    height: 40px;
-  }
+  .sidenav { width: 72px; }
+  .sidenav:not(.is-collapsed) { width: 200px; }
+  .content-shell { padding: var(--space-3); }
 }
 
-.unread-notification {
-  border: 2px solid #fbd008;
+.mat-mdc-list-base .mat-mdc-list-item .mdc-list-item__ripple::before,
+.mat-mdc-list-base .mat-mdc-list-item .mdc-list-item__ripple::after {
+  background-color: transparent !important;
 }
 
-.company-bar {
-  background-color: #ffe373;
-  color: black;
-  padding: 10px 20px;
-  text-align: left;
-  font-size: 16px;
-  font-weight: 500;
-  height: 50px;
-  display: flex;
-  align-items: center;
+.nav-item:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+/* Kill the MDC state-layer on mat list items - without this was getting some random dark yellow bar on the nav item overlay TODO: might need to bring this into global styling? */
+.mat-mdc-list-base {
+  /* make all state-layer colors transparent */
+  --mdc-list-list-item-hover-state-layer-color: transparent;
+  --mdc-list-list-item-focus-state-layer-color: transparent;
+  --mdc-list-list-item-pressed-state-layer-color: transparent;
+  --mdc-list-list-item-activated-state-layer-color: transparent;
+
+  /* and force their opacities to 0 */
+  --mdc-list-list-item-hover-state-layer-opacity: 0;
+  --mdc-list-list-item-focus-state-layer-opacity: 0;
+  --mdc-list-list-item-pressed-state-layer-opacity: 0;
+  --mdc-list-list-item-activated-state-layer-opacity: 0;
+}
+
+/* Fallback for older tokens / extra specificity */
+.mat-mdc-list-base .mdc-list-item .mdc-list-item__ripple::before,
+.mat-mdc-list-base .mdc-list-item .mdc-list-item__ripple::after,
+.mat-mdc-list-base .mdc-list-item--activated .mdc-list-item__ripple::before,
+.mat-mdc-list-base .mdc-list-item--activated .mdc-list-item__ripple::after,
+.mat-mdc-list-base .mdc-list-item--selected  .mdc-list-item__ripple::before,
+.mat-mdc-list-base .mdc-list-item--selected  .mdc-list-item__ripple::after {
+  background-color: transparent !important;
+  opacity: 0 !important;
 }

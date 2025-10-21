@@ -11,7 +11,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { jsPDF } from 'jspdf';
 import { Quote } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
@@ -21,6 +21,14 @@ import { LogoService } from '../../services/logo.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Job } from '../../models/job';
+import { JobsService } from '../../services/jobs.service';
+import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
+import { BidsService } from '../../services/bids.service';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
   selector: 'app-quote',
@@ -40,19 +48,28 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     NgIf,
     FormsModule,
     MatDialogModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    JobCardComponent,
+    MatProgressSpinnerModule,
+    PdfViewerComponent,
+    CommonModule,
+    MatDatepickerModule,
+    MatNativeDateModule
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
   providers: [QuoteService],
 })
+
+
 export class QuoteComponent implements OnInit {
   quoteForm: FormGroup;
+  jobDetails: Job | null = null;
   isSaving = false;
+  jobDetailsLoading = false;
   logoUrl: string | null = null;
   isLogoSupported = true;
   dataSource = new MatTableDataSource<FormGroup>([]);
-  displayedColumns: string[] = ['description', 'quantity', 'unitPrice', 'total', 'remove'];
   hasAmountPaid = false;
   hasExtraCost = false;
   hasTax = false;
@@ -62,6 +79,9 @@ export class QuoteComponent implements OnInit {
   jobId?: string;
   readOnly: boolean = false;
   isOwnQuote: boolean = false;
+  isFinalBiddingRound = false;
+  showFeeReminder = false;
+ quoteDocuments: { url: string, name: string }[] = [];
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -75,7 +95,9 @@ export class QuoteComponent implements OnInit {
     private authService: AuthService,
     private quoteDataService: QuoteDataService,
     private logoService: LogoService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private jobsService: JobsService,
+    private bidsService: BidsService
   ) {
     this.quoteForm = this.fb.group({
       header: ['INVOICE'],
@@ -133,8 +155,25 @@ export class QuoteComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    
 
+
+    this.route.queryParams.subscribe(params => {
+      if (params['jobId']) {
+        this.showFeeReminder = true;
+        this.jobId = params['jobId'];
+        this.jobDetailsLoading = true;
+        this.jobsService.getSpecificJob(this.jobId).subscribe(job => {
+          this.jobDetails = job;
+          this.jobDetailsLoading = false;
+          this.loadQuoteDocuments();
+        });
+      } else {
+        this.showFeeReminder = false;
+      }
+      const userRoles = this.authService.currentUserSubject.value?.roles;
+      this.isFinalBiddingRound = params['finalBiddingRound'] === 'true' &&
+        (userRoles?.includes('Subcontractor') || userRoles?.includes('Vendor'));
+    });
     // Check for quote data from the service (coming from JobSelectionComponent)
     const quote = this.quoteDataService.getQuote();
     if (quote) {
@@ -174,12 +213,12 @@ export class QuoteComponent implements OnInit {
       this.hasDiscount = !!quote.discountValue;
       this.hasFlatTotal = !!quote.flatTotalValue;
       this.hasAmountPaid = !!quote.amountPaid;
-      this.jobId = quote.jobId;
+      this.jobId = quote.jobID;
 
       //Check if its the logged in user`s quote
       const currentUserId = this.authService.currentUserSubject.value?.id;
       const quoteCreatorId = quote.createdID;
-    
+
       this.isOwnQuote = currentUserId && quoteCreatorId && currentUserId === quoteCreatorId;
 
       // Update quote rows and refresh table
@@ -213,7 +252,7 @@ export class QuoteComponent implements OnInit {
           this.quoteService.getQuote(params['quoteId']).subscribe({
             next: (savedQuote) => {
               console.log('Quote loaded:', savedQuote);
-      
+
               this.quoteForm.patchValue({
                 id: savedQuote.id,
                 header: savedQuote.header,
@@ -244,7 +283,7 @@ export class QuoteComponent implements OnInit {
                 logoId: savedQuote.logoId || null,
                 createdID: savedQuote.createdID || null
               });
-      
+
               // Fetch and show logo if logoId exists
               if (savedQuote.logoId) {
                 this.logoService.getLogo(savedQuote.logoId).subscribe({
@@ -263,21 +302,29 @@ export class QuoteComponent implements OnInit {
               this.hasDiscount = !!savedQuote.discountValue;
               this.hasFlatTotal = !!savedQuote.flatTotalValue;
               this.jobId = savedQuote.jobID;
-      
+
+              if (this.jobId) {
+                this.loadJobDetails(this.jobId);
+              }
+
+              this.loadQuoteDocuments();
               this.updateQuoteRows(savedQuote.rows);
               this.isSaving = false;
 
               //Check if its the logged in user`s quote
               const currentUserId = this.authService.currentUserSubject.value?.id;
               const quoteCreatorId = this.quoteForm.get('createdID')?.value;
-            
+
               this.isOwnQuote = currentUserId && quoteCreatorId && currentUserId === quoteCreatorId;
-      
-              if (savedQuote.status === 'Submitted') {
+
+              if (savedQuote.status === 'Submitted' && params['edit'] !== 'true') {
                 this.readOnly = true;
                 this.quoteForm.disable();
+              } else {
+                this.readOnly = false;
+                this.quoteForm.enable();
               }
-      
+
               this.cdr.detectChanges();
             },
             error: (err) => {
@@ -296,6 +343,20 @@ export class QuoteComponent implements OnInit {
         }
       });
     }
+  }
+
+  loadJobDetails(jobId: string): void {
+    this.jobDetailsLoading = true;
+    this.jobsService.getSpecificJob(jobId).subscribe({
+      next: (job) => {
+        this.jobDetails = job;
+        this.jobDetailsLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load job details:', err);
+        this.jobDetailsLoading = false;
+      }
+    });
   }
 
   updateQuoteRows(items: any[]) {
@@ -360,6 +421,14 @@ export class QuoteComponent implements OnInit {
 
   get quoteRows(): FormArray {
     return this.quoteForm.get('quoteRows') as FormArray;
+  }
+
+  get displayedColumns(): string[] {
+    const columns = ['description', 'quantity', 'unitPrice', 'total'];
+    if (this.quoteRows.length > 1) {
+      columns.push('remove');
+    }
+    return columns;
   }
 
   addRow(): void {
@@ -439,7 +508,7 @@ export class QuoteComponent implements OnInit {
       console.warn('Cannot approve quote: Job ID is missing.');
       return;
     }
-    
+
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -447,7 +516,7 @@ export class QuoteComponent implements OnInit {
         message: 'Are you sure you want to approve this quote? This action cannot be undone.'
       }
     });
-  
+
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // original approve logic here
@@ -463,10 +532,10 @@ export class QuoteComponent implements OnInit {
       }
     });
   }
-  
+
   rejectQuote(): void {
     if (!this.quoteId) return;
-  
+
     if (!this.jobId) {
       console.warn('Cannot reject quote: Job ID is missing.');
       return;
@@ -483,7 +552,7 @@ export class QuoteComponent implements OnInit {
         console.error('Failed to reject quote:', err);
       }
     });
-  }  
+  }
 
   getSubtotal(): number {
     let subtotal = this.quoteRows.controls.reduce((acc, row) => {
@@ -535,12 +604,12 @@ export class QuoteComponent implements OnInit {
       this.isLogoSupported = false;
       return;
     }
-  
+
     const reader = new FileReader();
     reader.onload = async () => {
       this.logoUrl = reader.result as string;
       this.isLogoSupported = true;
-  
+
       const userId = this.authService.currentUserSubject.value?.id || 'anonymous';
       this.logoService.uploadLogo(file, 'quote', userId).subscribe({
         next: (logo) => {
@@ -551,7 +620,7 @@ export class QuoteComponent implements OnInit {
         }
       });
     };
-  
+
     reader.readAsDataURL(file);
   }
 
@@ -608,7 +677,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
       version: formValue.version || undefined, // Let backend calculate version
       status: 'Draft',
       logoId: formValue.logoId || null,
@@ -678,7 +747,7 @@ export class QuoteComponent implements OnInit {
       console.warn('Cannot submit quote: Job ID is missing.');
       return;
     }
-  
+
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -686,13 +755,13 @@ export class QuoteComponent implements OnInit {
         message: 'Are you sure you want to submit this quote? This will lock the quote and mark it as submitted.'
       }
     });
-  
+
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
-  
+
       this.isSaving = true;
       const formValue = this.quoteForm.getRawValue();
-  
+
       const quote: Quote = {
         id: null,
         header: formValue.header || '',
@@ -733,12 +802,12 @@ export class QuoteComponent implements OnInit {
         extraCosts: [],
         createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
         createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-        jobId: this.jobId,
+        jobID: this.jobId,
         version: formValue.version,
         status: 'Draft', // intentionally leave as Draft until we change it
         logoId: formValue.logoId || null,
       };
-  
+
       // Populate extraCosts array
       if (this.hasExtraCost) {
         quote.extraCosts.push({
@@ -768,12 +837,12 @@ export class QuoteComponent implements OnInit {
           title: 'Flat Total',
         });
       }
-  
+
       // Save quote first, then change status
       this.quoteService.saveQuoteWithVersion(quote).subscribe({
         next: (submittedQuote) => {
           console.log('Quote saved:', submittedQuote);
-  
+
           // Now update the newly saved quote's status
           this.quoteService.changeStatus(submittedQuote.id!, 'Submitted').subscribe({
             next: (finalQuote) => {
@@ -798,7 +867,26 @@ export class QuoteComponent implements OnInit {
       });
     });
   }
-  
+
+
+  keepOriginalBid(): void {
+    if (!this.quoteId) {
+      console.warn('Cannot keep original bid: Quote ID is missing.');
+      return;
+    }
+
+    this.quoteService.changeStatus(this.quoteId, 'Submitted').subscribe({
+      next: (updatedQuote) => {
+        this.quoteForm.patchValue({ status: updatedQuote.status });
+        this.readOnly = true;
+        this.quoteForm.disable();
+        console.log('Original bid kept');
+      },
+      error: (err) => {
+        console.error('Failed to keep original bid:', err);
+      }
+    });
+  }
 
   async downloadPDF(): Promise<void> {
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -806,7 +894,7 @@ export class QuoteComponent implements OnInit {
     const margin = 10;
     const contentWidth = pageWidth - 2 * margin;
     let currentY = margin;
-  
+
     // Helper function to check for new page
     const checkNewPage = (height: number): void => {
       if (currentY + height > pdf.internal.pageSize.getHeight() - margin) {
@@ -814,9 +902,9 @@ export class QuoteComponent implements OnInit {
         currentY = margin;
       }
     };
-  
+
     pdf.setFont('helvetica', 'normal');
-  
+
     // Header with Logo
     if (this.logoUrl) {
       try {
@@ -826,18 +914,18 @@ export class QuoteComponent implements OnInit {
           img.onload = resolve;
           img.onerror = () => reject(new Error('Failed to load image'));
         });
-  
+
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('Failed to get canvas 2D context');
         ctx.drawImage(img, 0, 0);
-  
+
         const canvasDataUrl = canvas.toDataURL('image/png');
         const base64Data = canvasDataUrl.split(',')[1];
         const format = 'PNG';
-  
+
         const imgWidth = 30;
         const imgHeight = (img.height * imgWidth) / img.width;
         pdf.addImage(base64Data, format, margin, currentY, imgWidth, imgHeight);
@@ -846,7 +934,7 @@ export class QuoteComponent implements OnInit {
         console.error('Error adding logo to PDF:', e);
       }
     }
-  
+
     // Header Title and Number
     pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
@@ -856,7 +944,7 @@ export class QuoteComponent implements OnInit {
     pdf.setFont('helvetica', 'normal');
     pdf.text(`#${this.quoteForm.get('number')?.value || ''}`, margin, currentY);
     currentY += 10;
-  
+
     // Contact Details
     checkNewPage(40);
     pdf.setFontSize(10);
@@ -874,7 +962,7 @@ export class QuoteComponent implements OnInit {
       );
       currentY += 15;
     }
-  
+
     // Invoice Details
     let rightColumnY = margin + 20;
     pdf.text(`Date: ${this.quoteForm.get('date')?.value || ''}`, pageWidth - margin - 50, rightColumnY);
@@ -884,7 +972,7 @@ export class QuoteComponent implements OnInit {
     pdf.text(`Due Date: ${this.quoteForm.get('dueDate')?.value || ''}`, pageWidth - margin - 50, rightColumnY);
     rightColumnY += 7;
     pdf.text(`PO Number: ${this.quoteForm.get('poNumber')?.value || ''}`, pageWidth - margin - 50, rightColumnY);
-  
+
     // Items Table
     checkNewPage(30);
     currentY += 10;
@@ -892,13 +980,13 @@ export class QuoteComponent implements OnInit {
     pdf.setFont('helvetica', 'bold');
     pdf.text('Items', margin, currentY);
     currentY += 7;
-  
+
     let extraCostPerRow = 0;
     if (this.hasExtraCost && this.quoteRows.length > 0) {
       const extraCostValue = parseFloat(this.quoteForm.get('extraCostValue')?.value) || 0;
       extraCostPerRow = extraCostValue / this.quoteRows.length;
     }
-  
+
     // Table Header
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
@@ -909,7 +997,7 @@ export class QuoteComponent implements OnInit {
     currentY += 5;
     pdf.line(margin, currentY, margin + contentWidth, currentY);
     currentY += 5;
-  
+
     // Table Rows
     pdf.setFont('helvetica', 'normal');
     this.quoteRows.controls.forEach((row) => {
@@ -919,14 +1007,14 @@ export class QuoteComponent implements OnInit {
       const unitPrice = row.get('unitPrice')?.value || 0;
       let total = row.get('total')?.value || 0;
       total += extraCostPerRow;
-  
+
       pdf.text(description, margin, currentY, { maxWidth: 80 });
       pdf.text(quantity.toString(), margin + 90, currentY);
       pdf.text(`$${unitPrice.toFixed(2)}`, margin + 110, currentY);
       pdf.text(`$${total.toFixed(2)}`, margin + 140, currentY);
       currentY += 7;
     });
-  
+
     // Totals
     checkNewPage(50);
     currentY += 10;
@@ -938,7 +1026,7 @@ export class QuoteComponent implements OnInit {
       pdf.text(`$${subtotal.toFixed(2)}`, margin + 140, currentY);
       currentY += 7;
     }
-  
+
     if (this.hasTax) {
       const value = parseFloat(this.quoteForm.get('taxValue')?.value) || 0;
       pdf.setFont('helvetica', 'normal');
@@ -946,7 +1034,7 @@ export class QuoteComponent implements OnInit {
       pdf.text(`${value}%`, margin + 140, currentY);
       currentY += 7;
     }
-  
+
     if (this.hasDiscount) {
       const value = parseFloat(this.quoteForm.get('discountValue')?.value) || 0;
       pdf.setFont('helvetica', 'normal');
@@ -954,7 +1042,7 @@ export class QuoteComponent implements OnInit {
       pdf.text(`${value}%`, margin + 140, currentY);
       currentY += 7;
     }
-  
+
     if (this.hasFlatTotal) {
       const value = parseFloat(this.quoteForm.get('flatTotalValue')?.value) || 0;
       pdf.setFont('helvetica', 'normal');
@@ -962,12 +1050,12 @@ export class QuoteComponent implements OnInit {
       pdf.text(`$${value.toFixed(2)}`, margin + 140, currentY);
       currentY += 7;
     }
-  
+
     pdf.setFont('helvetica', 'bold');
     pdf.text('Total', margin, currentY);
     pdf.text(`$${grandTotal.toFixed(2)}`, margin + 140, currentY);
     currentY += 7;
-  
+
     // Notes and Terms
     checkNewPage(30);
     currentY += 10;
@@ -986,7 +1074,7 @@ export class QuoteComponent implements OnInit {
       pdf.setFont('helvetica', 'normal');
       pdf.text(this.quoteForm.get('terms')?.value || '', margin, currentY, { maxWidth: contentWidth });
     }
-  
+
     // Page Numbers
     const pageCount = pdf.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -995,17 +1083,17 @@ export class QuoteComponent implements OnInit {
       pdf.setTextColor(100);
       pdf.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 20, pdf.internal.pageSize.getHeight() - margin - 5);
     }
-  
+
     // --- Branded Footer ---
     checkNewPage(20);
     const footerY = pdf.internal.pageSize.getHeight() - margin;
     const footerText = 'Generated by ProBuildAI';
     const footerWidth = pdf.getTextWidth(footerText);
-  
+
     pdf.setFontSize(10);
     pdf.setTextColor(150);
     pdf.text(footerText, (pageWidth - footerWidth) / 2, footerY);
-  
+
     try {
       const logo = new Image();
       logo.src = '/logo.png'; // or '/logo.png' if public
@@ -1013,17 +1101,17 @@ export class QuoteComponent implements OnInit {
         logo.onload = res;
         logo.onerror = rej;
       });
-  
+
       const canvas = document.createElement('canvas');
       canvas.width = logo.width;
       canvas.height = logo.height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(logo, 0, 0);
       const logoData = canvas.toDataURL('image/png');
-  
+
       const imgWidth = 10;
       const imgHeight = (logo.height * imgWidth) / logo.width;
-  
+
       pdf.addImage(
         logoData,
         'PNG',
@@ -1035,12 +1123,12 @@ export class QuoteComponent implements OnInit {
     } catch (err) {
       console.warn('Failed to load ProBuildAI logo:', err);
     }
-  
+
     // Save the PDF
     const invoiceNumber = this.quoteForm.get('number')?.value || 'Quote';
     pdf.save(`${invoiceNumber}.pdf`);
   }
-  
+
 
   async updateDatabase(quoteId: string): Promise<void> {
     this.isSaving = true;
@@ -1085,7 +1173,7 @@ export class QuoteComponent implements OnInit {
       extraCosts: [],
       createdBy: this.authService.currentUserSubject.value?.firstName || 'Unknown',
       createdID: this.authService.currentUserSubject.value?.id || 'Unknown',
-      jobId: this.jobId,
+      jobID: this.jobId,
     };
 
     if (this.hasExtraCost) {
@@ -1130,4 +1218,17 @@ export class QuoteComponent implements OnInit {
       },
     });
   }
+
+ loadQuoteDocuments(): void {
+   if (this.jobId) {
+     this.bidsService.getBidsForJob(this.jobId).subscribe(bids => {
+       this.quoteDocuments = bids
+         .filter((bid: any) => bid.documentUrl)
+         .map((bid: any) => ({
+           url: bid.documentUrl,
+           name: `Quote from ${bid.user.firstName} ${bid.user.lastName}`
+         }));
+     });
+   }
+ }
 }

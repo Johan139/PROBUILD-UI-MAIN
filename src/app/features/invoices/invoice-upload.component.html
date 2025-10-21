@@ -1,0 +1,27 @@
+<div class="upload-container">
+  <div class="upload-form">
+    <h2>Upload Invoice</h2>
+    <form [formGroup]="uploadForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="invoice">Select Invoice:</label>
+        <input type="file" id="invoice" (change)="onFileSelected($event)" formControlName="invoice" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx">
+      </div>
+      <div class="form-group">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" formControlName="amount" placeholder="Enter amount">
+        <div *ngIf="uploadForm.get('amount')?.invalid && uploadForm.get('amount')?.touched" class="error-message">
+          Please enter a valid amount.
+        </div>
+      </div>
+      <div *ngIf="isUploading" class="progress-container">
+        <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+        <span>{{ progress }}%</span>
+      </div>
+      <button class="submit-btn" mat-raised-button type="submit" [disabled]="!uploadForm.valid || isUploading">Upload</button>
+    </form>
+  </div>
+  <div class="preview-pane" *ngIf="filePreviewUrl">
+    <h3>Invoice Preview</h3>
+    <iframe [src]="filePreviewUrl" width="100%" height="500px"></iframe>
+  </div>
+</div>

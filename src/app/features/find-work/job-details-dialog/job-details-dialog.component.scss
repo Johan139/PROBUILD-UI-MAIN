@@ -1,0 +1,17 @@
+.trade-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.trade-pill.match {
+  background-color: #4caf50;
+  color: #fff;
+}
