@@ -126,6 +126,12 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     }
   }
 
+  resendverificationemail(userid: string): Observable<any>
+  {
+        return this.http.get<any>(`${this.apiUrl}/resend-email-verification/${userid}`, { headers: { 'Content-Type': 'application/json' } });
+    
+  }
+
   login(credentials: { email: string; password: string }): Observable<any> {
     return this.http
       .post<any>(`${this.apiUrl}/login`, credentials, { headers: { 'Content-Type': 'application/json' } })

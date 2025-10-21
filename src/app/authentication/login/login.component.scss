@@ -8,6 +8,19 @@
   --mdc-outlined-text-field-container-shape: var(--radius-sm);
   --mdc-protected-button-container-shape: var(--radius-sm);
 }
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: $gray;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+.row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 
 .container {
   min-height: 100dvh;
