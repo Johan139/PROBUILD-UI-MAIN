@@ -2,7 +2,9 @@
 
 /* Page shell */
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   background: transparent;
   color: var(--color-text);
 }
@@ -10,8 +12,9 @@
 .assignments-container {
   width: 100%;
   max-width: 1700px;
-  margin: 2rem auto 0;
+  margin: 2rem auto;
   padding-inline: var(--space-4);
+  flex: 1;
 }
 
 /* Card */

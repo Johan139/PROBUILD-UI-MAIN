@@ -1,10 +1,17 @@
 @use 'styles/util/mixins' as u;
 
 /* Shell */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
 .dashboard-container {
   padding: var(--space-4, 20px);
   background: var(--color-canvas);
   color: var(--color-text);
+  flex: 1;
 }
 
 /* Loading + empty */
