@@ -1,0 +1,78 @@
+<div class="profile-container">
+  <div *ngIf="isLoading" class="spinner-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!isLoading && user">
+    <mat-card class="profile-card">
+      <mat-card-header>
+        <img mat-card-avatar [src]="user.profilePictureUrl || 'assets/default-avatar.png'" alt="{{ user.firstName }} {{ user.lastName }}">
+        <mat-card-title>{{ user.firstName }} {{ user.lastName }}</mat-card-title>
+        <mat-card-subtitle>{{ user.userType }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Phone:</strong> {{ user.phoneNumber }}</p>
+        <div class="ratings-summary">
+          <h3>Ratings</h3>
+          <div class="probuild-rating">
+            <span>Probuild Rating:</span>
+            <ng-container *ngIf="user.probuildRating; else noProbuildRating">
+              <mat-icon *ngFor="let star of getStarRating(user.probuildRating)" class="gold-star">{{ star }}</mat-icon>
+              <span>({{ user.probuildRating.toFixed(1) }})</span>
+            </ng-container>
+            <ng-template #noProbuildRating>
+              <span class="new-tag">New</span>
+            </ng-template>
+          </div>
+          <div class="google-rating">
+            <span>Google Rating:</span>
+            <ng-container *ngIf="user.googleRating">
+              <mat-icon *ngFor="let star of getStarRating(user.googleRating)" class="silver-star">{{ star }}</mat-icon>
+              <span>({{ user.googleRating.toFixed(1) }})</span>
+            </ng-container>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="reviews-card">
+      <mat-card-title>Reviews</mat-card-title>
+      <mat-card-content>
+        <mat-list *ngIf="ratings.length > 0; else noReviews">
+          <mat-list-item *ngFor="let rating of ratings">
+            <div class="review-item">
+              <div class="review-rating">
+                <mat-icon *ngFor="let star of getStarRating(rating.ratingValue)">{{ star }}</mat-icon>
+              </div>
+              <p class="review-text">"{{ rating.reviewText }}"</p>
+              <p class="review-meta">- Reviewed on {{ rating.createdAt | date: 'mediumDate' }}</p>
+            </div>
+          </mat-list-item>
+        </mat-list>
+        <ng-template #noReviews>
+          <p>This user has no reviews yet.</p>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="portfolio-card">
+      <mat-card-title>Portfolio</mat-card-title>
+      <mat-card-content>
+        <div *ngIf="user.portfolio && user.portfolio.jobs.length > 0; else noPortfolio">
+          <div *ngFor="let job of user.portfolio.jobs" class="portfolio-item">
+            <h4>{{ job.projectName }}</h4>
+            <p>{{ job.description }}</p>
+          </div>
+        </div>
+        <ng-template #noPortfolio>
+          <p>This user has not added any jobs to their portfolio yet.</p>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="!isLoading && !user">
+    <p>User not found.</p>
+  </div>
+</div>

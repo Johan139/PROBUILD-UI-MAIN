@@ -1,271 +1,202 @@
-/* Import variables from the profile SCSS */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$cyan: #61a0af;
-$dark-gray: #333;
-$white: #fff;
-$shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-$darker-yellow: #e6bf00;
+@use 'styles/util/mixins' as u;
 
 .container {
-  width: 95vw !important;
-  margin-top: 2rem;
+  width: min(95vw, 1200px) !important;
+  margin: 2rem auto 0;
+  padding-inline: var(--space-4, 16px);
 }
 
+/* Card */
 .profile-card.registration-card {
-  background-color: $white;
-  border: 1px solid $cyan;
-  box-shadow: $shadow;
-  border-radius: 8px;
-  padding: 16px;
-  height: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-4, 16px);
+  color: var(--color-text);
 
   mat-card-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
+    font: var(--fw-bold, 800) var(--fs-xl, 1.5rem)/var(--lh-tight, 1.2) var(--font-sans, system-ui, Arial);
+    color: var(--color-text);
     text-transform: uppercase;
-    margin-bottom: 12px;
+    letter-spacing: .02em;
+    margin-bottom: var(--space-3, 12px);
   }
 
   mat-divider {
-    background-color: $secondary-yellow;
-    border: none;
+    background: var(--color-primary);
     height: 2px;
-    margin: 16px 0;
+    border: 0;
+    margin: var(--space-4, 16px) 0;
+    border-radius: 999px;
+    opacity: .9;
   }
 }
 
-.profile-content {
-  margin-top: 16px;
+.profile-content { margin-top: var(--space-4, 16px); }
+
+/* Section headings */
+.section h3 {
+  font: var(--fw-bold, 800) var(--fs-xl, 1.5rem)/1.2 var(--font-sans);
+  color: var(--color-text);
+  text-transform: uppercase;
+  margin-bottom: var(--space-3, 12px);
+  letter-spacing: .02em;
 }
 
-.section {
-  h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-}
-
-.form-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-  gap: 20px;
-
-  mat-form-field {
-    flex: 1;
-    width: 100%;
-
-    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-      background-color: $white !important;
-      border-radius: 6px;
-      border: 1px solid $cyan;
-    }
-    ::ng-deep .mdc-floating-label {
-      position: static !important;
-      font-size: 0.9rem;
-      color: $dark-gray;
-    }
-    ::ng-deep .mdc-text-field .mdc-floating-label {
-      transform: translateY(-60%) !important;
-    }
-  }
-}
-  .submit-btn {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    font-weight: 500;
-    border-radius: 8px;
-    padding: 10px 20px;
-    transition: background-color 0.3s ease;
-    margin-top: 10px;
-
-    &:hover {
-      background-color: $darker-yellow;
-    }
-  }
+/* Rows */
+.form-row,
 .form-row-button {
   display: flex;
-  flex-direction: row-reverse;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4, 20px);
   align-items: flex-start;
-  margin-bottom: 20px;
-  gap: 20px;
+  margin-bottom: var(--space-5, 20px);
+}
+.form-row-button { flex-direction: row-reverse; justify-content: space-between; }
 
-  mat-form-field {
-    flex: 1;
-    width: 100%;
+/* Fields */
+mat-form-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+  width: 100%;
 
-    ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-      background-color: $white !important;
-      border-radius: 6px;
-      border: 1px solid $cyan;
-    }
-    ::ng-deep .mdc-floating-label {
-      position: static !important;
-      font-size: 0.9rem;
-      color: $dark-gray;
-    }
-    ::ng-deep .mdc-text-field .mdc-floating-label {
-      transform: translateY(-60%) !important;
-    }
+  /* Angular Material filled fields */
+  ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+    background: var(--color-surface) !important;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
+    box-shadow: none;
   }
 
-  .submit-btn {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    font-weight: 500;
-    border-radius: 8px;
-    padding: 10px 20px;
-    transition: background-color 0.3s ease;
-    width: 200px;
-    margin-top: 10px;
+  ::ng-deep .mdc-text-field--invalid:not(.mdc-text-field--disabled) {
+    border-color: var(--color-danger);
+  }
 
-    &:hover {
-      background-color: $darker-yellow;
-    }
+  ::ng-deep .mdc-floating-label {
+    position: static !important;
+    font-size: .9rem;
+    color: var(--color-text);
+    opacity: .9;
+  }
+
+  ::ng-deep .mdc-text-field .mdc-floating-label {
+    transform: translateY(-60%) !important;
+  }
+
+  /* Focus ring */
+  ::ng-deep .mdc-text-field--focused:not(.mdc-text-field--disabled) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
   }
 }
+
+/* Primary action buttons */
+.submit-btn {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: var(--fw-semibold, 600);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 20px;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+  margin-top: 10px;
+  border: 0;
+  @include u.interactive-states;
+
+  &:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-2); }
+  &:active { transform: translateY(1px); }
+  &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+}
+
+/* Alert */
 .alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
   backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid; place-items: center;
   z-index: 1000;
 }
-
 .alert-modal {
-  background-color: $white;
+  background: var(--color-surface);
+  color: var(--color-text);
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-3);
   text-align: center;
   width: 300px;
 
-  p {
-    margin-bottom: 20px;
-    color: $dark-gray;
-  }
+  p { margin-bottom: 20px; }
 }
 
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 12px;
+/* Chips & trade selection */
+.chip-container { display: flex; align-items: flex-start; gap: var(--space-3, 12px); }
+.chip-input-container { flex: 1 1 auto; }
+.chip-grid { margin-left: 16px; max-width: 50%; }
 
-    mat-form-field {
-      flex: none;
-      width: 100%;
-    }
-
-    .submit-btn {
-      padding: 8px 16px;
-      width: 100%;
-    }
-  }
-
-  .section h3 {
-    font-size: 1.2rem;
-  }
-}
-.chip-container {
-  display: flex;
-  align-items: flex-start;
+.trades-selection-container,
+.supplier-types-selection-container {
+  display: flex; gap: 20px; align-items: flex-start; min-height: 80px; flex-wrap: wrap;
 }
 
-.chip-input-container {
-  flex-grow: 1;
-}
-
-.chip-grid {
-  margin-left: 16px;
-  max-width: 50%;
-}
-
-.trades-selection-container {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  min-height: 80px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 16px;
-  }
-}
-
-.selected-trades-display {
-  flex: 1;
-  min-width: 300px;
+.selected-trades-display,
+.selected-supplier-types-display {
+  flex: 1; min-width: 300px;
 
   h4 {
     margin: 0 0 12px 0;
     font-size: 1rem;
-    color: $dark-gray;
-    font-weight: 500;
+    color: var(--color-text);
+    font-weight: var(--fw-semibold, 600);
   }
 
   .chips-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: flex; flex-wrap: wrap; gap: 8px;
     padding: 12px;
-    border: 1px solid $cyan;
-    border-radius: 6px;
-    background-color: $white;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface);
     min-height: 60px;
-    align-items: flex-start;
-    align-content: flex-start;
+    align-items: flex-start; align-content: flex-start;
 
     mat-chip-row {
-      background-color: #f0f0f0;
-      color: $dark-gray;
+      background: var(--color-surface-subtle);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
 
-      &:hover {
-        background-color: #e0e0e0;
-      }
+      &:hover { background: var(--color-surface-hover); }
 
       button[matChipRemove] {
-        color: #666;
-
-        &:hover {
-          color: #f44336;
-        }
+        color: var(--color-text-muted);
+        &:hover { color: var(--color-danger); }
       }
     }
   }
 }
 
-.trade-input-section {
-  flex: 1;
-  min-width: 250px;
-}
-
-.trades-form-field-wrapper {
-  display: none;
-}
-
-.supplier-types-selection-container {
-  @extend .trades-selection-container;
-}
-
-.selected-supplier-types-display {
-  @extend .selected-trades-display;
-}
-
+.trade-input-section,
 .supplier-type-input-section {
-  @extend .trade-input-section;
+  flex: 1; min-width: 250px;
 }
 
+/* Hide legacy wrapper */
+.trades-form-field-wrapper { display: none; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-row,
+  .form-row-button { flex-direction: column; gap: 12px; }
+
+  mat-form-field { flex: none; min-width: 100%; width: 100%; }
+
+  .submit-btn { width: 100%; padding: 8px 16px; }
+
+  .section h3 { font-size: 1.2rem; }
+
+  .chip-grid { max-width: 100%; margin-left: 0; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

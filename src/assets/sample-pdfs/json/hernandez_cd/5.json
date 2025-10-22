@@ -1,0 +1,290 @@
+{
+  "metadata": {
+    "pageType": "structural",
+    "scale": "3/32\" = 1'-0\"",
+    "imageWidth": 3300,
+    "imageHeight": 2550,
+    "drawingTitle": "HERNANDEZ RESIDENCE",
+    "projectAddress": "216 SHELF ROCK ROAD\nGEORGETOWN, TEXAS",
+    "sheetNumber": "A-5",
+    "country": "USA",
+    "buildingCode": null,
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "9/8/2023",
+    "revisionHistory": []
+  },
+  "rooms": [],
+  "walls": [],
+  "openings": [],
+  "roofPlan": null,
+  "elevationDetails": null,
+  "sitePlanDetails": null,
+  "fireAndLifeSafety": [],
+  "fixtures": [],
+  "dimensions": [
+    {
+      "id": "dim_overall_01",
+      "text": "106'-0\"",
+      "start": { "x": 1117, "y": 484 },
+      "end": { "x": 2043, "y": 484 },
+      "lengthInches": 1272
+    },
+    {
+      "id": "dim_overall_02",
+      "text": "72'-7\"",
+      "start": { "x": 2577, "y": 669 },
+      "end": { "x": 2577, "y": 1228 },
+      "lengthInches": 871
+    },
+    {
+      "id": "dim_overall_03",
+      "text": "106'-0\"",
+      "start": { "x": 1117, "y": 2497 },
+      "end": { "x": 2043, "y": 2497 },
+      "lengthInches": 1272
+    },
+    {
+      "id": "dim_overall_04",
+      "text": "72'-7\"",
+      "start": { "x": 300, "y": 669 },
+      "end": { "x": 300, "y": 1228 },
+      "lengthInches": 871
+    },
+    {
+      "id": "dim_sub_01",
+      "text": "16'-5\"",
+      "start": { "x": 1117, "y": 517 },
+      "end": { "x": 1262, "y": 517 },
+      "lengthInches": 197
+    },
+    {
+      "id": "dim_sub_02",
+      "text": "9'-9 5/8\"",
+      "start": { "x": 1262, "y": 517 },
+      "end": { "x": 1348, "y": 517 },
+      "lengthInches": 117.625
+    },
+    {
+      "id": "dim_sub_03",
+      "text": "8'-3\"",
+      "start": { "x": 1348, "y": 517 },
+      "end": { "x": 1420, "y": 517 },
+      "lengthInches": 99
+    },
+    {
+      "id": "dim_sub_04",
+      "text": "14'-4 5/8\"",
+      "start": { "x": 1420, "y": 517 },
+      "end": { "x": 1582, "y": 517 },
+      "lengthInches": 172.625
+    },
+    {
+      "id": "dim_sub_05",
+      "text": "3'-11\"",
+      "start": { "x": 1582, "y": 517 },
+      "end": { "x": 1625, "y": 517 },
+      "lengthInches": 47
+    },
+    {
+      "id": "dim_sub_06",
+      "text": "28'-9\"",
+      "start": { "x": 1625, "y": 517 },
+      "end": { "x": 1812, "y": 517 },
+      "lengthInches": 345
+    },
+    {
+      "id": "dim_sub_07",
+      "text": "20'-0\"",
+      "start": { "x": 1812, "y": 517 },
+      "end": { "x": 2043, "y": 517 },
+      "lengthInches": 240
+    }
+  ],
+  "annotations": [
+    {
+      "id": "anno_001",
+      "type": "TEXT",
+      "text": "A\nA-5",
+      "position": { "x": 873, "y": 2500 }
+    },
+    {
+      "id": "anno_002",
+      "type": "TEXT",
+      "text": "FOUNDATION PLAN\nSCALE: 3/32\" = 1'-0\"",
+      "position": { "x": 920, "y": 2497 }
+    },
+    {
+      "id": "anno_003",
+      "type": "TEXT",
+      "text": "NOTE: PULL ALL PLUMBING\nDIMENSION FROM OUTSIDE\nOF FRAME WALL",
+      "position": { "x": 68, "y": 1777 }
+    },
+    {
+      "id": "anno_004",
+      "type": "TEXT",
+      "text": "FOUNDATION NOTES:\n1. FOUNDATION CONTRACTOR TO COMPARE\nFOUNDATION PLANS FROM STRUCTURAL\nENGINEER TO THESE ARCHITECTURAL\nPLANS AND REPORT ANY DISCREPANCIES\nTO BUILDER",
+      "position": { "x": 395, "y": 381 }
+    }
+  ],
+  "structuralElements": [
+    {
+      "id": "slab_001",
+      "type": "SLAB_ON_GRADE",
+      "name": "GARAGE SLAB",
+      "polygon": [
+        { "x": 401, "y": 882 },
+        { "x": 836, "y": 882 },
+        { "x": 836, "y": 1400 },
+        { "x": 401, "y": 1400 }
+      ]
+    },
+    {
+      "id": "slab_002",
+      "type": "SLAB_ON_GRADE",
+      "name": "GARAGE SLAB",
+      "polygon": [
+        { "x": 401, "y": 1400 },
+        { "x": 1262, "y": 1400 },
+        { "x": 1262, "y": 2438 },
+        { "x": 401, "y": 2438 }
+      ]
+    },
+    {
+      "id": "slab_003",
+      "type": "SLAB_ON_GRADE",
+      "name": "HOUSE SLAB",
+      "polygon": [
+        { "x": 836, "y": 551 },
+        { "x": 2480, "y": 551 },
+        { "x": 2480, "y": 2438 },
+        { "x": 1262, "y": 2438 },
+        { "x": 1262, "y": 1400 },
+        { "x": 836, "y": 1400 }
+      ]
+    },
+    {
+      "id": "slab_004",
+      "type": "SLAB_ON_GRADE",
+      "name": "PORCH SLAB",
+      "polygon": [
+        { "x": 1262, "y": 2094 },
+        { "x": 1481, "y": 2094 },
+        { "x": 1481, "y": 2438 },
+        { "x": 1262, "y": 2438 }
+      ]
+    },
+    {
+      "id": "slab_005",
+      "type": "SLAB_ON_GRADE",
+      "name": "OUTDOOR LIVING SLAB",
+      "polygon": [
+        { "x": 1582, "y": 669 },
+        { "x": 2045, "y": 669 },
+        { "x": 2045, "y": 1232 },
+        { "x": 1582, "y": 1232 }
+      ]
+    },
+    {
+      "id": "pad_001",
+      "type": "CONCRETE_PAD",
+      "name": "4x4\nCONCRETE\nPAD",
+      "polygon": [
+        { "x": 780, "y": 772 },
+        { "x": 822, "y": 772 },
+        { "x": 822, "y": 814 },
+        { "x": 780, "y": 814 }
+      ]
+    }
+  ],
+  "symbols": [],
+  "gridLines": [],
+  "specialFeatures": [],
+  "mepSystems": {
+    "plumbing": [
+      {
+        "id": "plumb_001",
+        "type": "SINK_DRAIN",
+        "position": { "x": 1139, "y": 1289 }
+      },
+      {
+        "id": "plumb_002",
+        "type": "DISHWASHER_CONNECTION",
+        "position": { "x": 1139, "y": 1210 }
+      },
+      {
+        "id": "plumb_003",
+        "type": "ICE_MAKER_LINE",
+        "position": { "x": 1530, "y": 1133 }
+      },
+      {
+        "id": "plumb_004",
+        "type": "SINK_DRAIN",
+        "position": { "x": 1698, "y": 1637 }
+      },
+      {
+        "id": "plumb_005",
+        "type": "WASHER_BOX",
+        "position": { "x": 1734, "y": 1637 }
+      },
+      {
+        "id": "plumb_006",
+        "type": "TOILET_FLANGE",
+        "position": { "x": 1520, "y": 2146 }
+      },
+      {
+        "id": "plumb_007",
+        "type": "TUB_DRAIN",
+        "position": { "x": 1538, "y": 2244 }
+      },
+      {
+        "id": "plumb_008",
+        "type": "SINK_DRAIN",
+        "position": { "x": 1698, "y": 2244 }
+      },
+      {
+        "id": "plumb_009",
+        "type": "TOILET_FLANGE",
+        "position": { "x": 2157, "y": 1812 }
+      },
+      {
+        "id": "plumb_010",
+        "type": "SINK_DRAIN",
+        "position": { "x": 2063, "y": 1837 }
+      },
+      {
+        "id": "plumb_011",
+        "type": "TOILET_FLANGE",
+        "position": { "x": 2341, "y": 1280 }
+      },
+      {
+        "id": "plumb_012",
+        "type": "TUB_DRAIN",
+        "position": { "x": 2400, "y": 1582 }
+      },
+      {
+        "id": "plumb_013",
+        "type": "SHOWER_DRAIN",
+        "position": { "x": 2239, "y": 1698 }
+      },
+      {
+        "id": "plumb_014",
+        "type": "SINK_DRAIN",
+        "position": { "x": 2239, "y": 1250 }
+      },
+      {
+        "id": "plumb_015",
+        "type": "SINK_DRAIN",
+        "position": { "x": 2397, "y": 1250 }
+      },
+      {
+        "id": "plumb_016",
+        "type": "SINK_DRAIN",
+        "position": { "x": 1812, "y": 1184 }
+      }
+    ]
+  },
+  "detailViews": [],
+  "schedules": [],
+  "extractedText": []
+}

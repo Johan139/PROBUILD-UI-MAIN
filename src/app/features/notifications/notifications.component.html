@@ -1,42 +1,87 @@
-<div class="notifications-container">
-  <h1>All Notifications</h1>
-   <div class="pagination-controls">
-      <button class="nav-btn" (click)="previousPage()" [disabled]="currentPage === 1">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-      </button>
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
-      <button class="nav-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-        </svg>
+<div class="notifications">
+  <!-- Header / title row -->
+  <header class="pagebar">
+    <h1 class="title">Notifications</h1>
+
+    <div class="tools">
+      <div class="count" *ngIf="totalPages > 1 || paginatedNotifications.length">
+        Page {{ currentPage }} of {{ totalPages }}
+      </div>
+
+      <!-- page size -->
+      <label class="size" aria-label="Page size">
+        <span>Show</span>
+        <select [(ngModel)]="pageSize" (change)="goToFirstPage()">
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </label>
+
+      <button class="btn ghost" type="button" (click)="markAllRead()" *ngIf="paginatedNotifications.length">
+        Mark all read
       </button>
     </div>
-  <!-- <button *ngIf="authService.isLoggedIn()" (click)="sendTestNotification()">Send Test Notification</button> -->
-  <ul *ngIf="paginatedNotifications.length > 0; else noNotifications" class="notification-list">
-    <li *ngFor="let notification of paginatedNotifications" class="notification-item" (click)="navigateToJob(notification)">
-      <p class="notification-message">
-        <strong>{{ notification.projectName }}</strong> - {{ notification.senderFullName }}: {{ notification.message }} <span class="timestamp">{{ notification.timestamp | date:'short' }}</span>
-      </p>
+  </header>
+
+  <!-- Top pagination -->
+  <nav class="pager" aria-label="Pagination">
+    <button class="nav icon-btn" (click)="previousPage()" [disabled]="currentPage===1" aria-label="Previous page">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    <span class="pageinfo">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button class="nav icon-btn" (click)="nextPage()" [disabled]="currentPage===totalPages" aria-label="Next page">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </nav>
+
+  <!-- Empty state -->
+  <section class="empty" *ngIf="!paginatedNotifications.length">
+    <div class="empty__icon">🔔</div>
+    <p>No notifications yet</p>
+  </section>
+
+  <!-- List -->
+  <ul class="list" *ngIf="paginatedNotifications.length" role="list">
+    <li class="row"
+        *ngFor="let n of paginatedNotifications; trackBy: trackByNotif"
+        (click)="onOpen(n)"
+        [class.unread]="n.unread === true"
+        tabindex="0"
+        (keydown.enter)="onOpen(n)"
+        (keydown.space)="onOpen(n)">
+      <!-- Avatar -->
+      <div class="avatar" aria-hidden="true">
+        <span class="avatar__text">{{ getInitials(n.senderFullName) }}</span>
+      </div>
+
+      <!-- Content -->
+      <div class="cell">
+        <div class="line1">
+          <span class="sender">{{ n.senderFullName }}</span>
+          <span class="project">— {{ n.projectName }}</span>
+          <span class="time">{{ n.timestamp | date:'medium' }}</span>
+        </div>
+
+        <div class="msg">
+          {{ n.message }}
+          <span class="fee" *ngIf="n.message === 'You Won the Bid'">(A fee will be applied)</span>
+        </div>
+      </div>
+
+      <!-- Unread dot -->
+      <span class="dot" *ngIf="n.unread === true" aria-label="Unread"></span>
     </li>
   </ul>
-  <ng-template #noNotifications>
-    <div class="no-notifications">
-      You have no notifications.
-    </div>
-  </ng-template>
-  <div class="pagination-controls">
-     <button class="nav-btn" (click)="previousPage()" [disabled]="currentPage === 1">
-       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-       </svg>
-     </button>
-     <span>Page {{ currentPage }} of {{ totalPages }}</span>
-     <button class="nav-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
-       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-       </svg>
-     </button>
-   </div>
+
+  <!-- Bottom pagination -->
+  <nav class="pager" aria-label="Pagination" *ngIf="paginatedNotifications.length">
+    <button class="nav icon-btn" (click)="previousPage()" [disabled]="currentPage===1" aria-label="Previous page">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    <span class="pageinfo">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button class="nav icon-btn" (click)="nextPage()" [disabled]="currentPage===totalPages" aria-label="Next page">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </nav>
 </div>

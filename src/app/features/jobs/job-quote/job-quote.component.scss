@@ -1,725 +1,344 @@
-/* Retain original color scheme */
-/* Variables from Projects/Jobs theme */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$darker-yellow: #e6bf00;
-$cyan: #61a0af;
-$black: #000000;
-$dark-gray: #333;
-$light-gray: #d9d9d9;
-$white: #fff;
-$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
+/* Page shell */
 body {
-  overflow-y: auto; /* Replaced hidden for usability */
-  background-color: #fff; /* White background */
+  overflow-y: auto;
+  background: var(--color-canvas);
 }
 
 .page-center {
   width: 100%;
   display: flex;
-  flex-direction: column;   /* <= was row */
-  align-items: center;      /* center the inner blocks */
-  padding: 0 12px;
+  flex-direction: column;
+  align-items: center;
+  padding-inline: 12px;
   margin-top: 6rem;
 }
 
+/* Cards */
 mat-card {
-  background-color: white;
-  border: 1px solid $cyan; /* Retain cyan border */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow */
-  border-radius: 8px; /* Rounded corners */
-  padding: 16px; /* Inner padding */
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 70%, var(--color-border));
+  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-md);
 }
 
+/* Grid */
 .job-quote-container {
   width: 100%;
-  max-width: 1700px;         /* tweak as you like */
-  margin: 2rem auto 0;       /* centers the grid */
+  max-width: 1700px;
+  margin: 2rem auto 0;
   display: grid;
-  grid-template-columns: 1fr 2fr;  /* left (jobs/bids), right (create) */
-  gap: 24px;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-6);
   align-items: start;
-  justify-content: center;   /* ensures the two columns sit centered */
+  justify-content: center;
+  padding: var(--space-2);
 }
+
 .job-quote-container > app-subscription-warning {
-  grid-column: 1 / -1;         /* span across both columns */
-  justify-self: center;        /* center the grid item */
-  display: block;              
-  width: min(1200px, 100%);    /* “a little more width” – bump to taste */
-  margin: 0 0 8px 0;           /* small spacing below */
+  grid-column: 1 / -1;
+  justify-self: center;
+  display: block;
+  width: min(1200px, 100%);
+  margin-bottom: var(--space-2);
 }
+
 .form-col {
   grid-column: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .col-md-8 {
-  flex: 2; /* Right column slightly wider */
+  flex: 2;
   display: flex;
-  justify-content: center; /* Center the card */
+  justify-content: center;
 }
 
-/* Card Heights */
-.project-card {
-  width: 100%;
-  height: auto;
-  min-height: 300px; /* Consistent minimum */
-}
+/* Card sizes */
+.project-card { width: 100%; min-height: 300px; }
+.project-card-bids { min-height: 150px; }
+.job-quote-card { width: 100%; min-height: 600px; }
 
-.project-card-bids {
-  height: auto;
-  min-height: 150px; /* Minimum for balance */
-}
-
-.job-quote-card {
-  width: 100%;
-  // max-width: 800px;
-  height: auto;
-  min-height: 600px; /* Ensure form fits */
-}
-
-/* Typography Improvements */
+/* Headings */
 mat-card-title {
-  font-size: 1.5rem; /* Larger for prominence */
-  font-weight: 700; /* Bolder */
-  color: $dark-gray; /* Darker text */
-  text-transform: uppercase; /* Professional */
-  margin-bottom: 12px; /* Space below */
-}
-
-/* Updated Table Styles to Match Projects */
-table {
-  width: 100%;
-  border-collapse: collapse; /* Matches projects */
-}
-
-thead {
-  background-color: $primary-yellow; /* Matches projects */
-  color: $black; /* Matches projects $black */
-}
-
-th {
-  background-color: $primary-yellow; /* Matches projects */
-  color: $black; /* Matches projects $black */
-  font-weight: 500; /* Matches projects */
-  padding: 8px; /* Matches projects */
-  text-align: left; /* Matches projects */
-  border-bottom: 2px solid $light-gray; /* Matches projects $light-gray */
-}
-
-tr {
-  transition: background-color 0.3s ease; /* Already matches projects */
-}
-
-td {
-  padding: 8px; /* Matches projects */
-  border: 1px solid $light-gray; /* Matches projects $light-gray */
-  color: $black; /* Matches projects $black */
-}
-
-tr:hover {
-  background-color: $light-gray; /* Matches projects $light-gray */
-}
-
-/* Job Status Classes */
-.published {
-  color: #083d77 !important; /* Retained as specific to this context */
-}
-
-.discarded {
-  color: #da4167 !important; /* Retained as specific to this context */
-}
-
-.draft {
-  color: $cyan !important; /* Retained as specific to this context */
-}
-
-/* Remove redundant border classes */
-.data-row-1,
-.data-row-2 {
-  border: none; /* Rely on table borders */
-}
-
-/* Pagination Buttons */
-.table-button {
-  padding: 10px;
-  background-color: $primary-yellow; /* Retain yellow */
-  border-radius: 6px; /* Rounded */
-  border: none;
-  transition: background-color 0.3s ease;
-}
-
-.table-button:disabled {
-  background-color: #e0e0e0;
-  cursor: not-allowed;
-}
-
-.table-button:hover:not(:disabled) {
-  background-color: $darker-yellow; /* Darker yellow */
-}
-
-.icon {
-  width: 24px; /* Larger */
-  height: 24px;
-}
-
-.submit-btn:disabled {
-  background-color: #cccccc !important;
-  color: #666666 !important;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Document Styles */
-.document-meta {
-  font-size: 0.85rem;
-  color: $dark-gray;
-}
-
-.document-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.document-name {
-  font-size: 1rem;
-  font-weight: 500;
-  color: $black;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 0.25rem;
-}
-
-.documents-list {
-  max-height: 60vh;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-
-  /* Custom scrollbar */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: $light-gray;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: $cyan;
-    border-radius: 3px;
-  }
-}
-
-.no-documents {
-  text-align: center;
-  padding: 1rem;
-  color: $dark-gray;
-
-  p {
-    margin: 0;
-    font-size: 1rem;
-  }
-
-  &[error] {
-    color: #da4167;
-    font-weight: 500;
-  }
-}
-
-.documents-dialog {
-  padding: 1rem;
-
-  h2[mat-dialog-title] {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
-    margin-bottom: 1rem;
-  }
-}
-
-.loading-documents {
-  text-align: center;
-  padding: 1rem;
-  color: $dark-gray;
-
-  p {
-    margin: 0.5rem 0 0;
-    font-size: 1rem;
-  }
-}
-
-.document-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid $light-gray;
-  border-radius: 8px;
-  background-color: $white;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #f9f9f9;
-    border-color: $cyan;
-    box-shadow: $shadow;
-  }
-}
-
-.View-btn {
-  background: $primary-yellow;
-  border-radius: 10px;
-  padding: 0px 16px;
-  font-weight: 500;
-  color: $dark-gray;
-  margin: 0 0.5rem;
-
-  &:hover {
-    background: $darker-yellow;
-  }
-
-  &.publish-btn {
-    background: $primary-yellow;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-
-  &.save-btn {
-    background: $secondary-yellow;
-    &:hover {
-      background: darken($secondary-yellow, 10%);
-    }
-  }
-
-  &.delete-btn {
-    background: $primary-yellow;
-    color: $dark-gray;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-}
-
-.view-btn-document {
-  background-color: $primary-yellow;
-  color: $black;
-  padding: 0.25rem 1rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-left: 1rem;
-
-  &:hover {
-    background-color: $darker-yellow;
-    color: $dark-gray;
-  }
-}
-
-.confirm-documents-checkbox {
-  margin: 1rem 0 1rem 0.5rem;
-  font-size: 0.95rem;
-
-  mat-checkbox {
-    font-weight: 500;
-    color: #333;
-    display: inline-block !important;
-    opacity: 1 !important;
-  }
-}
-
-/* Upload Progress Styles */
-.upload-progress {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-right: 15px; /* Space to the left of the upload button */
-  background-color: #f9f9f9; /* Light background for contrast */
-  padding: 8px; /* Add padding for better appearance */
-  border-radius: 6px; /* Rounded corners */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-
-  p {
-    margin: 0 0 5px 0; /* Space below the text */
-    font-size: 12px; /* Smaller text */
-    color: #333; /* Darker text */
-  }
-
-  mat-progress-bar {
-    width: 150px; /* Slightly smaller for better fit */
-    height: 8px; /* Thinner bar */
-    border-radius: 4px; /* Rounded edges */
-  }
-
-  /* Customize the progress bar color */
-  ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner {
-    background-color: $primary-yellow !important; /* Retain yellow */
-  }
-
-  ::ng-deep mat-progress-bar .mdc-linear-progress__buffer {
-    background-color: #e0e0e0 !important; /* Light gray buffer */
-  }
-}
-
-.upload-complete {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-right: 15px; /* Space to the left of the upload button */
-  background-color: #e6ffe6; /* Light green background for success */
-  padding: 8px; /* Add padding for better appearance */
-  border-radius: 6px; /* Rounded corners */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-
-  p {
-    margin: 0; /* Remove default margin */
-    font-size: 12px; /* Smaller text */
-    color: #2e7d32; /* Dark green text for success */
-  }
-}
-
-.upload-success-message {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
-  white-space: nowrap;
-}
-
-/* Form Styling */
-.form-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px; /* More space */
-  gap: 20px; /* Increased gap */
-}
-
-/* Specific styling for the button row */
-.button-row {
-  display: flex;
-  align-items: center; /* Align items vertically */
-  gap: 10px; /* Smaller gap between Generate Quote and Cancel buttons */
-  margin-right: 20px; /* Space between the button group and the upload container */
-}
-
-.button-group {
-  display: flex;
-  gap: 10px; /* Small space between Generate Quote and Cancel buttons */
-}
-
-.panel-wrapper {
-  margin-bottom: 20px;
-}
-
-/* Ensure the upload container aligns with the button row */
-.upload-container {
-  display: flex;
-  align-items: center; /* Align progress bar and upload button vertically */
-  gap: 15px; /* Space between progress bar and upload button */
-}
-
-mat-form-field {
-  flex: 1;
-  width: 100%;
-}
-
-/* House Options */
-.house-options {
-  padding-top: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 20px; /* More space */
-  margin-bottom: 16px;
-}
-
-.house-options button {
-  background: $primary-yellow; /* Retain yellow */
-  color: #333; /* Darker text */
-  border-radius: 8px; /* Rounded */
-  padding: 10px 20px; /* Larger padding */
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-}
-
-.house-options button:hover {
-  background: $darker-yellow; /* Darker yellow */
-}
-
-/* General Button Styling */
-button[mat-raised-button] {
-  background-color: $primary-yellow; /* Retain yellow */
-  color: #333; /* Darker text */
-  font-weight: 500;
-  border-radius: 8px; /* Rounded */
-  padding: 10px 20px; /* Larger padding */
-  transition: background-color 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-}
-
-button[mat-raised-button]:hover {
-  background-color: $darker-yellow; /* Darker yellow */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
-}
-
-.submit-btn {
-  width: 200px; /* Fixed width */
-  height: 48px; /* Fixed height for consistency */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.submit-btn-document {
-  background: $primary-yellow;
-  border-radius: 10px;
-  padding: 0px 16px;
-  font-weight: 500;
-  color: $dark-gray;
-  margin: 0 0.5rem;
-
-  &:hover {
-    background: $darker-yellow;
-  }
-
-  &.publish-btn {
-    background: $primary-yellow;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-
-  &.save-btn {
-    background: $secondary-yellow;
-    &:hover {
-      background: darken($secondary-yellow, 10%);
-    }
-  }
-
-  &.delete-btn {
-    background: $primary-yellow;
-    color: $dark-gray;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-}
-
-.cancel-btn {
-  width: 200px; /* Fixed width */
-  height: 48px; /* Fixed height for consistency */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #da4167; /* Red for cancel */
-  color: white; /* White text for contrast */
-}
-
-.cancel-btn:hover {
-  background-color: #c0395a; /* Darker red on hover */
-}
-
-/* File Upload */
-.custom-file-upload {
-  position: relative;
-  display: inline-block;
-}
-
-.custom-file-upload input[type="file"] {
-  display: none; /* Ensure input is hidden */
-  opacity: 0; /* Additional layer of hiding */
-  width: 0; /* Prevent any residual space */
-  height: 0; /* Prevent any residual space */
-}
-
-.upload-label {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* Space between icon and text */
-  padding: 10px 20px; /* Larger padding */
-  background-color: $primary-yellow; /* Retain yellow */
-  color: #333; /* Darker text */
-  font-weight: 500;
-  border-radius: 8px; /* Rounded corners */
-  cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  box-sizing: border-box; /* Include padding in width */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-}
-
-.job-list-scroll {
-  max-height: 600px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.job-list-scroll table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.upload-label:hover {
-  background-color: $darker-yellow; /* Darker yellow */
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Slightly larger shadow on hover */
-}
-
-.upload-icon {
-  height: 24px;
-  width: 24px;
-  vertical-align: middle;
-}
-
-/* Alert Modal */
-.alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.alert-modal {
-  background-color: white;
-  padding: 24px; /* More padding */
-  border-radius: 8px; /* Rounded */
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  width: 300px;
-}
-
-.alert-modal p {
-  margin-bottom: 20px;
-  color: #333; /* Darker text */
-}
-
-.alert-modal button {
-  background-color: $primary-yellow; /* Retain yellow */
-  color: #333; /* Darker text */
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  margin-bottom: var(--space-3);
 }
 
 /* Divider */
 mat-divider {
-  background-color: $secondary-yellow; /* Retain yellow variant */
-  border: none;
+  background: var(--color-primary);
+  border: 0;
   height: 2px;
-  margin: 16px 0; /* More spacing */
+  margin: var(--space-4) 0;
 }
 
-/* Material Overrides */
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead, th {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+th {
+  font-weight: 600;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 2px solid var(--color-border);
+}
+
+tr { transition: background-color .2s ease; }
+
+td {
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.house-options {
+  gap: var(--space-3);
+}
+
+tr:hover { background: var(--color-surface-hover); }
+
+.published  { color: var(--color-focus) !important; }
+.discarded  { color: var(--color-danger) !important; }
+.draft      { color: var(--color-accent) !important; }
+
+/* Pagination-like buttons (table) */
+.table-button {
+  padding: 10px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  border: 0;
+  transition: background-color .2s ease;
+  color: var(--color-text-inverse);
+}
+.table-button:disabled {
+  background: #e0e0e0;
+  cursor: not-allowed;
+  color: #666;
+}
+.table-button:not(:disabled):hover { background: var(--color-primary-hover); }
+
+/* Upload / documents */
+.document-meta { font-size: .85rem; color: var(--color-text); opacity: .9; }
+
+.document-info {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+.document-name {
+  font-size: 1rem; font-weight: 600; color: var(--color-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .25rem;
+}
+
+.documents-list {
+  max-height: 60vh; overflow-y: auto; padding-right: .5rem;
+}
+.documents-list::-webkit-scrollbar { width: 6px; }
+.documents-list::-webkit-scrollbar-track {
+  background: var(--color-border); border-radius: 3px;
+}
+.documents-list::-webkit-scrollbar-thumb {
+  background: var(--color-accent); border-radius: 3px;
+}
+
+.no-documents {
+  text-align: center; padding: 1rem; color: var(--color-text);
+  p { margin: 0; font-size: 1rem; }
+  &[error] { color: var(--color-danger); font-weight: 600; }
+}
+
+.documents-dialog {
+  padding: 1rem;
+  h2[mat-dialog-title] {
+    font-size: 1.5rem; font-weight: 800; color: var(--color-text); margin-bottom: 1rem;
+  }
+}
+
+.loading-documents {
+  text-align: center; padding: 1rem; color: var(--color-text);
+  p { margin: .5rem 0 0; font-size: 1rem; }
+}
+
+.document-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .75rem; margin-bottom: .5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: all .2s ease;
+  &:hover {
+    background: var(--color-surface-subtle);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-1);
+  }
+}
+
+/* Buttons (shared look) */
+.View-btn,
+.submit-btn-document,
+.view-btn-document,
+button[mat-raised-button] {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  transition: background-color .2s ease, box-shadow .2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+button[mat-raised-button]:hover,
+.View-btn:hover,
+.submit-btn-document:hover,
+.view-btn-document:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 3px 6px rgba(0,0,0,.15);
+}
+
+.submit-btn:disabled {
+  background: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.submit-btn { width: 200px; height: 48px; display: inline-flex; align-items: center; justify-content: center; }
+
+.cancel-btn {
+  width: 200px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-danger); color: #fff;
+  border-radius: var(--radius-md);
+}
+.cancel-btn:hover { background: #c0395a; }
+
+/* Form rows */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.button-row { display: flex; align-items: center; gap: var(--space-3); margin-right: var(--space-5); }
+.button-group { display: flex; gap: var(--space-3); }
+
+.panel-wrapper { margin-bottom: var(--space-5); }
+
+/* Upload cluster (right side of button row) */
+.upload-container {
+  display: flex; align-items: center; gap: 15px;
+}
+
+.upload-progress {
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: var(--color-surface-subtle);
+  padding: 8px; border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  p { margin: 0 0 5px; font-size: 12px; color: var(--color-text); }
+  mat-progress-bar { width: 150px; height: 8px; border-radius: 4px; }
+  ::ng-deep mat-progress-bar .mdc-linear-progress__bar-inner { background: var(--color-primary) !important; }
+  ::ng-deep mat-progress-bar .mdc-linear-progress__buffer { background: #e0e0e0 !important; }
+}
+
+.upload-complete {
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: #e6ffe6; padding: 8px; border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  p { margin: 0; font-size: 12px; color: #2e7d32; }
+}
+
+.upload-success-message {
+  position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%); margin-bottom: 8px; white-space: nowrap;
+}
+
+.custom-file-upload { position: relative; display: inline-block; }
+.custom-file-upload input[type="file"] { display: none; opacity: 0; width: 0; height: 0; }
+
+.upload-label,
+.custom-file-upload .submit-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 20px; background: var(--color-primary);
+  color: var(--color-text-inverse); font-weight: 700;
+  border-radius: var(--radius-md); cursor: pointer;
+  transition: background-color .2s ease, box-shadow .2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+.upload-label:hover { background: var(--color-primary-hover); }
+.upload-icon { width: 24px; height: 24px; vertical-align: middle; }
+
+/* Tooltip for uploaded file names */
+::ng-deep .mat-tooltip {
+  background: #333; color: #fff; font-size: 12px; padding: 8px; max-width: 300px; white-space: pre-wrap;
+}
+
+/* Material form tweaks */
+mat-form-field { flex: 1; width: 100%; }
 ::ng-deep .mdc-floating-label {
   position: static !important;
-  font-size: 0.9rem; /* Smaller label */
-  color: #333; /* Darker text */
+  font-size: .9rem;
+  color: var(--color-text);
 }
-
-::ng-deep .mdc-text-field .mdc-floating-label {
-  transform: translateY(-60%) !important;
-}
-
+::ng-deep .mdc-text-field .mdc-floating-label { transform: translateY(-60%) !important; }
 ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-  background-color: white !important;
-  border-radius: 6px;
-  border: 1px solid $cyan; /* Retain cyan */
+  background: var(--color-surface) !important;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
 }
 
-/* Tooltip Styling for Uploaded File Names */
-::ng-deep .mat-tooltip {
-  background-color: #333;
-  color: white;
-  font-size: 12px;
-  padding: 8px;
-  max-width: 300px;
-  white-space: pre-wrap;
+/* Scroll area for jobs/bids tables */
+.job-list-scroll { max-height: 600px; overflow-y: auto; overflow-x: hidden; }
+.job-list-scroll table { width: 100%; border-collapse: collapse; }
+
+/* Alert modal */
+.alert-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(5px);
+  display: grid; place-items: center; z-index: 1000;
+}
+.alert-modal {
+  background: var(--color-surface); color: var(--color-text);
+  padding: 24px; border-radius: var(--radius-md); box-shadow: var(--shadow-3);
+  text-align: center; width: 300px;
+}
+.alert-modal p { margin-bottom: 20px; }
+.alert-modal button { background: var(--color-primary); color: var(--color-text-inverse); }
+
+/* Button wrappers for tooltips */
+.button-wrapper { display: inline-block; }
+.disabled-wrapper { cursor: not-allowed; }
+.disabled-wrapper .submit-btn {
+  background: #ccc; color: #666; pointer-events: none;
 }
 
-/* Responsive Design */
+.col-md-8-job-quote {
+  grid-column: 2;
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .job-quote-container {
     width: 95vw;
-    flex-direction: column; /* Stack on mobile */
-    gap: 16px; /* Reduced gap */
-    grid-template-columns: 1fr; /* Stack columns on mobile */
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
-
-  .form-row {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .button-row {
-    flex-direction: row; /* Keep buttons in a row on mobile */
-    align-items: center; /* Align to the center */
-    flex-wrap: wrap; /* Allow wrapping if needed */
-  }
-
-  .button-group {
-    display: flex;
-    gap: 10px; /* Maintain small gap on mobile */
-  }
-
-  .upload-container {
-    flex-direction: row; /* Keep progress bar and upload button in a row */
-    width: auto; /* Adjust width on mobile */
-    justify-content: flex-start; /* Align to the left */
-  }
-
-  .upload-progress,
-  .upload-complete {
-    margin-right: 10px; /* Adjust spacing for mobile */
-  }
-
-  .submit-btn,
-  .cancel-btn {
-    width: 100%; /* Full width on mobile */
-    max-width: 200px; /* Keep max width */
-  }
-
-  mat-form-field {
-    flex: none;
-    width: 100%;
-  }
-
-  .project-card,
-  .project-card-bids,
-  .job-quote-card {
-    max-width: 100%;
-  }
-.col-md-8-job-quote {
-  grid-column: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-    .col-md-4-job-quote {
-        flex: 0 0 auto;
-        width: 100%;
-    }
+  .form-row { flex-direction: column; gap: 12px; }
+  .button-row { flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .upload-container { flex-direction: row; width: auto; justify-content: flex-start; }
+  .upload-progress, .upload-complete { margin-right: 10px; }
+  .submit-btn, .cancel-btn { width: 100%; max-width: 200px; }
+  .project-card, .project-card-bids, .job-quote-card { max-width: 100%; }
+  .col-md-8-job-quote { grid-column: 1; }
+  .col-md-4-job-quote { width: 100%; flex: 0 0 auto; }
 }
 
-.button-wrapper {
-  display: inline-block;
-}
-
-.disabled-wrapper {
-  cursor: not-allowed;
-}
-
-.disabled-wrapper .submit-btn {
-  background-color: #cccccc;
-  color: #666666;
-  pointer-events: none;
-}

@@ -1,626 +1,217 @@
-/* Variables from Projects/Jobs theme */
-$primary-yellow: #fbd008;
-$secondary-yellow: #fcd02d;
-$darker-yellow: #e6bf00;
-$cyan: #61a0af;
-$black: #000000;
-$dark-gray: #333;
-$light-gray: #d9d9d9;
-$white: #fff;
-$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+@use 'styles/util/mixins' as u;
 
-/* Base Styles */
-.container {
-  width: 100%;
-  padding: 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  overflow-x: hidden;
-  overflow-y: auto;
+/* Page shell */
+:host {
+  display: block;
+  background: var(--color-canvas);
+  color: var(--color-text);
 }
 
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  width: 100%;
-  flex-shrink: 0;
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-4);
+  min-height: calc(100vh - 120px); /* header + company bar allowance */
+
+  .card { @include u.card-style; }
+
+  .welcome-card       { grid-column: span 6; }
+  .action-points-card { grid-column: span 6; }
+  .job-progress-card  { grid-column: 1 / -1; }
+
+  @media (max-width: 1024px) {
+    .welcome-card,
+    .action-points-card,
+    .job-progress-card { grid-column: 1 / -1; }
+  }
 }
 
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  flex: 1 1 45%;
-  min-width: 320px;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Material Card */
+/* Material card content */
 mat-card {
-  background-color: $white;
-  border-radius: 8px;
+  background: transparent;
+  border-radius: var(--radius-md);
   box-shadow: none;
-  padding: 1rem;
-  height: auto;
-  min-height: 300px;
-  flex-grow: 1;
+  padding: 0;
 }
-
 mat-card-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-mat-card-custom {
-  background-color: #f5f5f5 !important;
-  border-radius: 16px;
-  box-shadow: none;
-}
+  padding: var(--space-5) var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
 
-mat-card-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: $dark-gray;
-  text-transform: uppercase;
-  margin-bottom: 0.5rem;
-}
-.action-points-wrapper {
-  max-height: 500px; // or whatever fits your layout cleanly
-  overflow-y: auto;
-  overflow-x: hidden; // ✅ stops horizontal scrolling
-  border-radius: 4px;
-  background-color: white !important;
-  border: 1px solid $light-gray;
-}
-.submit-btn {
-  background: $primary-yellow;
-  border-radius: 10px;
-  padding: 0px 16px;
-  font-weight: 500;
-  color: $dark-gray;
-  margin: 0 0.5rem;
-
-  &:hover {
-    background: $darker-yellow;
-  }
-
-  &.publish-btn {
-    background: $primary-yellow;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-
-  &.save-btn {
-    background: $secondary-yellow;
-    &:hover {
-      background: darken($secondary-yellow, 10%);
-    }
-  }
-
-  &.delete-btn {
-    background: #fbd008;
-    color: $dark-gray;
-    &:hover {
-      background: $darker-yellow;
-    }
-  }
-}
-
-.action-points-table .submit-btn.delete-btn {
-  width: 80px;         // ✅ much slimmer
-  padding: 4px 0;       // ✅ vertical center, no overflow
-  font-size: 0.85rem;
-  margin: 0 auto;       // ✅ center it inside the cell
-  display: block;       // ✅ ensures the margin applies
-  border-radius: 6px;   // optional: a bit tighter
-}
-
-.action-points-table {
-  width: 100%;            // ✅ takes full card width
-  table-layout: fixed;    // ✅ equal distribution
-  min-width: 70px;
-  padding: 4px 12px;
-  font-size: 0.85rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  margin: 0;
-
-  th, td {
-    padding: 0.75rem 1rem; // ✅ more horizontal breathing room
-    text-align: left;
-    border-bottom: 1px solid $light-gray;
-    word-wrap: break-word;
-  }
-
-  .options-cell {
-    text-align: center;
-    vertical-align: middle;
-  }
-
-  th {
-    background-color: $secondary-yellow;
-    color: $dark-gray;
-    font-weight: bold;
-  }
-
-  tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-
-  button:not([mat-icon-button]) {
-    padding: 4px 12px;
-    font-size: 0.85rem;
+  mat-card-title {
+    font: var(--fw-bold) var(--fs-xl)/var(--lh-tight) var(--font-sans);
+    color: var(--color-text);
+    letter-spacing: .2px;
   }
 }
 mat-card-content {
-  padding-top: 1rem;
-
-  p {
-    color: $black;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
+  padding: var(--space-5);
 }
-.dialog-action-buttons {
-  display: flex;
-  justify-content: space-between;
-  gap: 1.5rem; /* Increase gap for better spacing in a wider dialog */
-  flex-wrap: nowrap;
-  margin-top: 1rem;
 
-  button {
-    flex: 1;
-    white-space: nowrap;
-    padding: 0.5rem 1rem; /* Adjust padding for better appearance */
-  }
+/* Dividers use accent instead of harsh line */
+.section-divider {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  opacity: .9;
+  margin: var(--space-4) 0;
 }
-.loading-documents {
+
+.welcome-text {
+  font-size: var(--fs-lg);
+  line-height: var(--lh-relaxed);
+  color: var(--color-text-muted);
   text-align: center;
-  padding: 1rem;
-  color: $dark-gray;
-
-  p {
-    margin: 0.5rem 0 0;
-    font-size: 1rem;
-  }
+  max-width: 80%;
+  margin: var(--space-4) auto;
 }
-.no-documents {
-  text-align: center;
-  padding: 1rem;
-  color: $dark-gray;
-
-  p {
-    margin: 0;
-    font-size: 1rem;
-  }
-
-  &[error] {
-    color: #da4167;
-    font-weight: 500;
-  }
-}
-.documents-list {
-  max-height: 60vh;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-
-  /* Custom scrollbar */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: $light-gray;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: $cyan;
-    border-radius: 3px;
-  }
-}
-::ng-deep .mat-mdc-snack-bar-container.snack-success {
-  background-color: #fbd008 !important; /* your yellow */
-  color: #333 !important;
-  font-weight: 600;
-}
-
-::ng-deep .mat-mdc-snack-bar-container.snack-success .mat-simple-snackbar-action {
-  color: #333 !important; /* button text */
-  font-weight: 600;
-}
-::ng-deep .custom-snackbar {
-  background-color: #333 !important; // dark background
-  color: white !important;           // text color
-
-  .mat-mdc-snack-bar-action {
-    color: #fbd008 !important;       // yellow Close button
-    font-weight: 600;
-  }
-}
-.progress-text {
-  font-weight: bold;
-  font-size: 1rem;
-  color: #333;
-  text-align: center;
-}
-.chat-box-inside-dialog {
-  max-height: 300px;
-  overflow-y: auto;
-  background: white;
-  padding: 10px;
-  margin-bottom: 20px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-.job-scroll-container {
-  flex: 1;
-  min-height: 0;
-  max-height: calc(100vh - 300px); // Adjust this value to suit the height of your header/cards
-  overflow-y: auto;
-  padding-right: 8px; // Optional: space to prevent scrollbar overlap
-}
-
-.job-progress-bar {
-  width: 100%;
-  height: 8px;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 4px;
-
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: #1976d2; // Angular Material Blue
-  transition: width 0.3s ease;
-}
-
-.progress-percent {
-  font-size: 12px;
-  color: #333;
-  margin-left: 5px;
-}
-
-.job-progress-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-width: 320px;
-  min-height: 0;
-}
-.chat-message {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 8px;
-}
-
-.chat-bubble {
-  background-color: #f1f0f0;
-  border-radius: 8px;
-  padding: 10px;
-  max-width: 100%;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  word-break: break-word;
-}
-
-.note-text {
-  font-size: 14px;
-  margin-bottom: 5px;
-}
-
-.note-time {
-  font-size: 11px;
-  color: #777;
-  text-align: right;
-}
-
-.note-textarea {
-  width: 100%;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 14px;
-}
-
-.document-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid $light-gray;
-  border-radius: 8px;
-  background-color: $white;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #f9f9f9;
-    border-color: $cyan;
-    box-shadow: $shadow;
-  }
-}
-.document-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.document-name {
-  font-size: 1rem;
-  font-weight: 500;
-  color: $black;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 0.25rem;
-}
-.note-detail-dialog {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 100%;
-  overflow: visible;
-  min-height: 400px; /* Keep this to ensure a minimum dialog height */
-  max-height: 85vh; /* Match the container's max-height */
-  h2 {
-    margin-top: 0;
-  }
-
-  mat-dialog-content {
-    overflow: hidden; /* Prevent internal scrollbars on the content itself */
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    word-break: break-word;
-    padding-bottom: 1rem;
-    flex-grow: 0; /* Prevent the content from growing to fill the dialog */
-    flex-shrink: 0; /* Prevent the content from shrinking */
-  }
-
-  mat-dialog-actions {
-    flex-wrap: nowrap;
-    justify-content: flex-end;
-    gap: 1rem;
-  }
-}
-.note-text-box {
-  background-color: $white;       // Or #fff
-  padding: 1rem;
-  border: 1px solid $light-gray;  // Use your existing variable or `#ccc`
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  color: $dark-gray;
-  margin-top: 0.5rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-mat-dialog-content {
-  overflow: hidden;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  word-break: break-word;
-  padding-bottom: 1rem;
-  flex-grow: 1; /* Allow the content area to grow and fill the dialog height */
-
-  p {
-    margin: 0.5rem 0;
-  }
-}
-.view-btn {
-  background-color: $primary-yellow !important;
-  color: $black !important;
-  padding: 0.25rem 1rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-left: 1rem;
-
-  &:hover {
-    background-color: $darker-yellow;
-    color: $dark-gray;
-  }
-}
-.wrap-text {
-  white-space: normal;
-  word-break: break-word;
-}
-/* Documents Dialog */
-.documents-dialog {
-  padding: 1rem;
-
-  h2[mat-dialog-title] {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: $dark-gray;
-    margin-bottom: 1rem;
-  }
-}
-.document-meta {
-  font-size: 0.85rem;
-  color: $dark-gray;
-}
-/* Divider */
-mat-divider {
-  background-color: $secondary-yellow;
-  height: 2px;
-  margin: 1rem 0;
-}
-
-/* Chart Container */
-.chart-container {
-  padding: 1rem 0;
-}
-
-/* Buttons */
-.submit-btn {
-  background: $primary-yellow;
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-weight: 500;
-  color: $dark-gray;
-  width: 200px;
-  margin: 0 0.5rem;
-
-  &:hover {
-    background: $darker-yellow;
-  }
-}
-
-.action-buttons {
-  padding: 1rem 0;
+/* Welcome CTA */
+.actions {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
+.btn-primary {
+  background: var(--brand-yellow-primary) !important;
+  color: var(--gray-900) !important;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-weight: var(--fw-semibold);
+  border: 1px solid transparent;
+  @include u.interactive-states;
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .column {
-    width: 100%;
-  }
-  .documents-dialog {
-    padding: 0.5rem;
-  }
-  .row {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .submit-btn {
-    width: 100%;
-    margin: 0.5rem 0;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  mat-card {
-    height: auto;
-    min-height: 300px;
+  &:hover {
+    background: var(--brand-yellow-accent);
   }
 }
-@media (max-width: 1024px) {
-  .column, .job-progress-panel {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-  .row {
-    flex-direction: column;
-    align-items: center;
-  }
-  .submit-btn {
-    width: 100%;
-    margin: 0.5rem 0;
-  }
-  .action-buttons {
-    flex-direction: column;
-  }
-  mat-card {
-    height: auto;
-    min-height: 300px;
-  }
+.btn-ghost {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  @include u.interactive-states;
 }
-::ng-deep .custom-note-dialog .mat-dialog-container {
-  width: 800px !important;
-  max-height: 90vh !important;
-  overflow: visible !important;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  background-color: #fefefe;
+
+/* Muted helper text */
+.muted { color: var(--color-text-muted); }
+
+/* Tables (Action Points + Jobs) */
+
+.table-wrap {
+  max-height: 48vh;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
-::ng-deep .note-popup-panel .mat-dialog-container {
-  width: 750px !important;
-  max-width: 90vw !important;
-  max-height: none !important;
-  overflow: visible !important;
-  padding: 24px;
-  border-radius: 10px;
-  background: #fefefe;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+
+/* Plain table (Action Points) */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    text-align: left;
+    font-weight: var(--fw-semibold);
+    padding: 10px 12px;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text);
+    vertical-align: middle;
+  }
+  tr:hover td { background: var(--color-surface-hover); }
+  .wrap { white-space: normal; word-break: break-word; }
+  .col-actions { width: 120px; text-align: right; }
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 8px;
+  border-radius: 999px; font-size: var(--fs-xs);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.badge.is-approved { background: color-mix(in oklab, var(--color-success) 14%, transparent); }
+.badge.is-rejected { background: color-mix(in oklab, var(--color-danger) 14%, transparent); }
+.badge.is-archived { background: color-mix(in oklab, var(--color-neutral) 14%, transparent); }
+.badge.is-pending  { background: color-mix(in oklab, var(--color-warning) 18%, transparent); }
+
+/* Angular Material table (Jobs) */
+.job-table {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: clip; /* keep sticky header inside radius */
+}
+.job-table .mat-mdc-header-row {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-weight: var(--fw-bold);
+}
+.job-table .mat-mdc-row:hover {
+  background: var(--color-surface-hover);
+}
+.job-table .mat-mdc-header-cell,
+.job-table .mat-mdc-cell {
+  padding: 10px 12px;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Progress bar */
+.progress {
+  width: 100%;
+  height: 8px;
+  background: var(--neutral-200, #e5e7eb);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-right: var(--space-2);
+  display: inline-block;
+  vertical-align: middle;
+}
+.bar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width .25s ease;
+}
+.pct {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+
+/* Dialogs (shared) */
+.documents-dialog,
+.note-detail-dialog {
+  @include u.card-style;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
 }
 .note-text-box {
-  background-color: $white;
-  padding: 1rem;
-  border: 1px solid $light-gray;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 1rem;
-  color: $dark-gray;
-  margin-top: 0.5rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  width: 100%;
-  box-sizing: border-box;
-  height: 200px; /* Fixed height for the textbox */
-  overflow-y: auto; /* Scrollbar for overflow */
-
-  /* Custom scrollbar styling */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: $light-gray;
-    border-radius: 3px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: $cyan;
-    border-radius: 3px;
-  }
-}
-::ng-deep .custom-dialog-container .mat-mdc-dialog-surface {
-  width: 900px !important;
-  max-height: 100vh !important; /* Match the new maxHeight */
-  overflow-y: auto !important;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
 }
 
-::ng-deep .note-detail-dialog p.note-content {
-  background-color: white;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  max-height: none;
-}
+/* Forms in header area */
+.team-picker { margin-bottom: var(--space-3); }
+:host { --mdc-outlined-text-field-container-shape: var(--radius-sm); }
 
-.mat-elevation-z8 {
-  margin-top: 20px;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: none;
-
-  mat-header-cell, mat-cell {
-    padding: 10px;
-    color: #333;
-  }
-
-  mat-header-cell {
-    background-color: #fcd02d;
-    font-weight: 700;
-  }
-
-  mat-row:hover {
-    background-color: lighten(#61a0af, 40%);
-  }
-
-  mat-icon-button {
-    color: #333;
-
-    &:hover {
-      color: #61a0af;
-    }
-  }
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
 }

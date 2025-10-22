@@ -1,0 +1,89 @@
+$primary-yellow: #fbd008;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+.upload-container {
+  display: flex;
+  gap: 20px;
+  padding: 2rem;
+  font-family: sans-serif;
+}
+
+.upload-form {
+  flex: 1;
+  padding: 2rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  box-shadow: $shadow;
+}
+
+h2 {
+  color: $dark-gray;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: $dark-gray;
+  font-weight: 600;
+}
+
+input[type="file"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid $light-gray;
+  border-radius: 4px;
+}
+
+.progress-container {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+mat-progress-bar {
+  flex: 1;
+}
+
+.submit-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background-color: $primary-yellow;
+  color: $dark-gray;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s;
+
+  &:disabled {
+    background-color: $light-gray;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: darken($primary-yellow, 10%);
+  }
+}
+
+.preview-pane {
+  flex: 2;
+  padding: 2rem;
+  border: 1px solid $light-gray;
+  border-radius: 8px;
+  background-color: $white;
+  box-shadow: $shadow;
+}
+
+iframe {
+  border: 1px solid $light-gray;
+}

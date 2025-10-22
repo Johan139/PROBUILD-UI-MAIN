@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit, TemplateRef } from '@angular/core';
+import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
@@ -20,7 +20,6 @@ import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { timeout, switchMap, filter, take, map } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
-import { formatDate } from '@angular/common';
 import { DatePipe } from '@angular/common';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,19 +28,22 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 import { QuoteService } from '../../quote/quote.service';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { AuthService } from '../../../authentication/auth.service';
 import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
-import { AnalysisService, AnalysisRequestDto } from '../services/analysis.service';
+import { AnalysisService } from '../services/analysis.service';
 import { AiChatService } from '../../ai-chat/services/ai-chat.service';
 import { AiChatStateService } from '../../ai-chat/services/ai-chat-state.service';
 import { Prompt } from '../../ai-chat/models/ai-chat.models';
 import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
 import { JobDocument } from '../../../models/JobDocument';
-import { DocumentsDialogComponent } from '../../../shared/dialogs/documents-dialog/documents-dialog.component';
+import { JOB_TYPES } from '../../../data/job-types';
+import { BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
+import { OverlayStateService } from '../../../services/overlay-state.service';
+import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
+import { MatToolbarModule } from '@angular/material/toolbar';
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
@@ -51,9 +53,7 @@ const Google_API = environment.Google_API;
   standalone: true,
   imports: [
     CommonModule,
-
     ReactiveFormsModule,
-
     MatFormField,
     MatSelectModule,
     MatDatepickerModule,
@@ -63,7 +63,6 @@ const Google_API = environment.Google_API;
     FormsModule,
     NgIf,
     NgFor,
-
     // Angular Material Modules
     MatFormFieldModule,
     MatSelectModule,
@@ -81,12 +80,12 @@ const Google_API = environment.Google_API;
     MatIconModule,
     MatCheckboxModule,
     MatRadioModule,
-
     // Custom Components and Pipes
     LoaderComponent,
-    FileSizePipe,
     SubscriptionWarningComponent,
-  ],
+    PdfViewerComponent,
+    MatToolbarModule
+],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
   styleUrls: ['./job-quote.component.scss'],
@@ -113,6 +112,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   private hubConnection!: HubConnection;
   uploadedFileInfos: UploadedFileInfo[] = [];
   userContextFile: File | null = null;
+  activeBlueprints: BlueprintDocument[] = [];
+  activeDocument: { url: string, name: string} | null = null;
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
@@ -128,6 +129,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPrompts = new FormControl([]);
   analysisReport: string | null = null;
   isAnalyzing: boolean = false;
+  jobTypes = JOB_TYPES;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -142,7 +144,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private fileUploadService: FileUploadService,
     private analysisService: AnalysisService,
     private aiChatService: AiChatService,
-    private aiChatStateService: AiChatStateService
+    private aiChatStateService: AiChatStateService,
+    public overlayState: OverlayStateService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -963,6 +966,19 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       size: fileInfo.size
     }));
     this.fileUploadService.viewUploadedFiles(documents);
+  }
+
+  loadBlueprintData(jobId: number): void {
+      this.httpClient.get<any>(`/api/blueprints/by-job/${jobId}`).subscribe(data => {
+        this.activeDocument = null; // Ensure standard PDF viewer is cleared
+        this.activeBlueprints = [{
+          name: data.name,
+          pdfUrl: data.pdfUrl,
+          pageImageUrls: data.pageImageUrls,
+          totalPages: data.totalPages,
+          analysisData: JSON.parse(data.analysisJson)
+        }];
+      });
   }
 }
 

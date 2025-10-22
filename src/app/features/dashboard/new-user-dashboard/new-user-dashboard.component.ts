@@ -62,8 +62,9 @@ export class NewUserDashboardComponent implements OnInit {
 
   userType: string = '';
   isSubContractor: boolean = false;
-  userJobs: {id: number, projectName: string, createdAt: string, progress: number }[] = [];
-  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'actions'];
+  userJobs: {id: number, projectName: string, createdAt: string, progress: number, status: string }[] = [];
+  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
+  notesDisplayedColumns: string[] = ['project', 'task', 'created', 'status', 'action'];
   jobsLoading: boolean = false;
   isLoading: boolean = false;
   documentDialogRef: MatDialogRef<any> | null = null;
@@ -384,15 +385,17 @@ export class NewUserDashboardComponent implements OnInit {
             return {
               id: job.id,
               projectName: job.projectName,
-              createdAt: job.desiredStartDate,
-              progress
+              createdAt: job.createdAt,
+              progress,
+              status: job.status
             };
           }).catch(err => {
             return {
               id: job.id,
               projectName: job.projectName,
               createdAt: job.createdAt,
-              progress: 0
+              progress: 0,
+              status: job.status
             };
           })
         );

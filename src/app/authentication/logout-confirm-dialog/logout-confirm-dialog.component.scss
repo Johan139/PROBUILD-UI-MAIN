@@ -1,51 +1,79 @@
+@use 'styles/util/mixins' as u;
+
 h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 16px;
-    }
-    p {
-      font-size: 1rem;
-      color: #555;
-      line-height: 1.5;
-      margin-bottom: 16px;
-    }
-    mat-dialog-actions {
-      display: flex;
-      gap: 12px;
-      padding-top: 16px;
-    }
-    .dialog-btn {
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 500;
-      transition: background-color 0.3s ease;
-    }
-    .return-btn {
-      background-color: #FBD008;
-      color: #333;
-    }
-    .return-btn:hover {
-      background-color: #e6bf00;
-    }
-     .confirm-btn {
-      background-color: #FBD008;
-      color: #333;
-    }
-    .confirm-btn:hover:not(:disabled) {
-      background-color: #e6bf00;
-    }
-    .confirm-btn:disabled {
-      background-color: #e0e0e0 !important;
-      color: #9e9e9e !important;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    .warning-message {
-      color: #b00020;
-      font-weight: bold;
-      margin-top: 12px;
-      padding: 8px;
-      background-color: #ffebee;
-      border-radius: 4px;
-    }
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-4, 16px);
+}
+
+p {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-4, 16px);
+}
+
+/* Dialog actions layout */
+mat-dialog-actions {
+  display: flex;
+  gap: var(--space-3, 12px);
+  padding-top: var(--space-4, 16px);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+
+.dialog-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.02s ease;
+  border: none;
+  cursor: pointer;
+}
+
+/* Primary actions (confirm, return, etc.) */
+.return-btn,
+.confirm-btn {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  @include u.interactive-states;
+}
+
+.return-btn:hover,
+.confirm-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-1);
+}
+
+.return-btn:active,
+.confirm-btn:active {
+  transform: translateY(1px);
+}
+
+.confirm-btn:disabled {
+  background: var(--color-primary-disabled);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* Warning / danger message */
+
+.warning-message {
+  color: var(--color-danger);
+  font-weight: 600;
+  margin-top: var(--space-3, 12px);
+  padding: 8px;
+  background: color-mix(in oklab, var(--color-danger) 10%, var(--color-surface));
+  border: 1px solid color-mix(in oklab, var(--color-danger) 25%, transparent);
+  border-radius: var(--radius-sm, 4px);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

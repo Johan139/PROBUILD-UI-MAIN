@@ -1,0 +1,212 @@
+// ==========================================================================
+// GLOBAL STYLESHEET
+// ==========================================================================
+//
+// Main entry point for the global styles.
+// It imports all design tokens, utilities, and sets up the Angular Material
+// theme bridge
+
+// --------------------------------------------------------------------------
+// 1. DESIGN TOKENS
+// --------------------------------------------------------------------------
+// Import all token files to make CSS custom properties available globally
+
+@use "tokens/colors";
+@use "tokens/typography";
+@use "tokens/spacing";
+@use "tokens/radius";
+@use "tokens/shadow";
+@use "tokens/zindex";
+
+// --------------------------------------------------------------------------
+// 2. UTILITIES & MIXINS
+// --------------------------------------------------------------------------
+// Import utility classes and mixins. Mixins are not output directly
+// but are made available for use in component stylesheets
+
+@use "util/utilities";
+@use "util/mixins";
+@use "util/buttons";
+@use "util/forms";
+@use "util/layout";
+@use "util/tables";
+@use "util/pills";
+@use "util/timeline";
+@use "util/chat";
+@use "util/calendar";
+
+// --------------------------------------------------------------------------
+// 3. ANGULAR MATERIAL THEME BRIDGE
+// --------------------------------------------------------------------------
+//
+
+@use "@angular/material" as mat;
+
+// --------------------------------------------------------------------------
+// 4. CSS RESET & BASE STYLES
+// --------------------------------------------------------------------------
+// A minimal reset to ensure cross-browser consistency
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 100%;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
+  line-height: var(--lh-normal);
+  min-height: 100vh;
+}
+
+@include mat.core();
+
+$probuild-yellow-palette: (
+  50: #fffde7,
+  100: #fff9c4,
+  200: #fff59d,
+  300: #fff176,
+  400: #ffee58,
+  500: #FFEB3B, // Base
+  600: #FDD835,
+  700: #FBC02D,
+  800: #F9A825,
+  900: #F57F17,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: rgba(0, 0, 0, 0.87),
+    600: rgba(0, 0, 0, 0.87),
+    700: rgba(0, 0, 0, 0.87),
+    800: rgba(0, 0, 0, 0.87),
+    900: rgba(0, 0, 0, 0.87),
+  )
+);
+
+// Light theme configuration
+$probuild-light-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$yellow-palette,
+    tertiary: mat.$blue-palette,
+  ),
+  typography: (
+    brand-family: var(--font-sans),
+    plain-family: var(--font-sans),
+  ),
+  density: (
+    scale: 0,
+  )
+));
+
+// Dark theme configuration
+$probuild-dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$yellow-palette,
+    tertiary: mat.$blue-palette,
+  ),
+  typography: (
+    brand-family: var(--font-sans),
+    plain-family: var(--font-sans),
+  ),
+  density: (
+    scale: 0,
+  )
+));
+
+// Apply themes
+:root {
+  // Apply all light theme component styles
+  @include mat.all-component-themes($probuild-light-theme);
+
+  // Override specific Material properties with tokens
+  .mat-mdc-card {
+    --mdc-elevated-card-container-color: var(--color-surface);
+    --mdc-elevated-card-elevation: var(--shadow-2);
+  }
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    background-color: var(--color-surface);
+  }
+}
+
+// IMPORTANT: This sets the background for the entire app
+.mat-drawer-container {
+  background-color: var(--color-canvas) !important;
+}
+
+
+.mat-mdc-card,
+.mat-expansion-panel,
+.mat-expansion-panel-header,
+.mat-form-field
+.mat-mdc-form-field,
+.mat-mdc-form-field-flex,
+.mat-mdc-form-field-infix,
+.mat-mdc-text-field-wrapper,
+.mat-mdc-select-value,
+.mat-mdc-select-arrow-wrapper,
+.mat-autocomplete-panel,
+.mat-table,
+.mat-header-cell,
+.mat-mdc-cell,
+.mat-option,
+.mat-mdc-autocomplete-panel,
+.mat-cell,
+.mat-dialog-container,
+.mat-paginator,
+.mat-mdc-paginator-container {
+  background-color: var(--color-surface) !important;
+}
+
+
+.theme-dark {
+  // Apply all dark theme component styles
+  @include mat.all-component-themes($probuild-dark-theme);
+}
+
+
+// ==========================================================================
+// GLOBAL CUSTOM SCROLLBARS
+// ==========================================================================
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 999px;
+}
+
+// ==========================================================================
+// GLOBAL TOOLTIP STYLES
+// ==========================================================================
+
+.mdc-tooltip {
+  .mdc-tooltip__surface {
+    background-color: var(--color-accent) !important;
+    color: var(--color-text-white) !important;
+    font-size: var(--font-size-sm);
+    // padding: var(--space-2) var(--space-3);
+  }
+}

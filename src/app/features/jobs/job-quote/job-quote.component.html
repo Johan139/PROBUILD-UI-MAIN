@@ -1,14 +1,13 @@
 
 <div *ngIf="isLoading">
   <app-loader></app-loader>
-
 </div>
 <div class="row job-quote-container">
   <app-subscription-warning [subscriptionActive]="subscriptionActive" [isLoading]="isLoading"></app-subscription-warning>
   <div class="col-md-4-job-quote form-col">
     <mat-card class="project-card">
       <mat-card-header>
-        <mat-card-title>YOUR JOBS</mat-card-title>
+        <mat-card-title>YOUR PROJECTS</mat-card-title>
 
       </mat-card-header>
       <mat-card-content>
@@ -84,7 +83,7 @@
             </div>
           </div>
           <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
-            No active bids to display.
+            No active bids to display
           </div>
         </mat-card-content>
       </mat-card>
@@ -207,10 +206,7 @@
             <mat-form-field appearance="fill">
               <mat-label>Job Type</mat-label>
               <mat-select formControlName="jobType">
-                <mat-option value='HOUSE'>House</mat-option>
-                <mat-option value="COMPLEX">Complex</mat-option>
-                <mat-option value="ESTATE">Estate</mat-option>
-                <mat-option value="COMMERCIAL">Retail</mat-option>
+                <mat-option *ngFor="let type of jobTypes" [value]="type.value">{{type.viewValue}}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field appearance="fill">
@@ -345,6 +341,7 @@
           <div class="form-row">
             <mat-radio-group [(ngModel)]="analysisType" [ngModelOptions]="{standalone: true}">
               <mat-radio-button value="Comprehensive">Full Blueprint Analysis</mat-radio-button>
+              <mat-radio-button value="Blueprint">Interactive Blueprint Overlay</mat-radio-button>
               <mat-radio-button value="Selected">Selected Blueprint Analysis</mat-radio-button>
               <mat-radio-button value="Renovation">Renovation Analysis</mat-radio-button>
             </mat-radio-group>
@@ -364,7 +361,7 @@
           <div class="form-row button-row">
             <div class="button-group">
               <span class="button-wrapper"
-                    [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing.' : ''"
+                    [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing' : ''"
                     [class.disabled-wrapper]="jobCardForm.invalid || uploadedFileInfos.length === 0">
                 <button mat-raised-button type="submit"
                         [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0 || jobCardForm.invalid"
@@ -400,6 +397,16 @@
                 <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
                 <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
               </div>
+            </div>
+            <div class="viewer-section" *ngIf="(activeBlueprints && activeBlueprints.length > 0) || activeDocument">
+              <mat-toolbar>
+                <span>Document Viewer</span>
+                <span class="toolbar-spacer"></span>
+                <button *ngIf="activeBlueprints.length > 0" mat-raised-button color="accent" (click)="overlayState.toggleOverlayVisibility()">
+                  Toggle Overlay
+                </button>
+              </mat-toolbar>
+              <!-- <app-pdf-viewer [blueprints]="activeBlueprints" [document]="activeDocument"></app-pdf-viewer> TODO: Reenable once complete -->
             </div>
           </div>
         </form>

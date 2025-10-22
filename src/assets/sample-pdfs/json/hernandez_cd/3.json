@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "pageType": "elevation",
+    "scale": "1/8\" = 1'-0\"",
+    "imageWidth": 3300,
+    "imageHeight": 2550,
+    "drawingTitle": "HERNANDEZ RESIDENCE",
+    "projectAddress": "216 SHELF ROCK ROAD\nGEORGETOWN, TEXAS",
+    "sheetNumber": "A-3",
+    "country": "USA",
+    "buildingCode": null,
+    "unitSystem": "imperial",
+    "temperatureUnit": null,
+    "drawingDate": "9/8/2023",
+    "revisionHistory": []
+  },
+  "rooms": [],
+  "walls": [],
+  "openings": [],
+  "roofPlan": null,
+  "elevationDetails": {
+    "levels": [
+      {
+        "id": "level_001",
+        "name": "1ST F.F.",
+        "elevation": "0'-0\"",
+        "elevationInches": 0,
+        "position": { "y": 918 }
+      },
+      {
+        "id": "level_002",
+        "name": "1ST FLR. PLT.",
+        "elevation": "N/A",
+        "elevationInches": null,
+        "position": { "y": 805 }
+      },
+      {
+        "id": "level_003",
+        "name": "10'-1 1/8\" PLT. HT.",
+        "elevation": "10'-1 1/8\"",
+        "elevationInches": 121.125,
+        "position": { "y": 691 }
+      },
+      {
+        "id": "level_004",
+        "name": "11'-1 1/8\" PLT. HT.",
+        "elevation": "11'-1 1/8\"",
+        "elevationInches": 133.125,
+        "position": { "y": 615 }
+      },
+      {
+        "id": "level_005",
+        "name": "1ST F.F.",
+        "elevation": "0'-0\"",
+        "elevationInches": 0,
+        "position": { "y": 2049 }
+      },
+      {
+        "id": "level_006",
+        "name": "1ST FLR. PLT.",
+        "elevation": "N/A",
+        "elevationInches": null,
+        "position": { "y": 1936 }
+      },
+      {
+        "id": "level_007",
+        "name": "10'-1 1/8\" PLT. HT.",
+        "elevation": "10'-1 1/8\"",
+        "elevationInches": 121.125,
+        "position": { "y": 1822 }
+      },
+      {
+        "id": "level_008",
+        "name": "11'-1 1/8\" PLT. HT.",
+        "elevation": "11'-1 1/8\"",
+        "elevationInches": 133.125,
+        "position": { "y": 1746 }
+      }
+    ],
+    "exteriorFinishes": [
+      {
+        "id": "finish_stone_001",
+        "material": "STONE PER SPECS",
+        "areaPolygon": [
+          { "x": 586, "y": 1822 },
+          { "x": 1057, "y": 1822 },
+          { "x": 1057, "y": 2049 },
+          { "x": 586, "y": 2049 }
+        ]
+      },
+      {
+        "id": "finish_stone_002",
+        "material": "STONE SILL",
+        "areaPolygon": [
+          { "x": 1789, "y": 1891 },
+          { "x": 1941, "y": 1891 },
+          { "x": 1941, "y": 1906 },
+          { "x": 1789, "y": 1906 }
+        ]
+      },
+      {
+        "id": "finish_stucco_001",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 586, "y": 691 },
+          { "x": 2736, "y": 615 },
+          { "x": 2736, "y": 918 },
+          { "x": 586, "y": 918 }
+        ]
+      },
+      {
+        "id": "finish_stucco_002",
+        "material": "STUCCO PER SPECS",
+        "areaPolygon": [
+          { "x": 1057, "y": 1746 },
+          { "x": 2736, "y": 1746 },
+          { "x": 2736, "y": 2049 },
+          { "x": 1057, "y": 2049 }
+        ]
+      }
+    ]
+  },
+  "sitePlanDetails": null,
+  "fireAndLifeSafety": [],
+  "fixtures": [],
+  "dimensions": [],
+  "annotations": [
+    {
+      "id": "anno_001",
+      "type": "TEXT",
+      "text": "A\nA-3",
+      "position": { "x": 579, "y": 1119 }
+    },
+    {
+      "id": "anno_002",
+      "type": "TEXT",
+      "text": "LEFT ELEVATION\nSCALE: 1/8\" = 1'-0\"",
+      "position": { "x": 626, "y": 1116 }
+    },
+    {
+      "id": "anno_003",
+      "type": "TEXT",
+      "text": "B\nA-3",
+      "position": { "x": 579, "y": 2244 }
+    },
+    {
+      "id": "anno_004",
+      "type": "TEXT",
+      "text": "RIGHT ELEVATION\nSCALE: 1/8\" = 1'-0\"",
+      "position": { "x": 626, "y": 2241 }
+    },
+    {
+      "id": "anno_005",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1106, "y": 427 }
+    },
+    {
+      "id": "anno_006",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1587, "y": 323 }
+    },
+    {
+      "id": "anno_007",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 2355, "y": 427 }
+    },
+    {
+      "id": "anno_008",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1080, "y": 1558 }
+    },
+    {
+      "id": "anno_009",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 1548, "y": 1454 }
+    },
+    {
+      "id": "anno_010",
+      "type": "ROOF_PITCH",
+      "text": "6:12",
+      "position": { "x": 2220, "y": 1558 }
+    },
+    {
+      "id": "anno_011",
+      "type": "TEXT",
+      "text": "SHINGLES\nPER SPECS\n(TYP)",
+      "position": { "x": 1782, "y": 424 }
+    },
+    {
+      "id": "anno_012",
+      "type": "TEXT",
+      "text": "4\" STUCCO\nSILL (TYP.)",
+      "position": { "x": 1083, "y": 792 }
+    },
+    {
+      "id": "anno_013",
+      "type": "TEXT",
+      "text": "STUCCO PER\nSPECS (TYP.)",
+      "position": { "x": 1391, "y": 802 }
+    },
+    {
+      "id": "anno_014",
+      "type": "TEXT",
+      "text": "GARAGE DOORS,\nPER SPECS",
+      "position": { "x": 1782, "y": 822 }
+    },
+    {
+      "id": "anno_015",
+      "type": "TEXT",
+      "text": "6\" STUCCO TRIM\nOVER 4\" STONE\nCAP (TYP.)",
+      "position": { "x": 2043, "y": 802 }
+    },
+    {
+      "id": "anno_016",
+      "type": "TEXT",
+      "text": "COACH LIGHT\n@ 6'-0\" A.F.F.",
+      "position": { "x": 2355, "y": 822 }
+    },
+    {
+      "id": "anno_017",
+      "type": "TEXT",
+      "text": "STONE PER SPECS\n(TYP.)",
+      "position": { "x": 2574, "y": 841 }
+    },
+    {
+      "id": "anno_018",
+      "type": "TEXT",
+      "text": "STONE PER SPECS\n(TYP.)",
+      "position": { "x": 686, "y": 2154 }
+    },
+    {
+      "id": "anno_019",
+      "type": "TEXT",
+      "text": "6\" STUCCO TRIM\nOVER 4\" STONE\nCAP (TYP.)",
+      "position": { "x": 1133, "y": 2154 }
+    },
+    {
+      "id": "anno_020",
+      "type": "TEXT",
+      "text": "STONE SILL\n(TYP.)",
+      "position": { "x": 1825, "y": 2154 }
+    },
+    {
+      "id": "anno_021",
+      "type": "TEXT",
+      "text": "STUCCO PER\nSPECS (TYP.)",
+      "position": { "x": 2095, "y": 2154 }
+    },
+    {
+      "id": "anno_022",
+      "type": "TEXT",
+      "text": "4\" STUCCO\nSILL (TYP.)",
+      "position": { "x": 2382, "y": 2154 }
+    }
+  ],
+  "structuralElements": [],
+  "symbols": [],
+  "gridLines": [],
+  "specialFeatures": [],
+  "mepSystems": {},
+  "detailViews": [],
+  "schedules": [],
+  "extractedText": []
+}

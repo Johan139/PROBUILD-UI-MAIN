@@ -1,0 +1,78 @@
+/* Variables from Projects/Jobs theme */
+$primary-yellow: #fbd008;
+$secondary-yellow: #fcd02d;
+$darker-yellow: #e6bf00;
+$cyan: #61a0af;
+$black: #000000;
+$dark-gray: #333;
+$light-gray: #d9d9d9;
+$white: #fff;
+$shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+.unsubscribe-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  padding: 20px;
+  background-color: #f9f9f9;
+
+  h2 {
+    margin-bottom: 20px;
+    color: $dark-gray;
+    font-weight: 600;
+  }
+
+  p {
+    color: $dark-gray;
+    margin-bottom: 30px;
+  }
+
+  .unsubscribe-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 20px;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  .submit-btn {
+    background-color: $primary-yellow;
+    color: $black;
+    font-weight: 500;
+    margin-top: 10px;
+
+    &:hover {
+      background-color: $darker-yellow;
+    }
+  }
+
+  .message {
+    margin-top: 20px;
+    font-weight: 600;
+  }
+
+  .home-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: 1px solid $light-gray;
+    background-color: $light-gray;
+    font-weight: 500;
+    color: $dark-gray;
+    text-decoration: none;
+    border-radius: 5px;
+    box-shadow: $shadow;
+
+    &:hover {
+      background-color: darken($light-gray, 10%);
+    }
+  }
+}

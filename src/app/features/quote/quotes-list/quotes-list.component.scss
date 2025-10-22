@@ -1,54 +1,194 @@
-$primary-yellow: #FFC107;
-$secondary-yellow: #FFA000;
-$cyan: #00ACC1;
-$dark-gray: #333333;
-$white: #FFFFFF;
-$shadow: rgba(0, 0, 0, 0.2);
+@use 'styles/util/mixins' as u;
 
-.container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: transparent;
+  color: var(--color-text);
 }
 
+/* Shell */
+.container {
+  padding: var(--space-5);
+  max-width: 1200px;
+  margin: 0 auto;
+  flex: 1;
+}
+
+/* Card */
 mat-card {
-  background-color: $white;
-  box-shadow: 0 4px 8px $shadow;
-  border-radius: 8px;
-  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-5);
 }
 
 mat-card-title {
-  color: $dark-gray;
-  font-size: 24px;
-  font-weight: 500;
+  font: var(--fw-extrabold) var(--fs-lg)/var(--lh-tight) var(--font-sans);
+  color: var(--color-text);
+  letter-spacing: .2px;
 }
 
+/* Table wrapper - safe scrolling with rounded corners */
+.table-wrap {
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: clip; /* keeps sticky header inside radius */
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+/* Base table */
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 
-  th, td {
+  thead th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    font-weight: var(--fw-semibold);
     padding: 12px;
+    border-bottom: 1px solid var(--color-border);
     text-align: left;
-    border-bottom: 1px solid $dark-gray;
+    vertical-align: middle;
+    white-space: nowrap;
   }
 
-  th {
-    background-color: $primary-yellow;
-    color: $dark-gray;
-    font-weight: 500;
+  tbody td {
+    padding: 12px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text);
+    vertical-align: middle;
   }
 
-  td {
-    color: $dark-gray;
-  }
+  tbody tr:hover td { background: var(--color-surface-hover); }
+  tbody tr:nth-child(even) td { background: var(--color-surface-subtle); }
 
-  .mat-icon-button {
-    color: $cyan;
+  /* First/last cell rounding under sticky header */
+  thead th:first-child { border-top-left-radius: var(--radius-md); }
+  thead th:last-child  { border-top-right-radius: var(--radius-md); }
+}
 
-    &:hover {
-      background-color: lighten($cyan, 40%);
-    }
+/* Sortable headers */
+th.is-sortable {
+  cursor: pointer;
+  user-select: none;
+  @include u.interactive-states;
+}
+th.is-sortable::after {
+  content: '↕';
+  font-size: .8em;
+  margin-left: 8px;
+  opacity: .6;
+}
+th.is-sortable.is-asc::after  { content: '↑'; opacity: 1; }
+th.is-sortable.is-desc::after { content: '↓'; opacity: 1; }
+
+/* Density modes */
+.table--compact  { --row-pad: 8px; }
+.table--cozy     { --row-pad: 12px; }
+.table--roomy    { --row-pad: 16px; }
+
+.table--compact tbody td,
+.table--compact thead th { padding: var(--row-pad); }
+.table--cozy tbody td,
+.table--cozy thead th { padding: var(--row-pad); }
+.table--roomy tbody td,
+.table--roomy thead th { padding: var(--row-pad); }
+
+/* Numeric alignment helpers */
+.cell--numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.cell--mono    { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.cell--muted   { color: var(--color-text-muted); }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 8px;
+  border-radius: 999px; font-size: var(--fs-xs);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.badge--ok     { background: color-mix(in oklab, var(--color-success) 14%, transparent); }
+.badge--warn   { background: color-mix(in oklab, var(--color-warning) 18%, transparent); }
+.badge--error  { background: color-mix(in oklab, var(--color-danger) 14%, transparent); }
+.badge--neutral{ background: color-mix(in oklab, var(--color-neutral) 14%, transparent); }
+
+/* Icon buttons inside table cells */
+.mat-icon-button,
+.button-icon {
+  color: var(--color-accent);
+  border-radius: var(--radius-sm);
+  @include u.interactive-states;
+
+  &:hover { background: color-mix(in oklab, var(--color-accent) 18%, transparent); }
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent);
   }
+}
+
+/* Selected row (e.g., when navigating via keyboard) */
+tr.is-selected td {
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+}
+
+/* Empty state inside .table-wrap when no rows */
+.table-empty {
+  display: grid; place-items: center;
+  padding: var(--space-10);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Sticky footer actions / pagination */
+.table-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.table-footer .pager {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+}
+.pager-btn {
+  height: 32px; min-width: 32px; padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  @include u.interactive-states;
+
+  &:hover { background: var(--color-surface-subtle); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+/* Angular material table  */
+.mat-mdc-table {
+  width: 100%;
+  background: transparent;
+  border-spacing: 0;
+}
+.mat-mdc-header-row {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-weight: var(--fw-bold);
+}
+.mat-mdc-row:hover { background: var(--color-surface-hover); }
+.mat-mdc-header-cell,
+.mat-mdc-cell { padding: 12px; border-bottom: 1px solid var(--color-border); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-wrap { overflow-x: auto; }
+  table { min-width: 640px; } /* keep columns readable; scroll on small screens */
 }
