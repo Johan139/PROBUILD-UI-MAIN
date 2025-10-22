@@ -143,6 +143,36 @@ $probuild-dark-theme: mat.define-theme((
   }
 }
 
+// IMPORTANT: This sets the background for the entire app
+.mat-drawer-container {
+  background-color: var(--color-canvas) !important;
+}
+
+
+.mat-mdc-card,
+.mat-expansion-panel,
+.mat-expansion-panel-header,
+.mat-form-field
+.mat-mdc-form-field,
+.mat-mdc-form-field-flex,
+.mat-mdc-form-field-infix,
+.mat-mdc-text-field-wrapper,
+.mat-mdc-select-value,
+.mat-mdc-select-arrow-wrapper,
+.mat-autocomplete-panel,
+.mat-table,
+.mat-header-cell,
+.mat-mdc-cell,
+.mat-option,
+.mat-mdc-autocomplete-panel,
+.mat-cell,
+.mat-dialog-container,
+.mat-paginator,
+.mat-mdc-paginator-container {
+  background-color: var(--color-surface) !important;
+}
+
+
 .theme-dark {
   // Apply all dark theme component styles
   @include mat.all-component-themes($probuild-dark-theme);
@@ -166,4 +196,17 @@ $probuild-dark-theme: mat.define-theme((
 ::-webkit-scrollbar-thumb {
   background: var(--color-accent);
   border-radius: 999px;
+}
+
+// ==========================================================================
+// GLOBAL TOOLTIP STYLES
+// ==========================================================================
+
+.mdc-tooltip {
+  .mdc-tooltip__surface {
+    background-color: var(--color-accent) !important;
+    color: var(--color-text-white) !important;
+    font-size: var(--font-size-sm);
+    // padding: var(--space-2) var(--space-3);
+  }
 }

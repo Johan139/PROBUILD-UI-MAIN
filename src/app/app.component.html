@@ -13,7 +13,7 @@
     </button>
 
     <a routerLink="/dashboard" class="logo-link" aria-label="ProBuild AI Home">
-      <img ngSrc="assets/logo.png" alt="Company Logo" height="40" width="140">
+      <img ngSrc="assets/logo.png" alt="Company Logo" height="52" width="152.5">
     </a>
 
     <span class="spacer"></span>
@@ -52,6 +52,7 @@
        [matTooltip]="item.tooltip"
        matTooltipShowDelay="500"
        matTooltipPosition="right">
+       <span class="active-indicator"></span>
        <mat-icon matListItemIcon class="nav-icon">{{ item.icon }}</mat-icon>
        <div matListItemTitle class="nav-label">{{ item.label }}</div>
       </a>
