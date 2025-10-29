@@ -88,25 +88,12 @@
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let user">
                 <div class="action-container" *ngIf="user.id !== currentUserId">
-                  <ng-container *ngIf="isRequestReceived(user.id); else notReceived">
-                    <button mat-flat-button color="accent" class="action-button"
-                            (mouseover)="hoveredUserId = user.id"
-                            (mouseout)="hoveredUserId = null"
-                            (click)="acceptConnectionRequest(user.id)">
-                      <mat-icon>{{ hoveredUserId === user.id ? 'check' : 'person_add' }}</mat-icon>
-                      {{ hoveredUserId === user.id ? 'Accept Request' : 'Request Received' }}
+                  <ng-container [ngSwitch]="getConnectionStatus(user.id)">
+                    <button *ngSwitchCase="'Connect'" mat-stroked-button color="primary" class="action-button" (click)="sendConnectionRequest(user.id)">
+                      <mat-icon>person_add</mat-icon>
+                      Connect
                     </button>
-                  </ng-container>
-                  <ng-template #notReceived>
-                    <ng-container *ngIf="!isRequestSent(user.id); else requestSentButton">
-                      <button *ngIf="user.isInSystem" mat-stroked-button color="primary" class="action-button" (click)="sendConnectionRequest(user.id)">
-                        <mat-icon>person_add</mat-icon>
-                        Connect
-                      </button>
-                    </ng-container>
-                  </ng-template>
-                  <ng-template #requestSentButton>
-                    <button mat-flat-button color="primary" class="action-button"
+                    <button *ngSwitchCase="'Request Sent'" mat-flat-button color="primary" class="action-button"
                             (mouseover)="hoveredUserId = user.id"
                             (mouseout)="hoveredUserId = null"
                             (click)="cancelConnectionRequest(user.id)"
@@ -114,7 +101,15 @@
                       <mat-icon>{{ hoveredUserId === user.id ? 'close' : 'check' }}</mat-icon>
                       {{ hoveredUserId === user.id ? 'Cancel Request' : 'Request Sent' }}
                     </button>
-                  </ng-template>
+                    <button *ngSwitchCase="'Request Received'" mat-flat-button color="accent" class="action-button" (click)="acceptConnectionRequest(user.id)">
+                      <mat-icon>person_add</mat-icon>
+                      Accept Request
+                    </button>
+                    <button *ngSwitchCase="'ACCEPTED'" mat-flat-button color="primary" class="action-button" disabled>
+                      <mat-icon>check_circle</mat-icon>
+                      Connected
+                    </button>
+                  </ng-container>
                   <ng-container *ngIf="user.isInSystem; else greyLogo">
                     <img src="assets/roundedlogo.png" alt="Probuild Logo" class="probuild-logo">
                   </ng-container>

@@ -55,6 +55,7 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
+import { LogoService } from '../../services/logo.service';
 
 
 const BASE_URL = environment.BACKEND_URL;
@@ -114,13 +115,15 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
 
 export class ProfileComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
-@ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
+  @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef;
+  logoUrl: string | null = null;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
-selectedPlace: { description: string; place_id: string } | null = null;
-autocompleteService: google.maps.places.AutocompleteService | undefined;
-isGoogleMapsLoaded: boolean = false;
+  selectedPlace: { description: string; place_id: string } | null = null;
+  autocompleteService: google.maps.places.AutocompleteService | undefined;
+  isGoogleMapsLoaded: boolean = false;
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
@@ -164,8 +167,6 @@ teamSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 inactiveSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
   subscriptionColumns: string[] = ['package', 'validUntil', 'amount', 'assignedUser', 'status', 'actions'];
 subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
-
-
   isLoadingSubscriptions = false;
   subscriptionsError: string | null = null;
   constructionTypes = constructionTypes;
@@ -199,13 +200,14 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private route: ActivatedRoute,
-        private registrationService: RegistrationService,
+    private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
-        private jobsService: JobsService,
-      @Inject(PLATFORM_ID) private platformId: Object,
-          private snackBar: MatSnackBar,
-    private teamManagementService: TeamManagementService
+    private jobsService: JobsService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private snackBar: MatSnackBar,
+    private teamManagementService: TeamManagementService,
+    private logoService: LogoService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -447,6 +449,7 @@ loadProfile(): void {
       this.isVerified = profileData.isVerified ?? false;
 
       this.loadTeamMembers();
+      this.loadUserLogo();
       this.isLoading = false;
     },
     error: () => {
@@ -1393,8 +1396,53 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
     return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
+  triggerFileInput(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  onLogoChange(event: Event): void {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      return;
+    }
+
+    this.logoService.setUserLogo(file).subscribe({
+      next: () => {
+        this.loadUserLogo();
+        this.snackBar.open('Logo updated successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Logo upload failed', err);
+        this.snackBar.open('Failed to update logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  removeLogo(): void {
+    this.logoService.deleteUserLogo().subscribe({
+      next: () => {
+        this.logoUrl = null;
+        this.snackBar.open('Logo removed successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Failed to remove logo', err);
+        this.snackBar.open('Failed to remove logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  loadUserLogo(): void {
+    this.logoService.getUserLogo().subscribe({
+      next: (logo) => {
+        this.logoUrl = logo.url;
+      },
+      error: () => {
+        this.logoUrl = null;
+      }
+    });
+  }
 }
-// To this:
+
 export interface ProfileDocument {
   id: number;
   userId: string;

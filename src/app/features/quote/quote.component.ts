@@ -343,6 +343,18 @@ export class QuoteComponent implements OnInit {
         }
       });
     }
+
+    this.logoService.getUserLogo().subscribe({
+      next: (logo) => {
+        if (!this.logoUrl) {
+          this.logoUrl = logo.url;
+          this.quoteForm.patchValue({ logoId: logo.id });
+        }
+      },
+      error: () => {
+        // User may not have a logo, so this is not a critical error
+      }
+    });
   }
 
   loadJobDetails(jobId: string): void {
@@ -611,9 +623,14 @@ export class QuoteComponent implements OnInit {
       this.isLogoSupported = true;
 
       const userId = this.authService.currentUserSubject.value?.id || 'anonymous';
-      this.logoService.uploadLogo(file, 'quote', userId).subscribe({
-        next: (logo) => {
-          this.quoteForm.patchValue({ logoId: logo.id });
+      this.logoService.setUserLogo(file).subscribe({
+        next: () => {
+          this.logoService.getUserLogo().subscribe({
+            next: (logo) => {
+              this.logoUrl = logo.url;
+              this.quoteForm.patchValue({ logoId: logo.id });
+            }
+          });
         },
         error: (err) => {
           console.error('Logo upload failed', err);

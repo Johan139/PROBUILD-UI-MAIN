@@ -59,6 +59,22 @@
                         </mat-form-field>
                       </div>
                     </div>
+                    <!-- Logo Upload -->
+                    <div class="section">
+                      <h3>Company Logo</h3>
+                      <div class="form-row">
+                        <div class="logo-container">
+                          <div class="placeholder" *ngIf="!logoUrl" (click)="triggerFileInput()">
+                            <span class="material-icons">add</span> Add Your Logo
+                          </div>
+                          <img *ngIf="logoUrl" [src]="logoUrl" alt="Your Logo" class="logo-image">
+                          <input #fileInput type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)">
+                          <button *ngIf="logoUrl" mat-icon-button class="remove-logo" (click)="removeLogo()" type="button">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <!-- Certification & Availability -->
                     <div class="section" *ngIf="canViewCertification()">
                       <h3>Certification & Availability</h3>
@@ -105,8 +121,6 @@
                       <button mat-raised-button type="submit" class="submit-btn">
                         {{ isSaving ? 'Saving...' : 'Save Profile' }}
                       </button>
-
-
                     </div>
 
                   </mat-tab>
@@ -181,7 +195,6 @@
                     <div class="section" *ngIf="canViewDeliveryLocation()">
                       <h3>Operating area and Location</h3>
                       <div class="form-row">
-                        <!-- ✅ New Address Field -->
                         <mat-form-field appearance="fill">
                           <mat-label>Address</mat-label>
                           <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto"

@@ -89,7 +89,7 @@ export class AppComponent implements OnInit, OnDestroy {
     { label: 'Calendar',        icon: 'calendar_today',  route: ['/calendar'],       tooltip: 'Access your schedule and calendar events' },
     { label: 'My Quotes',       icon: 'description',     route: ['/quotes'],         tooltip: 'Review your existing quotes' },
     { label: 'New Quote',       icon: 'note_add',        route: ['/quote'],          tooltip: 'Create a new quote' },
-    { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' },
+    // { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' }, // 29.10.2025 - Removed as it is very similar to My Projects
     { label: 'Find Work',       icon: 'travel_explore',  route: ['/find-work'],      tooltip: 'Search for new work opportunities' },
     { label: 'Connections',     icon: 'group',           route: ['/connections'],    tooltip: 'Manage your professional connections' },
     { label: 'Archive',         icon: 'inventory_2',     route: ['/archive'],        tooltip: 'Access your archived projects and records' },

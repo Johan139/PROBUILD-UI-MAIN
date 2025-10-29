@@ -192,9 +192,16 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
 
   sendConnectionRequest(userId: string): void {
-    this.connectionService.requestConnection(userId).subscribe(() => {
-      console.log('Request sent');
-      this.loadConnections();
+    this.connectionService.requestConnection(userId).subscribe({
+      next: () => {
+        console.log('Request sent');
+        this.snackBar.open('Connection request sent.', 'Close', { duration: 3000 });
+        this.loadConnections();
+      },
+      error: (err) => {
+        console.error('Failed to send connection request:', err);
+        this.snackBar.open(err.error?.message || 'Failed to send request.', 'Close', { duration: 5000 });
+      }
     });
   }
 
@@ -223,10 +230,23 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
     if (connection) {
       this.connectionService.declineConnection(connection.id).subscribe(() => {
         console.log('Request cancelled');
-        this.loadConnections();
+        this.allConnections = this.allConnections.filter(c => c.id !== connection.id);
+        this.updateDataSource();
       });
     }
   }
+
+  getConnectionStatus(userId: string): string {
+    const connection = this.allConnections.find(c => c.otherUserId === userId);
+    if (connection) {
+      if (connection.status === 'PENDING') {
+        return connection.requesterId === this.currentUserId ? 'Request Sent' : 'Request Received';
+      }
+        return connection.status;
+      }
+      return 'Connect';
+    }
+
   removeConnection(connectionId: string): void {
     this.connectionService.declineConnection(connectionId).subscribe(() => {
       console.log('Connection removed');
