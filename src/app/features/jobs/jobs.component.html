@@ -46,8 +46,8 @@
                 <img [src]="day.iconUrl" alt="Weather Icon" />
                 <div class="condition">{{ day.condition }}</div>
                 <div class="temp">
-                  <span class="high">{{ day.highTemp }}°</span>
-                  <span class="low">{{ day.lowTemp }}°</span>
+                  <span class="high">{{ measurementService.convertTemperature(day.highTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
+                  <span class="low">{{ measurementService.convertTemperature(day.lowTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
                 </div>
                 <div class="precip">
                   {{ day.precipitationProbability }}%

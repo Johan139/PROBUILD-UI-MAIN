@@ -229,3 +229,12 @@
   .mat-elevation-z8 mat-header-cell,
   .mat-elevation-z8 mat-cell { padding: 8px; font-size: .95rem; }
 }
+
+::ng-deep .mat-mdc-select-placeholder {
+  position: absolute;
+  top: 20px;
+}
+
+::ng-deep .mat-mdc-form-field-infix {
+  margin-top: -8px;
+}

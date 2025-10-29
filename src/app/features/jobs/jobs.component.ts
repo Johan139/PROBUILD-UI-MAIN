@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from "@angular/router";
-import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
+import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser, DecimalPipe } from "@angular/common";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
@@ -39,6 +39,7 @@ import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
+import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
 
 @Component({
   selector: 'app-jobs',
@@ -48,6 +49,7 @@ import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initia
     ReactiveFormsModule,
     NgIf,
     NgForOf,
+    DecimalPipe,
     MatButton,
     MatCard,
     MatCardHeader,
@@ -115,6 +117,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
   timelineGroups: TimelineGroup[] = [];
+  temperatureUnit: TemperatureUnit = 'C';
 
   constructor(
     private route: ActivatedRoute,
@@ -137,7 +140,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     private jobAssignmentService: JobAssignmentService,
     public authService: AuthService,
     private weatherService: WeatherService,
-    private weatherImpactService: WeatherImpactService
+    private weatherImpactService: WeatherImpactService,
+    public measurementService: MeasurementService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -149,6 +153,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.sessionId = uuidv4();
+    this.measurementService.getSettings().subscribe(settings => {
+      this.temperatureUnit = settings.temperature;
+    });
     this.signalrService.startConnection(this.sessionId);
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;

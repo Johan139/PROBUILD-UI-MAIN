@@ -56,6 +56,7 @@ import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 import { LogoService } from '../../services/logo.service';
+import { MeasurementService, MeasurementSettings } from '../../services/measurement.service';
 
 
 const BASE_URL = environment.BACKEND_URL;
@@ -114,6 +115,7 @@ export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: 
 })
 
 export class ProfileComponent implements OnInit {
+  cardTitle = 'User Profile';
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
@@ -207,7 +209,8 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
     @Inject(PLATFORM_ID) private platformId: Object,
     private snackBar: MatSnackBar,
     private teamManagementService: TeamManagementService,
-    private logoService: LogoService
+    private logoService: LogoService,
+    private measurementService: MeasurementService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -248,7 +251,9 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       longitude: [null],
       googlePlaceId: [''],
      notificationRadius: [100],
-     jobPreferences: [[]]
+     jobPreferences: [[]],
+      measurementSystem: ['Metric'],
+      temperatureUnit: ['C']
     });
 
     this.teamForm = this.fb.group({
@@ -384,6 +389,23 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
         this.autocompleteService = new google.maps.places.AutocompleteService();
       }).catch(err => console.error('Google Maps script loading error:', err));
     }
+
+    this.measurementService.getSettings().subscribe(settings => {
+      if (this.profileForm.get('measurementSystem')?.value !== settings.system) {
+        this.profileForm.get('measurementSystem')?.setValue(settings.system, { emitEvent: false });
+      }
+      if (this.profileForm.get('temperatureUnit')?.value !== settings.temperature) {
+        this.profileForm.get('temperatureUnit')?.setValue(settings.temperature, { emitEvent: false });
+      }
+    });
+
+    this.profileForm.get('measurementSystem')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ system: value });
+    });
+
+    this.profileForm.get('temperatureUnit')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ temperature: value });
+    });
   }
 private _filterCountries(value: string | null): any[] {
   const filterValue = (value ?? '').toLowerCase();
@@ -851,6 +873,12 @@ GetUserSubscription(): void {
           this.teamMembers = [...this.teamMembers, member];
           this.loadTeamMembers();
           this.teamForm.reset();
+          Object.keys(this.teamForm.controls).forEach(key => {
+            const control = this.teamForm.get(key);
+            control?.setErrors(null);
+            control?.markAsPristine();
+            control?.markAsUntouched();
+          });
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
@@ -1440,6 +1468,27 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
         this.logoUrl = null;
       }
     });
+  }
+  updateCardTitle(event: any): void {
+    switch (event.index) {
+      case 0:
+        this.cardTitle = 'User Profile';
+        break;
+      case 1:
+        this.cardTitle = 'Company Profile';
+        break;
+      case 2:
+        this.cardTitle = 'Team Management';
+        break;
+      case 3:
+        this.cardTitle = 'Documents';
+        break;
+      case 4:
+        this.cardTitle = 'Subscriptions';
+        break;
+      default:
+        this.cardTitle = 'User Profile';
+    }
   }
 }
 
