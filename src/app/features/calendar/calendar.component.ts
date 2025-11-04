@@ -4,9 +4,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
 import { CalendarService } from './calendar.service';
 import { CalendarEvent } from './calendar.model';
-import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -21,7 +22,6 @@ import { AddEventDialogComponent } from './add-event-dialog.component';
   selector: 'app-calendar',
   standalone: true,
   imports: [
-    BrowserModule,
     ReactiveFormsModule,
     MatCardModule,
     MatDividerModule,
@@ -46,12 +46,24 @@ export class CalendarComponent implements OnInit {
     private dialog: MatDialog
   ) {
     this.calendarOptions = {
-      plugins: [dayGridPlugin, interactionPlugin],
+      plugins: [dayGridPlugin, interactionPlugin, timeGridPlugin, listPlugin],
       initialView: 'dayGridMonth',
+      nowIndicator: true,
+      weekNumberCalculation: 'ISO',
+      navLinks: true,
+      selectable: true,
+      selectMirror: true,
       headerToolbar: {
-        left: 'prev,next today',
+        left: 'prevYear,prev,next,nextYear today',
         center: 'title',
-        right: 'dayGridMonth,dayGridWeek'
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,dayGridYear'
+      },
+      buttonText: {
+        today: 'Today',
+        month: 'Month',
+        week: 'Week',
+        day: 'Day',
+        year: 'Year'
       },
       events: [],
       eventClick: this.handleEventClick.bind(this),
@@ -94,7 +106,7 @@ export class CalendarComponent implements OnInit {
 
   openAddEventDialog(): void {
     const dialogRef = this.dialog.open(AddEventDialogComponent, {
-      width: '400px'
+      width: '600px'
     });
 
     dialogRef.afterClosed().subscribe(result => {

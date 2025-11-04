@@ -94,7 +94,7 @@
     background: var(--color-primary) !important;
     color: var(--color-text-inverse) !important;
     border: 0 !important;
-    border-radius: var(--radius-sm) !important;
+    border-radius: 0 !important;
     padding: 8px 16px !important;
     box-shadow: 0 1px 2px rgba(0,0,0,.08);
     transition: background-color .2s ease, box-shadow .2s ease !important;
@@ -126,6 +126,16 @@
     background: var(--color-surface-subtle);
     color: var(--color-text);
     font-weight: var(--fw-semibold);
+  }
+
+  .fc-daygrid-day-number,
+  .fc-col-header-cell-cushion {
+    color: var(--color-text) !important;
+    text-decoration: none !important;
+
+    &:hover {
+      color: var(--color-text) !important;
+    }
   }
 
   .fc-daygrid-day {

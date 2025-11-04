@@ -132,6 +132,12 @@ $probuild-dark-theme: mat.define-theme((
 :root {
   // Apply all light theme component styles
   @include mat.all-component-themes($probuild-light-theme);
+  @include mat.form-field-theme($probuild-light-theme);
+  @include mat.input-theme($probuild-light-theme);
+  @include mat.datepicker-theme($probuild-light-theme);
+  @include mat.button-theme($probuild-light-theme);
+  @include mat.divider-theme($probuild-light-theme);
+  @include mat.icon-theme($probuild-light-theme);
 
   // Override specific Material properties with tokens
   .mat-mdc-card {
@@ -152,7 +158,7 @@ $probuild-dark-theme: mat.define-theme((
 .mat-mdc-card,
 .mat-expansion-panel,
 .mat-expansion-panel-header,
-.mat-form-field
+.mat-form-field,
 .mat-mdc-form-field,
 .mat-mdc-form-field-flex,
 .mat-mdc-form-field-infix,
@@ -176,6 +182,12 @@ $probuild-dark-theme: mat.define-theme((
 .theme-dark {
   // Apply all dark theme component styles
   @include mat.all-component-themes($probuild-dark-theme);
+  @include mat.form-field-color($probuild-dark-theme);
+  @include mat.input-color($probuild-dark-theme);
+  @include mat.datepicker-color($probuild-dark-theme);
+  @include mat.button-color($probuild-dark-theme);
+  @include mat.divider-color($probuild-dark-theme);
+  @include mat.icon-color($probuild-dark-theme);
 }
 
 
