@@ -10,6 +10,7 @@ import { AuthService } from './authentication/auth.service';
 import { MarkdownModule } from 'ngx-markdown';
 import { FileUploadService } from './services/file-upload.service';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { Upload, Loader2, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, Check } from 'lucide-angular';
 
 export function initializeApp(authService: AuthService) {
   return () => authService.initialize();

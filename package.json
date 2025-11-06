@@ -53,6 +53,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
+    "lucide-angular": "^0.552.0",
     "marked": "^15.0.12",
     "ng2-pdfjs-viewer": "^25.0.9",
     "ngx-infinite-scroll": "^19.0.0",

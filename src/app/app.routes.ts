@@ -29,6 +29,7 @@ import { UnsubscribeComponent } from './authentication/unsubscribe/unsubscribe.c
 import { ConnectionsComponent } from './features/connections/connections.component';
 import { BlueprintTestPageComponent } from './features/testing/blueprint-test-page/blueprint-test-page.component';
 import { PdfViewerPopoutComponent } from './components/pdf-viewer/pdf-viewer-popout/pdf-viewer-popout.component';
+import { NewProjectComponent } from './features/new-project/new-project.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -61,6 +62,7 @@ export const routes: Routes = [
     { path: 'masteragreement', component: MasterServicesAgreementComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
+  {path:'new-project', component:NewProjectComponent, canActivate: [AuthGuard] },
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
   { path: 'payment-cancel', component: PaymentCancelComponent },
   { path: 'payment-success', component: PaymentSuccessComponent },
