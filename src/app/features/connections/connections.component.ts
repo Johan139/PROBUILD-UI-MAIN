@@ -38,24 +38,24 @@ export interface DisplayUser extends User {
 }
 
 @Component({
-  selector: 'app-connections',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTabsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatListModule,
-    MatCardModule,
-    MatIconModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSnackBarModule
-  ],
-  templateUrl: './connections.component.html',
-  styleUrls: ['./connections.component.scss']
+    selector: 'app-connections',
+    standalone: true,
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTabsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatListModule,
+        MatCardModule,
+        MatIconModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatSnackBarModule
+    ],
+    templateUrl: './connections.component.html',
+    styleUrls: ['./connections.component.scss']
 })
 export class ConnectionsComponent implements OnInit, AfterViewInit {
   searchTerm: string = '';

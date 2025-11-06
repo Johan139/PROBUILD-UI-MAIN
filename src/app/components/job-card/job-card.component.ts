@@ -8,16 +8,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
-  selector: 'app-job-card',
-  templateUrl: './job-card.component.html',
-  styleUrls: ['./job-card.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatCardModule,
-    MatIconModule,
-    MatTooltipModule
-  ]
+    selector: 'app-job-card',
+    templateUrl: './job-card.component.html',
+    styleUrls: ['./job-card.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatCardModule,
+        MatIconModule,
+        MatTooltipModule
+    ]
 })
 export class JobCardComponent  {
   @Input() job!: Job;

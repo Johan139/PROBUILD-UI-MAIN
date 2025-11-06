@@ -6,15 +6,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-confirmation-dialog',
-  standalone: true,
-  imports: [
-    MatDialogModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    FormsModule
-  ],
-  template: `
+    selector: 'app-confirmation-dialog',
+    standalone: true,
+    imports: [
+        MatDialogModule,
+        MatCheckboxModule,
+        MatButtonModule,
+        FormsModule
+    ],
+    template: `
     <div class="dialog-wrapper">
       <h2 mat-dialog-title class="dialog-title">{{ data.title }}</h2>
 
@@ -26,8 +26,8 @@ import { MatDialogModule } from '@angular/material/dialog';
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
-        <button 
-          mat-button 
+        <button
+          mat-button
           class="dialog-btn confirm-btn"
           (click)="dialogRef.close(false)">
           Cancel
@@ -42,7 +42,7 @@ import { MatDialogModule } from '@angular/material/dialog';
       </mat-dialog-actions>
     </div>
   `,
-  styles: [`
+    styles: [`
     .dialog-btn {
        padding: 8px 16px;
        border-radius: 6px;
@@ -53,7 +53,7 @@ import { MatDialogModule } from '@angular/material/dialog';
        background-color: #FBD008; /* Red */
        color: black;
      }
-  
+
      .confirm-btn:hover {
        background-color: #FBD008; /* Darker red */
      }

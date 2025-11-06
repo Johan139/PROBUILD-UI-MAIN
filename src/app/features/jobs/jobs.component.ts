@@ -42,36 +42,36 @@ import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initia
 import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
 
 @Component({
-  selector: 'app-jobs',
-  standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    NgIf,
-    NgForOf,
-    DecimalPipe,
-    MatButton,
-    MatCard,
-    MatCardHeader,
-    MatCardTitle,
-    MatCardContent,
-    MatDivider,
-    MatIconModule,
-    MatTooltipModule,
-    LoaderComponent,
-    MatDialogModule,
-    MatListModule,
-    MatIconModule,
-    MatProgressBarModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FileSizePipe,
-    MatCheckboxModule,
-    TimelineComponent,
-    MatAutocompleteModule
-  ],
-  templateUrl: './jobs.component.html',
-  styleUrl: './jobs.component.scss'
+    selector: 'app-jobs',
+    standalone: true,
+    imports: [
+        FormsModule,
+        ReactiveFormsModule,
+        NgIf,
+        NgForOf,
+        DecimalPipe,
+        MatButton,
+        MatCard,
+        MatCardHeader,
+        MatCardTitle,
+        MatCardContent,
+        MatDivider,
+        MatIconModule,
+        MatTooltipModule,
+        LoaderComponent,
+        MatDialogModule,
+        MatListModule,
+        MatIconModule,
+        MatProgressBarModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FileSizePipe,
+        MatCheckboxModule,
+        TimelineComponent,
+        MatAutocompleteModule
+    ],
+    templateUrl: './jobs.component.html',
+    styleUrl: './jobs.component.scss'
 })
 export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;

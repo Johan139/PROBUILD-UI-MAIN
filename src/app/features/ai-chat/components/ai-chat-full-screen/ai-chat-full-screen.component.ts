@@ -22,18 +22,18 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
 
 @Component({
-  selector: 'app-ai-chat-full-screen',
-  templateUrl: './ai-chat-full-screen.component.html',
-  styleUrls: ['./ai-chat-full-screen.component.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
+    selector: 'app-ai-chat-full-screen',
+    templateUrl: './ai-chat-full-screen.component.html',
+    styleUrls: ['./ai-chat-full-screen.component.scss'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
 })
 export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
-  
+
   private destroy$ = new Subject<void>();
   private promptsSource = new ReplaySubject<Prompt[]>(1);
   conversationId: string | null = null;
@@ -65,7 +65,7 @@ isResponding$!: Observable<boolean>;
   progress = 0;
   editingConversationId: string | null = null;
   editedTitle = '';
-  
+
   public isPromptsPopupVisible = false;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
@@ -113,7 +113,7 @@ isResponding$!: Observable<boolean>;
     private signalrService: SignalrService
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
-    
+
   this.isLoading$ = this.aiChatStateService.isLoading$;
 
 this.isResponding$ = combineLatest([
@@ -122,7 +122,7 @@ this.isResponding$ = combineLatest([
 ]).pipe(
   map(([isLoading, isStreaming]) => isLoading || isStreaming)
 );
-    
+
     this.messages$ = this.aiChatStateService.messages$;
     this.selectedPrompts$ = this.aiChatStateService.selectedPrompts$;
     this.aiChatStateService.prompts$.pipe(

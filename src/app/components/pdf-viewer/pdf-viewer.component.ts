@@ -22,11 +22,11 @@ export interface BlueprintDocument {
 }
 
 @Component({
-  selector: 'app-pdf-viewer',
-  standalone: true,
-  imports: [ CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule ],
-  templateUrl: './pdf-viewer.component.html',
-  styleUrls: ['./pdf-viewer.component.scss']
+    selector: 'app-pdf-viewer',
+    standalone: true,
+    imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule],
+    templateUrl: './pdf-viewer.component.html',
+    styleUrls: ['./pdf-viewer.component.scss']
 })
 export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @Input() document: { url: string, name: string } | null = null;

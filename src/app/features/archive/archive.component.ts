@@ -15,19 +15,19 @@ import { UserService } from '../../services/user.service';
 import { MatCardModule } from '@angular/material/card';
 
 @Component({
-  selector: 'app-archive',
-  templateUrl: './archive.component.html',
-  styleUrls: ['./archive.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatTableModule,
-    MatButtonModule,
-    DatePipe,
-    LoaderComponent,
-    MatCardModule,
-    MatTabsModule,
-  ],
+    selector: 'app-archive',
+    templateUrl: './archive.component.html',
+    styleUrls: ['./archive.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatTableModule,
+        MatButtonModule,
+        DatePipe,
+        LoaderComponent,
+        MatCardModule,
+        MatTabsModule,
+    ]
 })
 export class ArchiveComponent implements OnInit {
   archivedNotes: any[] = [];

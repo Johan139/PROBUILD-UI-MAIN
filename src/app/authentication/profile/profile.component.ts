@@ -81,37 +81,37 @@ export interface SubscriptionUpgradeDTO {
 }
 export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: string }>;
 @Component({
-  selector: 'app-profile',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-      CommonModule,
-    MatCardModule,
-    MatDividerModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressBarModule,
-    MatAutocompleteModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTabsModule,
-    MatTableModule,
-    MatDialogModule,
-    MatMenuModule,
-      MatTableModule,
-  MatPaginatorModule,
-  MatSortModule,
-    NgForOf,
-    NgIf,
-    SharedModule
-  ],
-  templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+    selector: 'app-profile',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        CommonModule,
+        MatCardModule,
+        MatDividerModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatProgressBarModule,
+        MatAutocompleteModule,
+        MatDialogModule,
+        MatTooltipModule,
+        MatSnackBarModule,
+        MatSelectModule,
+        MatButtonModule,
+        MatIconModule,
+        MatTabsModule,
+        MatTableModule,
+        MatDialogModule,
+        MatMenuModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatSortModule,
+        NgForOf,
+        NgIf,
+        SharedModule
+    ],
+    templateUrl: './profile.component.html',
+    styleUrls: ['./profile.component.scss']
 })
 
 export class ProfileComponent implements OnInit {

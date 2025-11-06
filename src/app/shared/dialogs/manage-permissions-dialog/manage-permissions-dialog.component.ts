@@ -9,17 +9,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 
 @Component({
-  selector: 'app-manage-permissions-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    MatDialogModule
-  ],
-  templateUrl: './manage-permissions-dialog.component.html',
-  styleUrl: './manage-permissions-dialog.component.scss'
+    selector: 'app-manage-permissions-dialog',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatCheckboxModule,
+        MatButtonModule,
+        MatDialogModule
+    ],
+    templateUrl: './manage-permissions-dialog.component.html',
+    styleUrl: './manage-permissions-dialog.component.scss'
 })
 export class ManagePermissionsDialogComponent implements OnInit {
   permissionsForm: FormGroup;

@@ -7,10 +7,10 @@ import { JobsService } from '../services/jobs.service';
 import { HttpClient } from '@angular/common/http';
 
 @Component({
-  selector: 'app-quote-documents-dialog',
-  standalone: true,
-  imports: [MatDialogModule, CommonModule, LoaderComponent, FileSizePipe],
-  template: `
+    selector: 'app-quote-documents-dialog',
+    standalone: true,
+    imports: [MatDialogModule, CommonModule, LoaderComponent, FileSizePipe],
+    template: `
     <ng-template #documentsDialog>
       <div class="documents-dialog">
         <h2 mat-dialog-title>Quote Documents</h2>
@@ -48,7 +48,7 @@ import { HttpClient } from '@angular/common/http';
       </div>
     </ng-template>
   `,
-  styles: [`
+    styles: [`
 $primary-yellow: #fbd008;
 $secondary-yellow: #fcd02d;
 $darker-yellow: #e6bf00;

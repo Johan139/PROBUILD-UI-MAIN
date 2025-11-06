@@ -19,20 +19,20 @@ import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEventDialogComponent } from './add-event-dialog.component';
 
 @Component({
-  selector: 'app-calendar',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    MatDividerModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FullCalendarModule
-  ],
-  templateUrl: './calendar.component.html',
-  styleUrls: ['./calendar.component.scss']
+    selector: 'app-calendar',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        MatDividerModule,
+        MatButtonModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FullCalendarModule
+    ],
+    templateUrl: './calendar.component.html',
+    styleUrls: ['./calendar.component.scss']
 })
 export class CalendarComponent implements OnInit {
   calendarOptions: CalendarOptions;

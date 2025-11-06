@@ -9,18 +9,18 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-  selector: 'app-quotes-list',
-  standalone: true,
-  imports: [
-    MatTableModule,
-    MatButtonModule,
-    MatCardModule,
-    HttpClientModule,
-    MatIconModule,
-  ],
-  templateUrl: './quotes-list.component.html',
-  styleUrls: ['./quotes-list.component.scss'],
-  providers: [QuoteService],
+    selector: 'app-quotes-list',
+    standalone: true,
+    imports: [
+        MatTableModule,
+        MatButtonModule,
+        MatCardModule,
+        HttpClientModule,
+        MatIconModule,
+    ],
+    templateUrl: './quotes-list.component.html',
+    styleUrls: ['./quotes-list.component.scss'],
+    providers: [QuoteService]
 })
 export class QuotesListComponent implements OnInit {
   displayedColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];

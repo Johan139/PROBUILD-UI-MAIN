@@ -16,22 +16,22 @@ import { startWith, map } from 'rxjs/operators';
 import { trades } from '../../../data/registration-data';
 
 @Component({
-  selector: 'app-initiate-bidding-dialog',
-  templateUrl: './initiate-bidding-dialog.component.html',
-  styleUrls: ['./initiate-bidding-dialog.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatRadioModule,
-    MatButtonModule,
-    MatAutocompleteModule,
-    MatChipsModule,
-    MatIconModule,
-    MatTooltipModule
-  ]
+    selector: 'app-initiate-bidding-dialog',
+    templateUrl: './initiate-bidding-dialog.component.html',
+    styleUrls: ['./initiate-bidding-dialog.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatRadioModule,
+        MatButtonModule,
+        MatAutocompleteModule,
+        MatChipsModule,
+        MatIconModule,
+        MatTooltipModule
+    ]
 })
 export class InitiateBiddingDialogComponent implements OnInit {
   form: FormGroup;

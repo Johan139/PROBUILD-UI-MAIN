@@ -10,18 +10,18 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
 @Component({
-  selector: 'app-documents-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatListModule,
-    MatIconModule,
-    FileSizePipe,
-  ],
-  templateUrl: './documents-dialog.component.html',
-  styleUrls: ['./documents-dialog.component.scss']
+    selector: 'app-documents-dialog',
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatListModule,
+        MatIconModule,
+        FileSizePipe,
+    ],
+    templateUrl: './documents-dialog.component.html',
+    styleUrls: ['./documents-dialog.component.scss']
 })
 export class DocumentsDialogComponent {
   @Input() documents: JobDocument[] = [];

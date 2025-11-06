@@ -10,27 +10,27 @@ import { MatDividerModule } from '@angular/material/divider';
 import { CommonModule } from '@angular/common';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { MatTimePickerModule } from '@angular/material/timepicker';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 
 @Component({
-  selector: 'app-add-event-dialog',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatIconModule,
-    MatDividerModule,
-    CommonModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatDialogContent,
-    MatDialogActions
-  ],
-  templateUrl: './add-event-dialog.component.html',
-  styleUrls: ['./add-event-dialog.component.scss']
+    selector: 'app-add-event-dialog',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatDialogModule,
+        MatIconModule,
+        MatDividerModule,
+        CommonModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
+        MatDialogContent,
+        MatDialogActions
+    ],
+    templateUrl: './add-event-dialog.component.html',
+    styleUrls: ['./add-event-dialog.component.scss'],
 })
 export class AddEventDialogComponent {
   eventForm: FormGroup;

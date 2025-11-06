@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatGridListModule} from "@angular/material/grid-list";
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import {AsyncPipe, CommonModule, NgForOf, NgIf} from "@angular/common";
 import { MatSelectModule} from "@angular/material/select";
 import {MatInputModule} from "@angular/material/input";
@@ -13,14 +13,11 @@ import { environment } from '../../../environments/environment';
 import {catchError, map, startWith} from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
 import {Observable, of} from 'rxjs';
-import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
-import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
+import { StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
-import { COUNTRIES } from '../../data/countries';
-import { STATES } from '../../data/states';
 import {MatAutocompleteModule} from "@angular/material/autocomplete";
 import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -54,32 +51,31 @@ export interface SubscriptionOption {
 }
 export type BillingCycle = 'monthly' | 'yearly';
 @Component({
-  selector: 'app-registration',
-  standalone: true,
-  imports: [
-    MatCardModule,
-    CommonModule,
-    MatGridListModule,
-    MatGridListModule,
-    ReactiveFormsModule,
-    NgForOf,
-    MatSelectModule,
-    MatDialogModule,
-    NgIf,
-    MatInputModule,
-    MatFormFieldModule,
-    MatButton,
-    LoaderComponent,
-    MatDivider,
-    MatAutocompleteModule,
-    AsyncPipe,
-    MatCheckboxModule,
-    MatChipsModule,
-    MatRadioModule,
-    MatIconModule
-  ],
-  templateUrl: './registration.component.html',
-  styleUrl: './registration.component.scss'
+    selector: 'app-registration',
+    standalone: true,
+    imports: [
+        MatCardModule,
+        CommonModule,
+        MatGridListModule,
+        MatGridListModule,
+        ReactiveFormsModule,
+        NgForOf,
+        MatSelectModule,
+        MatDialogModule,
+        NgIf,
+        MatInputModule,
+        MatFormFieldModule,
+        MatButton,
+        MatDivider,
+        MatAutocompleteModule,
+        AsyncPipe,
+        MatCheckboxModule,
+        MatChipsModule,
+        MatRadioModule,
+        MatIconModule
+    ],
+    templateUrl: './registration.component.html',
+    styleUrl: './registration.component.scss'
 })
 export class RegistrationComponent implements OnInit{
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
@@ -107,7 +103,7 @@ export class RegistrationComponent implements OnInit{
 states: any[] = [];
   filteredCountries: Observable<any[]> | undefined;
   filteredStates: Observable<any[]> | undefined;
-  
+
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
 
@@ -539,7 +535,7 @@ formValue.latitudeFromIP = metadata.latitude;
 formValue.longitudeFromIP = metadata.longitude;
 formValue.timezone = metadata.timezone;
 formValue.operatingSystem = this.getOperatingSystem();
-    
+
 
 // Ensure only the ID is sent
 if (typeof formValue.country === 'object') {

@@ -10,15 +10,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  selector: 'app-notifications-menu',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    MatButtonModule,
-  ],
-  templateUrl: './notifications-menu.component.html',
-  styleUrls: ['./notifications-menu.component.scss']
+    selector: 'app-notifications-menu',
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatIconModule,
+        MatButtonModule,
+    ],
+    templateUrl: './notifications-menu.component.html',
+    styleUrls: ['./notifications-menu.component.scss']
 })
 export class NotificationsMenuComponent implements OnInit {
   recentNotifications$!: Observable<Notification[]>;

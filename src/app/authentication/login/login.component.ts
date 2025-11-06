@@ -15,22 +15,22 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    NgIf,
-    MatFormFieldModule,
-    MatInputModule,
-    LoaderComponent,
-    MatButtonModule,
-    MatIconModule,
-    MatDividerModule,
-    RouterLink,
-  ],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+    selector: 'app-login',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        NgIf,
+        MatFormFieldModule,
+        MatInputModule,
+        LoaderComponent,
+        MatButtonModule,
+        MatIconModule,
+        MatDividerModule,
+        RouterLink,
+    ],
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
   loginForm: FormGroup;
@@ -112,7 +112,7 @@ if (error.status === 401) {
       });
     } else {
          this.showResendLink = false;
-         
+
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
@@ -132,7 +132,7 @@ if (error.status === 401) {
       this.showAlert = true;
       this.alertMessage = 'Verification email sent successfully. Please check your inbox and spam folder.';
         },
-        error: (error: any) => {  
+        error: (error: any) => {
                 this.showAlert = true;
       this.alertMessage = 'An error occured. Please contact support.';
         },

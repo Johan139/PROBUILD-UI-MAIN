@@ -32,34 +32,34 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
-  selector: 'app-quote',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatTableModule,
-    MatSelectModule,
-    MatIconModule,
-    MatDividerModule,
-    MatExpansionModule,
-    NgIf,
-    FormsModule,
-    MatDialogModule,
-    MatCheckboxModule,
-    JobCardComponent,
-    MatProgressSpinnerModule,
-    PdfViewerComponent,
-    CommonModule,
-    MatDatepickerModule,
-    MatNativeDateModule
-  ],
-  templateUrl: './quote.component.html',
-  styleUrls: ['./quote.component.scss'],
-  providers: [QuoteService],
+    selector: 'app-quote',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatTableModule,
+        MatSelectModule,
+        MatIconModule,
+        MatDividerModule,
+        MatExpansionModule,
+        NgIf,
+        FormsModule,
+        MatDialogModule,
+        MatCheckboxModule,
+        JobCardComponent,
+        MatProgressSpinnerModule,
+        PdfViewerComponent,
+        CommonModule,
+        MatDatepickerModule,
+        MatNativeDateModule
+    ],
+    templateUrl: './quote.component.html',
+    styleUrls: ['./quote.component.scss'],
+    providers: [QuoteService]
 })
 
 

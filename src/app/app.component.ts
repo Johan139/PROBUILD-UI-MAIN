@@ -33,38 +33,37 @@ type NavItem = {
 };
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [
-    RouterOutlet,
-    MatToolbarModule,
-    MatCardModule,
-    MatSidenavModule,
-    NgIf,
-    MatNavList,
-    LoaderComponent,
-    MatIconModule,
-    MatMenuModule,
-    MatSidenav,
-    RouterLink,
-    MatButtonModule,
-    NgOptimizedImage,
-    RouterModule,
-    MatIconModule,
-    NgFor,
-    MatDividerModule,
-    FooterComponent,
-    AiChatIconComponent,
-    AiChatWindowComponent,
-    MatTooltip,
-    MatListModule,
-    MatIconModule,
-    NotificationsMenuComponent
-
-],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
-  providers: [DatePipe]
+    selector: 'app-root',
+    standalone: true,
+    imports: [
+        RouterOutlet,
+        MatToolbarModule,
+        MatCardModule,
+        MatSidenavModule,
+        NgIf,
+        MatNavList,
+        LoaderComponent,
+        MatIconModule,
+        MatMenuModule,
+        MatSidenav,
+        RouterLink,
+        MatButtonModule,
+        NgOptimizedImage,
+        RouterModule,
+        MatIconModule,
+        NgFor,
+        MatDividerModule,
+        FooterComponent,
+        AiChatIconComponent,
+        AiChatWindowComponent,
+        MatTooltip,
+        MatListModule,
+        MatIconModule,
+        NotificationsMenuComponent
+    ],
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    providers: [DatePipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;

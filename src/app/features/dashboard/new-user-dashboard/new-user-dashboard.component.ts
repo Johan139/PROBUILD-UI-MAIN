@@ -32,29 +32,29 @@ import { UserService } from '../../../services/user.service';
 
  const BASE_URL = environment.BACKEND_URL;
  @Component({
-  selector: 'app-new-user-dashboard',
-  standalone: true,
-  imports: [
-    NgIf,
-    CommonModule,
-    MatButtonModule,
-    MatCardModule,
-    MatProgressBarModule,
-    MatDividerModule,
-    LoaderComponent,
-    MatDialogModule,
-    FileSizePipe,
-    MatFormFieldModule,
-    MatInputModule,
-    FormsModule,
-    MatSelectModule,
-    MatMenuModule,
-    MatIconModule,
-    MatTableModule
-],
-  templateUrl: './new-user-dashboard.component.html',
-  styleUrls: ['./new-user-dashboard.component.scss'],
-  providers: [provideNativeDateAdapter(), DatePipe]
+    selector: 'app-new-user-dashboard',
+    standalone: true,
+    imports: [
+        NgIf,
+        CommonModule,
+        MatButtonModule,
+        MatCardModule,
+        MatProgressBarModule,
+        MatDividerModule,
+        LoaderComponent,
+        MatDialogModule,
+        FileSizePipe,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        MatSelectModule,
+        MatMenuModule,
+        MatIconModule,
+        MatTableModule
+    ],
+    templateUrl: './new-user-dashboard.component.html',
+    styleUrls: ['./new-user-dashboard.component.scss'],
+    providers: [provideNativeDateAdapter(), DatePipe]
 })
 export class NewUserDashboardComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;

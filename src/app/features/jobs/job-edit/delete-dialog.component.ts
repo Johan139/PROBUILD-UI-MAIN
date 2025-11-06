@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Import MatDialogModule
+import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; 
 
 @Component({
-  selector: 'app-confirmation-dialog',
-  standalone: true,
-  imports: [MatDialogModule], // Add MatDialogModule to imports
-  template: `
+    selector: 'app-confirmation-dialog',
+    standalone: true,
+    imports: [MatDialogModule],
+    template: `
     <h2 mat-dialog-title>Are you sure you want to delete?</h2>
     <mat-dialog-content>
       <p>
@@ -17,7 +17,7 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog'; // Imp
       <button mat-button class="dialog-btn confirm-btn" (click)="onConfirm()">Yes</button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     h2 {
       font-size: 1.5rem;
       font-weight: 600;

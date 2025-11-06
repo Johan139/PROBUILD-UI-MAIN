@@ -6,15 +6,15 @@ import { BlueprintDocument } from '../pdf-viewer.component';
 import { PdfViewerStateService } from '../../../services/pdf-viewer-state.service';
 
 @Component({
-  selector: 'app-pdf-viewer-popout',
-  standalone: true,
-  imports: [CommonModule, PdfViewerComponent],
-  template: `
+    selector: 'app-pdf-viewer-popout',
+    standalone: true,
+    imports: [CommonModule, PdfViewerComponent],
+    template: `
     <div class="popout-container">
       <app-pdf-viewer [blueprints]="blueprints" [selectedBlueprint]="selectedBlueprint"></app-pdf-viewer>
     </div>
   `,
-  styles: [`
+    styles: [`
     .popout-container {
       width: 100vw;
       height: 100vh;

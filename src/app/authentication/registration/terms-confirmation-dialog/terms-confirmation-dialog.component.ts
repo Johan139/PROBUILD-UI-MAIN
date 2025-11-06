@@ -4,19 +4,17 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
-import { NgIf } from '@angular/common';
 
 @Component({
-  selector: 'app-terms-confirmation-dialog',
-  standalone: true,
-  imports: [
-    MatDialogModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    FormsModule,
-    NgIf
-  ],
-  template: `
+    selector: 'app-terms-confirmation-dialog',
+    standalone: true,
+    imports: [
+        MatDialogModule,
+        MatCheckboxModule,
+        MatButtonModule,
+        FormsModule
+    ],
+    template: `
    <h1 mat-dialog-title>Terms and Conditions</h1>
 <mat-dialog-content>
 <mat-checkbox
@@ -58,52 +56,52 @@ import { NgIf } from '@angular/common';
   </button>
 </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     h2 {
       font-size: 1.5rem;
       font-weight: 600;
       color: #333;
       margin-bottom: 16px;
     }
-  
+
     p {
       font-size: 1rem;
       color: #555;
       line-height: 1.5;
       margin-bottom: 16px;
     }
-  
+
     mat-dialog-actions {
       display: flex;
       gap: 12px;
       padding-top: 16px;
     }
-  
+
     .dialog-btn {
       padding: 8px 16px;
       border-radius: 6px;
       font-weight: 500;
       transition: background-color 0.3s ease;
     }
-  
+
     .return-btn {
       background-color: #FBD008;
       color: #333;
     }
-  
+
     .return-btn:hover {
       background-color: #e6bf00;
     }
-  
+
     .confirm-btn {
       background-color: #FBD008;
       color: black;
     }
-  
+
     .confirm-btn:hover {
       background-color: #e6bf00;
     }
-  
+
     .confirm-btn:disabled {
       background-color: #ccc !important;
       color: #666 !important;

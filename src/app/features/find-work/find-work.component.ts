@@ -5,7 +5,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList, effect } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
-import { GoogleMap, GoogleMapsModule, MapCircle } from '@angular/google-maps';
+import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
@@ -47,14 +47,13 @@ interface JobMarker {
 }
 
 @Component({
-  selector: 'app-find-work',
-  templateUrl: './find-work.component.html',
-  styleUrls: ['./find-work.component.scss'],
-  standalone: true,
-  imports: [
+    selector: 'app-find-work',
+    templateUrl: './find-work.component.html',
+    styleUrls: ['./find-work.component.scss'],
+    standalone: true,
+    imports: [
     CommonModule,
     GoogleMapsModule,
-    MapCircle,
     MatDialogModule,
     MatMenuModule,
     MatIconModule,
@@ -67,10 +66,10 @@ interface JobMarker {
     MatProgressSpinnerModule,
     JobCardComponent,
     MatButtonModule,
-    RouterModule,
-  ],
-  providers: [MapLoaderService],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    RouterModule
+],
+    providers: [MapLoaderService],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class FindWorkComponent implements OnInit, OnDestroy {

@@ -17,29 +17,29 @@ export interface SubscriptionDialogData {
   teamMembers?: { id: string; name?: string; email?: string }[];
   activeByUserId?: Record<string, { subscriptionId: string; packageLabel?: string }>;
   notice?: string; // 👈
-  
+
 }
 
 export type BillingCycle = 'monthly' | 'yearly';
 export interface SubscriptionSelection {
   pkg: SubscriptionPackage;
-  assigneeUserId: string;     
-  billingCycle: BillingCycle;          
+  assigneeUserId: string;
+  billingCycle: BillingCycle;
 }
 @Component({
-  selector: 'app-subscription-create',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatRadioModule
-  ],
-  templateUrl: './subscription-create.component.html',
-  styleUrls: ['./subscription-create.component.scss']
+    selector: 'app-subscription-create',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatSelectModule,
+        MatButtonModule,
+        MatRadioModule
+    ],
+    templateUrl: './subscription-create.component.html',
+    styleUrls: ['./subscription-create.component.scss']
 })
 export class SubscriptionCreateComponent implements OnInit {
   form!: FormGroup;
@@ -106,5 +106,4 @@ hasActiveForAssignee(): boolean {
       return `${amount.toFixed(2)} ${(currency || '').toUpperCase()}`;
     }
   }
-  
 }

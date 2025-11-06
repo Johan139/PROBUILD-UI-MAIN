@@ -13,23 +13,23 @@ import { JobsService } from '../../../services/jobs.service';
 import { BiddingService } from '../../../services/bidding.service';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
-import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog.component';
+import { InitiateBiddingDialogComponent } from '../initiate-bidding-dialog/initiate-bidding-dialog.component';
 
 @Component({
-  selector: 'app-jobs',
-  standalone: true,
-  imports: [
-    FormsModule,
-    NgIf,
-    NgForOf,
-    MatButton,
-    LoaderComponent,
-    GanttChartComponent,
-    MatCard,
-  ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  templateUrl: './job-edit.component.html',
-  styleUrl: './job-edit.component.scss'
+    selector: 'app-jobs',
+    standalone: true,
+    imports: [
+        FormsModule,
+        NgIf,
+        NgForOf,
+        MatButton,
+        LoaderComponent,
+        GanttChartComponent,
+        MatCard,
+    ],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    templateUrl: './job-edit.component.html',
+    styleUrl: './job-edit.component.scss'
 })
 export class JobEditComponent implements OnInit{
   taskData: any;

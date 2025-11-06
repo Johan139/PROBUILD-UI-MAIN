@@ -4,7 +4,6 @@ import { HttpClient } from "@angular/common/http";
 import { Router, ActivatedRoute } from "@angular/router";
 import { MatCardModule } from "@angular/material/card";
 import { NgIf } from "@angular/common";
-import { MatFormField } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButton } from "@angular/material/button";
 import { LoaderComponent } from '../../loader/loader.component';
@@ -13,11 +12,11 @@ import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 @Component({
-  selector: 'app-confirm-email',
-  standalone: true,
-  imports: [FormsModule, MatCardModule, ReactiveFormsModule, MatFormField, MatInputModule, NgIf, LoaderComponent, MatButton],
-  templateUrl: './confirm-email.component.html',
-  styleUrls: ['./confirm-email.component.scss']
+    selector: 'app-confirm-email',
+    standalone: true,
+    imports: [FormsModule, MatCardModule, ReactiveFormsModule, MatInputModule, NgIf, LoaderComponent, MatButton],
+    templateUrl: './confirm-email.component.html',
+    styleUrls: ['./confirm-email.component.scss']
 })
 export class ConfirmEmailComponent implements OnInit {
   confirmEmailForm: FormGroup;
