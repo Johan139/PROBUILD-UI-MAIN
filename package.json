@@ -66,7 +66,7 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.0",
-    "@angular/cli": "^18.2.0",
+    "@angular/cli": "^18.2.21",
     "@angular/compiler-cli": "^18.2.0",
     "@types/body-parser": "^1.19.5",
     "@types/estree": "^1.0.6",

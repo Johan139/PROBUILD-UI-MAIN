@@ -5,7 +5,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
-import { Profile, TeamMember, Document } from './profile.model';
+import { Profile, TeamMember, Document, UserAddress } from './profile.model';
 import { userTypes } from '../../data/user-types';
 import { TeamManagementService } from '../../services/team-management.service';
 import {
@@ -55,7 +55,7 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
-
+import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -158,6 +158,10 @@ filteredStates: Observable<any[]> = of([]);
   displayedColumns: string[] = ['name', 'role', 'email', 'status', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
 
+  selectedCountryCode: any;
+countryNumberCode: any[] = [];
+countryFilterCtrl = new FormControl('');
+filteredCountryCodes!: Observable<any[]>;
 //subscription variables
 activeSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 teamSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
@@ -165,6 +169,10 @@ inactiveSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
   subscriptionColumns: string[] = ['package', 'validUntil', 'amount', 'assignedUser', 'status', 'actions'];
 subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
+addresses: UserAddress[] = [];
+isLoadingAddresses = false;
+addressColumns: string[] = ['formattedAddress', 'city', 'state', 'country', 'actions'];
+addressDataSource = new MatTableDataSource<UserAddress>([]);
 
   isLoadingSubscriptions = false;
   subscriptionsError: string | null = null;
@@ -233,6 +241,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       deliveryArea: [[]],
       deliveryTime: [null],
       country: [null],
+      countryCode: [''],
       state: [null],
       city: [null],
       subscriptionPackage: ['', Validators.required],
@@ -242,6 +251,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
+            countryNumberCode:[''],
       latitude: [null],
       longitude: [null],
       googlePlaceId: [''],
@@ -305,6 +315,24 @@ this.registrationService.getCountries().subscribe(countries => {
 
 this.registrationService.getAllStates().subscribe(allStates => {
   this.states = allStates;
+
+
+  // Load all country dial codes just like registration
+this.registrationService.getAllCountryNumberCodes().subscribe(data => {
+  this.countryNumberCode = data;
+
+  // Default to user’s saved or ZA
+  const savedCode = this.profileForm.get('countryCode')?.value;
+  this.selectedCountryCode =
+    this.countryNumberCode.find(c => c.countryPhoneNumberCode === savedCode) ||
+    this.countryNumberCode.find(c => c.countryCode === 'ZA');
+
+  // Initialize the async filter observable
+  this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+    startWith(''),
+    map(value => this._filterCountryCodes(value ?? ''))
+  );
+});
 
   const countryCtrl = this.profileForm.get('country')!;
   const stateCtrl = this.profileForm.get('state')!;
@@ -392,6 +420,15 @@ private _filterCountries(value: string | null): any[] {
         c.countryCode.toLowerCase().includes(filterValue)
       );
 }
+private _filterCountryCodes(value: string): any[] {
+  const search = (value || '').toLowerCase().trim();
+  if (!search) return this.countryNumberCode;
+
+  return this.countryNumberCode.filter(c =>
+    c.countryCode?.toLowerCase().includes(search) ||
+    c.countryPhoneNumberCode?.toLowerCase().includes(search)
+  );
+}
 countryDisplayFn = (id: string) =>
   this.countries.find(c => c.id === id)?.countryName ?? '';
 
@@ -444,6 +481,67 @@ loadProfile(): void {
       this.states = states;
 
       this.profileForm.patchValue(profileData); // includes country & state IDs
+
+
+      // --- ✅ DIAL CODE PRESELECTION & SYNC ---
+if (profileData.countryNumberCode) {
+  this.registrationService.getAllCountryNumberCodes().pipe(take(1)).subscribe(codes => {
+    this.countryNumberCode = codes;
+
+    // Match by GUID
+    const matched = codes.find(c => c.id === profileData.countryNumberCode);
+    this.selectedCountryCode = matched || codes.find(c => c.countryCode === 'ZA') || codes[0];
+
+    // Update the form so the phoneNumber always includes the dial code
+    const currentPhone = this.profileForm.get('phoneNumber')?.value || '';
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+
+    if (currentPhone && !currentPhone.startsWith(dial)) {
+      const cleaned = currentPhone.replace(/[^\d+]/g, '').replace(/^0+/, '');
+      this.profileForm.patchValue({ phoneNumber: `${dial}${cleaned}` });
+    }
+
+    // initialize filter observable for dropdown search
+    this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+      startWith(''),
+      map(v => this._filterCountryCodes(v ?? ''))
+    );
+  });
+}
+
+      //Here we are going to set the user address that was saved on registration.
+      // --- populate Google address field from UserAddresses ---
+if (profileData.userAddresses && profileData.userAddresses.length > 0) {
+  const saved = profileData.userAddresses[0];
+  const patchObj = {
+    address: saved.formattedAddress,
+    formattedAddress: saved.formattedAddress,
+    streetNumber: saved.streetNumber,
+    streetName: saved.streetName,
+    city: saved.city,
+    state: saved.state,
+    postalCode: saved.postalCode,
+    country: saved.country,
+    countrycode: saved.countryCode,
+    latitude: saved.latitude,
+    longitude: saved.longitude,
+    googlePlaceId: saved.googlePlaceId,
+  };
+
+  this.profileForm.patchValue(patchObj);
+  this.addressControl.setValue(saved.formattedAddress);
+
+  if (profileData.userAddresses && profileData.userAddresses.length > 0) {
+  this.addresses = profileData.userAddresses;
+  this.addressDataSource.data = profileData.userAddresses;
+} else {
+  this.addresses = [];
+  this.addressDataSource.data = [];
+}
+}
+
+
+
       this.isVerified = profileData.isVerified ?? false;
 
       this.loadTeamMembers();
@@ -476,7 +574,8 @@ loadProfile(): void {
           const components = place.address_components || [];
           const getComponent = (type: string) =>
             components.find(c => c.types.includes(type))?.long_name || '';
-
+  const getShort = (type: string) =>
+          components.find(c => c.types.includes(type))?.short_name || '';
           const patchObj = {
             address: selectedAddress.description,
             formattedAddress: place.formatted_address || selectedAddress.description,
@@ -486,6 +585,7 @@ loadProfile(): void {
             state: getComponent('administrative_area_level_1'),
             postalCode: getComponent('postal_code'),
             country: getComponent('country'),
+            countryCode: getShort('country'),
             latitude: place.geometry?.location?.lat() ?? null,
             longitude: place.geometry?.location?.lng() ?? null,
             googlePlaceId: place.place_id || selectedAddress.place_id,  // fallback if needed
@@ -757,6 +857,86 @@ GetUserSubscription(): void {
       }
     });
   }
+  
+  // ---------- ADDRESS MANAGEMENT ----------
+ // ---------- ADDRESS MANAGEMENT ----------
+
+openAddressDialog(address?: UserAddress): void {
+  const dialogRef = this.dialog.open(AddressDialogComponent, {
+    width: '600px',
+    data: address || null
+  });
+
+  dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
+    if (result) {
+      if (address) {
+        this.updateAddress(result);
+      } else {
+        this.saveNewAddress(result);
+      }
+    }
+  });
+}
+
+editAddress(address: UserAddress): void {
+  this.openAddressDialog(address);
+}
+
+deleteAddress(address: UserAddress): void {
+  if (!address?.id) return;
+
+  const confirmed = confirm('Are you sure you want to delete this address?');
+  if (!confirmed) return;
+
+  this.profileService.deleteUserAddress(address.id).subscribe({
+    next: () => {
+      this.snackBar.open('Address deleted successfully.', 'Close', { duration: 3000 });
+      // ✅ use the actual array name
+      this.addresses = this.addresses.filter(a => a.id !== address.id);
+      this.addressDataSource.data = this.addresses;
+    },
+    error: err => {
+      console.error('Error deleting address', err);
+      this.snackBar.open('Failed to delete address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
+saveNewAddress(address: UserAddress): void {
+  
+  const payload = {
+    ...address,
+    userId: String(localStorage.getItem('userId') ?? '') // <-- make sure this is set!
+  };
+
+  this.profileService.addUserAddress(payload).subscribe({
+    next: saved => {
+      this.snackBar.open('Address added successfully.', 'Close', { duration: 3000 });
+      this.addresses.push(saved);
+      this.addressDataSource.data = [...this.addresses];
+    },
+    error: err => {
+      console.error('Error saving address', err);
+      this.snackBar.open('Failed to save address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
+updateAddress(address: UserAddress): void {
+  this.profileService.updateUserAddress(address.id!, address).subscribe({
+    next: updated => {
+      this.snackBar.open('Address updated successfully.', 'Close', { duration: 3000 });
+      const idx = this.addresses.findIndex(a => a.id === updated.id);
+      if (idx !== -1) this.addresses[idx] = updated;
+      this.addressDataSource.data = [...this.addresses];
+    },
+    error: err => {
+      console.error('Error updating address', err);
+      this.snackBar.open('Failed to update address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
 
   onSubmit(): void {
     if (this.profileForm.valid && !this.isSaving) {
@@ -765,7 +945,8 @@ GetUserSubscription(): void {
         SessionId: this.sessionId
       });
       const updatedProfile: Profile = this.profileForm.value;
-
+      console.log(updatedProfile)
+updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
@@ -1350,10 +1531,93 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
       }
     });
   }
+onCountryCodeChange(selected: any): void {
+  this.selectedCountryCode = selected;
+
+  const phoneCtrl = this.profileForm.get('phoneNumber');
+  if (!phoneCtrl) return;
+
+  let phone = phoneCtrl.value || '';
+  const newDial = selected.countryPhoneNumberCode || '';
+
+  // Remove old dial code if present
+  for (const c of this.countryNumberCode) {
+    const old = c.countryPhoneNumberCode;
+    if (old && phone.startsWith(old)) {
+      phone = phone.slice(old.length);
+      break;
+    }
+  }
+
+  // Clean remaining digits
+  phone = phone.replace(/[^\d+]/g, '').replace(/^0+/, '');
+
+  // Reapply new dial code
+  const newPhone = `${newDial}${phone}`;
+  phoneCtrl.setValue(newPhone);
+
+  // Update GUID reference
+  this.profileForm.patchValue({ countryNumberCode: selected.id });
+
+  console.log(`☎ Updated number: ${newPhone}`);
+}
+
 
   ngOnDestroy(): void {
     this.profileService.stopSignalR();
   }
+onPhoneInput(event: any) {
+  const inputEl = event.target as HTMLInputElement;
+  let value = inputEl.value || '';
+  const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+  const phoneCtrl = this.profileForm.get('phoneNumber');
+
+  // Clean illegal characters but allow + only at start
+  value = value
+    .replace(/[^0-9\s()+-]/g, '')  // remove strange chars
+    .replace(/(?!^)\+/g, '');      // remove any '+' that isn’t at the start
+
+  if (dial) {
+    // Remove duplicate dial prefixes like +27+27 or +1+1
+    const duplicatePattern = new RegExp(`^(\\+?${dial.replace('+', '\\+')}\\s*)+`);
+    value = value.replace(duplicatePattern, dial);
+
+    // Ensure value starts with single '+'
+    if (!value.startsWith('+')) {
+      value = '+' + value.replace(/^\+*/, '');
+    }
+
+    // If cleared → reset to dial
+    if (!value.trim()) {
+      value = dial;
+    }
+    // Backspacing inside dial code → lock it
+    else if (value.length < dial.length && dial.startsWith(value)) {
+      value = dial;
+    }
+    // If just "+" or "+0" → normalize
+    else if (value === '+' || value === '+0') {
+      value = dial;
+    }
+    // If missing dial → prepend it
+    else if (!value.startsWith(dial)) {
+      let digits = value.replace(/^\+?0+/, '');
+      value = dial + digits;
+    }
+    // ✅ Fix “+270...” or “+440...” etc. (leading 0 after dial)
+    else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
+      value = dial + value.substring(dial.length + 1);
+    }
+  }
+
+  // Final cleanup: remove double '+' anywhere just in case
+  value = value.replace(/\+\++/g, '+');
+
+  inputEl.value = value;
+  phoneCtrl?.setValue(value, { emitEvent: false });
+}
+
+
 
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
