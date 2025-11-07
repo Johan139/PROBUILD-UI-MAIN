@@ -339,6 +339,13 @@ export class BomService {
       });
 
       const date = new Date().toISOString().slice(0, 10);
+      doc.setProperties({
+        title: `${projectName} Bill of Materials`,
+        subject: 'AI-Generated Estimate',
+        author: 'ProBuild AI',
+        keywords: 'BOM, estimate, AI, construction',
+        creator: 'ProBuild AI'
+      });
       doc.save(`${projectName}_BOM_${date}.pdf`);
     };
 

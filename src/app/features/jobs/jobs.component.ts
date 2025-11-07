@@ -42,6 +42,7 @@ import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
 import { SpreadsheetService } from './services/spreadsheet.service';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
     selector: 'app-jobs',
@@ -351,23 +352,40 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   downloadAsSpreadsheet(format: 'csv' | 'excel'): void {
-    const data = this.processingResults.flatMap(result =>
-      result.parsedReport.sections.flatMap((section: { title: any; headers: any; content: any; }) =>
-        section.content.map((row: { [x: string]: any; }) => {
-          const newRow: { [key: string]: any } = { 'Section': section.title };
+    const data: { [key: string]: any[] } = {};
+    this.processingResults.forEach(result => {
+      result.parsedReport.sections.forEach((section: { title: string; headers: any[]; content: any[][]; }) => {
+        if (!data[section.title]) {
+          data[section.title] = [];
+        }
+        section.content.forEach((row: { [x: string]: any; }) => {
+          const newRow: { [key: string]: any } = {};
           section.headers.forEach((header: string | number, index: string | number) => {
             newRow[header] = row[index];
           });
-          return newRow;
-        })
-      )
-    );
+          data[section.title].push(newRow);
+        });
+      });
+    });
 
     const date = new Date().toISOString().slice(0, 10);
     const fileName = `${this.projectDetails.projectName}_BOM_${date}`;
 
     if (format === 'csv') {
-      this.spreadsheetService.generateCsv(data, fileName);
+      const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Download Multiple CSVs',
+          message: 'This will download a separate CSV file for each section of the Bill of Materials. Do you want to continue?',
+          confirmButtonText: 'Yes, Download All',
+          cancelButtonText: 'Cancel'
+        }
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.spreadsheetService.generateCsv(data, fileName);
+        }
+      });
     } else if (format === 'excel') {
       this.spreadsheetService.generateExcel(data, fileName);
     }
