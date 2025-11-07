@@ -291,7 +291,7 @@ export class BomService {
     return { sections };
   }
 
-  generateBOMPDF(processingResults: any[]): void {
+  generateBOMPDF(processingResults: any[], projectName: string): void {
     if (!processingResults || processingResults.length === 0) {
       this.snackBar.open('No data available to generate PDF.', 'Close', {
         duration: 3000,
@@ -309,9 +309,12 @@ export class BomService {
       const addPageHeader = () => {
         if (withLogo) {
           doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+          doc.setFontSize(8);
+          doc.text('This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.', 10, 28);
+          doc.text('Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.', 10, 32);
         }
         doc.setFontSize(18);
-        doc.text('Bill of Materials', 10, withLogo ? 35 : 15);
+        doc.text(`Bill of Materials for: ${projectName}`, 10, withLogo ? 45 : 15);
       };
 
       parsedReport.sections.forEach((section: any, index: number) => {
@@ -321,12 +324,12 @@ export class BomService {
         addPageHeader();
 
         doc.setFontSize(14);
-        doc.text(section.title, 10, withLogo ? 45 : 25);
+        doc.text(section.title, 10, withLogo ? 55 : 25);
 
         autoTable(doc, {
           head: [section.headers],
           body: section.content,
-          startY: withLogo ? 50 : 30,
+          startY: withLogo ? 60 : 30,
           theme: 'grid',
           headStyles: {
             fillColor: '#FFC107',
@@ -335,7 +338,8 @@ export class BomService {
         });
       });
 
-      doc.save('bill-of-materials.pdf');
+      const date = new Date().toISOString().slice(0, 10);
+      doc.save(`${projectName}_BOM_${date}.pdf`);
     };
 
     logo.onload = () => {

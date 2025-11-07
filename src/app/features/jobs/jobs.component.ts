@@ -14,6 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatMenuModule } from '@angular/material/menu';
 import { FileSizePipe } from '../Documents/filesize.pipe';
 import { Subscription, timeout, debounceTime, switchMap, of, Observable, map, filter, take } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -40,6 +41,7 @@ import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
+import { SpreadsheetService } from './services/spreadsheet.service';
 
 @Component({
     selector: 'app-jobs',
@@ -68,7 +70,8 @@ import { MeasurementService, TemperatureUnit } from '../../services/measurement.
         FileSizePipe,
         MatCheckboxModule,
         TimelineComponent,
-        MatAutocompleteModule
+        MatAutocompleteModule,
+        MatMenuModule
     ],
     templateUrl: './jobs.component.html',
     styleUrl: './jobs.component.scss'
@@ -141,7 +144,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public authService: AuthService,
     private weatherService: WeatherService,
     private weatherImpactService: WeatherImpactService,
-    public measurementService: MeasurementService
+    public measurementService: MeasurementService,
+    private spreadsheetService: SpreadsheetService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -336,7 +340,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateBOMPDF(): void {
-    this.bomService.generateBOMPDF(this.processingResults);
+    this.bomService.generateBOMPDF(this.processingResults, this.projectDetails.projectName);
   }
 
   downloadEnvironmentalReport(jobId: string): void {
@@ -344,6 +348,29 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportService
       .downloadEnvironmentalReport(jobId)
       .finally(() => (this.isGeneratingReport = false));
+  }
+
+  downloadAsSpreadsheet(format: 'csv' | 'excel'): void {
+    const data = this.processingResults.flatMap(result =>
+      result.parsedReport.sections.flatMap((section: { title: any; headers: any; content: any; }) =>
+        section.content.map((row: { [x: string]: any; }) => {
+          const newRow: { [key: string]: any } = { 'Section': section.title };
+          section.headers.forEach((header: string | number, index: string | number) => {
+            newRow[header] = row[index];
+          });
+          return newRow;
+        })
+      )
+    );
+
+    const date = new Date().toISOString().slice(0, 10);
+    const fileName = `${this.projectDetails.projectName}_BOM_${date}`;
+
+    if (format === 'csv') {
+      this.spreadsheetService.generateCsv(data, fileName);
+    } else if (format === 'excel') {
+      this.spreadsheetService.generateExcel(data, fileName);
+    }
   }
 
   openDocumentsDialog() {

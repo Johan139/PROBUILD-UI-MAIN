@@ -262,6 +262,11 @@
     </mat-dialog-content>
     <mat-dialog-actions>
       <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">Download PDF</button>
+      <button class="submit-btn" mat-raised-button [matMenuTriggerFor]="spreadsheetMenu">Download as Spreadsheet</button>
+      <mat-menu #spreadsheetMenu="matMenu">
+        <button mat-menu-item (click)="downloadAsSpreadsheet('csv')">Download as CSV</button>
+        <button mat-menu-item (click)="downloadAsSpreadsheet('excel')">Download as Excel</button>
+      </mat-menu>
       <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
     </mat-dialog-actions>
   </div>
