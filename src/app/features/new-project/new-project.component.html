@@ -1,155 +1,153 @@
-<div class="grid grid-cols-12 gap-6">
+<div class="new-project-grid">
   <!-- Left: Interactive Blueprint Viewer -->
-  <div class="col-span-12">
-    <div class="rounded-2xl border shadow-sm overflow-hidden" [style.background-color]="darkMode ? BRAND.gray426 : '#FFFFFF'" [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'">
+  <div class="blueprint-viewer-card">
+    <div class="card">
       <!-- Header strip inside viewer -->
-      <div class="flex items-center justify-between px-4 py-2" [style.background-color]="BRAND.yellow120" [style.color]="BRAND.gray433">
-        <div class="text-xs font-semibold tracking-wider">SCALE 1:100 • INTERACTIVE BLUEPRINT VIEWER</div>
-        <div *ngIf="flow.step === 'extracting' || flow.step === 'finalizing'" class="flex items-center gap-2">
-          <span class="text-xs font-medium">
+      <div class="blueprint-viewer-header">
+        <div>• INTERACTIVE BLUEPRINT VIEWER •</div>
+        <div *ngIf="flow.step === 'extracting' || flow.step === 'finalizing'" class="progress-bar-container">
+          <span>
             {{ flow.step === 'extracting' ? 'AI Metadata Extraction' : 'Finalizing Adjustments' }}
           </span>
-          <div class="w-40 h-2 rounded-full overflow-hidden" style="background-color: rgba(0,0,0,0.15)">
-            <div class="h-2" [style.width.%]="isExtracting(flow) || isFinalizing(flow) ? flow.pct : 0" [style.background-color]="BRAND.yellow012" style="transition: width .2s ease"></div>
+          <div class="progress-bar">
+            <div class="progress-bar-value" [style.width.%]="isExtracting(flow) || isFinalizing(flow) ? flow.pct : 0"></div>
           </div>
         </div>
       </div>
 
       <!-- Canvas area -->
-      <div class="relative" style="height: 520px" [style.background-color]="darkMode ? BRAND.gray432 : '#F3F4F6'">
+      <div class="blueprint-viewer-canvas" appDragAndDrop (fileDropped)="onFileDropped($event)" #dropZone>
+        <!-- PDF Viewer -->
+        <ng2-pdfjs-viewer
+          #pdfViewer
+          *ngIf="pdfSrc"
+          [pdfSrc]="pdfSrc"
+          [viewerId]="'newProjectPdfViewer'"
+          [showSpinner]="true"
+          [theme]="'dark'"
+        ></ng2-pdfjs-viewer>
+
         <!-- Mock blueprint grid -->
-        <div class="absolute inset-0 opacity-40" style="background-image: linear-gradient(#545b63 1px, transparent 1px), linear-gradient(90deg, #545b63 1px, transparent 1px); background-size: 24px 24px"></div>
+        <div class="blueprint-grid" *ngIf="!pdfSrc"></div>
 
         <!-- Highlight box -->
-        <div *ngIf="flow.step === 'walkthrough' || flow.step === 'uploaded' || flow.step === 'extracting' || flow.step === 'address'"
-             class="absolute rounded-xl border-2"
+        <!-- <div *ngIf="flow.step === 'walkthrough' || flow.step === 'uploaded' || flow.step === 'extracting' || flow.step === 'address'"
+             class="highlight-box"
              [style.left]="HIGHLIGHTS[currentKey].left"
              [style.top]="HIGHLIGHTS[currentKey].top"
              [style.width]="HIGHLIGHTS[currentKey].w"
              [style.height]="HIGHLIGHTS[currentKey].h"
-             [style.border-color]="isWalkthrough(flow) ? SECTION_ORDER[flow.index].color : BRAND.yellow012"
-             style="box-shadow: 0 0 0 4px rgba(252,209,9,0.2); transition: all .35s ease">
-        </div>
+             [style.border-color]="isWalkthrough(flow) ? SECTION_ORDER[flow.index].color : BRAND.yellow012">
+        </div> -->
 
         <!-- Upload state overlay -->
-        <div *ngIf="flow.step === 'idle'" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-          <lucide-icon name="upload" class="mb-3"></lucide-icon>
-          <h4 class="text-lg font-semibold mb-1">Upload Blueprint</h4>
-          <p class="text-sm opacity-80 mb-4">Drag & drop a PDF/DWG here or click to select.</p>
-          <input type="file" accept=".pdf,.dwg,.dxf" (change)="onFileSelected($event)" class="hidden" #fileInput>
-          <button class="rounded-xl font-semibold" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="fileInput.click()">
+        <div *ngIf="flow.step === 'idle'" class="upload-overlay" [class.file-over]="dropZone.classList.contains('file-over')">
+          <h4>Upload Blueprint</h4>
+          <p>Drag & drop a PDF here or click to select</p>
+          <input type="file" accept=".pdf" (change)="onFileSelected($event)" style="display: none" #fileInput multiple>
+          <button class="btn-primary" (click)="openUploadDialog()">
             Choose File
           </button>
         </div>
 
+        <!-- File selection dropdown -->
+        <div *ngIf="uploadedFiles.length > 1" class="file-selector">
+          <select (change)="onPdfSelectionChange($event)">
+            <option *ngFor="let file of uploadedFiles" [value]="file.name" [selected]="file === selectedFile">
+              {{ file.name }}
+            </option>
+          </select>
+        </div>
+
         <!-- Extracting overlay -->
-        <div *ngIf="flow.step === 'extracting'" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-          <lucide-icon name="loader-2" class="animate-spin mb-3"></lucide-icon>
-          <div class="text-sm opacity-90">Reading sheets, title blocks, site info…</div>
+        <div *ngIf="flow.step === 'extracting'" class="upload-overlay">
+          <lucide-icon name="loader-2" class="animate-spin"></lucide-icon>
+          <div>Reading sheets, title blocks, site info…</div>
         </div>
 
         <!-- Address confirmation modal -->
-        <div *ngIf="flow.step === 'address'" class="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
-          <div class="w-full max-w-2xl rounded-2xl border shadow-lg grid grid-cols-1 md:grid-cols-2"
-               [style.background-color]="darkMode ? BRAND.gray426 : '#FFFFFF'"
-               [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'">
-            <div class="p-5 space-y-3">
-              <div class="font-semibold text-base flex items-center gap-2"><lucide-icon name="map-pin" class="w-4 h-4"></lucide-icon> Confirm Project Location</div>
-              <label class="text-xs opacity-80">Detected address</label>
-              <input [(ngModel)]="addressField" class="w-full text-sm px-3 py-2 rounded-lg border"
-                     [style.background]="darkMode ? BRAND.gray432 : '#fff'"
-                     [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'"
-                     [style.color]="darkMode ? '#fff' : '#111827'">
-              <div class="text-xs opacity-75">Weather & region pricing will use this location.</div>
-              <div class="flex gap-2 pt-1">
-                <button class="rounded-md px-3 py-2" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
+        <div *ngIf="flow.step === 'address'" class="address-modal">
+          <div class="address-modal-content">
+            <div class="address-modal-header">
+              <lucide-icon name="map-pin"></lucide-icon> Confirm Project Location
+            </div>
+            <div class="address-modal-body">
+              <label>Detected address</label>
+              <input [(ngModel)]="addressField">
+              <div>Weather & region pricing will use this location.</div>
+              <div class="address-modal-actions">
+                <button class="btn-primary" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
                   Confirm Address
                 </button>
-                <button class="rounded-md px-3 py-2" [style.background-color]="BRAND.gray432" style="color: white" (click)="setFlow('extracting', { pct: 80 })">
+                <button class="btn-ghost" (click)="setFlow('extracting', { pct: 80 })">
                   Back
                 </button>
               </div>
             </div>
-            <!-- Mock map -->
-            <div class="p-5">
-              <div class="rounded-xl h-56 md:h-full w-full border overflow-hidden relative"
-                   [style.background]="darkMode ? BRAND.gray432 : '#EEF2F7'"
-                   [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'">
-                <div class="absolute inset-0 flex items-center justify-center text-xs opacity-70">
-                  [ Map Preview Placeholder ]
-                </div>
-              </div>
+            <div class="map-preview">
+              <div>[ Map Preview Placeholder ]</div>
             </div>
           </div>
         </div>
 
         <!-- Right-side vertical tools -->
-        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-          <button *ngFor="let button of rightToolbarButtons" [title]="button.label" class="h-9 w-9 rounded-md flex items-center justify-center border"
-                  [style.background-color]="darkMode ? BRAND.gray426 : '#fff'"
-                  [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'"
-                  [style.color]="darkMode ? '#fff' : '#111827'"
-                  (click)="handleToolbarClick(button.key)">
-            <lucide-icon [name]="button.icon" class="w-4 h-4"></lucide-icon>
+        <div class="toolbar">
+          <button *ngFor="let button of rightToolbarButtons" [title]="button.label" class="toolbar-button"
+                  (click)="handleToolbarClick(button.key)" [disabled]="flow.step === 'idle' || button.disabled">
+            <lucide-icon [img]="button.icon"></lucide-icon>
           </button>
 
           <!-- Unit toggle -->
-          <button title="Toggle Units" class="mt-2 h-9 px-2 rounded-md text-xs border"
-                  [style.background-color]="darkMode ? BRAND.gray426 : '#fff'"
-                  [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'"
-                  [style.color]="darkMode ? '#fff' : '#111827'"
-                  (click)="metric = !metric">
+          <button title="Toggle Units" class="toolbar-button"
+                  (click)="metric = !metric" [disabled]="true">
             {{ metric ? 'm / mm' : 'ft / in' }}
           </button>
         </div>
       </div>
 
       <!-- Viewer footer actions -->
-      <div class="px-4 py-3 space-y-3" [style.background-color]="darkMode ? BRAND.gray426 : '#fff'">
+      <div class="viewer-footer">
         <!-- Row 1: status + Start button -->
-        <div class="flex items-center justify-between">
-          <div class="text-xs opacity-75">
+        <div class="footer-row">
+          <div class="status-text">
             <span *ngIf="isUploaded(flow)">Ready: {{ flow.fileName }}</span>
-            <span *ngIf="flow.step !== 'uploaded' && flow.step !== 'idle'">Mode: {{ analysisMode }}</span> | Zoom: {{ zoom }}% | Units: {{ metric ? 'Metric' : 'Imperial' }}
+            <span *ngIf="flow.step !== 'uploaded' && flow.step !== 'idle'">Mode: {{ analysisMode }}</span> | Zoom: {{ zoom * 100}}% | Units: {{ metric ? 'Metric' : 'Imperial' }}
           </div>
-          <div class="flex gap-2">
-            <span *ngIf="flow.step === 'idle'" class="text-xs opacity-80">Select a file to begin.</span>
-            <button *ngIf="flow.step === 'uploaded'" class="rounded-md" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="setFlow('extracting', { pct: 5 })">
-              Start Project
-            </button>
-            <span *ngIf="flow.step === 'walkthrough'" class="text-xs opacity-80">Active section: <b>{{ currentKey }}</b></span>
+          <div class="footer-actions">
+            <!-- <span *ngIf="flow.step === 'idle'">Select a file to begin</span> -->
+
+            <span *ngIf="flow.step === 'walkthrough'">Active section: <b>{{ currentKey }}</b></span>
           </div>
         </div>
 
         <!-- Row 2: Analysis options + actions -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div class="flex items-center gap-4 text-sm">
-            <label class="inline-flex items-center gap-2 cursor-pointer">
+        <div class="footer-row">
+          <div class="analysis-options">
+            <label>
               <input type="radio" name="analysis" [checked]="analysisMode === 'full'" (change)="analysisMode = 'full'">
               <span>Full Blueprint Analysis</span>
             </label>
-            <label class="inline-flex items-center gap-2 cursor-pointer">
+            <label>
               <input type="radio" name="analysis" [checked]="analysisMode === 'selected'" (change)="analysisMode = 'selected'">
               <span>Selected Blueprint Analysis</span>
             </label>
-            <label class="inline-flex items-center gap-2 cursor-pointer">
+            <label>
               <input type="radio" name="analysis" [checked]="analysisMode === 'renovation'" (change)="analysisMode = 'renovation'">
               <span>Renovation Analysis</span>
             </label>
           </div>
 
-          <div class="flex flex-wrap gap-2">
-            <button class="rounded-md px-4 py-2"
-                    [style.background-color]="flow.step === 'idle' ? (darkMode ? '#4B5563' : '#D1D5DB') : BRAND.gray432"
-                    [style.color]="flow.step === 'idle' ? (darkMode ? '#9CA3AF' : '#6B7280') : '#fff'"
-                    [disabled]="flow.step === 'idle'"
-                    (click)="analyze()">
+          <div class="footer-actions">
+            <button *ngIf="flow.step === 'uploaded'" class="btn-primary" (click)="setFlow('extracting', { pct: 5 })">
+              Start Project
+            </button>
+            <button class="btn-ghost" [disabled]="flow.step === 'idle'" (click)="analyze()">
               Analyze
             </button>
-            <button class="rounded-md px-4 py-2" [style.background-color]="BRAND.gray432" style="color: #fff" (click)="viewUploadedFiles()">View Uploaded Files</button>
-            <button class="rounded-md px-4 py-2" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="setFlow('idle')">Cancel</button>
-            <button class="rounded-md px-4 py-2 inline-flex items-center gap-2" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="fileInput.nativeElement.click()">
-              <lucide-icon name="upload" class="w-4 h-4"></lucide-icon> Upload Blueprints
+            <button class="btn-ghost" (click)="viewUploadedFiles()" [disabled]="flow.step === 'idle'">View Uploaded Files</button>
+            <button class="btn-primary" (click)="cancel()" [disabled]="flow.step === 'idle'">Cancel</button>
+            <button class="btn-primary" (click)="openUploadDialog()">
+              Upload Blueprints
             </button>
           </div>
         </div>
@@ -158,128 +156,105 @@
   </div>
 
   <!-- Right: Guided Walkthrough Panel -->
-  <div class="col-span-12">
-    <div class="rounded-2xl border shadow-sm" [style.background-color]="darkMode ? BRAND.gray426 : '#FFFFFF'" [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-lg font-bold">New Project – Guided Setup</h3>
-          <span class="text-xs opacity-75">AI Extract</span>
+  <div class="guided-setup-card">
+    <div class="card">
+      <div class="guided-setup-header">
+        <h3>New Project – Guided Setup</h3>
+        <span>AI Extract</span>
+      </div>
+      <div class="progress-steps">
+        <span *ngFor="let step of progressSteps" class="progress-step" [class.done]="step.done">
+          <lucide-icon *ngIf="step.done" name="check"></lucide-icon>
+          <span *ngIf="!step.done" class="progress-step-dot"></span>
+          {{ step.k }}
+        </span>
+      </div>
+
+      <div [ngSwitch]="flow.step" class="step-switcher">
+        <p *ngSwitchCase="'idle'">Start by uploading a blueprint</p>
+
+        <div *ngSwitchCase="'uploaded'" class="info-block">
+          <h4>Ready to start?</h4>
+          <p>We’ll parse sheets, title blocks, scales, and more.</p>
+          <div class="info-block-actions">
+            <button class="btn-primary" (click)="setFlow('extracting', { pct: 5 })">
+              Begin Extraction
+            </button>
+            <button class="btn-primary" (click)="cancel()" [disabled]="flow.step === 'idle'">Replace File</button>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2 mb-4">
-          <span *ngFor="let step of progressSteps" class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                [style.background]="step.done ? BRAND.yellow012 : (darkMode ? BRAND.gray432 : '#E5E7EB')"
-                [style.color]="step.done ? BRAND.gray433 : (darkMode ? '#fff' : '#111827')">
-            <lucide-icon *ngIf="step.done" name="check" class="w-3 h-3"></lucide-icon>
-            <span *ngIf="!step.done" class="w-1.5 h-1.5 rounded-full" [style.background]="darkMode ? '#9CA3AF' : '#6B7280'"></span>
-            {{ step.k }}
-          </span>
+
+        <div *ngSwitchCase="'extracting'" class="info-block">
+          <div class="info-block-header">
+            <lucide-icon name="loader-2" class="animate-spin"></lucide-icon>
+            <h4>AI Metadata Extraction</h4>
+          </div>
+          <p>Pulling address, sheets, and site details…</p>
         </div>
 
-        <div [ngSwitch]="flow.step">
-          <p *ngSwitchCase="'idle'" class="text-sm opacity-80">Start by uploading a blueprint on the left.</p>
+        <div *ngSwitchCase="'address'" class="info-block">
+          <h4>Confirm Address</h4>
+          <p>We’ll sync weather + regional pricing once confirmed.</p>
+          <div>Detected: <b>{{ addressField }}</b></div>
+          <div class="info-block-actions">
+            <button class="btn-primary" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
+              Confirm & Continue
+            </button>
+            <button class="btn-ghost" (click)="setFlow('extracting', { pct: 85 })">
+              Edit Again
+            </button>
+          </div>
+        </div>
 
-          <div *ngSwitchCase="'uploaded'">
-            <div class="rounded-xl p-4 border" [style.border-color]="BRAND.gray433">
-              <h4 class="font-semibold">Ready to start?</h4>
-              <p class="text-xs opacity-75 mb-3">We’ll parse sheets, title blocks, scales, and more.</p>
-              <div class="flex gap-2">
-                <button [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="setFlow('extracting', { pct: 5 })">
-                  Begin Extraction
-                </button>
-                <button [style.background-color]="BRAND.gray432" style="color: #fff" (click)="setFlow('idle')">
-                  Replace File
-                </button>
-              </div>
+        <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
+          <div class="walkthrough-header">
+            <div>
+              <div *ngIf="isWalkthrough(flow)">Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}</div>
+              <h4 *ngIf="isWalkthrough(flow)" [style.color]="SECTION_ORDER[flow.index].color">{{ SECTION_ORDER[flow.index].key }}</h4>
+            </div>
+            <div class="walkthrough-progress">
+              <span *ngFor="let section of SECTION_ORDER; let i = index" class="walkthrough-progress-dot"
+                    [class.active]="isWalkthrough(flow) && i <= flow.index"
+                    [style.background]="section.color"></span>
             </div>
           </div>
-
-          <div *ngSwitchCase="'extracting'">
-            <div class="rounded-xl p-4 border" [style.border-color]="BRAND.gray433">
-              <div class="flex items-center gap-2 mb-1">
-                <lucide-icon name="loader-2" class="w-4 h-4 animate-spin"></lucide-icon>
-                <h4 class="font-semibold">AI Metadata Extraction</h4>
-              </div>
-              <p class="text-xs opacity-75 mb-3">Pulling address, sheets, and site details…</p>
-              <p class="text-xs opacity-80">This mocks Autodesk + internal parsers. The UI remains interactive.</p>
-            </div>
+          <div *ngIf="isWalkthrough(flow)">{{ defaultDesc[SECTION_ORDER[flow.index].key] }}</div>
+          <div *ngIf="isWalkthrough(flow)" class="notes-section">
+            <label>Add notes or changes (optional)</label>
+            <textarea [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]"
+                      [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)">
+            </textarea>
           </div>
-
-          <div *ngSwitchCase="'address'">
-            <div class="rounded-xl p-4 border" [style.border-color]="BRAND.gray433">
-              <h4 class="font-semibold">Confirm Address</h4>
-              <p class="text-xs opacity-75 mb-3">We’ll sync weather + regional pricing once confirmed.</p>
-              <div class="text-sm opacity-90">Detected: <b>{{ addressField }}</b></div>
-              <div class="mt-3 flex gap-2">
-                <button [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
-                  Confirm & Continue
-                </button>
-                <button [style.background-color]="BRAND.gray432" style="color: #fff" (click)="setFlow('extracting', { pct: 85 })">
-                  Edit Again
-                </button>
-              </div>
-            </div>
+          <div class="walkthrough-actions">
+            <div>Your input updates the BoM at the end.</div>
+            <button class="btn-primary" (click)="nextStep()">
+              <span *ngIf="isWalkthrough(flow)">{{ flow.index === SECTION_ORDER.length - 1 ? 'Finish' : 'Next' }}</span>
+            </button>
           </div>
+        </div>
 
-          <div *ngSwitchCase="'walkthrough'">
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div *ngIf="isWalkthrough(flow)" class="text-xs opacity-70">Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}</div>
-                  <h4 *ngIf="isWalkthrough(flow)" class="text-base font-semibold" [style.color]="SECTION_ORDER[flow.index].color">{{ SECTION_ORDER[flow.index].key }}</h4>
-                </div>
-                <div class="flex gap-2">
-                  <span *ngFor="let section of SECTION_ORDER; let i = index" class="w-2 h-2 rounded-full"
-                        [class.opacity-100]="isWalkthrough(flow) && i <= flow.index"
-                        [class.opacity-40]="isWalkthrough(flow) && i > flow.index"
-                        [style.background]="section.color"></span>
-                </div>
-              </div>
-              <div *ngIf="isWalkthrough(flow)" class="text-sm opacity-90 leading-relaxed">{{ defaultDesc[SECTION_ORDER[flow.index].key] }}</div>
-              <div *ngIf="isWalkthrough(flow)" class="space-y-2">
-                <label class="text-xs opacity-80">Add notes or changes (optional)</label>
-                <textarea [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]" rows="4" class="w-full text-sm px-3 py-2 rounded-lg border"
-                          [style.background]="darkMode ? BRAND.gray432 : '#fff'"
-                          [style.border-color]="darkMode ? BRAND.gray433 : '#E5E7EB'"
-                          [style.color]="darkMode ? '#fff' : '#111827'"
-                          [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)">
-                </textarea>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="text-xs opacity-75">Your input updates the BoM at the end.</div>
-                <button class="rounded-md" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433" (click)="nextStep()">
-                  <span *ngIf="isWalkthrough(flow)">{{ flow.index === SECTION_ORDER.length - 1 ? 'Finish' : 'Next' }}</span>
-                </button>
-              </div>
-            </div>
+        <div *ngSwitchCase="'finalizing'" class="info-block">
+          <div class="info-block-header">
+            <lucide-icon name="loader-2" class="animate-spin"></lucide-icon>
+            <h4>Finalizing</h4>
           </div>
+          <p>Applying your adjustments to the BoM & scope.</p>
+          <p>Reanalyzing blueprint and updating quantities…</p>
+        </div>
 
-          <div *ngSwitchCase="'finalizing'">
-            <div class="rounded-xl p-4 border" [style.border-color]="BRAND.gray433">
-              <div class="flex items-center gap-2 mb-1">
-                <lucide-icon name="loader-2" class="w-4 h-4 animate-spin"></lucide-icon>
-                <h4 class="font-semibold">Finalizing</h4>
-              </div>
-              <p class="text-xs opacity-75 mb-3">Applying your adjustments to the BoM & scope.</p>
-              <p class="text-xs opacity-80">Reanalyzing blueprint and updating quantities…</p>
-            </div>
+        <div *ngSwitchCase="'done'" class="info-block">
+          <div class="info-block-header">
+            <lucide-icon name="check"></lucide-icon>
+            <h4>AI Analysis Complete</h4>
           </div>
-
-          <div *ngSwitchCase="'done'">
-            <div class="space-y-3">
-              <div class="flex items-center gap-2 text-green-500">
-                <lucide-icon name="check" class="w-5 h-5"></lucide-icon>
-                <h4 class="font-semibold">AI Analysis Complete</h4>
-              </div>
-              <p class="text-sm opacity-80">Your edits have been applied. Download your outputs below.</p>
-              <div class="flex flex-wrap gap-2">
-                <button class="rounded-md" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433">View Final Bill of Materials</button>
-                <button class="rounded-md" [style.background-color]="BRAND.yellow012" [style.color]="BRAND.gray433">Download Project Summary</button>
-                <button class="rounded-md" [style.background-color]="BRAND.gray432" style="color: #fff">Launch Bidding Phase</button>
-              </div>
-              <div class="pt-2">
-                <button class="rounded-md" [style.background-color]="BRAND.gray432" style="color: #fff" (click)="setFlow('idle')">Start Another</button>
-              </div>
-            </div>
+          <p>Your edits have been applied. Download your outputs below.</p>
+          <div class="info-block-actions">
+            <button class="btn-primary">View Final Bill of Materials</button>
+            <button class="btn-primary">Download Project Summary</button>
+            <button class="btn-ghost">Launch Bidding Phase</button>
+          </div>
+          <div class="info-block-actions">
+            <button class="btn-ghost" (click)="setFlow('idle')">Start Another</button>
           </div>
         </div>
       </div>

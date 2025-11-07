@@ -1,9 +1,13 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Upload, Loader2, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, Check } from 'lucide-angular';
+import { MatDialog } from '@angular/material/dialog';
+import { UploadOptionsDialogComponent } from '../jobs/job-quote/upload-options-dialog.component';
+import { LucideAngularModule, Loader, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, Check } from 'lucide-angular';
+import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
+import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
+import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 
-// --- Flow State Machine ---
 type FlowState =
   | { step: 'idle' }
   | { step: 'uploaded'; fileName: string }
@@ -19,14 +23,15 @@ type FlowState =
   imports: [
     CommonModule,
     FormsModule,
-    LucideAngularModule
+    LucideAngularModule,
+    DragAndDropDirective,
+    PdfJsViewerModule
   ],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
 export class NewProjectComponent implements OnInit {
-  Upload = Upload;
-  Loader2 = Loader2;
+  Loader2 = Loader;
   MapPin = MapPin;
   MousePointer = MousePointer;
   Hand = Hand;
@@ -36,7 +41,7 @@ export class NewProjectComponent implements OnInit {
   Ruler = Ruler;
   RotateCw = RotateCw;
   Check = Check;
-  // --- Brand Colors ---
+
   BRAND = {
     gray433: '#1E2329',
     gray426: '#2A2F35',
@@ -47,15 +52,17 @@ export class NewProjectComponent implements OnInit {
     redWarn: '#F43F5E',
   };
 
-  // --- Component State ---
   darkMode = true;
   flow: FlowState = { step: 'idle' };
   addressField = '21 Featherstone Rd & 21st St, Red Wing';
-  zoom = 100;
+  zoom = 1; // Start at 100%
   metric = true;
   analysisMode: 'full' | 'selected' | 'renovation' = 'full';
 
-  // --- Data ---
+  uploadedFiles: File[] = [];
+  selectedFile: File | null = null;
+  pdfSrc: string | Uint8Array | null = null;
+
   SECTION_ORDER = [
     { key: 'Foundation', color: '#22C55E' },
     { key: 'Walls', color: '#60A5FA' },
@@ -82,21 +89,21 @@ export class NewProjectComponent implements OnInit {
     { key: 'pan', icon: this.Hand, label: 'Pan' },
     { key: 'zoomin', icon: this.ZoomIn, label: 'Zoom In' },
     { key: 'zoomout', icon: this.ZoomOut, label: 'Zoom Out' },
-    { key: 'fit', icon: this.Maximize2, label: 'Fit' },
-    { key: 'measure', icon: this.Ruler, label: 'Measure' },
+    { key: 'fit', icon: this.Maximize2, label: 'Fit to Page' },
+    { key: 'measure', icon: this.Ruler, label: 'Measure', disabled: true }, // TODO: Reenable when interactive blueprint implemented
     { key: 'rotate', icon: this.RotateCw, label: 'Rotate' },
   ];
 
   progressSteps: { k: string, done: boolean }[] = [];
   @ViewChild('fileInput') fileInput!: ElementRef;
+  @ViewChild('pdfViewer') pdfViewer: any;
 
-  constructor() { }
+  constructor(public dialog: MatDialog, private renderer: Renderer2) { }
 
   ngOnInit(): void {
     this.updateProgressSteps();
   }
 
-  // Type guards for template
   isUploaded(flow: FlowState): flow is Extract<FlowState, { step: 'uploaded' }> {
     return flow.step === 'uploaded';
   }
@@ -126,10 +133,53 @@ export class NewProjectComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      this.setFlow('uploaded', { fileName: file.name });
+    if (input.files) {
+      this.onFileDropped(input.files);
     }
+  }
+
+  onFileDropped(files: FileList): void {
+    if (files && files.length > 0) {
+      this.uploadedFiles = Array.from(files);
+      this.selectedFile = this.uploadedFiles[0];
+      this.setFlow('uploaded', { fileName: this.selectedFile.name });
+      this.displayPdf(this.selectedFile);
+    }
+  }
+
+  onPdfSelectionChange(event: Event): void {
+    const selectElement = event.target as HTMLSelectElement;
+    const selectedFileName = selectElement.value;
+    const newSelection = this.uploadedFiles.find(f => f.name === selectedFileName);
+    if (newSelection) {
+      this.selectedFile = newSelection;
+      this.displayPdf(this.selectedFile);
+    }
+  }
+
+  displayPdf(file: File): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  openUploadDialog(): void {
+    const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        if (result === 'folder') {
+          this.renderer.setAttribute(this.fileInput.nativeElement, 'webkitdirectory', 'true');
+        } else {
+          this.renderer.removeAttribute(this.fileInput.nativeElement, 'webkitdirectory');
+        }
+        this.fileInput.nativeElement.click();
+      }
+    });
   }
 
   setFlow(step: FlowState['step'], data?: any): void {
@@ -137,13 +187,33 @@ export class NewProjectComponent implements OnInit {
     this.updateProgressSteps();
   }
 
-  handleToolbarClick(key: string): void {
-    if (key === 'zoomin') {
-      this.zoom = Math.min(400, this.zoom + 10);
-    } else if (key === 'zoomout') {
-      this.zoom = Math.max(10, this.zoom - 10);
-    } else if (key === 'fit') {
-      this.zoom = 100;
+  async handleToolbarClick(key: string): Promise<void> {
+    if (!this.pdfViewer) {
+      return;
+    }
+
+    switch (key) {
+      case 'zoomin':
+        this.zoom = Math.min(4, this.zoom + 0.25); // Max zoom 400%
+        await this.pdfViewer.setZoom(this.zoom);
+        break;
+      case 'zoomout':
+        this.zoom = Math.max(0.25, this.zoom - 0.25); // Min zoom 25%
+        await this.pdfViewer.setZoom(this.zoom);
+        break;
+      case 'fit':
+        this.zoom = 1; // Reset to 100%
+        await this.pdfViewer.setZoom('auto');
+        break;
+      case 'rotate':
+        await this.pdfViewer.triggerRotation('cw');
+        break;
+      case 'select':
+        await this.pdfViewer.setCursor('select');
+        break;
+      case 'pan':
+        await this.pdfViewer.setCursor('hand');
+        break;
     }
   }
 
@@ -153,6 +223,19 @@ export class NewProjectComponent implements OnInit {
     if (this.flow.step === 'walkthrough') this.setFlow('finalizing', { pct: 5 });
     if (this.flow.step === 'extracting') this.setFlow('address', { detectedAddress: this.addressField });
     if (this.flow.step === 'finalizing') setTimeout(() => this.setFlow('done'), 300);
+  }
+
+  cancel(): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent);
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.setFlow('idle');
+        this.uploadedFiles = [];
+        this.selectedFile = null;
+        this.pdfSrc = null;
+      }
+    });
   }
 
   viewUploadedFiles(): void {
