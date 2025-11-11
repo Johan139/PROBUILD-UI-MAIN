@@ -120,6 +120,7 @@ filteredCountryCodes!: Observable<any[]>;
   
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
+isGoogleRegistration = false;
 
   tradeCtrl = new FormControl();
   filteredTrades: Observable<{ value: string; display: string; }[]>;
@@ -390,6 +391,42 @@ const countryCtrl = this.registrationForm.get('country')!;
         this.registrationForm.get('email')?.enable();
       }
     });
+
+let googleData: any = null;
+
+// Try to get from navigation state first
+const nav = this.router.getCurrentNavigation();
+googleData = nav?.extras?.state?.['googleData'];
+
+// Fallback to sessionStorage if page refreshed or reloaded
+if (!googleData) {
+  const stored = sessionStorage.getItem('googleData');
+  if (stored) {
+    googleData = JSON.parse(stored);
+  }
+}
+
+if (googleData) {
+  this.isGoogleRegistration = true;
+  this.registrationForm.patchValue({
+    email: googleData.email,
+    firstName: googleData.firstName,
+    lastName: googleData.lastName
+  });
+
+  // Disable Google-managed fields
+  this.registrationForm.get('email')?.disable();
+  this.registrationForm.get('firstName')?.disable();
+  this.registrationForm.get('lastName')?.disable();
+
+  // Remove password requirement
+  this.registrationForm.get('password')?.clearValidators();
+  this.registrationForm.get('password')?.updateValueAndValidity();
+
+  // 🧹 Clear after use
+  sessionStorage.removeItem('googleData');
+}
+
   }
 async ngAfterViewInit(): Promise<void> {
   if (!this.isBrowser) return;

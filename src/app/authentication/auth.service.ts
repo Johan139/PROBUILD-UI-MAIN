@@ -125,6 +125,26 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       }
     }
   }
+googleLogin(idToken: string): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/google-login`, { idToken }).pipe(
+    switchMap((response) => {
+      if (!response.requiresRegistration) {
+        return this.handleSuccessfulLogin(response);
+      }
+      return of(response);
+    }),
+    catchError((error: HttpErrorResponse) => {
+      if (
+        error.status === 401 &&
+        error.error.error ===
+          'Email address has not been verified. Please check your inbox and spam folder.'
+      ) {
+        return throwError(() => this.handleLoginError(error));
+      }
+      return throwError(() => this.handleLoginError(error));
+    })
+  );
+}
 
   resendverificationemail(userid: string): Observable<any>
   {
