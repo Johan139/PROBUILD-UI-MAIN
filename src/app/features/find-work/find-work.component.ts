@@ -129,7 +129,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     const newMapId = theme === 'dark' ? darkMapId : lightMapId;
 
-    console.log(`Applying mapId: ${newMapId}`);
+    // console.log(`Applying mapId: ${newMapId}`);
     this.mapOptions = { ...this.mapOptions, mapId: newMapId };
 
     if (this.map) {

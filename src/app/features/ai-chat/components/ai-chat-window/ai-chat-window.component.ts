@@ -247,7 +247,7 @@ this.streamHandlerRegistered = true;
 
 
 this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
-console.log('[chunk]', { cid, chunk });
+// console.log('[chunk]', { cid, chunk });
 
 
 this.ngZone.run(() => {
@@ -280,7 +280,7 @@ let alreadyEndedFor: Set<string> = new Set();
 this.signalrService.onStreamEnd((cid: string) => {
 if (alreadyEndedFor.has(cid)) return;
 alreadyEndedFor.add(cid);
-console.log('[streamEnd]', { cid, current: this.conversationId });
+// console.log('[streamEnd]', { cid, current: this.conversationId });
 
 
 this.ngZone.run(() => {

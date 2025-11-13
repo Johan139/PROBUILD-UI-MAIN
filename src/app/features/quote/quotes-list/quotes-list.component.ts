@@ -33,12 +33,12 @@ export class QuotesListComponent implements OnInit {
   }
 
   loadQuotes(): void {
-    console.log('Fetching quotes...');
+    // console.log('Fetching quotes...');
     this.quoteService.getAllQuotes().subscribe({
       next: (quotes) => {
-        console.log('Quotes received:', quotes);
+        // console.log('Quotes received:', quotes);
         this.dataSource.data = quotes || [];
-        console.log('DataSource after update:', this.dataSource.data);
+        // console.log('DataSource after update:', this.dataSource.data);
       },
       error: (err) => {
         console.error('Error loading quotes:', err);
@@ -47,7 +47,7 @@ export class QuotesListComponent implements OnInit {
   }
 
   openQuote(quoteId: string | null): void {
-    console.log('Attempting to open quote with ID:', quoteId);
+    // console.log('Attempting to open quote with ID:', quoteId);
     this.router.navigate(['/quote'], {
       queryParams: { quoteId: quoteId }
     });

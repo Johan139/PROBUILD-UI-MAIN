@@ -239,11 +239,11 @@ export class TimelineService {
   }
 
   handleGroupClick(group: TimelineGroup) {
-    console.log('Group clicked:', group);
+    // console.log('Group clicked:', group);
   }
 
   handleEditGroup(group: TimelineGroup) {
-    console.log('Edit group:', group);
+    // console.log('Edit group:', group);
   }
 
   private extractMainTasksFromGroups(

@@ -114,7 +114,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      console.log('Access token expired, attempting to refresh...');
+     // console.log('Access token expired, attempting to refresh...');
       try {
         await firstValueFrom(this.refreshToken());
         const newToken = localStorage.getItem('accessToken');
@@ -158,8 +158,8 @@ googleLogin(idToken: string): Observable<any> {
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
-          console.log(error.status)
-          console.log(error.error)
+          // console.log(error.status)
+          // console.log(error.error)
           if (error.status === 401 && error.error.error === "Email address has not been verified. Please check your inbox and spam folder.") {
             return throwError(() => this.handleLoginError(error));
           }
@@ -431,7 +431,7 @@ googleLogin(idToken: string): Observable<any> {
     this.teamManagementService.getPermissions(teamMemberId).subscribe({
       next: (permissions) => {
         this._userPermissions.next(permissions);
-        console.log('Permissions loaded:', this._userPermissions.getValue());
+        // console.log('Permissions loaded:', this._userPermissions.getValue());
       },
       error: (err) => {
         console.error('Failed to load user permissions', err);

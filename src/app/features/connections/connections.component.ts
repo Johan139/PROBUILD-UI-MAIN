@@ -129,13 +129,13 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log('[ConnectionsComponent] Invitation dialog closed with result:', result);
-        console.log('[ConnectionsComponent] Calling invitationService.inviteUser...');
+        // console.log('[ConnectionsComponent] Invitation dialog closed with result:', result);
+        // console.log('[ConnectionsComponent] Calling invitationService.inviteUser...');
         this.invitationService.inviteUser(result).subscribe({
           next: (response) => {
-            console.log('[ConnectionsComponent] inviteUser call successful:', response);
+            // console.log('[ConnectionsComponent] inviteUser call successful:', response);
             this.snackBar.open('Invitation sent successfully!', 'Close', { duration: 3000 });
-            console.log('[ConnectionsComponent] Reloading connections...');
+            // console.log('[ConnectionsComponent] Reloading connections...');
             this.loadConnections();
           },
           error: (err) => {
@@ -144,7 +144,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
           }
         });
       } else {
-        console.log('[ConnectionsComponent] Invitation dialog closed without result.');
+        // console.log('[ConnectionsComponent] Invitation dialog closed without result.');
       }
     });
   }
@@ -152,7 +152,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   loadConnections(): void {
     this.connectionService.getConnections().subscribe((connections: ConnectionDto[]) => {
       this.allConnections = connections;
-      console.log('All connections from backend:', this.allConnections);
+      // console.log('All connections from backend:', this.allConnections);
       this.connections = connections.filter(c => c.isInSystem);
       this.invited = connections.filter(c => !c.isInSystem);
       this.connections.forEach(conn => {
@@ -163,7 +163,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
         }
       });
       this.connectionsDataSource.data = [...this.connections, ...this.invited];
-      console.log('Filtered invited users:', this.invited);
+      // console.log('Filtered invited users:', this.invited);
       this.userService.getAllUsers().subscribe(users => {
         this.allUsers = users.filter(user => user.id !== this.currentUserId);
         this.updateDataSource();
@@ -183,7 +183,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
       userType: 'Invited',
     } as DisplayUser));
 
-    console.log('Processed invited users for display:', invitedUsers);
+    // console.log('Processed invited users for display:', invitedUsers);
 
     this.dataSource.data = [...displayUsers, ...invitedUsers];
     this.cdr.detectChanges();
@@ -193,21 +193,21 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
   sendConnectionRequest(userId: string): void {
     this.connectionService.requestConnection(userId).subscribe(() => {
-      console.log('Request sent');
+      // console.log('Request sent');
       this.loadConnections();
     });
   }
 
   acceptConnectionRequest(connectionId: string): void {
     this.connectionService.acceptConnection(connectionId).subscribe(() => {
-      console.log('Request accepted');
+      // console.log('Request accepted');
       this.loadConnections();
     });
   }
 
   declineConnectionRequest(connectionId: string): void {
     this.connectionService.declineConnection(connectionId).subscribe(() => {
-      console.log('Request declined');
+      // console.log('Request declined');
     });
   }
   isRequestSent(userId: string): boolean {
@@ -222,14 +222,14 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
     const connection = this.allConnections.find(c => c.otherUserId === userId && c.status === 'PENDING');
     if (connection) {
       this.connectionService.declineConnection(connection.id).subscribe(() => {
-        console.log('Request cancelled');
+        // console.log('Request cancelled');
         this.loadConnections();
       });
     }
   }
   removeConnection(connectionId: string): void {
     this.connectionService.declineConnection(connectionId).subscribe(() => {
-      console.log('Connection removed');
+      // console.log('Connection removed');
       this.loadConnections();
     });
   }

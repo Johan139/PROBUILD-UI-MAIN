@@ -191,7 +191,7 @@ export class QuoteDocumentsDialogComponent {
         url
       };
     });
-    console.log(this.documents);
+    // console.log(this.documents);
     this.isLoading = false;
   }
 
@@ -224,7 +224,7 @@ export class QuoteDocumentsDialogComponent {
     this.jobsService.downloadJobDocumentFile(blobUrl).subscribe({
       next: (response: Blob) => {
         const contentType = doc.type;
-        console.log('Content Type:', contentType);
+        // console.log('Content Type:', contentType);
         const blob = new Blob([response], { type: contentType });
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');

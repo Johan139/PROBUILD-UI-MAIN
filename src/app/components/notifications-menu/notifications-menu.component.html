@@ -16,23 +16,33 @@
 
     <!-- List -->
     <div class="notif-list" *ngIf="notifications?.length">
-      <button class="notif-item"
-              *ngFor="let n of notifications | slice:0:8; trackBy: trackByNotif"
-              (click)="navigateToJob(n)">
-        <div class="avatar">
-          <span class="avatar__text">{{ getInitials(n.senderFullName) }}</span>
-        </div>
-        <div class="notif-content">
-          <div class="notif-header">
-            <span class="sender">{{ n.senderFullName }}</span>
-            <span class="time">{{ n.timestamp | date:'shortTime' }}</span>
-          </div>
-          <div class="notif-body">
-            <div class="project">{{ n.projectName }}</div>
-            <div class="message">{{ n.message }}</div>
-          </div>
-        </div>
-      </button>
+<button class="notif-item"
+        *ngFor="let n of notifications | slice:0:8; trackBy: trackByNotif"
+        (click)="navigateToJob(n)">
+
+  <div class="avatar">
+    <span class="avatar__text">{{ getInitials(n.senderFullName) }}</span>
+  </div>
+
+  <div class="notif-content">
+    <div class="notif-header">
+      <span class="sender">{{ n.senderFullName }}</span>
+      <span class="time">{{ n.timestamp | date:'shortTime' }}</span>
+    </div>
+
+    <div class="notif-body">
+      <div class="project">{{ n.projectName }}</div>
+      <div class="message">{{ n.message }}</div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN WITH DOT -->
+  <div class="notif-right">
+    <span *ngIf="n.isRead === false || n.unread === true"
+          class="notif-unread-dot"></span>
+  </div>
+
+</button>
     </div>
   </ng-container>
 

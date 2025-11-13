@@ -377,7 +377,7 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
         this.isLoading = false;
       }
     });
-  console.log(this.subscriptionPackages)
+  // console.log(this.subscriptionPackages)
      this.route.queryParamMap.pipe(take(1)).subscribe(params => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', { duration: 5000 });
@@ -401,7 +401,7 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
     this.profileService.uploadComplete$.subscribe(fileCount => {
       this.isUploading = false;
       this.resetFileInput();
-      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
+      // console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
 
     if (this.isBrowser) {
@@ -593,7 +593,7 @@ if (profileData.userAddresses && profileData.userAddresses.length > 0) {
 
           this.profileForm.patchValue(patchObj);
           this.addressControl.setValue(patchObj.address);
-          console.log('🔄 Google Place data patched:', patchObj);
+          // console.log('🔄 Google Place data patched:', patchObj);
         }
       }
     );
@@ -603,7 +603,7 @@ if (profileData.userAddresses && profileData.userAddresses.length > 0) {
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
-        console.log(subscriptions)
+        // console.log(subscriptions)
         this.subscriptionPackages = subscriptions.map(s => ({
           value: s.subscription,
           display: `${s.subscription}`,
@@ -945,7 +945,7 @@ updateAddress(address: UserAddress): void {
         SessionId: this.sessionId
       });
       const updatedProfile: Profile = this.profileForm.value;
-      console.log(updatedProfile)
+      // console.log(updatedProfile)
 updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
@@ -1055,7 +1055,7 @@ updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      console.log('File input reset');
+      // console.log('File input reset');
     }
   }
 
@@ -1294,7 +1294,7 @@ openSubscriptionUpgradeDialog(subscription: SubscriptionRow): void {
 
     const pkgCode      = typeof result === 'string' ? result : result.subscriptionPackage;
     const billingCycle = typeof result === 'string' ? 'monthly' : (result.billingCycle ?? 'monthly');
-console.log(pkgCode)
+// console.log(pkgCode)
     // reflect selection
     this.profileForm.patchValue({ subscriptionPackage: pkgCode });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();
@@ -1345,7 +1345,7 @@ private getActiveSubscriptionEmails(): Set<string> {
     const email = String(r.assignedUserName ?? '')
       .trim()
       .toLowerCase();
-console.log(email)
+// console.log(email)
     if (email && ACTIVE.has(status)) emails.add(email);
   }
   return emails;
@@ -1407,7 +1407,7 @@ openSubscriptionCreateDialog(): void {
         : teamBlockedCount > 0
           ? `${teamBlockedCount} team member${teamBlockedCount > 1 ? 's' : ''} already subscribed.`
           : null;
-  console.log(this.subscriptionPackages)
+  // console.log(this.subscriptionPackages)
   this.dialog.open(SubscriptionCreateComponent, {
     width: '600px',
     autoFocus: false,
@@ -1559,7 +1559,7 @@ onCountryCodeChange(selected: any): void {
   // Update GUID reference
   this.profileForm.patchValue({ countryNumberCode: selected.id });
 
-  console.log(`☎ Updated number: ${newPhone}`);
+  // console.log(`☎ Updated number: ${newPhone}`);
 }
 
 
@@ -1623,13 +1623,13 @@ onPhoneInput(event: any) {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
     this.snackBar.open(`Switched to ${newRole} role`, 'Close', { duration: 3000 });
-    console.log('Role switched to:', newRole);
-    console.log('Visibility - Personal:', this.canViewPersonalInfo());
-    console.log('Visibility - Company:', this.canViewCompanyDetails());
-    console.log('Visibility - Certification:', this.canViewCertification());
-    console.log('Visibility - Trade:', this.canViewTradeSupplier());
-    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
-    console.log('Visibility - Subscription:', this.canViewSubscription());
+    // console.log('Role switched to:', newRole);
+    // console.log('Visibility - Personal:', this.canViewPersonalInfo());
+    // console.log('Visibility - Company:', this.canViewCompanyDetails());
+    // console.log('Visibility - Certification:', this.canViewCertification());
+    // console.log('Visibility - Trade:', this.canViewTradeSupplier());
+    // console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
+    // console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
   // TODO: Implement these methods based on user roles once development complete

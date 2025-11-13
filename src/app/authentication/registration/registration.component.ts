@@ -271,7 +271,7 @@ this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
   distinctUntilChanged(),
   map(value => this._filterCountryCodes(value ?? ''))
 );
-      console.log(`🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`);
+      // console.log(`🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`);
     },
     error: (err) => {
       console.warn('Could not detect country via IP API, defaulting to ZA', err);
@@ -286,7 +286,7 @@ this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
 
   // Fetch all states once
 this.registrationService.getAllStates().subscribe(allStates => {
-  console.log('All states:', allStates); // <-- Add this
+  // console.log('All states:', allStates); // <-- Add this
   this.states = allStates;
 
     const countryCtrl = this.registrationForm.get('country')!;
@@ -369,7 +369,7 @@ const countryCtrl = this.registrationForm.get('country')!;
 
         this.invitationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
-            console.log('Invitation data:', data);
+            // console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
             if (data.role) {
               const userType = this.userTypes.find(t => t.display === data.role);
@@ -494,15 +494,15 @@ private handlePlaceSelection(place: any): void {
     countryCode: countryCode
   });
 
-  console.log('📍 Google Maps selection', {
-    formattedAddress: place.formatted_address,
-    city,
-    state,
-    country,
-    lat,
-    lng,
-    countryCode
-  });
+  // console.log('📍 Google Maps selection', {
+  //   formattedAddress: place.formatted_address,
+  //   city,
+  //   state,
+  //   country,
+  //   lat,
+  //   lng,
+  //   countryCode
+  // });
 }
 
 
@@ -737,7 +737,7 @@ if (cleaned.startsWith(countryCode.replace('+', '')) || cleaned.startsWith(count
 }
 
 // 🔍 Debug log
-console.log('📞 Final phone number saved:', formValue.phoneNumber);
+// console.log('📞 Final phone number saved:', formValue.phoneNumber);
 
       if (this.user === 'SUBCONTRACTOR') {
         formValue.trades = this.selectedTrades.map(trade => trade.value);
@@ -759,7 +759,7 @@ formValue.latitudeFromIP = metadata.latitude;
 formValue.longitudeFromIP = metadata.longitude;
 formValue.timezone = metadata.timezone;
 formValue.operatingSystem = this.getOperatingSystem();
-    console.log(this.selectedCountryCode?.id)
+    // console.log(this.selectedCountryCode?.id)
 formValue.countryNumberCode = this.selectedCountryCode?.id || null;
 // Ensure only the ID is sent
 if (typeof formValue.country === 'object') {
@@ -815,7 +815,7 @@ if (typeof formValue.state === 'object') {
           else
           {
             const billingCycle = this.registrationForm.value.billingCycle as 'monthly' | 'yearly';
-            console.log(billingCycle)
+            // console.log(billingCycle)
             this.dialog.open(PaymentPromptDialogComponent, {
               data: {
                 userId,
@@ -1165,7 +1165,7 @@ onStateSelected(event: any): void {
   stateCtrl?.markAsTouched();
   stateCtrl?.updateValueAndValidity();
 
-  console.log('✅ Selected state:', selected);
+  // console.log('✅ Selected state:', selected);
 }
 
 private loadGoogleMapsScript(): Promise<void> {

@@ -93,11 +93,11 @@ export class ConfirmAIAcceptanceDialogComponent implements OnInit {
     this.warningMessage = this.data?.warningMessage || null;
     this.disableConfirm = !!this.data?.disableConfirm;
     
-    console.log('Dialog data:', { 
-      warningMessage: this.warningMessage, 
-      disableConfirm: this.disableConfirm,
-      rawData: this.data 
-    });
+    // console.log('Dialog data:', { 
+    //   warningMessage: this.warningMessage, 
+    //   disableConfirm: this.disableConfirm,
+    //   rawData: this.data 
+    // });
     
     // Force change detection
     this.cdr.detectChanges();

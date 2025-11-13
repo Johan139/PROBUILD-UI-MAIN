@@ -43,6 +43,7 @@ export class ManagePermissionsDialogComponent {
   save(): void {
     const selectedPermissions = Object.keys(this.permissionsForm.value)
       .filter(key => this.permissionsForm.value[key]);
+
     this.teamManagementService.updatePermissions(this.data.teamMemberId, selectedPermissions)
       .subscribe(() => this.dialogRef.close(true));
   }
