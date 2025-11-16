@@ -1,0 +1,71 @@
+.my-projects-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  .projects-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .text-2xl {
+      font-size: 1.5rem; /* 24px */
+      line-height: 2rem; /* 32px */
+    }
+
+    .font-bold {
+      font-weight: 700;
+    }
+
+    .text-muted-foreground {
+      color: #6b7280;
+    }
+
+    button {
+      background-color: #FCD109;
+      color: #1f2937;
+      font-weight: 600;
+      border-radius: 45px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover {
+        background-color: #fbc02d;
+      }
+    }
+  }
+
+  .filter-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+
+    button {
+      padding: 8px 4px;
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: color 0.3s, border-color 0.3s;
+      background: none;
+      box-shadow: none;
+      border-width: 0;
+      border-bottom-width: 2px;
+      border-style: solid;
+      border-color: transparent;
+      margin-right: 10px;
+
+      &.active {
+        color: #FCD109;
+        border-bottom-color: #FCD109;
+      }
+    }
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}

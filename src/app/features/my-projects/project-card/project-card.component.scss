@@ -1,0 +1,204 @@
+.project-card {
+  overflow: hidden;
+  transition: box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+
+  &:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-thumbnail {
+    position: relative;
+    height: 192px; // h-48
+    background-color: #f0f0f0; // bg-muted
+    flex-shrink: 0;
+
+    .thumbnail-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      color: white;
+      font-size: 0.75rem; // text-xs
+      font-weight: 600; // font-semibold
+      padding: 4px 12px;
+      border-radius: 9999px; // rounded-full
+    }
+  }
+
+  .card-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-grow: 1;
+
+    .project-title {
+      font-size: 1.125rem; // text-lg
+      font-weight: 700; // font-bold
+      margin-bottom: 4px;
+    }
+
+    .project-address {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem; // text-sm
+      color: #6b7280; // text-muted-foreground
+    }
+
+    .project-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: auto;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem; // text-sm
+
+        .mat-icon {
+          color: #6b7280; // text-muted-foreground
+        }
+
+        span {
+          font-weight: 500; // font-medium
+        }
+      }
+    }
+
+    .progress-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 16px;
+
+      .progress-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.875rem; // text-sm
+
+        span:first-child {
+          color: #6b7280; // text-muted-foreground
+        }
+
+        .progress-value {
+          font-weight: 600; // font-semibold
+          color: #FCD109;
+        }
+      }
+
+      .progress {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      .bar {
+        height: 100%;
+        background: #FCD109;
+        transition: width .25s ease;
+      }
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      margin-top: 16px;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+}
+
+.activate-button {
+  background-color: #FCD109;
+  color: #1f2937;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #fbc02d;
+  }
+}
+
+.view-details-button {
+  background-color: transparent;
+  color: #6b7280;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  width: 100%;
+  border: 1px solid #6b7280;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+}
+
+.icon-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+}
+
+// Background color classes for status
+.bg-blue-500 {
+  background-color: #3b82f6;
+}
+
+.bg-green-500 {
+  background-color: #22c55e;
+}
+
+.bg-gray-500 {
+  background-color: #6b7280;
+}
+
+.bg-red-500 {
+  background-color: #ef4444;
+}
+
+.bg-yellow-500 {
+  background-color: #f59e0b;
+}
+
+.bg-purple-500 {
+  background-color: #8b5cf6;
+}

@@ -84,7 +84,7 @@ export class AppComponent implements OnInit, OnDestroy {
   navItems: NavItem[] = [
     { label: 'Home',            icon: 'home',            route: ['/dashboard'],      tooltip: 'Return to the main dashboard' },
     { label: 'New Project',     icon: 'note_add',        route: ['/new-project'],    tooltip: 'Create a new project' },
-    { label: 'My Projects',     icon: 'folder',          route: ['/job-quote'],      tooltip: 'View and manage your ongoing projects' },
+    { label: 'My Projects',     icon: 'folder',          route: ['/my-projects'],      tooltip: 'View and manage your ongoing projects' },
     { label: 'Job Assignment',  icon: 'assignment_ind',  route: ['/job-assignment'], tooltip: 'Assign jobs to your team members' },
     { label: 'Calendar',        icon: 'calendar_today',  route: ['/calendar'],       tooltip: 'Access your schedule and calendar events' },
     { label: 'My Quotes',       icon: 'description',     route: ['/quotes'],         tooltip: 'Review your existing quotes' },

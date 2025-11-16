@@ -30,24 +30,16 @@ import { ConnectionsComponent } from './features/connections/connections.compone
 import { BlueprintTestPageComponent } from './features/testing/blueprint-test-page/blueprint-test-page.component';
 import { PdfViewerPopoutComponent } from './components/pdf-viewer/pdf-viewer-popout/pdf-viewer-popout.component';
 import { NewProjectComponent } from './features/new-project/new-project.component';
+import { MyProjectsComponent } from './features/my-projects/my-projects.component';
+import { FindWorkComponent } from './features/find-work/find-work.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
   {path:'unsubscribe', component:UnsubscribeComponent },
   {path:'archive', component:ArchiveComponent, canActivate: [AuthGuard] },
-  {
-    path: 'find-work',
-    loadComponent: () => import('./features/find-work/find-work.component').then(m => m.FindWorkComponent)
-  },
-  {
-    path: 'connections',
-    component: ConnectionsComponent,
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'ai-chat',
-    loadChildren: () => import('./features/ai-chat/ai-chat.routes').then(m => m.AI_CHAT_ROUTES)
-  },
+  {path: 'find-work', component: FindWorkComponent, canActivate: [AuthGuard]},
+  {path: 'connections',component: ConnectionsComponent,canActivate: [AuthGuard]},
+  {path: 'ai-chat', loadChildren: () => import('./features/ai-chat/ai-chat.routes').then(m => m.AI_CHAT_ROUTES)},
   {path:'login', component:LoginComponent },
   {path:'forgot-password', component:ForgotPasswordComponent },
   {path:'gant-chart', component:GanttChartComponent, canActivate: [AuthGuard] },
@@ -56,16 +48,17 @@ export const routes: Routes = [
   {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
   {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },
   {path:'calendar', component:CalendarComponent, canActivate: [AuthGuard] },
-  { path: 'termsofuse', component: TermsComponent },
-  { path: 'privacy', component: PrivacyComponent },
-  { path: 'subscriptionconfirmation', component: SubscriptionConfirmationComponent },
-    { path: 'masteragreement', component: MasterServicesAgreementComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
+  {path: 'termsofuse', component: TermsComponent },
+  {path: 'privacy', component: PrivacyComponent },
+  {path: 'subscriptionconfirmation', component: SubscriptionConfirmationComponent },
+  {path: 'masteragreement', component: MasterServicesAgreementComponent },
+  {path: 'reset-password', component: ResetPasswordComponent },
   {path:'projects', component:ProjectsComponent, canActivate: [AuthGuard] },
   {path:'new-project', component:NewProjectComponent, canActivate: [AuthGuard] },
+  {path:'my-projects', component:MyProjectsComponent, canActivate: [AuthGuard]},
   {path:'view-quote', component:JobsComponent, canActivate: [AuthGuard] },
-  { path: 'payment-cancel', component: PaymentCancelComponent },
-  { path: 'payment-success', component: PaymentSuccessComponent },
+  {path: 'payment-cancel', component: PaymentCancelComponent },
+  {path: 'payment-success', component: PaymentSuccessComponent },
   {path:'quote', component:QuoteComponent, canActivate: [AuthGuard] },
   {path:'quotes', component: QuotesListComponent, canActivate: [AuthGuard]  },
   {path:'bids', component:BidComponent, canActivate: [AuthGuard] },
@@ -88,5 +81,5 @@ export const routes: Routes = [
   },
   {path:'blueprint-test', component:BlueprintTestPageComponent, canActivate: [AuthGuard] },
   {path:'pdf-viewer-popout', component:PdfViewerPopoutComponent, canActivate: [AuthGuard] },
-  { path:'profile', component: ProfileComponent, canActivate: [AuthGuard] }
+  {path:'profile', component: ProfileComponent, canActivate: [AuthGuard] }
 ];
