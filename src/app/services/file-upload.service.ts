@@ -190,4 +190,8 @@ export class FileUploadService {
 
     return uploadSubject.asObservable();
   }
+  
+  getFile(url: string): Observable<Blob> {
+    return this.httpClient.get(url, { responseType: 'blob' });
+  }
 }

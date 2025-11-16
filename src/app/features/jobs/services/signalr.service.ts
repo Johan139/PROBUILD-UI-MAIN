@@ -2,6 +2,17 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { AuthService } from '../../../authentication/auth.service';
+import { environment } from '../../../../environments/environment';
+
+export interface AnalysisProgressUpdate {
+    jobId: number;
+    statusMessage: string;
+    currentStep: number;
+    totalSteps: number;
+    isComplete: boolean;
+    hasFailed: boolean;
+    errorMessage: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -10,13 +21,18 @@ export class SignalrService {
   private hubConnection!: HubConnection;
   public progress = new Subject<number>();
   public uploadComplete = new Subject<number>();
+  public analysisProgress = new Subject<AnalysisProgressUpdate>();
 
   constructor(private authService: AuthService) {}
 
-  public startConnection(sessionId: string): void {
+  public startConnection(): void {
+    if (this.hubConnection && this.hubConnection.state === 'Connected') {
+      return;
+    }
+
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(
-        `https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub?sessionId=${sessionId}`,
+        `${environment.BACKEND_URL}/progressHub`,
         {
           accessTokenFactory: async () => {
             const token = await this.authService.getToken();
@@ -41,6 +57,14 @@ export class SignalrService {
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.uploadComplete.next(fileCount);
     });
+
+    this.hubConnection.on('ReceiveAnalysisProgress', (data: AnalysisProgressUpdate) => {
+        this.analysisProgress.next(data);
+    });
+  }
+
+  public getConnectionId = (): string | null => {
+    return this.hubConnection?.connectionId ?? null;
   }
 
   public stopConnection(): void {

@@ -37,10 +37,10 @@ export class AiChatService {
             const hiddenPrompts = [
               "Subcontractor_Comparison_Prompt.txt",
               "Vendor_Comparison_Prompt.txt",
-              "sub-contractor-selected-prompt-master-prompt.txt",
+              "selected-prompt-system-persona.txt",
               "prompt-failure-corrective-action.txt",
               "prompt-revision.txt",
-              "prompt-22-rebuttal.txt"
+              "bid-justification-rebuttal-prompt.txt"
             ];
             return prompts
               .filter(prompt => {

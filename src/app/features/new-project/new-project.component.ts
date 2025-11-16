@@ -1,12 +1,52 @@
-import { Component, ElementRef, OnInit, ViewChild, Renderer2 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Component, ElementRef, OnInit, ViewChild, Renderer2, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { UploadOptionsDialogComponent } from '../jobs/job-quote/upload-options-dialog.component';
 import { LucideAngularModule, Loader, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, Check } from 'lucide-angular';
 import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { AiChatService } from '../ai-chat/services/ai-chat.service';
+import { AiChatStateService } from '../ai-chat/services/ai-chat-state.service';
+import { Prompt } from '../ai-chat/models/ai-chat.models';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FileUploadService, UploadedFileInfo } from '../../services/file-upload.service';
+import { NewAnalysisService } from '../../services/new-analysis.service';
+import { SignalrService, AnalysisProgressUpdate } from '../jobs/services/signalr.service';
+import { RichTextEditorComponent } from '../../components/rich-text-editor/rich-text-editor.component';
+import { environment } from '../../../environments/environment';
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+
+interface WalkthroughStep {
+  stepIndex: number;
+  promptKey: string;
+  aiResponse: string;
+  userEditedResponse?: string;
+  userComments?: string;
+  isComplete: boolean;
+}
+
+interface AnalysisState {
+  flowType: 'standard' | 'walkthrough';
+  analysisType: 'sequential' | 'selected' | 'renovation';
+  budgetLevel: 'high' | 'medium' | 'low';
+  uploadedFiles: UploadedFileInfo[];
+  selectedFile: UploadedFileInfo | null;
+  walkthroughSessionId?: string;
+  walkthroughHistory: WalkthroughStep[];
+  currentWalkthroughStep: number;
+  analysisProgress: AnalysisProgressUpdate | null;
+}
 
 type FlowState =
   | { step: 'idle' }
@@ -23,10 +63,21 @@ type FlowState =
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     LucideAngularModule,
     DragAndDropDirective,
-    PdfJsViewerModule
-  ],
+    PdfJsViewerModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatRadioModule,
+    RichTextEditorComponent,
+    MatCheckboxModule,
+    MatAutocompleteModule,
+    MatExpansionModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatProgressBarModule
+],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
@@ -58,10 +109,37 @@ export class NewProjectComponent implements OnInit {
   zoom = 1; // Start at 100%
   metric = true;
   analysisMode: 'full' | 'selected' | 'renovation' = 'full';
+  flowType: 'standard' | 'walkthrough' = 'standard';
+  analysisType: 'sequential' | 'selected' | 'renovation' = 'sequential';
+  budgetLevel: 'high' | 'medium' | 'low' = 'medium';
+  isLoading = false;
+  isRerunningStep = false;
+  isNavigatingNext = false;
+  progress = 0;
 
-  uploadedFiles: File[] = [];
-  selectedFile: File | null = null;
+  uploadedFiles: UploadedFileInfo[] = [];
+  selectedFile: UploadedFileInfo | null = null;
   pdfSrc: string | Uint8Array | null = null;
+  availablePrompts$: Observable<Prompt[]>;
+  selectedPrompts = new FormControl([]);
+
+  currentUserEditedContent: string = '';
+  currentUserComments: string = '';
+  applyCostOptimisation: boolean = false;
+  hasScrolledToBottom: boolean = false;
+
+  private state = new BehaviorSubject<AnalysisState>({
+    flowType: 'standard',
+    analysisType: 'sequential',
+    budgetLevel: 'medium',
+    uploadedFiles: [],
+    selectedFile: null,
+    walkthroughHistory: [],
+    currentWalkthroughStep: -1,
+    analysisProgress: null,
+  });
+
+  state$ = this.state.asObservable();
 
   SECTION_ORDER = [
     { key: 'Foundation', color: '#22C55E' },
@@ -97,11 +175,95 @@ export class NewProjectComponent implements OnInit {
   progressSteps: { k: string, done: boolean }[] = [];
   @ViewChild('fileInput') fileInput!: ElementRef;
   @ViewChild('pdfViewer') pdfViewer: any;
+  @ViewChild(RichTextEditorComponent) private richTextEditor!: RichTextEditorComponent;
 
-  constructor(public dialog: MatDialog, private renderer: Renderer2) { }
+  constructor(
+    public dialog: MatDialog,
+    private renderer: Renderer2,
+    private aiChatService: AiChatService,
+    private aiChatStateService: AiChatStateService,
+    private fileUploadService: FileUploadService,
+    private newAnalysisService: NewAnalysisService,
+    private signalrService: SignalrService,
+    private formBuilder: FormBuilder,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    this.clientForm = this.formBuilder.group({
+      projectName: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', Validators.required],
+      companyName: [''],
+      position: [''],
+      startDate: ['', Validators.required],
+    });
 
-  ngOnInit(): void {
+    this.addressForm = this.formBuilder.group({
+      formattedAddress: ['', Validators.required],
+    });
+    const hiddenPrompts = ['SYSTEM_COMPREHENSIVE_ANALYSIS', 'SYSTEM_RENOVATION_ANALYSIS'];
+    this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
+      map(prompts => prompts.filter(p => !hiddenPrompts.includes(p.promptKey)))
+    );
+  }
+
+  isBrowser: boolean;
+  autocompleteService: google.maps.places.AutocompleteService | undefined;
+  options: { description: string; place_id: string }[] = [];
+  addressControl = new FormControl<string>('', [Validators.required, this.requireMatch.bind(this)]);
+  selectedPlace: { description: string; place_id: string } | null = null;
+  private isGoogleMapsLoaded: boolean = false;
+  clientForm: FormGroup;
+  addressForm: FormGroup;
+
+  async ngOnInit(): Promise<void> {
     this.updateProgressSteps();
+    this.aiChatService.getMyPrompts();
+
+    this.signalrService.startConnection();
+    this.signalrService.analysisProgress.subscribe(update => {
+      this.state.next({ ...this.state.getValue(), analysisProgress: update });
+      if (update.isComplete || update.hasFailed) {
+        this.isLoading = false;
+        if (!update.hasFailed) {
+          this.setFlow('done');
+        }
+      }
+    });
+
+    if (this.isBrowser) {
+      try {
+        await this.loadGoogleMapsScript();
+        this.isGoogleMapsLoaded = true;
+        this.autocompleteService = new google.maps.places.AutocompleteService();
+      } catch (error) {
+        console.error('Error loading Google Maps API:', error);
+        this.isGoogleMapsLoaded = false;
+      }
+    }
+
+    this.addressControl.valueChanges.subscribe((value) => {
+      if (typeof value === 'string' && value.trim()) {
+        const service = new google.maps.places.AutocompleteService();
+        service.getPlacePredictions({ input: value }, (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            this.options = predictions.map((pred) => ({
+              description: pred.description,
+              place_id: pred.place_id,
+            }));
+          } else {
+            this.options = [];
+          }
+        });
+      } else {
+        this.options = [];
+      }
+      if (this.selectedPlace && value !== this.selectedPlace.description) {
+        this.selectedPlace = null;
+      }
+    });
   }
 
   isUploaded(flow: FlowState): flow is Extract<FlowState, { step: 'uploaded' }> {
@@ -140,10 +302,19 @@ export class NewProjectComponent implements OnInit {
 
   onFileDropped(files: FileList): void {
     if (files && files.length > 0) {
-      this.uploadedFiles = Array.from(files);
-      this.selectedFile = this.uploadedFiles[0];
-      this.setFlow('uploaded', { fileName: this.selectedFile.name });
-      this.displayPdf(this.selectedFile);
+      const fileArray = Array.from(files);
+      this.fileUploadService.uploadFiles(fileArray, 'some-session-id').subscribe(upload => {
+        this.progress = upload.progress;
+        this.isLoading = upload.isUploading;
+        if (upload.files) {
+          this.uploadedFiles = [...this.uploadedFiles, ...upload.files];
+          if (!this.selectedFile) {
+            this.selectedFile = this.uploadedFiles[0];
+            this.setFlow('uploaded', { fileName: this.selectedFile.name });
+            this.displayPdfByName(this.selectedFile.name);
+          }
+        }
+      });
     }
   }
 
@@ -153,18 +324,23 @@ export class NewProjectComponent implements OnInit {
     const newSelection = this.uploadedFiles.find(f => f.name === selectedFileName);
     if (newSelection) {
       this.selectedFile = newSelection;
-      this.displayPdf(this.selectedFile);
+      this.displayPdfByName(this.selectedFile.name);
     }
   }
 
-  displayPdf(file: File): void {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
-        this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-      }
-    };
-    reader.readAsArrayBuffer(file);
+  displayPdfByName(fileName: string): void {
+    const fileInfo = this.uploadedFiles.find(f => f.name === fileName);
+    if (fileInfo) {
+      this.fileUploadService.getFile(fileInfo.url).subscribe(blob => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (reader.result) {
+            this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+          }
+        };
+        reader.readAsArrayBuffer(blob);
+      });
+    }
   }
 
   openUploadDialog(): void {
@@ -272,4 +448,245 @@ export class NewProjectComponent implements OnInit {
       { k: 'Finalize', done: ['finalizing', 'done'].includes(this.flow.step) },
     ];
   }
+
+  startStandardAnalysis(): void {
+    if (this.clientForm.invalid || this.addressForm.invalid) {
+      // Show validation errors
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('ProjectName', this.clientForm.value.projectName);
+    formData.append('firstName', this.clientForm.value.firstName);
+    formData.append('lastName', this.clientForm.value.lastName);
+    formData.append('email', this.clientForm.value.email);
+    formData.append('phone', this.clientForm.value.phone);
+    formData.append('company', this.clientForm.value.companyName);
+    formData.append('position', this.clientForm.value.position);
+    formData.append('startDate', this.clientForm.value.startDate);
+
+    formData.append('address', this.addressForm.value.formattedAddress);
+
+    if (this.selectedPlace && this.selectedPlace.place_id) {
+        const placesService = new google.maps.places.PlacesService(document.createElement('div'));
+        placesService.getDetails(
+            { placeId: this.selectedPlace.place_id, fields: ['geometry', 'formatted_address', 'address_components'] },
+            (place, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                    const lat = place.geometry?.location?.lat();
+                    const lng = place.geometry?.location?.lng();
+
+                    let streetNumber = '';
+                    let streetName = '';
+                    let city = '';
+                    let state = '';
+                    let postalCode = '';
+                    let country = '';
+
+                    if (place.address_components) {
+                        place.address_components.forEach(component => {
+                            const types = component.types;
+                            if (types.includes('street_number')) streetNumber = component.long_name;
+                            if (types.includes('route')) streetName = component.long_name;
+                            if (types.includes('locality')) city = component.long_name;
+                            if (types.includes('administrative_area_level_1')) state = component.short_name;
+                            if (types.includes('postal_code')) postalCode = component.long_name;
+                            if (types.includes('country')) country = component.long_name;
+                        });
+                    }
+
+                    formData.append('streetNumber', streetNumber);
+                    formData.append('streetName', streetName);
+                    formData.append('city', city);
+                    formData.append('state', state);
+                    formData.append('postalCode', postalCode);
+                    formData.append('country', country);
+
+                    if (lat !== undefined && lng !== undefined) {
+                        formData.append('latitude', lat.toString());
+                        formData.append('longitude', lng.toString());
+                    }
+                    formData.append('googlePlaceId', this.selectedPlace!.place_id);
+                    this.submitStandardAnalysis(formData);
+                }
+            }
+        );
+    } else {
+        this.submitStandardAnalysis(formData);
+    }
+  }
+
+  submitStandardAnalysis(formData: FormData) {
+    const connectionId = this.signalrService.getConnectionId();
+    if (!connectionId) {
+      console.error("Could not get SignalR connection ID");
+      // Optionally, show an error to the user
+      return;
+    }
+    formData.append('connectionId', connectionId);
+    formData.append('analysisType', this.analysisType);
+    formData.append('budgetLevel', this.budgetLevel);
+    formData.append('generateDetailsWithAi', 'true');
+
+    const fileUrls = this.uploadedFiles.map(f => f.url);
+    formData.append('temporaryFileUrls', JSON.stringify(fileUrls));
+
+    this.isLoading = true;
+    this.newAnalysisService.startStandardAnalysis(formData).subscribe({
+      next: (response) => {
+        console.log('Analysis started successfully', response);
+        // Progress will be handled by the SignalR subscription
+      },
+      error: (error) => {
+        console.error('Analysis failed to start', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  startWalkthrough(): void {
+    if (!this.selectedFile) return;
+
+    const promptKeys = (this.analysisType === 'selected' ? this.selectedPrompts.value : []) ?? [];
+    this.newAnalysisService.startWalkthrough(this.uploadedFiles, this.clientForm.value.startDate, this.analysisType, this.budgetLevel, promptKeys).subscribe({
+      next: (response) => {
+        this.state.next({
+          ...this.state.getValue(),
+          walkthroughSessionId: response.sessionId,
+          walkthroughHistory: [response.firstStep],
+          currentWalkthroughStep: 0,
+        });
+      },
+      error: (error) => console.error('Failed to start walkthrough', error),
+    });
+  }
+
+  goToNextStep(): void {
+    const currentState = this.state.getValue();
+    if (!currentState.walkthroughSessionId) return;
+
+    this.isNavigatingNext = true;
+    this.newAnalysisService.getNextWalkthroughStep(
+      currentState.walkthroughSessionId,
+      this.applyCostOptimisation
+    ).subscribe({
+      next: (nextStep) => {
+        this.state.next({
+          ...currentState,
+          walkthroughHistory: [...currentState.walkthroughHistory, nextStep],
+          currentWalkthroughStep: currentState.walkthroughHistory.length,
+        });
+        this.hasScrolledToBottom = false;
+        this.isNavigatingNext = false;
+      },
+      error: (error) => {
+        console.error('Failed to get next step', error);
+        this.isNavigatingNext = false;
+      }
+    });
+  }
+
+  goToPreviousStep(): void {
+    const currentState = this.state.getValue();
+    if (currentState.currentWalkthroughStep > 0) {
+      this.state.next({
+        ...currentState,
+        currentWalkthroughStep: currentState.currentWalkthroughStep - 1,
+      });
+    }
+  }
+
+  onEditorContentChanged(newContent: string) {
+    this.currentUserEditedContent = newContent;
+  }
+
+  rerunCurrentStep() {
+    const currentState = this.state.getValue();
+    const currentStep = currentState.walkthroughHistory[currentState.currentWalkthroughStep];
+    if (!currentState.walkthroughSessionId) return;
+
+    const payload = {
+      originalAiResponse: currentStep.aiResponse,
+      userEditedResponse: this.currentUserEditedContent,
+      userComments: this.currentUserComments,
+      applyCostOptimisation: this.applyCostOptimisation
+    };
+    this.isRerunningStep = true;
+    this.newAnalysisService.rerunWalkthroughStep(currentState.walkthroughSessionId, currentStep.stepIndex, payload)
+      .subscribe({
+        next: updatedStep => {
+          const newHistory = [...currentState.walkthroughHistory];
+          newHistory[currentState.currentWalkthroughStep] = updatedStep;
+          this.state.next({
+            ...currentState,
+            walkthroughHistory: newHistory
+          });
+          this.isRerunningStep = false;
+        },
+        error: (error) => {
+          console.error('Failed to rerun step', error);
+          this.isRerunningStep = false;
+        }
+      });
+  }
+
+  undo(): void {
+    if (this.richTextEditor) {
+      this.richTextEditor.undo();
+    }
+  }
+
+  redo(): void {
+    if (this.richTextEditor) {
+      this.richTextEditor.redo();
+    }
+  }
+
+  onResponseViewerScroll(event: Event): void {
+    const element = event.target as HTMLElement;
+    if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+      this.hasScrolledToBottom = true;
+    }
+  }
+
+  loadGoogleMapsScript(): Promise<void> {
+      return new Promise((resolve, reject) => {
+        if (typeof google !== 'undefined' && google.maps) {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          if (typeof google !== 'undefined' && google.maps) {
+            resolve();
+          } else {
+            reject(new Error('Google Maps API script loaded but google object is not defined'));
+          }
+        };
+
+        script.onerror = (error) => {
+          console.error('Google Maps script failed to load:', error);
+          reject(error);
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    onAddressSelected(event: any) {
+        const selectedAddress = event.option.value;
+        this.selectedPlace = selectedAddress;
+        this.addressControl.setValue(selectedAddress.description);
+        this.addressForm.get('formattedAddress')?.setValue(selectedAddress.description);
+    }
+
+    requireMatch(control: AbstractControl): ValidationErrors | null {
+    if (!this.selectedPlace) {
+      return { requireMatch: true };
+    }
+    return null;
+  }
 }
+

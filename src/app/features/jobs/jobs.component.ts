@@ -161,7 +161,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.measurementService.getSettings().subscribe(settings => {
       this.temperatureUnit = settings.temperature;
     });
-    this.signalrService.startConnection(this.sessionId);
+    this.signalrService.startConnection();
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
     });
