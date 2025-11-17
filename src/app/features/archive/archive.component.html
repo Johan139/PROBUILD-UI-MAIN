@@ -63,13 +63,13 @@
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
           </table>
         </mat-tab>
-        <mat-tab label="Jobs">
+        <mat-tab label="Projects">
           <div *ngIf="isLoading" class="loading-container">
             <app-loader></app-loader>
           </div>
 
           <div *ngIf="!isLoading && archivedJobs.length === 0" class="no-notes">
-            <p>No archived jobs found</p>
+            <p>No archived projects found</p>
           </div>
 
           <table mat-table [dataSource]="archivedJobs" *ngIf="!isLoading && archivedJobs.length > 0" class="mat-elevation-z8">

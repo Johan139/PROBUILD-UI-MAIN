@@ -360,4 +360,33 @@ export class BomService {
       drawContent(false);
     };
   }
+
+  public extractTotalCost(fullResponse: string): string | null {
+    if (!fullResponse) {
+      return null;
+    }
+
+    const parsedReport = this.parseReport(fullResponse);
+    if (!parsedReport || !parsedReport.sections || parsedReport.sections.length === 0) {
+      return null;
+    }
+
+    const lastSection = parsedReport.sections[parsedReport.sections.length - 1];
+    if (lastSection && lastSection.type === 'table' && lastSection.content && lastSection.content.length > 0) {
+      const lastRow = lastSection.content[lastSection.content.length - 1];
+      if (lastRow && lastRow.length > 0) {
+        const totalCostCell = lastRow[lastRow.length - 1];
+        const match = totalCostCell.match(/\$([\d,]+\.\d{2})/);
+        if (match && match[1]) {
+          return match[1];
+        }
+        const numberMatch = totalCostCell.match(/[\d,]+\.\d{2}/);
+        if (numberMatch && numberMatch[0]) {
+          return numberMatch[0];
+        }
+      }
+    }
+
+    return null;
+  }
 }

@@ -3,27 +3,27 @@
 
 
   <mat-card class="profile-card">
-    <mat-card-title>Job Assignments</mat-card-title>
+    <mat-card-title>Project Assignments</mat-card-title>
     <p class="description-text">
-      Here you can assign team members to specific jobs. Team members are added and managed on the Team Management page within your profile. Once a team member is added, you can assign them to any available job from the list below.
+      Here you can assign team members to specific projects. Team members are added and managed on the Team Management page within your profile. Once a team member is added, you can assign them to any available project from the list below.
     </p>
     <mat-divider></mat-divider>
 
     <!-- Form Section -->
     <div class="section">
-      <h3>Assign Job</h3>
+      <h3>Assign Project</h3>
       <form class="form-row" (ngSubmit)="submitAssignment()">
         <mat-form-field class="job-selection">
-          <mat-label>Select Job</mat-label>
+          <mat-label>Select Project</mat-label>
           <input type="text"
-                 placeholder="Search for a job"
-                 aria-label="Select Job"
+                 placeholder="Search for a project"
+                 aria-label="Select Project"
                  matInput
                  [formControl]="jobControl"
                  [matAutocomplete]="autoJob">
           <mat-autocomplete #autoJob="matAutocomplete" [displayWith]="displayJob" (optionSelected)="onJobSelectionChange($event.option.value)">
             <mat-option *ngIf="!(filteredJobs | async)?.length" disabled>
-              No jobs found
+              No projects found
             </mat-option>
             <mat-option *ngFor="let job of filteredJobs | async" [value]="job">
               {{ job.projectName }}

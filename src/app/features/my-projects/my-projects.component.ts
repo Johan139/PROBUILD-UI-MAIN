@@ -3,13 +3,16 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { JobsService } from '../../services/jobs.service';
 import { AuthService } from '../../authentication/auth.service';
 import { ProjectCardComponent, Project } from './project-card/project-card.component';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { TeamManagementService } from '../../services/team-management.service';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { BomService } from '../jobs/services/bom.service';
+import { of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { LoaderComponent } from '../../loader/loader.component';
 
 @Component({
   selector: 'app-my-projects',
@@ -18,12 +21,15 @@ import { catchError, map, switchMap } from 'rxjs/operators';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    ProjectCardComponent
+    ProjectCardComponent,
+    LoaderComponent,
+    MatSnackBarModule
   ],
   templateUrl: './my-projects.component.html',
   styleUrls: ['./my-projects.component.scss']
 })
 export class MyProjectsComponent implements OnInit {
+  isLoading = false;
   projects: Project[] = [];
   filteredProjects: Project[] = [];
   projectFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" | "FAILED" = "all";
@@ -47,7 +53,9 @@ export class MyProjectsComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private jobDataService: JobDataService,
-    private teamManagementService: TeamManagementService
+    private teamManagementService: TeamManagementService,
+    private bomService: BomService,
+    private snackBar: MatSnackBar
   ) { }
 
   ngOnInit(): void {
@@ -68,6 +76,18 @@ export class MyProjectsComponent implements OnInit {
   }
 
   loadProjects(): void {
+    this.isLoading = true;
+    const userId = this.authService.getUserId();
+    if (userId) {
+      const cachedProjects = localStorage.getItem(`projects_${userId}`);
+      if (cachedProjects) {
+        this.projects = JSON.parse(cachedProjects);
+        this.updateCounts();
+        this.setProjectFilter('all');
+        this.isLoading = false;
+      }
+    }
+
     const isTeamMember = this.authService.isTeamMember();
     this.authService.currentUser$.pipe(
       switchMap(user => {
@@ -77,7 +97,10 @@ export class MyProjectsComponent implements OnInit {
           : this.jobsService.getAllJobsByUserId(user.id);
       }),
       switchMap(jobs => {
-        if (!jobs || jobs.length === 0) return of([]);
+        if (!jobs || jobs.length === 0) {
+          this.isLoading = false;
+          return of([]);
+        }
 
         const nonArchivedJobs = jobs.filter(job => job.status !== 'ARCHIVED');
 
@@ -89,7 +112,10 @@ export class MyProjectsComponent implements OnInit {
         });
 
         const uniqueJobs = Array.from(uniqueJobsMap.values());
-        if (uniqueJobs.length === 0) return of([]);
+        if (uniqueJobs.length === 0) {
+          this.isLoading = false;
+          return of([]);
+        }
 
         const jobDataPromises = uniqueJobs
           .filter(job => job && job.id)
@@ -102,7 +128,7 @@ export class MyProjectsComponent implements OnInit {
               ...details,
               progress: this.calculateJobProgress(subtasks || []),
               team: (teamMembers || []).length,
-              thumbnailUrl: this.getRandomImage()
+              thumbnailUrl: this.getImageForJob(job.id)
             };
             return project;
           }));
@@ -111,11 +137,17 @@ export class MyProjectsComponent implements OnInit {
           this.projects = projects;
           this.updateCounts();
           this.setProjectFilter('all');
+          if (userId) {
+            localStorage.setItem(`projects_${userId}`, JSON.stringify(projects));
+          }
+          this.isLoading = false;
         });
 
         return of([]); // Return an empty observable to satisfy the switchMap
       })
-    ).subscribe();
+    ).subscribe({
+      error: () => this.isLoading = false
+    });
   }
 
   updateCounts(): void {
@@ -143,22 +175,31 @@ export class MyProjectsComponent implements OnInit {
   }
 
   editProject(jobId: number): void {
-    // Navigate to edit page, assuming a route like '/edit-project/:id'
+    // TODO: Need to make a good editing dialog or details page for this, could add to the jobs.component like the example? Details | Timeline | Team Members | Whatever ?
     this.router.navigate(['/edit-project', jobId]);
   }
 
   deleteProject(jobId: number): void {
-    // Implement delete logic, possibly with a confirmation dialog
+    // TODO: Should be archiving instead of deleting
     console.log('Delete project:', jobId);
   }
 
   activateProject(jobId: number): void {
-    // Implement activate logic
+    // TODO: Implement activate logic, start the bidding process
     console.log('Activate project:', jobId);
   }
 
-  private getRandomImage(): string {
-    const randomIndex = Math.floor(Math.random() * this.jobCardImages.length);
+  archiveProject(jobId: number): void {
+    this.jobsService.archiveJob(jobId).subscribe(() => {
+      this.projects = this.projects.filter(p => p.jobId !== jobId);
+      this.filteredProjects = this.filteredProjects.filter(p => p.jobId !== jobId);
+      this.updateCounts();
+      this.snackBar.open('Project archived successfully', 'Close', { duration: 3000 });
+    });
+  }
+
+  private getImageForJob(jobId: number): string {
+    const randomIndex = jobId % this.jobCardImages.length;
     return this.jobCardImages[randomIndex];
   }
 }

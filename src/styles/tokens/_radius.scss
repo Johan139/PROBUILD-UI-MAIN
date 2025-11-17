@@ -2,7 +2,6 @@
 // BORDER RADIUS TOKENS
 // ==========================================================================
 //
-// Consistent scale for border radius
 
 :root {
   --radius-xs: 6px;
@@ -10,4 +9,5 @@
   --radius-md: 10px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-full: 9999px;
 }

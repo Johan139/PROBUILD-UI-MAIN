@@ -30,7 +30,7 @@
         </p>
 
         <div class="actions">
-          <button class="btn-primary" mat-flat-button (click)="navigateToJobs()">View & Create Jobs</button>
+          <button class="btn-primary" mat-flat-button (click)="navigateToJobs()">View & Create Projects</button>
         </div>
       </mat-card-content>
     </mat-card>
@@ -146,9 +146,9 @@
                   <mat-icon>more_vert</mat-icon>
                 </button>
                 <mat-menu #jobMenu="matMenu">
-                  <button mat-menu-item (click)="loadJob(job.id)">View Job</button>
+                  <button mat-menu-item (click)="loadJob(job.id)">View Project</button>
                   <button mat-menu-item [disabled]="job.progress !== 100" (click)="archiveJob(job.id)">
-                    Archive Job
+                    Archive Project
                   </button>
                 </mat-menu>
               </mat-cell>
