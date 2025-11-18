@@ -196,4 +196,16 @@ export class FileUploadService {
       responseType: 'blob'
     });
   }
+
+  deleteTemporaryFile(fileUrl: string): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: [fileUrl],
+    });
+  }
+
+  deleteTemporaryFiles(fileUrls: string[]): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: fileUrls,
+    });
+  }
 }

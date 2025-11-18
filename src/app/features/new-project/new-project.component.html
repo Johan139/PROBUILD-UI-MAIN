@@ -22,7 +22,7 @@
           #pdfViewer
           *ngIf="pdfSrc"
           [pdfSrc]="pdfSrc"
-          [viewerId]="'newProjectPdfViewer'"
+          [viewerId]="viewerId"
           [showSpinner]="true"
           [theme]="'dark'"
         ></ng2-pdfjs-viewer>
@@ -51,12 +51,21 @@
         </div>
 
         <!-- File selection dropdown -->
-        <div *ngIf="uploadedFiles.length > 1" class="file-selector">
-          <select (change)="onPdfSelectionChange($event)">
-            <option *ngFor="let file of uploadedFiles" [value]="file.name" [selected]="file === selectedFile">
-              {{ file.name }}
-            </option>
-          </select>
+        <div *ngIf="uploadedFiles.length > 0" class="file-list-container">
+          <button class="file-list-toggle" (click)="isFileListCollapsed = !isFileListCollapsed">
+            <i class="fas fa-chevron-down" [class.rotated]="isFileListCollapsed"></i>
+            <span>{{ uploadedFiles.length }} Files Uploaded</span>
+          </button>
+          <div class="file-list" [class.collapsed]="isFileListCollapsed">
+            <ul>
+              <li *ngFor="let file of uploadedFiles" [class.selected]="file === selectedFile" (click)="onPdfSelectionChange(file)">
+                <span>{{ file.name }}</span>
+                <button (click)="removeFile(file)" class="remove-btn">
+                  &times;
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Extracting overlay -->

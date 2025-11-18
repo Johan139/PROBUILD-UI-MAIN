@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, Renderer2, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, Renderer2, Inject, PLATFORM_ID, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -87,7 +87,7 @@ type FlowState =
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
-export class NewProjectComponent implements OnInit {
+export class NewProjectComponent implements OnInit, OnDestroy {
   HardHat = HardHat;
   MapPin = MapPin;
   MousePointer = MousePointer;
@@ -128,11 +128,13 @@ export class NewProjectComponent implements OnInit {
   pdfSrc: string | Uint8Array | null = null;
   availablePrompts$: Observable<Prompt[]>;
   selectedPrompts = new FormControl([]);
+  viewerId = uuidv4();
 
   currentUserEditedContent: string = '';
   currentUserComments: string = '';
   applyCostOptimisation: boolean = false;
   hasScrolledToBottom: boolean = false;
+  isFileListCollapsed = false;
 
   private state = new BehaviorSubject<AnalysisState>({
     flowType: 'standard',
@@ -252,7 +254,7 @@ export class NewProjectComponent implements OnInit {
         this.isGoogleMapsLoaded = true;
         this.autocompleteService = new google.maps.places.AutocompleteService();
       } catch (error) {
-        console.error('Error loading Google Maps API:', error);
+        // console.error('Error loading Google Maps API:', error);
         this.isGoogleMapsLoaded = false;
       }
     }
@@ -280,6 +282,26 @@ export class NewProjectComponent implements OnInit {
 
     this.clientForm.valueChanges.subscribe(value => {
       this.localStorageService.setItem(this.CLIENT_FORM_KEY, value);
+    });
+  }
+
+
+  ngOnDestroy(): void {
+    this.deleteTemporaryFiles();
+  }
+
+  deleteTemporaryFiles(): void {
+    const urlsToDelete = this.uploadedFiles.map(f => f.url);
+    if (urlsToDelete.length === 0) {
+      return;
+    }
+    this.fileUploadService.deleteTemporaryFiles(urlsToDelete).subscribe({
+      next: () => {
+        this.uploadedFiles = [];
+      },
+      error: (error) => {
+        //console.error('Error deleting temporary files:', error);
+      },
     });
   }
 
@@ -331,8 +353,9 @@ export class NewProjectComponent implements OnInit {
         this.progress = upload.progress;
         this.isLoading = upload.isUploading;
         if (upload.files) {
+          const isFirstUpload = this.uploadedFiles.length === 0;
           this.uploadedFiles = [...this.uploadedFiles, ...upload.files];
-          if (!this.selectedFile) {
+          if (isFirstUpload && this.uploadedFiles.length > 0) {
             this.selectedFile = this.uploadedFiles[0];
             this.setFlow('uploaded', { fileName: this.selectedFile.name });
             this.displayPdfByName(this.selectedFile.name);
@@ -342,12 +365,10 @@ export class NewProjectComponent implements OnInit {
     }
   }
 
-  onPdfSelectionChange(event: Event): void {
-    const selectElement = event.target as HTMLSelectElement;
-    const selectedFileName = selectElement.value;
-    const newSelection = this.uploadedFiles.find(f => f.name === selectedFileName);
-    if (newSelection) {
-      this.selectedFile = newSelection;
+  onPdfSelectionChange(file: UploadedFileInfo): void {
+    if (file) {
+      this.selectedFile = file;
+      this.setFlow('uploaded', { fileName: this.selectedFile.name });
       this.displayPdfByName(this.selectedFile.name);
     }
   }
@@ -360,6 +381,7 @@ export class NewProjectComponent implements OnInit {
         reader.onload = () => {
           if (reader.result) {
             this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+            this.viewerId = uuidv4();
           }
         };
         reader.readAsArrayBuffer(blob);
@@ -545,14 +567,14 @@ export class NewProjectComponent implements OnInit {
   submitStandardAnalysis(formData: FormData) {
     const userId = this.authService.getUserId();
     if (!userId) {
-      console.error("Could not get UserId");
+      // console.error("Could not get UserId");
       this.snackBar.open('Error: Could not get user ID. Please try logging in again.', 'Close', { duration: 10000 });
       return;
     }
     formData.append('userId', userId);
     const connectionId = this.signalrService.getConnectionId();
     if (!connectionId) {
-      console.error("Could not get SignalR connection ID");
+      // console.error("Could not get SignalR connection ID");
       this.snackBar.open('Error: Could not establish a connection with the server. Please refresh the page.', 'Close', { duration: 10000 });
       return;
     }
@@ -568,14 +590,14 @@ export class NewProjectComponent implements OnInit {
     this.isLoading = true;
     this.newAnalysisService.startStandardAnalysis(formData).subscribe({
       next: (response) => {
-        console.log('Analysis started successfully', response);
+        // console.log('Analysis started successfully', response);
         this.snackBar.open('Analysis started successfully!', 'Close', { duration: 5000 });
         this.clientForm.reset();
         this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
         // Progress will be handled by the SignalR subscription
       },
       error: (error) => {
-        console.error('Analysis failed to start', error);
+        // console.error('Analysis failed to start', error);
         this.isLoading = false;
         this.snackBar.open('Error: Analysis failed to start. Please try again.', 'Close', { duration: 10000 });
       }
@@ -597,7 +619,7 @@ export class NewProjectComponent implements OnInit {
         this.snackBar.open('Walkthrough started successfully!', 'Close', { duration: 5000 });
       },
       error: (error) => {
-        console.error('Failed to start walkthrough', error);
+        // console.error('Failed to start walkthrough', error);
         this.snackBar.open('Error: Failed to start walkthrough. Please try again.', 'Close', { duration: 10000 });
       }
     });
@@ -622,7 +644,7 @@ export class NewProjectComponent implements OnInit {
         this.isNavigatingNext = false;
       },
       error: (error) => {
-        console.error('Failed to get next step', error);
+        // console.error('Failed to get next step', error);
         this.isNavigatingNext = false;
         this.snackBar.open('Error: Failed to get next step. Please try again.', 'Close', { duration: 10000 });
       }
@@ -668,7 +690,7 @@ export class NewProjectComponent implements OnInit {
           this.snackBar.open('Step updated successfully!', 'Close', { duration: 5000 });
         },
         error: (error) => {
-          console.error('Failed to rerun step', error);
+          // console.error('Failed to rerun step', error);
           this.isRerunningStep = false;
           this.snackBar.open('Error: Failed to rerun step. Please try again.', 'Close', { duration: 10000 });
         }
@@ -713,7 +735,7 @@ export class NewProjectComponent implements OnInit {
         };
 
         script.onerror = (error) => {
-          console.error('Google Maps script failed to load:', error);
+          // console.error('Google Maps script failed to load:', error);
           reject(error);
         };
         document.head.appendChild(script);
@@ -732,6 +754,47 @@ export class NewProjectComponent implements OnInit {
       return { requireMatch: true };
     }
     return null;
+  }
+
+  removeFile(fileToRemove: UploadedFileInfo): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Confirm Deletion',
+        message: `Are you sure you want to remove the file "${fileToRemove.name}"?`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.fileUploadService.deleteTemporaryFile(fileToRemove.url).subscribe({
+          next: () => {
+            this.uploadedFiles = this.uploadedFiles.filter(f => f.url !== fileToRemove.url);
+            if (this.selectedFile?.url === fileToRemove.url) {
+              if (this.uploadedFiles.length > 0) {
+                this.selectedFile = this.uploadedFiles[0];
+                this.displayPdfByName(this.selectedFile.name);
+              } else {
+                this.selectedFile = null;
+                this.pdfSrc = null;
+                this.setFlow('idle');
+              }
+            }
+            this.snackBar.open(`File "${fileToRemove.name}" has been removed.`, 'Close', { duration: 3000 });
+          },
+          error: (error) => {
+            console.error('Failed to delete file:', error);
+            this.snackBar.open(`Error removing file "${fileToRemove.name}". Please try again.`, 'Close', { duration: 5000 });
+          }
+        });
+      }
+    });
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification($event: any): void {
+    if (this.uploadedFiles.length > 0) {
+      $event.returnValue = true;
+    }
   }
 }
 

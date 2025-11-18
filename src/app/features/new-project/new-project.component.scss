@@ -285,6 +285,7 @@
   font-size: var(--fs-xs);
   opacity: 0.75;
   color: var(--color-text);
+  margin-top: 12px;
 }
 
 .step-switcher {
@@ -666,4 +667,85 @@
 
 .walkthrough-container .mat-mdc-form-field {
   margin-left: var(--space-4) !important;
+}
+
+.file-list-container {
+  position: absolute;
+  top: 2rem;
+  left: 1rem;
+  z-index: 10;
+
+  .file-list-toggle {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    color: var(--color-text);
+
+    i {
+      transition: transform 0.2s ease;
+    }
+
+    .rotated {
+      transform: rotate(180deg);
+    }
+  }
+
+  .file-list {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    margin-top: var(--space-2);
+    display: block;
+
+    &.collapsed {
+      display: none;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-2);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: background-color 0.2s ease;
+      color: var(--color-text);
+
+      &:hover {
+        background-color: var(--color-surface-hover);
+      }
+
+      &.selected {
+        background-color: var(--brand-yellow-primary);
+        color: var(--color-text-inverse);
+      }
+
+      .remove-btn {
+        background: none;
+        border: none;
+        color: var(--color-text-muted);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0 var(--space-2);
+
+        &:hover {
+          color: var(--color-danger);
+        }
+      }
+    }
+  }
 }
