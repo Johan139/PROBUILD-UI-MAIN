@@ -2,7 +2,8 @@ import { Pipe, PipeTransform } from '@angular/core';
 import { userTypes } from '../../data/user-types';
 
 @Pipe({
-  name: 'roleDisplay'
+    name: 'roleDisplay',
+    standalone: false
 })
 export class RoleDisplayPipe implements PipeTransform {
 

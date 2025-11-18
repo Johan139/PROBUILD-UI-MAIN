@@ -5,10 +5,10 @@ import { CommonModule } from '@angular/common';
 import { StripeService } from '../../services/StripeService';
 export type BillingCycle = 'monthly' | 'yearly';
 @Component({
-  selector: 'app-payment-prompt-dialog',
-  standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule],
-  template: `
+    selector: 'app-payment-prompt-dialog',
+    standalone: true,
+    imports: [CommonModule, MatDialogModule, MatButtonModule],
+    template: `
     <h2 mat-dialog-title>Registration Complete</h2>
     <mat-dialog-content>
       <p>Your account was created. Please complete payment to continue.</p>
@@ -18,7 +18,7 @@ export type BillingCycle = 'monthly' | 'yearly';
       <button mat-button class="dialog-btn pay-btn" (click)="continueToPayment()">Pay Now</button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     h2 {
       font-size: 1.5rem;
       font-weight: 600;
@@ -71,7 +71,7 @@ export class PaymentPromptDialogComponent {
     continueToPayment() {
 //  console.log(this.data.billingCycle)
         this.stripeService.createCheckoutSession({
-          userId: this.data.userId, 
+          userId: this.data.userId,
           packageName: this.data.packageName,
           amount: this.data.amount,
           source: this.data.source,
@@ -86,7 +86,7 @@ export class PaymentPromptDialogComponent {
           error: err => console.error('Checkout session error', err)
         });
       }
-  
+
     skip() {
       this.dialogRef.close();
     }

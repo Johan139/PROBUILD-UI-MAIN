@@ -100,7 +100,7 @@ if (aValue == null || bValue == null) {
       this.router.navigate(['/contracts', response.contractId, 'sign']);
     });
   }
-  
+
   analyzeBids(): void {
     const bidIds = Array.from(this.selectedBids);
     this.biddingService.analyzeBids(this.jobId).subscribe(result => {

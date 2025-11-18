@@ -14,9 +14,9 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
     selector: 'app-note-detail-dialog',
+    standalone: true,
     templateUrl: './note-detail-dialog.component.html',
     styleUrls: ['./note-detail-dialog.component.scss'],
-    standalone: true,
     imports: [CommonModule, MatButtonModule, MatDialogModule, DatePipe, MatFormFieldModule, MatInputModule, FormsModule, MatIconModule]
 })
 export class NoteDetailDialogComponent implements OnInit {

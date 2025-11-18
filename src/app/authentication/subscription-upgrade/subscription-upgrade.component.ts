@@ -32,19 +32,19 @@ export interface SubscriptionUpgradeResult {
 }
 
 @Component({
-  selector: 'app-subscription-upgrade',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatRadioModule,
-    MatButtonModule
-  ],
-  templateUrl: './subscription-upgrade.component.html',
-  styleUrls: ['./subscription-upgrade.component.scss']
+    selector: 'app-subscription-upgrade',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatSelectModule,
+        MatRadioModule,
+        MatButtonModule
+    ],
+    templateUrl: './subscription-upgrade.component.html',
+    styleUrls: ['./subscription-upgrade.component.scss']
 })
 export class SubscriptionUpgradeComponent implements OnInit {
   form!: FormGroup;
@@ -63,7 +63,7 @@ export class SubscriptionUpgradeComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       subscriptionPackage: [null, Validators.required],
-      billingCycle: ['monthly'] 
+      billingCycle: ['monthly']
     });
 
     // Auto-select the first *previewable* option (paid, not trial/basic/free, not current)

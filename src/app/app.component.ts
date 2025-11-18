@@ -33,38 +33,37 @@ type NavItem = {
 };
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [
-    RouterOutlet,
-    MatToolbarModule,
-    MatCardModule,
-    MatSidenavModule,
-    NgIf,
-    MatNavList,
-    LoaderComponent,
-    MatIconModule,
-    MatMenuModule,
-    MatSidenav,
-    RouterLink,
-    MatButtonModule,
-    NgOptimizedImage,
-    RouterModule,
-    MatIconModule,
-    NgFor,
-    MatDividerModule,
-    FooterComponent,
-    AiChatIconComponent,
-    AiChatWindowComponent,
-    MatTooltip,
-    MatListModule,
-    MatIconModule,
-    NotificationsMenuComponent
-
-],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
-  providers: [DatePipe]
+    selector: 'app-root',
+    standalone: true,
+    imports: [
+        RouterOutlet,
+        MatToolbarModule,
+        MatCardModule,
+        MatSidenavModule,
+        NgIf,
+        MatNavList,
+        LoaderComponent,
+        MatIconModule,
+        MatMenuModule,
+        MatSidenav,
+        RouterLink,
+        MatButtonModule,
+        NgOptimizedImage,
+        RouterModule,
+        MatIconModule,
+        NgFor,
+        MatDividerModule,
+        FooterComponent,
+        AiChatIconComponent,
+        AiChatWindowComponent,
+        MatTooltip,
+        MatListModule,
+        MatIconModule,
+        NotificationsMenuComponent
+    ],
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    providers: [DatePipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
   showAlert: boolean = false;
@@ -84,12 +83,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   navItems: NavItem[] = [
     { label: 'Home',            icon: 'home',            route: ['/dashboard'],      tooltip: 'Return to the main dashboard' },
-    { label: 'My Projects',         icon: 'folder',          route: ['/job-quote'],      tooltip: 'View and manage your ongoing projects' },
-    { label: 'Job Assignment',  icon: 'assignment_ind',  route: ['/job-assignment'], tooltip: 'Assign jobs to your team members' },
+    { label: 'New Project',     icon: 'note_add',        route: ['/new-project'],    tooltip: 'Create a new project' },
+    { label: 'My Projects',     icon: 'folder',          route: ['/my-projects'],      tooltip: 'View and manage your ongoing projects' },
+    { label: 'Project Assignment',  icon: 'assignment_ind',  route: ['/job-assignment'], tooltip: 'Assign team members to your projects' },
     { label: 'Calendar',        icon: 'calendar_today',  route: ['/calendar'],       tooltip: 'Access your schedule and calendar events' },
     { label: 'My Quotes',       icon: 'description',     route: ['/quotes'],         tooltip: 'Review your existing quotes' },
     { label: 'New Quote',       icon: 'note_add',        route: ['/quote'],          tooltip: 'Create a new quote' },
-    { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' },
+    // { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' }, // 29.10.2025 - Removed as it is very similar to My Projects
     { label: 'Find Work',       icon: 'travel_explore',  route: ['/find-work'],      tooltip: 'Search for new work opportunities' },
     { label: 'Connections',     icon: 'group',           route: ['/connections'],    tooltip: 'Manage your professional connections' },
     { label: 'Archive',         icon: 'inventory_2',     route: ['/archive'],        tooltip: 'Access your archived projects and records' },

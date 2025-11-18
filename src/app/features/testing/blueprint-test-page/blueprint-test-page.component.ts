@@ -14,11 +14,11 @@ import * as hernandezCdPage6 from '../../../../assets/sample-pdfs/json/hernandez
 import * as hernandezCdPage7 from '../../../../assets/sample-pdfs/json/hernandez_cd/7.json';
 
 @Component({
-  selector: 'app-blueprint-test-page',
-  standalone: true,
-  imports: [CommonModule, PdfViewerComponent],
-  templateUrl: './blueprint-test-page.component.html',
-  styleUrls: ['./blueprint-test-page.component.scss']
+    selector: 'app-blueprint-test-page',
+    standalone: true,
+    imports: [CommonModule, PdfViewerComponent],
+    templateUrl: './blueprint-test-page.component.html',
+    styleUrls: ['./blueprint-test-page.component.scss']
 })
 export class BlueprintTestPageComponent implements OnInit, OnDestroy {
   blueprints: BlueprintDocument[] = [];

@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatGridListModule} from "@angular/material/grid-list";
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import {AsyncPipe, CommonModule, NgForOf, NgIf} from "@angular/common";
 import { MatSelectModule} from "@angular/material/select";
 import {MatInputModule} from "@angular/material/input";
@@ -15,12 +15,10 @@ import { InvitationService } from '../../services/invitation.service';
 import {merge, Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import {MatDivider} from "@angular/material/divider";
-import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
+import { StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
-import { COUNTRIES } from '../../data/countries';
-import { STATES } from '../../data/states';
 import {MatAutocompleteModule} from "@angular/material/autocomplete";
 import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -46,7 +44,7 @@ import {
 import { RegistrationService } from '../../services/registration.service';
 import { ElementRef, Inject, PLATFORM_ID, ViewChild, AfterViewInit } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { ProfileService } from '../profile/profile.service'; 
+import { ProfileService } from '../profile/profile.service';
 declare const google: any;
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -56,32 +54,31 @@ export interface SubscriptionOption {
 }
 export type BillingCycle = 'monthly' | 'yearly';
 @Component({
-  selector: 'app-registration',
-  standalone: true,
-  imports: [
-    MatCardModule,
-    CommonModule,
-    MatGridListModule,
-    MatGridListModule,
-    ReactiveFormsModule,
-    NgForOf,
-    MatSelectModule,
-    MatDialogModule,
-    NgIf,
-    MatInputModule,
-    MatFormFieldModule,
-    MatButton,
-    LoaderComponent,
-    MatDivider,
-    MatAutocompleteModule,
-    AsyncPipe,
-    MatCheckboxModule,
-    MatChipsModule,
-    MatRadioModule,
-    MatIconModule
-  ],
-  templateUrl: './registration.component.html',
-  styleUrl: './registration.component.scss'
+    selector: 'app-registration',
+    standalone: true,
+    imports: [
+        MatCardModule,
+        CommonModule,
+        MatGridListModule,
+        MatGridListModule,
+        ReactiveFormsModule,
+        NgForOf,
+        MatSelectModule,
+        MatDialogModule,
+        NgIf,
+        MatInputModule,
+        MatFormFieldModule,
+        MatButton,
+        MatDivider,
+        MatAutocompleteModule,
+        AsyncPipe,
+        MatCheckboxModule,
+        MatChipsModule,
+        MatRadioModule,
+        MatIconModule
+    ],
+    templateUrl: './registration.component.html',
+    styleUrl: './registration.component.scss'
 })
 export class RegistrationComponent implements OnInit{
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
@@ -117,7 +114,7 @@ export class RegistrationComponent implements OnInit{
 
   countryFilterCtrl = new FormControl('');
 filteredCountryCodes!: Observable<any[]>;
-  
+
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
 isGoogleRegistration = false;

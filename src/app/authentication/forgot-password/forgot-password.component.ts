@@ -11,20 +11,20 @@ import { ForgotPasswordService } from './forgot-password.service';
 import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
-  selector: 'app-forgot-password',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    NgIf,
-    MatFormFieldModule,
-    MatInputModule,
-    LoaderComponent,
-    MatButtonModule,
-    MatDividerModule,
-  ],
-  templateUrl: './forgot-password.component.html',
-  styleUrls: ['./forgot-password.component.scss'],
+    selector: 'app-forgot-password',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        NgIf,
+        MatFormFieldModule,
+        MatInputModule,
+        LoaderComponent,
+        MatButtonModule,
+        MatDividerModule,
+    ],
+    templateUrl: './forgot-password.component.html',
+    styleUrls: ['./forgot-password.component.scss']
 })
 export class ForgotPasswordComponent {
   forgotPasswordForm: FormGroup;

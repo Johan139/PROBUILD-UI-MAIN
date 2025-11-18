@@ -155,6 +155,7 @@ textarea[matInput] {
   border: 0;
   border-radius: var(--radius-md);
   padding: 8px 16px;
+  margin-right: var(--space-2);
   font-weight: var(--fw-semibold);
   transition: background-color .2s ease, box-shadow .2s ease;
   box-shadow: 0 1px 2px rgba(0,0,0,.08);
@@ -353,8 +354,19 @@ app-timeline > * { min-width: max-content; }
 }
 
 mat-dialog-actions {
-  display: flex; justify-content: flex-end; padding-top: 1rem;
-  .submit-btn { background: var(--color-primary); color: var(--color-text-inverse); &:hover { background: var(--color-primary-hover); } }
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  gap: var(--space-2);
+
+  .submit-btn {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+
+    &:hover {
+      background: var(--color-primary-hover);
+    }
+  }
 }
 
 /* Report Dialog */

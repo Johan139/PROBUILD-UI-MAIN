@@ -55,6 +55,8 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
+import { LogoService } from '../../services/logo.service';
+import { MeasurementService, MeasurementSettings } from '../../services/measurement.service';
 import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
@@ -79,48 +81,51 @@ export interface SubscriptionUpgradeDTO {
 }
 export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: string }>;
 @Component({
-  selector: 'app-profile',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-      CommonModule,
-    MatCardModule,
-    MatDividerModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressBarModule,
-    MatAutocompleteModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTabsModule,
-    MatTableModule,
-    MatDialogModule,
-    MatMenuModule,
-      MatTableModule,
-  MatPaginatorModule,
-  MatSortModule,
-    NgForOf,
-    NgIf,
-    SharedModule
-  ],
-  templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+    selector: 'app-profile',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        CommonModule,
+        MatCardModule,
+        MatDividerModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatProgressBarModule,
+        MatAutocompleteModule,
+        MatDialogModule,
+        MatTooltipModule,
+        MatSnackBarModule,
+        MatSelectModule,
+        MatButtonModule,
+        MatIconModule,
+        MatTabsModule,
+        MatTableModule,
+        MatDialogModule,
+        MatMenuModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatSortModule,
+        NgForOf,
+        NgIf,
+        SharedModule
+    ],
+    templateUrl: './profile.component.html',
+    styleUrls: ['./profile.component.scss']
 })
 
 export class ProfileComponent implements OnInit {
+  cardTitle = 'User Profile';
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
-@ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
+  @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef;
+  logoUrl: string | null = null;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
-selectedPlace: { description: string; place_id: string } | null = null;
-autocompleteService: google.maps.places.AutocompleteService | undefined;
-isGoogleMapsLoaded: boolean = false;
+  selectedPlace: { description: string; place_id: string } | null = null;
+  autocompleteService: google.maps.places.AutocompleteService | undefined;
+  isGoogleMapsLoaded: boolean = false;
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
@@ -207,13 +212,15 @@ addressDataSource = new MatTableDataSource<UserAddress>([]);
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private route: ActivatedRoute,
-        private registrationService: RegistrationService,
+    private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
-        private jobsService: JobsService,
-      @Inject(PLATFORM_ID) private platformId: Object,
-          private snackBar: MatSnackBar,
-    private teamManagementService: TeamManagementService
+    private jobsService: JobsService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private snackBar: MatSnackBar,
+    private teamManagementService: TeamManagementService,
+    private logoService: LogoService,
+    private measurementService: MeasurementService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -256,7 +263,9 @@ addressDataSource = new MatTableDataSource<UserAddress>([]);
       longitude: [null],
       googlePlaceId: [''],
      notificationRadius: [100],
-     jobPreferences: [[]]
+     jobPreferences: [[]],
+      measurementSystem: ['Metric'],
+      temperatureUnit: ['C']
     });
 
     this.teamForm = this.fb.group({
@@ -410,6 +419,23 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
         this.autocompleteService = new google.maps.places.AutocompleteService();
       }).catch(err => console.error('Google Maps script loading error:', err));
     }
+
+    this.measurementService.getSettings().subscribe(settings => {
+      if (this.profileForm.get('measurementSystem')?.value !== settings.system) {
+        this.profileForm.get('measurementSystem')?.setValue(settings.system, { emitEvent: false });
+      }
+      if (this.profileForm.get('temperatureUnit')?.value !== settings.temperature) {
+        this.profileForm.get('temperatureUnit')?.setValue(settings.temperature, { emitEvent: false });
+      }
+    });
+
+    this.profileForm.get('measurementSystem')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ system: value });
+    });
+
+    this.profileForm.get('temperatureUnit')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ temperature: value });
+    });
   }
 private _filterCountries(value: string | null): any[] {
   const filterValue = (value ?? '').toLowerCase();
@@ -545,6 +571,7 @@ if (profileData.userAddresses && profileData.userAddresses.length > 0) {
       this.isVerified = profileData.isVerified ?? false;
 
       this.loadTeamMembers();
+      this.loadUserLogo();
       this.isLoading = false;
     },
     error: () => {
@@ -857,7 +884,7 @@ GetUserSubscription(): void {
       }
     });
   }
-  
+
   // ---------- ADDRESS MANAGEMENT ----------
  // ---------- ADDRESS MANAGEMENT ----------
 
@@ -903,7 +930,7 @@ deleteAddress(address: UserAddress): void {
 }
 
 saveNewAddress(address: UserAddress): void {
-  
+
   const payload = {
     ...address,
     userId: String(localStorage.getItem('userId') ?? '') // <-- make sure this is set!
@@ -1029,6 +1056,12 @@ updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
           this.teamMembers = [...this.teamMembers, member];
           this.loadTeamMembers();
           this.teamForm.reset();
+          Object.keys(this.teamForm.controls).forEach(key => {
+            const control = this.teamForm.get(key);
+            control?.setErrors(null);
+            control?.markAsPristine();
+            control?.markAsUntouched();
+          });
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
@@ -1657,8 +1690,74 @@ onPhoneInput(event: any) {
     return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
+  triggerFileInput(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  onLogoChange(event: Event): void {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      return;
+    }
+
+    this.logoService.setUserLogo(file).subscribe({
+      next: () => {
+        this.loadUserLogo();
+        this.snackBar.open('Logo updated successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Logo upload failed', err);
+        this.snackBar.open('Failed to update logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  removeLogo(): void {
+    this.logoService.deleteUserLogo().subscribe({
+      next: () => {
+        this.logoUrl = null;
+        this.snackBar.open('Logo removed successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Failed to remove logo', err);
+        this.snackBar.open('Failed to remove logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  loadUserLogo(): void {
+    this.logoService.getUserLogo().subscribe({
+      next: (logo) => {
+        this.logoUrl = logo.url;
+      },
+      error: () => {
+        this.logoUrl = null;
+      }
+    });
+  }
+  updateCardTitle(event: any): void {
+    switch (event.index) {
+      case 0:
+        this.cardTitle = 'User Profile';
+        break;
+      case 1:
+        this.cardTitle = 'Company Profile';
+        break;
+      case 2:
+        this.cardTitle = 'Team Management';
+        break;
+      case 3:
+        this.cardTitle = 'Documents';
+        break;
+      case 4:
+        this.cardTitle = 'Subscriptions';
+        break;
+      default:
+        this.cardTitle = 'User Profile';
+    }
+  }
 }
-// To this:
+
 export interface ProfileDocument {
   id: number;
   userId: string;

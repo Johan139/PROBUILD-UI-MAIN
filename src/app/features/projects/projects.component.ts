@@ -1,19 +1,14 @@
 import { Component, Inject, PLATFORM_ID, ViewChild, AfterViewInit } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { Router } from "@angular/router";
-import { MatFormField } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatCardModule } from "@angular/material/card";
 import { MatDivider } from "@angular/material/divider";
-import { NgIf, NgFor, CommonModule, isPlatformBrowser } from "@angular/common";
-import { MatInput } from "@angular/material/input";
-import { MatButton } from "@angular/material/button";
+import { CommonModule, isPlatformBrowser } from "@angular/common";
 import { environment } from '../../../environments/environment';
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { LoaderComponent } from '../../loader/loader.component';
 import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
-import { PieChartsComponent } from '../../components/pie-charts/pie-charts.component';
 import { SortedBarChartComponent } from '../../components/sorted-bar-chart/sorted-bar-chart.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
@@ -21,30 +16,23 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 const BASE_URL = environment.BACKEND_URL;
 
 @Component({
-  selector: 'app-projects',
-  standalone: true,
-  imports: [
+    selector: 'app-projects',
+    standalone: true,
+    imports: [
     CommonModule,
-    MatFormField,
     MatSelectModule,
     MatDatepickerModule,
     ReactiveFormsModule,
     MatCardModule,
     MatDivider,
-    PieChartsComponent,
     GanttChartComponent,
     SortedBarChartComponent,
-    NgIf,
-    NgFor,
-    MatInput,
-    MatButton,
-    LoaderComponent,
     MatTableModule,
-    MatPaginatorModule,
-  ],
-  providers: [provideNativeDateAdapter()],
-  templateUrl: './projects.component.html',
-  styleUrls: ['./projects.component.scss']
+    MatPaginatorModule
+],
+    providers: [provideNativeDateAdapter()],
+    templateUrl: './projects.component.html',
+    styleUrls: ['./projects.component.scss']
 })
 export class ProjectsComponent implements AfterViewInit {
   showAlert: boolean = false;
@@ -87,7 +75,7 @@ export class ProjectsComponent implements AfterViewInit {
       { completed: 20, notstarted: 30 },
       { completed: 30, notstarted: 40 },
     ];
-    
+
     this.chartData1 = [
       { activity: 'Foundation', frequency: 0.25 },
       { activity: 'Framing', frequency: 0.20 },
@@ -95,7 +83,7 @@ export class ProjectsComponent implements AfterViewInit {
       { activity: 'Plumbing', frequency: 0.10 },
       { activity: 'Finishing', frequency: 0.30 },
     ];
-  
+
     this.taskData = [
       { id: '1', name: 'Roof Structure', start: new Date(2024, 9, 23), end: new Date(2024, 10, 30), progress: 88, dependencies: null },
       { id: '2', name: 'Wall Insulation', start: new Date(2024, 9, 24), end: new Date(2024, 9, 30), progress: 100, dependencies: null },

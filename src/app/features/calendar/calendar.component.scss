@@ -39,7 +39,13 @@
 }
 
 .calendar-content { margin-top: var(--space-4); }
-.calendar-controls { margin-bottom: var(--space-5); }
+.calendar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
 
 /* Primary action */
 .add-event-btn {
@@ -55,6 +61,57 @@
 
   &:hover { background: var(--color-primary-hover); box-shadow: 0 3px 6px rgba(0,0,0,.12); }
   &:focus-visible { outline: 0; box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent); }
+}
+
+/* Filter controls */
+.view-toggle {
+  display: inline-flex;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+}
+
+::ng-deep .mat-button-toggle-group {
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+::ng-deep .mat-button-toggle {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-subtle);
+  background: transparent;
+  transition: background-color .2s ease, color .2s ease;
+
+  &.mat-button-toggle-checked {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-radius: var(--radius-sm);
+  }
+}
+
+.status-filter {
+  min-width: 200px;
+}
+
+::ng-deep .mat-form-field-wrapper {
+  padding-bottom: 0;
+}
+
+::ng-deep .mat-form-field-flex {
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+}
+
+::ng-deep .mat-form-field-underline {
+  display: none;
+}
+
+::ng-deep .mat-select-value,
+::ng-deep .mat-select-arrow,
+::ng-deep .mat-form-field-label {
+  color: var(--color-text) !important;
 }
 
 /* Inline alerts */
@@ -94,7 +151,7 @@
     background: var(--color-primary) !important;
     color: var(--color-text-inverse) !important;
     border: 0 !important;
-    border-radius: var(--radius-sm) !important;
+    border-radius: 0 !important;
     padding: 8px 16px !important;
     box-shadow: 0 1px 2px rgba(0,0,0,.08);
     transition: background-color .2s ease, box-shadow .2s ease !important;
@@ -126,6 +183,16 @@
     background: var(--color-surface-subtle);
     color: var(--color-text);
     font-weight: var(--fw-semibold);
+  }
+
+  .fc-daygrid-day-number,
+  .fc-col-header-cell-cushion {
+    color: var(--color-text) !important;
+    text-decoration: none !important;
+
+    &:hover {
+      color: var(--color-text) !important;
+    }
   }
 
   .fc-daygrid-day {

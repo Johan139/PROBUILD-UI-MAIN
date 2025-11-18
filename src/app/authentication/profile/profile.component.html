@@ -4,15 +4,15 @@
       <div class="fullcolumn">
         <mat-card class="profile-card">
           <mat-card-header>
-            <mat-card-title>User Profile</mat-card-title>
+            <mat-card-title>{{ cardTitle }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <mat-divider></mat-divider>
             <div class="profile-content">
               <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm.controls">
-                <mat-tab-group>
+                <mat-tab-group (selectedTabChange)="updateCardTitle($event)">
                   <!-- Profile Tab -->
-                  <mat-tab label="Profile">
+                  <mat-tab label="User Profile">
                     <!-- Role Switcher Dropdown (For Dev Testing) -->
                     <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
                           {{ role }}
@@ -89,6 +89,22 @@
                         </mat-form-field>
                       </div>
                     </div>
+                    <!-- Logo Upload -->
+                    <div class="section">
+                      <h3>Company Logo</h3>
+                      <div class="form-row">
+                        <div class="logo-container">
+                          <div class="placeholder" *ngIf="!logoUrl" (click)="triggerFileInput()">
+                            <span class="material-icons">add</span> Add Your Logo
+                          </div>
+                          <img *ngIf="logoUrl" [src]="logoUrl" alt="Your Logo" class="logo-image">
+                          <input #fileInput type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)">
+                          <button *ngIf="logoUrl" mat-icon-button class="remove-logo" (click)="removeLogo()" type="button">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <!-- Certification & Availability -->
                     <div class="section" *ngIf="canViewCertification()">
                       <h3>Certification & Availability</h3>
@@ -130,13 +146,31 @@
                         </div>
                       </div>
                     </div>
+                    <!-- Measurement Settings -->
+                    <div class="section">
+                      <h3>Measurement Settings</h3>
+                      <div class="form-row">
+                        <mat-form-field appearance="fill">
+                          <mat-label>Measurement System</mat-label>
+                          <mat-select formControlName="measurementSystem">
+                            <mat-option value="Metric">Metric</mat-option>
+                            <mat-option value="Imperial">Imperial</mat-option>
+                          </mat-select>
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Temperature Unit</mat-label>
+                          <mat-select formControlName="temperatureUnit">
+                            <mat-option value="C">Celsius (°C)</mat-option>
+                            <mat-option value="F">Fahrenheit (°F)</mat-option>
+                          </mat-select>
+                        </mat-form-field>
+                      </div>
+                    </div>
                     <!-- Submit Button -->
                     <div class="form-row">
                       <button mat-raised-button type="submit" class="submit-btn">
                         {{ isSaving ? 'Saving...' : 'Save Profile' }}
                       </button>
-
-
                     </div>
 
                   </mat-tab>
@@ -211,7 +245,6 @@
                     <div class="section" *ngIf="canViewDeliveryLocation()">
                       <h3>Operating area</h3>
                       <div class="form-row">
-                        <!-- ✅ New Address Field -->
                         <mat-form-field appearance="fill">
                           <mat-label>Delivery Area</mat-label>
                           <mat-select formControlName="deliveryArea" multiple>
@@ -229,31 +262,26 @@
                       </div>
                       <!-- REMOVED THIS SECTION AS WE ARE MAKING USE OF THE GOOGLE MAPS API ADDRESS 
                       <div class="form-row">
-<mat-form-field appearance="fill">
-  <mat-label>Country</mat-label>
-  <input matInput formControlName="country"
-         [matAutocomplete]="autoCountry"
-         (focus)="openCountryPanel()"
-         #countryAutoTrigger="matAutocompleteTrigger">
-  <mat-autocomplete #autoCountry="matAutocomplete" [displayWith]="countryDisplayFn">
-    <mat-option *ngFor="let country of filteredCountries | async" [value]="country.id">
-      {{ country.countryName }}
-    </mat-option>
-  </mat-autocomplete>
-</mat-form-field>
-
-<mat-form-field appearance="fill">
-  <mat-label>State</mat-label>
-  <input matInput formControlName="state"
-         [matAutocomplete]="autoState"
-         (focus)="openStatePanel()"
-         #stateAutoTrigger="matAutocompleteTrigger">
-  <mat-autocomplete #autoState="matAutocomplete" [displayWith]="stateDisplayFn">
-    <mat-option *ngFor="let state of filteredStates | async" [value]="state.id">
-      {{ state.stateName }}
-    </mat-option>
-  </mat-autocomplete>
-</mat-form-field>
+                        <mat-form-field appearance="fill" class="custom-col">
+                          <mat-label>Country</mat-label>
+                          <input matInput formControlName="country" [matAutocomplete]="autoCountry"
+                            (focus)="openCountryPanel()" #countryAutoTrigger="matAutocompleteTrigger">
+                          <mat-autocomplete #autoCountry="matAutocomplete" [displayWith]="countryDisplayFn">
+                            <mat-option *ngFor="let country of filteredCountries | async" [value]="country.id">
+                              {{ country.countryName }}
+                            </mat-option>
+                          </mat-autocomplete>
+                        </mat-form-field>
+                        <mat-form-field appearance="fill" class="custom-col">
+                          <mat-label>State</mat-label>
+                          <input matInput formControlName="state" [matAutocomplete]="autoState" (focus)="openStatePanel()"
+                            #stateAutoTrigger="matAutocompleteTrigger">
+                          <mat-autocomplete #autoState="matAutocomplete" [displayWith]="stateDisplayFn">
+                            <mat-option *ngFor="let state of filteredStates | async" [value]="state.id">
+                              {{ state.stateName }}
+                            </mat-option>
+                          </mat-autocomplete>
+                        </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>City</mat-label>
                           <input matInput formControlName="city" placeholder=" " />

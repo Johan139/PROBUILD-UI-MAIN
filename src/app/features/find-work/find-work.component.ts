@@ -47,11 +47,11 @@ interface JobMarker {
 }
 
 @Component({
-  selector: 'app-find-work',
-  templateUrl: './find-work.component.html',
-  styleUrls: ['./find-work.component.scss'],
-  standalone: true,
-  imports: [
+    selector: 'app-find-work',
+    templateUrl: './find-work.component.html',
+    styleUrls: ['./find-work.component.scss'],
+    standalone: true,
+    imports: [
     CommonModule,
     GoogleMapsModule,
     MatDialogModule,
@@ -66,10 +66,10 @@ interface JobMarker {
     MatProgressSpinnerModule,
     JobCardComponent,
     MatButtonModule,
-    RouterModule,
-  ],
-  providers: [MapLoaderService],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    RouterModule
+],
+    providers: [MapLoaderService],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class FindWorkComponent implements OnInit, OnDestroy {
@@ -124,6 +124,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
+  radiusCircle: google.maps.Circle | null = null;
 
   applyMapTheme(theme: 'light' | 'dark') {
 
@@ -213,6 +214,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.jobs.length > 0) {
       setTimeout(() => this.updateMapMarkers(), 100);
     }
+    this.updateRadiusCircle();
   }
 
   private setupMapLoadingSubscription(): void {
@@ -474,6 +476,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         this.zoom = 10;
       });
     }
+    this.updateRadiusCircle();
   }
 
   private getUserLocationAndCalculateDistances(): void {
@@ -639,6 +642,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.updateMapMarkers();
     }
     this.saveFiltersToLocalStorage();
+    this.updateRadiusCircle();
   }
 
   clearFilters(): void {
@@ -794,4 +798,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
  hasBidded(jobId: number): boolean {
    return this.biddedJobIds.has(jobId);
  }
+
+ updateRadiusCircle(): void {
+    if (!this.map) return;
+
+    const radiusInMeters = this.distanceUnit === 'mi'
+      ? this.distance * 1609.34
+      : this.distance * 1000;
+
+    if (this.radiusCircle) {
+      this.radiusCircle.setCenter(this.center);
+      this.radiusCircle.setRadius(radiusInMeters);
+    } else {
+      this.radiusCircle = new google.maps.Circle({
+        strokeColor: '#61A0AF',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#61A0AF',
+        fillOpacity: 0.15,
+        map: this.map,
+        center: this.center,
+        radius: radiusInMeters,
+      });
+    }
+  }
 }
+
+

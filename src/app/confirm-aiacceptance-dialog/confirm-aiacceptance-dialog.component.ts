@@ -3,16 +3,16 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-confirm-ai-acceptance-dialog',
-  standalone: true,
-  imports: [MatDialogModule, CommonModule], // Add CommonModule for *ngIf
-  changeDetection: ChangeDetectionStrategy.OnPush, // Explicit change detection strategy
-  template: `
+    selector: 'app-confirm-ai-acceptance-dialog',
+    standalone: true,
+    imports: [MatDialogModule, CommonModule], // Add CommonModule for *ngIf
+    changeDetection: ChangeDetectionStrategy.OnPush, // Explicit change detection strategy
+    template: `
     <h1 mat-dialog-title>Confirm Job Details</h1>
     <div mat-dialog-content>
       <p>Please confirm that you have reviewed the AI-generated output and subtasks, and that you accept them as correct.</p>
-      <p *ngIf="warningMessage && warningMessage.length > 0" 
-         class="warning-message" 
+      <p *ngIf="warningMessage && warningMessage.length > 0"
+         class="warning-message"
          style="border: 2px solid red; display: block !important;">
         ⚠ {{ warningMessage }}
       </p>
@@ -24,7 +24,7 @@ import { CommonModule } from '@angular/common';
               (click)="onConfirm()">Confirm</button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     h2 {
       font-size: 1.5rem;
       font-weight: 600;
@@ -92,13 +92,13 @@ export class ConfirmAIAcceptanceDialogComponent implements OnInit {
     // Set properties first
     this.warningMessage = this.data?.warningMessage || null;
     this.disableConfirm = !!this.data?.disableConfirm;
-    
-    // console.log('Dialog data:', { 
-    //   warningMessage: this.warningMessage, 
+
+    // console.log('Dialog data:', {
+    //   warningMessage: this.warningMessage,
     //   disableConfirm: this.disableConfirm,
-    //   rawData: this.data 
+    //   rawData: this.data
     // });
-    
+
     // Force change detection
     this.cdr.detectChanges();
   }

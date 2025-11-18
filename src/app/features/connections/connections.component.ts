@@ -14,11 +14,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConnectionService } from '../../services/connection.service';
 import { UserService } from '../../services/user.service';
 import { User } from '../../models/user';
-import { Connection } from '../../models/connection';
 import { AuthService } from '../../authentication/auth.service';
 import { InvitationDialogComponent } from './invitation-dialog/invitation-dialog.component';
 import { InvitationService } from '../../services/invitation.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { SharedModule } from '../../shared/shared.module';
+import { LoaderComponent } from "../../loader/loader.component";
 
 export interface ConnectionDto {
   id: string;
@@ -38,9 +39,9 @@ export interface DisplayUser extends User {
 }
 
 @Component({
-  selector: 'app-connections',
-  standalone: true,
-  imports: [
+    selector: 'app-connections',
+    standalone: true,
+    imports: [
     CommonModule,
     FormsModule,
     MatTabsModule,
@@ -52,10 +53,12 @@ export interface DisplayUser extends User {
     MatIconModule,
     MatTableModule,
     MatPaginatorModule,
-    MatSnackBarModule
-  ],
-  templateUrl: './connections.component.html',
-  styleUrls: ['./connections.component.scss']
+    MatSnackBarModule,
+    SharedModule,
+    LoaderComponent
+],
+    templateUrl: './connections.component.html',
+    styleUrls: ['./connections.component.scss']
 })
 export class ConnectionsComponent implements OnInit, AfterViewInit {
   searchTerm: string = '';
@@ -67,12 +70,17 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   connections: ConnectionDto[] = [];
   invited: ConnectionDto[] = [];
   currentUserId: string | null = null;
-  displayedColumns: string[] = ['companyName', 'trade', 'name', 'type', 'email', 'phoneNumber', 'constructionType', 'supplierType', 'productsOffered', 'country', 'city', 'action'];
-  connectionsColumns: string[] = ['name', 'email', 'status', 'action'];
+  displayedColumns: string[] = ['companyName', 'trade', 'name', 'type', 'constructionType', 'supplierType', 'productsOffered', 'country', 'city', 'action'];
+  connectionsColumns: string[] = ['name', 'email', 'phoneNumber', 'status', 'action'];
   showInviteMessage = false;
   hoveredUserId: string | null = null;
+  isLoading = false;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  private paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+    this.paginator = mp;
+    this.dataSource.paginator = this.paginator;
+  }
 
   constructor(
     private connectionService: ConnectionService,
@@ -94,7 +102,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
+    // Now handled by the setter
   }
 
   loadAllUsers(): void {
@@ -150,6 +158,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   }
 
   loadConnections(): void {
+    this.isLoading = true;
     this.connectionService.getConnections().subscribe((connections: ConnectionDto[]) => {
       this.allConnections = connections;
       // console.log('All connections from backend:', this.allConnections);
@@ -167,6 +176,7 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
       this.userService.getAllUsers().subscribe(users => {
         this.allUsers = users.filter(user => user.id !== this.currentUserId);
         this.updateDataSource();
+        this.isLoading = false;
       });
     });
   }
@@ -187,14 +197,21 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
     this.dataSource.data = [...displayUsers, ...invitedUsers];
     this.cdr.detectChanges();
-    this.dataSource.paginator = this.paginator;
+    // Now handled by the setter
   }
 
 
   sendConnectionRequest(userId: string): void {
-    this.connectionService.requestConnection(userId).subscribe(() => {
-      // console.log('Request sent');
-      this.loadConnections();
+    this.connectionService.requestConnection(userId).subscribe({
+      next: () => {
+        //console.log('Request sent');
+        this.snackBar.open('Connection request sent.', 'Close', { duration: 3000 });
+        this.loadConnections();
+      },
+      error: (err) => {
+        //console.error('Failed to send connection request:', err);
+        this.snackBar.open(err.error?.message || 'Failed to send request.', 'Close', { duration: 5000 });
+      }
     });
   }
 
@@ -222,11 +239,24 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
     const connection = this.allConnections.find(c => c.otherUserId === userId && c.status === 'PENDING');
     if (connection) {
       this.connectionService.declineConnection(connection.id).subscribe(() => {
-        // console.log('Request cancelled');
-        this.loadConnections();
+        //console.log('Request cancelled');
+        this.allConnections = this.allConnections.filter(c => c.id !== connection.id);
+        this.updateDataSource();
       });
     }
   }
+
+  getConnectionStatus(userId: string): string {
+    const connection = this.allConnections.find(c => c.otherUserId === userId);
+    if (connection) {
+      if (connection.status === 'PENDING') {
+        return connection.requesterId === this.currentUserId ? 'Request Sent' : 'Request Received';
+      }
+        return connection.status;
+      }
+      return 'Connect';
+    }
+
   removeConnection(connectionId: string): void {
     this.connectionService.declineConnection(connectionId).subscribe(() => {
       // console.log('Connection removed');

@@ -28,4 +28,18 @@ export class LogoService {
   getLogo(id: string) {
     return this.http.get<Logo>(`${this.apiUrl}/${id}`);
   }
+
+  setUserLogo(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.apiUrl}/user-logo`, formData);
+  }
+
+  getUserLogo() {
+    return this.http.get<Logo>(`${this.apiUrl}/user-logo`);
+  }
+
+  deleteUserLogo() {
+    return this.http.delete(`${this.apiUrl}/user-logo`);
+  }
 }

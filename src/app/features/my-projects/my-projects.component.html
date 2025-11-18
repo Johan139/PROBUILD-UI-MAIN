@@ -1,0 +1,44 @@
+<app-loader *ngIf="isLoading"></app-loader>
+<div class="my-projects-container" *ngIf="!isLoading">
+  <header class="projects-header">
+    <div>
+      <h1 class="text-2xl font-bold">My Projects</h1>
+      <p class="text-muted-foreground">View and manage your construction projects</p>
+    </div>
+    <button mat-flat-button color="primary" (click)="createNewProject()">
+      <mat-icon>add</mat-icon>
+      New Project
+    </button>
+  </header>
+
+  <div class="filter-tabs">
+    <button [class.active]="projectFilter === 'all'" (click)="setProjectFilter('all')">
+      All Projects ({{ projects.length }})
+    </button>
+    <button [class.active]="projectFilter === 'LIVE'" (click)="setProjectFilter('LIVE')">
+      Live ({{ liveProjectsCount }})
+    </button>
+    <button [class.active]="projectFilter === 'BIDDING'" (click)="setProjectFilter('BIDDING')">
+      Bidding ({{ biddingProjectsCount }})
+    </button>
+    <button [class.active]="projectFilter === 'DRAFT'" (click)="setProjectFilter('DRAFT')">
+      Preliminary ({{ draftProjectsCount }})
+    </button>
+    <button [class.active]="projectFilter === 'FAILED'" (click)="setProjectFilter('FAILED')">
+      Failed ({{ failedProjectsCount }})
+    </button>
+  </div>
+
+  <div class="projects-grid">
+    <app-project-card
+      *ngFor="let project of filteredProjects"
+      [project]="project"
+      (onView)="viewProject($event)"
+      (onEdit)="editProject($event)"
+      (onDelete)="deleteProject($event)"
+      (onActivate)="activateProject($event)"
+      (onArchive)="archiveProject($event)"
+      (onUploadThumbnail)="uploadThumbnail($event)"
+    ></app-project-card>
+  </div>
+</div>
