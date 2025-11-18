@@ -291,6 +291,7 @@ export class SubtaskService {
         },
       });
   }
+  
   publishJob(jobId: number, job: any): Observable<any> {
     return this.jobsService.updateJob(job, jobId);
   }
