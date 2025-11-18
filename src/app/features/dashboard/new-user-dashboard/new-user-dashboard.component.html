@@ -2,15 +2,12 @@
   <app-loader></app-loader>
 </div>
 
-<div class="dashboard-grid">
-  <!-- Welcome / CTA -->
-  <section class="card welcome-card">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Welcome to Your ProBuildAI Dashboard</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="teams.length > 1" class="team-picker">
+<div class="dashboard-container">
+  <div class="welcome-header">
+    <h2>Welcome to ProBuild AI</h2>
+    <p>Manage your construction projects with AI-powered tools</p>
+
+          <div *ngIf="teams.length > 1" class="team-picker">
           <mat-form-field appearance="outline">
             <mat-label>Select Team</mat-label>
             <mat-select [(ngModel)]="selectedTeam" name="team">
@@ -18,25 +15,26 @@
             </mat-select>
           </mat-form-field>
         </div>
+  </div>
 
-        <mat-divider class="section-divider"></mat-divider>
+  <div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="actions-container">
+      <button mat-flat-button class="btn-primary quick-action-btn" (click)="navigateToJobs()">
+        <mat-icon>add</mat-icon>
+        Create New Project
+      </button>
+      <button class="btn-outline quick-action-btn" (click)="navigateToProjects()">
+        <mat-icon>list</mat-icon>
+        View All Projects
+      </button>
+      <button class="btn-outline quick-action-btn" (click)="navigateToCalendar()">
+        <mat-icon>calendar_today</mat-icon>
+        View Calendar
+      </button>
+    </div>
+  </div>
 
-        <p class="welcome-text" *ngIf="isSubContractor">
-          As a {{userType}}, manage your construction projects efficiently with our comprehensive tools.
-          Track progress, create job quotes, and stay organized all in one place.
-        </p>
-        <p class="welcome-text" *ngIf="!isSubContractor">
-          Welcome to ProBuildAI! Explore our tools to streamline your project management needs.
-        </p>
-
-        <div class="actions">
-          <button class="btn-primary" mat-flat-button (click)="navigateToJobs()">View & Create Projects</button>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
-
-  <!-- Action Points -->
   <section class="card action-points-card">
     <mat-card>
       <mat-card-header>
@@ -100,70 +98,80 @@
     </mat-card>
   </section>
 
-  <!-- Job Progress -->
-  <section class="card job-progress-card">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title><strong>Project Progress</strong></mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider class="section-divider"></mat-divider>
+  <div class="recent-projects">
+    <div class="carousel-header">
+      <h3>Recent Projects</h3>
+      <div class="view-toggle">
+        <button mat-icon-button (click)="toggleProjectView('grid')" [class.active]="projectView === 'grid'"
+                matTooltip="Grid View" [matTooltipShowDelay]="500">
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button mat-icon-button (click)="toggleProjectView('list')" [class.active]="projectView === 'list'"
+                matTooltip="List View" [matTooltipShowDelay]="500">
+          <mat-icon>list</mat-icon>
+        </button>
+      </div>
+      <div class="carousel-controls" *ngIf="projectView === 'grid'">
+        <button mat-icon-button (click)="prevProject()" [disabled]="currentIndex === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-icon-button (click)="nextProject()" [disabled]="currentIndex >= projects.length - 3">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div *ngIf="projectView === 'grid'" class="projects-carousel">
+        <app-project-card *ngFor="let project of visibleProjects" [project]="project" (onView)="loadJob($event)" (onArchive)="archiveJob($event)"></app-project-card>
+    </div>
+    <div *ngIf="projectView === 'list'">
+      <div class="table-wrap">
+        <mat-table [dataSource]="projects" class="job-table">
+          <ng-container matColumnDef="project">
+            <mat-header-cell *matHeaderCellDef>Project</mat-header-cell>
+            <mat-cell *matCellDef="let project">{{ project.projectName }}</mat-cell>
+          </ng-container>
 
-        <p *ngIf="jobsLoading" class="muted">Loading jobs…</p>
-        <p *ngIf="!jobsLoading && userJobs.length === 0" class="muted">No jobs assigned to you yet.</p>
+          <ng-container matColumnDef="created">
+            <mat-header-cell *matHeaderCellDef>Created</mat-header-cell>
+            <mat-cell *matCellDef="let project">{{ project.createdAt | date: 'shortDate' }}</mat-cell>
+          </ng-container>
 
-        <div class="table-wrap" *ngIf="userJobs.length > 0">
-          <mat-table [dataSource]="userJobs" class="job-table">
-            <ng-container matColumnDef="project">
-              <mat-header-cell *matHeaderCellDef>Project</mat-header-cell>
-              <mat-cell *matCellDef="let job">{{ job.projectName }}</mat-cell>
-            </ng-container>
+          <ng-container matColumnDef="progress">
+            <mat-header-cell *matHeaderCellDef>Progress</mat-header-cell>
+            <mat-cell *matCellDef="let project">
+              <div class="progress">
+                <div class="bar" [style.width.%]="project.progress"></div>
+              </div>
+              <span class="pct">{{ project.progress }}%</span>
+            </mat-cell>
+          </ng-container>
 
-            <ng-container matColumnDef="created">
-              <mat-header-cell *matHeaderCellDef>Created</mat-header-cell>
-              <mat-cell *matCellDef="let job">{{ job.createdAt | date: 'shortDate' }}</mat-cell>
-            </ng-container>
+          <ng-container matColumnDef="status">
+            <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+            <mat-cell *matCellDef="let project">{{ project.status | titlecase}}</mat-cell>
+          </ng-container>
 
-            <ng-container matColumnDef="progress">
-              <mat-header-cell *matHeaderCellDef>Progress</mat-header-cell>
-              <mat-cell *matCellDef="let job">
-                <div class="progress">
-                  <div class="bar" [style.width.%]="job.progress"></div>
-                </div>
-                <span class="pct">{{ job.progress }}%</span>
-              </mat-cell>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-              <mat-cell *matCellDef="let job">{{ job.status | titlecase}}</mat-cell>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <mat-header-cell *matHeaderCellDef></mat-header-cell>
-              <mat-cell *matCellDef="let job">
-                <button mat-icon-button [matMenuTriggerFor]="jobMenu">
-                  <mat-icon>more_vert</mat-icon>
+          <ng-container matColumnDef="actions">
+            <mat-header-cell *matHeaderCellDef></mat-header-cell>
+            <mat-cell *matCellDef="let project">
+              <button mat-icon-button [matMenuTriggerFor]="jobMenu">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #jobMenu="matMenu">
+                <button mat-menu-item (click)="loadJob(project.jobId)">View Project</button>
+                <button mat-menu-item [disabled]="project.progress !== 100" (click)="archiveJob(project.id)">
+                  Archive Project
                 </button>
-                <mat-menu #jobMenu="matMenu">
-                  <button mat-menu-item (click)="loadJob(job.id)">View Project</button>
-                  <button mat-menu-item [disabled]="job.progress !== 100" (click)="archiveJob(job.id)">
-                    Archive Project
-                  </button>
-                </mat-menu>
-              </mat-cell>
-            </ng-container>
+              </mat-menu>
+            </mat-cell>
+          </ng-container>
 
-            <mat-header-row *matHeaderRowDef="jobDisplayedColumns"></mat-header-row>
-            <mat-row *matRowDef="let row; columns: jobDisplayedColumns;"></mat-row>
-          </mat-table>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
-</div>
-
-<!-- Documents Dialog -->
+          <mat-header-row *matHeaderRowDef="jobDisplayedColumns"></mat-header-row>
+          <mat-row *matRowDef="let row; columns: jobDisplayedColumns;"></mat-row>
+        </mat-table>
+      </div>
+    </div>
+    <!-- Documents Dialog -->
 <ng-template #documentsDialog>
   <div class="documents-dialog">
     <h2 mat-dialog-title>Quote Documents</h2>
@@ -221,5 +229,5 @@
   </div>
 
 </ng-template>
-
-<!-- <img ngSrc='assets/info1.jpeg' height="450" width="800"> -->
+  </div>
+</div>

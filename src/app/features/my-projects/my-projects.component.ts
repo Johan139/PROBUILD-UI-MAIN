@@ -13,6 +13,7 @@ import { BomService } from '../jobs/services/bom.service';
 import { of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
+import { ProjectService } from '../../services/project.service';
 
 @Component({
   selector: 'app-my-projects',
@@ -55,99 +56,18 @@ export class MyProjectsComponent implements OnInit {
     private jobDataService: JobDataService,
     private teamManagementService: TeamManagementService,
     private bomService: BomService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private projectService: ProjectService
   ) { }
 
   ngOnInit(): void {
-    this.loadProjects();
-  }
-
-  calculateJobProgress(subtasks: any[]): number {
-    if (!subtasks || subtasks.length === 0) {
-      return 0;
-    }
-    const completedDays = subtasks
-      .filter(st => st.status?.toLowerCase() === 'completed')
-      .reduce((sum, st) => sum + st.days, 0);
-
-    const totalDays = subtasks.reduce((sum, st) => sum + st.days, 0);
-
-    return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-  }
-
-  loadProjects(): void {
-    this.isLoading = true;
-    const userId = this.authService.getUserId();
-    if (userId) {
-      const cachedProjects = localStorage.getItem(`projects_${userId}`);
-      if (cachedProjects) {
-        this.projects = JSON.parse(cachedProjects);
-        this.updateCounts();
-        this.setProjectFilter('all');
-        this.isLoading = false;
-      }
-    }
-
-    const isTeamMember = this.authService.isTeamMember();
-    this.authService.currentUser$.pipe(
-      switchMap(user => {
-        if (!user) return of([]);
-        return isTeamMember
-          ? this.jobsService.getAssignedJobsForTeamMember(user.id)
-          : this.jobsService.getAllJobsByUserId(user.id);
-      }),
-      switchMap(jobs => {
-        if (!jobs || jobs.length === 0) {
-          this.isLoading = false;
-          return of([]);
-        }
-
-        const nonArchivedJobs = jobs.filter(job => job.status !== 'ARCHIVED');
-
-        const uniqueJobsMap = new Map<number, any>();
-        nonArchivedJobs.forEach(job => {
-          if (!uniqueJobsMap.has(job.id)) {
-            uniqueJobsMap.set(job.id, job);
-          }
-        });
-
-        const uniqueJobs = Array.from(uniqueJobsMap.values());
-        if (uniqueJobs.length === 0) {
-          this.isLoading = false;
-          return of([]);
-        }
-
-        const jobDataPromises = uniqueJobs
-          .filter(job => job && job.id)
-          .map(job => Promise.all([
-            this.jobsService.getSpecificJob(job.id.toString()).toPromise(),
-            this.jobsService.getJobSubtasks(job.id).toPromise(),
-            this.teamManagementService.getTeamMembers(job.id.toString()).toPromise()
-          ]).then(([details, subtasks, teamMembers]) => {
-            const project: Project = {
-              ...details,
-              progress: this.calculateJobProgress(subtasks || []),
-              team: (teamMembers || []).length,
-              thumbnailUrl: this.getImageForJob(job.id)
-            };
-            return project;
-          }));
-
-        Promise.all(jobDataPromises).then(projects => {
-          this.projects = projects;
-          this.updateCounts();
-          this.setProjectFilter('all');
-          if (userId) {
-            localStorage.setItem(`projects_${userId}`, JSON.stringify(projects));
-          }
-          this.isLoading = false;
-        });
-
-        return of([]); // Return an empty observable to satisfy the switchMap
-      })
-    ).subscribe({
-      error: () => this.isLoading = false
+    this.projectService.projects$.subscribe(projects => {
+      this.projects = projects;
+      this.updateCounts();
+      this.setProjectFilter(this.projectFilter);
     });
+    this.projectService.isLoading.subscribe(isLoading => this.isLoading = isLoading);
+    this.projectService.loadProjects();
   }
 
   updateCounts(): void {
@@ -190,16 +110,11 @@ export class MyProjectsComponent implements OnInit {
   }
 
   archiveProject(jobId: number): void {
-    this.jobsService.archiveJob(jobId).subscribe(() => {
-      this.projects = this.projects.filter(p => p.jobId !== jobId);
-      this.filteredProjects = this.filteredProjects.filter(p => p.jobId !== jobId);
-      this.updateCounts();
-      this.snackBar.open('Project archived successfully', 'Close', { duration: 3000 });
-    });
+    this.projectService.archiveProject(jobId);
+    this.snackBar.open('Project archived successfully', 'Close', { duration: 3000 });
   }
 
-  private getImageForJob(jobId: number): string {
-    const randomIndex = jobId % this.jobCardImages.length;
-    return this.jobCardImages[randomIndex];
+  uploadThumbnail(event: { jobId: number, file: File }): void {
+    this.projectService.uploadThumbnail(event.jobId, event.file);
   }
 }

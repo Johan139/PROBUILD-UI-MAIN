@@ -3,12 +3,13 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { UploadOptionsDialogComponent } from '../jobs/job-quote/upload-options-dialog.component';
-import { LucideAngularModule, Loader, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, Check } from 'lucide-angular';
+import { LucideAngularModule, HardHat, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, CheckCircle } from 'lucide-angular';
 import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { v4 as uuidv4 } from 'uuid';
 import { AiChatService } from '../ai-chat/services/ai-chat.service';
 import { AiChatStateService } from '../ai-chat/services/ai-chat-state.service';
 import { Prompt } from '../ai-chat/models/ai-chat.models';
@@ -26,8 +27,12 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCardModule } from '@angular/material/card';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { AuthService } from '../../authentication/auth.service';
+import { LocalStorageService } from '../../services/local-storage.service';
 
-interface WalkthroughStep {
+  interface WalkthroughStep {
   stepIndex: number;
   promptKey: string;
   aiResponse: string;
@@ -76,13 +81,14 @@ type FlowState =
     MatExpansionModule,
     MatInputModule,
     MatDatepickerModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatCardModule
 ],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
 })
 export class NewProjectComponent implements OnInit {
-  Loader2 = Loader;
+  HardHat = HardHat;
   MapPin = MapPin;
   MousePointer = MousePointer;
   Hand = Hand;
@@ -91,7 +97,7 @@ export class NewProjectComponent implements OnInit {
   Maximize2 = Maximize2;
   Ruler = Ruler;
   RotateCw = RotateCw;
-  Check = Check;
+  Check = CheckCircle;
 
   BRAND = {
     gray433: '#1E2329',
@@ -110,7 +116,7 @@ export class NewProjectComponent implements OnInit {
   metric = true;
   analysisMode: 'full' | 'selected' | 'renovation' = 'full';
   flowType: 'standard' | 'walkthrough' = 'standard';
-  analysisType: 'sequential' | 'selected' | 'renovation' = 'sequential';
+  analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
   budgetLevel: 'high' | 'medium' | 'low' = 'medium';
   isLoading = false;
   isRerunningStep = false;
@@ -186,6 +192,9 @@ export class NewProjectComponent implements OnInit {
     private newAnalysisService: NewAnalysisService,
     private signalrService: SignalrService,
     private formBuilder: FormBuilder,
+    private authService: AuthService,
+    private snackBar: MatSnackBar,
+    private localStorageService: LocalStorageService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -217,8 +226,12 @@ export class NewProjectComponent implements OnInit {
   private isGoogleMapsLoaded: boolean = false;
   clientForm: FormGroup;
   addressForm: FormGroup;
+  sessionId!: string;
+  private readonly CLIENT_FORM_KEY = 'newProjectClientForm';
 
   async ngOnInit(): Promise<void> {
+    this.sessionId = uuidv4();
+    this.loadForm();
     this.updateProgressSteps();
     this.aiChatService.getMyPrompts();
 
@@ -264,6 +277,17 @@ export class NewProjectComponent implements OnInit {
         this.selectedPlace = null;
       }
     });
+
+    this.clientForm.valueChanges.subscribe(value => {
+      this.localStorageService.setItem(this.CLIENT_FORM_KEY, value);
+    });
+  }
+
+  loadForm(): void {
+    const savedData = this.localStorageService.getItem(this.CLIENT_FORM_KEY);
+    if (savedData) {
+      this.clientForm.patchValue(savedData, { emitEvent: false });
+    }
   }
 
   isUploaded(flow: FlowState): flow is Extract<FlowState, { step: 'uploaded' }> {
@@ -303,7 +327,7 @@ export class NewProjectComponent implements OnInit {
   onFileDropped(files: FileList): void {
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
-      this.fileUploadService.uploadFiles(fileArray, 'some-session-id').subscribe(upload => {
+      this.fileUploadService.uploadFiles(fileArray, this.sessionId).subscribe(upload => {
         this.progress = upload.progress;
         this.isLoading = upload.isUploading;
         if (upload.files) {
@@ -410,6 +434,8 @@ export class NewProjectComponent implements OnInit {
         this.uploadedFiles = [];
         this.selectedFile = null;
         this.pdfSrc = null;
+        this.clientForm.reset();
+        this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
       }
     });
   }
@@ -517,16 +543,24 @@ export class NewProjectComponent implements OnInit {
   }
 
   submitStandardAnalysis(formData: FormData) {
+    const userId = this.authService.getUserId();
+    if (!userId) {
+      console.error("Could not get UserId");
+      this.snackBar.open('Error: Could not get user ID. Please try logging in again.', 'Close', { duration: 10000 });
+      return;
+    }
+    formData.append('userId', userId);
     const connectionId = this.signalrService.getConnectionId();
     if (!connectionId) {
       console.error("Could not get SignalR connection ID");
-      // Optionally, show an error to the user
+      this.snackBar.open('Error: Could not establish a connection with the server. Please refresh the page.', 'Close', { duration: 10000 });
       return;
     }
     formData.append('connectionId', connectionId);
     formData.append('analysisType', this.analysisType);
     formData.append('budgetLevel', this.budgetLevel);
     formData.append('generateDetailsWithAi', 'true');
+    formData.append('sessionId', this.sessionId);
 
     const fileUrls = this.uploadedFiles.map(f => f.url);
     formData.append('temporaryFileUrls', JSON.stringify(fileUrls));
@@ -535,11 +569,15 @@ export class NewProjectComponent implements OnInit {
     this.newAnalysisService.startStandardAnalysis(formData).subscribe({
       next: (response) => {
         console.log('Analysis started successfully', response);
+        this.snackBar.open('Analysis started successfully!', 'Close', { duration: 5000 });
+        this.clientForm.reset();
+        this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
         // Progress will be handled by the SignalR subscription
       },
       error: (error) => {
         console.error('Analysis failed to start', error);
         this.isLoading = false;
+        this.snackBar.open('Error: Analysis failed to start. Please try again.', 'Close', { duration: 10000 });
       }
     });
   }
@@ -547,7 +585,7 @@ export class NewProjectComponent implements OnInit {
   startWalkthrough(): void {
     if (!this.selectedFile) return;
 
-    const promptKeys = (this.analysisType === 'selected' ? this.selectedPrompts.value : []) ?? [];
+    const promptKeys = (this.analysisType === 'Selected' ? this.selectedPrompts.value : []) ?? [];
     this.newAnalysisService.startWalkthrough(this.uploadedFiles, this.clientForm.value.startDate, this.analysisType, this.budgetLevel, promptKeys).subscribe({
       next: (response) => {
         this.state.next({
@@ -556,8 +594,12 @@ export class NewProjectComponent implements OnInit {
           walkthroughHistory: [response.firstStep],
           currentWalkthroughStep: 0,
         });
+        this.snackBar.open('Walkthrough started successfully!', 'Close', { duration: 5000 });
       },
-      error: (error) => console.error('Failed to start walkthrough', error),
+      error: (error) => {
+        console.error('Failed to start walkthrough', error);
+        this.snackBar.open('Error: Failed to start walkthrough. Please try again.', 'Close', { duration: 10000 });
+      }
     });
   }
 
@@ -582,6 +624,7 @@ export class NewProjectComponent implements OnInit {
       error: (error) => {
         console.error('Failed to get next step', error);
         this.isNavigatingNext = false;
+        this.snackBar.open('Error: Failed to get next step. Please try again.', 'Close', { duration: 10000 });
       }
     });
   }
@@ -622,10 +665,12 @@ export class NewProjectComponent implements OnInit {
             walkthroughHistory: newHistory
           });
           this.isRerunningStep = false;
+          this.snackBar.open('Step updated successfully!', 'Close', { duration: 5000 });
         },
         error: (error) => {
           console.error('Failed to rerun step', error);
           this.isRerunningStep = false;
+          this.snackBar.open('Error: Failed to rerun step. Please try again.', 'Close', { duration: 10000 });
         }
       });
   }

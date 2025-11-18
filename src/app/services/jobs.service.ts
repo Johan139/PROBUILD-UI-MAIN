@@ -101,4 +101,11 @@ export class JobsService {
   getDashboardJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
   }
+
+  uploadJobThumbnail(jobId: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.httpClient.post(`${BASE_URL}/${jobId}/thumbnail`, formData);
+  }
+
 }

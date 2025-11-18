@@ -15,11 +15,11 @@
     <button [class.active]="projectFilter === 'all'" (click)="setProjectFilter('all')">
       All Projects ({{ projects.length }})
     </button>
-    <button [class.active]="projectFilter === 'BIDDING'" (click)="setProjectFilter('BIDDING')">
-      Bidding ({{ biddingProjectsCount }})
-    </button>
     <button [class.active]="projectFilter === 'LIVE'" (click)="setProjectFilter('LIVE')">
       Live ({{ liveProjectsCount }})
+    </button>
+    <button [class.active]="projectFilter === 'BIDDING'" (click)="setProjectFilter('BIDDING')">
+      Bidding ({{ biddingProjectsCount }})
     </button>
     <button [class.active]="projectFilter === 'DRAFT'" (click)="setProjectFilter('DRAFT')">
       Preliminary ({{ draftProjectsCount }})
@@ -38,6 +38,7 @@
       (onDelete)="deleteProject($event)"
       (onActivate)="activateProject($event)"
       (onArchive)="archiveProject($event)"
+      (onUploadThumbnail)="uploadThumbnail($event)"
     ></app-project-card>
   </div>
 </div>

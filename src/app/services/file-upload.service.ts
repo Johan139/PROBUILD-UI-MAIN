@@ -25,7 +25,6 @@ export interface UploadProgress {
     files?: UploadedFileInfo[];
 }
 
-
 @Injectable({
   providedIn: 'root'
 })
@@ -190,8 +189,11 @@ export class FileUploadService {
 
     return uploadSubject.asObservable();
   }
-  
+
   getFile(url: string): Observable<Blob> {
-    return this.httpClient.get(url, { responseType: 'blob' });
+    return this.httpClient.get(`${BASE_URL}/Jobs/downloadFile`, {
+      params: { fileUrl: url },
+      responseType: 'blob'
+    });
   }
 }

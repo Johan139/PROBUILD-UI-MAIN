@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Job as JobModel } from '../../../models/job';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 export interface Project extends JobModel {
   team?: number;
@@ -27,7 +28,8 @@ export interface Project extends JobModel {
     MatIconModule,
     MatProgressBarModule,
     MatMenuModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSnackBarModule
   ],
   templateUrl: './project-card.component.html',
   styleUrls: ['./project-card.component.scss']
@@ -39,6 +41,9 @@ export class ProjectCardComponent {
   @Output() onDelete = new EventEmitter<number>();
   @Output() onActivate = new EventEmitter<number>();
   @Output() onArchive = new EventEmitter<number>();
+  @Output() onUploadThumbnail = new EventEmitter<{ jobId: number, file: File }>();
+
+  constructor(private snackBar: MatSnackBar) {}
 
   statusColors = {
     BIDDING: "bg-blue-500",
@@ -57,4 +62,18 @@ export class ProjectCardComponent {
     DISCARD: "Discarded",
     NEW: "New",
   };
+
+  onFileSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      const allowedTypes = ['image/png', 'image/jpeg'];
+      if (allowedTypes.includes(file.type)) {
+        this.onUploadThumbnail.emit({ jobId: this.project.jobId, file: file });
+      } else {
+        this.snackBar.open('Invalid file type. Please upload a PNG or JPEG file.', 'Close', {
+          duration: 3000,
+        });
+      }
+    }
+  }
 }

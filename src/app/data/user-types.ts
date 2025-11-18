@@ -6,7 +6,7 @@ export const userTypes = [
   {value:'SUPERINTENDANT', display:'Superintendent'},
   {value:'ASSISTANT_SUPERINTENDANT', display:'Assistant Superintendent'},
   {value:'FOREMAN', display:'Foreman'},
-  {value:'SUBCONTRACTOR', display:'Subcontractor'},
+  {value:'SUBCONTRACTOR', display:'Subcontractor | Tradesman'},
   {value:'VENDOR', display:'Supplier/Vendor'},
   {value:'PERSONAL_USE', display:'Personal Use'}
 ];

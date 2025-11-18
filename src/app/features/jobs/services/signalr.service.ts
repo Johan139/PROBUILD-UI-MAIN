@@ -30,9 +30,12 @@ export class SignalrService {
       return;
     }
 
+    const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
+    const hubUrl = `${baseUrl}/hubs/progressHub`;
+
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(
-        `${environment.BACKEND_URL}/progressHub`,
+        hubUrl,
         {
           accessTokenFactory: async () => {
             const token = await this.authService.getToken();
