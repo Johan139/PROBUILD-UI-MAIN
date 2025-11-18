@@ -3,7 +3,7 @@
     <div class="fullcolumn">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Job: {{projectDetails.projectName}}</mat-card-title>
+          <mat-card-title>Job: {{projectDetails?.projectName}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
@@ -17,8 +17,8 @@
             <div class="address-container">
               <div *ngIf="!isEditingAddress" class="address-display">
                 <span><strong>Address: </strong>
-                  <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
-                  <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
+                  <span *ngIf="projectDetails?.address">{{projectDetails?.address}}</span>
+                  <span *ngIf="!projectDetails?.address && projectDetails?.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
                 </span>
                 <button *ngIf="authService.hasPermission('editJobs')" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
                   <mat-icon>edit</mat-icon>
@@ -157,7 +157,7 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
               View Bill of Materials
             </button>
-            <button *ngIf="!projectDetails.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
+            <button *ngIf="!projectDetails?.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
               <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
               <span *ngIf="isGeneratingReport">Generating...</span>
             </button>

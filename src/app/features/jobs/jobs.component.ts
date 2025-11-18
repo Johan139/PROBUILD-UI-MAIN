@@ -179,7 +179,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       filter(projectDetails => !!projectDetails)
     ).subscribe(projectDetails => {
       this.projectDetails = projectDetails;
-      this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
+      if (this.projectDetails?.date) {
+  const d = new Date(this.projectDetails.date);
+  this.startDateDisplay = isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+} else {
+  this.startDateDisplay = null;
+}
 
       if (this.projectDetails?.jobId) {
         this.authService.currentUser$.pipe(

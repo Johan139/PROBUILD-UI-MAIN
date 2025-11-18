@@ -29,17 +29,17 @@ export class PdfViewerPopoutComponent implements OnInit, OnDestroy {
   constructor(private pdfViewerState: PdfViewerStateService) {}
 
   ngOnInit(): void {
-    console.log('PopoutComponent: ngOnInit');
+    // console.log('PopoutComponent: ngOnInit');
     this.stateSubscription = new Subscription();
     this.stateSubscription.add(
       this.pdfViewerState.blueprints$.subscribe(blueprints => {
-        console.log('PopoutComponent: Received blueprints from state', blueprints);
+        // console.log('PopoutComponent: Received blueprints from state', blueprints);
         this.blueprints = blueprints;
       })
     );
     this.stateSubscription.add(
       this.pdfViewerState.selectedBlueprint$.subscribe(blueprint => {
-        console.log('PopoutComponent: Received selected blueprint from state', blueprint);
+        // console.log('PopoutComponent: Received selected blueprint from state', blueprint);
         this.selectedBlueprint = blueprint;
       })
     );

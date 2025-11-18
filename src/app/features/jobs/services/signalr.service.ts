@@ -50,7 +50,7 @@ export class SignalrService {
     this.hubConnection.onreconnecting(error => console.warn('Connection lost. Reconnecting...', error));
     this.hubConnection
       .start()
-      .then(() => console.log('SignalR connection established successfully'))
+      .then()
       .catch((err) => console.error('SignalR Connection Error:', err));
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {

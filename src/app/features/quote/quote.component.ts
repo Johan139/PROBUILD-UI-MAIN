@@ -254,7 +254,7 @@ export class QuoteComponent implements OnInit {
           this.quoteId = params['quoteId'];
           this.quoteService.getQuote(params['quoteId']).subscribe({
             next: (savedQuote) => {
-              console.log('Quote loaded:', savedQuote);
+              // console.log('Quote loaded:', savedQuote);
 
               this.quoteForm.patchValue({
                 id: savedQuote.id,
@@ -563,7 +563,7 @@ export class QuoteComponent implements OnInit {
         this.quoteForm.patchValue({ status: updatedQuote.status });
         this.readOnly = true;
         this.quoteForm.disable();
-        console.log('Quote rejected');
+        // console.log('Quote rejected');
       },
       error: (err) => {
         console.error('Failed to reject quote:', err);
@@ -736,7 +736,7 @@ export class QuoteComponent implements OnInit {
 
     this.quoteService.saveQuoteWithVersion(quote).subscribe({
       next: (savedQuote) => {
-        console.log('Quote saved with version:', savedQuote);
+        // console.log('Quote saved with version:', savedQuote);
         this.readOnly = true;
               this.quoteForm.disable();
               this.isSaving = false;
@@ -863,7 +863,7 @@ export class QuoteComponent implements OnInit {
       // Save quote first, then change status
       this.quoteService.saveQuoteWithVersion(quote).subscribe({
         next: (submittedQuote) => {
-          console.log('Quote saved:', submittedQuote);
+          // console.log('Quote saved:', submittedQuote);
 
           // Now update the newly saved quote's status
           this.quoteService.changeStatus(submittedQuote.id!, 'Submitted').subscribe({
@@ -902,7 +902,7 @@ export class QuoteComponent implements OnInit {
         this.quoteForm.patchValue({ status: updatedQuote.status });
         this.readOnly = true;
         this.quoteForm.disable();
-        console.log('Original bid kept');
+        // console.log('Original bid kept');
       },
       error: (err) => {
         console.error('Failed to keep original bid:', err);
@@ -1229,7 +1229,7 @@ export class QuoteComponent implements OnInit {
 
     this.quoteService.updateQuote(quote).subscribe({
       next: (updatedQuote) => {
-        console.log('Quote updated:', updatedQuote);
+        // console.log('Quote updated:', updatedQuote);
         this.isSaving = false;
         this.cdr.detectChanges();
       },

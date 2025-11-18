@@ -157,7 +157,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.sessionId = uuidv4();
-    console.log('Generated sessionId:', this.sessionId);
+    // console.log('Generated sessionId:', this.sessionId);
 
     this.jobCardForm = this.formBuilder.group({
       projectName: ['', Validators.required],
@@ -216,13 +216,13 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
       this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
-      console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
+      // console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
     });
 
     this.hubConnection.on('UploadComplete', (fileCount: number) => {
       this.isUploading = false;
-      console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
-      console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
+      // console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
+      // console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
 
     this.authService.currentUser$.pipe(
@@ -255,7 +255,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         await this.loadGoogleMapsScript();
         this.isGoogleMapsLoaded = true;
         this.autocompleteService = new google.maps.places.AutocompleteService();
-        console.log('Google Maps API loaded successfully');
+        // console.log('Google Maps API loaded successfully');
 
         // this.jobCardForm.get('address')?.valueChanges
         //   .pipe(debounceTime(300), switchMap(value => this.getPlacePredictions(value)))
@@ -370,7 +370,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.hubConnection) {
       this.hubConnection.stop()
-        .then(() => console.log('SignalR connection stopped'))
+        .then()
         .catch(err => console.error('Error stopping SignalR:', err));
     }
     //this.deleteTemporaryFiles();
@@ -425,13 +425,13 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onAddressSelected(event: MatAutocompleteSelectedEvent) {
     const selectedAddress = event.option.value;
-    console.log('Selected address:', selectedAddress);
+    // console.log('Selected address:', selectedAddress);
     this.selectedPlace = selectedAddress;
     this.addressControl.setValue(selectedAddress.description);
     this.jobCardForm.get('address')?.setValue(selectedAddress.description);
 
     const placeId = selectedAddress.place_id;
-    console.log('Extracted placeId:', placeId);
+    // console.log('Extracted placeId:', placeId);
 
     if (!placeId) {
       console.error('Invalid or missing placeId:', placeId);
@@ -443,7 +443,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       { placeId: placeId, fields: ['name', 'formatted_address', 'geometry'] },
       (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          console.log('Place details:', place);
+          // console.log('Place details:', place);
         } else {
           console.warn('Place details failed with status:', status);
           if (status === google.maps.places.PlacesServiceStatus.INVALID_REQUEST) {
@@ -478,7 +478,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openQuote(quoteId: string | null): void {
-    console.log('Attempting to open quote with ID:', quoteId);
+    // console.log('Attempting to open quote with ID:', quoteId);
     this.router.navigate(['/quote'], {
       queryParams: { quoteId: quoteId }
     });
@@ -494,7 +494,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   populateHouse(type: string): void {
-    console.log(type);
+    // console.log(type);
     if (type === 'wood') {
       this.jobCardForm.patchValue({
         wallStructure: 'WOOD',
@@ -584,14 +584,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       placesService.getDetails(
         { placeId: this.selectedPlace.place_id, fields: ['geometry', 'formatted_address', 'address_components', 'types'] },
         (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
-          console.log('Place details status:', status);
+          // console.log('Place details status:', status);
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-            console.log('Google Maps place details:', place);
-            console.log('Geometry:', place.geometry);
-            console.log('Location:', place.geometry?.location);
+            // console.log('Google Maps place details:', place);
+            // console.log('Geometry:', place.geometry);
+            // console.log('Location:', place.geometry?.location);
             const lat = place.geometry?.location?.lat ? place.geometry.location.lat() : undefined;
             const lng = place.geometry?.location?.lng ? place.geometry.location.lng() : undefined;
-            console.log('Latitude:', lat, 'Longitude:', lng);
+            // console.log('Latitude:', lat, 'Longitude:', lng);
             formData.set('address', place.formatted_address || formValue.address);
 
             let streetNumber = '';
@@ -633,7 +633,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
             formData.append('country', country);
 
             if (lat !== undefined && lng !== undefined) {
-              console.log('Appending latitude and longitude to FormData:', lat, lng);
+              // console.log('Appending latitude and longitude to FormData:', lat, lng);
               formData.append('latitude', lat.toString());
               formData.append('longitude', lng.toString());
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
@@ -644,7 +644,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
 
               // Fallback to Geocoding API
-              console.log('Falling back to Geocoding API for address:', formValue.address);
+              // console.log('Falling back to Geocoding API for address:', formValue.address);
               this.httpClient.get('https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='+ Google_API)
                 .subscribe({
                   next: (response: any) => {
@@ -652,7 +652,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                       const location = response.results[0].geometry.location;
                       const lat = location.lat;
                       const lng = location.lng;
-                      console.log('Geocoding API returned - Latitude:', lat, 'Longitude:', lng);
+                      // console.log('Geocoding API returned - Latitude:', lat, 'Longitude:', lng);
                       formData.append('latitude', lat.toString());
                       formData.append('longitude', lng.toString());
                       this.submitFormData(formData, callback);
@@ -692,9 +692,9 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         next: (event) => {
           if (event.type === HttpEventType.UploadProgress && event.total) {
             this.progress = Math.round((50 * event.loaded) / event.total);
-            console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
+            // console.log(`Client-to-API Progress: ${this.progress}% (Loaded: ${event.loaded}, Total: ${event.total})`);
           } else if (event.type === HttpEventType.Response) {
-            console.log('Upload to API complete:', event.body);
+            // console.log('Upload to API complete:', event.body);
             this.isLoading = false;
             const res = event.body;
             if (res) {
@@ -734,6 +734,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.jobService.getSpecificJob(id).subscribe(res => {
       const parsedDate = new Date(res.desiredStartDate);
       const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
+      
       const responseParams = {
         jobId: res.jobId,
         operatingArea: res.operatingArea,
@@ -760,18 +761,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   updateConvertedValue(value: string | number): void {
     const numValue = parseFloat(value as string);
     if (isNaN(numValue)) {
-      console.log('Invalid input, no conversion');
+      // console.log('Invalid input, no conversion');
       return;
     }
-    console.log('Converted value updated:', numValue, this.selectedUnit);
+    // console.log('Converted value updated:', numValue, this.selectedUnit);
   }
 
   onUnitChange(unit: string): void {
-    console.log('Unit changed to:', unit);
+    // console.log('Unit changed to:', unit);
     const currentValue = this.jobCardForm.value.buildingSize;
     this.selectedUnit = unit;
     if (!currentValue || isNaN(parseFloat(currentValue))) {
-      console.log('No valid value to convert');
+      // console.log('No valid value to convert');
       return;
     }
 
@@ -779,12 +780,12 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     let newValue: number;
     if (this.selectedUnit === 'sq m') {
       newValue = numValue * 0.092903;
-      console.log(`Converting ${numValue} sq ft to ${newValue} sq m`);
+      // console.log(`Converting ${numValue} sq ft to ${newValue} sq m`);
     } else if (this.selectedUnit === 'sq ft') {
       newValue = numValue * 10.7639;
-      console.log(`Converting ${numValue} sq m to ${newValue} sq ft`);
+      // console.log(`Converting ${numValue} sq m to ${newValue} sq ft`);
     } else {
-      console.log('No conversion needed');
+      // console.log('No conversion needed');
       this.selectedUnit = unit;
       return;
     }
@@ -804,7 +805,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        console.log('Cancel clicked. Files to be deleted:', this.uploadedFileInfos.map(f => f.url));
+        // console.log('Cancel clicked. Files to be deleted:', this.uploadedFileInfos.map(f => f.url));
         //this.deleteTemporaryFiles();
         this.jobCardForm.reset();
         this.uploadedFileInfos = [];
@@ -904,7 +905,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.jobService.downloadJobDocumentFile(blobUrl).subscribe({
       next: (response: Blob) => {
         const contentType = doc.type;
-        console.log('Content Type:', contentType);
+        // console.log('Content Type:', contentType);
         const blob = new Blob([response], { type: contentType });
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');

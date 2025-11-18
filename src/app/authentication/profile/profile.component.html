@@ -35,13 +35,43 @@
                           <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')"> Mandatory Field: Input
                             Required. </mat-error>
                         </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Phone Number</mat-label>
-                          <input matInput formControlName="phoneNumber" placeholder=" "
-                             />
-                          <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')"> Mandatory Field:
-                            Input Required. </mat-error>
-                        </mat-form-field>
+                        <div class="phone-field-container">
+  <!-- Country Code Select -->
+  <mat-form-field appearance="fill" class="country-code-field">
+    <mat-label>Code</mat-label>
+    <mat-select
+      [(value)]="selectedCountryCode"
+      (selectionChange)="onCountryCodeChange($event.value)">
+      <mat-option>
+        <input
+          matInput
+          placeholder="Search..."
+          [formControl]="countryFilterCtrl"
+          (keydown)="$event.stopPropagation()"
+        />
+      </mat-option>
+      <mat-option *ngFor="let c of filteredCountryCodes | async" [value]="c">
+        {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Actual Mobile Input -->
+  <mat-form-field appearance="fill" class="mobile-number-field">
+    <mat-label>Mobile Number</mat-label>
+    <input
+      matInput
+      type="tel"
+      formControlName="phoneNumber"
+      placeholder="Enter mobile number"
+      required
+      (input)="onPhoneInput($event)"
+    />
+    <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
+      Mandatory Field: Input Required.
+    </mat-error>
+  </mat-form-field>
+</div>
                         <mat-form-field appearance="fill">
                           <mat-label>User Type</mat-label>
                           <mat-select formControlName="userType" panelClass="custom-select-panel"
@@ -213,18 +243,8 @@
                     </div>
                     <!-- Delivery & Location -->
                     <div class="section" *ngIf="canViewDeliveryLocation()">
-                      <h3>Operating area and Location</h3>
+                      <h3>Operating area</h3>
                       <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Address</mat-label>
-                          <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto"
-                            placeholder="Enter an address" />
-                          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-                            <mat-option *ngFor="let option of options" [value]="option">
-                              {{ option.description }}
-                            </mat-option>
-                          </mat-autocomplete>
-                        </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Delivery Area</mat-label>
                           <mat-select formControlName="deliveryArea" multiple>
@@ -240,6 +260,7 @@
                           </mat-select>
                         </mat-form-field>
                       </div>
+                      <!-- REMOVED THIS SECTION AS WE ARE MAKING USE OF THE GOOGLE MAPS API ADDRESS 
                       <div class="form-row">
                         <mat-form-field appearance="fill" class="custom-col">
                           <mat-label>Country</mat-label>
@@ -265,7 +286,7 @@
                           <mat-label>City</mat-label>
                           <input matInput formControlName="city" placeholder=" " />
                         </mat-form-field>
-                      </div>
+                      </div> -->
                     </div>
                     <!-- Job Preferences -->
                     <div class="section" *ngIf="canViewTradeSupplier()">
@@ -290,6 +311,61 @@
                       </button>
                     </div>
                   </mat-tab>
+                                    <!-- Addresses Tab -->
+<mat-tab label="Addresses">
+  <div class="section addresses-section">
+    <h3>Address Details</h3>
+      <div class="address-footer">
+      <button mat-raised-button color="primary" type="button" class="submit-btn" (click)="openAddressDialog()">
+        Add New Address
+      </button>
+    </div>
+    <!-- This scrolls ONLY the table -->
+    <div class="address-table-scroll">
+      <mat-table [dataSource]="addressDataSource" class="mat-elevation-z8">
+        <ng-container matColumnDef="formattedAddress">
+          <mat-header-cell *matHeaderCellDef>Address</mat-header-cell>
+          <mat-cell *matCellDef="let addr">{{ addr.formattedAddress }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="city">
+          <mat-header-cell *matHeaderCellDef>City</mat-header-cell>
+          <mat-cell *matCellDef="let addr">{{ addr.city }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="state">
+          <mat-header-cell *matHeaderCellDef>State</mat-header-cell>
+          <mat-cell *matCellDef="let addr">{{ addr.state }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="country">
+          <mat-header-cell *matHeaderCellDef>Country</mat-header-cell>
+          <mat-cell *matCellDef="let addr">{{ addr.country }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+          <mat-cell *matCellDef="let addr">
+            <button mat-icon-button color="primary" type="button" (click)="editAddress(addr)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" type="button" (click)="deleteAddress(addr)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="['formattedAddress','city','state','country','actions']"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: ['formattedAddress','city','state','country','actions']"></mat-row>
+      </mat-table>
+    </div>
+
+  </div>
+
+</mat-tab>
+
+
+                  
                   <!-- Team Management Tab -->
                   <mat-tab label="Team Management"
                     *ngIf="authService.hasPermission('addTeamMembers') || authService.hasPermission('deleteTeamMembers') || authService.hasPermission('editTeamMembers')">
@@ -664,7 +740,7 @@
                       </button>
                     </div>
                   </mat-tab>
-                </mat-tab-group>
+                 </mat-tab-group>
               </form>
             </div>
           </mat-card-content>

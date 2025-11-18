@@ -135,7 +135,7 @@ save(): void {
   if (this.form.valid) {
     const billingCycle = this.form.value.billingCycle as BillingCycle;
     const subscriptionPackage = this.form.value.subscriptionPackage as string;
-console.log(subscriptionPackage)
+// console.log(subscriptionPackage)
     this.dialogRef.close({ subscriptionPackage, billingCycle });
   }
 }

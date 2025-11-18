@@ -51,7 +51,7 @@ export class NoteDetailDialogComponent implements OnInit {
   }
 
   startApproval(note: any): void {
-    console.log('Note object in startApproval:', note);
+    // console.log('Note object in startApproval:', note);
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {

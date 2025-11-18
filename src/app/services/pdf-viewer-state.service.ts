@@ -23,12 +23,12 @@ export class PdfViewerStateService {
   }
 
   setBlueprints(blueprints: BlueprintDocument[]): void {
-    console.log('StateService: Setting blueprints', blueprints);
+    // console.log('StateService: Setting blueprints', blueprints);
     this.blueprintsSubject.next(blueprints);
   }
 
   setSelectedBlueprint(blueprint: BlueprintDocument | null): void {
-    console.log('StateService: Setting selected blueprint', blueprint);
+    // console.log('StateService: Setting selected blueprint', blueprint);
     this.selectedBlueprintSubject.next(blueprint);
   }
 

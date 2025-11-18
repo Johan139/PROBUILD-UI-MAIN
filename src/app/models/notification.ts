@@ -6,4 +6,6 @@ export interface Notification {
   projectName: string;
   senderFullName: string;
   unread?: boolean;
+  isRead?: boolean;
+  
 }

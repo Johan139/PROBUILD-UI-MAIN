@@ -120,8 +120,8 @@ export class AppComponent implements OnInit, OnDestroy {
       .pipe(filter(event => event instanceof NavigationEnd))
     .subscribe((event: NavigationEnd) => {
   this.showFooter = !event.urlAfterRedirects.includes('/login');
-  console.log('Footer visibility:', this.showFooter);
-  console.log('Current route:', event.urlAfterRedirects);
+  // console.log('Footer visibility:', this.showFooter);
+  // console.log('Current route:', event.urlAfterRedirects);
 
 });
     this.router.events.pipe(
@@ -211,7 +211,7 @@ logout(): void {
   });
 
   dialogRef.afterClosed().subscribe(result => {
-    console.log(result)
+    //console.log(result)
     if (result === true) {
       localStorage.clear();
       this.loggedIn = false;

@@ -66,10 +66,10 @@ export class PaymentPromptDialogComponent {
       @Inject(MAT_DIALOG_DATA) public data: {source: string, userId: string, packageName: string; amount: number, billingCycle: BillingCycle }
     ) {}
     ngOnInit() {
-      console.log(this.data.billingCycle)
+      // console.log(this.data.billingCycle)
     }
     continueToPayment() {
- console.log(this.data.billingCycle)
+//  console.log(this.data.billingCycle)
         this.stripeService.createCheckoutSession({
           userId: this.data.userId,
           packageName: this.data.packageName,
@@ -79,7 +79,7 @@ export class PaymentPromptDialogComponent {
           billingCycle: this.data.billingCycle
         }).subscribe({
           next: res => {
-            console.log(res)
+            // console.log(res)
             this.dialogRef.close();
             window.location.href = res.url;
           },
