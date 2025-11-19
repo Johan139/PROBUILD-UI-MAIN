@@ -4,9 +4,13 @@ import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { JobsService } from '../../services/jobs.service';
 import { AuthService } from '../../authentication/auth.service';
-import { ProjectCardComponent, Project } from './project-card/project-card.component';
+import { ProjectCardComponent } from './project-card/project-card.component';
+import { Project } from '../../models/project';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { TeamManagementService } from '../../services/team-management.service';
 import { BomService } from '../jobs/services/bom.service';
@@ -14,6 +18,7 @@ import { of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
 import { ProjectService } from '../../services/project.service';
+import { ProjectsTableComponent } from '../../components/projects-table/projects-table.component';
 
 @Component({
   selector: 'app-my-projects',
@@ -22,7 +27,11 @@ import { ProjectService } from '../../services/project.service';
     CommonModule,
     MatButtonModule,
     MatIconModule,
+    MatTableModule,
+    MatTooltipModule,
+    MatMenuModule,
     ProjectCardComponent,
+    ProjectsTableComponent,
     LoaderComponent,
     MatSnackBarModule
   ],
@@ -34,6 +43,8 @@ export class MyProjectsComponent implements OnInit {
   projects: Project[] = [];
   filteredProjects: Project[] = [];
   projectFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" | "FAILED" = "all";
+  projectView: 'grid' | 'list' = 'grid';
+  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
 
   biddingProjectsCount = 0;
   liveProjectsCount = 0;
@@ -116,5 +127,9 @@ export class MyProjectsComponent implements OnInit {
 
   uploadThumbnail(event: { jobId: number, file: File }): void {
     this.projectService.uploadThumbnail(event.jobId, event.file);
+  }
+
+  toggleProjectView(view: 'grid' | 'list') {
+    this.projectView = view;
   }
 }
