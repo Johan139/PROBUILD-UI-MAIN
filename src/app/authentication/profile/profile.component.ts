@@ -18,6 +18,8 @@ import {
   certificationOptions
 } from '../../data/registration-data';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MatTabGroup } from '@angular/material/tabs';
+import { ViewChildren, QueryList } from '@angular/core';
 import { SubscriptionRow } from '../../models/SubscriptionRow'
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -202,7 +204,7 @@ addressDataSource = new MatTableDataSource<UserAddress>([]);
 @ViewChild('activeSort') activeSort!: MatSort;
 @ViewChild('teamSort') teamSort!: MatSort;
 @ViewChild('inactiveSort') inactiveSort!: MatSort;
-
+@ViewChildren(MatTabGroup) tabGroups!: QueryList<MatTabGroup>;
   constructor(
     private profileService: ProfileService,
     public authService: AuthService,
@@ -313,6 +315,19 @@ addressDataSource = new MatTableDataSource<UserAddress>([]);
         this.options = [];
       }
     });
+      this.route.queryParamMap.subscribe(params => {
+    const tab = params.get('tab');
+    if (tab === 'subscriptions') {
+      
+      // Wait for ALL async data loads + Angular render
+      setTimeout(() => {
+        const groups = this.tabGroups.toArray();
+        if (groups.length > 0) {
+          groups[0].selectedIndex = 5;   // Main profile tab group
+        }
+      }, 500);
+    }
+  });
   }
 
   ngOnInit(): void {
