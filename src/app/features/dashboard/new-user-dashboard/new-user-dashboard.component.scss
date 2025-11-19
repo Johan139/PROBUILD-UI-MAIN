@@ -98,7 +98,7 @@ mat-card-content {
 /* Muted helper text */
 .muted { color: var(--color-text-muted); }
 
-/* Tables (Action Points + Jobs) */
+/* Tables (Action Points) */
 
 .table-wrap {
   max-height: 48vh;
@@ -169,28 +169,6 @@ mat-card-content {
   padding: 10px 12px;
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
-}
-
-/* Progress bar */
-.progress {
-  width: 100%;
-  height: 8px;
-  background: var(--neutral-200, #e5e7eb);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-right: var(--space-2);
-  display: inline-block;
-  vertical-align: middle;
-}
-.bar {
-  height: 100%;
-  background: var(--color-primary);
-  transition: width .25s ease;
-}
-.pct {
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-  margin-left: 6px;
 }
 
 /* Dialogs (shared) */

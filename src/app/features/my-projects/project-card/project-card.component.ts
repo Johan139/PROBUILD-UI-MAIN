@@ -8,15 +8,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Job as JobModel } from '../../../models/job';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Project } from '../../../models/project';
 
-export interface Project extends JobModel {
-  team?: number;
-  progress?: number;
-  thumbnailUrl?: string;
-  budget?: string;
-  deadline?: string; // TODO: Added for future use. Could use the date of the last subtask for this
-  status: "BIDDING" | "LIVE" | "DRAFT" | "FAILED" | "DISCARD" | "NEW";
-}
 
 @Component({
   selector: 'app-project-card',

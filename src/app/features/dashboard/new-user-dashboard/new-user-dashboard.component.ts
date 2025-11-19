@@ -31,8 +31,9 @@ import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-d
 import { NoteService } from '../../jobs/services/note.service';
 import { UserService } from '../../../services/user.service';
 import { ProjectService } from '../../../services/project.service';
-import { Project } from '../../my-projects/project-card/project-card.component';
+import { Project } from '../../../models/project';
 import { ProjectCardComponent } from '../../my-projects/project-card/project-card.component';
+import { ProjectsTableComponent } from '../../../components/projects-table/projects-table.component';
 
   const BASE_URL = environment.BACKEND_URL;
   @Component({
@@ -56,6 +57,7 @@ import { ProjectCardComponent } from '../../my-projects/project-card/project-car
         MatIconModule,
         MatTableModule,
         ProjectCardComponent,
+        ProjectsTableComponent,
         MatTooltipModule
     ],
     templateUrl: './new-user-dashboard.component.html',
@@ -69,7 +71,6 @@ export class NewUserDashboardComponent implements OnInit {
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {id: number, projectName: string, createdAt: string, progress: number, status: string }[] = [];
-  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
   notesDisplayedColumns: string[] = ['project', 'task', 'created', 'status', 'action'];
   jobsLoading: boolean = false;
   isLoading: boolean = false;
@@ -119,7 +120,7 @@ export class NewUserDashboardComponent implements OnInit {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
   onViewNote(note: any): void {
-    // You can open a modal, route to a detail page, or fetch more info here.
+    // Open a modal, route to a detail page, whatever
   }
 
   getNoteStatus(note: any): string {

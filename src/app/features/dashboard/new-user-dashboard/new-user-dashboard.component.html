@@ -124,52 +124,11 @@
         <app-project-card *ngFor="let project of visibleProjects" [project]="project" (onView)="loadJob($event)" (onArchive)="archiveJob($event)"></app-project-card>
     </div>
     <div *ngIf="projectView === 'list'">
-      <div class="table-wrap">
-        <mat-table [dataSource]="projects" class="job-table">
-          <ng-container matColumnDef="project">
-            <mat-header-cell *matHeaderCellDef>Project</mat-header-cell>
-            <mat-cell *matCellDef="let project">{{ project.projectName }}</mat-cell>
-          </ng-container>
-
-          <ng-container matColumnDef="created">
-            <mat-header-cell *matHeaderCellDef>Created</mat-header-cell>
-            <mat-cell *matCellDef="let project">{{ project.createdAt | date: 'shortDate' }}</mat-cell>
-          </ng-container>
-
-          <ng-container matColumnDef="progress">
-            <mat-header-cell *matHeaderCellDef>Progress</mat-header-cell>
-            <mat-cell *matCellDef="let project">
-              <div class="progress">
-                <div class="bar" [style.width.%]="project.progress"></div>
-              </div>
-              <span class="pct">{{ project.progress }}%</span>
-            </mat-cell>
-          </ng-container>
-
-          <ng-container matColumnDef="status">
-            <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-            <mat-cell *matCellDef="let project">{{ project.status | titlecase}}</mat-cell>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <mat-header-cell *matHeaderCellDef></mat-header-cell>
-            <mat-cell *matCellDef="let project">
-              <button mat-icon-button [matMenuTriggerFor]="jobMenu">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #jobMenu="matMenu">
-                <button mat-menu-item (click)="loadJob(project.jobId)">View Project</button>
-                <button mat-menu-item [disabled]="project.progress !== 100" (click)="archiveJob(project.id)">
-                  Archive Project
-                </button>
-              </mat-menu>
-            </mat-cell>
-          </ng-container>
-
-          <mat-header-row *matHeaderRowDef="jobDisplayedColumns"></mat-header-row>
-          <mat-row *matRowDef="let row; columns: jobDisplayedColumns;"></mat-row>
-        </mat-table>
-      </div>
+      <app-projects-table
+        [projects]="projects"
+        (onView)="loadJob($event)"
+        (onArchive)="archiveJob($event)">
+      </app-projects-table>
     </div>
     <!-- Documents Dialog -->
 <ng-template #documentsDialog>

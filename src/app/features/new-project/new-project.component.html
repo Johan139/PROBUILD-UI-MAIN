@@ -150,14 +150,14 @@
             <button *ngIf="flow.step === 'uploaded'" class="btn-primary" (click)="setFlow('extracting', { pct: 5 })">
               Start Project
             </button>
-            <button class="btn-ghost" [disabled]="flow.step === 'idle'" (click)="analyze()">
+            <!-- <button class="btn-ghost" [disabled]="flow.step === 'idle'" (click)="analyze()">
               Analyze
-            </button>
-            <button class="btn-ghost" (click)="viewUploadedFiles()" [disabled]="flow.step === 'idle'">View Uploaded Files</button>
+            </button> -->
+            <!-- <button class="btn-ghost" (click)="viewUploadedFiles()" [disabled]="flow.step === 'idle'">View Uploaded Files</button> -->
             <button class="btn-primary" (click)="cancel()" [disabled]="flow.step === 'idle'">Cancel</button>
-            <button class="btn-primary" (click)="openUploadDialog()">
+            <!-- <button class="btn-primary" (click)="openUploadDialog()">
               Upload Blueprints
-            </button>
+            </button> -->
           </div>
         </div>
         <!-- Row 3: Dropdown for selected analysis -->

@@ -4,7 +4,7 @@ import { switchMap } from 'rxjs/operators';
 import { JobsService } from './jobs.service';
 import { AuthService } from '../authentication/auth.service';
 import { TeamManagementService } from './team-management.service';
-import { Project } from '../features/my-projects/project-card/project-card.component';
+import { Project } from '../models/project';
 
 @Injectable({
   providedIn: 'root'
@@ -40,63 +40,32 @@ export class ProjectService {
       }
     }
 
-    const isTeamMember = this.authService.isTeamMember();
     this.authService.currentUser$.pipe(
       switchMap(user => {
-        if (!user) return of([]);
-        return isTeamMember
-          ? this.jobsService.getAssignedJobsForTeamMember(user.id)
-          : this.jobsService.getAllJobsByUserId(user.id);
-      }),
-      switchMap(jobs => {
-        if (!jobs || jobs.length === 0) {
+        if (!user) {
           this.isLoading.next(false);
           return of([]);
         }
-
-        const nonArchivedJobs = jobs.filter(job => job.status !== 'ARCHIVED');
-
-        const uniqueJobsMap = new Map<number, any>();
-        nonArchivedJobs.forEach(job => {
-          if (!uniqueJobsMap.has(job.id)) {
-            uniqueJobsMap.set(job.id, job);
-          }
-        });
-
-        const uniqueJobs = Array.from(uniqueJobsMap.values());
-        if (uniqueJobs.length === 0) {
-          this.isLoading.next(false);
-          return of([]);
-        }
-
-        const jobDataPromises = uniqueJobs
-          .filter(job => job && job.id)
-          .map(job => Promise.all([
-            this.jobsService.getSpecificJob(job.id.toString()).toPromise(),
-            this.jobsService.getJobSubtasks(job.id).toPromise(),
-            this.teamManagementService.getTeamMembers(job.id.toString()).toPromise()
-          ]).then(([details, subtasks, teamMembers]) => {
-            const project: Project = {
-              ...details,
-              progress: this.calculateJobProgress(subtasks || []),
-              team: (teamMembers || []).length,
-              thumbnailUrl: details.thumbnailUrl || this.getImageForJob(job.id)
-            };
-            return project;
-          }));
-
-        Promise.all(jobDataPromises).then(projects => {
-          this.projects.next(projects);
-          if (userId) {
-            localStorage.setItem(`projects_${userId}`, JSON.stringify(projects));
-          }
-          this.isLoading.next(false);
-        });
-
-        return of([]);
+        return this.jobsService.getUserDashboard(user.id);
       })
     ).subscribe({
-      error: () => this.isLoading.next(false)
+      next: (projects: any[]) => {
+        const mappedProjects = projects.map(p => ({
+          ...p,
+          thumbnailUrl: p.thumbnailUrl || this.getImageForJob(p.jobId)
+        }));
+
+        this.projects.next(mappedProjects);
+        console.log('Loaded projects:', mappedProjects);
+        if (userId) {
+          localStorage.setItem(`projects_${userId}`, JSON.stringify(mappedProjects));
+        }
+        this.isLoading.next(false);
+      },
+      error: (err) => {
+        console.error('Failed to load projects', err);
+        this.isLoading.next(false);
+      }
     });
   }
 
