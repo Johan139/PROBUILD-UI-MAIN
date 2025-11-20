@@ -315,7 +315,8 @@ export class AiChatService {
       }
 
       const criticalOutputRegex = /^CRITICAL OUTPUT REQUIREMENT:/s;
-      if (criticalOutputRegex.test(content)) {
+      const budgetOutputRegex = /^Prompt: .*?Budget Context/s;
+      if (criticalOutputRegex.test(content) || budgetOutputRegex.test(content)) {
         return 'The start of your analysis with Mason';
       }
 
