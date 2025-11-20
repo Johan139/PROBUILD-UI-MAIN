@@ -12,14 +12,11 @@ export class ReportService {
     private snackBar: MatSnackBar
   ) {}
 
-  async downloadEnvironmentalReport(jobId: string): Promise<void> {
+  async getEnvironmentalReportContent(jobId: string): Promise<string | null> {
     try {
       const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
       if (!results || results.length === 0 || !results[0].fullResponse) {
-        this.snackBar.open('Could not retrieve the report data.', 'Close', {
-          duration: 3000,
-        });
-        return;
+        return null;
       }
 
       const fullResponse = results[0].fullResponse;
@@ -65,10 +62,7 @@ export class ReportService {
       }
 
       if (!reportContent) {
-        this.snackBar.open('Environmental report section not found.', 'Close', {
-          duration: 3000,
-        });
-        return;
+        return null;
       }
       const linesToRemove = [
         'Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.',
@@ -89,67 +83,90 @@ export class ReportService {
       // Remove the dynamic introductory paragraph
       reportContent = reportContent.replace(/As a Sustainability and Environmental Construction Analyst,[\s\S]*?\n\n/, '').trim();
 
-      const parsedContent = await Promise.resolve(marked(reportContent));
-
-      const logo = new Image();
-      logo.src = 'assets/logo.png';
-
-      const generateReport = (logoDataUrl?: string) => {
-        const worker = new Worker(
-          new URL('../report-generator.worker', import.meta.url),
-          { type: 'module' }
-        );
-
-        worker.onmessage = ({ data }) => {
-          if (data.success) {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(data.pdfBlob);
-            link.download = 'environmental-lifecycle-report.pdf';
-            link.click();
-            URL.revokeObjectURL(link.href);
-          } else {
-            this.snackBar.open(data.error, 'Close', { duration: 3000 });
-          }
-          worker.terminate();
-        };
-
-        worker.onerror = (error) => {
-          console.error('Worker error:', error);
-          this.snackBar.open(
-            'An error occurred while generating the PDF.',
-            'Close',
-            { duration: 3000 }
-          );
-          worker.terminate();
-        };
-
-        const jsonContent = this._parseHtmlToJson(parsedContent);
-        worker.postMessage({
-          reportContent: jsonContent,
-          logoDataUrl: logoDataUrl,
-        });
-      };
-
-      logo.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = logo.width;
-        canvas.height = logo.height;
-        ctx!.drawImage(logo, 0, 0);
-        const logoDataUrl = canvas.toDataURL('image/png');
-        generateReport(logoDataUrl);
-      };
-
-      logo.onerror = () => {
-        console.warn('Could not load logo, proceeding without it.');
-        generateReport();
-      };
+      return marked(reportContent);
     } catch (err) {
       console.error('Failed to get bill of materials for report:', err);
-      this.snackBar.open('Failed to fetch report data.', 'Close', {
-        duration: 3000,
-      });
+      return null;
     }
+  }
+
+  async getFullReportContent(jobId: string): Promise<string | null> {
+      try {
+        const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+        if (!results || results.length === 0 || !results[0].fullResponse) {
+          return null;
+        }
+        return marked(results[0].fullResponse);
+      } catch (err) {
+          console.error('Failed to get full report content:', err);
+          return null;
+      }
+  }
+
+  async generatePdfFromHtml(htmlContent: string, fileName: string, title: string = 'Environmental Lifecycle Report'): Promise<void> {
+    const logo = new Image();
+    logo.src = 'assets/logo.png';
+
+    const generateReport = (logoDataUrl?: string) => {
+      const worker = new Worker(
+        new URL('../report-generator.worker', import.meta.url),
+        { type: 'module' }
+      );
+
+      worker.onmessage = ({ data }) => {
+        if (data.success) {
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(data.pdfBlob);
+          link.download = fileName;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        } else {
+          this.snackBar.open(data.error, 'Close', { duration: 3000 });
+        }
+        worker.terminate();
+      };
+
+      worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        this.snackBar.open(
+          'An error occurred while generating the PDF.',
+          'Close',
+          { duration: 3000 }
+        );
+        worker.terminate();
+      };
+
+      const jsonContent = this._parseHtmlToJson(htmlContent);
+      worker.postMessage({
+        reportContent: jsonContent,
+        logoDataUrl: logoDataUrl,
+        title: title
+      });
+    };
+
+    logo.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = logo.width;
+      canvas.height = logo.height;
+      ctx!.drawImage(logo, 0, 0);
+      const logoDataUrl = canvas.toDataURL('image/png');
+      generateReport(logoDataUrl);
+    };
+
+    logo.onerror = () => {
+      console.warn('Could not load logo, proceeding without it.');
+      generateReport();
+    };
+  }
+
+  async downloadEnvironmentalReport(jobId: string): Promise<void> {
+      const content = await this.getEnvironmentalReportContent(jobId);
+      if (content) {
+          await this.generatePdfFromHtml(content, 'environmental-lifecycle-report.pdf', 'Environmental Lifecycle Report');
+      } else {
+          this.snackBar.open('Could not retrieve environmental report data.', 'Close', { duration: 3000 });
+      }
   }
 
   private _parseHtmlToJson(htmlString: string): any[] {

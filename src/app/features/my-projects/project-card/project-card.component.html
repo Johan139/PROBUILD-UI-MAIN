@@ -14,7 +14,7 @@
         </button>
         <mat-menu #jobMenu="matMenu">
           <button mat-menu-item (click)="onView.emit(project.jobId)">View Project</button>
-          <button mat-menu-item [disabled]="!(project.progress === 100 || project.status === 'FAILED' || project.status === 'DRAFT')" (click)="onArchive.emit(project.jobId)">
+          <button mat-menu-item (click)="onArchive.emit(project.jobId)">
             Archive Project
           </button>
           <button mat-menu-item (click)="fileInput.click()">

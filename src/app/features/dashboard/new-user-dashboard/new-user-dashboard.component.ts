@@ -6,7 +6,6 @@ import { MatCardModule } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
 import { LoaderComponent } from '../../../loader/loader.component';
 import { LoginService } from "../../../services/login.service";
-import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { JobsService } from '../../../services/jobs.service';
