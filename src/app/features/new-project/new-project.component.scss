@@ -281,6 +281,28 @@
   }
 }
 
+.analysis-progress-container {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--color-surface-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+
+  h4 {
+    font-size: var(--fs-base);
+    font-weight: var(--fw-semibold);
+    color: var(--color-text);
+    margin-bottom: var(--space-3);
+  }
+
+  p {
+    font-size: var(--fs-sm);
+    color: var(--color-text);
+    margin-top: var(--space-2);
+    opacity: 0.9;
+  }
+}
+
 .status-text {
   font-size: var(--fs-xs);
   opacity: 0.75;

@@ -357,9 +357,22 @@ export class JobDataService {
       const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
       let currentPhase = '';
 
+      // Only parse the "Phase 22: Timeline" section
+      let inTimelineSection = false;
+
       for (const line of lines) {
         const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('Ready for the next prompt 20')) break;
+
+        if (trimmedLine.includes('### Phase 22: Timeline')) {
+          inTimelineSection = true;
+        }
+
+        if (!inTimelineSection) continue;
+
+        if (trimmedLine.startsWith('Ready for the next prompt 22')) {
+           break;
+        }
+
         if (!tableStarted && headerRegex.test(trimmedLine)) {
           tableStarted = true;
           continue;
