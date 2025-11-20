@@ -14,8 +14,6 @@ import { Project } from '../../models/project';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { TeamManagementService } from '../../services/team-management.service';
 import { BomService } from '../jobs/services/bom.service';
-import { of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
 import { ProjectService } from '../../services/project.service';
 import { ProjectsTableComponent } from '../../components/projects-table/projects-table.component';

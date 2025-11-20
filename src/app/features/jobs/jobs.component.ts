@@ -1,10 +1,9 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from "@angular/router";
-import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser, DecimalPipe } from "@angular/common";
+import { NgForOf, NgIf, isPlatformBrowser, DecimalPipe } from "@angular/common";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
-import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
 import { LoaderComponent } from '../../loader/loader.component';
@@ -16,16 +15,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatMenuModule } from '@angular/material/menu';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, timeout, debounceTime, switchMap, of, Observable, map, filter, take } from 'rxjs';
+import { Subscription, debounceTime, switchMap, of, map, filter, take } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { Location } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { TimelineComponent, TimelineTask, TimelineGroup } from '../../components/timeline/timeline.component';
+import { TimelineComponent, TimelineGroup } from '../../components/timeline/timeline.component';
 import { JobDataService } from './services/job-data.service';
 import { SubtaskService } from './services/subtask.service';
 import { DocumentService } from './services/document.service';
@@ -80,6 +78,7 @@ import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-d
 export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
+  @ViewChild('reportDialog') reportDialog!: TemplateRef<any>;
   @ViewChild('noteDialog') noteDialog!: TemplateRef<any>;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   addressSuggestions: { description: string; place_id: string }[] = [];
@@ -117,6 +116,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   jobCardForm: FormGroup;
   sessionId: string = '';
   public isGeneratingReport = false;
+  public isReportLoading = false;
+  public reportHtml: string | null = null;
+  public reportError: string | null = null;
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
@@ -354,6 +356,50 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportService
       .downloadEnvironmentalReport(jobId)
       .finally(() => (this.isGeneratingReport = false));
+  }
+
+  openReportDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+
+    this.reportService.getFullReportContent(this.projectDetails.jobId)
+      .then(content => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh'
+          });
+        } else {
+          this.snackBar.open('Could not retrieve report content.', 'Close', { duration: 3000 });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        this.snackBar.open('An error occurred while fetching the report.', 'Close', { duration: 3000 });
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  closeReportDialog(): void {
+    this.dialog.closeAll();
+  }
+
+  downloadFullReport(): void {
+    if (!this.reportHtml) return;
+
+    this.isGeneratingReport = true;
+    const fileName = `${this.projectDetails.projectName}_Full_Report.pdf`;
+
+    this.reportService.generatePdfFromHtml(this.reportHtml, fileName, 'Full Project Analysis Report')
+      .finally(() => {
+        this.isGeneratingReport = false;
+      });
   }
 
   downloadAsSpreadsheet(format: 'csv' | 'excel'): void {

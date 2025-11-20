@@ -60,7 +60,7 @@ const cleanTableData = (data: any): any => {
 };
 
 addEventListener('message', async ({ data }) => {
-  const { reportContent, logoDataUrl } = data;
+  const { reportContent, logoDataUrl, title } = data;
 
   try {
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -86,9 +86,10 @@ addEventListener('message', async ({ data }) => {
     currentY += 10;
 
     // Title
+    const reportTitle = title || 'Environmental Lifecycle Report';
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Environmental Lifecycle Report', pageWidth / 2, currentY, { align: 'center' });
+    doc.text(reportTitle, pageWidth / 2, currentY, { align: 'center' });
     currentY += 15;
 
     // Content

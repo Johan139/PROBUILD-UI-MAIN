@@ -154,6 +154,10 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()" matTooltip="View all documents associated with this job">
               View Documents
             </button>
+            <button class="submit-btn save-btn" mat-raised-button (click)="openReportDialog()" [disabled]="isReportLoading" matTooltip="View the full AI-generated report">
+              <span *ngIf="!isReportLoading">View Full Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
               View Bill of Materials
             </button>
@@ -316,6 +320,28 @@
     </mat-dialog-actions>
   </div>
 </ng-template>
+
+<!-- Full Report Dialog -->
+<ng-template #reportDialog>
+  <div class="documents-dialog report-dialog">
+    <h2 mat-dialog-title>Full Project Analysis Report</h2>
+    <mat-dialog-content class="report-content">
+      <div *ngIf="reportError" class="no-documents" error>
+        <p>{{reportError}}</p>
+      </div>
+      <div *ngIf="reportHtml" class="report-text-content" [innerHTML]="reportHtml">
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button class="submit-btn" mat-raised-button (click)="downloadFullReport()" [disabled]="isGeneratingReport">
+        <span *ngIf="!isGeneratingReport">Download PDF</span>
+        <span *ngIf="isGeneratingReport">Generating...</span>
+      </button>
+      <button class="submit-btn" mat-raised-button (click)="closeReportDialog()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
 <!-- Alert Modal -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
