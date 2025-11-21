@@ -49,8 +49,8 @@ export class ReportService {
           }
         }
       } else {
-        const reportStartMarker = 'Ready for the next prompt 20.';
-        const reportEndMarker = 'Ready for the next prompt 21.';
+        const reportStartMarker = 'Ready for the next prompt 27.';
+        const reportEndMarker = 'Ready for the next prompt 28.';
         let startIndex = fullResponse.indexOf(reportStartMarker);
         if (startIndex !== -1) {
           startIndex += reportStartMarker.length;
@@ -68,8 +68,13 @@ export class ReportService {
         'Here is the comprehensive Environmental Lifecycle Report for the Hernandez Residence.',
         '**Prepared By:** Gemini Sustainability Consulting',
         '**From:** Gemini - Sustainability Consultant & Estimator',
-        '### **Phase 20: Environmental Lifecycle Report**',
-        'Ready for the next prompt 10.'
+        '### **Phase 27: Environmental Lifecycle Report**',
+        'Ready for the next prompt 10.',
+        'Ready for the next prompt 27.',
+        'Output 1:',
+        'Output 2:',
+        'I am Done',
+        'Executive Summary Complete.'
       ];
       linesToRemove.forEach((line) => {
         reportContent = reportContent
@@ -96,7 +101,30 @@ export class ReportService {
         if (!results || results.length === 0 || !results[0].fullResponse) {
           return null;
         }
-        return marked(results[0].fullResponse);
+        let fullResponse = results[0].fullResponse;
+
+        // Remove initial JSON block
+        fullResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+
+        // Remove unwanted lines/markers
+        const linesToRemove = [
+          'I am Done',
+          'Executive Summary Complete.',
+          'Output 1: ',
+          'Output 2: ',
+        ];
+
+        // Also remove "Ready for the next prompt X." lines
+        fullResponse = fullResponse.replace(/Ready for the next prompt \d+\./g, '');
+
+        linesToRemove.forEach((line) => {
+          fullResponse = fullResponse.replace(new RegExp(line, 'g'), '');
+        });
+
+        // Clean up extra newlines that might result from removals
+        fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
+
+        return marked(fullResponse);
       } catch (err) {
           console.error('Failed to get full report content:', err);
           return null;

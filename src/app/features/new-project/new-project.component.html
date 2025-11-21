@@ -70,7 +70,7 @@
 
         <!-- Extracting overlay -->
         <div *ngIf="flow.step === 'extracting'" class="upload-overlay">
-          <lucide-icon name="hard-hat" class="animate-spin"></lucide-icon>
+          <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
           <div>Reading sheets, title blocks, site info…</div>
         </div>
 
@@ -78,7 +78,7 @@
         <div *ngIf="flow.step === 'address'" class="address-modal">
           <div class="address-modal-content">
             <div class="address-modal-header">
-              <lucide-icon name="map-pin"></lucide-icon> Confirm Project Location
+              <lucide-icon [img]="MapPin"></lucide-icon> Confirm Project Location
             </div>
             <div class="address-modal-body">
               <label>Detected address</label>
@@ -198,7 +198,7 @@
         </div>
       <div class="progress-steps" *ngIf="flowType === 'walkthrough'">
         <span *ngFor="let step of progressSteps" class="progress-step" [class.done]="step.done">
-          <lucide-icon *ngIf="step.done" name="check-circle"></lucide-icon>
+          <lucide-icon *ngIf="step.done" [img]="Check"></lucide-icon>
           <span *ngIf="!step.done" class="progress-step-dot"></span>
           {{ step.k }}
         </span>
@@ -295,10 +295,12 @@
           </mat-select>
         </mat-form-field>
 
-        <button class="btn-primary" (click)="startStandardAnalysis()" [disabled]="!selectedFile" matTooltip="Begin the analysis with the selected options">
-          <lucide-icon name="hard-hat" class="animate-spin" *ngIf="isLoading"></lucide-icon>
-          <span *ngIf="!isLoading">Start Analysis</span>
-        </button>
+        <div style="align-self: flex-start;" [matTooltip]="isLoading ? 'Analysis in progress...' : (!selectedFile ? 'Please select a blueprint first' : 'Begin the analysis with the selected options')">
+          <button class="btn-primary" (click)="startStandardAnalysis()" [disabled]="!selectedFile || isLoading">
+            <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isLoading"></lucide-icon>
+            <span *ngIf="!isLoading">Start Analysis</span>
+          </button>
+        </div>
 
         <!-- Real-time Progress Display -->
         <div *ngIf="isLoading && flowType === 'standard' && (state$ | async)?.analysisProgress as progress" class="analysis-progress-container">
@@ -374,7 +376,7 @@
               <button class="btn-secondary" (click)="redo()">Redo</button>
               <mat-checkbox [(ngModel)]="applyCostOptimisation">Apply Cost Optimisation and Efficiency</mat-checkbox>
               <button class="btn-primary" (click)="rerunCurrentStep()" matTooltip="Rerun the analysis for this step with your changes.">
-                <lucide-icon name="hard-hat" class="animate-spin" *ngIf="isRerunningStep"></lucide-icon>
+                <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isRerunningStep"></lucide-icon>
                 <span *ngIf="!isRerunningStep">Rerun with my edits</span>
               </button>
             </div>
@@ -385,7 +387,7 @@
         <div class="walkthrough-navigation">
           <button class="btn-ghost" (click)="goToPreviousStep()" matTooltip="Go back to the previous step.">Back</button>
           <button class="btn-primary" (click)="goToNextStep()" [disabled]="!hasScrolledToBottom" matTooltip="Proceed to the next step in the walkthrough.">
-            <lucide-icon name="hard-hat" class="animate-spin" *ngIf="isNavigatingNext"></lucide-icon>
+            <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isNavigatingNext"></lucide-icon>
             <span *ngIf="!isNavigatingNext">Next</span>
           </button>
         </div>
@@ -407,7 +409,7 @@
 
         <div *ngSwitchCase="'extracting'" class="info-block">
           <div class="info-block-header">
-            <lucide-icon name="hard-hat" class="animate-spin"></lucide-icon>
+            <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
             <h4>AI Metadata Extraction</h4>
           </div>
           <p>Pulling address, sheets, and site details…</p>
@@ -456,7 +458,7 @@
 
         <div *ngSwitchCase="'finalizing'" class="info-block">
           <div class="info-block-header">
-            <lucide-icon name="hard-hat" class="animate-spin"></lucide-icon>
+            <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
             <h4>Finalizing</h4>
           </div>
           <p>Applying your adjustments to the BoM & scope.</p>
@@ -465,7 +467,7 @@
 
         <div *ngSwitchCase="'done'" class="info-block">
           <div class="info-block-header">
-            <lucide-icon name="check-circle"></lucide-icon>
+            <lucide-icon [img]="Check"></lucide-icon>
             <h4>AI Analysis Complete</h4>
           </div>
           <p>Your edits have been applied. Download your outputs below.</p>

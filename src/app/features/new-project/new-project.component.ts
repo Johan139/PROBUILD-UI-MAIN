@@ -29,6 +29,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../authentication/auth.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 
@@ -82,7 +83,8 @@ type FlowState =
     MatInputModule,
     MatDatepickerModule,
     MatProgressBarModule,
-    MatCardModule
+    MatCardModule,
+    MatTooltipModule
 ],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
