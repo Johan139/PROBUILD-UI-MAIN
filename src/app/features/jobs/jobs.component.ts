@@ -14,6 +14,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { FileSizePipe } from '../Documents/filesize.pipe';
 import { Subscription, debounceTime, switchMap, of, map, filter, take } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -70,7 +71,8 @@ import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-d
         MatCheckboxModule,
         TimelineComponent,
         MatAutocompleteModule,
-        MatMenuModule
+        MatMenuModule,
+        MatExpansionModule
     ],
     templateUrl: './jobs.component.html',
     styleUrl: './jobs.component.scss'
@@ -118,6 +120,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public isGeneratingReport = false;
   public isReportLoading = false;
   public reportHtml: string | null = null;
+  public reportTitle: string = 'Full Project Analysis Report';
   public reportError: string | null = null;
   public isProjectOwner = false;
   public currentUserId: string = '';
@@ -362,6 +365,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isReportLoading = true;
     this.reportError = null;
     this.reportHtml = null;
+    this.reportTitle = 'Full Project Analysis Report';
 
     this.reportService.getFullReportContent(this.projectDetails.jobId)
       .then(content => {
@@ -386,6 +390,64 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       });
   }
 
+  openExecutiveSummaryDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = 'Executive Summary';
+
+    this.reportService.getExecutiveSummary(this.projectDetails.jobId)
+      .then(content => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh'
+          });
+        } else {
+          this.snackBar.open('Could not retrieve Executive Summary.', 'Close', { duration: 3000 });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        this.snackBar.open('An error occurred while fetching the Executive Summary.', 'Close', { duration: 3000 });
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  openEnvironmentalReportDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = 'Environmental Lifecycle Report';
+
+    this.reportService.getEnvironmentalReportContent(this.projectDetails.jobId)
+      .then(content => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh'
+          });
+        } else {
+          this.snackBar.open('Could not retrieve Environmental Report.', 'Close', { duration: 3000 });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        this.snackBar.open('An error occurred while fetching the Environmental Report.', 'Close', { duration: 3000 });
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
   closeReportDialog(): void {
     this.dialog.closeAll();
   }
@@ -394,9 +456,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.reportHtml) return;
 
     this.isGeneratingReport = true;
-    const fileName = `${this.projectDetails.projectName}_Full_Report.pdf`;
+    const cleanTitle = this.reportTitle.replace(/ /g, '_');
+    const fileName = `${this.projectDetails.projectName}_${cleanTitle}.pdf`;
 
-    this.reportService.generatePdfFromHtml(this.reportHtml, fileName, 'Full Project Analysis Report')
+    this.reportService.generatePdfFromHtml(this.reportHtml, fileName, this.reportTitle)
       .finally(() => {
         this.isGeneratingReport = false;
       });

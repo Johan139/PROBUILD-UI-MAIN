@@ -61,84 +61,94 @@
           </div>
 
           <!-- Timeline Section -->
-          <div class="timeline-section">
-            <mat-card-title class="timeline-title">Probuild Construction Timeline</mat-card-title>
-            <mat-divider class="timeline-divider"></mat-divider>
-            <div class="chart-container">
-              <div class="timeline-wrapper">
-                <app-timeline
-                  [taskGroups]="timelineGroups"
-                  [isProjectOwner]="isProjectOwner"
-                  (onGroupClick)="timelineService.handleGroupClick($event)"
-                  (onGroupMove)="handleGroupMove($event)"
-                  (onEditGroup)="timelineService.handleEditGroup($event)">
-                </app-timeline>
+          <mat-accordion multi>
+            <mat-expansion-panel [expanded]="true">
+              <mat-expansion-panel-header>
+                <mat-panel-title class="timeline-title">Probuild Construction Timeline</mat-panel-title>
+              </mat-expansion-panel-header>
+              <div class="timeline-section">
+                <mat-divider class="timeline-divider"></mat-divider>
+                <div class="chart-container">
+                  <div class="timeline-wrapper">
+                    <app-timeline
+                      [taskGroups]="timelineGroups"
+                      [isProjectOwner]="isProjectOwner"
+                      (onGroupClick)="timelineService.handleGroupClick($event)"
+                      (onGroupMove)="handleGroupMove($event)"
+                      (onEditGroup)="timelineService.handleEditGroup($event)">
+                    </app-timeline>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </mat-expansion-panel>
 
-<!-- Subtasks Section -->
-<mat-card-title>Tasks and Subtasks</mat-card-title>
-<mat-divider></mat-divider>
-<div class="subtask-section">
-  <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
-    <div class="table-header">
-      <h3>{{table.title}}</h3>
-      <button *ngIf="authService.hasPermission('createJobs')" class="submit-btn" (click)="subtaskService.addSubtask(table)">
-        Add Subtask
-      </button>
-    </div>
-    <table class="themed-table">
-      <thead>
-        <tr>
-          <th>Task</th>
-          <th>Days</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th>Task Status</th>
-          <th>Actions</th>
-          <th>Notes</th>
-          <th>Approve</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
-          <td>
-            <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
-          </td>
-          <td>
-            <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
-                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
-                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
-          </td>
-          <td>
-            {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
-          </td>
-          <td>
-            <button *ngIf="authService.hasPermission('deleteJobs')" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
-              Delete
-            </button>
+            <!-- Subtasks Section -->
+            <mat-expansion-panel [expanded]="true">
+              <mat-expansion-panel-header>
+                <mat-panel-title>Tasks and Subtasks</mat-panel-title>
+              </mat-expansion-panel-header>
+              <mat-divider></mat-divider>
+              <div class="subtask-section">
+                <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
+                  <div class="table-header">
+                    <h3>{{table.title}}</h3>
+                    <button *ngIf="authService.hasPermission('createJobs')" class="submit-btn" (click)="subtaskService.addSubtask(table)">
+                      Add Subtask
+                    </button>
+                  </div>
+                  <table class="themed-table">
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Days</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Task Status</th>
+                        <th>Actions</th>
+                        <th>Notes</th>
+                        <th>Approve</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
+                        <td>
+                          <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
+                        </td>
+                        <td>
+                          <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
+                                 (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
+                        </td>
+                        <td>
+                          <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
+                                 (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
+                        </td>
+                        <td>
+                          <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
+                        </td>
+                        <td>
+                          {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
+                        </td>
+                        <td>
+                          <button *ngIf="authService.hasPermission('deleteJobs')" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
+                            Delete
+                          </button>
 
-          </td>
-          <td>
-            <button class="submit-btn" (click)="openNoteDialog(subtask)">
-              Update
-            </button>
-          </td>
-          <td>
-            <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+                        </td>
+                        <td>
+                          <button class="submit-btn" (click)="openNoteDialog(subtask)">
+                            Update
+                          </button>
+                        </td>
+                        <td>
+                          <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
 
           <!-- Action Buttons -->
           <div class="action-buttons">
@@ -151,23 +161,38 @@
             <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()" matTooltip="Discard all changes and revert the job to its last saved state">
               Discard Job
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()" matTooltip="View all documents associated with this job">
-              View Documents
+            <!-- Reports Dropdown -->
+            <button class="submit-btn save-btn" mat-raised-button [matMenuTriggerFor]="reportsMenu" matTooltip="View project reports and documents">
+              Project Reports <mat-icon>arrow_drop_down</mat-icon>
             </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openReportDialog()" [disabled]="isReportLoading" matTooltip="View the full AI-generated report">
-              <span *ngIf="!isReportLoading">View Full Report</span>
-              <span *ngIf="isReportLoading">Loading...</span>
-            </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
-              View Bill of Materials
-            </button>
-            <button *ngIf="!projectDetails?.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
-              <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
-              <span *ngIf="isGeneratingReport">Generating...</span>
-            </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()" matTooltip="Return to the previous page">
+            <mat-menu #reportsMenu="matMenu">
+              <button mat-menu-item (click)="openDocumentsDialog()">
+                <mat-icon>description</mat-icon>
+                <span>View Documents</span>
+              </button>
+              <button mat-menu-item (click)="openReportDialog()" [disabled]="isReportLoading">
+                <mat-icon>assessment</mat-icon>
+                <span *ngIf="!isReportLoading">View Full Report</span>
+                <span *ngIf="isReportLoading">Loading...</span>
+              </button>
+              <button mat-menu-item (click)="openBillOfMaterialsDialog()">
+                <mat-icon>list_alt</mat-icon>
+                <span>View Bill of Materials</span>
+              </button>
+              <button mat-menu-item (click)="openExecutiveSummaryDialog()" [disabled]="isReportLoading">
+                <mat-icon>summarize</mat-icon>
+                <span *ngIf="!isReportLoading">View Executive Summary</span>
+                <span *ngIf="isReportLoading">Loading...</span>
+              </button>
+              <button mat-menu-item *ngIf="!projectDetails?.isSelected" (click)="openEnvironmentalReportDialog()" [disabled]="isReportLoading">
+                <mat-icon>eco</mat-icon>
+                <span *ngIf="!isReportLoading">View Environmental Report</span>
+                <span *ngIf="isReportLoading">Loading...</span>
+              </button>
+            </mat-menu>
+            <!-- <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()" matTooltip="Return to the previous page">
               Back
-            </button>
+            </button> -->
             <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()" matTooltip="Mark all subtasks as approved">
                Accept All Subtasks
             </button>
@@ -324,7 +349,7 @@
 <!-- Full Report Dialog -->
 <ng-template #reportDialog>
   <div class="documents-dialog report-dialog">
-    <h2 mat-dialog-title>Full Project Analysis Report</h2>
+    <h2 mat-dialog-title>{{ reportTitle }}</h2>
     <mat-dialog-content class="report-content">
       <div *ngIf="reportError" class="no-documents" error>
         <p>{{reportError}}</p>

@@ -131,6 +131,50 @@ export class ReportService {
       }
   }
 
+  async getExecutiveSummary(jobId: string): Promise<string | null> {
+    try {
+      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+      const fullResponse = results[0].fullResponse;
+
+      // Clean up JSON blocks first
+      let cleanResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+
+      const startMarkerRegex = /###?\s*Executive Summary/i;
+      const endMarker = 'Executive Summary Complete.';
+
+      const match = cleanResponse.match(startMarkerRegex);
+
+      if (match && match.index !== undefined) {
+        let startIndex = match.index;
+        let content = cleanResponse.substring(startIndex);
+
+        const endIndex = content.indexOf(endMarker);
+        if (endIndex !== -1) {
+          content = content.substring(0, endIndex);
+        }
+
+        // Remove the title line we just found so we can normalize it
+        content = content.replace(startMarkerRegex, '').trim();
+
+        // Add title back as H3 for the PDF/Display
+        content = `### Executive Summary\n\n${content}`;
+
+        return marked(content);
+      } else {
+         console.warn('Executive Summary start marker not found in response.');
+         // console.log('Response snippet:', cleanResponse.substring(cleanResponse.length - 500)); // Debug log
+      }
+
+      return null;
+    } catch (err) {
+      console.error('Failed to get executive summary:', err);
+      return null;
+    }
+  }
+
   async generatePdfFromHtml(htmlContent: string, fileName: string, title: string = 'Environmental Lifecycle Report'): Promise<void> {
     const logo = new Image();
     logo.src = 'assets/logo.png';
