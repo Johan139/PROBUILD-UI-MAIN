@@ -110,11 +110,11 @@ states: any[] = [];
   
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
-
+selectedPlanFromUrl: string | null = null;
   tradeCtrl = new FormControl();
   filteredTrades: Observable<{ value: string; display: string; }[]>;
   selectedTrades: { value: string; display: string; }[] = [];
-
+selectedBillingFromUrl: string | null = null;
   supplierTypeCtrl = new FormControl();
   filteredSupplierTypes: Observable<{ value: string; display: string; }[]>;
   selectedSupplierTypes: { value: string; display: string; }[] = [];
@@ -160,6 +160,11 @@ states: any[] = [];
   ngOnInit() {
     this.loadSubscriptionPackages();
 
+  const plan = this.route.snapshot.queryParamMap.get('plan');
+  const billing = this.route.snapshot.queryParamMap.get('billing') || 'monthly';
+
+  this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
+  this.selectedBillingFromUrl = billing;
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
@@ -206,7 +211,7 @@ states: any[] = [];
       deliveryTime: (''),
       userName:(''),
     });
-
+  this.registrationForm.get('billingCycle')?.setValue(this.selectedBillingFromUrl);
     this.user = 'PERSONAL_USE';
 
   // Fetch countries
@@ -412,21 +417,33 @@ private _filterCountries(value: string | null): any[] {
     //this.user = userSelected.value
   }
 
-  private loadSubscriptionPackages(): void {
-    this.stripeService.getSubscriptions().subscribe({
-      next: (subscriptions) => {
-        this.subscriptionPackages = subscriptions.map(s => ({
-          value: s.subscription,
-          display: `${s.subscription}`,
-          amount: s.amount,
-          annualAmount:s.annualAmount
-        }));
-      },
-      error: (err) => {
-        console.error('Failed to load subscription packages:', err);
+private loadSubscriptionPackages(): void {
+  this.stripeService.getSubscriptions().subscribe({
+    next: (subscriptions) => {
+      this.subscriptionPackages = subscriptions.map(s => ({
+        value: s.subscription,
+        display: `${s.subscription}`,
+        amount: s.amount,
+        annualAmount: s.annualAmount
+      }));
+
+      // 🔥 Auto-select plan ONLY after list loads
+      if (this.selectedPlanFromUrl) {
+        const match = this.subscriptionPackages.find(
+          p => p.value.toLowerCase() === this.selectedPlanFromUrl
+        );
+
+        if (match) {
+          this.registrationForm.get('subscriptionPackage')?.setValue(match.value);
+        }
       }
-    });
-  }
+    },
+    error: (err) => {
+      console.error('Failed to load subscription packages:', err);
+    }
+  });
+}
+
 
   certificationChange(selectedOption:any) {
     if(selectedOption === "FULLY_LICENSED")
