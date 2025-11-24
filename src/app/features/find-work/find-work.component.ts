@@ -247,7 +247,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     const jobs$ = this.jobsService.getAllJobs();
     const quotes$ = this.quoteService.getAllQuotes();
     const bids$ = this.jobsService.getBiddedJobs(userId);
-
     forkJoin([jobs$, quotes$, bids$]).pipe(takeUntil(this.destroy$)).subscribe({
       next: ([jobs, quotes, bids]) => {
         if (!jobs || jobs.length === 0) {
@@ -619,15 +618,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     // Calculate trade counts based on currently filtered jobs (before applying trade filter itself)
     this.tradeCounts = this.allTrades.reduce((acc, trade) => {
-      acc[trade] = filtered.filter(job => job.trades.includes(trade)).length;
+      acc[trade] = filtered.filter(job => job.trades?.includes(trade)).length;
       return acc;
     }, {} as { [trade: string]: number });
 
 
     if (this.selectedTrades && this.selectedTrades.length > 0 && this.selectedTrades.length < this.allTrades.length) {
-      filtered = filtered.filter(job =>
-        job.trades.some(trade => this.selectedTrades.includes(trade))
-      );
+ filtered = filtered.filter(job =>
+  job.trades?.some(trade => this.selectedTrades.includes(trade))
+);
     }
 
     if (this.selectedJobTypes && this.selectedJobTypes.length > 0 && this.selectedJobTypes.length < this.allJobTypes.length) {

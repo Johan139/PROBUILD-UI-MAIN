@@ -213,9 +213,9 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       startDate: ['', Validators.required],
     });
 
-    this.addressForm = this.formBuilder.group({
-      formattedAddress: ['', Validators.required],
-    });
+this.addressForm = this.formBuilder.group({
+  formattedAddress: ['', [Validators.required, this.requireMatch.bind(this)]],
+});
     const hiddenPrompts = ['SYSTEM_COMPREHENSIVE_ANALYSIS', 'SYSTEM_RENOVATION_ANALYSIS'];
     this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
       map(prompts => prompts.filter(p => !hiddenPrompts.includes(p.promptKey)))
@@ -225,7 +225,6 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   isBrowser: boolean;
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   options: { description: string; place_id: string }[] = [];
-  addressControl = new FormControl<string>('', [Validators.required, this.requireMatch.bind(this)]);
   selectedPlace: { description: string; place_id: string } | null = null;
   private isGoogleMapsLoaded: boolean = false;
   clientForm: FormGroup;
@@ -261,7 +260,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.addressControl.valueChanges.subscribe((value) => {
+    this.addressForm.get('formattedAddress')!.valueChanges.subscribe((value) => {
       if (typeof value === 'string' && value.trim()) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: value }, (predictions, status) => {
@@ -747,7 +746,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     onAddressSelected(event: any) {
         const selectedAddress = event.option.value;
         this.selectedPlace = selectedAddress;
-        this.addressControl.setValue(selectedAddress.description);
+        this.addressForm.get('formattedAddress')?.setValue(selectedAddress.description);
         this.addressForm.get('formattedAddress')?.setValue(selectedAddress.description);
     }
 

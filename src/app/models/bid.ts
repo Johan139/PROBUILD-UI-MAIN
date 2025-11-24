@@ -12,3 +12,4 @@ export class Bid {
     quoteId?: string;
     documentUrl?: string;
   }
+  
