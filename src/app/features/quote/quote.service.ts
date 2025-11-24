@@ -26,7 +26,7 @@ export class QuoteService {
   }
 
   saveQuote(quote: Quote): Observable<Quote> {
-    console.log('Saving quote to:', this.apiUrl, 'with data:', quote);
+    // console.log('Saving quote to:', this.apiUrl, 'with data:', quote);
     return this.http.post<Quote>(this.apiUrl, quote, { headers: this.getHeaders() }).pipe(
       catchError((error: HttpErrorResponse) => {
         console.error('Error saving quote:', error);
@@ -55,7 +55,7 @@ export class QuoteService {
   }
 
   updateQuote(quote: Quote): Observable<Quote> {
-    console.log('Updating quote at:', `${this.apiUrl}/${quote.id}`, 'with data:', quote);
+    // console.log('Updating quote at:', `${this.apiUrl}/${quote.id}`, 'with data:', quote);
     return this.http.post<Quote>(`${this.apiUrl}/UpdateQuote/${quote.id}`, quote, { headers: this.getHeaders() }).pipe(
       catchError((error: HttpErrorResponse) => {
         console.error('Error updating quote:', error);

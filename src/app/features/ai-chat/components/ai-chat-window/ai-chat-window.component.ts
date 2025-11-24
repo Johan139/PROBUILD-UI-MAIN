@@ -23,11 +23,11 @@ import { combineLatest } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-ai-chat-window',
-  templateUrl: './ai-chat-window.component.html',
-  styleUrls: ['./ai-chat-window.component.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe],
+    selector: 'app-ai-chat-window',
+    templateUrl: './ai-chat-window.component.html',
+    styleUrls: ['./ai-chat-window.component.scss'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, MatIconModule, MatTooltipModule, MarkdownModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
 })
 export class AiChatWindowComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -61,7 +61,7 @@ private streamEndHandlerRegistered = false;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
   public isLoggedIn = false;
-  
+
 public combinedMessages$!: Observable<ChatMessage[]>;
 public streamingMessages: Map<string, string> = new Map();
 private lastChunkByCid: Map<string, string> = new Map();
@@ -105,8 +105,8 @@ public streamingMessages$ = this.streamingMessagesSubject.asObservable();
     private signalrService: SignalrService,
     private authService: AuthService,
         private ngZone: NgZone
-    
-    
+
+
   ) {
     this.isChatOpen$ = this.state.isChatOpen$;
     this.messages$ = this.state.messages$;
@@ -139,7 +139,7 @@ this.currentConversation$.pipe(takeUntil(this.destroy$)).subscribe(async convers
 
   ngOnInit(): void {
 
-   
+
     this.hasDocuments$ = this.state.documents$.pipe(
       map(documents => documents.length > 0)
     );
@@ -247,7 +247,7 @@ this.streamHandlerRegistered = true;
 
 
 this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
-console.log('[chunk]', { cid, chunk });
+// console.log('[chunk]', { cid, chunk });
 
 
 this.ngZone.run(() => {
@@ -280,7 +280,7 @@ let alreadyEndedFor: Set<string> = new Set();
 this.signalrService.onStreamEnd((cid: string) => {
 if (alreadyEndedFor.has(cid)) return;
 alreadyEndedFor.add(cid);
-console.log('[streamEnd]', { cid, current: this.conversationId });
+// console.log('[streamEnd]', { cid, current: this.conversationId });
 
 
 this.ngZone.run(() => {

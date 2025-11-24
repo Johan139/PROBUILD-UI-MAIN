@@ -98,7 +98,7 @@ mat-card-content {
 /* Muted helper text */
 .muted { color: var(--color-text-muted); }
 
-/* Tables (Action Points + Jobs) */
+/* Tables (Action Points) */
 
 .table-wrap {
   max-height: 48vh;
@@ -171,28 +171,6 @@ mat-card-content {
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Progress bar */
-.progress {
-  width: 100%;
-  height: 8px;
-  background: var(--neutral-200, #e5e7eb);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-right: var(--space-2);
-  display: inline-block;
-  vertical-align: middle;
-}
-.bar {
-  height: 100%;
-  background: var(--color-primary);
-  transition: width .25s ease;
-}
-.pct {
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-  margin-left: 6px;
-}
-
 /* Dialogs (shared) */
 .documents-dialog,
 .note-detail-dialog {
@@ -214,4 +192,111 @@ mat-card-content {
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+}
+
+.dashboard-container {
+  padding: var(--space-4);
+}
+
+.welcome-header {
+  margin-bottom: var(--space-6);
+  h2 {
+    font: var(--fw-bold) var(--fs-1)/var(--lh-tight) var(--font-sans);
+    color: var(--color-text);
+    letter-spacing: .2px;
+  }
+  p {
+    color: var(--color-text-muted);
+    font-size: var(--fs-lg);
+  }
+}
+
+.quick-actions {
+  margin-bottom: var(--space-6);
+  h3 {
+    font: var(--fw-semibold) var(--fs-2)/var(--lh-tight) var(--font-sans);
+    margin-bottom: var(--space-3);
+  }
+  .actions-container {
+    display: flex;
+    gap: var(--space-3);
+  }
+}
+
+.recent-projects {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+
+  .carousel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+
+    h3 {
+      font: var(--fw-semibold) var(--fs-2)/var(--lh-tight) var(--font-sans);
+    }
+
+    .view-toggle {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  .carousel-controls button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .projects-carousel {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% / 3) - var(--space-3));
+    gap: var(--space-4);
+    overflow-x: auto;
+    padding-bottom: var(--space-4);
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-weight: var(--fw-semibold);
+  @include u.interactive-states;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  mat-icon {
+    margin-right: var(--space-2);
+  }
+}
+
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+}
+
+.view-toggle {
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    &.active {
+      color: var(--color-primary);
+    }
+  }
 }

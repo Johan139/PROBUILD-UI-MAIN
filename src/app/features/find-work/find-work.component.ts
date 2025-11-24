@@ -47,11 +47,11 @@ interface JobMarker {
 }
 
 @Component({
-  selector: 'app-find-work',
-  templateUrl: './find-work.component.html',
-  styleUrls: ['./find-work.component.scss'],
-  standalone: true,
-  imports: [
+    selector: 'app-find-work',
+    templateUrl: './find-work.component.html',
+    styleUrls: ['./find-work.component.scss'],
+    standalone: true,
+    imports: [
     CommonModule,
     GoogleMapsModule,
     MatDialogModule,
@@ -66,10 +66,10 @@ interface JobMarker {
     MatProgressSpinnerModule,
     JobCardComponent,
     MatButtonModule,
-    RouterModule,
-  ],
-  providers: [MapLoaderService],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    RouterModule
+],
+    providers: [MapLoaderService],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 
 export class FindWorkComponent implements OnInit, OnDestroy {
@@ -124,12 +124,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
+  radiusCircle: google.maps.Circle | null = null;
 
   applyMapTheme(theme: 'light' | 'dark') {
 
     const newMapId = theme === 'dark' ? darkMapId : lightMapId;
 
-    console.log(`Applying mapId: ${newMapId}`);
+    // console.log(`Applying mapId: ${newMapId}`);
     this.mapOptions = { ...this.mapOptions, mapId: newMapId };
 
     if (this.map) {
@@ -213,6 +214,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.jobs.length > 0) {
       setTimeout(() => this.updateMapMarkers(), 100);
     }
+    this.updateRadiusCircle();
   }
 
   private setupMapLoadingSubscription(): void {
@@ -245,7 +247,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     const jobs$ = this.jobsService.getAllJobs();
     const quotes$ = this.quoteService.getAllQuotes();
     const bids$ = this.jobsService.getBiddedJobs(userId);
-
     forkJoin([jobs$, quotes$, bids$]).pipe(takeUntil(this.destroy$)).subscribe({
       next: ([jobs, quotes, bids]) => {
         if (!jobs || jobs.length === 0) {
@@ -474,6 +475,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         this.zoom = 10;
       });
     }
+    this.updateRadiusCircle();
   }
 
   private getUserLocationAndCalculateDistances(): void {
@@ -616,15 +618,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     // Calculate trade counts based on currently filtered jobs (before applying trade filter itself)
     this.tradeCounts = this.allTrades.reduce((acc, trade) => {
-      acc[trade] = filtered.filter(job => job.trades.includes(trade)).length;
+      acc[trade] = filtered.filter(job => job.trades?.includes(trade)).length;
       return acc;
     }, {} as { [trade: string]: number });
 
 
     if (this.selectedTrades && this.selectedTrades.length > 0 && this.selectedTrades.length < this.allTrades.length) {
-      filtered = filtered.filter(job =>
-        job.trades.some(trade => this.selectedTrades.includes(trade))
-      );
+ filtered = filtered.filter(job =>
+  job.trades?.some(trade => this.selectedTrades.includes(trade))
+);
     }
 
     if (this.selectedJobTypes && this.selectedJobTypes.length > 0 && this.selectedJobTypes.length < this.allJobTypes.length) {
@@ -639,6 +641,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.updateMapMarkers();
     }
     this.saveFiltersToLocalStorage();
+    this.updateRadiusCircle();
   }
 
   clearFilters(): void {
@@ -794,4 +797,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
  hasBidded(jobId: number): boolean {
    return this.biddedJobIds.has(jobId);
  }
+
+ updateRadiusCircle(): void {
+    if (!this.map) return;
+
+    const radiusInMeters = this.distanceUnit === 'mi'
+      ? this.distance * 1609.34
+      : this.distance * 1000;
+
+    if (this.radiusCircle) {
+      this.radiusCircle.setCenter(this.center);
+      this.radiusCircle.setRadius(radiusInMeters);
+    } else {
+      this.radiusCircle = new google.maps.Circle({
+        strokeColor: '#61A0AF',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#61A0AF',
+        fillOpacity: 0.15,
+        map: this.map,
+        center: this.center,
+        radius: radiusInMeters,
+      });
+    }
+  }
 }
+
+

@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
+import { MeasurementService } from '../../services/measurement.service';
 import { QuoteService } from './quote.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -31,34 +32,34 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
 @Component({
-  selector: 'app-quote',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatTableModule,
-    MatSelectModule,
-    MatIconModule,
-    MatDividerModule,
-    MatExpansionModule,
-    NgIf,
-    FormsModule,
-    MatDialogModule,
-    MatCheckboxModule,
-    JobCardComponent,
-    MatProgressSpinnerModule,
-    PdfViewerComponent,
-    CommonModule,
-    MatDatepickerModule,
-    MatNativeDateModule
-  ],
-  templateUrl: './quote.component.html',
-  styleUrls: ['./quote.component.scss'],
-  providers: [QuoteService],
+    selector: 'app-quote',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatTableModule,
+        MatSelectModule,
+        MatIconModule,
+        MatDividerModule,
+        MatExpansionModule,
+        NgIf,
+        FormsModule,
+        MatDialogModule,
+        MatCheckboxModule,
+        JobCardComponent,
+        MatProgressSpinnerModule,
+        PdfViewerComponent,
+        CommonModule,
+        MatDatepickerModule,
+        MatNativeDateModule
+    ],
+    templateUrl: './quote.component.html',
+    styleUrls: ['./quote.component.scss'],
+    providers: [QuoteService]
 })
 
 
@@ -81,7 +82,8 @@ export class QuoteComponent implements OnInit {
   isOwnQuote: boolean = false;
   isFinalBiddingRound = false;
   showFeeReminder = false;
- quoteDocuments: { url: string, name: string }[] = [];
+  quoteDocuments: { url: string, name: string }[] = [];
+  units: string[] = [];
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
@@ -97,10 +99,11 @@ export class QuoteComponent implements OnInit {
     private logoService: LogoService,
     private dialog: MatDialog,
     private jobsService: JobsService,
-    private bidsService: BidsService
+    private bidsService: BidsService,
+    private measurementService: MeasurementService
   ) {
     this.quoteForm = this.fb.group({
-      header: ['INVOICE'],
+      header: [''],
       number: [''],
       from: [''],
       toTitle: ['Bill To'],
@@ -155,7 +158,7 @@ export class QuoteComponent implements OnInit {
   }
 
   ngOnInit(): void {
-
+    this.units = this.measurementService.getUnits();
 
     this.route.queryParams.subscribe(params => {
       if (params['jobId']) {
@@ -251,7 +254,7 @@ export class QuoteComponent implements OnInit {
           this.quoteId = params['quoteId'];
           this.quoteService.getQuote(params['quoteId']).subscribe({
             next: (savedQuote) => {
-              console.log('Quote loaded:', savedQuote);
+              // console.log('Quote loaded:', savedQuote);
 
               this.quoteForm.patchValue({
                 id: savedQuote.id,
@@ -343,6 +346,18 @@ export class QuoteComponent implements OnInit {
         }
       });
     }
+
+    this.logoService.getUserLogo().subscribe({
+      next: (logo) => {
+        if (!this.logoUrl) {
+          this.logoUrl = logo.url;
+          this.quoteForm.patchValue({ logoId: logo.id });
+        }
+      },
+      error: () => {
+        // User may not have a logo, so this is not a critical error
+      }
+    });
   }
 
   loadJobDetails(jobId: string): void {
@@ -371,6 +386,7 @@ export class QuoteComponent implements OnInit {
         const row = this.fb.group({
           description: [item.description || ''],
           quantity: [item.quantity || 1],
+          unit: [item.unit || ''],
           unitPrice: [item.unitPrice || 0],
           total: [item.total || 0],
         });
@@ -401,6 +417,7 @@ export class QuoteComponent implements OnInit {
     const row = this.fb.group({
       description: [''],
       quantity: [1],
+      unit: [''],
       unitPrice: [0],
       total: [0],
     });
@@ -424,7 +441,7 @@ export class QuoteComponent implements OnInit {
   }
 
   get displayedColumns(): string[] {
-    const columns = ['description', 'quantity', 'unitPrice', 'total'];
+    const columns = ['description', 'quantity', 'unit', 'unitPrice', 'total'];
     if (this.quoteRows.length > 1) {
       columns.push('remove');
     }
@@ -546,7 +563,7 @@ export class QuoteComponent implements OnInit {
         this.quoteForm.patchValue({ status: updatedQuote.status });
         this.readOnly = true;
         this.quoteForm.disable();
-        console.log('Quote rejected');
+        // console.log('Quote rejected');
       },
       error: (err) => {
         console.error('Failed to reject quote:', err);
@@ -611,9 +628,14 @@ export class QuoteComponent implements OnInit {
       this.isLogoSupported = true;
 
       const userId = this.authService.currentUserSubject.value?.id || 'anonymous';
-      this.logoService.uploadLogo(file, 'quote', userId).subscribe({
-        next: (logo) => {
-          this.quoteForm.patchValue({ logoId: logo.id });
+      this.logoService.setUserLogo(file).subscribe({
+        next: () => {
+          this.logoService.getUserLogo().subscribe({
+            next: (logo) => {
+              this.logoUrl = logo.url;
+              this.quoteForm.patchValue({ logoId: logo.id });
+            }
+          });
         },
         error: (err) => {
           console.error('Logo upload failed', err);
@@ -714,7 +736,7 @@ export class QuoteComponent implements OnInit {
 
     this.quoteService.saveQuoteWithVersion(quote).subscribe({
       next: (savedQuote) => {
-        console.log('Quote saved with version:', savedQuote);
+        // console.log('Quote saved with version:', savedQuote);
         this.readOnly = true;
               this.quoteForm.disable();
               this.isSaving = false;
@@ -841,7 +863,7 @@ export class QuoteComponent implements OnInit {
       // Save quote first, then change status
       this.quoteService.saveQuoteWithVersion(quote).subscribe({
         next: (submittedQuote) => {
-          console.log('Quote saved:', submittedQuote);
+          // console.log('Quote saved:', submittedQuote);
 
           // Now update the newly saved quote's status
           this.quoteService.changeStatus(submittedQuote.id!, 'Submitted').subscribe({
@@ -880,7 +902,7 @@ export class QuoteComponent implements OnInit {
         this.quoteForm.patchValue({ status: updatedQuote.status });
         this.readOnly = true;
         this.quoteForm.disable();
-        console.log('Original bid kept');
+        // console.log('Original bid kept');
       },
       error: (err) => {
         console.error('Failed to keep original bid:', err);
@@ -1207,7 +1229,7 @@ export class QuoteComponent implements OnInit {
 
     this.quoteService.updateQuote(quote).subscribe({
       next: (updatedQuote) => {
-        console.log('Quote updated:', updatedQuote);
+        // console.log('Quote updated:', updatedQuote);
         this.isSaving = false;
         this.cdr.detectChanges();
       },

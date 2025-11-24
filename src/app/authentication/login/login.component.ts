@@ -13,24 +13,24 @@ import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-
+declare const google: any;
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    NgIf,
-    MatFormFieldModule,
-    MatInputModule,
-    LoaderComponent,
-    MatButtonModule,
-    MatIconModule,
-    MatDividerModule,
-    RouterLink,
-  ],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+    selector: 'app-login',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        NgIf,
+        MatFormFieldModule,
+        MatInputModule,
+        LoaderComponent,
+        MatButtonModule,
+        MatIconModule,
+        MatDividerModule,
+        RouterLink,
+    ],
+    templateUrl: './login.component.html',
+    styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
   loginForm: FormGroup;
@@ -44,6 +44,7 @@ export class LoginComponent {
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    
     private route: ActivatedRoute
   ) {
     this.loginForm = this.formBuilder.group({
@@ -60,6 +61,60 @@ export class LoginComponent {
       ],
     });
   }
+  
+ngAfterViewInit() {
+  const checkGsiLoaded = setInterval(() => {
+    const googleLibLoaded = typeof window !== 'undefined' && (window as any).google?.accounts?.id;
+    const divExists = document.getElementById('googleSignInDiv');
+
+    if (googleLibLoaded && divExists) {
+      clearInterval(checkGsiLoaded);
+
+      google.accounts.id.initialize({
+        client_id: '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
+        callback: (response: any) => this.handleGoogleCredential(response),
+      });
+
+      google.accounts.id.renderButton(
+        divExists,
+        {
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          logo_alignment: 'center'
+        }
+      );
+    }
+  }, 250);
+}
+
+handleGoogleCredential(response: any) {
+  const idToken = response.credential;
+  this.isLoading = true;
+
+  this.authService.googleLogin(idToken).subscribe({
+    next: (res: any) => {
+      this.isLoading = false;
+
+      // Check if backend says registration is required
+   if (res.requiresRegistration) {
+  sessionStorage.setItem('googleData', JSON.stringify(res));
+  this.router.navigate(['/register']);
+}
+ else {
+        // ✅ Normal flow (handleSuccessfulLogin was already called inside the pipe)
+        this.router.navigateByUrl('dashboard');
+      }
+    },
+    error: (err) => {
+      console.error('Google login failed', err);
+      this.isLoading = false;
+      this.showAlert = true;
+      this.alertMessage = 'Google sign-in failed. Please try again.';
+    }
+  });
+}
 
   togglePasswordVisibility(): void {
     this.hidePassword = !this.hidePassword;
@@ -112,7 +167,7 @@ if (error.status === 401) {
       });
     } else {
          this.showResendLink = false;
-         
+
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
@@ -132,10 +187,11 @@ if (error.status === 401) {
       this.showAlert = true;
       this.alertMessage = 'Verification email sent successfully. Please check your inbox and spam folder.';
         },
-        error: (error: any) => {  
+        error: (error: any) => {
                 this.showAlert = true;
       this.alertMessage = 'An error occured. Please contact support.';
         },
       });
   }
+
 }

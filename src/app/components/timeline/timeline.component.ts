@@ -38,11 +38,11 @@ export interface TimelineGroup {
 }
 
 @Component({
-  selector: 'app-timeline',
-  standalone: true,
-  imports: [CommonModule, MatDialogModule],
-  templateUrl: './timeline.component.html',
-  styleUrls: ['./timeline.component.scss']
+    selector: 'app-timeline',
+    standalone: true,
+    imports: [CommonModule, MatDialogModule],
+    templateUrl: './timeline.component.html',
+    styleUrls: ['./timeline.component.scss']
 })
 export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   @Input() taskGroups: TimelineGroup[] = [];

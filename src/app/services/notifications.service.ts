@@ -43,7 +43,7 @@ export class NotificationsService {
 
   private connectSignalR(): void {
     if (!this.authService.isLoggedIn()) {
-      console.log('User not authenticated, skipping SignalR connection');
+      // console.log('User not authenticated, skipping SignalR connection');
       return;
     }
     this.hubConnection = new signalR.HubConnectionBuilder()
@@ -59,7 +59,7 @@ export class NotificationsService {
 
     this.hubConnection.start()
       .then(() => {
-        console.log('SignalR connection established');
+        // console.log('SignalR connection established');
         this.reconnectAttempts = 0;
       })
       .catch(err => {
@@ -67,20 +67,20 @@ export class NotificationsService {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           const delay = Math.pow(2, this.reconnectAttempts) * 1000;
-          console.log(`Reconnecting SignalR in ${delay}ms (attempt ${this.reconnectAttempts})`);
+          // console.log(`Reconnecting SignalR in ${delay}ms (attempt ${this.reconnectAttempts})`);
           setTimeout(() => this.connectSignalR(), delay);
         }
       });
 
     this.hubConnection.on('ReceiveNotification', (notification: Notification) => {
-      console.log('Received real-time notification:', notification);
+      // console.log('Received real-time notification:', notification);
       const currentNotifications = this.notificationsSubject.value;
       this.notificationsSubject.next([notification, ...currentNotifications]);
       this.checkForUnreadNotifications();
     });
 
     this.hubConnection.onclose((error) => {
-      console.log('SignalR connection closed.', error);
+      // console.log('SignalR connection closed.', error);
     });
   }
 
@@ -99,6 +99,8 @@ export class NotificationsService {
       const url = `${this.apiUrl}?page=${page}&pageSize=${pageSize}`;
       return this.http.get<PaginatedNotificationResponse>(url).pipe(
         tap(response => {
+            // console.log("Loaded notifications:", response.notifications);
+  // console.log("Unread exists?", response.notifications.some(n => n.isRead === false));
           const notifications = response?.notifications || [];
           this.notificationsSubject.next(notifications);
           this.checkForUnreadNotifications();
@@ -110,36 +112,42 @@ export class NotificationsService {
       );
     }
 
-  markRead(id: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${id}/mark-as-read`, {}).pipe(
-      tap(() => {
-        const currentNotifications = this.notificationsSubject.value;
-        const notification = currentNotifications.find(n => n.id === id);
-        if (notification) {
-          notification.unread = false;
-        }
-        this.notificationsSubject.next([...currentNotifications]);
-        this.checkForUnreadNotifications();
-      })
-    );
-  }
+markRead(id: number): Observable<any> {
+  return this.http.post(`${this.apiUrl}/mark-as-read/${id}`, {}).pipe(
+    tap(() => {
+      const updated = this.notificationsSubject.value.map(n =>
+        n.id === id ? { ...n, unread: false, isRead: true } : n
+      );
+      this.notificationsSubject.next(updated);
+      this.checkForUnreadNotifications();
+    })
+  );
+}
 
-  markAllRead(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/mark-all-as-read`, {}).pipe(
-      tap(() => {
-        const currentNotifications = this.notificationsSubject.value;
-        currentNotifications.forEach(n => n.unread = false);
-        this.notificationsSubject.next([...currentNotifications]);
-        this.hasUnreadNotifications$.next(false);
-      })
-    );
-  }
 
-  private checkForUnreadNotifications(): void {
-    const allNotifications = this.notificationsSubject.value;
-    const unreadNotifications = allNotifications.filter(n => !this.seenNotificationIds.includes(n.id));
-    this.hasUnreadNotifications$.next(unreadNotifications.length > 0);
-  }
+markAllRead(): Observable<any> {
+  return this.http.post(`${this.apiUrl}/mark-all-as-read`, {}).pipe(
+    tap(() => {
+      const updated = this.notificationsSubject.value.map(n => ({
+        ...n,
+        unread: false,
+        isRead: true
+      }));
+
+      this.notificationsSubject.next(updated);
+      this.hasUnreadNotifications$.next(false);
+    })
+  );
+}
+
+
+private checkForUnreadNotifications(): void {
+  const allNotifications = this.notificationsSubject.value;
+
+  const hasUnread = allNotifications.some(n => n.isRead === false || n.unread === true);
+
+  this.hasUnreadNotifications$.next(hasUnread);
+}
 
   private saveSeenNotifications(): void {
     localStorage.setItem('seenNotificationIds', JSON.stringify(this.seenNotificationIds));

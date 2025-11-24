@@ -17,22 +17,22 @@ import { LoaderComponent } from '../../loader/loader.component';
   providedIn: 'root',
 })
 @Component({
-  selector: 'app-reset-password',
-  templateUrl: './reset-password.component.html',
-  styleUrls: ['./reset-password.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatDividerModule,
-    MatProgressSpinnerModule,
-    LoaderComponent,
-    HttpClientModule
-  ]
+    selector: 'app-reset-password',
+    templateUrl: './reset-password.component.html',
+    styleUrls: ['./reset-password.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatDividerModule,
+        MatProgressSpinnerModule,
+        LoaderComponent,
+        HttpClientModule
+    ]
 })
 export class ResetPasswordComponent implements OnInit {
   resetForm!: FormGroup;

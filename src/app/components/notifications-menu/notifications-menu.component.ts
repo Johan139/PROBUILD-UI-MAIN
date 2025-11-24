@@ -10,15 +10,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  selector: 'app-notifications-menu',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    MatButtonModule,
-  ],
-  templateUrl: './notifications-menu.component.html',
-  styleUrls: ['./notifications-menu.component.scss']
+    selector: 'app-notifications-menu',
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatIconModule,
+        MatButtonModule,
+    ],
+    templateUrl: './notifications-menu.component.html',
+    styleUrls: ['./notifications-menu.component.scss']
 })
 export class NotificationsMenuComponent implements OnInit {
   recentNotifications$!: Observable<Notification[]>;
@@ -42,9 +42,9 @@ export class NotificationsMenuComponent implements OnInit {
 
   toggleMenu() {
     this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      this.notificationsService.markAllRead().subscribe();
-    }
+    // if (this.isOpen) {
+    //   this.notificationsService.markAllRead().subscribe();
+    // }
   }
 
   closeMenu() {
@@ -57,6 +57,7 @@ export class NotificationsMenuComponent implements OnInit {
   }
 
   navigateToJob(notification: any): void {
+        this.notificationsService.markRead(notification.id).subscribe();
     this.jobDataService.navigateToJob(notification);
     this.closeMenu();
   }

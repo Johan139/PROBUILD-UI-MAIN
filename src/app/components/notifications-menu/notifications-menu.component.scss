@@ -23,6 +23,13 @@
   }
 }
 
+.notif-unread-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--color-danger);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 .notif-backdrop {
   position: fixed;
   inset: 0;
@@ -70,16 +77,14 @@
 
 .notif-item {
   display: grid;
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 40px 1fr auto; /* Avatar | Content | Dot */
   gap: 12px;
   align-items: start;
   padding: 12px 16px;
   width: 100%;
-  border: none;
   border-bottom: 1px solid var(--color-border);
   background: transparent;
-  text-align: left;
-  cursor: pointer;
+
 
   &:last-child {
     border-bottom: none;
@@ -89,7 +94,12 @@
     background: var(--color-surface-hover);
   }
 }
-
+.notif-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;  /* top aligned */
+  padding-top: 4px;         /* tweak this if needed */
+}
 .avatar {
   width: 32px;
   height: 32px;

@@ -1,15 +1,14 @@
-// subscription-confirmation.component.ts
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SubscriptionService } from '../../app/services/subscription.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-subscription-confirmation',
-  templateUrl: './subscription-confirmation.component.html',
-  styleUrls: ['./subscription-confirmation.component.scss'],
-  standalone: true, // <== ✅ make sure this is here
-  imports: [CommonModule, ReactiveFormsModule], // <== ✅ add ReactiveFormsModule here
+    selector: 'app-subscription-confirmation',
+    templateUrl: './subscription-confirmation.component.html',
+    styleUrls: ['./subscription-confirmation.component.scss'],
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule]
 })
 export class SubscriptionConfirmationComponent {
   form: FormGroup;

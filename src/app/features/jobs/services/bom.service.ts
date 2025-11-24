@@ -45,23 +45,38 @@ export class BomService {
       return { sections: [] };
     }
 
+    console.log('Full Response:', fullResponse); // Debug log
+
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {
-      2: 'Groundwork & Foundation',
-      3: 'Framing & Structure',
-      4: 'Roofing',
-      5: 'Exterior Enclosure',
-      6: 'Electrical',
-      7: 'Plumbing',
-      8: 'HVAC',
-      9: 'Insulation',
-      10: 'Drywall',
-      11: 'Painting & Coatings',
-      12: 'Interior Trim & Doors',
-      13: 'Kitchen & Bath',
-      14: 'Flooring',
-      15: 'Exterior Flatwork & Landscaping',
-      16: 'Cleaning & Final Touches',
+      1: 'Site Logistics',
+      2: 'Quality Management',
+      3: 'Demolition',
+      4: 'Groundwork & Foundation',
+      5: 'Framing & Structure',
+      6: 'Roofing',
+      7: 'Exterior Enclosure',
+      8: 'Electrical',
+      9: 'Plumbing',
+      10: 'HVAC',
+      11: 'Fire Protection',
+      12: 'Insulation',
+      13: 'Drywall',
+      14: 'Painting & Coatings',
+      15: 'Interior Trim & Doors',
+      16: 'Kitchen & Bath',
+      17: 'Flooring',
+      18: 'Exterior Flatwork & Landscaping',
+      19: 'Cleaning & Final Touches',
+      20: 'Risk Analysis',
+      21: 'Timeline',
+      22: 'General Conditions',
+      23: 'Procurement',
+      24: 'Daily Construction Plan',
+      25: 'Cost Breakdowns',
+      26: 'Value Engineering',
+      27: 'Environmental Lifecycle',
+      28: 'Project Closeout'
     };
 
     const parseTableFromLines = (lines: string[], startIndex: number) => {
@@ -224,8 +239,9 @@ export class BomService {
         if (phaseName) {
           const lines = sectionText.trim().split('\n');
 
+          // Find 'Output 1: ... Materials BOM' or just 'Materials BOM'
           const bomTitleIndex = lines.findIndex((l) =>
-            l.includes('Materials Bill of Materials (BOM)')
+            l.includes('Output 1:') || l.includes('Materials BOM')
           );
           if (bomTitleIndex !== -1) {
             const table = parseTableFromLines(lines, bomTitleIndex + 1);
@@ -238,8 +254,9 @@ export class BomService {
             }
           }
 
+          // Find 'Output 2: Subcontractor Cost Breakdown' or just 'Subcontractor Cost Breakdown'
           const subconTitleIndex = lines.findIndex((l) =>
-            l.includes('Subcontractor Cost Breakdown')
+            l.includes('Output 2:') || l.includes('Subcontractor Cost Breakdown')
           );
           if (subconTitleIndex !== -1) {
             const table = parseTableFromLines(lines, subconTitleIndex + 1);
@@ -291,7 +308,7 @@ export class BomService {
     return { sections };
   }
 
-  generateBOMPDF(processingResults: any[]): void {
+  generateBOMPDF(processingResults: any[], projectName: string): void {
     if (!processingResults || processingResults.length === 0) {
       this.snackBar.open('No data available to generate PDF.', 'Close', {
         duration: 3000,
@@ -309,9 +326,12 @@ export class BomService {
       const addPageHeader = () => {
         if (withLogo) {
           doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+          doc.setFontSize(8);
+          doc.text('This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.', 10, 28);
+          doc.text('Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.', 10, 32);
         }
         doc.setFontSize(18);
-        doc.text('Bill of Materials', 10, withLogo ? 35 : 15);
+        doc.text(`Bill of Materials for: ${projectName}`, 10, withLogo ? 45 : 15);
       };
 
       parsedReport.sections.forEach((section: any, index: number) => {
@@ -321,12 +341,12 @@ export class BomService {
         addPageHeader();
 
         doc.setFontSize(14);
-        doc.text(section.title, 10, withLogo ? 45 : 25);
+        doc.text(section.title, 10, withLogo ? 55 : 25);
 
         autoTable(doc, {
           head: [section.headers],
           body: section.content,
-          startY: withLogo ? 50 : 30,
+          startY: withLogo ? 60 : 30,
           theme: 'grid',
           headStyles: {
             fillColor: '#FFC107',
@@ -335,7 +355,15 @@ export class BomService {
         });
       });
 
-      doc.save('bill-of-materials.pdf');
+      const date = new Date().toISOString().slice(0, 10);
+      doc.setProperties({
+        title: `${projectName} Bill of Materials`,
+        subject: 'AI-Generated Estimate',
+        author: 'ProBuild AI',
+        keywords: 'BOM, estimate, AI, construction',
+        creator: 'ProBuild AI'
+      });
+      doc.save(`${projectName}_BOM_${date}.pdf`);
     };
 
     logo.onload = () => {
@@ -348,5 +376,34 @@ export class BomService {
       });
       drawContent(false);
     };
+  }
+
+  public extractTotalCost(fullResponse: string): string | null {
+    if (!fullResponse) {
+      return null;
+    }
+
+    const parsedReport = this.parseReport(fullResponse);
+    if (!parsedReport || !parsedReport.sections || parsedReport.sections.length === 0) {
+      return null;
+    }
+
+    const lastSection = parsedReport.sections[parsedReport.sections.length - 1];
+    if (lastSection && lastSection.type === 'table' && lastSection.content && lastSection.content.length > 0) {
+      const lastRow = lastSection.content[lastSection.content.length - 1];
+      if (lastRow && lastRow.length > 0) {
+        const totalCostCell = lastRow[lastRow.length - 1];
+        const match = totalCostCell.match(/\$([\d,]+\.\d{2})/);
+        if (match && match[1]) {
+          return match[1];
+        }
+        const numberMatch = totalCostCell.match(/[\d,]+\.\d{2}/);
+        if (numberMatch && numberMatch[0]) {
+          return numberMatch[0];
+        }
+      }
+    }
+
+    return null;
   }
 }

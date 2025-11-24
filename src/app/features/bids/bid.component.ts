@@ -11,22 +11,22 @@ import { MatDividerModule } from '@angular/material/divider';
 import { NgIf } from '@angular/common';
 
 @Component({
-  selector: 'app-bid',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatTableModule,
-    MatDividerModule,
-    NgIf
-  ],
-  templateUrl: './bid.component.html', // Fixed to point to the correct HTML file
-  styleUrls: ['./bid.component.scss'],
-  providers: [BidService]
+    selector: 'app-bid',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatTableModule,
+        MatDividerModule,
+        NgIf
+    ],
+    templateUrl: './bid.component.html', // Fixed to point to the correct HTML file
+    styleUrls: ['./bid.component.scss'],
+    providers: [BidService]
 })
 export class BidComponent implements OnInit {
   bidForm: FormGroup;
