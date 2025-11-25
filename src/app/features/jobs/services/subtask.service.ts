@@ -204,15 +204,28 @@ export class SubtaskService {
   private prepareProjectData(status: string): any {
     const projectDetails = this.store.getState().projectDetails;
     const subtaskGroups = this.store.getState().subtaskGroups;
-    const formattedDate = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = (date: Date | string) => {
+      let d;
+      if (date instanceof Date) {
+        d = date;
+      } else if (typeof date === 'string') {
+        d = new Date(date);
+      } else {
+        d = new Date(); // Fallback for null/undefined
+      }
+
+      if (isNaN(d.getTime())) {
+        d = new Date(); // Fallback for invalid date string
+      }
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
 
     return {
-      Id: projectDetails.jobId || 0,
+      JobId: projectDetails.jobId || 0,
       ProjectName: projectDetails.projectName || '',
       JobType: projectDetails.jobType || '',
       Qty: Number(projectDetails.quantity) || 1,
@@ -291,7 +304,7 @@ export class SubtaskService {
         },
       });
   }
-  
+
   publishJob(jobId: number, job: any): Observable<any> {
     return this.jobsService.updateJob(job, jobId);
   }

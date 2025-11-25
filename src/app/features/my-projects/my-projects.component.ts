@@ -7,13 +7,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
-import { JobsService } from '../../services/jobs.service';
-import { AuthService } from '../../authentication/auth.service';
 import { ProjectCardComponent } from './project-card/project-card.component';
 import { Project } from '../../models/project';
 import { JobDataService } from '../jobs/services/job-data.service';
-import { TeamManagementService } from '../../services/team-management.service';
-import { BomService } from '../jobs/services/bom.service';
 import { LoaderComponent } from '../../loader/loader.component';
 import { ProjectService } from '../../services/project.service';
 import { ProjectsTableComponent } from '../../components/projects-table/projects-table.component';
@@ -49,22 +45,9 @@ export class MyProjectsComponent implements OnInit {
   draftProjectsCount = 0;
   failedProjectsCount = 0;
 
-  private jobCardImages = [
-    'assets/job-card/community-center.png',
-    'assets/job-card/construction-blueprint.png',
-    'assets/job-card/industrial-warehouse-construction.png',
-    'assets/job-card/modern-office-building-construction.jpg',
-    'assets/job-card/residential-tower-construction.jpg',
-    'assets/job-card/shopping-mall-renovation.jpg'
-  ];
-
   constructor(
-    private jobsService: JobsService,
-    private authService: AuthService,
     private router: Router,
     private jobDataService: JobDataService,
-    private teamManagementService: TeamManagementService,
-    private bomService: BomService,
     private snackBar: MatSnackBar,
     private projectService: ProjectService
   ) { }

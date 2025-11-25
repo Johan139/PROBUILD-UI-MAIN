@@ -69,6 +69,11 @@
       border-color: transparent;
       margin-right: var(--space-2);
 
+      &:hover {
+        color: var(--color-text);
+        background: transparent;
+      }
+
       &.active {
         color: var(--color-primary);
         border-bottom-color: var(--color-primary);

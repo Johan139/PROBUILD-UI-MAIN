@@ -69,19 +69,6 @@ export class ProjectService {
     });
   }
 
-  private calculateJobProgress(subtasks: any[]): number {
-    if (!subtasks || subtasks.length === 0) {
-      return 0;
-    }
-    const completedDays = subtasks
-      .filter(st => st.status?.toLowerCase() === 'completed')
-      .reduce((sum, st) => sum + st.days, 0);
-
-    const totalDays = subtasks.reduce((sum, st) => sum + st.days, 0);
-
-    return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-  }
-
   private getImageForJob(jobId: number): string {
     const projects = this.projects.getValue();
     const project = projects.find(p => p.jobId === jobId);
