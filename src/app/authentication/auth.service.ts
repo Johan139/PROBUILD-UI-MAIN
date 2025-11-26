@@ -114,7 +114,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      console.log('Access token expired, attempting to refresh...');
+     // console.log('Access token expired, attempting to refresh...');
       try {
         await firstValueFrom(this.refreshToken());
         const newToken = localStorage.getItem('accessToken');
@@ -125,6 +125,26 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       }
     }
   }
+googleLogin(idToken: string): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/google-login`, { idToken }).pipe(
+    switchMap((response) => {
+      if (!response.requiresRegistration) {
+        return this.handleSuccessfulLogin(response);
+      }
+      return of(response);
+    }),
+    catchError((error: HttpErrorResponse) => {
+      if (
+        error.status === 401 &&
+        error.error.error ===
+          'Email address has not been verified. Please check your inbox and spam folder.'
+      ) {
+        return throwError(() => this.handleLoginError(error));
+      }
+      return throwError(() => this.handleLoginError(error));
+    })
+  );
+}
 
   resendverificationemail(userid: string): Observable<any>
   {
@@ -138,8 +158,8 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
-          console.log(error.status)
-          console.log(error.error)
+          // console.log(error.status)
+          // console.log(error.error)
           if (error.status === 401 && error.error.error === "Email address has not been verified. Please check your inbox and spam folder.") {
             return throwError(() => this.handleLoginError(error));
           }
@@ -411,7 +431,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     this.teamManagementService.getPermissions(teamMemberId).subscribe({
       next: (permissions) => {
         this._userPermissions.next(permissions);
-        console.log('Permissions loaded:', this._userPermissions.getValue());
+        // console.log('Permissions loaded:', this._userPermissions.getValue());
       },
       error: (err) => {
         console.error('Failed to load user permissions', err);

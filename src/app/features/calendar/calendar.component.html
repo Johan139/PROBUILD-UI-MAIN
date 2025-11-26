@@ -3,21 +3,39 @@
       <div class="fullcolumn">
         <mat-card class="calendar-card">
           <mat-card-header>
-            <mat-card-title>Event Calendar</mat-card-title>
+            <mat-card-title>Jobs Calendar</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <mat-divider></mat-divider>
             <div class="calendar-content">
-              <div *ngIf="successMessage" class="success-message">
+              <!-- <div *ngIf="successMessage" class="success-message">
                 {{ successMessage }}
               </div>
               <div *ngIf="errorMessage" class="error-message">
                 {{ errorMessage }}
-              </div>
+              </div> -->
               <div class="calendar-controls">
                 <button mat-raised-button class="add-event-btn" (click)="openAddEventDialog()">
                   Add Event
                 </button>
+                <mat-button-toggle-group #group="matButtonToggleGroup" [(ngModel)]="viewMode" (change)="updateCalendarView()">
+                  <mat-button-toggle value="projects">
+                    Projects
+                  </mat-button-toggle>
+                  <mat-button-toggle value="tasks">
+                    Tasks
+                  </mat-button-toggle>
+                </mat-button-toggle-group>
+                <mat-form-field>
+                  <mat-label>Status</mat-label>
+                  <mat-select [(ngModel)]="statusFilter" (selectionChange)="updateCalendarView()">
+                    <mat-option value="all">All</mat-option>
+                    <mat-option value="LIVE">Live</mat-option>
+                    <mat-option value="BIDDING">Bidding</mat-option>
+                    <mat-option value="DRAFT">Preliminary</mat-option>
+                    <mat-option value="FAILED">Failed</mat-option>
+                  </mat-select>
+                </mat-form-field>
               </div>
               <full-calendar [options]="calendarOptions"></full-calendar>
             </div>

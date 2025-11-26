@@ -6,7 +6,6 @@ import { MatCardModule } from "@angular/material/card";
 import { MatDividerModule } from "@angular/material/divider";
 import { LoaderComponent } from '../../../loader/loader.component';
 import { LoginService } from "../../../services/login.service";
-import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { JobsService } from '../../../services/jobs.service';
@@ -20,6 +19,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { JobDataService } from '../../jobs/services/job-data.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -29,32 +29,39 @@ import { TeamManagementService } from '../../../services/team-management.service
 import { NoteDetailDialogComponent } from '../../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
 import { NoteService } from '../../jobs/services/note.service';
 import { UserService } from '../../../services/user.service';
+import { ProjectService } from '../../../services/project.service';
+import { Project } from '../../../models/project';
+import { ProjectCardComponent } from '../../my-projects/project-card/project-card.component';
+import { ProjectsTableComponent } from '../../../components/projects-table/projects-table.component';
 
- const BASE_URL = environment.BACKEND_URL;
- @Component({
-  selector: 'app-new-user-dashboard',
-  standalone: true,
-  imports: [
-    NgIf,
-    CommonModule,
-    MatButtonModule,
-    MatCardModule,
-    MatProgressBarModule,
-    MatDividerModule,
-    LoaderComponent,
-    MatDialogModule,
-    FileSizePipe,
-    MatFormFieldModule,
-    MatInputModule,
-    FormsModule,
-    MatSelectModule,
-    MatMenuModule,
-    MatIconModule,
-    MatTableModule
-],
-  templateUrl: './new-user-dashboard.component.html',
-  styleUrls: ['./new-user-dashboard.component.scss'],
-  providers: [provideNativeDateAdapter(), DatePipe]
+  const BASE_URL = environment.BACKEND_URL;
+  @Component({
+    selector: 'app-new-user-dashboard',
+    standalone: true,
+    imports: [
+        NgIf,
+        CommonModule,
+        MatButtonModule,
+        MatCardModule,
+        MatProgressBarModule,
+        MatDividerModule,
+        LoaderComponent,
+        MatDialogModule,
+        FileSizePipe,
+        MatFormFieldModule,
+        MatInputModule,
+        FormsModule,
+        MatSelectModule,
+        MatMenuModule,
+        MatIconModule,
+        MatTableModule,
+        ProjectCardComponent,
+        ProjectsTableComponent,
+        MatTooltipModule
+    ],
+    templateUrl: './new-user-dashboard.component.html',
+    styleUrls: ['./new-user-dashboard.component.scss'],
+    providers: [provideNativeDateAdapter(), DatePipe]
 })
 export class NewUserDashboardComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -63,7 +70,6 @@ export class NewUserDashboardComponent implements OnInit {
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {id: number, projectName: string, createdAt: string, progress: number, status: string }[] = [];
-  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
   notesDisplayedColumns: string[] = ['project', 'task', 'created', 'status', 'action'];
   jobsLoading: boolean = false;
   isLoading: boolean = false;
@@ -90,6 +96,9 @@ export class NewUserDashboardComponent implements OnInit {
   ];
   teams: any[] = [];
   selectedTeam: any = null;
+  projects: Project[] = [];
+  currentIndex = 0;
+  projectView: 'grid' | 'list' = 'grid';
 
   constructor(
     private loginService: LoginService,
@@ -104,12 +113,13 @@ export class NewUserDashboardComponent implements OnInit {
     private teamManagementService: TeamManagementService,
     private noteService: NoteService,
     private userService: UserService,
+    private projectService: ProjectService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
   onViewNote(note: any): void {
-    // You can open a modal, route to a detail page, or fetch more info here.
+    // Open a modal, route to a detail page, whatever
   }
 
   getNoteStatus(note: any): string {
@@ -171,7 +181,8 @@ export class NewUserDashboardComponent implements OnInit {
       }
     });
 
-    this.loadUserJobs();
+    this.projectService.projects$.subscribe(projects => this.projects = projects);
+    this.projectService.loadProjects();
     this.isSubContractor = this.userType === 'SUBCONTRACTOR' || this.userType === 'CONSTRUCTION';
 
     setTimeout(() => {
@@ -413,19 +424,8 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   archiveJob(jobId: number): void {
-    this.jobService.archiveJob(jobId).subscribe({
-      next: () => {
-        this.snackBar.open('Job archived successfully!', 'Close', {
-          duration: 3000,
-        });
-        this.loadUserJobs();
-      },
-      error: () => {
-        this.snackBar.open('Failed to archive job.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
+    this.projectService.archiveProject(jobId);
+    this.snackBar.open('Job archived successfully!', 'Close', { duration: 3000 });
   }
 
   startApproval(note: any) {
@@ -542,10 +542,34 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   navigateToProjects() {
-    this.router.navigateByUrl('/projects');
+    this.router.navigateByUrl('/my-projects');
   }
 
   navigateToJobs() {
-    this.router.navigateByUrl('job-quote');
+    this.router.navigateByUrl('new-project');
+  }
+
+  navigateToCalendar() {
+    this.router.navigateByUrl('/calendar');
+  }
+
+  get visibleProjects() {
+    return this.projects.slice(this.currentIndex, this.currentIndex + 3);
+  }
+
+  nextProject() {
+    if (this.currentIndex < this.projects.length - 3) {
+      this.currentIndex++;
+    }
+  }
+
+  prevProject() {
+    if (this.currentIndex > 0) {
+      this.currentIndex--;
+    }
+  }
+
+  toggleProjectView(view: 'grid' | 'list') {
+    this.projectView = view;
   }
 }

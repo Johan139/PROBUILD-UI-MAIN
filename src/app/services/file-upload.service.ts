@@ -25,7 +25,6 @@ export interface UploadProgress {
     files?: UploadedFileInfo[];
 }
 
-
 @Injectable({
   providedIn: 'root'
 })
@@ -148,7 +147,7 @@ export class FileUploadService {
 
 
     dialogRef.afterClosed().subscribe(result => {
-      console.log('The dialog was closed');
+      // console.log('The dialog was closed');
     });
   }
 
@@ -189,5 +188,24 @@ export class FileUploadService {
     });
 
     return uploadSubject.asObservable();
+  }
+
+  getFile(url: string): Observable<Blob> {
+    return this.httpClient.get(`${BASE_URL}/Jobs/downloadFile`, {
+      params: { fileUrl: url },
+      responseType: 'blob'
+    });
+  }
+
+  deleteTemporaryFile(fileUrl: string): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: [fileUrl],
+    });
+  }
+
+  deleteTemporaryFiles(fileUrls: string[]): Observable<any> {
+    return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+      blobUrls: fileUrls,
+    });
   }
 }

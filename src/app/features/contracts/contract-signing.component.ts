@@ -16,9 +16,10 @@ interface Contract {
 }
 
 @Component({
-  selector: 'app-contract-signing',
-  templateUrl: './contract-signing.component.html',
-  styleUrls: ['./contract-signing.component.scss']
+    selector: 'app-contract-signing',
+    templateUrl: './contract-signing.component.html',
+    styleUrls: ['./contract-signing.component.scss'],
+    standalone: false
 })
 export class ContractSigningComponent implements OnInit {
   contract: Contract | null = null;

@@ -3,7 +3,7 @@
     <div class="fullcolumn">
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Job: {{projectDetails.projectName}}</mat-card-title>
+          <mat-card-title>Job: {{projectDetails?.projectName}}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <mat-divider></mat-divider>
@@ -17,8 +17,8 @@
             <div class="address-container">
               <div *ngIf="!isEditingAddress" class="address-display">
                 <span><strong>Address: </strong>
-                  <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
-                  <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
+                  <span *ngIf="projectDetails?.address">{{projectDetails?.address}}</span>
+                  <span *ngIf="!projectDetails?.address && projectDetails?.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
                 </span>
                 <button *ngIf="authService.hasPermission('editJobs')" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
                   <mat-icon>edit</mat-icon>
@@ -46,8 +46,8 @@
                 <img [src]="day.iconUrl" alt="Weather Icon" />
                 <div class="condition">{{ day.condition }}</div>
                 <div class="temp">
-                  <span class="high">{{ day.highTemp }}°</span>
-                  <span class="low">{{ day.lowTemp }}°</span>
+                  <span class="high">{{ measurementService.convertTemperature(day.highTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
+                  <span class="low">{{ measurementService.convertTemperature(day.lowTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
                 </div>
                 <div class="precip">
                   {{ day.precipitationProbability }}%
@@ -154,10 +154,14 @@
             <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()" matTooltip="View all documents associated with this job">
               View Documents
             </button>
+            <button class="submit-btn save-btn" mat-raised-button (click)="openReportDialog()" [disabled]="isReportLoading" matTooltip="View the full AI-generated report">
+              <span *ngIf="!isReportLoading">View Full Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
             <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
               View Bill of Materials
             </button>
-            <button *ngIf="!projectDetails.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
+            <button *ngIf="!projectDetails?.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
               <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
               <span *ngIf="isGeneratingReport">Generating...</span>
             </button>
@@ -262,6 +266,11 @@
     </mat-dialog-content>
     <mat-dialog-actions>
       <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">Download PDF</button>
+      <button class="submit-btn" mat-raised-button [matMenuTriggerFor]="spreadsheetMenu">Download as Spreadsheet</button>
+      <mat-menu #spreadsheetMenu="matMenu">
+        <button mat-menu-item (click)="downloadAsSpreadsheet('csv')">Download as CSV</button>
+        <button mat-menu-item (click)="downloadAsSpreadsheet('excel')">Download as Excel</button>
+      </mat-menu>
       <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
     </mat-dialog-actions>
   </div>
@@ -311,6 +320,28 @@
     </mat-dialog-actions>
   </div>
 </ng-template>
+
+<!-- Full Report Dialog -->
+<ng-template #reportDialog>
+  <div class="documents-dialog report-dialog">
+    <h2 mat-dialog-title>Full Project Analysis Report</h2>
+    <mat-dialog-content class="report-content">
+      <div *ngIf="reportError" class="no-documents" error>
+        <p>{{reportError}}</p>
+      </div>
+      <div *ngIf="reportHtml" class="report-text-content" [innerHTML]="reportHtml">
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button class="submit-btn" mat-raised-button (click)="downloadFullReport()" [disabled]="isGeneratingReport">
+        <span *ngIf="!isGeneratingReport">Download PDF</span>
+        <span *ngIf="isGeneratingReport">Generating...</span>
+      </button>
+      <button class="submit-btn" mat-raised-button (click)="closeReportDialog()">Close</button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
 <!-- Alert Modal -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">

@@ -46,6 +46,6 @@ export class TeamManagementService {
   }
 
   updatePermissions(teamMemberId: string, permissions: string[]): Observable<any> {
-    return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, { PermissionKeys: permissions });
+    return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, { Permissions: permissions });
   }
 }

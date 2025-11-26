@@ -14,20 +14,20 @@ import { MatStepper } from '@angular/material/stepper';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  selector: 'app-submit-bid-dialog',
-  templateUrl: './submit-bid-dialog.component.html',
-  styleUrls: ['./submit-bid-dialog.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatStepperModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatProgressBarModule,
-    PdfViewerComponent,
-    MatDialogModule
-  ]
+    selector: 'app-submit-bid-dialog',
+    templateUrl: './submit-bid-dialog.component.html',
+    styleUrls: ['./submit-bid-dialog.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatStepperModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatProgressBarModule,
+        PdfViewerComponent,
+        MatDialogModule
+    ]
 })
 
 export class SubmitBidDialogComponent implements OnInit {

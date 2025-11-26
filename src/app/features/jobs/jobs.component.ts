@@ -1,10 +1,9 @@
 import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from "@angular/router";
-import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
+import { NgForOf, NgIf, isPlatformBrowser, DecimalPipe } from "@angular/common";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
-import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
 import { LoaderComponent } from '../../loader/loader.component';
@@ -14,17 +13,17 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatMenuModule } from '@angular/material/menu';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, timeout, debounceTime, switchMap, of, Observable, map, filter, take } from 'rxjs';
+import { Subscription, debounceTime, switchMap, of, map, filter, take } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { Location } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { TimelineComponent, TimelineTask, TimelineGroup } from '../../components/timeline/timeline.component';
+import { TimelineComponent, TimelineGroup } from '../../components/timeline/timeline.component';
 import { JobDataService } from './services/job-data.service';
 import { SubtaskService } from './services/subtask.service';
 import { DocumentService } from './services/document.service';
@@ -39,41 +38,47 @@ import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
+import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
+import { SpreadsheetService } from './services/spreadsheet.service';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
-  selector: 'app-jobs',
-  standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    NgIf,
-    NgForOf,
-    MatButton,
-    MatCard,
-    MatCardHeader,
-    MatCardTitle,
-    MatCardContent,
-    MatDivider,
-    MatIconModule,
-    MatTooltipModule,
-    LoaderComponent,
-    MatDialogModule,
-    MatListModule,
-    MatIconModule,
-    MatProgressBarModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FileSizePipe,
-    MatCheckboxModule,
-    TimelineComponent,
-    MatAutocompleteModule
-  ],
-  templateUrl: './jobs.component.html',
-  styleUrl: './jobs.component.scss'
+    selector: 'app-jobs',
+    standalone: true,
+    imports: [
+        FormsModule,
+        ReactiveFormsModule,
+        NgIf,
+        NgForOf,
+        DecimalPipe,
+        MatButton,
+        MatCard,
+        MatCardHeader,
+        MatCardTitle,
+        MatCardContent,
+        MatDivider,
+        MatIconModule,
+        MatTooltipModule,
+        LoaderComponent,
+        MatDialogModule,
+        MatListModule,
+        MatIconModule,
+        MatProgressBarModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FileSizePipe,
+        MatCheckboxModule,
+        TimelineComponent,
+        MatAutocompleteModule,
+        MatMenuModule
+    ],
+    templateUrl: './jobs.component.html',
+    styleUrl: './jobs.component.scss'
 })
 export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
+  @ViewChild('reportDialog') reportDialog!: TemplateRef<any>;
   @ViewChild('noteDialog') noteDialog!: TemplateRef<any>;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   addressSuggestions: { description: string; place_id: string }[] = [];
@@ -111,10 +116,14 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   jobCardForm: FormGroup;
   sessionId: string = '';
   public isGeneratingReport = false;
+  public isReportLoading = false;
+  public reportHtml: string | null = null;
+  public reportError: string | null = null;
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
   timelineGroups: TimelineGroup[] = [];
+  temperatureUnit: TemperatureUnit = 'C';
 
   constructor(
     private route: ActivatedRoute,
@@ -137,7 +146,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     private jobAssignmentService: JobAssignmentService,
     public authService: AuthService,
     private weatherService: WeatherService,
-    private weatherImpactService: WeatherImpactService
+    private weatherImpactService: WeatherImpactService,
+    public measurementService: MeasurementService,
+    private spreadsheetService: SpreadsheetService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -149,7 +160,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.sessionId = uuidv4();
-    this.signalrService.startConnection(this.sessionId);
+    this.measurementService.getSettings().subscribe(settings => {
+      this.temperatureUnit = settings.temperature;
+    });
+    this.signalrService.startConnection();
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
     });
@@ -167,7 +181,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       filter(projectDetails => !!projectDetails)
     ).subscribe(projectDetails => {
       this.projectDetails = projectDetails;
-      this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
+      if (this.projectDetails?.date) {
+  const d = new Date(this.projectDetails.date);
+  this.startDateDisplay = isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+} else {
+  this.startDateDisplay = null;
+}
 
       if (this.projectDetails?.jobId) {
         this.authService.currentUser$.pipe(
@@ -329,7 +348,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateBOMPDF(): void {
-    this.bomService.generateBOMPDF(this.processingResults);
+    this.bomService.generateBOMPDF(this.processingResults, this.projectDetails.projectName);
   }
 
   downloadEnvironmentalReport(jobId: string): void {
@@ -337,6 +356,90 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportService
       .downloadEnvironmentalReport(jobId)
       .finally(() => (this.isGeneratingReport = false));
+  }
+
+  openReportDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+
+    this.reportService.getFullReportContent(this.projectDetails.jobId)
+      .then(content => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh'
+          });
+        } else {
+          this.snackBar.open('Could not retrieve report content.', 'Close', { duration: 3000 });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        this.snackBar.open('An error occurred while fetching the report.', 'Close', { duration: 3000 });
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  closeReportDialog(): void {
+    this.dialog.closeAll();
+  }
+
+  downloadFullReport(): void {
+    if (!this.reportHtml) return;
+
+    this.isGeneratingReport = true;
+    const fileName = `${this.projectDetails.projectName}_Full_Report.pdf`;
+
+    this.reportService.generatePdfFromHtml(this.reportHtml, fileName, 'Full Project Analysis Report')
+      .finally(() => {
+        this.isGeneratingReport = false;
+      });
+  }
+
+  downloadAsSpreadsheet(format: 'csv' | 'excel'): void {
+    const data: { [key: string]: any[] } = {};
+    this.processingResults.forEach(result => {
+      result.parsedReport.sections.forEach((section: { title: string; headers: any[]; content: any[][]; }) => {
+        if (!data[section.title]) {
+          data[section.title] = [];
+        }
+        section.content.forEach((row: { [x: string]: any; }) => {
+          const newRow: { [key: string]: any } = {};
+          section.headers.forEach((header: string | number, index: string | number) => {
+            newRow[header] = row[index];
+          });
+          data[section.title].push(newRow);
+        });
+      });
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    const fileName = `${this.projectDetails.projectName}_BOM_${date}`;
+
+    if (format === 'csv') {
+      const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Download Multiple CSVs',
+          message: 'This will download a separate CSV file for each section of the Bill of Materials. Do you want to continue?',
+          confirmButtonText: 'Yes, Download All',
+          cancelButtonText: 'Cancel'
+        }
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.spreadsheetService.generateCsv(data, fileName);
+        }
+      });
+    } else if (format === 'excel') {
+      this.spreadsheetService.generateExcel(data, fileName);
+    }
   }
 
   openDocumentsDialog() {

@@ -45,7 +45,7 @@ export class WeatherService {
 
   getWeatherForecast(lat: number, lon: number): Observable<ForecastDay[]> {
     const url = `${BASE_URL}/weather-forecast?lat=${lat}&lon=${lon}`; // Your backend proxy
-    console.log('Calling backend weather endpoint:', url);
+    // console.log('Calling backend weather endpoint:', url);
 
     return this.httpClient.get<GoogleForecastResponse>(url).pipe(
       map((data) => {

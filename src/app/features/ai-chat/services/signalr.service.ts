@@ -21,7 +21,7 @@ export class SignalrService {
     if (this.connectionPromise) return this.connectionPromise;
 
     if (!this.authService.isLoggedIn()) {
-      console.log('SignalR: User not logged in, skipping connection.');
+      // console.log('SignalR: User not logged in, skipping connection.');
       return;
     }
 
@@ -51,21 +51,21 @@ export class SignalrService {
       });
 
       this.hubConnection.onreconnected(connectionId => {
-        console.info('SignalR: reconnected.', { connectionId });
+        // console.info('SignalR: reconnected.', { connectionId });
       });
 
       this.hubConnection.onclose(err => {
         if (err) {
           console.error('SignalR: connection closed due to error:', err);
         } else {
-          console.log('SignalR: connection closed gracefully (stop/dispose).');
+          // console.log('SignalR: connection closed gracefully (stop/dispose).');
         }
         this.connectionPromise = undefined;
       });
     }
 
     this.connectionPromise = this.hubConnection.start()
-      .then(() => console.log('SignalR: connection started.'))
+      .then()
       .catch(err => {
         console.error('SignalR: failed to start:', err);
         this.connectionPromise = undefined;

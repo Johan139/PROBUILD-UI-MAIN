@@ -1,15 +1,10 @@
 // ==========================================================================
 // GLOBAL STYLESHEET
 // ==========================================================================
-//
-// Main entry point for the global styles.
-// It imports all design tokens, utilities, and sets up the Angular Material
-// theme bridge
 
 // --------------------------------------------------------------------------
 // 1. DESIGN TOKENS
 // --------------------------------------------------------------------------
-// Import all token files to make CSS custom properties available globally
 
 @use "tokens/colors";
 @use "tokens/typography";
@@ -21,8 +16,6 @@
 // --------------------------------------------------------------------------
 // 2. UTILITIES & MIXINS
 // --------------------------------------------------------------------------
-// Import utility classes and mixins. Mixins are not output directly
-// but are made available for use in component stylesheets
 
 @use "util/utilities";
 @use "util/mixins";
@@ -38,14 +31,13 @@
 // --------------------------------------------------------------------------
 // 3. ANGULAR MATERIAL THEME BRIDGE
 // --------------------------------------------------------------------------
-//
 
 @use "@angular/material" as mat;
+@include mat.core();
 
 // --------------------------------------------------------------------------
-// 4. CSS RESET & BASE STYLES
+// 4. CSS RESET & BASE
 // --------------------------------------------------------------------------
-// A minimal reset to ensure cross-browser consistency
 
 *,
 *::before,
@@ -69,34 +61,10 @@ body {
   min-height: 100vh;
 }
 
-@include mat.core();
+// --------------------------------------------------------------------------
+// 5. THEME DEFINITIONS
+// --------------------------------------------------------------------------
 
-$probuild-yellow-palette: (
-  50: #fffde7,
-  100: #fff9c4,
-  200: #fff59d,
-  300: #fff176,
-  400: #ffee58,
-  500: #FFEB3B, // Base
-  600: #FDD835,
-  700: #FBC02D,
-  800: #F9A825,
-  900: #F57F17,
-  contrast: (
-    50: rgba(0, 0, 0, 0.87),
-    100: rgba(0, 0, 0, 0.87),
-    200: rgba(0, 0, 0, 0.87),
-    300: rgba(0, 0, 0, 0.87),
-    400: rgba(0, 0, 0, 0.87),
-    500: rgba(0, 0, 0, 0.87),
-    600: rgba(0, 0, 0, 0.87),
-    700: rgba(0, 0, 0, 0.87),
-    800: rgba(0, 0, 0, 0.87),
-    900: rgba(0, 0, 0, 0.87),
-  )
-);
-
-// Light theme configuration
 $probuild-light-theme: mat.define-theme((
   color: (
     theme-type: light,
@@ -112,7 +80,6 @@ $probuild-light-theme: mat.define-theme((
   )
 ));
 
-// Dark theme configuration
 $probuild-dark-theme: mat.define-theme((
   color: (
     theme-type: dark,
@@ -128,31 +95,40 @@ $probuild-dark-theme: mat.define-theme((
   )
 ));
 
-// Apply themes
+// --------------------------------------------------------------------------
+// 6. APPLY THEMES
+// --------------------------------------------------------------------------
+
 :root {
-  // Apply all light theme component styles
   @include mat.all-component-themes($probuild-light-theme);
 
-  // Override specific Material properties with tokens
   .mat-mdc-card {
     --mdc-elevated-card-container-color: var(--color-surface);
     --mdc-elevated-card-elevation: var(--shadow-2);
   }
+
   .mat-mdc-dialog-container .mdc-dialog__surface {
     background-color: var(--color-surface);
   }
 }
 
-// IMPORTANT: This sets the background for the entire app
+.theme-dark {
+  color-scheme: dark;
+  @include mat.all-component-colors($probuild-dark-theme);
+}
+
+// --------------------------------------------------------------------------
+// 7. GLOBAL ANGULAR MATERIAL OVERRIDES
+// --------------------------------------------------------------------------
+
 .mat-drawer-container {
   background-color: var(--color-canvas) !important;
 }
 
-
 .mat-mdc-card,
 .mat-expansion-panel,
 .mat-expansion-panel-header,
-.mat-form-field
+.mat-form-field,
 .mat-mdc-form-field,
 .mat-mdc-form-field-flex,
 .mat-mdc-form-field-infix,
@@ -172,16 +148,9 @@ $probuild-dark-theme: mat.define-theme((
   background-color: var(--color-surface) !important;
 }
 
-
-.theme-dark {
-  // Apply all dark theme component styles
-  @include mat.all-component-themes($probuild-dark-theme);
-}
-
-
-// ==========================================================================
-// GLOBAL CUSTOM SCROLLBARS
-// ==========================================================================
+// --------------------------------------------------------------------------
+// 8. SCROLLBARS
+// --------------------------------------------------------------------------
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -198,15 +167,14 @@ $probuild-dark-theme: mat.define-theme((
   border-radius: 999px;
 }
 
-// ==========================================================================
-// GLOBAL TOOLTIP STYLES
-// ==========================================================================
+// --------------------------------------------------------------------------
+// 9. TOOLTIP
+// --------------------------------------------------------------------------
 
 .mdc-tooltip {
   .mdc-tooltip__surface {
     background-color: var(--color-accent) !important;
     color: var(--color-text-white) !important;
     font-size: var(--font-size-sm);
-    // padding: var(--space-2) var(--space-3);
   }
 }

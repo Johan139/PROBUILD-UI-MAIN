@@ -27,6 +27,8 @@ export interface Profile {
   city: string | null;
   subscriptionPackage: string | null;
   isVerified: boolean;
+  userAddresses?: UserAddress[];
+  countryNumberCode: string ;
 }
 
 export interface TeamMember {
@@ -51,3 +53,31 @@ export interface ProfileDocument {
   size: number;
   blobUrl: string;
 }
+
+export interface UserAddress {
+  id: number;
+  streetNumber: string;
+  streetName: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  latitude?: any | null;
+  longitude?: any | null;
+  formattedAddress: string;
+  googlePlaceId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  userId?: string;
+  countryCode: string;
+  addressType?: string;
+}
+
+export interface AddressType{
+  id: string;
+  name: string;
+  description: string; 
+  isdefault: number;
+  displayorder: number;
+}
+

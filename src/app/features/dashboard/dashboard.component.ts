@@ -6,21 +6,21 @@ import {NewUserDashboardComponent} from "./new-user-dashboard/new-user-dashboard
 import {ProjectsService} from "../../services/projects.service";
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [
-    NgIf,
-    NewUserDashboardComponent,
-    MatIconModule,
-    MatSidenavModule
-  ],
-  templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss'
+    selector: 'app-dashboard',
+    standalone: true,
+    imports: [
+        NgIf,
+        NewUserDashboardComponent,
+        MatIconModule,
+        MatSidenavModule
+    ],
+    templateUrl: './dashboard.component.html',
+    styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit{
     nrProjects: number = 0;
 
-    
+
     constructor(private projectService: ProjectsService) {
     }
 

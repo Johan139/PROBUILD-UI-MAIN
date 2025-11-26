@@ -14,9 +14,9 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
     selector: 'app-note-detail-dialog',
+    standalone: true,
     templateUrl: './note-detail-dialog.component.html',
     styleUrls: ['./note-detail-dialog.component.scss'],
-    standalone: true,
     imports: [CommonModule, MatButtonModule, MatDialogModule, DatePipe, MatFormFieldModule, MatInputModule, FormsModule, MatIconModule]
 })
 export class NoteDetailDialogComponent implements OnInit {
@@ -51,7 +51,7 @@ export class NoteDetailDialogComponent implements OnInit {
   }
 
   startApproval(note: any): void {
-    console.log('Note object in startApproval:', note);
+    // console.log('Note object in startApproval:', note);
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {

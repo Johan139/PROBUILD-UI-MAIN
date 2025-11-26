@@ -29,7 +29,7 @@ export class StripeService {
   constructor(private httpClient: HttpClient) {}
 
   createCheckoutSession(subscription: {source:string,userId: string, packageName: string; amount: number, assignedUser: string, billingCycle: BillingCycle}): Observable<{ url: string }> {
-    console.log(subscription)
+    // console.log(subscription)
     return this.httpClient.post<{ url: string }>(
       `${BASE_URL}/create-checkout-session`,
       subscription
