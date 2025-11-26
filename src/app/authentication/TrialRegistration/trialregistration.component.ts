@@ -10,7 +10,7 @@ import {MatButton} from "@angular/material/button";
 import {HttpClient} from "@angular/common/http";
 import {Router, ActivatedRoute} from "@angular/router";
 import { environment } from '../../../environments/environment';
-import {catchError, map, startWith} from 'rxjs/operators';
+import {catchError, debounceTime, distinctUntilChanged, map, startWith} from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
 import {Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
@@ -46,6 +46,9 @@ import {
   certificationOptions
 } from '../../data/registration-data';
 import { RegistrationService } from '../../services/registration.service';
+import { ElementRef, Inject, PLATFORM_ID, AfterViewInit } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { ProfileService } from '../profile/profile.service';
 
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
@@ -85,10 +88,14 @@ export type BillingCycle = 'monthly' | 'yearly';
 export class TrialRegistrationComponent implements OnInit{
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
     @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
+      @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
   token: string | null = null;
+    isBrowser: boolean | undefined;
+  isGoogleMapsLoaded: boolean = false;
+  autocomplete!: google.maps.places.Autocomplete;
   // Options for dropdowns
   constructionTypes = constructionTypes;
   trades = trades;
@@ -106,12 +113,16 @@ export class TrialRegistrationComponent implements OnInit{
 
   countries: any[] = [];
 states: any[] = [];
+  countryNumberCode: any[] = [];
+  selectedCountryCode: any;
+  addressTypes: { id: string; name: string; description?: string }[] = []; // ✅ added
   filteredCountries: Observable<any[]> | undefined;
   filteredStates: Observable<any[]> | undefined;
   
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
-
+    countryFilterCtrl = new FormControl('');
+filteredCountryCodes!: Observable<any[]>;
   tradeCtrl = new FormControl();
   filteredTrades: Observable<{ value: string; display: string; }[]>;
   selectedTrades: { value: string; display: string; }[] = [];
@@ -126,6 +137,7 @@ states: any[] = [];
   isLoading: boolean = false;
 
   constructor(
+        @Inject(PLATFORM_ID) private platformId: Object,
     private formBuilder: FormBuilder,
     private httpClient: HttpClient,
     private router: Router,
@@ -133,8 +145,10 @@ states: any[] = [];
     private registrationService: RegistrationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
-    private invitationService: InvitationService
+    private invitationService: InvitationService,
+    private profileService: ProfileService
   ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
@@ -157,14 +171,34 @@ states: any[] = [];
       })
     );
   }
+private _filterCountryCodes(value: string): any[] {
+  const search = (value || '').toLowerCase().trim();
+  if (!search) return this.countryNumberCode;
 
+  return this.countryNumberCode.filter(c =>
+    c.countryCode?.toLowerCase().includes(search) ||
+    c.countryPhoneNumberCode?.toLowerCase().includes(search)
+  );
+}
   ngOnInit() {
     this.loadSubscriptionPackages();
  this.loadGoogleTag();
-    this.registrationForm = this.formBuilder.group({
+
+      this.profileService.getAddressType().subscribe({
+    next: (types) => (this.addressTypes = types),
+    error: (err) => console.error('Failed to load address types', err)
+  });
+
+     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
-      phoneNumber: ['', Validators.required],
+      phoneNumber: [
+  '',
+  [
+    Validators.required,
+    Validators.pattern(/^[0-9\s()+-]{6,20}$/) // allows 6–15 digits only
+  ]
+],
       email: [{value: '', disabled: true}, [Validators.required, Validators.email]],
       password: [
         '',
@@ -179,18 +213,22 @@ states: any[] = [];
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
+      countryCode: [''],
       billingCycle: ['monthly'],
+        city: [''],
+  state: [''],
+  country: [''],
       latitude: [null],
       longitude: [null],
       formattedAddress: [''],
       googlePlaceId: [''],
       vatNo: [''],
+      addressType: ['', Validators.required],
       userType: ['PERSONAL_USE', Validators.required],
 
       constructionType: ([]),
-      country: ['', Validators.required],
-      state: ['', Validators.required],
-      city: ['', Validators.required],
+
+      countryNumberCode:[''],
 
       nrEmployees: (''),
       yearsOfOperation: (''),
@@ -198,8 +236,7 @@ states: any[] = [];
       certificationDocumentPath: (''),
       availability:(''),
 
-      subscriptionPackage: [{ value: 'Trial', disabled: true }, Validators.required],
-
+      subscriptionPackage: ['', Validators.required],
       projectPreferences: ([]),
 
       productsOffered:([]),
@@ -211,9 +248,40 @@ states: any[] = [];
 
     this.user = 'PERSONAL_USE';
 
-  // Fetch countries
-this.registrationService.getCountries().subscribe(countries => {
-  this.countries = countries;
+  this.registrationService.getAllCountryNumberCodes().subscribe(data => {
+ this.registrationService.getAllCountryNumberCodes().subscribe(data => {
+  this.countryNumberCode = data;
+
+  // 🌍 Try to get user's real country via IP API
+  this.getUserMetadata().subscribe({
+    next: (meta) => {
+      const ipCountryCode = meta?.country_code || meta?.country || 'US'; // fallback to ZA
+      const detected = this.countryNumberCode.find(
+        c => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase()
+      );
+      if (detected) {
+        this.selectedCountryCode = detected;
+      } else {
+        // fallback if no match
+        const fallback = this.countryNumberCode.find(c => c.countryCode === 'US');
+        this.selectedCountryCode = fallback || this.countryNumberCode[0];
+      }
+   // Initialize filter stream
+this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+  startWith(''),
+  debounceTime(100),
+  distinctUntilChanged(),
+  map(value => this._filterCountryCodes(value ?? ''))
+);
+      // console.log(`🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`);
+    },
+    error: (err) => {
+      console.warn('Could not detect country via IP API, defaulting to ZA', err);
+      const fallback = this.countryNumberCode.find(c => c.countryCode === 'ZA');
+      this.selectedCountryCode = fallback || this.countryNumberCode[0];
+    }
+  });
+});
 
   this.registrationForm.get('country')?.setValidators([
     Validators.required,
@@ -316,7 +384,81 @@ this.registrationService.getAllStates().subscribe(allStates => {
       }
     });
   }
+async ngAfterViewInit(): Promise<void> {
+  if (!this.isBrowser) return;
 
+  try {
+    await this.loadGoogleMapsScript();
+    this.isGoogleMapsLoaded = true;
+    this.initAutocomplete();
+  } catch (err) {
+    console.error('Failed to load Google Maps API:', err);
+  }
+}
+private initAutocomplete(): void {
+  if (!this.addressInput?.nativeElement) return;
+
+  this.autocomplete = new google.maps.places.Autocomplete(this.addressInput.nativeElement, {
+    fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
+    types: ['geocode'],
+  });
+
+  this.autocomplete.addListener('place_changed', () => {
+    const place = this.autocomplete.getPlace();
+    if (!place.address_components) return;
+    this.handlePlaceSelection(place);
+  });
+}
+private handlePlaceSelection(place: any): void {
+  let streetNumber = '';
+  let streetName = '';
+  let city = '';
+  let state = '';
+  let postalCode = '';
+  let country = '';
+  let countryCode = '';
+
+  for (const component of place.address_components) {
+    const types = component.types;
+
+    if (types.includes('street_number')) streetNumber = component.long_name;
+    if (types.includes('route')) streetName = component.long_name;
+    if (types.includes('locality') || types.includes('sublocality')) city = component.long_name;
+    if (types.includes('administrative_area_level_1')) state = component.long_name;
+    if (types.includes('postal_code')) postalCode = component.long_name;
+    if (types.includes('country')) {
+      country = component.long_name;
+      countryCode = component.short_name;
+    }
+  }
+
+  const lat = place.geometry?.location?.lat();
+  const lng = place.geometry?.location?.lng();
+
+  this.registrationForm.patchValue({
+    formattedAddress: place.formatted_address,
+    streetNumber,
+    streetName,
+    city,
+    state,
+    postalCode,
+    country,
+    latitude: lat,
+    longitude: lng,
+    googlePlaceId: place.place_id,
+    countryCode: countryCode
+  });
+
+  // console.log('📍 Google Maps selection', {
+  //   formattedAddress: place.formatted_address,
+  //   city,
+  //   state,
+  //   country,
+  //   lat,
+  //   lng,
+  //   countryCode
+  // });
+}
 countryDisplayFn = (id: string) => {
   const country = this.countries.find(c => c.id === id);
   return country ? country.countryName : '';
@@ -889,6 +1031,88 @@ validateStateSelection() {
     }
   });
 }
+selectedDialCode = '+1';
+onPhoneInput(event: any) {
+  const inputEl = event.target as HTMLInputElement;
+  let value = inputEl.value || '';
+  const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+  const phoneCtrl = this.registrationForm.get('phoneNumber');
 
+  // Clean illegal characters but allow + only at start
+  value = value
+    .replace(/[^0-9\s()+-]/g, '')  // remove strange chars
+    .replace(/(?!^)\+/g, '');      // remove any '+' that isn’t at start
 
+  if (dial) {
+    // Remove duplicate dial prefixes like +27+27 or +1+1
+    const duplicatePattern = new RegExp(`^(\\+?${dial.replace('+', '\\+')}\\s*)+`);
+    value = value.replace(duplicatePattern, dial);
+
+    // Ensure single '+'
+    if (!value.startsWith('+')) {
+      value = '+' + value.replace(/^\+*/, '');
+    }
+
+    // Reset if cleared
+    if (!value.trim()) {
+      value = dial;
+    }
+    // Prevent deleting dial prefix
+    else if (value.length < dial.length && dial.startsWith(value)) {
+      value = dial;
+    }
+    // Normalize weird +0 / +00 cases
+    else if (value === '+' || value === '+0') {
+      value = dial;
+    }
+    // If missing dial entirely → prepend
+    else if (!value.startsWith(dial)) {
+      let digits = value.replace(/^\+?0+/, '');
+      value = dial + digits;
+    }
+    // Fix "+270..." or "+440..."
+    else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
+      value = dial + value.substring(dial.length + 1);
+    }
+  }
+
+  // Final cleanup
+  value = value.replace(/\+\++/g, '+');
+
+  inputEl.value = value;
+  phoneCtrl?.setValue(value, { emitEvent: false });
+}
+onCountryCodeChange(selected: any) {
+  this.selectedCountryCode = selected;
+  const dial = selected?.countryPhoneNumberCode || '';
+  const phoneCtrl = this.registrationForm.get('phoneNumber');
+  const currentValue = phoneCtrl?.value || '';
+
+  if (!currentValue || !currentValue.startsWith('+')) {
+    phoneCtrl?.setValue(dial + ' ');
+  } else {
+    // Replace old code if user switched countries
+    const cleaned = currentValue.replace(/^\+\d+/, '');
+    phoneCtrl?.setValue(dial + cleaned);
+  }
+}
+private loadGoogleMapsScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof google !== 'undefined' && google.maps) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (typeof google !== 'undefined' && google.maps) resolve();
+      else reject(new Error('Google Maps API loaded but google object not defined'));
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
 }
