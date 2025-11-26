@@ -8,12 +8,12 @@ import { UserService } from '../../services/user.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-notifications',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './notifications.component.html',
-  styleUrls: ['./notifications.component.scss'],
-  providers: [DatePipe]
+    selector: 'app-notifications',
+    standalone: true,
+    imports: [CommonModule, FormsModule],
+    templateUrl: './notifications.component.html',
+    styleUrls: ['./notifications.component.scss'],
+    providers: [DatePipe]
 })
 export class NotificationsComponent implements OnInit {
   isDevMode = isDevMode();

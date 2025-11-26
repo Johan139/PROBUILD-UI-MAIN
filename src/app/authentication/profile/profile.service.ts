@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Observable, throwError, of, Subject } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
-import { Profile, TeamMember, Document, ProfileDocument } from './profile.model';
+import { Profile, TeamMember, Document, ProfileDocument, UserAddress, AddressType } from './profile.model';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth.service';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -46,14 +46,14 @@ export class ProfileService {
 
     this.hubConnection
       .start()
-      .then(() => console.log('SignalR connection established successfully'))
+      .then()
       .catch(err => console.error('SignalR Connection Error:', err));
   }
 
   stopSignalR(): void {
     if (this.hubConnection) {
       this.hubConnection.stop()
-        .then(() => console.log('SignalR connection stopped'))
+        .then()
         .catch(err => console.error('Error stopping SignalR:', err));
     }
   }
@@ -231,4 +231,30 @@ export class ProfileService {
         })
       );
   }
+  getUserAddresses(userId: string): Observable<UserAddress[]> {
+  return this.http.get<UserAddress[]>(`${this.apiUrl}/GetUserAddresses/${userId}`, { headers: this.getHeaders() });
+}
+
+  getAddressType(): Observable<AddressType[]> {
+  return this.http.get<AddressType[]>(`${this.apiUrl}/AddressTypes/`, { headers: this.getHeaders() });
+}
+addUserAddress(address: UserAddress): Observable<UserAddress> {
+      const url = `${this.apiUrl}/AddUserAddress`;
+      // console.log(address);
+    return this.http.post<UserAddress>(url, address, { headers: this.getHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating profile:', error);
+          return throwError(() => new Error('Failed to update profile'));
+        })
+      );
+}
+
+updateUserAddress(id: number, address: UserAddress): Observable<UserAddress> {
+  return this.http.put<UserAddress>(`${this.apiUrl}/UpdateUserAddress/${id}`, address, { headers: this.getHeaders() });
+}
+
+deleteUserAddress(id: number): Observable<void> {
+  return this.http.delete<void>(`${this.apiUrl}/DeleteUserAddress/${id}`, { headers: this.getHeaders() });
+}
 }

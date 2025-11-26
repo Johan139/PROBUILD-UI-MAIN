@@ -22,11 +22,11 @@ export interface BlueprintDocument {
 }
 
 @Component({
-  selector: 'app-pdf-viewer',
-  standalone: true,
-  imports: [ CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule ],
-  templateUrl: './pdf-viewer.component.html',
-  styleUrls: ['./pdf-viewer.component.scss']
+    selector: 'app-pdf-viewer',
+    standalone: true,
+    imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule],
+    templateUrl: './pdf-viewer.component.html',
+    styleUrls: ['./pdf-viewer.component.scss']
 })
 export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   @Input() document: { url: string, name: string } | null = null;
@@ -87,9 +87,9 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('PdfViewerComponent: ngOnChanges triggered', changes);
+    // console.log('PdfViewerComponent: ngOnChanges triggered', changes);
     if (changes['blueprints'] && this.blueprints && this.blueprints.length > 0) {
-      console.log('PdfViewerComponent: Blueprints input changed', this.blueprints);
+      // console.log('PdfViewerComponent: Blueprints input changed', this.blueprints);
       this.isBlueprintLoaded = true;
       if (this.selectedBlueprint) {
         const currentSelection = this.blueprints.find(b => b.pdfUrl === this.selectedBlueprint?.pdfUrl);
@@ -98,10 +98,10 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
         this.selectBlueprint(this.blueprints[0]);
       }
     } else if (changes['selectedBlueprint'] && this.selectedBlueprint) {
-      console.log('PdfViewerComponent: selectedBlueprint input changed', this.selectedBlueprint);
+      // console.log('PdfViewerComponent: selectedBlueprint input changed', this.selectedBlueprint);
       this.selectBlueprint(this.selectedBlueprint);
     } else if (changes['document'] && this.document) {
-      console.log('PdfViewerComponent: Document input changed', this.document);
+      // console.log('PdfViewerComponent: Document input changed', this.document);
       this.isBlueprintLoaded = false;
       this.selectedBlueprint = null;
       this.viewMode = 'pdf';
@@ -115,7 +115,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.page = 1;
     this.currentImageUrl = this.selectedBlueprint.pageImageUrls[0];
     this.displayedImageUrl = this.currentImageUrl;
-    console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
+    // console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
     if (this.selectedBlueprint.analysisData[1]) {
       this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData[1]);
     } else {
@@ -171,7 +171,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.isImageLoading = false;
     this.displayedImageUrl = this.currentImageUrl;
     this.imageDimensions = { width: imgElement.naturalWidth, height: imgElement.naturalHeight };
-    console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
+    // console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
   }
 
   onPdfTotalPages(pagesInfo: PagesInfo): void { this.totalPages = pagesInfo.pagesCount; }
@@ -220,9 +220,9 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   }
 
   openPopout(): void {
-    console.log('PdfViewerComponent: Opening popout...');
-    console.log('PdfViewerComponent: Dispatching blueprints to state', this.blueprints);
-    console.log('PdfViewerComponent: Dispatching selected blueprint to state', this.selectedBlueprint);
+    // console.log('PdfViewerComponent: Opening popout...');
+    // console.log('PdfViewerComponent: Dispatching blueprints to state', this.blueprints);
+    // console.log('PdfViewerComponent: Dispatching selected blueprint to state', this.selectedBlueprint);
     this.pdfViewerState.setBlueprints(this.blueprints);
     this.pdfViewerState.setSelectedBlueprint(this.selectedBlueprint);
     this.pdfViewerState.setIsPoppedOut(true);
@@ -265,7 +265,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
       return;
     }
 
-    console.log('Opening PDF in new tab with ng2-pdfjs-viewer');
+    // console.log('Opening PDF in new tab with ng2-pdfjs-viewer');
 
     this.externalViewerId = `external-pdf-viewer-${uuidv4()}`;
     this.externalPdfViewer.pdfSrc = pdfUrl;

@@ -20,28 +20,28 @@ import { QuoteDataService } from '../../quote/quote-data.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
-  selector: 'app-job-selection',
-  standalone: true,
-  imports: [
-    NgForOf,
-    NgIf,
-    CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatDividerModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-    FormsModule,
-    MatIconModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    FileSizePipe
-  ],
-  templateUrl: './job-selection.component.html',
-  styleUrls: ['./job-selection.component.scss'],
-  encapsulation: ViewEncapsulation.None
+    selector: 'app-job-selection',
+    standalone: true,
+    imports: [
+        NgForOf,
+        NgIf,
+        CommonModule,
+        MatCardModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatDividerModule,
+        MatListModule,
+        MatProgressSpinnerModule,
+        FormsModule,
+        MatIconModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        FileSizePipe
+    ],
+    templateUrl: './job-selection.component.html',
+    styleUrls: ['./job-selection.component.scss'],
+    encapsulation: ViewEncapsulation.None
 })
 export class JobSelectionComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;

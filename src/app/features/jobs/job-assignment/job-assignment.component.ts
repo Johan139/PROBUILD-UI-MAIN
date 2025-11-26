@@ -24,30 +24,30 @@ import { SharedModule } from '../../../shared/shared.module';
 import { UserService } from '../../../services/user.service';
 
 @Component({
-  selector: 'app-job-assignment',
-  standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    NgIf,
-    NgForOf,
-    MatButton,
-    LoaderComponent,
-    MatCard,
-    MatCardModule,
-    MatTableModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatDividerModule,
-    MatAutocompleteModule,
-    AsyncPipe,
-    MatTooltipModule,
-    SharedModule
-  ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  templateUrl: './job-assignment.component.html',
-  styleUrls: ['./job-assignment.component.scss']
+    selector: 'app-job-assignment',
+    standalone: true,
+    imports: [
+        FormsModule,
+        ReactiveFormsModule,
+        NgIf,
+        NgForOf,
+        MatButton,
+        LoaderComponent,
+        MatCard,
+        MatCardModule,
+        MatTableModule,
+        MatSelectModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatDividerModule,
+        MatAutocompleteModule,
+        AsyncPipe,
+        MatTooltipModule,
+        SharedModule
+    ],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    templateUrl: './job-assignment.component.html',
+    styleUrls: ['./job-assignment.component.scss']
 })
 export class JobAssignmentComponent implements OnInit {
   isLoading = false;

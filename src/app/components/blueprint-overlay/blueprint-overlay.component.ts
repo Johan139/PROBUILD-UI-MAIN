@@ -6,11 +6,11 @@ import { OverlayStateService, SelectableElement } from '../../services/overlay-s
 import { BlueprintAnalysisData, Point, Room } from '../../models/blueprint.model';
 
 @Component({
-  selector: 'app-blueprint-overlay',
-  standalone: true,
-  imports: [CommonModule, MatTooltipModule],
-  templateUrl: './blueprint-overlay.component.html',
-  styleUrls: ['./blueprint-overlay.component.scss']
+    selector: 'app-blueprint-overlay',
+    standalone: true,
+    imports: [CommonModule, MatTooltipModule],
+    templateUrl: './blueprint-overlay.component.html',
+    styleUrls: ['./blueprint-overlay.component.scss']
 })
 export class BlueprintOverlayComponent {
   @Input() imageDimensions!: { width: number; height: number; };
@@ -20,7 +20,7 @@ export class BlueprintOverlayComponent {
   offsetX$: Observable<number>;
   offsetY$: Observable<number>;
   scale$: Observable<number>;
- 
+
   constructor(public overlayState: OverlayStateService) {
     this.blueprintData$ = this.overlayState.blueprintData$;
     this.selectedElement$ = this.overlayState.selectedElement$;
@@ -46,7 +46,7 @@ export class BlueprintOverlayComponent {
     const transformedPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
     this.overlayState.setCursorPosition({ x: Math.round(transformedPoint.x), y: Math.round(transformedPoint.y) });
   }
- 
+
   public static transformBlueprintData(data: any): BlueprintAnalysisData {
     if (data && data.rooms) {
       data.rooms.forEach((room: Room) => {

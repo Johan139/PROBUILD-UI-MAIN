@@ -58,7 +58,77 @@
     letter-spacing: .02em;
   }
 }
+/* Keep button OUTSIDE scroll */
+.addresses-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
+/* Scroll only the table content */
+.address-table-scroll {
+  max-height: 550px;       /* ⬅️ adjust this to taste (try 700-750px for more rows) */
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+}
+.phone-field-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Country code dropdown width */
+.country-code-field {
+  flex: 0 0 130px;
+  min-width: 135px;
+  max-width: 140px;
+}
+
+/* Mobile number stretches more */
+.mobile-number-field {
+  flex: 1.4;
+}
+
+/* Make sure both fields share the same background + border look */
+.country-code-field,
+.mobile-number-field {
+  ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+    background: var(--color-surface) !important;
+    border-radius: 6px;
+    border: 1px solid color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
+    box-shadow: none;
+  }
+
+  ::ng-deep .mdc-text-field--focused:not(.mdc-text-field--disabled) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+  }
+}
+/* Optional styling for scrollbars */
+.address-table-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.address-table-scroll::-webkit-scrollbar-thumb {
+  background-color: #bdbdbd;
+  border-radius: 4px;
+}
+
+/* Footer (button) always visible below */
+.address-footer {
+  padding-top: 12px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.no-addresses {
+  margin-bottom: 10px;
+  color: #666;
+  font-style: italic;
+}
 /* Form grid */
 .form-row {
   display: grid;
@@ -131,6 +201,53 @@
   }
 }
 
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: 8px;
+  background-color: var(--color-surface-subtle);
+
+  .placeholder {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--color-surface);
+    }
+
+    .material-icons {
+      font-size: 2rem;
+    }
+  }
+
+  .logo-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .file-input {
+    display: none;
+  }
+
+  .remove-logo {
+    color: var(--color-text);
+  }
+}
+
 /* Buttons */
 .submit-btn {
   background: var(--color-primary);
@@ -181,4 +298,13 @@
   .upload-icon { width: 20px; height: 20px; }
   .mat-elevation-z8 mat-header-cell,
   .mat-elevation-z8 mat-cell { padding: 8px; font-size: .95rem; }
+}
+
+::ng-deep .mat-mdc-select-placeholder {
+  position: absolute;
+  top: 20px;
+}
+
+::ng-deep .mat-mdc-form-field-infix {
+  margin-top: -8px;
 }

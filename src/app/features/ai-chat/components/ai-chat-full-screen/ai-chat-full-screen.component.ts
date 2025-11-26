@@ -22,18 +22,18 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
 
 @Component({
-  selector: 'app-ai-chat-full-screen',
-  templateUrl: './ai-chat-full-screen.component.html',
-  styleUrls: ['./ai-chat-full-screen.component.scss'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
+    selector: 'app-ai-chat-full-screen',
+    templateUrl: './ai-chat-full-screen.component.html',
+    styleUrls: ['./ai-chat-full-screen.component.scss'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, MarkdownModule, MatIconModule, MatTooltipModule, MatProgressBarModule, MatButtonModule, SelectedPromptsPipe]
 })
 export class AiChatFullScreenComponent implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
 
-  
+
   private destroy$ = new Subject<void>();
   private promptsSource = new ReplaySubject<Prompt[]>(1);
   conversationId: string | null = null;
@@ -65,7 +65,7 @@ isResponding$!: Observable<boolean>;
   progress = 0;
   editingConversationId: string | null = null;
   editedTitle = '';
-  
+
   public isPromptsPopupVisible = false;
   public documents: JobDocument[] = [];
   public sortOrder: 'asc' | 'desc' = 'desc';
@@ -113,7 +113,7 @@ isResponding$!: Observable<boolean>;
     private signalrService: SignalrService
   ) {
     this.conversations$ = this.aiChatStateService.conversations$;
-    
+
   this.isLoading$ = this.aiChatStateService.isLoading$;
 
 this.isResponding$ = combineLatest([
@@ -122,7 +122,7 @@ this.isResponding$ = combineLatest([
 ]).pipe(
   map(([isLoading, isStreaming]) => isLoading || isStreaming)
 );
-    
+
     this.messages$ = this.aiChatStateService.messages$;
     this.selectedPrompts$ = this.aiChatStateService.selectedPrompts$;
     this.aiChatStateService.prompts$.pipe(
@@ -173,7 +173,7 @@ this.combinedMessages$ = combineLatest([
 
 
 this.signalrService.onReceiveStreamChunk((cid: string, chunk: string) => {
-    console.log('[chunk]', { cid, chunk });
+    // console.log('[chunk]', { cid, chunk });
   this.ngZone.run(() => {
     // 👉 Adopt the stream's conversation id for the very first message
     if (!this.conversationId) {
@@ -203,7 +203,7 @@ let alreadyEndedFor: Set<string> = new Set();
 this.signalrService.onStreamEnd((cid: string) => {
   if (alreadyEndedFor.has(cid)) return;
   alreadyEndedFor.add(cid);
-  console.log('[streamEnd]', { cid, current: this.conversationId });
+  // console.log('[streamEnd]', { cid, current: this.conversationId });
   this.ngZone.run(() => {
     // 👉 Ensure we’re pointing at this stream if it's the first one
     if (!this.conversationId) {
@@ -339,7 +339,7 @@ selectConversation(conversationId: string): void {
  startNewConversation(): void {
   this.router.navigate(['/ai-chat', 'new']);
   this.newMessageContent = '';
-  console.log('startNewConversation');
+  // console.log('startNewConversation');
 
   this.aiChatStateService.setActiveConversationId(null);
   this.aiChatStateService.setMessages([]);
@@ -412,14 +412,14 @@ const currentConversationId = this.conversationId;
         .filter((key): key is string => !!key);
 
       if (currentConversationId) {
-          console.log('Existing conversation')
+          // console.log('Existing conversation')
   const documentUrls = this.documents.map(doc => doc.blobUrl);
 
 
   this.aiChatService.sendMessage(currentConversationId, messageToSend, this.files, selectedPromptKeys, documentUrls);
   this.router.navigate(['/ai-chat', currentConversationId]);
 } else {
-  console.log('New Conversation')
+  // console.log('New Conversation')
         // Create new conversation and join group before sending message
 this.aiChatService.startConversation(
   messageToSend,

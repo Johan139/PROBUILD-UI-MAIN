@@ -5,7 +5,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
-import { Profile, TeamMember, Document } from './profile.model';
+import { Profile, TeamMember, Document, UserAddress } from './profile.model';
 import { userTypes } from '../../data/user-types';
 import { TeamManagementService } from '../../services/team-management.service';
 import {
@@ -18,6 +18,8 @@ import {
   certificationOptions
 } from '../../data/registration-data';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { MatTabGroup } from '@angular/material/tabs';
+import { ViewChildren, QueryList } from '@angular/core';
 import { SubscriptionRow } from '../../models/SubscriptionRow'
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -55,7 +57,9 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
-
+import { LogoService } from '../../services/logo.service';
+import { MeasurementService, MeasurementSettings } from '../../services/measurement.service';
+import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -79,48 +83,51 @@ export interface SubscriptionUpgradeDTO {
 }
 export type ActiveMap = Record<string, { subscriptionId: string; packageLabel?: string }>;
 @Component({
-  selector: 'app-profile',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    FormsModule,
-      CommonModule,
-    MatCardModule,
-    MatDividerModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressBarModule,
-    MatAutocompleteModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatSnackBarModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTabsModule,
-    MatTableModule,
-    MatDialogModule,
-    MatMenuModule,
-      MatTableModule,
-  MatPaginatorModule,
-  MatSortModule,
-    NgForOf,
-    NgIf,
-    SharedModule
-  ],
-  templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss']
+    selector: 'app-profile',
+    standalone: true,
+    imports: [
+        ReactiveFormsModule,
+        FormsModule,
+        CommonModule,
+        MatCardModule,
+        MatDividerModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatProgressBarModule,
+        MatAutocompleteModule,
+        MatDialogModule,
+        MatTooltipModule,
+        MatSnackBarModule,
+        MatSelectModule,
+        MatButtonModule,
+        MatIconModule,
+        MatTabsModule,
+        MatTableModule,
+        MatDialogModule,
+        MatMenuModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatSortModule,
+        NgForOf,
+        NgIf,
+        SharedModule
+    ],
+    templateUrl: './profile.component.html',
+    styleUrls: ['./profile.component.scss']
 })
 
 export class ProfileComponent implements OnInit {
+  cardTitle = 'User Profile';
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
-@ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
+  @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('fileInput') fileInput!: ElementRef;
+  logoUrl: string | null = null;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
-selectedPlace: { description: string; place_id: string } | null = null;
-autocompleteService: google.maps.places.AutocompleteService | undefined;
-isGoogleMapsLoaded: boolean = false;
+  selectedPlace: { description: string; place_id: string } | null = null;
+  autocompleteService: google.maps.places.AutocompleteService | undefined;
+  isGoogleMapsLoaded: boolean = false;
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
@@ -158,6 +165,10 @@ filteredStates: Observable<any[]> = of([]);
   displayedColumns: string[] = ['name', 'role', 'email', 'status', 'actions'];
   documentColumns: string[] = ['name', 'type', 'uploadedDate', 'actions'];
 
+  selectedCountryCode: any;
+countryNumberCode: any[] = [];
+countryFilterCtrl = new FormControl('');
+filteredCountryCodes!: Observable<any[]>;
 //subscription variables
 activeSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 teamSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
@@ -165,6 +176,10 @@ inactiveSubscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
   subscriptionColumns: string[] = ['package', 'validUntil', 'amount', 'assignedUser', 'status', 'actions'];
 subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 
+addresses: UserAddress[] = [];
+isLoadingAddresses = false;
+addressColumns: string[] = ['formattedAddress', 'city', 'state', 'country', 'actions'];
+addressDataSource = new MatTableDataSource<UserAddress>([]);
 
   isLoadingSubscriptions = false;
   subscriptionsError: string | null = null;
@@ -189,7 +204,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
 @ViewChild('activeSort') activeSort!: MatSort;
 @ViewChild('teamSort') teamSort!: MatSort;
 @ViewChild('inactiveSort') inactiveSort!: MatSort;
-
+@ViewChildren(MatTabGroup) tabGroups!: QueryList<MatTabGroup>;
   constructor(
     private profileService: ProfileService,
     public authService: AuthService,
@@ -199,13 +214,15 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
     private route: ActivatedRoute,
-        private registrationService: RegistrationService,
+    private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
-        private jobsService: JobsService,
-      @Inject(PLATFORM_ID) private platformId: Object,
-          private snackBar: MatSnackBar,
-    private teamManagementService: TeamManagementService
+    private jobsService: JobsService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private snackBar: MatSnackBar,
+    private teamManagementService: TeamManagementService,
+    private logoService: LogoService,
+    private measurementService: MeasurementService
   ) {
        this.jobCardForm = new FormGroup({});
         this.isBrowser = isPlatformBrowser(this.platformId);
@@ -233,6 +250,7 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       deliveryArea: [[]],
       deliveryTime: [null],
       country: [null],
+      countryCode: [''],
       state: [null],
       city: [null],
       subscriptionPackage: ['', Validators.required],
@@ -242,11 +260,14 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
+            countryNumberCode:[''],
       latitude: [null],
       longitude: [null],
       googlePlaceId: [''],
      notificationRadius: [100],
-     jobPreferences: [[]]
+     jobPreferences: [[]],
+      measurementSystem: ['Metric'],
+      temperatureUnit: ['C']
     });
 
     this.teamForm = this.fb.group({
@@ -294,6 +315,19 @@ subscriptionsData = new MatTableDataSource<SubscriptionRow>([]);
         this.options = [];
       }
     });
+      this.route.queryParamMap.subscribe(params => {
+    const tab = params.get('tab');
+    if (tab === 'subscriptions') {
+      
+      // Wait for ALL async data loads + Angular render
+      setTimeout(() => {
+        const groups = this.tabGroups.toArray();
+        if (groups.length > 0) {
+          groups[0].selectedIndex = 5;   // Main profile tab group
+        }
+      }, 500);
+    }
+  });
   }
 
   ngOnInit(): void {
@@ -305,6 +339,24 @@ this.registrationService.getCountries().subscribe(countries => {
 
 this.registrationService.getAllStates().subscribe(allStates => {
   this.states = allStates;
+
+
+  // Load all country dial codes just like registration
+this.registrationService.getAllCountryNumberCodes().subscribe(data => {
+  this.countryNumberCode = data;
+
+  // Default to user’s saved or ZA
+  const savedCode = this.profileForm.get('countryCode')?.value;
+  this.selectedCountryCode =
+    this.countryNumberCode.find(c => c.countryPhoneNumberCode === savedCode) ||
+    this.countryNumberCode.find(c => c.countryCode === 'ZA');
+
+  // Initialize the async filter observable
+  this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+    startWith(''),
+    map(value => this._filterCountryCodes(value ?? ''))
+  );
+});
 
   const countryCtrl = this.profileForm.get('country')!;
   const stateCtrl = this.profileForm.get('state')!;
@@ -349,7 +401,7 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
         this.isLoading = false;
       }
     });
-  console.log(this.subscriptionPackages)
+  // console.log(this.subscriptionPackages)
      this.route.queryParamMap.pipe(take(1)).subscribe(params => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', { duration: 5000 });
@@ -373,7 +425,7 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
     this.profileService.uploadComplete$.subscribe(fileCount => {
       this.isUploading = false;
       this.resetFileInput();
-      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
+      // console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
 
     if (this.isBrowser) {
@@ -382,6 +434,23 @@ this.filteredCountries = this.profileForm.get('country')!.valueChanges.pipe(
         this.autocompleteService = new google.maps.places.AutocompleteService();
       }).catch(err => console.error('Google Maps script loading error:', err));
     }
+
+    this.measurementService.getSettings().subscribe(settings => {
+      if (this.profileForm.get('measurementSystem')?.value !== settings.system) {
+        this.profileForm.get('measurementSystem')?.setValue(settings.system, { emitEvent: false });
+      }
+      if (this.profileForm.get('temperatureUnit')?.value !== settings.temperature) {
+        this.profileForm.get('temperatureUnit')?.setValue(settings.temperature, { emitEvent: false });
+      }
+    });
+
+    this.profileForm.get('measurementSystem')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ system: value });
+    });
+
+    this.profileForm.get('temperatureUnit')?.valueChanges.subscribe(value => {
+      this.measurementService.updateSettings({ temperature: value });
+    });
   }
 private _filterCountries(value: string | null): any[] {
   const filterValue = (value ?? '').toLowerCase();
@@ -391,6 +460,15 @@ private _filterCountries(value: string | null): any[] {
         c.countryName.toLowerCase().includes(filterValue) ||
         c.countryCode.toLowerCase().includes(filterValue)
       );
+}
+private _filterCountryCodes(value: string): any[] {
+  const search = (value || '').toLowerCase().trim();
+  if (!search) return this.countryNumberCode;
+
+  return this.countryNumberCode.filter(c =>
+    c.countryCode?.toLowerCase().includes(search) ||
+    c.countryPhoneNumberCode?.toLowerCase().includes(search)
+  );
 }
 countryDisplayFn = (id: string) =>
   this.countries.find(c => c.id === id)?.countryName ?? '';
@@ -444,9 +522,71 @@ loadProfile(): void {
       this.states = states;
 
       this.profileForm.patchValue(profileData); // includes country & state IDs
+
+
+      // --- ✅ DIAL CODE PRESELECTION & SYNC ---
+if (profileData.countryNumberCode) {
+  this.registrationService.getAllCountryNumberCodes().pipe(take(1)).subscribe(codes => {
+    this.countryNumberCode = codes;
+
+    // Match by GUID
+    const matched = codes.find(c => c.id === profileData.countryNumberCode);
+    this.selectedCountryCode = matched || codes.find(c => c.countryCode === 'ZA') || codes[0];
+
+    // Update the form so the phoneNumber always includes the dial code
+    const currentPhone = this.profileForm.get('phoneNumber')?.value || '';
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+
+    if (currentPhone && !currentPhone.startsWith(dial)) {
+      const cleaned = currentPhone.replace(/[^\d+]/g, '').replace(/^0+/, '');
+      this.profileForm.patchValue({ phoneNumber: `${dial}${cleaned}` });
+    }
+
+    // initialize filter observable for dropdown search
+    this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+      startWith(''),
+      map(v => this._filterCountryCodes(v ?? ''))
+    );
+  });
+}
+
+      //Here we are going to set the user address that was saved on registration.
+      // --- populate Google address field from UserAddresses ---
+if (profileData.userAddresses && profileData.userAddresses.length > 0) {
+  const saved = profileData.userAddresses[0];
+  const patchObj = {
+    address: saved.formattedAddress,
+    formattedAddress: saved.formattedAddress,
+    streetNumber: saved.streetNumber,
+    streetName: saved.streetName,
+    city: saved.city,
+    state: saved.state,
+    postalCode: saved.postalCode,
+    country: saved.country,
+    countrycode: saved.countryCode,
+    latitude: saved.latitude,
+    longitude: saved.longitude,
+    googlePlaceId: saved.googlePlaceId,
+  };
+
+  this.profileForm.patchValue(patchObj);
+  this.addressControl.setValue(saved.formattedAddress);
+
+  if (profileData.userAddresses && profileData.userAddresses.length > 0) {
+  this.addresses = profileData.userAddresses;
+  this.addressDataSource.data = profileData.userAddresses;
+} else {
+  this.addresses = [];
+  this.addressDataSource.data = [];
+}
+}
+
+
+
       this.isVerified = profileData.isVerified ?? false;
 
       this.loadTeamMembers();
+      this.loadUserLogo();
       this.isLoading = false;
     },
     error: () => {
@@ -476,7 +616,8 @@ loadProfile(): void {
           const components = place.address_components || [];
           const getComponent = (type: string) =>
             components.find(c => c.types.includes(type))?.long_name || '';
-
+  const getShort = (type: string) =>
+          components.find(c => c.types.includes(type))?.short_name || '';
           const patchObj = {
             address: selectedAddress.description,
             formattedAddress: place.formatted_address || selectedAddress.description,
@@ -486,6 +627,7 @@ loadProfile(): void {
             state: getComponent('administrative_area_level_1'),
             postalCode: getComponent('postal_code'),
             country: getComponent('country'),
+            countryCode: getShort('country'),
             latitude: place.geometry?.location?.lat() ?? null,
             longitude: place.geometry?.location?.lng() ?? null,
             googlePlaceId: place.place_id || selectedAddress.place_id,  // fallback if needed
@@ -493,7 +635,7 @@ loadProfile(): void {
 
           this.profileForm.patchValue(patchObj);
           this.addressControl.setValue(patchObj.address);
-          console.log('🔄 Google Place data patched:', patchObj);
+          // console.log('🔄 Google Place data patched:', patchObj);
         }
       }
     );
@@ -503,7 +645,7 @@ loadProfile(): void {
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
-        console.log(subscriptions)
+        // console.log(subscriptions)
         this.subscriptionPackages = subscriptions.map(s => ({
           value: s.subscription,
           display: `${s.subscription}`,
@@ -758,6 +900,86 @@ GetUserSubscription(): void {
     });
   }
 
+  // ---------- ADDRESS MANAGEMENT ----------
+ // ---------- ADDRESS MANAGEMENT ----------
+
+openAddressDialog(address?: UserAddress): void {
+  const dialogRef = this.dialog.open(AddressDialogComponent, {
+    width: '600px',
+    data: address || null
+  });
+
+  dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
+    if (result) {
+      if (address) {
+        this.updateAddress(result);
+      } else {
+        this.saveNewAddress(result);
+      }
+    }
+  });
+}
+
+editAddress(address: UserAddress): void {
+  this.openAddressDialog(address);
+}
+
+deleteAddress(address: UserAddress): void {
+  if (!address?.id) return;
+
+  const confirmed = confirm('Are you sure you want to delete this address?');
+  if (!confirmed) return;
+
+  this.profileService.deleteUserAddress(address.id).subscribe({
+    next: () => {
+      this.snackBar.open('Address deleted successfully.', 'Close', { duration: 3000 });
+      // ✅ use the actual array name
+      this.addresses = this.addresses.filter(a => a.id !== address.id);
+      this.addressDataSource.data = this.addresses;
+    },
+    error: err => {
+      console.error('Error deleting address', err);
+      this.snackBar.open('Failed to delete address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
+saveNewAddress(address: UserAddress): void {
+
+  const payload = {
+    ...address,
+    userId: String(localStorage.getItem('userId') ?? '') // <-- make sure this is set!
+  };
+
+  this.profileService.addUserAddress(payload).subscribe({
+    next: saved => {
+      this.snackBar.open('Address added successfully.', 'Close', { duration: 3000 });
+      this.addresses.push(saved);
+      this.addressDataSource.data = [...this.addresses];
+    },
+    error: err => {
+      console.error('Error saving address', err);
+      this.snackBar.open('Failed to save address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
+updateAddress(address: UserAddress): void {
+  this.profileService.updateUserAddress(address.id!, address).subscribe({
+    next: updated => {
+      this.snackBar.open('Address updated successfully.', 'Close', { duration: 3000 });
+      const idx = this.addresses.findIndex(a => a.id === updated.id);
+      if (idx !== -1) this.addresses[idx] = updated;
+      this.addressDataSource.data = [...this.addresses];
+    },
+    error: err => {
+      console.error('Error updating address', err);
+      this.snackBar.open('Failed to update address.', 'Close', { duration: 3000 });
+    }
+  });
+}
+
+
   onSubmit(): void {
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
@@ -765,7 +987,8 @@ GetUserSubscription(): void {
         SessionId: this.sessionId
       });
       const updatedProfile: Profile = this.profileForm.value;
-
+      // console.log(updatedProfile)
+updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
@@ -848,6 +1071,12 @@ GetUserSubscription(): void {
           this.teamMembers = [...this.teamMembers, member];
           this.loadTeamMembers();
           this.teamForm.reset();
+          Object.keys(this.teamForm.controls).forEach(key => {
+            const control = this.teamForm.get(key);
+            control?.setErrors(null);
+            control?.markAsPristine();
+            control?.markAsUntouched();
+          });
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
@@ -874,7 +1103,7 @@ GetUserSubscription(): void {
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      console.log('File input reset');
+      // console.log('File input reset');
     }
   }
 
@@ -1113,7 +1342,7 @@ openSubscriptionUpgradeDialog(subscription: SubscriptionRow): void {
 
     const pkgCode      = typeof result === 'string' ? result : result.subscriptionPackage;
     const billingCycle = typeof result === 'string' ? 'monthly' : (result.billingCycle ?? 'monthly');
-console.log(pkgCode)
+// console.log(pkgCode)
     // reflect selection
     this.profileForm.patchValue({ subscriptionPackage: pkgCode });
     this.profileForm.get('subscriptionPackage')?.markAsDirty();
@@ -1164,7 +1393,7 @@ private getActiveSubscriptionEmails(): Set<string> {
     const email = String(r.assignedUserName ?? '')
       .trim()
       .toLowerCase();
-console.log(email)
+// console.log(email)
     if (email && ACTIVE.has(status)) emails.add(email);
   }
   return emails;
@@ -1226,7 +1455,7 @@ openSubscriptionCreateDialog(): void {
         : teamBlockedCount > 0
           ? `${teamBlockedCount} team member${teamBlockedCount > 1 ? 's' : ''} already subscribed.`
           : null;
-  console.log(this.subscriptionPackages)
+  // console.log(this.subscriptionPackages)
   this.dialog.open(SubscriptionCreateComponent, {
     width: '600px',
     autoFocus: false,
@@ -1350,22 +1579,105 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
       }
     });
   }
+onCountryCodeChange(selected: any): void {
+  this.selectedCountryCode = selected;
+
+  const phoneCtrl = this.profileForm.get('phoneNumber');
+  if (!phoneCtrl) return;
+
+  let phone = phoneCtrl.value || '';
+  const newDial = selected.countryPhoneNumberCode || '';
+
+  // Remove old dial code if present
+  for (const c of this.countryNumberCode) {
+    const old = c.countryPhoneNumberCode;
+    if (old && phone.startsWith(old)) {
+      phone = phone.slice(old.length);
+      break;
+    }
+  }
+
+  // Clean remaining digits
+  phone = phone.replace(/[^\d+]/g, '').replace(/^0+/, '');
+
+  // Reapply new dial code
+  const newPhone = `${newDial}${phone}`;
+  phoneCtrl.setValue(newPhone);
+
+  // Update GUID reference
+  this.profileForm.patchValue({ countryNumberCode: selected.id });
+
+  // console.log(`☎ Updated number: ${newPhone}`);
+}
+
 
   ngOnDestroy(): void {
     this.profileService.stopSignalR();
   }
+onPhoneInput(event: any) {
+  const inputEl = event.target as HTMLInputElement;
+  let value = inputEl.value || '';
+  const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+  const phoneCtrl = this.profileForm.get('phoneNumber');
+
+  // Clean illegal characters but allow + only at start
+  value = value
+    .replace(/[^0-9\s()+-]/g, '')  // remove strange chars
+    .replace(/(?!^)\+/g, '');      // remove any '+' that isn’t at the start
+
+  if (dial) {
+    // Remove duplicate dial prefixes like +27+27 or +1+1
+    const duplicatePattern = new RegExp(`^(\\+?${dial.replace('+', '\\+')}\\s*)+`);
+    value = value.replace(duplicatePattern, dial);
+
+    // Ensure value starts with single '+'
+    if (!value.startsWith('+')) {
+      value = '+' + value.replace(/^\+*/, '');
+    }
+
+    // If cleared → reset to dial
+    if (!value.trim()) {
+      value = dial;
+    }
+    // Backspacing inside dial code → lock it
+    else if (value.length < dial.length && dial.startsWith(value)) {
+      value = dial;
+    }
+    // If just "+" or "+0" → normalize
+    else if (value === '+' || value === '+0') {
+      value = dial;
+    }
+    // If missing dial → prepend it
+    else if (!value.startsWith(dial)) {
+      let digits = value.replace(/^\+?0+/, '');
+      value = dial + digits;
+    }
+    // ✅ Fix “+270...” or “+440...” etc. (leading 0 after dial)
+    else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
+      value = dial + value.substring(dial.length + 1);
+    }
+  }
+
+  // Final cleanup: remove double '+' anywhere just in case
+  value = value.replace(/\+\++/g, '+');
+
+  inputEl.value = value;
+  phoneCtrl?.setValue(value, { emitEvent: false });
+}
+
+
 
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
     this.snackBar.open(`Switched to ${newRole} role`, 'Close', { duration: 3000 });
-    console.log('Role switched to:', newRole);
-    console.log('Visibility - Personal:', this.canViewPersonalInfo());
-    console.log('Visibility - Company:', this.canViewCompanyDetails());
-    console.log('Visibility - Certification:', this.canViewCertification());
-    console.log('Visibility - Trade:', this.canViewTradeSupplier());
-    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
-    console.log('Visibility - Subscription:', this.canViewSubscription());
+    // console.log('Role switched to:', newRole);
+    // console.log('Visibility - Personal:', this.canViewPersonalInfo());
+    // console.log('Visibility - Company:', this.canViewCompanyDetails());
+    // console.log('Visibility - Certification:', this.canViewCertification());
+    // console.log('Visibility - Trade:', this.canViewTradeSupplier());
+    // console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
+    // console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
   // TODO: Implement these methods based on user roles once development complete
@@ -1393,8 +1705,74 @@ if (String(pkg?.value ?? "").toLowerCase().includes("trial")) {
     return ['GENERAL_CONTRACTOR', 'PROJECT_MANAGER', 'CHIEF_ESTIMATOR', 'GENERAL_SUPERINTENDANT', 'SUPERINTENDANT', 'ASSISTANT_SUPERINTENDANT', 'FOREMAN', 'SUBCONTRACTOR', 'VENDOR'].includes(this.userRole || '');
   }
 
+  triggerFileInput(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  onLogoChange(event: Event): void {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      return;
+    }
+
+    this.logoService.setUserLogo(file).subscribe({
+      next: () => {
+        this.loadUserLogo();
+        this.snackBar.open('Logo updated successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Logo upload failed', err);
+        this.snackBar.open('Failed to update logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  removeLogo(): void {
+    this.logoService.deleteUserLogo().subscribe({
+      next: () => {
+        this.logoUrl = null;
+        this.snackBar.open('Logo removed successfully', 'Close', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Failed to remove logo', err);
+        this.snackBar.open('Failed to remove logo', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  loadUserLogo(): void {
+    this.logoService.getUserLogo().subscribe({
+      next: (logo) => {
+        this.logoUrl = logo.url;
+      },
+      error: () => {
+        this.logoUrl = null;
+      }
+    });
+  }
+  updateCardTitle(event: any): void {
+    switch (event.index) {
+      case 0:
+        this.cardTitle = 'User Profile';
+        break;
+      case 1:
+        this.cardTitle = 'Company Profile';
+        break;
+      case 2:
+        this.cardTitle = 'Team Management';
+        break;
+      case 3:
+        this.cardTitle = 'Documents';
+        break;
+      case 4:
+        this.cardTitle = 'Subscriptions';
+        break;
+      default:
+        this.cardTitle = 'User Profile';
+    }
+  }
 }
-// To this:
+
 export interface ProfileDocument {
   id: number;
   userId: string;

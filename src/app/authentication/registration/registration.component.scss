@@ -5,7 +5,41 @@
   margin: 2rem auto 0;
   padding-inline: var(--space-4, 16px);
 }
+.dial-code {
+  color: #8a822a;
+  font-weight: 600;
+  pointer-events: none; /* makes prefix unclickable */
+  user-select: none; /* prevents highlighting or deleting */
+}
+.phone-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
 
+.phone-field-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+/* Dial code field — slightly bigger now */
+.country-code-field {
+  flex: 0 0 130px;  /* was 100px — gives a wider, comfortable dropdown */
+  min-width: 135px;
+  max-width: 140px;
+}
+
+/* Mobile number — slightly larger relative share */
+.mobile-number-field {
+  flex: 1.4; /* makes it stretch more vs user type */
+}
+
+/* User type stays on same line */
+.user-type-field {
+  flex: 1;
+}
 /* Card */
 .profile-card.registration-card {
   background: var(--color-surface);
@@ -90,7 +124,14 @@ mat-form-field {
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
   }
 }
-
+.full-width {
+  flex: 1 1 100%;
+}
+.address-type-field {
+  flex: 0 0 40%;
+  min-width: 250px;
+  max-width: 400px;
+}
 /* Primary action buttons */
 .submit-btn {
   background: var(--color-primary);
@@ -194,6 +235,9 @@ mat-form-field {
   .section h3 { font-size: 1.2rem; }
 
   .chip-grid { max-width: 100%; margin-left: 0; }
+    .address-type-field {
+    flex: 1 1 100%;
+  }
 }
 
 /* Reduced motion */

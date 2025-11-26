@@ -63,7 +63,9 @@ export class JobBiddingComponent implements OnInit {
     this.filteredBids.sort((a, b) => {
       const aValue = a[column as keyof Bid];
       const bValue = b[column as keyof Bid];
-
+if (aValue == null || bValue == null) {
+  return 0; // or your fallback
+}
       if (aValue < bValue) {
         return this.sortDirection === 'asc' ? -1 : 1;
       }
@@ -86,7 +88,7 @@ export class JobBiddingComponent implements OnInit {
     const finalistIds = Array.from(this.selectedBids).map(String);
     this.biddingService.selectFinalists(this.jobId, finalistIds).subscribe(() => {
       // Add notification or UI update logic here
-      console.log('Finalists selected');
+      // console.log('Finalists selected');
       this.loadBids(); // Refresh bids to show finalist status
     });
   }
@@ -94,16 +96,16 @@ export class JobBiddingComponent implements OnInit {
   awardJob(bidId: number): void {
     this.biddingService.awardJob(this.jobId, bidId).subscribe((response) => {
       // Add notification or UI update logic here
-      console.log('Job awarded to bid:', bidId);
+      // console.log('Job awarded to bid:', bidId);
       this.router.navigate(['/contracts', response.contractId, 'sign']);
     });
   }
-  
+
   analyzeBids(): void {
     const bidIds = Array.from(this.selectedBids);
     this.biddingService.analyzeBids(this.jobId).subscribe(result => {
       this.analysisResult = result;
-      console.log('Analysis result:', result);
+      // console.log('Analysis result:', result);
     });
   }
 }

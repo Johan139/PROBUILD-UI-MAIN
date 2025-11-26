@@ -13,23 +13,23 @@ import { JobsService } from '../../../services/jobs.service';
 import { BiddingService } from '../../../services/bidding.service';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { FormsModule } from '@angular/forms';
-import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog.component';
+import { InitiateBiddingDialogComponent } from '../initiate-bidding-dialog/initiate-bidding-dialog.component';
 
 @Component({
-  selector: 'app-jobs',
-  standalone: true,
-  imports: [
-    FormsModule,
-    NgIf,
-    NgForOf,
-    MatButton,
-    LoaderComponent,
-    GanttChartComponent,
-    MatCard,
-  ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  templateUrl: './job-edit.component.html',
-  styleUrl: './job-edit.component.scss'
+    selector: 'app-jobs',
+    standalone: true,
+    imports: [
+        FormsModule,
+        NgIf,
+        NgForOf,
+        MatButton,
+        LoaderComponent,
+        GanttChartComponent,
+        MatCard,
+    ],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    templateUrl: './job-edit.component.html',
+    styleUrl: './job-edit.component.scss'
 })
 export class JobEditComponent implements OnInit{
   taskData: any;
@@ -132,7 +132,7 @@ export class JobEditComponent implements OnInit{
       };
   });
 
-    console.log(this.calculatedChainedTables);
+    // console.log(this.calculatedChainedTables);
 
     this.taskData = [
       { id: '1',name: 'RoofStructure', start:  this.calculatedChainedTables[5].startDate, end: this.calculatedChainedTables[5].endDate, progress: 0, dependencies: null, },
@@ -274,8 +274,8 @@ export class JobEditComponent implements OnInit{
     this.weatherService.getFutureWeather(location, date).subscribe({
       next: (data) => {
         this.weatherData = data;
-        console.log(this.weatherData)
-        console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
+        // console.log(this.weatherData)
+        // console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
       },
       error: (err) => {
         this.weatherData = "No Weather Data as Data should be more the two weeks from now";
@@ -386,8 +386,8 @@ export class JobEditComponent implements OnInit{
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
 
     const dataInput = this.store.getState().subtaskGroups
-    console.log('Tasks in store for Saved:', dataInput[0]);
-    console.log('UserId :: ', localStorage.getItem("userId"))
+    // console.log('Tasks in store for Saved:', dataInput[0]);
+    // console.log('UserId :: ', localStorage.getItem("userId"))
     const projectData = this.prepareProjectData("DRAFT");
 
     this.isLoading = true;
@@ -415,7 +415,7 @@ export class JobEditComponent implements OnInit{
     }));
 
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
-    console.log('UserId :: ', localStorage.getItem("userId"))
+    // console.log('UserId :: ', localStorage.getItem("userId"))
     const projectData = this.prepareProjectData("DISCARD");
 
     this.isLoading = true;

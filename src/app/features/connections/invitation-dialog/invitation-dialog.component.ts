@@ -10,19 +10,19 @@ import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 
 @Component({
-  selector: 'app-invitation-dialog',
-  templateUrl: './invitation-dialog.component.html',
-  styleUrls: ['./invitation-dialog.component.scss'],
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    TextFieldModule
-  ],
+    selector: 'app-invitation-dialog',
+    templateUrl: './invitation-dialog.component.html',
+    styleUrls: ['./invitation-dialog.component.scss'],
+    standalone: true,
+    imports: [
+        CommonModule,
+        MatDialogModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        TextFieldModule
+    ]
 })
 export class InvitationDialogComponent {
   invitationForm: FormGroup;
