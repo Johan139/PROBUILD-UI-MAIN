@@ -178,6 +178,7 @@ private _filterCountryCodes(value: string): any[] {
 }
   ngOnInit() {
     this.loadSubscriptionPackages();
+
 const plan = this.route.snapshot.queryParamMap.get('plan');
 let billing = this.route.snapshot.queryParamMap.get('billing')?.toLowerCase() as BillingCycle | null;
 
@@ -186,18 +187,15 @@ if (billing !== 'monthly' && billing !== 'yearly') {
   billing = 'monthly'; // fallback
 }
 
-
-  const plan = this.route.snapshot.queryParamMap.get('plan');
-  const billing = this.route.snapshot.queryParamMap.get('billing') || 'monthly';
-
-  this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
-  this.selectedBillingFromUrl = billing;
+this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
+this.selectedBillingFromUrl = billing;
 
 
       this.profileService.getAddressType().subscribe({
     next: (types) => (this.addressTypes = types),
     error: (err) => console.error('Failed to load address types', err)
   });
+
 
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
@@ -652,16 +650,6 @@ private loadSubscriptionPackages(): void {
 }
 
 
-        if (match) {
-          this.registrationForm.get('subscriptionPackage')?.setValue(match.value);
-        }
-      }
-    },
-    error: (err) => {
-      console.error('Failed to load subscription packages:', err);
-    }
-  });
-}
   certificationChange(selectedOption:any) {
     if(selectedOption === "FULLY_LICENSED")
       this.certified = true;
