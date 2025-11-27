@@ -45,8 +45,6 @@ export class BomService {
       return { sections: [] };
     }
 
-    console.log('Full Response:', fullResponse); // Debug log
-
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {
       1: 'Site Logistics',

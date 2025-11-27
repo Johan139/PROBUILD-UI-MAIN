@@ -1,4 +1,4 @@
-<div class="container" [attr.inert]="showAlert || isDialogOpen ? '' : null">
+<div class="jobs-container" [attr.inert]="showAlert || isDialogOpen ? '' : null">
   <div class="job-header">
     <div class="header-left">
       <button class="back-btn" (click)="NavigateBack()" matTooltip="Go Back" matTooltipShowDelay="500">
@@ -66,9 +66,6 @@
   <div *ngIf="activeTab === 'overview'" class="tab-content fade-in">
     <div class="fullcolumn">
       <mat-card>
-        <mat-card-header>
-          <mat-card-title>Project Details</mat-card-title>
-        </mat-card-header>
         <mat-card-content>
           <div *ngIf="isLoading">
             <app-loader></app-loader>
@@ -198,7 +195,7 @@
           </div>
           <div class="metric-details">
             <p class="label">Pending Invoices</p>
-            <p class="value">$45K</p>
+            <p class="value">HARDCODED $45K</p>
             <p class="subtext">3 invoices awaiting payment</p>
           </div>
         </div>
@@ -211,7 +208,7 @@
           </div>
           <div class="metric-details">
             <p class="label">Procurement Commitments</p>
-            <p class="value">$128K</p>
+            <p class="value">${{procurementCommitments / 1000 | number:'1.0-0'}}K</p>
             <p class="subtext">Materials ordered</p>
           </div>
         </div>
@@ -220,37 +217,33 @@
 
     <!-- Budget Tracking Table -->
     <mat-card class="mb-6">
-      <!-- <div class="table-header-row">
-        <h3>Budget Breakdown by Trade</h3>
-        <button class="btn-outline-custom" (click)="startAddLineItem()" *ngIf="!isAddingLineItem">
-          <mat-icon>add</mat-icon>
-          Add Line Item
-        </button>
-      </div> -->
-
       <div class="table-header-row">
         <h3>
           <ng-container [ngSwitch]="budgetTableTab">
             <span *ngSwitchCase="'all'">Budget Breakdown</span>
-            <span *ngSwitchCase="'Labor'">Labor Cost Breakdown</span>
+            <span *ngSwitchCase="'Subcontractor'">Subcontractor & Labor Breakdown</span>
             <span *ngSwitchCase="'Materials'">Materials Breakdown</span>
-            <span *ngSwitchCase="'Subcontractor'">Subcontractor Costs</span>
             <span *ngSwitchCase="'Equipment'">Equipment Costs</span>
             <span *ngSwitchCase="'Other'">Other Costs</span>
           </ng-container>
         </h3>
-        <button class="btn-outline-custom" (click)="startAddLineItem()" *ngIf="!isAddingLineItem">
-          <mat-icon>add</mat-icon>
-          Add Line Item
-        </button>
+        <div class="button-group">
+          <button class="btn-outline-custom" (click)="importAiEstimates()" *ngIf="!isAddingLineItem" matTooltip="Import estimates from AI Analysis">
+            <mat-icon>smart_toy</mat-icon>
+            Import AI
+          </button>
+          <button class="btn-outline-custom" (click)="startAddLineItem()" *ngIf="!isAddingLineItem">
+            <mat-icon>add</mat-icon>
+            Add Line Item
+          </button>
+        </div>
       </div>
 
       <!-- Budget Table Tabs -->
       <div class="nav-tabs sub-tabs">
         <button (click)="setBudgetTableTab('all')" [class.active]="budgetTableTab === 'all'">All</button>
-        <button (click)="setBudgetTableTab('Labor')" [class.active]="budgetTableTab === 'Labor'">Labor</button>
+        <button (click)="setBudgetTableTab('Subcontractor')" [class.active]="budgetTableTab === 'Subcontractor'">Subcontractors & Labor</button>
         <button (click)="setBudgetTableTab('Materials')" [class.active]="budgetTableTab === 'Materials'">Materials</button>
-        <button (click)="setBudgetTableTab('Subcontractor')" [class.active]="budgetTableTab === 'Subcontractor'">Subcontractors</button>
         <button (click)="setBudgetTableTab('Equipment')" [class.active]="budgetTableTab === 'Equipment'">Equipment</button>
         <button (click)="setBudgetTableTab('Other')" [class.active]="budgetTableTab === 'Other'">Other</button>
       </div>
@@ -261,7 +254,15 @@
             <tr>
               <th>Status</th>
               <th>Item</th>
-              <th>Trade</th>
+              <th *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">Vendor</th>
+              <th *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">Trade</th>
+              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment' || budgetTableTab === 'Subcontractor'">
+                {{ budgetTableTab === 'Subcontractor' ? 'Hours' : 'Qty' }}
+              </th>
+              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">Unit</th>
+              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment' || budgetTableTab === 'Subcontractor'">
+                {{ budgetTableTab === 'Subcontractor' ? 'Rate' : 'Unit Cost' }}
+              </th>
               <th class="text-right">Estimated</th>
               <th class="text-right">Actual</th>
               <th class="text-right">Variance</th>
@@ -276,7 +277,25 @@
             <tr *ngIf="isAddingLineItem" class="edit-row bg-primary-soft">
               <td><mat-icon>add_circle_outline</mat-icon></td>
               <td><input class="table-input" [(ngModel)]="newBudgetItem.item" placeholder="Item Name"></td>
-              <td><input class="table-input" [(ngModel)]="newBudgetItem.trade" placeholder="Trade"></td>
+
+              <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
+                <input class="table-input" [(ngModel)]="newBudgetItem.vendor" placeholder="Vendor">
+              </td>
+              <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">
+                <input class="table-input" [(ngModel)]="newBudgetItem.trade" placeholder="Trade">
+              </td>
+
+              <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
+                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.quantity" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0"></td>
+                <td><input class="table-input" [(ngModel)]="newBudgetItem.unit" placeholder="Unit"></td>
+                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.unitCost" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0.00"></td>
+              </ng-container>
+
+              <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
+                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.quantity" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0"></td>
+                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.unitCost" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0.00"></td>
+              </ng-container>
+
               <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.estimatedCost" placeholder="0"></td>
               <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.actualCost" placeholder="0"></td>
               <td class="text-center">-</td>
@@ -314,8 +333,22 @@
                     <line x1="12" x2="12.01" y1="16" y2="16"/>
                   </svg>
                 </td>
-                <td class="font-medium">{{ticket.item}}</td>
-                <td class="text-muted">{{ticket.trade}}</td>
+                <td class="font-medium" [matTooltip]="ticket.phase ? 'Phase: ' + ticket.phase : ''">{{ticket.item}}</td>
+
+                <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'" class="text-muted">{{ticket.vendor || '-'}}</td>
+                <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'" class="text-muted">{{ticket.trade}}</td>
+
+                <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
+                  <td class="text-right">{{ticket.quantity}}</td>
+                  <td class="text-muted">{{ticket.unit}}</td>
+                  <td class="text-right">${{ticket.unitCost}}</td>
+                </ng-container>
+
+                <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
+                  <td class="text-right">{{ticket.quantity}}</td>
+                  <td class="text-right">${{ticket.unitCost}}</td>
+                </ng-container>
+
                 <td class="text-right font-medium">${{ticket.estimatedCost | number:'1.0-0'}}</td>
                 <td class="text-right">${{ticket.actualCost | number:'1.0-0'}}</td>
                 <td class="text-right font-medium" [ngClass]="getStatusColor(ticket.estimatedCost, ticket.forecastToComplete)">
@@ -330,7 +363,10 @@
                     <span class="font-medium">{{ticket.percentComplete}}%</span>
                   </div>
                 </td>
-                <td class="text-right font-medium">${{ (ticket?.forecastToComplete ?? 0) | number:'1.0-0' }}</td>
+                <td class="text-right font-medium">
+                  <!-- Non-editable view (when not editing row) -->
+                  ${{ (ticket?.forecastToComplete ?? 0) | number:'1.0-0' }}
+                </td>
                 <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [matTooltip]="ticket.notes">
                   {{ticket.notes}}
                 </td>
@@ -350,12 +386,34 @@
               <ng-template #editMode>
                 <td><mat-icon>edit</mat-icon></td>
                 <td><input class="table-input" [(ngModel)]="editingItem!.item" placeholder="Item Name"></td>
-                <td><input class="table-input" [(ngModel)]="editingItem!.trade" placeholder="Trade"></td>
+
+                <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
+                  <input class="table-input" [(ngModel)]="editingItem!.vendor" placeholder="Vendor">
+                </td>
+                <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">
+                  <input class="table-input" [(ngModel)]="editingItem!.trade" placeholder="Trade">
+                </td>
+
+                <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
+                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.quantity" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0"></td>
+                  <td><input class="table-input" [(ngModel)]="editingItem!.unit" placeholder="Unit"></td>
+                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.unitCost" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0.00"></td>
+                </ng-container>
+
+                <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
+                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.quantity" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0"></td>
+                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.unitCost" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0.00"></td>
+                </ng-container>
+
                 <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.estimatedCost" placeholder="0"></td>
                 <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.actualCost" placeholder="0"></td>
                 <td class="text-center">-</td>
-                <td class="text-right text-muted">{{editingItem!.percentComplete}}%</td>
-                <td class="text-right text-muted">${{ (editingItem!.forecastToComplete ?? 0) | number:'1.0-0' }}</td>
+                <td class="text-right text-muted">
+                  <input type="number" class="table-input text-right" [(ngModel)]="editingItem!.percentComplete" placeholder="0" min="0" max="100">
+                </td>
+                <td class="text-right text-muted">
+                    <input type="number" class="table-input text-right" [(ngModel)]="editingItem!.forecastToComplete" placeholder="0">
+                </td>
                 <td><input class="table-input" [(ngModel)]="editingItem!.notes" placeholder="Notes"></td>
                 <td>
                   <div class="action-buttons-row">
@@ -374,7 +432,11 @@
             <tr>
               <td></td>
               <td>TOTAL</td>
-              <td></td>
+              <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all'"></td>
+              <td *ngIf="budgetTableTab !== 'Materials'"></td>
+              <ng-container *ngIf="budgetTableTab === 'Materials'">
+                <td></td><td></td><td></td>
+              </ng-container>
               <td class="text-right">${{totalEstimated / 1000 | number:'1.0-0'}}K</td>
               <td class="text-right">${{totalActual / 1000 | number:'1.0-0'}}K</td>
               <td class="text-right" [ngClass]="variance >= 0 ? 'text-green' : 'text-red'">
@@ -382,6 +444,7 @@
               </td>
               <td></td>
               <td class="text-right">${{totalForecast / 1000 | number:'1.0-0'}}K</td>
+              <td></td>
               <td></td>
             </tr>
           </tfoot>
@@ -408,35 +471,20 @@
         </mat-card-header>
         <mat-card-content>
           <div class="sub-list">
-            <div class="sub-item">
+            <div class="sub-item" *ngFor="let sub of subcontractorSummary">
               <div>
-                <p class="name">ABC Framing Co.</p>
-                <p class="draws">3 of 5 draws completed</p>
+                <p class="name">{{ sub.vendor || sub.trade || sub.item }}</p>
+                <p class="draws">{{ sub.trade }}</p>
               </div>
               <div style="text-align: right;">
-                <p class="amount">$280K</p>
-                <p class="status text-green">On budget</p>
+                <p class="amount">${{ sub.actualCost | number:'1.0-0' }}</p>
+                <p class="status" [ngClass]="getStatusColor(sub.estimatedCost, sub.forecastToComplete)">
+                  {{ getVariance(sub) >= 0 ? 'Under Budget' : 'Over Budget' }}
+                </p>
               </div>
             </div>
-            <div class="sub-item">
-              <div>
-                <p class="name">Elite Electrical</p>
-                <p class="draws">2 of 4 draws completed</p>
-              </div>
-              <div style="text-align: right;">
-                <p class="amount">$95K</p>
-                <p class="status text-green">Under budget</p>
-              </div>
-            </div>
-            <div class="sub-item">
-              <div>
-                <p class="name">Pro Plumbing Services</p>
-                <p class="draws">2 of 4 draws completed</p>
-              </div>
-              <div style="text-align: right;">
-                <p class="amount">$78K</p>
-                <p class="status text-green">On track</p>
-              </div>
+            <div *ngIf="subcontractorSummary.length === 0" class="text-muted text-center p-4">
+              No subcontractor costs recorded yet.
             </div>
           </div>
         </mat-card-content>
@@ -494,9 +542,7 @@
         <mat-expansion-panel-header>
           <mat-panel-title class="timeline-title">Probuild Construction Timeline</mat-panel-title>
         </mat-expansion-panel-header>
-        <div class="timeline-section">
           <mat-divider class="timeline-divider"></mat-divider>
-          <div class="chart-container">
             <div class="timeline-wrapper">
               <app-timeline
                 [taskGroups]="timelineGroups"
@@ -506,8 +552,6 @@
                 (onEditGroup)="timelineService.handleEditGroup($event)">
               </app-timeline>
             </div>
-          </div>
-        </div>
       </mat-expansion-panel>
 
       <!-- Subtasks Section -->

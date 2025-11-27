@@ -151,7 +151,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   newBudgetItem: Partial<BudgetLineItem> = {};
   editingItemId: number | null = null;
   editingItem: BudgetLineItem | null = null; // Copy of item being edited
-  budgetTableTab: 'all' | 'Labor' | 'Materials' | 'Subcontractor' | 'Equipment' | 'Other' = 'all';
+  budgetTableTab: 'all' | 'Subcontractor' | 'Materials' | 'Equipment' | 'Other' = 'all';
 
   // Team Data
   assignedTeamMembers: JobUser[] = [];
@@ -232,6 +232,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       : '1.00';
   }
 
+  get procurementCommitments(): number {
+    return this.budgetItems
+      .filter(item => item.category === 'Materials')
+      .reduce((sum, item) => sum + item.estimatedCost, 0);
+  }
+
   getVariance(item: BudgetLineItem): number {
     const forecast = item.forecastToComplete ?? item.estimatedCost;
     return item.estimatedCost - forecast;
@@ -248,14 +254,191 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.budgetTableTab === 'all') {
       return this.budgetItems;
     }
+    if (this.budgetTableTab === 'Subcontractor') {
+        // Include 'Labor' category items in Subcontractor tab for consolidation
+        return this.budgetItems.filter(item => item.category === 'Subcontractor' || item.category === 'Labor');
+    }
     return this.budgetItems.filter(item => item.category === this.budgetTableTab);
   }
 
   get subcontractorSummary(): BudgetLineItem[] {
-    // Return all items categorized as Subcontractor, maybe sorted by cost
+    // Return all items categorized as Subcontractor, sorted by highest Actual Cost
     return this.budgetItems
       .filter(item => item.category === 'Subcontractor')
-      .sort((a, b) => b.actualCost - a.actualCost);
+      .sort((a, b) => b.actualCost - a.actualCost)
+      .slice(0, 5); // Show top 5
+  }
+
+  importAiEstimates(): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Import AI Estimates',
+        message: 'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
+        confirmButtonText: 'Import',
+        cancelButtonText: 'Cancel'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.processAiImport();
+      }
+    });
+  }
+
+  private processAiImport(): void {
+    // TODO: Check for duplicates first? For now just append as requested, user can delete.
+    if (!this.processingResults || this.processingResults.length === 0) {
+        this.isLoadingBudget = true;
+        this.bomService.getBillOfMaterials(this.projectDetails.jobId).subscribe(results => {
+            this.processingResults = results.length ? results : [results];
+            this.runImportLogic();
+        });
+    } else {
+        this.runImportLogic();
+    }
+  }
+
+  private runImportLogic(): void {
+    this.isLoadingBudget = true;
+    const newItems: BudgetLineItem[] = [];
+    const report = this.processingResults[0]?.parsedReport;
+
+    if (report && report.sections) {
+        report.sections.forEach((section: any) => {
+            let category = 'Other';
+            let phase = section.title.replace(/ - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i, '').trim();
+
+            if (section.title.toLowerCase().includes('material')) category = 'Materials';
+            else if (section.title.toLowerCase().includes('labor') || section.title.toLowerCase().includes('subcontractor')) category = 'Subcontractor';
+
+            // Filter out summary tables
+            // Explicitly filter summary sections to avoid duplication
+            if (
+                (section.title.toLowerCase().includes('total') && section.title.toLowerCase().includes('breakdown')) ||
+                section.title.toLowerCase().includes('project cost summary') ||
+                section.title.toLowerCase().includes('summary of costs')
+            ) {
+                return;
+            }
+
+            if (section.type === 'table' && section.content) {
+                // Helper to find index by header name (case insensitive)
+                const getIndex = (headers: string[], ...names: string[]) =>
+                    headers.findIndex(h => names.some(n => h.toLowerCase().includes(n.toLowerCase())));
+
+                const headers = section.headers || [];
+
+                // Column Indices
+                const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
+                const tradeIdx = getIndex(headers, 'Trade');
+                const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
+                const unitIdx = getIndex(headers, 'Unit');
+                // Make 'Total Cost' more specific to avoid grabbing CSI codes
+                const costIdx = getIndex(headers, 'Total Cost', 'Total Estimated Cost', 'Est. Cost', 'Total Price');
+                const unitCostIdx = getIndex(headers, 'Unit Cost', 'Rate', 'Hourly Rate');
+
+                section.content.forEach((row: any[]) => {
+                    const item = itemIdx > -1 ? row[itemIdx] : (tradeIdx > -1 ? row[tradeIdx] : 'Unknown Item');
+                    const trade = tradeIdx > -1 ? row[tradeIdx] : phase; // Fallback to Phase if no Trade column
+
+                    let cost = 0;
+                    let qty = 0;
+                    let unitCost = 0;
+
+                    // Parse Quantity
+                    if (qtyIdx > -1) {
+                         const qStr = row[qtyIdx]?.toString() || '';
+                         qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
+                    }
+
+                    // Parse Unit Cost
+                    if (unitCostIdx > -1) {
+                         const ucStr = row[unitCostIdx]?.toString() || '';
+                         unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
+                    }
+
+                    // Parse Total Cost with validation
+                    if (costIdx > -1) {
+                        const cStr = row[costIdx]?.toString() || '';
+                        cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
+                    }
+
+                    // Validation: If we have Qty and UnitCost, use them to calculate/verify Total
+                    const calculatedCost = qty * unitCost;
+                    if (calculatedCost > 0) {
+                        // If Total Cost is missing, zero, or suspiciously different (e.g. > 10% variance), trust the calculation
+                        // This fixes the issue where "38100" was parsed from "38" x 100'" description overflow
+                        if (cost === 0 || Math.abs(cost - calculatedCost) > (calculatedCost * 0.1)) {
+                            cost = calculatedCost;
+                        }
+                    } else if (cost === 0 && costIdx === -1) {
+                         // Only fallback to last column if we really have no other data
+                         // and ensure it looks like a price (contains dot or currency symbol)
+                         const lastVal = row[row.length - 1]?.toString() || '';
+                         if (lastVal.includes('.') || lastVal.includes('$')) {
+                             cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
+                         }
+                    }
+
+                    const unit = unitIdx > -1 ? row[unitIdx] : (category === 'Labor' ? 'Hours' : 'ea');
+
+                    // Skip items that couldn't be identified or have no cost
+                    if (item === 'Unknown Item') {
+                        return;
+                    }
+
+                    if (cost > 0) {
+                        newItems.push({
+                            jobId: Number(this.projectDetails.jobId),
+                            category: category,
+                            phase: phase,
+                            item: item,
+                            trade: trade,
+                            estimatedCost: cost,
+                            actualCost: 0,
+                            percentComplete: 0,
+                            quantity: qty > 0 ? qty : undefined,
+                            unit: qty > 0 ? unit : undefined,
+                            unitCost: unitCost > 0 ? unitCost : undefined,
+                            status: 'Pending',
+                            notes: 'Imported from AI Analysis',
+                            source: 'AI',
+                            id: 0
+                        } as BudgetLineItem);
+                    }
+                });
+            }
+        });
+    }
+
+    if (newItems.length === 0) {
+        this.isLoadingBudget = false;
+        this.snackBar.open('No estimable items found in AI report.', 'Close', { duration: 3000 });
+        return;
+    }
+
+    // warning if clicked twice. Check if items with source='AI' already exist.
+    const existingAiItems = this.budgetItems.filter(i => i.source === 'AI');
+    if (existingAiItems.length > 0) {
+        if (!confirm(`You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`)) {
+            this.isLoadingBudget = false;
+            return;
+        }
+    }
+
+    this.budgetService.addBudgetItemsBatch(newItems).subscribe({
+        next: (savedItems) => {
+            this.budgetItems = [...this.budgetItems, ...savedItems];
+            this.isLoadingBudget = false;
+            this.snackBar.open(`Successfully imported ${savedItems.length} items from AI.`, 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+            console.error('Batch import failed', err);
+            this.isLoadingBudget = false;
+            this.snackBar.open('Failed to import items.', 'Close', { duration: 3000 });
+        }
+    });
   }
 
   setBudgetTableTab(tab: any): void {
@@ -366,6 +549,16 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.newBudgetItem = {};
   }
 
+  recalculateEstimatedCost(item: Partial<BudgetLineItem>): void {
+    if ((item.quantity || item.quantity === 0) && (item.unitCost || item.unitCost === 0)) {
+      item.estimatedCost = item.quantity * item.unitCost;
+      // Default forecast to estimated if not set, or update it if it matches estimated
+      if (item.forecastToComplete === undefined || item.forecastToComplete === 0) {
+          item.forecastToComplete = item.estimatedCost;
+      }
+    }
+  }
+
   saveNewLineItem(): void {
     if (!this.newBudgetItem.item || !this.newBudgetItem.trade) {
       this.snackBar.open('Please fill in Item and Trade fields.', 'Close', { duration: 3000 });
@@ -377,7 +570,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       ...this.newBudgetItem,
       estimatedCost: this.newBudgetItem.estimatedCost || 0,
       actualCost: this.newBudgetItem.actualCost || 0,
-      forecastToComplete: this.newBudgetItem.forecastToComplete || 0,
+      // Default forecast to estimated cost if not manually entered
+      forecastToComplete: this.newBudgetItem.forecastToComplete ?? this.newBudgetItem.estimatedCost ?? 0,
       percentComplete: this.newBudgetItem.percentComplete || 0,
       jobId: Number(this.projectDetails.jobId)
     } as BudgetLineItem;

@@ -20,6 +20,10 @@ export class BudgetService {
     return this.http.post<BudgetLineItem>(this.apiUrl, item);
   }
 
+  addBudgetItemsBatch(items: BudgetLineItem[]): Observable<BudgetLineItem[]> {
+    return this.http.post<BudgetLineItem[]>(`${this.apiUrl}/batch`, items);
+  }
+
   updateBudgetItem(id: number, item: BudgetLineItem): Observable<BudgetLineItem> {
     return this.http.put<BudgetLineItem>(`${this.apiUrl}/${id}`, item);
   }
