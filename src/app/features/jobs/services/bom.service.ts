@@ -45,6 +45,8 @@ export class BomService {
       return { sections: [] };
     }
 
+    // console.log('Parsing AI Response:', fullResponse);
+
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {
       1: 'Site Logistics',

@@ -313,9 +313,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
             else if (section.title.toLowerCase().includes('labor') || section.title.toLowerCase().includes('subcontractor')) category = 'Subcontractor';
 
             // Filter out summary tables
-            // Explicitly filter summary sections to avoid duplication
             if (
                 (section.title.toLowerCase().includes('total') && section.title.toLowerCase().includes('breakdown')) ||
+                section.title.toLowerCase().includes('project cost breakdown') ||
                 section.title.toLowerCase().includes('project cost summary') ||
                 section.title.toLowerCase().includes('summary of costs')
             ) {
@@ -334,13 +334,37 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
                 const tradeIdx = getIndex(headers, 'Trade');
                 const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
                 const unitIdx = getIndex(headers, 'Unit');
+                const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
+                const detailIdx = getIndex(headers, 'Size/Detail', 'Detail', 'Size', 'Dimensions');
+
                 // Make 'Total Cost' more specific to avoid grabbing CSI codes
                 const costIdx = getIndex(headers, 'Total Cost', 'Total Estimated Cost', 'Est. Cost', 'Total Price');
                 const unitCostIdx = getIndex(headers, 'Unit Cost', 'Rate', 'Hourly Rate');
 
                 section.content.forEach((row: any[]) => {
-                    const item = itemIdx > -1 ? row[itemIdx] : (tradeIdx > -1 ? row[tradeIdx] : 'Unknown Item');
+                    let item = itemIdx > -1 ? row[itemIdx] : (tradeIdx > -1 ? row[tradeIdx] : 'Unknown Item');
                     const trade = tradeIdx > -1 ? row[tradeIdx] : phase; // Fallback to Phase if no Trade column
+
+                    // Row-Level Filter: Skip summary rows that might appear in regular tables
+                    if (item.toLowerCase().includes('total') ||
+                        item.toLowerCase().includes('subtotal') ||
+                        item.toLowerCase().includes('overhead') ||
+                        item.toLowerCase().includes('contingency') ||
+                        item.toLowerCase().includes('escalation') ||
+                        item.toLowerCase().includes('calculated gc bid')) {
+                        return;
+                    }
+
+                    // Enrich Item Name with Specification
+                    if (specIdx > -1 && row[specIdx]) {
+                        item += ` - ${row[specIdx]}`;
+                    }
+
+                    // Enrich Notes with Size/Detail
+                    let notes = 'Imported from AI Analysis';
+                    if (detailIdx > -1 && row[detailIdx]) {
+                        notes = `${row[detailIdx]}; ${notes}`;
+                    }
 
                     let cost = 0;
                     let qty = 0;
@@ -368,7 +392,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
                     const calculatedCost = qty * unitCost;
                     if (calculatedCost > 0) {
                         // If Total Cost is missing, zero, or suspiciously different (e.g. > 10% variance), trust the calculation
-                        // This fixes the issue where "38100" was parsed from "38" x 100'" description overflow
                         if (cost === 0 || Math.abs(cost - calculatedCost) > (calculatedCost * 0.1)) {
                             cost = calculatedCost;
                         }
@@ -402,7 +425,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
                             unit: qty > 0 ? unit : undefined,
                             unitCost: unitCost > 0 ? unitCost : undefined,
                             status: 'Pending',
-                            notes: 'Imported from AI Analysis',
+                            notes: notes,
                             source: 'AI',
                             id: 0
                         } as BudgetLineItem);

@@ -56,7 +56,7 @@ export class ProjectService {
         }));
 
         this.projects.next(mappedProjects);
-        console.log('Loaded projects:', mappedProjects);
+        // console.log('Loaded projects:', mappedProjects);
         if (userId) {
           localStorage.setItem(`projects_${userId}`, JSON.stringify(mappedProjects));
         }
