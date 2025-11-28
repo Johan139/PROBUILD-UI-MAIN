@@ -106,7 +106,7 @@
   font-weight: var(--fw-semibold);
   margin: 0 8px 8px 0;
   text-transform: capitalize;
-  color: var(--color-text-inverse);
+  color: var(--color-text-white);
 
   &.status-draft     { background: var(--color-accent); }
   &.status-submitted { background: var(--color-warning); }

@@ -1,7 +1,7 @@
 /* Page shell */
 body {
   overflow-y: auto;
-  background: var(--color-surface);
+  background: var(--color-canvas);
 }
 
 .page-center {
@@ -341,3 +341,4 @@ mat-form-field { flex: 1; width: 100%; }
   .col-md-8-job-quote { grid-column: 1; }
   .col-md-4-job-quote { width: 100%; flex: 0 0 auto; }
 }
+

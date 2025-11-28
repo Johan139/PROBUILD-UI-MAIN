@@ -3,7 +3,7 @@
 /* Page shell */
 :host {
   display: block;
-  background: transparent;
+  background: var(--color-canvas);
   color: var(--color-text);
 }
 

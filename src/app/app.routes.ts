@@ -29,6 +29,7 @@ import { UnsubscribeComponent } from './authentication/unsubscribe/unsubscribe.c
 import { ConnectionsComponent } from './features/connections/connections.component';
 import { BlueprintTestPageComponent } from './features/testing/blueprint-test-page/blueprint-test-page.component';
 import { PdfViewerPopoutComponent } from './components/pdf-viewer/pdf-viewer-popout/pdf-viewer-popout.component';
+import { TrialRegistrationComponent } from './authentication/TrialRegistration/trialregistration.component';
 
 export const routes: Routes = [
   {path:'', redirectTo: 'login', pathMatch:'full'},
@@ -51,6 +52,7 @@ export const routes: Routes = [
   {path:'forgot-password', component:ForgotPasswordComponent },
   {path:'gant-chart', component:GanttChartComponent, canActivate: [AuthGuard] },
   {path:'register', component:RegistrationComponent },
+   {path:'trial-registration', component: TrialRegistrationComponent},
   {path:'confirm-email', component:ConfirmEmailComponent },
   {path:'job-quote', component:JobQuoteComponent, canActivate: [AuthGuard] },
   {path:'job-assignment', component:JobAssignmentComponent, canActivate: [AuthGuard] },

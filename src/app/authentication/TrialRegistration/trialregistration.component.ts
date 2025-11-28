@@ -10,15 +10,16 @@ import {MatButton} from "@angular/material/button";
 import {HttpClient} from "@angular/common/http";
 import {Router, ActivatedRoute} from "@angular/router";
 import { environment } from '../../../environments/environment';
-import {catchError, debounceTime, distinctUntilChanged, filter, map, startWith} from 'rxjs/operators';
+import {catchError, map, startWith} from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
-import {merge, Observable, of} from 'rxjs';
+import {Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import {MatDivider} from "@angular/material/divider";
 import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
-import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
+import { PaymentPromptDialogComponent } from './../registration/payment-prompt-dialog.component' ;
+import { TermsConfirmationDialogComponent } from './../registration/terms-confirmation-dialog/terms-confirmation-dialog.component';
 import { COUNTRIES } from '../../data/countries';
 import { STATES } from '../../data/states';
 import {MatAutocompleteModule} from "@angular/material/autocomplete";
@@ -28,6 +29,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import { ViewChild } from '@angular/core';
 import { combineLatest } from 'rxjs';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import {
@@ -44,10 +46,7 @@ import {
   certificationOptions
 } from '../../data/registration-data';
 import { RegistrationService } from '../../services/registration.service';
-import { ElementRef, Inject, PLATFORM_ID, ViewChild, AfterViewInit } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { ProfileService } from '../profile/profile.service'; 
-declare const google: any;
+
 const BASE_URL = environment.BACKEND_URL;
 export interface SubscriptionOption {
   id: number;
@@ -80,20 +79,16 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatRadioModule,
     MatIconModule
   ],
-  templateUrl: './registration.component.html',
-  styleUrl: './registration.component.scss'
+  templateUrl: './trialregistration.component.html',
+  styleUrl: './trialregistration.component.scss'
 })
-export class RegistrationComponent implements OnInit{
+export class TrialRegistrationComponent implements OnInit{
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
-  @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
-  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+    @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
   token: string | null = null;
-  isBrowser: boolean | undefined;
-  isGoogleMapsLoaded: boolean = false;
-  autocomplete!: google.maps.places.Autocomplete;
   // Options for dropdowns
   constructionTypes = constructionTypes;
   trades = trades;
@@ -110,21 +105,17 @@ export class RegistrationComponent implements OnInit{
   subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
 
   countries: any[] = [];
-  states: any[] = [];
-  countryNumberCode: any[] = [];
-  selectedCountryCode: any;
-  addressTypes: { id: string; name: string; description?: string }[] = []; // ✅ added
-
-  countryFilterCtrl = new FormControl('');
-filteredCountryCodes!: Observable<any[]>;
+states: any[] = [];
+  filteredCountries: Observable<any[]> | undefined;
+  filteredStates: Observable<any[]> | undefined;
   
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
-selectedPlanFromUrl: string | null = null;
+
   tradeCtrl = new FormControl();
   filteredTrades: Observable<{ value: string; display: string; }[]>;
   selectedTrades: { value: string; display: string; }[] = [];
-selectedBillingFromUrl: string | null = null;
+
   supplierTypeCtrl = new FormControl();
   filteredSupplierTypes: Observable<{ value: string; display: string; }[]>;
   selectedSupplierTypes: { value: string; display: string; }[] = [];
@@ -135,7 +126,6 @@ selectedBillingFromUrl: string | null = null;
   isLoading: boolean = false;
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
     private formBuilder: FormBuilder,
     private httpClient: HttpClient,
     private router: Router,
@@ -143,10 +133,8 @@ selectedBillingFromUrl: string | null = null;
     private registrationService: RegistrationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
-    private invitationService: InvitationService,
-    private profileService: ProfileService
+    private invitationService: InvitationService
   ) {
-    this.isBrowser = isPlatformBrowser(this.platformId);
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
@@ -169,43 +157,14 @@ selectedBillingFromUrl: string | null = null;
       })
     );
   }
-private _filterCountryCodes(value: string): any[] {
-  const search = (value || '').toLowerCase().trim();
-  if (!search) return this.countryNumberCode;
 
-  return this.countryNumberCode.filter(c =>
-    c.countryCode?.toLowerCase().includes(search) ||
-    c.countryPhoneNumberCode?.toLowerCase().includes(search)
-  );
-}
   ngOnInit() {
     this.loadSubscriptionPackages();
-const plan = this.route.snapshot.queryParamMap.get('plan');
-let billing = this.route.snapshot.queryParamMap.get('billing')?.toLowerCase() as BillingCycle | null;
-
-// Validate billing value
-if (billing !== 'monthly' && billing !== 'yearly') {
-  billing = 'monthly'; // fallback
-}
-
-
-      this.profileService.getAddressType().subscribe({
-    next: (types) => (this.addressTypes = types),
-    error: (err) => console.error('Failed to load address types', err)
-  });
-
-this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
-this.selectedBillingFromUrl = billing;
+ this.loadGoogleTag();
     this.registrationForm = this.formBuilder.group({
       firstName: [{value: '', disabled: true}, Validators.required],
       lastName: [{value: '', disabled: true}, Validators.required],
-      phoneNumber: [
-  '',
-  [
-    Validators.required,
-    Validators.pattern(/^[0-9\s()+-]{6,20}$/) // allows 6–15 digits only
-  ]
-],
+      phoneNumber: ['', Validators.required],
       email: [{value: '', disabled: true}, [Validators.required, Validators.email]],
       password: [
         '',
@@ -220,22 +179,18 @@ this.selectedBillingFromUrl = billing;
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
-      countryCode: [''],
       billingCycle: ['monthly'],
-        city: [''],
-  state: [''],
-  country: [''],
       latitude: [null],
       longitude: [null],
       formattedAddress: [''],
       googlePlaceId: [''],
       vatNo: [''],
-      addressType: ['', Validators.required],
       userType: ['PERSONAL_USE', Validators.required],
 
       constructionType: ([]),
-
-      countryNumberCode:[''],
+      country: ['', Validators.required],
+      state: ['', Validators.required],
+      city: ['', Validators.required],
 
       nrEmployees: (''),
       yearsOfOperation: (''),
@@ -243,7 +198,8 @@ this.selectedBillingFromUrl = billing;
       certificationDocumentPath: (''),
       availability:(''),
 
-      subscriptionPackage: ['', Validators.required],
+      subscriptionPackage: [{ value: 'Trial', disabled: true }, Validators.required],
+
       projectPreferences: ([]),
 
       productsOffered:([]),
@@ -252,107 +208,67 @@ this.selectedBillingFromUrl = billing;
       deliveryTime: (''),
       userName:(''),
     });
-  this.registrationForm.get('billingCycle')?.setValue(this.selectedBillingFromUrl);
+
     this.user = 'PERSONAL_USE';
 
- this.registrationService.getAllCountryNumberCodes().subscribe(data => {
-  this.countryNumberCode = data;
+  // Fetch countries
+this.registrationService.getCountries().subscribe(countries => {
+  this.countries = countries;
 
-  // 🌍 Try to get user's real country via IP API
-  this.getUserMetadata().subscribe({
-    next: (meta) => {
-      const ipCountryCode = meta?.country_code || meta?.country || 'US'; // fallback to ZA
-      const detected = this.countryNumberCode.find(
-        c => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase()
+  this.registrationForm.get('country')?.setValidators([
+    Validators.required,
+    this.mustBeValidCountryValidator(this.countries)
+  ]);
+
+  this.registrationForm.get('country')?.updateValueAndValidity();
+});
+
+  // Fetch all states once
+this.registrationService.getAllStates().subscribe(allStates => {
+  this.states = allStates;
+
+  const countryCtrl = this.registrationForm.get('country')!;
+  const stateCtrl = this.registrationForm.get('state')!;
+
+  // ⭐ Attach validators RIGHT HERE
+  this.registrationForm.get('state')?.setValidators([
+    Validators.required,
+    this.mustBeValidStateValidator(this.states)
+  ]);
+  this.registrationForm.get('state')?.updateValueAndValidity();
+
+  this.filteredStates = combineLatest([
+    countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
+    stateCtrl.valueChanges.pipe(startWith(''))
+  ]).pipe(
+    map(([countryId, search]) => {
+      const term = (typeof search === 'string' ? search : '').toLowerCase();
+      if (!countryId) return [];
+
+      const normalizedCountryId = (countryId + '').toLowerCase();
+
+      const inCountry = this.states.filter(s =>
+        (s.countryId + '').toLowerCase() === normalizedCountryId
       );
-      if (detected) {
-        this.selectedCountryCode = detected;
-      } else {
-        // fallback if no match
-        const fallback = this.countryNumberCode.find(c => c.countryCode === 'US');
-        this.selectedCountryCode = fallback || this.countryNumberCode[0];
-      }
-   // Initialize filter stream
-this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
-  startWith(''),
-  debounceTime(100),
-  distinctUntilChanged(),
-  map(value => this._filterCountryCodes(value ?? ''))
-);
-      console.log(`🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`);
-    },
-    error: (err) => {
-      console.warn('Could not detect country via IP API, defaulting to ZA', err);
-      const fallback = this.countryNumberCode.find(c => c.countryCode === 'ZA');
-      this.selectedCountryCode = fallback || this.countryNumberCode[0];
-    }
-  });
+
+      if (!term) return inCountry;
+
+      return inCountry.filter(s =>
+        (s.stateName ?? '').toLowerCase().includes(term) ||
+        (s.stateCode ?? '').toLowerCase().includes(term)
+      );
+    })
+  );
 });
 
 
 
 
-  // Fetch all states once
-this.registrationService.getAllStates().subscribe(allStates => {
-  console.log('All states:', allStates); // <-- Add this
-  this.states = allStates;
-
-    const countryCtrl = this.registrationForm.get('country')!;
-    const stateCtrl = this.registrationForm.get('state')!;
-
-// this.filteredStates = merge(
-//   countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
-//   stateCtrl.valueChanges.pipe(startWith(''))
-// ).pipe(
-//   map(() => {
-//     const stateVal = stateCtrl.value;
-//     const countryVal = countryCtrl.value;
-
-//     // 1️⃣ No valid country → nothing to show
-//     if (!countryVal || typeof countryVal !== 'object') return [];
-
-//     // 2️⃣ If a state object is already selected → hide list completely
-//     if (typeof stateVal === 'object') return [];
-
-//     const search = (stateVal ?? '').toLowerCase();
-
-//     const inCountry = this.states.filter(
-//       s => s.countryId?.toLowerCase() === countryVal.id?.toLowerCase()
-//     );
-
-//     // 3️⃣ No text search → show all states in that country
-//     if (!search) return inCountry;
-
-//     return inCountry.filter(
-//       s =>
-//         (s.stateName ?? '').toLowerCase().includes(search) ||
-//         (s.stateCode ?? '').toLowerCase().includes(search)
-//     );
-//   })
-// );
-
-  });
-
-
   // Countries filter
-const countryCtrl = this.registrationForm.get('country')!;
-// this.filteredCountries = countryCtrl.valueChanges.pipe(
-//   debounceTime(150),
-//   distinctUntilChanged(),
-//   startWith(''),
-//   map(value => {
-//     // 1️⃣ User typing → filter
-//     if (typeof value === 'string') {
-//       const term = value.toLowerCase();
-//       return this.countries.filter(c =>
-//         c.countryName.toLowerCase().includes(term) ||
-//         c.countryCode.toLowerCase().includes(term)
-//       );
-//     }
-//     // 2️⃣ User selected an object → don’t reset list
-//     return [];
-//   })
-// );
+  this.filteredCountries = this.registrationForm.get('country')!.valueChanges.pipe(
+    startWith(''),
+    map(value => this._filterCountries(value))
+  );
 
 
 
@@ -400,90 +316,19 @@ const countryCtrl = this.registrationForm.get('country')!;
       }
     });
   }
-async ngAfterViewInit(): Promise<void> {
-  if (!this.isBrowser) return;
 
-  try {
-    await this.loadGoogleMapsScript();
-    this.isGoogleMapsLoaded = true;
-    this.initAutocomplete();
-  } catch (err) {
-    console.error('Failed to load Google Maps API:', err);
-  }
-}
-
-private initAutocomplete(): void {
-  if (!this.addressInput?.nativeElement) return;
-
-  this.autocomplete = new google.maps.places.Autocomplete(this.addressInput.nativeElement, {
-    fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
-    types: ['geocode'],
-  });
-
-  this.autocomplete.addListener('place_changed', () => {
-    const place = this.autocomplete.getPlace();
-    if (!place.address_components) return;
-    this.handlePlaceSelection(place);
-  });
-}
-private handlePlaceSelection(place: any): void {
-  let streetNumber = '';
-  let streetName = '';
-  let city = '';
-  let state = '';
-  let postalCode = '';
-  let country = '';
-  let countryCode = '';
-
-  for (const component of place.address_components) {
-    const types = component.types;
-
-    if (types.includes('street_number')) streetNumber = component.long_name;
-    if (types.includes('route')) streetName = component.long_name;
-    if (types.includes('locality') || types.includes('sublocality')) city = component.long_name;
-    if (types.includes('administrative_area_level_1')) state = component.long_name;
-    if (types.includes('postal_code')) postalCode = component.long_name;
-    if (types.includes('country')) {
-      country = component.long_name;
-      countryCode = component.short_name;
-    }
-  }
-
-  const lat = place.geometry?.location?.lat();
-  const lng = place.geometry?.location?.lng();
-
-  this.registrationForm.patchValue({
-    formattedAddress: place.formatted_address,
-    streetNumber,
-    streetName,
-    city,
-    state,
-    postalCode,
-    country,
-    latitude: lat,
-    longitude: lng,
-    googlePlaceId: place.place_id,
-    countryCode: countryCode
-  });
-
-  console.log('📍 Google Maps selection', {
-    formattedAddress: place.formatted_address,
-    city,
-    state,
-    country,
-    lat,
-    lng,
-    countryCode
-  });
-}
-
-
-countryDisplayFn = (country: any): string => {
-  if (!country) return '';
-  return typeof country === 'string' ? country : country.countryName;
+countryDisplayFn = (id: string) => {
+  const country = this.countries.find(c => c.id === id);
+  return country ? country.countryName : '';
 };
-
-stateDisplayFn = (state: any) => state?.stateName ?? '';
+stateDisplayFn = (state: any) => {
+  if (typeof state === 'string') {
+    return this.states.find(s => s.id === state)?.stateName ?? '';
+  } else if (state && typeof state === 'object') {
+    return state.stateName || '';
+  }
+  return '';
+};
 
   addTrade(event: any): void {
     const value = (event.value || '').trim();
@@ -496,13 +341,11 @@ stateDisplayFn = (state: any) => state?.stateName ?? '';
     event.chipInput!.clear();
     this.registrationForm.get('tradeCtrl')!.setValue(null);
   }
-openCountryPanel() {
-  const ctrl = this.registrationForm.get('country');
-  // only open if user actually focused in, not when programmatically set
-  if (!ctrl?.value || typeof ctrl.value === 'string') {
-    setTimeout(() => this.countryAutoTrigger.openPanel());
+  openCountryPanel() {
+    const ctrl = this.registrationForm.get('country');
+    ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
+    setTimeout(() => this.countryAutoTrigger?.openPanel());
   }
-}
     openStatePanel() {
     const ctrl = this.registrationForm.get('state');
     ctrl?.setValue(ctrl.value ?? '', { emitEvent: true });
@@ -554,14 +397,15 @@ openCountryPanel() {
   }
 
 private _filterCountries(value: any): any[] {
-  const filterValue =
-    typeof value === 'string' ? value.toLowerCase() : value?.countryName?.toLowerCase() || '';
-  return this.countries.filter(
-    c =>
-      c.countryName.toLowerCase().includes(filterValue) ||
-      c.countryCode.toLowerCase().includes(filterValue)
+  // User typed text
+  const filterText = typeof value === 'string' ? value.toLowerCase() : '';
+
+  return this.countries.filter(c =>
+    c.countryName.toLowerCase().includes(filterText) ||
+    c.countryCode.toLowerCase().includes(filterText)
   );
 }
+
 
 
 
@@ -588,29 +432,26 @@ private _filterCountries(value: any): any[] {
 private loadSubscriptionPackages(): void {
   this.stripeService.getSubscriptions().subscribe({
     next: (subscriptions) => {
-      this.subscriptionPackages = subscriptions.map(s => ({
-        value: s.subscription,
-        display: `${s.subscription}`,
-        amount: s.amount,
-        annualAmount: s.annualAmount
-      }));
+      this.subscriptionPackages = subscriptions
+        .filter(s => s.subscription.includes('Trial'))
+        .map(s => ({
+          value: s.subscription,
+          display: `${s.subscription}`,
+          amount: s.amount,
+          annualAmount: s.annualAmount
+        }));
 
-      // 🔥 Auto-select plan ONLY after list loads
-      if (this.selectedPlanFromUrl) {
-        const match = this.subscriptionPackages.find(
-          p => p.value.toLowerCase() === this.selectedPlanFromUrl
-        );
+      // 🔥 FORCE the default value AFTER the list is loaded
+      this.registrationForm.get('subscriptionPackage')?.setValue(this.subscriptionPackages[0].value);
 
-        if (match) {
-          this.registrationForm.get('subscriptionPackage')?.setValue(match.value);
-        }
-      }
+      // 🔥 Disable it so it becomes grayed out
+      this.registrationForm.get('subscriptionPackage')?.disable();
     },
-    error: (err) => {
-      console.error('Failed to load subscription packages:', err);
-    }
+    error: (err) => console.error('Subscription load error:', err)
   });
 }
+
+
   certificationChange(selectedOption:any) {
     if(selectedOption === "FULLY_LICENSED")
       this.certified = true;
@@ -618,7 +459,29 @@ private loadSubscriptionPackages(): void {
 getUserMetadata(): Observable<any> {
   return this.httpClient.get('https://ipapi.co/json/');
 }
+loadGoogleTag() {
+  if (document.getElementById('google-ads-script')) {
+    return; // Already loaded
+  }
 
+  // Load the gtag.js script
+  const gtagScript = document.createElement('script');
+  gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17722362865';
+  gtagScript.async = true;
+  gtagScript.id = 'google-ads-script';
+  document.head.appendChild(gtagScript);
+
+  // Add the config script
+  const configScript = document.createElement('script');
+  configScript.id = 'google-ads-config';
+  configScript.innerHTML = `
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'AW-17722362865');
+  `;
+  document.head.appendChild(configScript);
+}
 
 private getOperatingSystem(): string {
   const userAgent = navigator.userAgent;
@@ -702,25 +565,6 @@ private getOperatingSystem(): string {
 
       const formValue = this.registrationForm.getRawValue();
 
-// ✅ Combine country code + cleaned phone number before saving
-let rawPhone = formValue.phoneNumber || '';
-let countryCode = this.selectedCountryCode?.countryPhoneNumberCode || '';
-
-// Strip out everything except digits and '+'
-const cleaned = rawPhone.replace(/[^\d+]/g, '');
-
-// If user already started with +countryCode, keep as is
-if (cleaned.startsWith(countryCode.replace('+', '')) || cleaned.startsWith(countryCode)) {
-  formValue.phoneNumber = cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
-} else {
-  // Remove leading zeros from local numbers
-  const normalized = cleaned.replace(/^0+/, '');
-  formValue.phoneNumber = `${countryCode}${normalized}`;
-}
-
-// 🔍 Debug log
-console.log('📞 Final phone number saved:', formValue.phoneNumber);
-
       if (this.user === 'SUBCONTRACTOR') {
         formValue.trades = this.selectedTrades.map(trade => trade.value);
       }
@@ -741,8 +585,8 @@ formValue.latitudeFromIP = metadata.latitude;
 formValue.longitudeFromIP = metadata.longitude;
 formValue.timezone = metadata.timezone;
 formValue.operatingSystem = this.getOperatingSystem();
-    console.log(this.selectedCountryCode?.id)
-formValue.countryNumberCode = this.selectedCountryCode?.id || null;
+    
+
 // Ensure only the ID is sent
 if (typeof formValue.country === 'object') {
   formValue.country = formValue.country?.id;
@@ -845,21 +689,6 @@ if (typeof formValue.state === 'object') {
 
       const formValue = this.registrationForm.getRawValue();
 
-let rawPhone = formValue.phoneNumber || '';
-let countryCode = this.selectedCountryCode?.countryPhoneNumberCode || '';
-
-// Strip out everything except digits and '+'
-const cleaned = rawPhone.replace(/[^\d+]/g, '');
-
-// If user already started with +countryCode, keep as is
-if (cleaned.startsWith(countryCode.replace('+', '')) || cleaned.startsWith(countryCode)) {
-  formValue.phoneNumber = cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
-} else {
-  // Remove leading zeros from local numbers
-  const normalized = cleaned.replace(/^0+/, '');
-  formValue.phoneNumber = `${countryCode}${normalized}`;
-}
-
       if (this.user === 'SUBCONTRACTOR') {
         formValue.trades = this.selectedTrades.map(trade => trade.value);
       }
@@ -879,7 +708,7 @@ formValue.countryFromIP = metadata.country_name;
 formValue.latitudeFromIP = metadata.latitude;
 formValue.longitudeFromIP = metadata.longitude;
 formValue.timezone = metadata.timezone;
-formValue.countryNumberCode = this.selectedCountryCode?.id || null;
+
 formValue.operatingSystem = this.getOperatingSystem();
       this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
         headers: { 'Content-Type': 'application/json' }
@@ -1007,181 +836,59 @@ formValue.operatingSystem = this.getOperatingSystem();
     this.showAlert = false;
   }
 
-  onCountryBlur() {
+validateCountrySelection() {
   const ctrl = this.registrationForm.get('country');
-  const val = ctrl?.value;
+  const value = ctrl?.value;
 
-  // If not a valid object (user typed text only)
-  if (!val || typeof val !== 'object') {
-    ctrl?.setValue(null);
+  const isValid = this.countries.some(c => c.id === value);
+
+  if (!isValid) {
     ctrl?.setErrors({ invalidSelection: true });
+    ctrl?.setValue('');
   }
 }
+private mustBeValidCountryValidator = (countries: any[]): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
 
-onStateBlur(): void {
+    if (!value) return { required: true };
+
+    const isValid = countries.some(c => c.id === value);
+    return isValid ? null : { invalidSelection: true };
+  };
+};
+private mustBeValidStateValidator = (states: any[]): ValidatorFn => {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) return { required: true };
+    const isValid = states.some(s => s.id === value);
+    return isValid ? null : { invalidSelection: true };
+  };
+};
+
+onCountrySelected(event: any) {
+  const countryId = event.option.value;
+  this.registrationForm.get('country')?.setValue(countryId, { emitEvent: false });
+
+  // Reset state when country changes
+  this.registrationForm.get('state')?.setValue('');
+}
+onStateSelected(event: any) {
+  this.registrationForm.get('state')?.setValue(event.option.value, { emitEvent: false });
+}
+validateStateSelection() {
   setTimeout(() => {
     const ctrl = this.registrationForm.get('state');
-    const val = ctrl?.value;
-    // only clear if still a string after dropdown selection settles
-    if (!val || typeof val !== 'object') {
-      ctrl?.setValue(null);
+    const value = ctrl?.value;
+
+    const isValid = this.states.some(s => s.id === value);
+
+    if (!isValid) {
       ctrl?.setErrors({ invalidSelection: true });
+      ctrl?.setValue('');
     }
-  }, 150);
-}
-
-selectedDialCode = '+1';
-onPhoneInput(event: any) {
-  const inputEl = event.target as HTMLInputElement;
-  let value = inputEl.value || '';
-  const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
-  const phoneCtrl = this.registrationForm.get('phoneNumber');
-
-  // Clean illegal characters but allow + only at start
-  value = value
-    .replace(/[^0-9\s()+-]/g, '')  // remove strange chars
-    .replace(/(?!^)\+/g, '');      // remove any '+' that isn’t at start
-
-  if (dial) {
-    // Remove duplicate dial prefixes like +27+27 or +1+1
-    const duplicatePattern = new RegExp(`^(\\+?${dial.replace('+', '\\+')}\\s*)+`);
-    value = value.replace(duplicatePattern, dial);
-
-    // Ensure single '+'
-    if (!value.startsWith('+')) {
-      value = '+' + value.replace(/^\+*/, '');
-    }
-
-    // Reset if cleared
-    if (!value.trim()) {
-      value = dial;
-    }
-    // Prevent deleting dial prefix
-    else if (value.length < dial.length && dial.startsWith(value)) {
-      value = dial;
-    }
-    // Normalize weird +0 / +00 cases
-    else if (value === '+' || value === '+0') {
-      value = dial;
-    }
-    // If missing dial entirely → prepend
-    else if (!value.startsWith(dial)) {
-      let digits = value.replace(/^\+?0+/, '');
-      value = dial + digits;
-    }
-    // Fix "+270..." or "+440..."
-    else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
-      value = dial + value.substring(dial.length + 1);
-    }
-  }
-
-  // Final cleanup
-  value = value.replace(/\+\++/g, '+');
-
-  inputEl.value = value;
-  phoneCtrl?.setValue(value, { emitEvent: false });
-}
-
-
-// optional pretty format (basic local example)
-private formatPhoneNumber(value: string, countryCode: string): string {
-  if (countryCode === 'ZA' && value.length >= 3) {
-    return `(${value.slice(0, 3)}) ${value.slice(3, 6)} ${value.slice(6)}`;
-  }
-  if (countryCode === 'US' && value.length >= 3) {
-    return `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
-  }
-  return value; // fallback
-}
-onCountrySelected(event: any): void {
-  const selected = event.option.value;
-  this.selectedCountryCode = selected;
-  const countryCtrl = this.registrationForm.get('country');
-  const stateCtrl = this.registrationForm.get('state');
-  const phoneCtrl = this.registrationForm.get('phoneNumber');
-  const dial = selected?.countryPhoneNumberCode || '';
-  const currentValue = phoneCtrl?.value | 0;
-  // Set country value
-  countryCtrl?.setValue(selected, { emitEvent: false });
-
-  // Clear dependent state
-  stateCtrl?.reset('', { emitEvent: false });
-  stateCtrl?.markAsPristine();
-  stateCtrl?.markAsUntouched();
-
-  // 🔍 Find matching dial code
-  const match = this.countryNumberCode.find(
-    (x) => x.countryId?.toLowerCase() === selected.id?.toLowerCase()
-  );
-  this.selectedDialCode = match?.countryPhoneNumberCode || '';
-
-  // 🪄 If no phone entered yet, inject the code automatically
-  if (this.selectedDialCode && !phoneCtrl?.value) {
-    phoneCtrl?.setValue(`${this.selectedDialCode} `);
-  }
-
-  requestAnimationFrame(() => {
-    this.countryAutoTrigger.closePanel();
-    stateCtrl?.setValue(stateCtrl.value ?? '', { emitEvent: true });
   });
 }
 
-
-
-onStateSelected(event: any): void {
-  const selected = event.option.value;
-  const stateCtrl = this.registrationForm.get('state');
-
-  // set object value directly without re-emitting
-  stateCtrl?.setValue(selected, { emitEvent: false });
-
-  // ✅ use the same logic as country: close panel in animation frame
-  requestAnimationFrame(() => {
-    this.stateAutoTrigger.closePanel();
-
-    // Optional: blur to prevent flicker
-    (document.activeElement as HTMLElement)?.blur();
-  });
-
-  // Mark as touched & valid
-  stateCtrl?.markAsTouched();
-  stateCtrl?.updateValueAndValidity();
-
-  console.log('✅ Selected state:', selected);
-}
-
-private loadGoogleMapsScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof google !== 'undefined' && google.maps) {
-      resolve();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      if (typeof google !== 'undefined' && google.maps) resolve();
-      else reject(new Error('Google Maps API loaded but google object not defined'));
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-onCountryCodeChange(selected: any) {
-  this.selectedCountryCode = selected;
-  const dial = selected?.countryPhoneNumberCode || '';
-  const phoneCtrl = this.registrationForm.get('phoneNumber');
-  const currentValue = phoneCtrl?.value || '';
-
-  if (!currentValue || !currentValue.startsWith('+')) {
-    phoneCtrl?.setValue(dial + ' ');
-  } else {
-    // Replace old code if user switched countries
-    const cleaned = currentValue.replace(/^\+\d+/, '');
-    phoneCtrl?.setValue(dial + cleaned);
-  }
-}
 
 }
