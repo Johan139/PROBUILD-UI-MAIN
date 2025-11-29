@@ -1,0 +1,175 @@
+    <div class="card">
+      <!-- Header strip inside viewer -->
+      <div class="blueprint-viewer-header">
+        <div>• INTERACTIVE BLUEPRINT VIEWER •</div>
+        <!-- Only show progress bar in create mode if flow matches -->
+        <div *ngIf="mode === 'create' && (flow.step === 'extracting' || flow.step === 'finalizing')" class="progress-bar-container">
+          <span>
+            {{ flow.step === 'extracting' ? 'AI Metadata Extraction' : 'Finalizing Adjustments' }}
+          </span>
+          <div class="progress-bar">
+            <!-- flow.pct is only available on specific types of FlowState, cast or check carefully in template or logic.
+                 Since flow is union type, can use a helper or type guard function in ts, but in template we trust the *ngIf check -->
+            <div class="progress-bar-value" [style.width.%]="isExtracting(flow) || isFinalizing(flow) ? (flow['pct'] || 0) : 0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas area -->
+      <div class="blueprint-viewer-canvas" appDragAndDrop (fileDropped)="onFileDropped($event)" #dropZone>
+        <!-- PDF Viewer -->
+        <ng2-pdfjs-viewer
+          #pdfViewer
+          *ngIf="pdfSrc"
+          [pdfSrc]="pdfSrc"
+          [viewerId]="viewerId"
+          [showSpinner]="true"
+          [theme]="'dark'"
+        ></ng2-pdfjs-viewer>
+
+        <!-- Mock blueprint grid -->
+        <div class="blueprint-grid" *ngIf="!pdfSrc"></div>
+
+        <!-- Highlight box (Create Mode Only) -->
+         <div *ngIf="mode === 'create' && (flow.step === 'walkthrough' || flow.step === 'uploaded' || flow.step === 'extracting' || flow.step === 'address')"
+             class="highlight-box"
+             style="display:none;"
+             >
+        </div>
+
+        <!-- Upload state overlay (Create Mode Only) -->
+        <div *ngIf="mode === 'create' && flow.step === 'idle'" class="upload-overlay" [class.file-over]="dropZone.classList.contains('file-over')">
+          <h4>Upload Blueprint</h4>
+          <p>Drag & drop a PDF here or click to select</p>
+          <input type="file" accept=".pdf" (change)="onFileSelected($event)" style="display: none" #fileInput multiple>
+          <button class="btn-primary" (click)="openUploadDialog()">
+            Choose File
+          </button>
+        </div>
+
+        <!-- View Mode Empty State -->
+        <div *ngIf="mode === 'view' && !pdfSrc" class="upload-overlay">
+             <h4>No Blueprint Selected</h4>
+             <p>Select a file from the list to view.</p>
+        </div>
+
+        <!-- File selection dropdown -->
+        <div *ngIf="uploadedFiles.length > 0" class="file-list-container">
+          <button class="file-list-toggle" (click)="isFileListCollapsed = !isFileListCollapsed">
+            <i class="fas fa-chevron-down" [class.rotated]="isFileListCollapsed"></i>
+            <span>{{ uploadedFiles.length }} Files {{ mode === 'create' ? 'Uploaded' : 'Available' }}</span>
+          </button>
+          <div class="file-list" [class.collapsed]="isFileListCollapsed">
+            <ul>
+              <li *ngFor="let file of uploadedFiles" [class.selected]="file === selectedFile" (click)="onPdfSelectionChange(file)">
+                <span>{{ file.name }}</span>
+                <button *ngIf="mode === 'create'" (click)="removeFile(file); $event.stopPropagation()" class="remove-btn">
+                  &times;
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Extracting overlay (Create Mode Only) -->
+        <div *ngIf="mode === 'create' && flow.step === 'extracting'" class="upload-overlay">
+          <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
+          <div>Reading sheets, title blocks, site info…</div>
+        </div>
+
+        <!-- Address confirmation modal (Create Mode Only) -->
+        <div *ngIf="mode === 'create' && flow.step === 'address'" class="address-modal">
+          <div class="address-modal-content">
+            <div class="address-modal-header">
+              <lucide-icon [img]="MapPin"></lucide-icon> Confirm Project Location
+            </div>
+            <div class="address-modal-body">
+              <label>Detected address</label>
+              <input [value]="isExtracting(flow) || flow['step'] === 'address' ? flow['detectedAddress'] : ''" readonly>
+              <div>Weather & region pricing will use this location.</div>
+              <div class="address-modal-actions">
+                <button class="btn-primary" (click)="confirmAddressAction()">
+                  Confirm Address
+                </button>
+                <button class="btn-ghost" (click)="editAddressAction()">
+                  Back
+                </button>
+              </div>
+            </div>
+            <div class="map-preview">
+              <div>[ Map Preview Placeholder ]</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right-side vertical tools -->
+        <div class="toolbar">
+          <button *ngFor="let button of rightToolbarButtons" [title]="button.label" class="toolbar-button"
+                  (click)="handleToolbarClick(button.key)" [disabled]="(mode === 'create' && flow.step === 'idle') || (!pdfSrc && mode === 'view') || button.disabled">
+            <lucide-icon [img]="button.icon"></lucide-icon>
+          </button>
+
+          <!-- Unit toggle -->
+          <button title="Toggle Units" class="toolbar-button"
+                  (click)="metric = !metric" [disabled]="true">
+            {{ metric ? 'm / mm' : 'ft / in' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewer footer actions -->
+      <div class="viewer-footer">
+        <!-- Row 1: status + Start button -->
+        <div class="footer-row">
+          <div class="status-text">
+            <span *ngIf="mode === 'create' && isUploaded(flow)">Ready: {{ flow.fileName }}</span>
+            <span *ngIf="mode === 'view' && selectedFile">Viewing: {{ selectedFile.name }}</span>
+            <span *ngIf="(mode === 'create' && flow.step !== 'uploaded' && flow.step !== 'idle') || (mode === 'view' && selectedFile)">
+                Mode: {{ analysisMode }} | Zoom: {{ zoom * 100}}% | Units: {{ metric ? 'Metric' : 'Imperial' }}
+            </span>
+          </div>
+          <div class="footer-actions">
+            <span *ngIf="mode === 'create' && flow.step === 'walkthrough'">Active section: <b>{{ currentKey }}</b></span>
+          </div>
+        </div>
+
+        <!-- Row 2: Analysis options + actions (Create Mode Only) -->
+        <div *ngIf="mode === 'create'" class="footer-row">
+          <div class="analysis-options">
+            <label>
+              <input type="radio" name="analysis" [checked]="analysisMode === 'full'" (change)="onAnalysisModeChange('full')">
+              <span>Full Blueprint Analysis</span>
+            </label>
+            <label>
+              <input type="radio" name="analysis" [checked]="analysisMode === 'selected'" (change)="onAnalysisModeChange('selected')">
+              <span>Selected Blueprint Analysis</span>
+            </label>
+            <label>
+              <input type="radio" name="analysis" [checked]="analysisMode === 'renovation'" (change)="onAnalysisModeChange('renovation')">
+              <span>Renovation Analysis</span>
+            </label>
+          </div>
+
+          <div class="footer-actions">
+            <button *ngIf="flow.step === 'uploaded'" class="btn-primary" (click)="onStartProject()">
+              Start Project
+            </button>
+            <button class="btn-primary" (click)="onCancel()" [disabled]="flow.step === 'idle'">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Row 3: Dropdown for selected analysis (Create Mode Only) -->
+        <div *ngIf="mode === 'create' && analysisMode === 'selected'" class="footer-row">
+            <div class="analysis-options-details">
+                <mat-form-field appearance="fill">
+                    <mat-label>Select Prompts</mat-label>
+                    <mat-select [formControl]="selectedPrompts" multiple>
+                        <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.id">
+                            {{ prompt.promptName }}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+        </div>
+      </div>
+    </div>

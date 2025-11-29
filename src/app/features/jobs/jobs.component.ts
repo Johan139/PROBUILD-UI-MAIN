@@ -49,6 +49,9 @@ import { SharedModule } from '../../shared/shared.module';
 import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
 import { BudgetLineItem } from '../../models/budget-line-item.model';
+import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
+import { UploadedFileInfo, FileUploadService } from '../../services/file-upload.service';
+import { JobsService } from '../../services/jobs.service';
 
 @Component({
     selector: 'app-jobs',
@@ -83,7 +86,8 @@ import { BudgetLineItem } from '../../models/budget-line-item.model';
         MatMenuModule,
         MatExpansionModule,
         MatSelectModule,
-        SharedModule
+        SharedModule,
+        ProjectBlueprintViewerComponent
     ],
     templateUrl: './jobs.component.html',
     styleUrl: './jobs.component.scss'
@@ -140,7 +144,13 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   temperatureUnit: TemperatureUnit = 'C';
 
   // Tab State
-  activeTab: 'overview' | 'budget' | 'timeline' | 'team' = 'budget';
+  activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' = 'budget';
+
+  // Blueprint Viewer Data
+  blueprintFiles: UploadedFileInfo[] = [];
+  selectedBlueprint: UploadedFileInfo | null = null;
+  blueprintPdfSrc: string | Uint8Array | null = null;
+  isLoadingBlueprints: boolean = false;
 
   // Budget Data
   budgetItems: BudgetLineItem[] = [];
@@ -186,7 +196,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public measurementService: MeasurementService,
     private spreadsheetService: SpreadsheetService,
     private fb: FormBuilder,
-    private budgetService: BudgetService
+    private budgetService: BudgetService,
+    private fileUploadService: FileUploadService,
+    private jobsService: JobsService
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -486,21 +498,108 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     return 'error';
   }
 
-  setActiveTab(tab: 'overview' | 'budget' | 'timeline' | 'team'): void {
+  setActiveTab(tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints'): void {
     this.activeTab = tab;
-    if (tab === 'team') {
-      this.loadAssignedTeam();
-    } else if (tab === 'budget') {
-      this.loadBudget();
-    }
+  }
+
+  loadBlueprints(): void {
+    if (!this.projectDetails?.jobId) return;
+    this.isLoadingBlueprints = true;
+    this.documentService.fetchDocuments(this.projectDetails.jobId).subscribe({
+      next: (docs) => {
+        // Filter for PDFs and map to UploadedFileInfo
+        this.blueprintFiles = docs
+          .filter((doc: any) => (doc.name && doc.name.toLowerCase().endsWith('.pdf')) || (doc.type && doc.type.includes('pdf')))
+          .map((doc: any) => ({
+            name: doc.name || 'Untitled Document',
+            url: '', // No direct URL available
+            type: doc.type || 'application/pdf',
+            size: doc.size || 0,
+            id: doc.id
+          } as any));
+
+        if (this.blueprintFiles.length > 0) {
+           this.handleBlueprintSelected(this.blueprintFiles[0]);
+        } else {
+           this.isLoadingBlueprints = false;
+        }
+      },
+      error: (err) => {
+        console.error('Error loading blueprints', err);
+        this.isLoadingBlueprints = false;
+        this.snackBar.open('Failed to load blueprints.', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  handleBlueprintSelected(file: UploadedFileInfo): void {
+      this.selectedBlueprint = file;
+      this.isLoadingBlueprints = true;
+
+      const docId = (file as any).id;
+      if (docId) {
+          this.jobsService.downloadJobDocument(docId).subscribe({
+            next: (blob) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (reader.result) {
+                        this.blueprintPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+                        this.isLoadingBlueprints = false;
+                    }
+                };
+                reader.readAsArrayBuffer(blob);
+            },
+            error: (err) => {
+                console.error('Error downloading document', err);
+                this.isLoadingBlueprints = false;
+                this.snackBar.open('Failed to load blueprint content.', 'Close', { duration: 3000 });
+            }
+          });
+      } else if (file.url) {
+          this.fileUploadService.getFile(file.url).subscribe({
+            next: (blob) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (reader.result) {
+                  this.blueprintPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+                  this.isLoadingBlueprints = false;
+                }
+              };
+              reader.readAsArrayBuffer(blob);
+            },
+            error: (err) => {
+              console.error('Error fetching blueprint blob', err);
+              this.isLoadingBlueprints = false;
+              this.snackBar.open('Failed to load blueprint file.', 'Close', { duration: 3000 });
+            }
+          });
+      }
   }
 
   loadBudget(): void {
     if (!this.projectDetails?.jobId) return;
+
+    // Stale-While-Revalidate: Load from Local Storage first
+    const storageKey = `budget_${this.projectDetails.jobId}`;
+    if (this.isBrowser) {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          this.budgetItems = JSON.parse(cached);
+        } catch (e) {
+          // console.error('Error parsing cached budget data', e);
+        }
+      }
+    }
+
     this.isLoadingBudget = true;
     this.budgetService.getBudget(this.projectDetails.jobId).subscribe({
       next: (items) => {
         this.budgetItems = items;
+        // Update Local Storage with fresh data
+        if (this.isBrowser) {
+          localStorage.setItem(storageKey, JSON.stringify(this.budgetItems));
+        }
         this.isLoadingBudget = false;
       },
       error: (err) => {
@@ -682,6 +781,19 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   loadAssignedTeam(): void {
     if (!this.projectDetails?.jobId) return;
 
+    // Stale-While-Revalidate: Load from Local Storage first
+    const storageKey = `team_${this.projectDetails.jobId}`;
+    if (this.isBrowser) {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          this.assignedTeamMembers = JSON.parse(cached);
+        } catch (e) {
+          // console.error('Error parsing cached team data', e);
+        }
+      }
+    }
+
     this.isLoadingTeam = true;
     this.jobAssignmentService.getJobAssignment().subscribe({
       next: (assignments) => {
@@ -689,6 +801,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         const assignment = assignments.find(a => a.id === jobId);
         if (assignment && assignment.jobUser) {
           this.assignedTeamMembers = assignment.jobUser;
+          // Update Local Storage with fresh data
+          if (this.isBrowser) {
+            localStorage.setItem(storageKey, JSON.stringify(this.assignedTeamMembers));
+          }
         } else {
           this.assignedTeamMembers = [];
         }
@@ -808,6 +924,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 }
 
       if (this.projectDetails?.jobId) {
+        this.loadBlueprints();
+        this.loadAssignedTeam();
+        this.loadBudget();
         this.authService.currentUser$.pipe(
           filter(user => !!user),
           take(1)

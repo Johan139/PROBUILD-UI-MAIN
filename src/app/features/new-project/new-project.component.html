@@ -1,183 +1,28 @@
 <div class="new-project-grid">
   <!-- Left: Interactive Blueprint Viewer -->
   <div class="blueprint-viewer-card">
-    <div class="card">
-      <!-- Header strip inside viewer -->
-      <div class="blueprint-viewer-header">
-        <div>• INTERACTIVE BLUEPRINT VIEWER •</div>
-        <div *ngIf="flow.step === 'extracting' || flow.step === 'finalizing'" class="progress-bar-container">
-          <span>
-            {{ flow.step === 'extracting' ? 'AI Metadata Extraction' : 'Finalizing Adjustments' }}
-          </span>
-          <div class="progress-bar">
-            <div class="progress-bar-value" [style.width.%]="isExtracting(flow) || isFinalizing(flow) ? flow.pct : 0"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Canvas area -->
-      <div class="blueprint-viewer-canvas" appDragAndDrop (fileDropped)="onFileDropped($event)" #dropZone>
-        <!-- PDF Viewer -->
-        <ng2-pdfjs-viewer
-          #pdfViewer
-          *ngIf="pdfSrc"
-          [pdfSrc]="pdfSrc"
-          [viewerId]="viewerId"
-          [showSpinner]="true"
-          [theme]="'dark'"
-        ></ng2-pdfjs-viewer>
-
-        <!-- Mock blueprint grid -->
-        <div class="blueprint-grid" *ngIf="!pdfSrc"></div>
-
-        <!-- Highlight box -->
-        <!-- <div *ngIf="flow.step === 'walkthrough' || flow.step === 'uploaded' || flow.step === 'extracting' || flow.step === 'address'"
-             class="highlight-box"
-             [style.left]="HIGHLIGHTS[currentKey].left"
-             [style.top]="HIGHLIGHTS[currentKey].top"
-             [style.width]="HIGHLIGHTS[currentKey].w"
-             [style.height]="HIGHLIGHTS[currentKey].h"
-             [style.border-color]="isWalkthrough(flow) ? SECTION_ORDER[flow.index].color : BRAND.yellow012">
-        </div> -->
-
-        <!-- Upload state overlay -->
-        <div *ngIf="flow.step === 'idle'" class="upload-overlay" [class.file-over]="dropZone.classList.contains('file-over')">
-          <h4>Upload Blueprint</h4>
-          <p>Drag & drop a PDF here or click to select</p>
-          <input type="file" accept=".pdf" (change)="onFileSelected($event)" style="display: none" #fileInput multiple>
-          <button class="btn-primary" (click)="openUploadDialog()">
-            Choose File
-          </button>
-        </div>
-
-        <!-- File selection dropdown -->
-        <div *ngIf="uploadedFiles.length > 0" class="file-list-container">
-          <button class="file-list-toggle" (click)="isFileListCollapsed = !isFileListCollapsed">
-            <i class="fas fa-chevron-down" [class.rotated]="isFileListCollapsed"></i>
-            <span>{{ uploadedFiles.length }} Files Uploaded</span>
-          </button>
-          <div class="file-list" [class.collapsed]="isFileListCollapsed">
-            <ul>
-              <li *ngFor="let file of uploadedFiles" [class.selected]="file === selectedFile" (click)="onPdfSelectionChange(file)">
-                <span>{{ file.name }}</span>
-                <button (click)="removeFile(file)" class="remove-btn">
-                  &times;
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Extracting overlay -->
-        <div *ngIf="flow.step === 'extracting'" class="upload-overlay">
-          <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
-          <div>Reading sheets, title blocks, site info…</div>
-        </div>
-
-        <!-- Address confirmation modal -->
-        <div *ngIf="flow.step === 'address'" class="address-modal">
-          <div class="address-modal-content">
-            <div class="address-modal-header">
-              <lucide-icon [img]="MapPin"></lucide-icon> Confirm Project Location
-            </div>
-            <div class="address-modal-body">
-              <label>Detected address</label>
-              <input [(ngModel)]="addressField">
-              <div>Weather & region pricing will use this location.</div>
-              <div class="address-modal-actions">
-                <button class="btn-primary" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
-                  Confirm Address
-                </button>
-                <button class="btn-ghost" (click)="setFlow('extracting', { pct: 80 })">
-                  Back
-                </button>
-              </div>
-            </div>
-            <div class="map-preview">
-              <div>[ Map Preview Placeholder ]</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right-side vertical tools -->
-        <div class="toolbar">
-          <button *ngFor="let button of rightToolbarButtons" [title]="button.label" class="toolbar-button"
-                  (click)="handleToolbarClick(button.key)" [disabled]="flow.step === 'idle' || button.disabled">
-            <lucide-icon [img]="button.icon"></lucide-icon>
-          </button>
-
-          <!-- Unit toggle -->
-          <button title="Toggle Units" class="toolbar-button"
-                  (click)="metric = !metric" [disabled]="true">
-            {{ metric ? 'm / mm' : 'ft / in' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Viewer footer actions -->
-      <div class="viewer-footer">
-        <!-- Row 1: status + Start button -->
-        <div class="footer-row">
-          <div class="status-text">
-            <span *ngIf="isUploaded(flow)">Ready: {{ flow.fileName }}</span>
-            <span *ngIf="flow.step !== 'uploaded' && flow.step !== 'idle'">Mode: {{ analysisMode }}</span> | Zoom: {{ zoom * 100}}% | Units: {{ metric ? 'Metric' : 'Imperial' }}
-          </div>
-          <div class="footer-actions">
-            <!-- <span *ngIf="flow.step === 'idle'">Select a file to begin</span> -->
-
-            <span *ngIf="flow.step === 'walkthrough'">Active section: <b>{{ currentKey }}</b></span>
-          </div>
-        </div>
-
-        <!-- Row 2: Analysis options + actions -->
-        <div class="footer-row">
-          <div class="analysis-options">
-            <label>
-              <input type="radio" name="analysis" [checked]="analysisMode === 'full'" (change)="analysisMode = 'full'">
-              <span>Full Blueprint Analysis</span>
-            </label>
-            <label>
-              <input type="radio" name="analysis" [checked]="analysisMode === 'selected'" (change)="analysisMode = 'selected'">
-              <span>Selected Blueprint Analysis</span>
-            </label>
-            <label>
-              <input type="radio" name="analysis" [checked]="analysisMode === 'renovation'" (change)="analysisMode = 'renovation'">
-              <span>Renovation Analysis</span>
-            </label>
-          </div>
-
-          <div class="footer-actions">
-            <button *ngIf="flow.step === 'uploaded'" class="btn-primary" (click)="setFlow('extracting', { pct: 5 })">
-              Start Project
-            </button>
-            <!-- <button class="btn-ghost" [disabled]="flow.step === 'idle'" (click)="analyze()">
-              Analyze
-            </button> -->
-            <!-- <button class="btn-ghost" (click)="viewUploadedFiles()" [disabled]="flow.step === 'idle'">View Uploaded Files</button> -->
-            <button class="btn-primary" (click)="cancel()" [disabled]="flow.step === 'idle'">Cancel</button>
-            <!-- <button class="btn-primary" (click)="openUploadDialog()">
-              Upload Blueprints
-            </button> -->
-          </div>
-        </div>
-        <!-- Row 3: Dropdown for selected analysis -->
-        <div *ngIf="analysisMode === 'selected'" class="footer-row">
-            <div class="analysis-options-details">
-                <mat-form-field appearance="fill">
-                    <mat-label>Select Prompts</mat-label>
-                    <mat-select [formControl]="selectedPrompts" multiple>
-                        <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.id">
-                            {{ prompt.promptName }}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
-            </div>
-        </div>
-      </div>
-    </div>
+    <app-project-blueprint-viewer
+      [mode]="'create'"
+      [flow]="flow"
+      [uploadedFiles]="uploadedFiles"
+      [selectedFile]="selectedFile"
+      [pdfSrc]="pdfSrc"
+      [analysisMode]="analysisMode"
+      [availablePrompts$]="availablePrompts$"
+      [selectedPrompts]="selectedPrompts"
+      (flowChange)="flow = $event; updateProgressSteps()"
+      (fileUploaded)="handleFileUploaded($event)"
+      (fileSelected)="handleFileSelected($event)"
+      (fileRemoved)="removeFile($event)"
+      (analysisModeChange)="analysisMode = $event"
+      (startProject)="setFlow('extracting', { pct: 5 })"
+      (cancelProject)="cancel()"
+      (addressConfirmed)="onAddressConfirmed($event)"
+      (addressEdit)="setFlow('extracting', { pct: 80 })">
+    </app-project-blueprint-viewer>
   </div>
 
-  <!-- Right: Guided Walkthrough Panel -->
+  <!-- Guided Walkthrough Panel -->
   <div class="guided-setup-card">
     <div class="card">
       <div class="guided-setup-header">

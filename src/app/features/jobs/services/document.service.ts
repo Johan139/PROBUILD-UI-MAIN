@@ -26,14 +26,16 @@ export class DocumentService {
     this.isDocumentsLoading = true;
     this.documentsError = null;
     return this.jobsService.getJobDocuments(jobId).pipe(
-      tap((docs: any[]) => {
-        this.documents = docs.map((doc) => ({
+      map((docs: any[]) => {
+        const mappedDocs = docs.map((doc) => ({
           id: doc.id,
-          name: doc.fileName,
-          type: this.getFileType(doc.fileName),
+          name: doc.fileName || doc.name,
+          type: this.getFileType(doc.fileName || doc.name || ''),
           size: doc.size,
         }));
+        this.documents = mappedDocs;
         this.isDocumentsLoading = false;
+        return mappedDocs;
       }),
       catchError((err) => {
         console.error('Error fetching documents:', err);

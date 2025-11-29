@@ -2,8 +2,8 @@ import { Component, ElementRef, OnInit, ViewChild, Renderer2, Inject, PLATFORM_I
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { UploadOptionsDialogComponent } from '../jobs/job-quote/upload-options-dialog.component';
-import { LucideAngularModule, HardHat, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, CheckCircle } from 'lucide-angular';
+import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
+import { LucideAngularModule, HardHat, MapPin, CheckCircle } from 'lucide-angular';
 import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
@@ -84,7 +84,8 @@ type FlowState =
     MatDatepickerModule,
     MatProgressBarModule,
     MatCardModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ProjectBlueprintViewerComponent
 ],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss']
@@ -92,30 +93,11 @@ type FlowState =
 export class NewProjectComponent implements OnInit, OnDestroy {
   HardHat = HardHat;
   MapPin = MapPin;
-  MousePointer = MousePointer;
-  Hand = Hand;
-  ZoomIn = ZoomIn;
-  ZoomOut = ZoomOut;
-  Maximize2 = Maximize2;
-  Ruler = Ruler;
-  RotateCw = RotateCw;
   Check = CheckCircle;
-
-  BRAND = {
-    gray433: '#1E2329',
-    gray426: '#2A2F35',
-    gray432: '#3B4046',
-    grayTooltip: '#6B7280',
-    yellow012: '#FCD109',
-    yellow120: '#FFE473',
-    redWarn: '#F43F5E',
-  };
 
   darkMode = true;
   flow: FlowState = { step: 'idle' };
   addressField = '21 Featherstone Rd & 21st St, Red Wing';
-  zoom = 1; // Start at 100%
-  metric = true;
   analysisMode: 'full' | 'selected' | 'renovation' = 'full';
   flowType: 'standard' | 'walkthrough' = 'standard';
   analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
@@ -130,13 +112,11 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   pdfSrc: string | Uint8Array | null = null;
   availablePrompts$: Observable<Prompt[]>;
   selectedPrompts = new FormControl([]);
-  viewerId = uuidv4();
 
   currentUserEditedContent: string = '';
   currentUserComments: string = '';
   applyCostOptimisation: boolean = false;
   hasScrolledToBottom: boolean = false;
-  isFileListCollapsed = false;
 
   private state = new BehaviorSubject<AnalysisState>({
     flowType: 'standard',
@@ -172,19 +152,8 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     Kitchen: 'Base & wall cabinets, soft-close hardware, quartz/granite tops, undermount sink, appliance allowances.',
   };
 
-  rightToolbarButtons = [
-    { key: 'select', icon: this.MousePointer, label: 'Select' },
-    { key: 'pan', icon: this.Hand, label: 'Pan' },
-    { key: 'zoomin', icon: this.ZoomIn, label: 'Zoom In' },
-    { key: 'zoomout', icon: this.ZoomOut, label: 'Zoom Out' },
-    { key: 'fit', icon: this.Maximize2, label: 'Fit to Page' },
-    { key: 'measure', icon: this.Ruler, label: 'Measure', disabled: true }, // TODO: Reenable when interactive blueprint implemented
-    { key: 'rotate', icon: this.RotateCw, label: 'Rotate' },
-  ];
-
   progressSteps: { k: string, done: boolean }[] = [];
   @ViewChild('fileInput') fileInput!: ElementRef;
-  @ViewChild('pdfViewer') pdfViewer: any;
   @ViewChild(RichTextEditorComponent) private richTextEditor!: RichTextEditorComponent;
 
   constructor(
@@ -334,111 +303,30 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     return flow.step === 'finalizing';
   }
 
-  get currentKey(): string {
-    if (this.isWalkthrough(this.flow)) {
-      return this.SECTION_ORDER[this.flow.index].key;
-    }
-    return 'Foundation';
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files) {
-      this.onFileDropped(input.files);
-    }
-  }
-
-  onFileDropped(files: FileList): void {
-    if (files && files.length > 0) {
-      const fileArray = Array.from(files);
-      this.fileUploadService.uploadFiles(fileArray, this.sessionId).subscribe(upload => {
-        this.progress = upload.progress;
-        this.isLoading = upload.isUploading;
-        if (upload.files) {
-          const isFirstUpload = this.uploadedFiles.length === 0;
-          this.uploadedFiles = [...this.uploadedFiles, ...upload.files];
-          if (isFirstUpload && this.uploadedFiles.length > 0) {
-            this.selectedFile = this.uploadedFiles[0];
-            this.setFlow('uploaded', { fileName: this.selectedFile.name });
-            this.displayPdfByName(this.selectedFile.name);
-          }
-        }
-      });
-    }
-  }
-
-  onPdfSelectionChange(file: UploadedFileInfo): void {
-    if (file) {
-      this.selectedFile = file;
-      this.setFlow('uploaded', { fileName: this.selectedFile.name });
-      this.displayPdfByName(this.selectedFile.name);
-    }
-  }
-
-  displayPdfByName(fileName: string): void {
-    const fileInfo = this.uploadedFiles.find(f => f.name === fileName);
-    if (fileInfo) {
-      this.fileUploadService.getFile(fileInfo.url).subscribe(blob => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (reader.result) {
-            this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-            this.viewerId = uuidv4();
-          }
-        };
-        reader.readAsArrayBuffer(blob);
-      });
-    }
-  }
-
-  openUploadDialog(): void {
-    const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        if (result === 'folder') {
-          this.renderer.setAttribute(this.fileInput.nativeElement, 'webkitdirectory', 'true');
-        } else {
-          this.renderer.removeAttribute(this.fileInput.nativeElement, 'webkitdirectory');
-        }
-        this.fileInput.nativeElement.click();
-      }
-    });
-  }
-
   setFlow(step: FlowState['step'], data?: any): void {
     this.flow = { step, ...data };
     this.updateProgressSteps();
   }
 
-  async handleToolbarClick(key: string): Promise<void> {
-    if (!this.pdfViewer) {
-      return;
-    }
+  handleFileUploaded(event: {files: UploadedFileInfo[], selected: UploadedFileInfo | null, pdfSrc: string | Uint8Array | null}) {
+      this.uploadedFiles = event.files;
+      this.selectedFile = event.selected;
+      this.pdfSrc = event.pdfSrc;
+      if (this.selectedFile) {
+          this.setFlow('uploaded', { fileName: this.selectedFile.name });
+      }
+  }
 
-    switch (key) {
-      case 'zoomin':
-        this.zoom = Math.min(4, this.zoom + 0.25); // Max zoom 400%
-        await this.pdfViewer.setZoom(this.zoom);
-        break;
-      case 'zoomout':
-        this.zoom = Math.max(0.25, this.zoom - 0.25); // Min zoom 25%
-        await this.pdfViewer.setZoom(this.zoom);
-        break;
-      case 'fit':
-        this.zoom = 1; // Reset to 100%
-        await this.pdfViewer.setZoom('auto');
-        break;
-      case 'rotate':
-        await this.pdfViewer.triggerRotation('cw');
-        break;
-      case 'select':
-        await this.pdfViewer.setCursor('select');
-        break;
-      case 'pan':
-        await this.pdfViewer.setCursor('hand');
-        break;
-    }
+  handleFileSelected(file: UploadedFileInfo) {
+      this.selectedFile = file;
+      this.setFlow('uploaded', { fileName: this.selectedFile.name });
+      // Pdf source loading is handled by the child component,
+      // but we need to keep track of selected file state in parent for analysis steps
+  }
+
+  onAddressConfirmed(address: string) {
+      this.addressField = address;
+      this.setFlow('walkthrough', { index: 0, notes: {} });
   }
 
   analyze(): void {
@@ -464,9 +352,6 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     });
   }
 
-  viewUploadedFiles(): void {
-    alert('Open files drawer (stub)');
-  }
 
   nextStep(): void {
     if (this.flow.step === 'walkthrough') {
@@ -774,7 +659,16 @@ export class NewProjectComponent implements OnInit, OnDestroy {
             if (this.selectedFile?.url === fileToRemove.url) {
               if (this.uploadedFiles.length > 0) {
                 this.selectedFile = this.uploadedFiles[0];
-                this.displayPdfByName(this.selectedFile.name);
+                // Fetch the new selected file's content to update pdfSrc
+                this.fileUploadService.getFile(this.selectedFile.url).subscribe(blob => {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    if (reader.result) {
+                      this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+                    }
+                  };
+                  reader.readAsArrayBuffer(blob);
+                });
               } else {
                 this.selectedFile = null;
                 this.pdfSrc = null;

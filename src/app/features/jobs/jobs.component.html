@@ -60,6 +60,7 @@
     <button (click)="setActiveTab('budget')" [class.active]="activeTab === 'budget'">Budget Tracking</button>
     <button (click)="setActiveTab('timeline')" [class.active]="activeTab === 'timeline'">Timeline</button>
     <button (click)="setActiveTab('team')" [class.active]="activeTab === 'team'">Team & Subcontractors</button>
+    <button (click)="setActiveTab('blueprints')" [class.active]="activeTab === 'blueprints'">Blueprint Viewer</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -510,21 +511,21 @@
           <div class="sub-list">
             <div class="change-order-item">
               <div>
-                <p class="title">CO-001: Additional Outlets</p>
+                <p class="title">HARDCODED CO-001: Additional Outlets</p>
                 <p class="date">Approved • Jan 15, 2025</p>
               </div>
               <p class="amount text-red">+$3.2K</p>
             </div>
             <div class="change-order-item">
               <div>
-                <p class="title">CO-002: Upgraded Fixtures</p>
+                <p class="title">HARDCODED CO-002: Upgraded Fixtures</p>
                 <p class="date">Approved • Jan 20, 2025</p>
               </div>
               <p class="amount text-red">+$5.8K</p>
             </div>
             <div class="change-order-item">
               <div>
-                <p class="title">CO-003: Material Substitution</p>
+                <p class="title">HARDCODED CO-003: Material Substitution</p>
                 <p class="date">Approved • Jan 22, 2025</p>
               </div>
               <p class="amount text-green">-$2.1K</p>
@@ -743,6 +744,24 @@
         </mat-card-content>
       </mat-card>
     </div>
+  </div>
+
+  <!-- BLUEPRINTS TAB -->
+  <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
+    <div *ngIf="isLoadingBlueprints" class="loading-overlay">
+        <app-loader></app-loader>
+    </div>
+    <mat-card>
+      <mat-card-content>
+        <app-project-blueprint-viewer
+          [mode]="'view'"
+          [uploadedFiles]="blueprintFiles"
+          [selectedFile]="selectedBlueprint"
+          [pdfSrc]="blueprintPdfSrc"
+          (fileSelected)="handleBlueprintSelected($event)">
+        </app-project-blueprint-viewer>
+      </mat-card-content>
+    </mat-card>
   </div>
 
 </div>
