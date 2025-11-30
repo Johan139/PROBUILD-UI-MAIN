@@ -23,14 +23,13 @@ export class JobCardComponent  {
   @Input() job!: Job;
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
+  @Input() showNewTag: boolean = true;
   @Input() bid: Bid | null = null;
   @Input() quote: Quote | null = null;
   @Output() viewQuote = new EventEmitter<Quote | Bid>();
   @Output() viewPdf = new EventEmitter<string>();
   @Output() withdrawBid = new EventEmitter<Quote | Bid>();
   @Output() editBid = new EventEmitter<Quote | Bid>();
-
-
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];
