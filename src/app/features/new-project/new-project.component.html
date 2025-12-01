@@ -4,6 +4,7 @@
     <app-project-blueprint-viewer
       [mode]="'create'"
       [flow]="flow"
+      [sessionId]="sessionId"
       [uploadedFiles]="uploadedFiles"
       [selectedFile]="selectedFile"
       [pdfSrc]="pdfSrc"
@@ -18,7 +19,8 @@
       (startProject)="setFlow('extracting', { pct: 5 })"
       (cancelProject)="cancel()"
       (addressConfirmed)="onAddressConfirmed($event)"
-      (addressEdit)="setFlow('extracting', { pct: 80 })">
+      (addressEdit)="setFlow('extracting', { pct: 80 })"
+    >
     </app-project-blueprint-viewer>
   </div>
 
@@ -26,23 +28,39 @@
   <div class="guided-setup-card">
     <div class="card">
       <div class="guided-setup-header">
-        <h3 *ngIf="flowType === 'walkthrough'">New Project – Guided Walkthrough</h3>
+        <h3 *ngIf="flowType === 'walkthrough'">
+          New Project – Guided Walkthrough
+        </h3>
         <h3 *ngIf="flowType === 'standard'">New Project – Standard Analysis</h3>
         <span>AI Extract</span>
       </div>
-         <!-- Flow Type Selector -->
-        <div class="flow-type-selector">
-          <label>
-            <input type="radio" name="flowType" value="standard" [(ngModel)]="flowType">
-            <span>Standard Analysis</span>
-          </label>
-          <label>
-            <input type="radio" name="flowType" value="walkthrough" [(ngModel)]="flowType">
-            <span>Guided Walkthrough</span>
-          </label>
-        </div>
+      <!-- Flow Type Selector -->
+      <div class="flow-type-selector">
+        <label>
+          <input
+            type="radio"
+            name="flowType"
+            value="standard"
+            [(ngModel)]="flowType"
+          />
+          <span>Standard Analysis</span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="flowType"
+            value="walkthrough"
+            [(ngModel)]="flowType"
+          />
+          <span>Guided Walkthrough</span>
+        </label>
+      </div>
       <div class="progress-steps" *ngIf="flowType === 'walkthrough'">
-        <span *ngFor="let step of progressSteps" class="progress-step" [class.done]="step.done">
+        <span
+          *ngFor="let step of progressSteps"
+          class="progress-step"
+          [class.done]="step.done"
+        >
           <lucide-icon *ngIf="step.done" [img]="Check"></lucide-icon>
           <span *ngIf="!step.done" class="progress-step-dot"></span>
           {{ step.k }}
@@ -62,7 +80,43 @@
               <div class="form-row">
                 <mat-form-field appearance="fill">
                   <mat-label>Project Name</mat-label>
-                  <input matInput formControlName="projectName">
+                  <input matInput formControlName="projectName" />
+                </mat-form-field>
+              </div>
+              <mat-form-field appearance="fill">
+                <mat-label>Start Date</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="picker"
+                  formControlName="startDate"
+                  readonly
+                  (click)="picker.open()"
+                />
+                <mat-datepicker-toggle
+                  matSuffix
+                  [for]="picker"
+                ></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+            </div>
+            <div class="form-row">
+              <div [formGroup]="addressForm" class="address-container">
+                <mat-form-field appearance="fill" class="address-form-field">
+                  <mat-label>Address</mat-label>
+                  <input
+                    matInput
+                    [formControl]="addressControl"
+                    [matAutocomplete]="auto"
+                    placeholder="Enter an address"
+                  />
+                  <mat-autocomplete
+                    #auto="matAutocomplete"
+                    (optionSelected)="onAddressSelected($event)"
+                  >
+                    <mat-option *ngFor="let option of options" [value]="option">
+                      {{ option.description }}
+                    </mat-option>
+                  </mat-autocomplete>
                 </mat-form-field>
               </div>
             </div>
@@ -107,29 +161,29 @@
               <div class="form-row">
                 <mat-form-field appearance="fill">
                   <mat-label>First Name</mat-label>
-                  <input matInput formControlName="firstName">
+                  <input matInput formControlName="firstName" />
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Last Name</mat-label>
-                  <input matInput formControlName="lastName">
+                  <input matInput formControlName="lastName" />
                 </mat-form-field>
               </div>
               <div class="form-row">
                 <mat-form-field appearance="fill">
                   <mat-label>Email</mat-label>
-                  <input matInput formControlName="email">
+                  <input matInput formControlName="email" />
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Phone</mat-label>
-                  <input matInput formControlName="phone">
+                  <input matInput formControlName="phone" />
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Company Name</mat-label>
-                  <input matInput formControlName="companyName">
+                  <input matInput formControlName="companyName" />
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Position</mat-label>
-                  <input matInput formControlName="position">
+                  <input matInput formControlName="position" />
                 </mat-form-field>
               </div>
             </div>
@@ -139,39 +193,71 @@
         <mat-form-field appearance="fill" *ngIf="analysisType === 'Selected'">
           <mat-label>Select Prompts</mat-label>
           <mat-select [formControl]="selectedPrompts" multiple>
-            <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.id">
+            <mat-option
+              *ngFor="let prompt of availablePrompts$ | async"
+              [value]="prompt.id"
+            >
               {{ prompt.promptName }}
             </mat-option>
           </mat-select>
         </mat-form-field>
 
-        <div style="align-self: flex-start;" [matTooltip]="isLoading ? 'Analysis in progress...' : (!selectedFile ? 'Please select a blueprint first' : 'Begin the analysis with the selected options')">
-          <button class="btn-primary" (click)="startStandardAnalysis()" [disabled]="!selectedFile || isLoading">
-            <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isLoading"></lucide-icon>
+        <div
+          style="align-self: flex-start"
+          [matTooltip]="
+            isLoading
+              ? 'Analysis in progress...'
+              : !selectedFile
+              ? 'Please select a blueprint first'
+              : 'Begin the analysis with the selected options'
+          "
+        >
+          <button
+            class="btn-primary"
+            (click)="startStandardAnalysis()"
+            [disabled]="!selectedFile || isLoading"
+          >
+            <lucide-icon
+              [img]="HardHat"
+              class="animate-spin"
+              *ngIf="isLoading"
+            ></lucide-icon>
             <span *ngIf="!isLoading">Start Analysis</span>
           </button>
         </div>
 
         <!-- Real-time Progress Display -->
-        <div *ngIf="isLoading && flowType === 'standard' && (state$ | async)?.analysisProgress as progress" class="analysis-progress-container">
-            <h4>Analysis in Progress...</h4>
-            <mat-progress-bar mode="determinate" [value]="(progress.currentStep / progress.totalSteps) * 100"></mat-progress-bar>
-            <p *ngIf="progress.currentStep > 0">Step {{ progress.currentStep }} of {{ progress.totalSteps }}</p>
-            <p>{{ progress.statusMessage }}</p>
-            <p *ngIf="progress.currentStep === 0">Your job is being queued...</p>
-            <div *ngIf="progress.hasFailed" class="error-message">
-              <mat-card class="error-card">
-                <mat-card-header>
-                  <mat-card-title>Analysis Failed</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  <p>{{ progress.errorMessage }}</p>
-                </mat-card-content>
-                <mat-card-actions>
-                  <button mat-button (click)="isLoading = false">Dismiss</button>
-                </mat-card-actions>
-              </mat-card>
-            </div>
+        <div
+          *ngIf="
+            isLoading &&
+            flowType === 'standard' &&
+            (state$ | async)?.analysisProgress as progress
+          "
+          class="analysis-progress-container"
+        >
+          <h4>Analysis in Progress...</h4>
+          <mat-progress-bar
+            mode="determinate"
+            [value]="(progress.currentStep / progress.totalSteps) * 100"
+          ></mat-progress-bar>
+          <p *ngIf="progress.currentStep > 0">
+            Step {{ progress.currentStep }} of {{ progress.totalSteps }}
+          </p>
+          <p>{{ progress.statusMessage }}</p>
+          <p *ngIf="progress.currentStep === 0">Your job is being queued...</p>
+          <div *ngIf="progress.hasFailed" class="error-message">
+            <mat-card class="error-card">
+              <mat-card-header>
+                <mat-card-title>Analysis Failed</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <p>{{ progress.errorMessage }}</p>
+              </mat-card-content>
+              <mat-card-actions>
+                <button mat-button (click)="isLoading = false">Dismiss</button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
         </div>
       </div>
 
@@ -181,10 +267,12 @@
         <div class="walkthrough-stepper">
           <ng-container *ngIf="state$ | async as state">
             <ul class="stepper-list">
-              <li *ngFor="let step of state.walkthroughHistory; let i = index"
-                  class="stepper-item"
-                  [class.is-active]="i === state.currentWalkthroughStep"
-                  [class.is-complete]="i < state.currentWalkthroughStep">
+              <li
+                *ngFor="let step of state.walkthroughHistory; let i = index"
+                class="stepper-item"
+                [class.is-active]="i === state.currentWalkthroughStep"
+                [class.is-complete]="i < state.currentWalkthroughStep"
+              >
                 <div class="stepper-indicator">
                   <div class="stepper-line"></div>
                   <div class="stepper-dot"></div>
@@ -197,38 +285,67 @@
           </ng-container>
         </div>
 
-<div [formGroup]="clientForm">
-  <mat-form-field appearance="fill">
-    <mat-label>Start Date</mat-label>
-    <input matInput [matDatepicker]="picker" formControlName="startDate" readonly (click)="picker.open()">
-    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-    <mat-datepicker #picker></mat-datepicker>
-  </mat-form-field>
-</div>
+        <mat-form-field appearance="fill">
+          <mat-label>Start Date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="picker"
+            formControlName="startDate"
+            readonly
+            (click)="picker.open()"
+          />
+          <mat-datepicker-toggle
+            matSuffix
+            [for]="picker"
+          ></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
 
         <mat-form-field appearance="fill">
-            <mat-label>Budget Level</mat-label>
-            <mat-select [(ngModel)]="budgetLevel">
-                <mat-option value="high">High</mat-option>
-                <mat-option value="medium">Medium</mat-option>
-                <mat-option value="low">Low</mat-option>
-            </mat-select>
+          <mat-label>Budget Level</mat-label>
+          <mat-select [(ngModel)]="budgetLevel">
+            <mat-option value="high">High</mat-option>
+            <mat-option value="medium">Medium</mat-option>
+            <mat-option value="low">Low</mat-option>
+          </mat-select>
         </mat-form-field>
 
         <!-- AI Response Viewer -->
         <div class="response-viewer" (scroll)="onResponseViewerScroll($event)">
           <div *ngIf="state$ | async as state">
-            <div *ngIf="state.flowType === 'walkthrough' && state.walkthroughHistory.length > 0">
+            <div
+              *ngIf="
+                state.flowType === 'walkthrough' &&
+                state.walkthroughHistory.length > 0
+              "
+            >
               <app-rich-text-editor
-                [initialContent]="state.walkthroughHistory[state.currentWalkthroughStep].aiResponse"
-                (contentChanged)="onEditorContentChanged($event)">
+                [initialContent]="
+                  state.walkthroughHistory[state.currentWalkthroughStep]
+                    .aiResponse
+                "
+                (contentChanged)="onEditorContentChanged($event)"
+              >
               </app-rich-text-editor>
-              <textarea [(ngModel)]="currentUserComments" placeholder="Add general comments here..."></textarea>
+              <textarea
+                [(ngModel)]="currentUserComments"
+                placeholder="Add general comments here..."
+              ></textarea>
               <button class="btn-secondary" (click)="undo()">Undo</button>
               <button class="btn-secondary" (click)="redo()">Redo</button>
-              <mat-checkbox [(ngModel)]="applyCostOptimisation">Apply Cost Optimisation and Efficiency</mat-checkbox>
-              <button class="btn-primary" (click)="rerunCurrentStep()" matTooltip="Rerun the analysis for this step with your changes.">
-                <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isRerunningStep"></lucide-icon>
+              <mat-checkbox [(ngModel)]="applyCostOptimisation"
+                >Apply Cost Optimisation and Efficiency</mat-checkbox
+              >
+              <button
+                class="btn-primary"
+                (click)="rerunCurrentStep()"
+                matTooltip="Rerun the analysis for this step with your changes."
+              >
+                <lucide-icon
+                  [img]="HardHat"
+                  class="animate-spin"
+                  *ngIf="isRerunningStep"
+                ></lucide-icon>
                 <span *ngIf="!isRerunningStep">Rerun with my edits</span>
               </button>
             </div>
@@ -237,25 +354,55 @@
 
         <!-- Navigation Buttons -->
         <div class="walkthrough-navigation">
-          <button class="btn-ghost" (click)="goToPreviousStep()" matTooltip="Go back to the previous step.">Back</button>
-          <button class="btn-primary" (click)="goToNextStep()" [disabled]="!hasScrolledToBottom" matTooltip="Proceed to the next step in the walkthrough.">
-            <lucide-icon [img]="HardHat" class="animate-spin" *ngIf="isNavigatingNext"></lucide-icon>
+          <button
+            class="btn-ghost"
+            (click)="goToPreviousStep()"
+            matTooltip="Go back to the previous step."
+          >
+            Back
+          </button>
+          <button
+            class="btn-primary"
+            (click)="goToNextStep()"
+            [disabled]="!hasScrolledToBottom"
+            matTooltip="Proceed to the next step in the walkthrough."
+          >
+            <lucide-icon
+              [img]="HardHat"
+              class="animate-spin"
+              *ngIf="isNavigatingNext"
+            ></lucide-icon>
             <span *ngIf="!isNavigatingNext">Next</span>
           </button>
         </div>
       </div>
 
-      <div [ngSwitch]="flow.step" class="step-switcher" *ngIf="flowType === 'walkthrough'">
-        <p *ngSwitchCase="'idle'">Start by uploading a blueprint and selecting your project start date</p>
+      <div
+        [ngSwitch]="flow.step"
+        class="step-switcher"
+        *ngIf="flowType === 'walkthrough'"
+      >
+        <p *ngSwitchCase="'idle'">
+          Start by uploading a blueprint and selecting your project start date
+        </p>
 
         <div *ngSwitchCase="'uploaded'" class="info-block">
           <h4>Ready to start?</h4>
           <p>We’ll parse sheets, title blocks, scales, and more.</p>
           <div class="info-block-actions">
-            <button class="btn-primary" (click)="setFlow('extracting', { pct: 5 })">
+            <button
+              class="btn-primary"
+              (click)="setFlow('extracting', { pct: 5 })"
+            >
               Begin Extraction
             </button>
-            <button class="btn-primary" (click)="cancel()" [disabled]="flow.step === 'idle'">Replace File</button>
+            <button
+              class="btn-primary"
+              (click)="cancel()"
+              [disabled]="flow.step === 'idle'"
+            >
+              Replace File
+            </button>
           </div>
         </div>
 
@@ -270,12 +417,20 @@
         <div *ngSwitchCase="'address'" class="info-block">
           <h4>Confirm Address</h4>
           <p>We’ll sync weather + regional pricing once confirmed.</p>
-          <div>Detected: <b>{{ addressField }}</b></div>
+          <div>
+            Detected: <b>{{ addressField }}</b>
+          </div>
           <div class="info-block-actions">
-            <button class="btn-primary" (click)="setFlow('walkthrough', { index: 0, notes: {} })">
+            <button
+              class="btn-primary"
+              (click)="setFlow('walkthrough', { index: 0, notes: {} })"
+            >
               Confirm & Continue
             </button>
-            <button class="btn-ghost" (click)="setFlow('extracting', { pct: 85 })">
+            <button
+              class="btn-ghost"
+              (click)="setFlow('extracting', { pct: 85 })"
+            >
               Edit Again
             </button>
           </div>
@@ -284,26 +439,42 @@
         <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
           <div class="walkthrough-header">
             <div>
-              <div *ngIf="isWalkthrough(flow)">Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}</div>
-              <h4 *ngIf="isWalkthrough(flow)" [style.color]="SECTION_ORDER[flow.index].color">{{ SECTION_ORDER[flow.index].key }}</h4>
+              <div *ngIf="isWalkthrough(flow)">
+                Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}
+              </div>
+              <h4
+                *ngIf="isWalkthrough(flow)"
+                [style.color]="SECTION_ORDER[flow.index].color"
+              >
+                {{ SECTION_ORDER[flow.index].key }}
+              </h4>
             </div>
             <div class="walkthrough-progress">
-              <span *ngFor="let section of SECTION_ORDER; let i = index" class="walkthrough-progress-dot"
-                    [class.active]="isWalkthrough(flow) && i <= flow.index"
-                    [style.background]="section.color"></span>
+              <span
+                *ngFor="let section of SECTION_ORDER; let i = index"
+                class="walkthrough-progress-dot"
+                [class.active]="isWalkthrough(flow) && i <= flow.index"
+                [style.background]="section.color"
+              ></span>
             </div>
           </div>
-          <div *ngIf="isWalkthrough(flow)">{{ defaultDesc[SECTION_ORDER[flow.index].key] }}</div>
+          <div *ngIf="isWalkthrough(flow)">
+            {{ defaultDesc[SECTION_ORDER[flow.index].key] }}
+          </div>
           <div *ngIf="isWalkthrough(flow)" class="notes-section">
             <label>Add notes or changes (optional)</label>
-            <textarea [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]"
-                      [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)">
+            <textarea
+              [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]"
+              [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)"
+            >
             </textarea>
           </div>
           <div class="walkthrough-actions">
             <div>Your input updates the BoM at the end.</div>
             <button class="btn-primary" (click)="nextStep()">
-              <span *ngIf="isWalkthrough(flow)">{{ flow.index === SECTION_ORDER.length - 1 ? 'Finish' : 'Next' }}</span>
+              <span *ngIf="isWalkthrough(flow)">{{
+                flow.index === SECTION_ORDER.length - 1 ? "Finish" : "Next"
+              }}</span>
             </button>
           </div>
         </div>
@@ -329,7 +500,9 @@
             <button class="btn-ghost">Launch Bidding Phase</button>
           </div>
           <div class="info-block-actions">
-            <button class="btn-ghost" (click)="setFlow('idle')">Start Another</button>
+            <button class="btn-ghost" (click)="setFlow('idle')">
+              Start Another
+            </button>
           </div>
         </div>
       </div>
