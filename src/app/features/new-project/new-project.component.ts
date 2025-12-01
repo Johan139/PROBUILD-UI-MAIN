@@ -276,7 +276,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.addressControl.valueChanges.subscribe((value) => {
+    this.addressForm.get('formattedAddress')!.valueChanges.subscribe((value) => {
       if (typeof value === 'string' && value.trim()) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: value }, (predictions, status) => {
