@@ -87,6 +87,20 @@ export class JobDataService {
       },
     });
 
+    // Stale-While-Revalidate: Load from Local Storage first
+    const storageKey = `subtasks_${projectDetails.jobId}`;
+    if (typeof localStorage !== 'undefined') {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          this.store.setState({ subtaskGroups: parsed });
+        } catch (e) {
+          // console.error('Error parsing cached subtasks', e);
+        }
+      }
+    }
+
     this.jobsService.getJobSubtasks(projectDetails.jobId).pipe(
       switchMap((data: any) => {
         if (!data || data.length === 0) {
@@ -115,9 +129,15 @@ export class JobDataService {
         if (result.source === 'subtasks') {
           const grouped = this.groupSubtasksByTitle(result.data);
           this.store.setState({ subtaskGroups: grouped });
+          if (typeof localStorage !== 'undefined') {
+             localStorage.setItem(storageKey, JSON.stringify(grouped));
+          }
         } else if (result.source === 'bom' && result.markdown) {
           const parsedGroups = this.parseTimelineToTaskGroups(result.markdown);
           this.store.setState({ subtaskGroups: parsedGroups });
+          if (typeof localStorage !== 'undefined') {
+             localStorage.setItem(storageKey, JSON.stringify(parsedGroups));
+          }
 
           // Also extract isSelected flag and update projectDetails
           try {

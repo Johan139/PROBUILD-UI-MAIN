@@ -45,7 +45,7 @@ export class BomService {
       return { sections: [] };
     }
 
-    console.log('Full Response:', fullResponse); // Debug log
+    // console.log('Parsing AI Response:', fullResponse);
 
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {

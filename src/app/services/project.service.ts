@@ -56,7 +56,7 @@ export class ProjectService {
         }));
 
         this.projects.next(mappedProjects);
-        console.log('Loaded projects:', mappedProjects);
+        // console.log('Loaded projects:', mappedProjects);
         if (userId) {
           localStorage.setItem(`projects_${userId}`, JSON.stringify(mappedProjects));
         }
@@ -67,19 +67,6 @@ export class ProjectService {
         this.isLoading.next(false);
       }
     });
-  }
-
-  private calculateJobProgress(subtasks: any[]): number {
-    if (!subtasks || subtasks.length === 0) {
-      return 0;
-    }
-    const completedDays = subtasks
-      .filter(st => st.status?.toLowerCase() === 'completed')
-      .reduce((sum, st) => sum + st.days, 0);
-
-    const totalDays = subtasks.reduce((sum, st) => sum + st.days, 0);
-
-    return totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
   }
 
   private getImageForJob(jobId: number): string {

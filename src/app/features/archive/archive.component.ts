@@ -8,11 +8,14 @@ import { NoteDetailDialogComponent } from '../../shared/dialogs/note-detail-dial
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { combineLatest, of, forkJoin } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { LoaderComponent } from '../../loader/loader.component';
 import { UserService } from '../../services/user.service';
 import { MatCardModule } from '@angular/material/card';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
     selector: 'app-archive',
@@ -23,6 +26,8 @@ import { MatCardModule } from '@angular/material/card';
         CommonModule,
         MatTableModule,
         MatButtonModule,
+        MatIconModule,
+        MatMenuModule,
         DatePipe,
         LoaderComponent,
         MatCardModule,
@@ -34,7 +39,7 @@ export class ArchiveComponent implements OnInit {
   archivedJobs: any[] = [];
   isLoading = true;
   displayedColumns: string[] = ['project', 'task', 'created', 'status', 'view'];
-  jobDisplayedColumns: string[] = ['projectName', 'jobType', 'status', 'completionDate'];
+  jobDisplayedColumns: string[] = ['projectName', 'jobType', 'status', 'completionDate', 'actions'];
   private userId: string | null = null;
   openingNoteId: string | null = null;
 
@@ -60,6 +65,46 @@ export class ArchiveComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
+      }
+    });
+  }
+
+  unarchiveJob(job: any): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Unarchive Project',
+        message: `Are you sure you want to unarchive "${job.projectName}"? It will be moved back to your projects list.`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.jobsService.unarchiveJob(job.jobId).subscribe({
+          next: () => {
+            this.loadArchivedJobs();
+          },
+          error: (err) => console.error('Error unarchiving job', err)
+        });
+      }
+    });
+  }
+
+  deleteJob(job: any): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Permanently Delete Project',
+        message: `Are you sure you want to permanently delete "${job.projectName}"? This action cannot be undone.`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.jobsService.deleteJob(job.jobId).subscribe({
+          next: () => {
+            this.loadArchivedJobs();
+          },
+          error: (err) => console.error('Error deleting job', err)
+        });
       }
     });
   }

@@ -18,7 +18,18 @@ export class JobsService {
   }
 
   updateJob(jobData: any, id: any): Observable<any> {
-    return this.httpClient.post<any>(BASE_URL+'/'+id, jobData,{headers:{'Content-Type': 'application/json'}});
+    const headers = { 'Content-Type': 'application/json' };
+
+    // Create a copy of the payload to avoid mutating the original object
+    const payload = { ...jobData };
+
+    // Remove IFormFile fields that cannot be serialized to JSON
+    // These cause model binding errors on the backend (400 Bad Request)
+    delete payload.Blueprint;
+    delete payload.UserContextFile;
+
+    console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
+    return this.httpClient.post<any>(`${BASE_URL}/${id}`, payload, { headers });
   }
 
   getAllJobsByUserId(userId: string): Observable<any> {
@@ -92,6 +103,14 @@ export class JobsService {
 
   archiveJob(jobId: number): Observable<void> {
     return this.httpClient.put<void>(`${BASE_URL}/${jobId}/archive`, {});
+  }
+
+  unarchiveJob(jobId: number): Observable<void> {
+    return this.httpClient.put<void>(`${BASE_URL}/${jobId}/unarchive`, {});
+  }
+
+  deleteJob(jobId: number): Observable<void> {
+    return this.httpClient.delete<void>(`${BASE_URL}/${jobId}`);
   }
 
   getArchivedJobs(): Observable<any[]> {

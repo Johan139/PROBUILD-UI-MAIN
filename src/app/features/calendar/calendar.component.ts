@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -9,7 +8,6 @@ import listPlugin from '@fullcalendar/list';
 import { CalendarService } from './calendar.service';
 import { JobsService } from '../../services/jobs.service';
 import { CalendarEvent } from './calendar.model';
-import { SubtaskService } from '../jobs/services/subtask.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -22,11 +20,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEventDialogComponent } from './add-event-dialog.component';
 import { JobDataService } from '../jobs/services/job-data.service';
+import { Job } from '../../models/job';
+import { CommonModule } from '@angular/common';
+import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-calendar',
     standalone: true,
     imports: [
+        CommonModule,
         ReactiveFormsModule,
         FormsModule,
         MatCardModule,
@@ -37,7 +41,10 @@ import { JobDataService } from '../jobs/services/job-data.service';
         MatInputModule,
         FullCalendarModule,
         MatButtonToggleModule,
-        MatSelectModule
+        MatSelectModule,
+        MatTooltipModule,
+        JobCardComponent,
+        MatIconModule
     ],
     templateUrl: './calendar.component.html',
     styleUrls: ['./calendar.component.scss']
@@ -50,7 +57,14 @@ export class CalendarComponent implements OnInit {
   events: CalendarEvent[] = [];
   viewMode: 'projects' | 'tasks' = 'projects';
   allEvents: EventInput[] = [];
-  statusFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" | "FAILED" = "LIVE";
+  statusFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" = "all";
+
+  jobs: Job[] = [];
+  filteredJobs: Job[] = [];
+  selectedJobIds: number[] = [];
+  jobColors: { [key: number]: string } = {};
+  searchTerm: string = '';
+  hideEmptyProjects: boolean = true;
 
   constructor(
     private calendarService: CalendarService,
@@ -99,9 +113,32 @@ export class CalendarComponent implements OnInit {
     }
 
     this.jobsService.getAllJobsByUserId(userId).subscribe({
-      next: (jobs) => {
+      next: (response: any[]) => {
+        const normalizedJobs = response.map(j => ({
+            ...j,
+            jobId: j.jobId || j.id,
+            jobType: j.jobType || j.JobType || 'Unknown',
+            potentialStartDate: j.potentialStartDate || j.PotentialStartDate,
+            potentialEndDate: j.potentialEndDate || j.PotentialEndDate,
+            durationInDays: j.durationInDays || j.DurationInDays,
+            address: j.address || j.Address || j.formattedAddress || j.FormattedAddress,
+            city: j.city || j.City,
+            state: j.state || j.State
+        })) as Job[];
+
+        // Filter out failed jobs
+        this.jobs = normalizedJobs.filter(job => job.status !== 'FAILED');
+        this.filteredJobs = this.jobs;
+
+        // Assign a unique color to each job
+        this.jobs.forEach((job) => {
+            if (job.jobId && !this.jobColors[job.jobId]) {
+                this.jobColors[job.jobId] = this.getRandomColor();
+            }
+        });
+
         const allEvents: EventInput[] = [];
-        const jobPromises = jobs.map((job: any) =>
+        const jobPromises = this.jobs.map((job) =>
           new Promise<void>((resolve) => {
             const processSubtasks = (subtaskGroups: any[]) => {
               const subtaskEvents: EventInput[] = [];
@@ -127,8 +164,9 @@ export class CalendarComponent implements OnInit {
                       end: subtask.endDate,
                       backgroundColor: this.getRandomColor(),
                       borderColor: this.getRandomColor(),
+                      textColor: '#111827',
                       extendedProps: {
-                        jobId: job.id,
+                        jobId: job.jobId,
                         jobStatus: job.status
                       }
                     });
@@ -136,37 +174,43 @@ export class CalendarComponent implements OnInit {
                 });
               });
 
-              // Add the parent job event spanning the full duration of its subtasks
               if (minDate && maxDate) {
+                const projectColor = this.jobColors[job.jobId];
                 allEvents.push({
                   title: `Project: ${job.projectName}`,
                   start: (minDate as Date).toISOString().split('T')[0],
                   end: (maxDate as Date).toISOString().split('T')[0],
-                  backgroundColor: '#3788d8',
-                  borderColor: '#3788d8',
+                  backgroundColor: projectColor,
+                  borderColor: projectColor,
+                  textColor: '#111827',
                   allDay: true,
                   extendedProps: {
-                    jobId: job.id,
+                    jobId: job.jobId,
                     jobStatus: job.status
                   }
                 });
+
+                job.potentialStartDate = minDate as Date;
+                job.potentialEndDate = maxDate as Date;
+                const diffTime = Math.abs((maxDate as Date).getTime() - (minDate as Date).getTime());
+                job.durationInDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
               }
 
               allEvents.push(...subtaskEvents);
               resolve();
             };
 
-            this.jobsService.getJobSubtasks(job.id).subscribe({
+            this.jobsService.getJobSubtasks(job.jobId).subscribe({
               next: (subtasks) => {
                 if (subtasks && subtasks.length > 0) {
                   const grouped = this.jobDataService['groupSubtasksByTitle'](subtasks);
                   processSubtasks(grouped);
                 } else {
-                  this.fetchSubtasksFromBom(job.id).then(processSubtasks);
+                  this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
                 }
               },
               error: () => {
-                this.fetchSubtasksFromBom(job.id).then(processSubtasks);
+                this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
               }
             });
           })
@@ -176,6 +220,7 @@ export class CalendarComponent implements OnInit {
           this.allEvents = [...(this.calendarOptions.events as EventInput[]), ...allEvents];
           this.updateCalendarView();
           this.isLoading = false;
+          this.filterJobs();
         });
       },
       error: (error) => {
@@ -207,12 +252,25 @@ export class CalendarComponent implements OnInit {
   }
 
   getRandomColor(): string {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+    const yellowPalette = [
+      '#FCD109',
+      '#FFE473',
+      '#FFD700',
+      '#FFC107',
+      '#FFEB3B',
+      '#FBC02D',
+      '#F57F17',
+      '#FFF176',
+      '#FFEE58',
+      '#FDD835',
+      '#F9A825',
+      '#FFB300',
+      '#F0B90B',
+      '#E1AD01',
+      '#D4AF37',
+      '#C5A000'
+    ];
+    return yellowPalette[Math.floor(Math.random() * yellowPalette.length)];
   }
 
   loadEvents(): void {
@@ -251,15 +309,60 @@ export class CalendarComponent implements OnInit {
     }
   }
 
+  toggleJobSelection(jobId: number): void {
+    if (this.selectedJobIds.includes(jobId)) {
+      this.selectedJobIds = this.selectedJobIds.filter(id => id !== jobId);
+    } else {
+      this.selectedJobIds.push(jobId);
+    }
+    this.updateCalendarView();
+  }
+
+  isJobSelected(jobId: number): boolean {
+    return this.selectedJobIds.includes(jobId);
+  }
+
+  toggleEmptyProjects(): void {
+    this.hideEmptyProjects = !this.hideEmptyProjects;
+    this.filterJobs();
+  }
+
+  jobHasEvents(jobId: number): boolean {
+    if (!this.allEvents) return false;
+    return this.allEvents.some(event => event.extendedProps?.['jobId'] === jobId);
+  }
+
+  filterJobs(): void {
+    let result = this.jobs;
+
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      result = result.filter(job =>
+        job.projectName.toLowerCase().includes(term) ||
+        (job.jobId && job.jobId.toString().includes(term))
+      );
+    }
+
+    if (this.hideEmptyProjects) {
+        result = result.filter(job => this.jobHasEvents(job.jobId));
+    }
+
+    this.filteredJobs = result;
+  }
+
   updateCalendarView(projectName?: string): void {
     let filteredEvents = this.allEvents;
 
-    // Filter by status
     if (this.statusFilter !== 'all') {
       filteredEvents = filteredEvents.filter(event => event.extendedProps?.['jobStatus'] === this.statusFilter);
     }
 
-    // Filter by view mode (projects or tasks)
+    if (this.selectedJobIds.length > 0) {
+        filteredEvents = filteredEvents.filter(event =>
+            event.extendedProps?.['jobId'] && this.selectedJobIds.includes(event.extendedProps?.['jobId'])
+        );
+    }
+
     if (this.viewMode === 'projects') {
       this.calendarOptions.events = filteredEvents.filter(event => event.title?.startsWith('Project:'));
     } else {

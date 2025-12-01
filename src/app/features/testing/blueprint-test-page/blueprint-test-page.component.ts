@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { PdfViewerComponent, BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { BlueprintOverlayComponent } from '../../../components/blueprint-overlay/blueprint-overlay.component';
+import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
 import * as hernandezWallPlanAnalysisData from '../../../../assets/sample-pdfs/json/hernandez_wall_plan_and_frame_plan.json';
 import * as hernandezCdPage1 from '../../../../assets/sample-pdfs/json/hernandez_cd/1.json';
 import * as hernandezCdPage2 from '../../../../assets/sample-pdfs/json/hernandez_cd/2.json';
@@ -16,7 +17,7 @@ import * as hernandezCdPage7 from '../../../../assets/sample-pdfs/json/hernandez
 @Component({
     selector: 'app-blueprint-test-page',
     standalone: true,
-    imports: [CommonModule, PdfViewerComponent],
+    imports: [CommonModule, PdfViewerComponent, SubscriptionWarningComponent],
     templateUrl: './blueprint-test-page.component.html',
     styleUrls: ['./blueprint-test-page.component.scss']
 })
