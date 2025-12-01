@@ -1,9 +1,33 @@
-import { Component, ElementRef, OnInit, ViewChild, Renderer2, Inject, PLATFORM_ID, OnDestroy, HostListener } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  Renderer2,
+  Inject,
+  PLATFORM_ID,
+  OnDestroy,
+  HostListener,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
-import { LucideAngularModule, HardHat, MapPin, CheckCircle } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  HardHat,
+  MapPin,
+  CheckCircle,
+} from 'lucide-angular';
 import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
@@ -17,15 +41,21 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { FileUploadService, UploadedFileInfo } from '../../services/file-upload.service';
+import {
+  FileUploadService,
+  UploadedFileInfo,
+} from '../../services/file-upload.service';
 import { NewAnalysisService } from '../../services/new-analysis.service';
-import { SignalrService, AnalysisProgressUpdate } from '../jobs/services/signalr.service';
+import {
+  SignalrService,
+  AnalysisProgressUpdate,
+} from '../jobs/services/signalr.service';
 import { RichTextEditorComponent } from '../../components/rich-text-editor/rich-text-editor.component';
 import { environment } from '../../../environments/environment';
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -33,7 +63,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../authentication/auth.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 
-  interface WalkthroughStep {
+interface WalkthroughStep {
   stepIndex: number;
   promptKey: string;
   aiResponse: string;
@@ -85,10 +115,10 @@ type FlowState =
     MatProgressBarModule,
     MatCardModule,
     MatTooltipModule,
-    ProjectBlueprintViewerComponent
-],
+    ProjectBlueprintViewerComponent,
+  ],
   templateUrl: './new-project.component.html',
-  styleUrls: ['./new-project.component.scss']
+  styleUrls: ['./new-project.component.scss'],
 })
 export class NewProjectComponent implements OnInit, OnDestroy {
   HardHat = HardHat;
@@ -138,7 +168,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     { key: 'Kitchen', color: '#F59E0B' },
   ];
 
-  HIGHLIGHTS: Record<string, { left: string; top: string; w: string; h: string }> = {
+  HIGHLIGHTS: Record<
+    string,
+    { left: string; top: string; w: string; h: string }
+  > = {
     Foundation: { left: '10%', top: '60%', w: '80%', h: '30%' },
     Walls: { left: '12%', top: '20%', w: '76%', h: '55%' },
     Roof: { left: '8%', top: '10%', w: '84%', h: '40%' },
@@ -146,15 +179,19 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   };
 
   defaultDesc: Record<string, string> = {
-    Foundation: 'Concrete slab with Class-III vapor barrier, #4 rebar @ 12" O.C., 25 MPa concrete, perimeter insulation as per climate zone.',
-    Walls: 'Exterior 2x6 studs @ 16" O.C., R-21 insulation, sheathing + weather barrier, selected cladding; interior 2x4 @ 16" O.C.',
+    Foundation:
+      'Concrete slab with Class-III vapor barrier, #4 rebar @ 12" O.C., 25 MPa concrete, perimeter insulation as per climate zone.',
+    Walls:
+      'Exterior 2x6 studs @ 16" O.C., R-21 insulation, sheathing + weather barrier, selected cladding; interior 2x4 @ 16" O.C.',
     Roof: 'Timber trusses, 30-year shingles, underlayment, drip edge, ridge vent; R-38 attic insulation.',
-    Kitchen: 'Base & wall cabinets, soft-close hardware, quartz/granite tops, undermount sink, appliance allowances.',
+    Kitchen:
+      'Base & wall cabinets, soft-close hardware, quartz/granite tops, undermount sink, appliance allowances.',
   };
 
-  progressSteps: { k: string, done: boolean }[] = [];
+  progressSteps: { k: string; done: boolean }[] = [];
   @ViewChild('fileInput') fileInput!: ElementRef;
-  @ViewChild(RichTextEditorComponent) private richTextEditor!: RichTextEditorComponent;
+  @ViewChild(RichTextEditorComponent)
+  private richTextEditor!: RichTextEditorComponent;
 
   constructor(
     public dialog: MatDialog,
@@ -185,23 +222,31 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.addressForm = this.formBuilder.group({
       formattedAddress: ['', Validators.required],
     });
-    const hiddenPrompts = ['SYSTEM_COMPREHENSIVE_ANALYSIS', 'SYSTEM_RENOVATION_ANALYSIS'];
+    const hiddenPrompts = [
+      'SYSTEM_COMPREHENSIVE_ANALYSIS',
+      'SYSTEM_RENOVATION_ANALYSIS',
+    ];
     this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
-      map(prompts => prompts.filter(p => !hiddenPrompts.includes(p.promptKey)))
+      map((prompts) =>
+        prompts.filter((p) => !hiddenPrompts.includes(p.promptKey))
+      )
     );
   }
 
   isBrowser: boolean;
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   options: { description: string; place_id: string }[] = [];
-  addressControl = new FormControl<string>('', [Validators.required, this.requireMatch.bind(this)]);
+  addressControl = new FormControl<string>('', [
+    Validators.required,
+    this.requireMatch.bind(this),
+  ]);
   selectedPlace: { description: string; place_id: string } | null = null;
   private isGoogleMapsLoaded: boolean = false;
   clientForm: FormGroup;
   addressForm: FormGroup;
   sessionId!: string;
   private readonly CLIENT_FORM_KEY = 'newProjectClientForm';
-
+  private shouldDeleteTempFiles = true;
   async ngOnInit(): Promise<void> {
     this.sessionId = uuidv4();
     this.loadForm();
@@ -209,9 +254,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.aiChatService.getMyPrompts();
 
     this.signalrService.startConnection();
-    this.signalrService.analysisProgress.subscribe(update => {
+    this.signalrService.analysisProgress.subscribe((update) => {
       this.state.next({ ...this.state.getValue(), analysisProgress: update });
       if (update.isComplete || update.hasFailed) {
+        this.shouldDeleteTempFiles = false;
         this.isLoading = false;
         if (!update.hasFailed) {
           this.setFlow('done');
@@ -234,7 +280,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       if (typeof value === 'string' && value.trim()) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: value }, (predictions, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
             this.options = predictions.map((pred) => ({
               description: pred.description,
               place_id: pred.place_id,
@@ -251,18 +300,19 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.clientForm.valueChanges.subscribe(value => {
+    this.clientForm.valueChanges.subscribe((value) => {
       this.localStorageService.setItem(this.CLIENT_FORM_KEY, value);
     });
   }
 
-
   ngOnDestroy(): void {
-    this.deleteTemporaryFiles();
+    if (this.shouldDeleteTempFiles) {
+      this.deleteTemporaryFiles();
+    }
   }
 
   deleteTemporaryFiles(): void {
-    const urlsToDelete = this.uploadedFiles.map(f => f.url);
+    const urlsToDelete = this.uploadedFiles.map((f) => f.url);
     if (urlsToDelete.length === 0) {
       return;
     }
@@ -283,11 +333,15 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     }
   }
 
-  isUploaded(flow: FlowState): flow is Extract<FlowState, { step: 'uploaded' }> {
+  isUploaded(
+    flow: FlowState
+  ): flow is Extract<FlowState, { step: 'uploaded' }> {
     return flow.step === 'uploaded';
   }
 
-  isExtracting(flow: FlowState): flow is Extract<FlowState, { step: 'extracting' }> {
+  isExtracting(
+    flow: FlowState
+  ): flow is Extract<FlowState, { step: 'extracting' }> {
     return flow.step === 'extracting';
   }
 
@@ -295,11 +349,15 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     return flow.step === 'address';
   }
 
-  isWalkthrough(flow: FlowState): flow is Extract<FlowState, { step: 'walkthrough' }> {
+  isWalkthrough(
+    flow: FlowState
+  ): flow is Extract<FlowState, { step: 'walkthrough' }> {
     return flow.step === 'walkthrough';
   }
 
-  isFinalizing(flow: FlowState): flow is Extract<FlowState, { step: 'finalizing' }> {
+  isFinalizing(
+    flow: FlowState
+  ): flow is Extract<FlowState, { step: 'finalizing' }> {
     return flow.step === 'finalizing';
   }
 
@@ -308,39 +366,46 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.updateProgressSteps();
   }
 
-  handleFileUploaded(event: {files: UploadedFileInfo[], selected: UploadedFileInfo | null, pdfSrc: string | Uint8Array | null}) {
-      this.uploadedFiles = event.files;
-      this.selectedFile = event.selected;
-      this.pdfSrc = event.pdfSrc;
-      if (this.selectedFile) {
-          this.setFlow('uploaded', { fileName: this.selectedFile.name });
-      }
+  handleFileUploaded(event: {
+    files: UploadedFileInfo[];
+    selected: UploadedFileInfo | null;
+    pdfSrc: string | Uint8Array | null;
+  }) {
+    this.uploadedFiles = event.files;
+    this.selectedFile = event.selected;
+    this.pdfSrc = event.pdfSrc;
+    if (this.selectedFile) {
+      this.setFlow('uploaded', { fileName: this.selectedFile.name });
+    }
   }
 
   handleFileSelected(file: UploadedFileInfo) {
-      this.selectedFile = file;
-      this.setFlow('uploaded', { fileName: this.selectedFile.name });
-      // Pdf source loading is handled by the child component,
-      // but we need to keep track of selected file state in parent for analysis steps
+    this.selectedFile = file;
+    this.setFlow('uploaded', { fileName: this.selectedFile.name });
+    // Pdf source loading is handled by the child component,
+    // but we need to keep track of selected file state in parent for analysis steps
   }
 
   onAddressConfirmed(address: string) {
-      this.addressField = address;
-      this.setFlow('walkthrough', { index: 0, notes: {} });
+    this.addressField = address;
+    this.setFlow('walkthrough', { index: 0, notes: {} });
   }
 
   analyze(): void {
     if (this.flow.step === 'idle') return;
     if (this.flow.step === 'uploaded') this.setFlow('extracting', { pct: 5 });
-    if (this.flow.step === 'walkthrough') this.setFlow('finalizing', { pct: 5 });
-    if (this.flow.step === 'extracting') this.setFlow('address', { detectedAddress: this.addressField });
-    if (this.flow.step === 'finalizing') setTimeout(() => this.setFlow('done'), 300);
+    if (this.flow.step === 'walkthrough')
+      this.setFlow('finalizing', { pct: 5 });
+    if (this.flow.step === 'extracting')
+      this.setFlow('address', { detectedAddress: this.addressField });
+    if (this.flow.step === 'finalizing')
+      setTimeout(() => this.setFlow('done'), 300);
   }
 
   cancel(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent);
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.setFlow('idle');
         this.uploadedFiles = [];
@@ -352,11 +417,13 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     });
   }
 
-
   nextStep(): void {
     if (this.flow.step === 'walkthrough') {
       if (this.flow.index < this.SECTION_ORDER.length - 1) {
-        this.setFlow('walkthrough', { ...this.flow, index: this.flow.index + 1 });
+        this.setFlow('walkthrough', {
+          ...this.flow,
+          index: this.flow.index + 1,
+        });
       } else {
         this.setFlow('finalizing', { pct: 5 });
       }
@@ -377,9 +444,26 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   updateProgressSteps(): void {
     this.progressSteps = [
       { k: 'Upload', done: this.flow.step !== 'idle' },
-      { k: 'Extract', done: ['extracting', 'address', 'walkthrough', 'finalizing', 'done'].includes(this.flow.step) },
-      { k: 'Address', done: ['address', 'walkthrough', 'finalizing', 'done'].includes(this.flow.step) },
-      { k: 'Walkthrough', done: ['walkthrough', 'finalizing', 'done'].includes(this.flow.step) },
+      {
+        k: 'Extract',
+        done: [
+          'extracting',
+          'address',
+          'walkthrough',
+          'finalizing',
+          'done',
+        ].includes(this.flow.step),
+      },
+      {
+        k: 'Address',
+        done: ['address', 'walkthrough', 'finalizing', 'done'].includes(
+          this.flow.step
+        ),
+      },
+      {
+        k: 'Walkthrough',
+        done: ['walkthrough', 'finalizing', 'done'].includes(this.flow.step),
+      },
       { k: 'Finalize', done: ['finalizing', 'done'].includes(this.flow.step) },
     ];
   }
@@ -403,51 +487,59 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('address', this.addressForm.value.formattedAddress);
 
     if (this.selectedPlace && this.selectedPlace.place_id) {
-        const placesService = new google.maps.places.PlacesService(document.createElement('div'));
-        placesService.getDetails(
-            { placeId: this.selectedPlace.place_id, fields: ['geometry', 'formatted_address', 'address_components'] },
-            (place, status) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-                    const lat = place.geometry?.location?.lat();
-                    const lng = place.geometry?.location?.lng();
+      const placesService = new google.maps.places.PlacesService(
+        document.createElement('div')
+      );
+      placesService.getDetails(
+        {
+          placeId: this.selectedPlace.place_id,
+          fields: ['geometry', 'formatted_address', 'address_components'],
+        },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            const lat = place.geometry?.location?.lat();
+            const lng = place.geometry?.location?.lng();
 
-                    let streetNumber = '';
-                    let streetName = '';
-                    let city = '';
-                    let state = '';
-                    let postalCode = '';
-                    let country = '';
+            let streetNumber = '';
+            let streetName = '';
+            let city = '';
+            let state = '';
+            let postalCode = '';
+            let country = '';
 
-                    if (place.address_components) {
-                        place.address_components.forEach(component => {
-                            const types = component.types;
-                            if (types.includes('street_number')) streetNumber = component.long_name;
-                            if (types.includes('route')) streetName = component.long_name;
-                            if (types.includes('locality')) city = component.long_name;
-                            if (types.includes('administrative_area_level_1')) state = component.short_name;
-                            if (types.includes('postal_code')) postalCode = component.long_name;
-                            if (types.includes('country')) country = component.long_name;
-                        });
-                    }
-
-                    formData.append('streetNumber', streetNumber);
-                    formData.append('streetName', streetName);
-                    formData.append('city', city);
-                    formData.append('state', state);
-                    formData.append('postalCode', postalCode);
-                    formData.append('country', country);
-
-                    if (lat !== undefined && lng !== undefined) {
-                        formData.append('latitude', lat.toString());
-                        formData.append('longitude', lng.toString());
-                    }
-                    formData.append('googlePlaceId', this.selectedPlace!.place_id);
-                    this.submitStandardAnalysis(formData);
-                }
+            if (place.address_components) {
+              place.address_components.forEach((component) => {
+                const types = component.types;
+                if (types.includes('street_number'))
+                  streetNumber = component.long_name;
+                if (types.includes('route')) streetName = component.long_name;
+                if (types.includes('locality')) city = component.long_name;
+                if (types.includes('administrative_area_level_1'))
+                  state = component.short_name;
+                if (types.includes('postal_code'))
+                  postalCode = component.long_name;
+                if (types.includes('country')) country = component.long_name;
+              });
             }
-        );
+            this.shouldDeleteTempFiles = false;
+            formData.append('streetNumber', streetNumber);
+            formData.append('streetName', streetName);
+            formData.append('city', city);
+            formData.append('state', state);
+            formData.append('postalCode', postalCode);
+            formData.append('country', country);
+
+            if (lat !== undefined && lng !== undefined) {
+              formData.append('latitude', lat.toString());
+              formData.append('longitude', lng.toString());
+            }
+            formData.append('googlePlaceId', this.selectedPlace!.place_id);
+            this.submitStandardAnalysis(formData);
+          }
+        }
+      );
     } else {
-        this.submitStandardAnalysis(formData);
+      this.submitStandardAnalysis(formData);
     }
   }
 
@@ -455,14 +547,22 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     const userId = this.authService.getUserId();
     if (!userId) {
       // console.error("Could not get UserId");
-      this.snackBar.open('Error: Could not get user ID. Please try logging in again.', 'Close', { duration: 10000 });
+      this.snackBar.open(
+        'Error: Could not get user ID. Please try logging in again.',
+        'Close',
+        { duration: 10000 }
+      );
       return;
     }
     formData.append('userId', userId);
     const connectionId = this.signalrService.getConnectionId();
     if (!connectionId) {
       // console.error("Could not get SignalR connection ID");
-      this.snackBar.open('Error: Could not establish a connection with the server. Please refresh the page.', 'Close', { duration: 10000 });
+      this.snackBar.open(
+        'Error: Could not establish a connection with the server. Please refresh the page.',
+        'Close',
+        { duration: 10000 }
+      );
       return;
     }
     formData.append('connectionId', connectionId);
@@ -471,14 +571,16 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('generateDetailsWithAi', 'true');
     formData.append('sessionId', this.sessionId);
 
-    const fileUrls = this.uploadedFiles.map(f => f.url);
+    const fileUrls = this.uploadedFiles.map((f) => f.url);
     formData.append('temporaryFileUrls', JSON.stringify(fileUrls));
 
     this.isLoading = true;
     this.newAnalysisService.startStandardAnalysis(formData).subscribe({
       next: (response) => {
         // console.log('Analysis started successfully', response);
-        this.snackBar.open('Analysis started successfully!', 'Close', { duration: 5000 });
+        this.snackBar.open('Analysis started successfully!', 'Close', {
+          duration: 5000,
+        });
         this.clientForm.reset();
         this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
         // Progress will be handled by the SignalR subscription
@@ -486,30 +588,50 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       error: (error) => {
         // console.error('Analysis failed to start', error);
         this.isLoading = false;
-        this.snackBar.open('Error: Analysis failed to start. Please try again.', 'Close', { duration: 10000 });
-      }
+        this.snackBar.open(
+          'Error: Analysis failed to start. Please try again.',
+          'Close',
+          { duration: 10000 }
+        );
+      },
     });
   }
 
   startWalkthrough(): void {
     if (!this.selectedFile) return;
-
-    const promptKeys = (this.analysisType === 'Selected' ? this.selectedPrompts.value : []) ?? [];
-    this.newAnalysisService.startWalkthrough(this.uploadedFiles, this.clientForm.value.startDate, this.analysisType, this.budgetLevel, promptKeys).subscribe({
-      next: (response) => {
-        this.state.next({
-          ...this.state.getValue(),
-          walkthroughSessionId: response.sessionId,
-          walkthroughHistory: [response.firstStep],
-          currentWalkthroughStep: 0,
-        });
-        this.snackBar.open('Walkthrough started successfully!', 'Close', { duration: 5000 });
-      },
-      error: (error) => {
-        // console.error('Failed to start walkthrough', error);
-        this.snackBar.open('Error: Failed to start walkthrough. Please try again.', 'Close', { duration: 10000 });
-      }
-    });
+    this.shouldDeleteTempFiles = false;
+    const promptKeys =
+      (this.analysisType === 'Selected' ? this.selectedPrompts.value : []) ??
+      [];
+    this.newAnalysisService
+      .startWalkthrough(
+        this.uploadedFiles,
+        this.clientForm.value.startDate,
+        this.analysisType,
+        this.budgetLevel,
+        promptKeys
+      )
+      .subscribe({
+        next: (response) => {
+          this.state.next({
+            ...this.state.getValue(),
+            walkthroughSessionId: response.sessionId,
+            walkthroughHistory: [response.firstStep],
+            currentWalkthroughStep: 0,
+          });
+          this.snackBar.open('Walkthrough started successfully!', 'Close', {
+            duration: 5000,
+          });
+        },
+        error: (error) => {
+          // console.error('Failed to start walkthrough', error);
+          this.snackBar.open(
+            'Error: Failed to start walkthrough. Please try again.',
+            'Close',
+            { duration: 10000 }
+          );
+        },
+      });
   }
 
   goToNextStep(): void {
@@ -517,25 +639,31 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     if (!currentState.walkthroughSessionId) return;
 
     this.isNavigatingNext = true;
-    this.newAnalysisService.getNextWalkthroughStep(
-      currentState.walkthroughSessionId,
-      this.applyCostOptimisation
-    ).subscribe({
-      next: (nextStep) => {
-        this.state.next({
-          ...currentState,
-          walkthroughHistory: [...currentState.walkthroughHistory, nextStep],
-          currentWalkthroughStep: currentState.walkthroughHistory.length,
-        });
-        this.hasScrolledToBottom = false;
-        this.isNavigatingNext = false;
-      },
-      error: (error) => {
-        // console.error('Failed to get next step', error);
-        this.isNavigatingNext = false;
-        this.snackBar.open('Error: Failed to get next step. Please try again.', 'Close', { duration: 10000 });
-      }
-    });
+    this.newAnalysisService
+      .getNextWalkthroughStep(
+        currentState.walkthroughSessionId,
+        this.applyCostOptimisation
+      )
+      .subscribe({
+        next: (nextStep) => {
+          this.state.next({
+            ...currentState,
+            walkthroughHistory: [...currentState.walkthroughHistory, nextStep],
+            currentWalkthroughStep: currentState.walkthroughHistory.length,
+          });
+          this.hasScrolledToBottom = false;
+          this.isNavigatingNext = false;
+        },
+        error: (error) => {
+          // console.error('Failed to get next step', error);
+          this.isNavigatingNext = false;
+          this.snackBar.open(
+            'Error: Failed to get next step. Please try again.',
+            'Close',
+            { duration: 10000 }
+          );
+        },
+      });
   }
 
   goToPreviousStep(): void {
@@ -554,33 +682,45 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
   rerunCurrentStep() {
     const currentState = this.state.getValue();
-    const currentStep = currentState.walkthroughHistory[currentState.currentWalkthroughStep];
+    const currentStep =
+      currentState.walkthroughHistory[currentState.currentWalkthroughStep];
     if (!currentState.walkthroughSessionId) return;
 
     const payload = {
       originalAiResponse: currentStep.aiResponse,
       userEditedResponse: this.currentUserEditedContent,
       userComments: this.currentUserComments,
-      applyCostOptimisation: this.applyCostOptimisation
+      applyCostOptimisation: this.applyCostOptimisation,
     };
     this.isRerunningStep = true;
-    this.newAnalysisService.rerunWalkthroughStep(currentState.walkthroughSessionId, currentStep.stepIndex, payload)
+    this.newAnalysisService
+      .rerunWalkthroughStep(
+        currentState.walkthroughSessionId,
+        currentStep.stepIndex,
+        payload
+      )
       .subscribe({
-        next: updatedStep => {
+        next: (updatedStep) => {
           const newHistory = [...currentState.walkthroughHistory];
           newHistory[currentState.currentWalkthroughStep] = updatedStep;
           this.state.next({
             ...currentState,
-            walkthroughHistory: newHistory
+            walkthroughHistory: newHistory,
           });
           this.isRerunningStep = false;
-          this.snackBar.open('Step updated successfully!', 'Close', { duration: 5000 });
+          this.snackBar.open('Step updated successfully!', 'Close', {
+            duration: 5000,
+          });
         },
         error: (error) => {
           // console.error('Failed to rerun step', error);
           this.isRerunningStep = false;
-          this.snackBar.open('Error: Failed to rerun step. Please try again.', 'Close', { duration: 10000 });
-        }
+          this.snackBar.open(
+            'Error: Failed to rerun step. Please try again.',
+            'Close',
+            { duration: 10000 }
+          );
+        },
       });
   }
 
@@ -604,39 +744,45 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   loadGoogleMapsScript(): Promise<void> {
-      return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
         if (typeof google !== 'undefined' && google.maps) {
           resolve();
-          return;
+        } else {
+          reject(
+            new Error(
+              'Google Maps API script loaded but google object is not defined'
+            )
+          );
         }
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          if (typeof google !== 'undefined' && google.maps) {
-            resolve();
-          } else {
-            reject(new Error('Google Maps API script loaded but google object is not defined'));
-          }
-        };
+      };
 
-        script.onerror = (error) => {
-          // console.error('Google Maps script failed to load:', error);
-          reject(error);
-        };
-        document.head.appendChild(script);
-      });
-    }
+      script.onerror = (error) => {
+        // console.error('Google Maps script failed to load:', error);
+        reject(error);
+      };
+      document.head.appendChild(script);
+    });
+  }
 
-    onAddressSelected(event: any) {
-        const selectedAddress = event.option.value;
-        this.selectedPlace = selectedAddress;
-        this.addressControl.setValue(selectedAddress.description);
-        this.addressForm.get('formattedAddress')?.setValue(selectedAddress.description);
-    }
+  onAddressSelected(event: any) {
+    const selectedAddress = event.option.value;
+    this.selectedPlace = selectedAddress;
+    this.addressControl.setValue(selectedAddress.description);
+    this.addressForm
+      .get('formattedAddress')
+      ?.setValue(selectedAddress.description);
+  }
 
-    requireMatch(control: AbstractControl): ValidationErrors | null {
+  requireMatch(control: AbstractControl): ValidationErrors | null {
     if (!this.selectedPlace) {
       return { requireMatch: true };
     }
@@ -647,40 +793,54 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirm Deletion',
-        message: `Are you sure you want to remove the file "${fileToRemove.name}"?`
-      }
+        message: `Are you sure you want to remove the file "${fileToRemove.name}"?`,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.fileUploadService.deleteTemporaryFile(fileToRemove.url).subscribe({
           next: () => {
-            this.uploadedFiles = this.uploadedFiles.filter(f => f.url !== fileToRemove.url);
+            this.uploadedFiles = this.uploadedFiles.filter(
+              (f) => f.url !== fileToRemove.url
+            );
             if (this.selectedFile?.url === fileToRemove.url) {
               if (this.uploadedFiles.length > 0) {
                 this.selectedFile = this.uploadedFiles[0];
                 // Fetch the new selected file's content to update pdfSrc
-                this.fileUploadService.getFile(this.selectedFile.url).subscribe(blob => {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    if (reader.result) {
-                      this.pdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-                    }
-                  };
-                  reader.readAsArrayBuffer(blob);
-                });
+                this.fileUploadService
+                  .getFile(this.selectedFile.url)
+                  .subscribe((blob) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (reader.result) {
+                        this.pdfSrc = new Uint8Array(
+                          reader.result as ArrayBuffer
+                        );
+                      }
+                    };
+                    reader.readAsArrayBuffer(blob);
+                  });
               } else {
                 this.selectedFile = null;
                 this.pdfSrc = null;
                 this.setFlow('idle');
               }
             }
-            this.snackBar.open(`File "${fileToRemove.name}" has been removed.`, 'Close', { duration: 3000 });
+            this.snackBar.open(
+              `File "${fileToRemove.name}" has been removed.`,
+              'Close',
+              { duration: 3000 }
+            );
           },
           error: (error) => {
             console.error('Failed to delete file:', error);
-            this.snackBar.open(`Error removing file "${fileToRemove.name}". Please try again.`, 'Close', { duration: 5000 });
-          }
+            this.snackBar.open(
+              `Error removing file "${fileToRemove.name}". Please try again.`,
+              'Close',
+              { duration: 5000 }
+            );
+          },
         });
       }
     });
@@ -693,4 +853,3 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     }
   }
 }
-
