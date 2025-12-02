@@ -6,5 +6,5 @@ export interface Project extends JobModel {
   thumbnailUrl?: string;
   budget?: string;
   deadline?: string;
-  status: "BIDDING" | "LIVE" | "DRAFT" | "FAILED" | "DISCARD" | "NEW" | string;
+  status: 'BIDDING' | 'LIVE' | 'DRAFT' | 'FAILED' | 'DISCARD' | 'NEW' | string;
 }

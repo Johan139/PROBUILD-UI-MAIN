@@ -12,7 +12,7 @@ import autoTable from 'jspdf-autotable';
 export class BomService {
   constructor(
     private jobsService: JobsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   getBillOfMaterials(jobId: string): Observable<any> {
@@ -36,7 +36,7 @@ export class BomService {
         return of({
           error: error.error?.error || 'Failed to check AI processing status.',
         });
-      })
+      }),
     );
   }
 
@@ -76,7 +76,7 @@ export class BomService {
       25: 'Cost Breakdowns',
       26: 'Value Engineering',
       27: 'Environmental Lifecycle',
-      28: 'Project Closeout'
+      28: 'Project Closeout',
     };
 
     const parseTableFromLines = (lines: string[], startIndex: number) => {
@@ -139,8 +139,12 @@ export class BomService {
           isRenovation = true;
         }
       }
-      if (!isRenovation) { // Fallback check
-        isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(fullResponse);
+      if (!isRenovation) {
+        // Fallback check
+        isRenovation =
+          /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(
+            fullResponse,
+          );
       }
     } catch (e) {
       console.error('Error parsing JSON from AI response:', e);
@@ -156,11 +160,20 @@ export class BomService {
             const headers = table.headers.join(' ').toLowerCase();
             let title = '';
 
-            if (headers.includes('task description') && headers.includes('total labor cost')) {
+            if (
+              headers.includes('task description') &&
+              headers.includes('total labor cost')
+            ) {
               title = 'Labor Cost Breakdown';
-            } else if (headers.includes('item') && headers.includes('total cost')) {
+            } else if (
+              headers.includes('item') &&
+              headers.includes('total cost')
+            ) {
               title = 'Bill of Materials';
-            } else if (headers.includes('category') && headers.includes('amount')) {
+            } else if (
+              headers.includes('category') &&
+              headers.includes('amount')
+            ) {
               title = 'Financial Summary';
             }
 
@@ -187,13 +200,17 @@ export class BomService {
       };
 
       // Isolate the main cost breakdown and summary sections
-      const costSectionRegex = /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown|Part A: Detailed Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
-      const summarySectionRegex = /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=\n###|$)/;
+      const costSectionRegex =
+        /### \*\*(Part A: Detailed Cost Breakdown|S-1: Detailed Cost Breakdown Summary|Part A: Detailed Cost Breakdown|Part A: Detailed Breakdown)\*\*([\s\S]*?)(?=### \*\*(Part B:|S-2:|Project Summary|$))/;
+      const summarySectionRegex =
+        /### \*\*(Part B: Project Cost Summary|Part B: Project Summary)\*\*([\s\S]*?)(?=\n###|$)/;
 
       const costSectionMatch = fullResponse.match(costSectionRegex);
       if (costSectionMatch && costSectionMatch[2]) {
         // Split the cost breakdown section into individual R-tables
-        const rSections = costSectionMatch[2].split(/^(?=#### \*\*R-|^\*\*R-)/m);
+        const rSections = costSectionMatch[2].split(
+          /^(?=#### \*\*R-|^\*\*R-)/m,
+        );
         for (const rSection of rSections) {
           if (rSection.trim() === '') continue;
 
@@ -218,18 +235,22 @@ export class BomService {
         const lines = summaryMatch[2].trim().split('\n');
         const table = parseTableFromLines(lines, 0);
         if (table) {
-          sections.push({ title: 'Project Cost Summary', type: 'table', ...table });
+          sections.push({
+            title: 'Project Cost Summary',
+            type: 'table',
+            ...table,
+          });
         }
       }
     } else {
       // Existing logic for Full Analysis prompts
       const reportSections = fullResponse.split(
-        /(?=Ready for the next prompt \d+\.)/
+        /(?=Ready for the next prompt \d+\.)/,
       );
 
       for (const sectionText of reportSections) {
         const promptNumberMatch = sectionText.match(
-          /Ready for the next prompt (\d+)\./
+          /Ready for the next prompt (\d+)\./,
         );
         if (!promptNumberMatch) continue;
 
@@ -240,8 +261,8 @@ export class BomService {
           const lines = sectionText.trim().split('\n');
 
           // Find 'Output 1: ... Materials BOM' or just 'Materials BOM'
-          const bomTitleIndex = lines.findIndex((l) =>
-            l.includes('Output 1:') || l.includes('Materials BOM')
+          const bomTitleIndex = lines.findIndex(
+            (l) => l.includes('Output 1:') || l.includes('Materials BOM'),
           );
           if (bomTitleIndex !== -1) {
             const table = parseTableFromLines(lines, bomTitleIndex + 1);
@@ -255,8 +276,10 @@ export class BomService {
           }
 
           // Find 'Output 2: Subcontractor Cost Breakdown' or just 'Subcontractor Cost Breakdown'
-          const subconTitleIndex = lines.findIndex((l) =>
-            l.includes('Output 2:') || l.includes('Subcontractor Cost Breakdown')
+          const subconTitleIndex = lines.findIndex(
+            (l) =>
+              l.includes('Output 2:') ||
+              l.includes('Subcontractor Cost Breakdown'),
           );
           if (subconTitleIndex !== -1) {
             const table = parseTableFromLines(lines, subconTitleIndex + 1);
@@ -293,8 +316,10 @@ export class BomService {
     if (costBreakdownTitleIndex !== -1) {
       const table = parseTableFromLines(allLines, costBreakdownTitleIndex + 1);
       if (table) {
-        const title = allLines[costBreakdownTitleIndex].replace(/#|\*/g, '').trim();
-        const titleExists = sections.some(s => s.title === title);
+        const title = allLines[costBreakdownTitleIndex]
+          .replace(/#|\*/g, '')
+          .trim();
+        const titleExists = sections.some((s) => s.title === title);
         if (!titleExists) {
           sections.push({
             title: 'Total Project Cost Breakdown',
@@ -327,11 +352,23 @@ export class BomService {
         if (withLogo) {
           doc.addImage(logo, 'PNG', 10, 10, 50, 15);
           doc.setFontSize(8);
-          doc.text('This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.', 10, 28);
-          doc.text('Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.', 10, 32);
+          doc.text(
+            'This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.',
+            10,
+            28,
+          );
+          doc.text(
+            'Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.',
+            10,
+            32,
+          );
         }
         doc.setFontSize(18);
-        doc.text(`Bill of Materials for: ${projectName}`, 10, withLogo ? 45 : 15);
+        doc.text(
+          `Bill of Materials for: ${projectName}`,
+          10,
+          withLogo ? 45 : 15,
+        );
       };
 
       parsedReport.sections.forEach((section: any, index: number) => {
@@ -361,7 +398,7 @@ export class BomService {
         subject: 'AI-Generated Estimate',
         author: 'ProBuild AI',
         keywords: 'BOM, estimate, AI, construction',
-        creator: 'ProBuild AI'
+        creator: 'ProBuild AI',
       });
       doc.save(`${projectName}_BOM_${date}.pdf`);
     };
@@ -371,9 +408,13 @@ export class BomService {
     };
 
     logo.onerror = () => {
-      this.snackBar.open('Could not load logo, proceeding without it.', 'Close', {
-        duration: 3000,
-      });
+      this.snackBar.open(
+        'Could not load logo, proceeding without it.',
+        'Close',
+        {
+          duration: 3000,
+        },
+      );
       drawContent(false);
     };
   }
@@ -384,12 +425,21 @@ export class BomService {
     }
 
     const parsedReport = this.parseReport(fullResponse);
-    if (!parsedReport || !parsedReport.sections || parsedReport.sections.length === 0) {
+    if (
+      !parsedReport ||
+      !parsedReport.sections ||
+      parsedReport.sections.length === 0
+    ) {
       return null;
     }
 
     const lastSection = parsedReport.sections[parsedReport.sections.length - 1];
-    if (lastSection && lastSection.type === 'table' && lastSection.content && lastSection.content.length > 0) {
+    if (
+      lastSection &&
+      lastSection.type === 'table' &&
+      lastSection.content &&
+      lastSection.content.length > 0
+    ) {
       const lastRow = lastSection.content[lastSection.content.length - 1];
       if (lastRow && lastRow.length > 0) {
         const totalCostCell = lastRow[lastRow.length - 1];

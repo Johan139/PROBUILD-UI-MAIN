@@ -1,17 +1,16 @@
 import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LocalStorageService {
-
-  constructor() { }
+  constructor() {}
 
   setItem(key: string, data: any): void {
     const timestamp = new Date().getTime();
     const dataWithTimestamp = {
       timestamp,
-      data
+      data,
     };
     localStorage.setItem(key, JSON.stringify(dataWithTimestamp));
   }

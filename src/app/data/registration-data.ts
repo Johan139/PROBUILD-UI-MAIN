@@ -1,9 +1,12 @@
 export const constructionTypes = [
-  {value:'RESIDENTIAL', display:'Residential (Single-Family, Multi-Family)'},
-  {value:'COMMERCIAL',display:'Commercial (Retail, Office)'},
-  {value:'INDUSTRIAL',display:'Industrial (Factories, Warehouses)'},
-  {value:'INFRASTRUCTURE',display:'Infrastructure (Highways, Bridges)'},
-  {value:'RENOVATION',display:'Renovation/Remodeling'}
+  {
+    value: 'RESIDENTIAL',
+    display: 'Residential (Single-Family, Multi-Family)',
+  },
+  { value: 'COMMERCIAL', display: 'Commercial (Retail, Office)' },
+  { value: 'INDUSTRIAL', display: 'Industrial (Factories, Warehouses)' },
+  { value: 'INFRASTRUCTURE', display: 'Infrastructure (Highways, Bridges)' },
+  { value: 'RENOVATION', display: 'Renovation/Remodeling' },
 ];
 
 export const trades = [
@@ -24,7 +27,10 @@ export const trades = [
   { value: 'DRYWALL_PLASTER_ACOUSTIC', display: 'Drywall/Plaster/Acoustic' },
   { value: 'ELECTRICAL', display: 'Electrical' },
   { value: 'ELEVATOR_ESCALATOR', display: 'Elevator/Escalator' },
-  { value: 'ENVIRONMENTAL', display: 'Environmental (Remediation and on-site work)' },
+  {
+    value: 'ENVIRONMENTAL',
+    display: 'Environmental (Remediation and on-site work)',
+  },
   { value: 'EXCAVATING_EARTHMOVING', display: 'Excavating/EarthMoving' },
   { value: 'EXTERIOR_IMPROVEMENT', display: 'Exterior Improvement' },
   { value: 'FENCE', display: 'Fence' },
@@ -36,7 +42,10 @@ export const trades = [
   { value: 'GEOTECHNICAL_CONSTRUCTION', display: 'Geotechnical Construction' },
   { value: 'GLASS_GLAZING', display: 'Glass & Glazing' },
   { value: 'GUTTERS', display: 'Gutters' },
-  { value: 'HIGHWAYS_STREETS_BRIDGES', display: 'Highways / Streets / Bridges' },
+  {
+    value: 'HIGHWAYS_STREETS_BRIDGES',
+    display: 'Highways / Streets / Bridges',
+  },
   { value: 'HVAC', display: 'HVAC' },
   { value: 'INSULATION', display: 'Insulation' },
   { value: 'INTERIOR_FINISHING', display: 'Interior Finishing' },
@@ -63,7 +72,10 @@ export const trades = [
   { value: 'STEEL_ERECTOR', display: 'Steel Erector' },
   { value: 'STEEL_FABRICATION', display: 'Steel Fabrication' },
   { value: 'TESTING_BALANCING', display: 'Testing & Balancing' },
-  { value: 'THERMAL_MOISTURE_PROTECTION', display: 'Thermal / Moisture Protection' },
+  {
+    value: 'THERMAL_MOISTURE_PROTECTION',
+    display: 'Thermal / Moisture Protection',
+  },
   { value: 'TILE_TERRAZZO_MARBLE', display: 'Tile/Terrazzo/Marble' },
   { value: 'UTILITY', display: 'Utility' },
   { value: 'WATER_WELL_DRILLING', display: 'Water Well Drilling' },
@@ -71,7 +83,7 @@ export const trades = [
   { value: 'WELDING', display: 'Welding' },
   { value: 'WINDOWS', display: 'Windows' },
   { value: 'WOODWORK_INTERIOR', display: 'Woodwork (Interior)' },
-  { value: 'WRECKING_DEMOLITION', display: 'Wrecking/Demolition' }
+  { value: 'WRECKING_DEMOLITION', display: 'Wrecking/Demolition' },
 ];
 
 export const supplierTypes = [
@@ -83,7 +95,10 @@ export const supplierTypes = [
   { value: 'BONDING_INSURANCE', display: 'Bonding/Insurance' },
   { value: 'ENGINEERING', display: 'Engineering' },
   { value: 'EQUIPMENT_SALES_RENTAL', display: 'Equipment Sales & Rental' },
-  { value: 'EXISTING_CONDITIONS', display: 'Existing Conditions (e.g., surveying, 3D scanning)' },
+  {
+    value: 'EXISTING_CONDITIONS',
+    display: 'Existing Conditions (e.g., surveying, 3D scanning)',
+  },
   { value: 'FLEET_AUTOMOBILES', display: 'Fleet Automobiles' },
   { value: 'FUEL', display: 'Fuel' },
   { value: 'INFORMATION_TECHNOLOGY', display: 'Information Technology' },
@@ -95,9 +110,15 @@ export const supplierTypes = [
   { value: 'OFFICE_DESIGN_FURNITURE', display: 'Office Design / Furniture' },
   { value: 'PAYROLL_SERVICES', display: 'Payroll Services' },
   { value: 'PORTABLE_TOILETS', display: 'Portable Toilets' },
-  { value: 'PROFESSIONAL_SERVICE', display: 'Professional Service (legal, accounting, etc.)' },
+  {
+    value: 'PROFESSIONAL_SERVICE',
+    display: 'Professional Service (legal, accounting, etc.)',
+  },
   { value: 'REBAR', display: 'Rebar' },
-  { value: 'REINFORCING_BAR_FABRICATION', display: 'Reinforcing Bar Fabrication' },
+  {
+    value: 'REINFORCING_BAR_FABRICATION',
+    display: 'Reinforcing Bar Fabrication',
+  },
   { value: 'REINFORCING_STEEL', display: 'Reinforcing Steel' },
   { value: 'RENTALS', display: 'Rentals' },
   { value: 'SAFETY', display: 'Safety (Consulting and supplies)' },
@@ -107,57 +128,78 @@ export const supplierTypes = [
   { value: 'STONE', display: 'Stone' },
   { value: 'TRANSPORTATION', display: 'Transportation' },
   { value: 'TRUCKING', display: 'Trucking' },
-  { value: 'WASTE_HAULING_AND_DISPOSAL', display: 'Waste Hauling and Disposal' },
+  {
+    value: 'WASTE_HAULING_AND_DISPOSAL',
+    display: 'Waste Hauling and Disposal',
+  },
   { value: 'WHOLESALE_DISTRIBUTION', display: 'Wholesale Distribution' },
-  { value: 'WOODS_PLASTICS_COMPOSITES', display: 'Woods / Plastics / Composites' }
+  {
+    value: 'WOODS_PLASTICS_COMPOSITES',
+    display: 'Woods / Plastics / Composites',
+  },
 ];
 
 export const supplierProducts = [
-  {value:'LUMBER', display:'Lumber (Softwood, Hardwood, Pressure-Treated)'},
-  {value:'STEEL', display:'Steel (Structural, Rebar)'},
-  {value:'ROOFING_MATERIAL', display:'Roofing Materials (Asphalt Shingles, Metal Roofing)'},
-  {value:'INSULATION_MATERIAL', display:'Insulation Materials (Fiberglass, Spray Foam)'},
-  {value:'ELECTRICAL', display:'Electrical Supplies (Wires, Switchgear)'},
-  {value:'PLUMBING', display:'Plumbing Equipment (Pipes, Fittings)'},
-  {value:'HVAC_EQUIPMENT', display:'HVAC Equipment (Ducts, Units)'},
-  {value:'PAINT_FINISHES', display:'Paint and Finishes'},
-  {value:'ALTERNATIVE', display:'Sustainable Materials (Solar Panels, Low VOC Paint)'},
-  {value:'', display:'Other'}
+  { value: 'LUMBER', display: 'Lumber (Softwood, Hardwood, Pressure-Treated)' },
+  { value: 'STEEL', display: 'Steel (Structural, Rebar)' },
+  {
+    value: 'ROOFING_MATERIAL',
+    display: 'Roofing Materials (Asphalt Shingles, Metal Roofing)',
+  },
+  {
+    value: 'INSULATION_MATERIAL',
+    display: 'Insulation Materials (Fiberglass, Spray Foam)',
+  },
+  { value: 'ELECTRICAL', display: 'Electrical Supplies (Wires, Switchgear)' },
+  { value: 'PLUMBING', display: 'Plumbing Equipment (Pipes, Fittings)' },
+  { value: 'HVAC_EQUIPMENT', display: 'HVAC Equipment (Ducts, Units)' },
+  { value: 'PAINT_FINISHES', display: 'Paint and Finishes' },
+  {
+    value: 'ALTERNATIVE',
+    display: 'Sustainable Materials (Solar Panels, Low VOC Paint)',
+  },
+  { value: '', display: 'Other' },
 ];
 
 export const deliveryAreas = [
-  {value:'LOCAL', display:'Local'},
-  {value:'REGIONAL', display:'Regional'},
-  {value:'NATIONAL', display:'National'}
+  { value: 'LOCAL', display: 'Local' },
+  { value: 'REGIONAL', display: 'Regional' },
+  { value: 'NATIONAL', display: 'National' },
 ];
 
 export const preferenceOptions = [
-  {value:'SHORT', display:'Short-term Projects (1-3 months)'},
-  {value:'LONG', display:'Long-term Projects (6+ months)'},
-  {value:'CONTRACT', display:'Contract-based'},
-  {value:'DEMAND', display:'On-demand basis (Per Task/Hour)'}
+  { value: 'SHORT', display: 'Short-term Projects (1-3 months)' },
+  { value: 'LONG', display: 'Long-term Projects (6+ months)' },
+  { value: 'CONTRACT', display: 'Contract-based' },
+  { value: 'DEMAND', display: 'On-demand basis (Per Task/Hour)' },
 ];
 
 export const leadTimeDelivery = [
-  {value:'SAME_DAY', display:'Same Day'},
-  {value:'3_DAYS', display:'1-3 Days'},
-  {value:'1_WEEK', display:'1 Week'},
-  {value:'1_WEEK+', display:'More than 1 Week'}
+  { value: 'SAME_DAY', display: 'Same Day' },
+  { value: '3_DAYS', display: '1-3 Days' },
+  { value: '1_WEEK', display: '1 Week' },
+  { value: '1_WEEK+', display: 'More than 1 Week' },
 ];
 
 export const availabilityOptions = [
-  {value:'IMMEDIATE', display:'Available Immediately'},
-  {value:'2_WEEKS', display:'Within 1-2 Weeks'},
-  {value:'1_MONTH', display:'Within 1 Month'},
-  {value:'PROJECT_BASIS', display:'By Project Basis'}
+  { value: 'IMMEDIATE', display: 'Available Immediately' },
+  { value: '2_WEEKS', display: 'Within 1-2 Weeks' },
+  { value: '1_MONTH', display: 'Within 1 Month' },
+  { value: 'PROJECT_BASIS', display: 'By Project Basis' },
 ];
 
 export const employeeNumber = ['1-10', '11-50', '51-100', '100+'];
-export const operationalYears = ['Less than 1 year', '1-3 years', '3-5 years', '5-10 years', '10+ years'];
+export const operationalYears = [
+  'Less than 1 year',
+  '1-3 years',
+  '3-5 years',
+  '5-10 years',
+  '10+ years',
+];
 
 export const certificationOptions = [
-  {value:'FULLY_LICENSED', display:'Licensed and Certified'},
-  {value:'LICENSED', display:'Licensed (No Certification)'},
-  {value:'CERTIFIED', display:'Certification (No License)'},
-  {value:'NON_LICENSED', display:'Unlicensed/Uncertified'}
+  { value: 'FULLY_LICENSED', display: 'Licensed and Certified' },
+  { value: 'LICENSED', display: 'Licensed (No Certification)' },
+  { value: 'CERTIFIED', display: 'Certification (No License)' },
+  { value: 'NON_LICENSED', display: 'Unlicensed/Uncertified' },
 ];

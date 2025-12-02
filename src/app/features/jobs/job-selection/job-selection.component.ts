@@ -1,4 +1,11 @@
-import { Component, OnInit, ChangeDetectorRef, TemplateRef, ViewChild, ViewEncapsulation } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef,
+  TemplateRef,
+  ViewChild,
+  ViewEncapsulation,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { NgForOf, NgIf, CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -20,28 +27,28 @@ import { QuoteDataService } from '../../quote/quote-data.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
-    selector: 'app-job-selection',
-    standalone: true,
-    imports: [
-        NgForOf,
-        NgIf,
-        CommonModule,
-        MatCardModule,
-        MatButtonModule,
-        MatCheckboxModule,
-        MatDividerModule,
-        MatListModule,
-        MatProgressSpinnerModule,
-        FormsModule,
-        MatIconModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        FileSizePipe
-    ],
-    templateUrl: './job-selection.component.html',
-    styleUrls: ['./job-selection.component.scss'],
-    encapsulation: ViewEncapsulation.None
+  selector: 'app-job-selection',
+  standalone: true,
+  imports: [
+    NgForOf,
+    NgIf,
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDividerModule,
+    MatListModule,
+    MatProgressSpinnerModule,
+    FormsModule,
+    MatIconModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FileSizePipe,
+  ],
+  templateUrl: './job-selection.component.html',
+  styleUrls: ['./job-selection.component.scss'],
+  encapsulation: ViewEncapsulation.None,
 })
 export class JobSelectionComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -127,7 +134,7 @@ export class JobSelectionComponent implements OnInit {
     private jobService: JobsService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private quoteDataService: QuoteDataService
+    private quoteDataService: QuoteDataService,
   ) {}
 
   ngOnInit(): void {
@@ -168,7 +175,7 @@ export class JobSelectionComponent implements OnInit {
           this.jobListFull = [];
           this.jobList = [];
           this.cdr.detectChanges();
-        }
+        },
       );
     } else {
       console.error('User ID is not available in local storage.');
@@ -191,9 +198,9 @@ export class JobSelectionComponent implements OnInit {
     this.jobService.getJobSubtasks(job.id).subscribe({
       next: (data) => {
         const grouped = this.groupSubtasksByTitle(data);
-        this.subtaskGroups = grouped.map(group => ({
+        this.subtaskGroups = grouped.map((group) => ({
           ...group,
-          subtasks: group.subtasks.map(subtask => ({
+          subtasks: group.subtasks.map((subtask) => ({
             ...subtask,
             selected: false,
           })),
@@ -221,7 +228,7 @@ export class JobSelectionComponent implements OnInit {
         this.subtaskGroups = [];
         this.isLoading = false;
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
@@ -254,13 +261,34 @@ export class JobSelectionComponent implements OnInit {
 
   fetchSubtasksForJob(job: any): void {
     this.subtaskGroups = [
-      { title: 'Foundation Subtasks', subtasks: JSON.parse(job.FoundationSubtask || '[]') },
-      { title: 'Wall Insulation Subtasks', subtasks: JSON.parse(job.WallInsulationSubtask || '[]') },
-      { title: 'Wall Structure Subtasks', subtasks: JSON.parse(job.WallStructureSubtask || '[]') },
-      { title: 'Electrical Supply Needs Subtasks', subtasks: JSON.parse(job.ElectricalSupplyNeedsSubtask || '[]') },
-      { title: 'Roof Insulation Subtasks', subtasks: JSON.parse(job.RoofInsulationSubtask || '[]') },
-      { title: 'Roofing Subtasks', subtasks: JSON.parse(job.RoofStructureSubtask || '[]') },
-      { title: 'Finishes Subtasks', subtasks: JSON.parse(job.FinishesSubtask || '[]') },
+      {
+        title: 'Foundation Subtasks',
+        subtasks: JSON.parse(job.FoundationSubtask || '[]'),
+      },
+      {
+        title: 'Wall Insulation Subtasks',
+        subtasks: JSON.parse(job.WallInsulationSubtask || '[]'),
+      },
+      {
+        title: 'Wall Structure Subtasks',
+        subtasks: JSON.parse(job.WallStructureSubtask || '[]'),
+      },
+      {
+        title: 'Electrical Supply Needs Subtasks',
+        subtasks: JSON.parse(job.ElectricalSupplyNeedsSubtask || '[]'),
+      },
+      {
+        title: 'Roof Insulation Subtasks',
+        subtasks: JSON.parse(job.RoofInsulationSubtask || '[]'),
+      },
+      {
+        title: 'Roofing Subtasks',
+        subtasks: JSON.parse(job.RoofStructureSubtask || '[]'),
+      },
+      {
+        title: 'Finishes Subtasks',
+        subtasks: JSON.parse(job.FinishesSubtask || '[]'),
+      },
     ].map((group) => ({
       ...group,
       subtasks: group.subtasks.map((subtask: any) => ({
@@ -275,19 +303,21 @@ export class JobSelectionComponent implements OnInit {
       this.selectedSubtasks.push({ ...subtask });
     } else {
       this.selectedSubtasks = this.selectedSubtasks.filter(
-        s => s.id !== subtask.id || s.task !== subtask.task
+        (s) => s.id !== subtask.id || s.task !== subtask.task,
       );
     }
     this.cdr.detectChanges();
   }
 
   createQuoteForSubtask(subtask: any): void {
-    const quoteItems = [{
-      description: subtask.task,
-      quantity: subtask.days || 1,
-      unitPrice: 0,
-      total: 0,
-    }];
+    const quoteItems = [
+      {
+        description: subtask.task,
+        quantity: subtask.days || 1,
+        unitPrice: 0,
+        total: 0,
+      },
+    ];
 
     this.createQuote(quoteItems);
   }
@@ -322,7 +352,9 @@ export class JobSelectionComponent implements OnInit {
       shipTo: this.selectedJob.address || 'Client Address',
       date: new Date().toISOString().split('T')[0],
       paymentTerms: 'Due on receipt',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
       poNumber: '',
       itemHeader: 'Item',
       quantityHeader: 'Quantity',
@@ -343,7 +375,7 @@ export class JobSelectionComponent implements OnInit {
       createdBy: localStorage.getItem('userId') || 'unknown',
       createdID: uuidv4(),
       extraCosts: [],
-      jobID: this.selectedJob.Id
+      jobID: this.selectedJob.Id,
     };
 
     this.quoteDataService.setQuote(newQuote);
@@ -356,11 +388,11 @@ export class JobSelectionComponent implements OnInit {
     const jobId = this.selectedJob.Id;
     this.jobService.getJobDocuments(jobId).subscribe({
       next: (docs: any[]) => {
-        this.documents = docs.map(doc => ({
+        this.documents = docs.map((doc) => ({
           id: doc.id,
           name: doc.fileName,
           type: this.getFileType(doc.fileName),
-          size: doc.size
+          size: doc.size,
         }));
         this.isDocumentsLoading = false;
       },
@@ -368,7 +400,7 @@ export class JobSelectionComponent implements OnInit {
         console.error('Error fetching documents:', err);
         this.documentsError = 'Failed to load documents.';
         this.isDocumentsLoading = false;
-      }
+      },
     });
   }
 
@@ -382,7 +414,7 @@ export class JobSelectionComponent implements OnInit {
     const dialogRef = this.dialog.open(this.documentsDialog, {
       width: '500px',
       maxHeight: '80vh',
-      autoFocus: true
+      autoFocus: true,
     });
     dialogRef.afterClosed().subscribe(() => {
       if (activeElement) {
@@ -402,7 +434,8 @@ export class JobSelectionComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');
         if (!newTab) {
-          this.alertMessage = 'Failed to open document. Please allow pop-ups for this site.';
+          this.alertMessage =
+            'Failed to open document. Please allow pop-ups for this site.';
           this.showAlert = true;
         }
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
@@ -411,18 +444,22 @@ export class JobSelectionComponent implements OnInit {
         console.error('Error viewing document:', err);
         this.alertMessage = 'Failed to view document.';
         this.showAlert = true;
-      }
+      },
     });
   }
 
   getFileType(fileName: string): string {
     const extension = fileName.split('.').pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf': return 'application/pdf';
-      case 'png': return 'image/png';
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
       case 'jpg':
-      case 'jpeg': return 'image/jpeg';
-      default: return 'application/octet-stream';
+      case 'jpeg':
+        return 'image/jpeg';
+      default:
+        return 'application/octet-stream';
     }
   }
 
@@ -437,34 +474,47 @@ export class JobSelectionComponent implements OnInit {
     this.jobService.GetBillOfMaterials(this.selectedJob.Id).subscribe({
       next: (status: any) => {
         if (status.length > 0) {
-          this.processingResults = status.map(doc => ({
+          this.processingResults = status.map((doc) => ({
             id: doc.id,
             jobId: doc.jobId,
             documentId: doc.DocumentId,
-            bomJson: "",
+            bomJson: '',
             materialsEstimateJson: doc.materialsEstimateJson,
             fullResponse: doc.fullResponse,
             createdAt: doc.createdAt,
-            parsedReport: this.parseReport(doc.fullResponse)
+            parsedReport: this.parseReport(doc.fullResponse),
           }));
           this.isBomLoading = false;
-          this.dialog.open(this.billOfMaterialsDialog, { width: '1800px', maxHeight: '90vh', panelClass: 'bill-of-materials-dialog' });
+          this.dialog.open(this.billOfMaterialsDialog, {
+            width: '1800px',
+            maxHeight: '90vh',
+            panelClass: 'bill-of-materials-dialog',
+          });
         } else {
           this.bomError = status.message || 'No bill of materials available.';
           this.isBomLoading = false;
-          this.dialog.open(this.billOfMaterialsDialog, { width: '1800px', maxHeight: '90vh', panelClass: 'bill-of-materials-dialog' });
+          this.dialog.open(this.billOfMaterialsDialog, {
+            width: '1800px',
+            maxHeight: '90vh',
+            panelClass: 'bill-of-materials-dialog',
+          });
         }
       },
       error: (error) => {
-        this.bomError = error.error?.error || 'Failed to load bill of materials.';
+        this.bomError =
+          error.error?.error || 'Failed to load bill of materials.';
         this.isBomLoading = false;
-        this.dialog.open(this.billOfMaterialsDialog, { width: '1800px', maxHeight: '90vh', panelClass: 'bill-of-materials-dialog' });
-      }
+        this.dialog.open(this.billOfMaterialsDialog, {
+          width: '1800px',
+          maxHeight: '90vh',
+          panelClass: 'bill-of-materials-dialog',
+        });
+      },
     });
   }
 
   parseReport(fullResponse: string): any {
-    const lines = fullResponse.split('\n').filter(line => line.trim());
+    const lines = fullResponse.split('\n').filter((line) => line.trim());
     const sections: any[] = [];
     let currentSection: any = null;
     let inTable = false;
@@ -484,19 +534,25 @@ export class JobSelectionComponent implements OnInit {
         currentSection = {
           title: line.replace('##', '').trim(),
           type: 'text',
-          content: []
+          content: [],
         };
       } else if (line.includes('|') && currentSection) {
         if (!inTable) {
           inTable = true;
           currentSection.type = 'table';
           currentSection.content = [];
-          tableHeaders = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          tableHeaders = line
+            .split('|')
+            .map((cell) => cell.trim())
+            .filter((cell) => cell);
           currentSection.headers = tableHeaders;
         } else if (line.includes('---')) {
           continue;
         } else {
-          const row = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          const row = line
+            .split('|')
+            .map((cell) => cell.trim())
+            .filter((cell) => cell);
           tableContent.push(row);
         }
       } else if (line.startsWith('-') && currentSection) {
@@ -509,29 +565,29 @@ export class JobSelectionComponent implements OnInit {
           currentSection = {
             title: currentSection.title + ' (List)',
             type: 'list',
-            content: []
+            content: [],
           };
         } else if (currentSection.type !== 'list') {
           currentSection.type = 'list';
           currentSection.content = [];
         }
         currentSection.content.push(line.replace('-', '').trim());
-      } else if (currentSection)
-        {if (inTable) {
-            currentSection.content = tableContent;
-            inTable = false;
-            tableHeaders = [];
-            tableContent = [];
-            sections.push(currentSection);
-            currentSection = {
-              title: currentSection.title + ' (Text)',
-              type: 'text',
-              content: []
-            };
-          }
-          currentSection.content.push(line.trim());
+      } else if (currentSection) {
+        if (inTable) {
+          currentSection.content = tableContent;
+          inTable = false;
+          tableHeaders = [];
+          tableContent = [];
+          sections.push(currentSection);
+          currentSection = {
+            title: currentSection.title + ' (Text)',
+            type: 'text',
+            content: [],
+          };
         }
+        currentSection.content.push(line.trim());
       }
+    }
     if (currentSection) {
       if (inTable) {
         currentSection.content = tableContent;

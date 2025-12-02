@@ -9,26 +9,29 @@ import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-unsubscribe',
-    templateUrl: './unsubscribe.component.html',
-    styleUrls: ['./unsubscribe.component.scss'],
-    standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule
-    ]
+  selector: 'app-unsubscribe',
+  templateUrl: './unsubscribe.component.html',
+  styleUrls: ['./unsubscribe.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+  ],
 })
 export class UnsubscribeComponent implements OnInit {
   message: string = '';
   email: string = '';
 
-  constructor(private route: ActivatedRoute, private http: HttpClient) { }
+  constructor(
+    private route: ActivatedRoute,
+    private http: HttpClient,
+  ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.email = params['email'];
       if (this.email) {
         this.unsubscribe();
@@ -37,10 +40,15 @@ export class UnsubscribeComponent implements OnInit {
   }
 
   unsubscribe(): void {
-    this.http.get(`${environment.BACKEND_URL}/subscription/unsubscribe?email=${this.email}`, { responseType: 'text' })
+    this.http
+      .get(
+        `${environment.BACKEND_URL}/subscription/unsubscribe?email=${this.email}`,
+        { responseType: 'text' },
+      )
       .subscribe({
-        next: (response) => this.message = response,
-        error: (error) => this.message = 'An error occurred while trying to unsubscribe.'
+        next: (response) => (this.message = response),
+        error: (error) =>
+          (this.message = 'An error occurred while trying to unsubscribe.'),
       });
   }
 }

@@ -8,19 +8,19 @@ import { UserService } from '../../services/user.service';
 import { FormsModule } from '@angular/forms';
 
 @Component({
-    selector: 'app-notifications',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    templateUrl: './notifications.component.html',
-    styleUrls: ['./notifications.component.scss'],
-    providers: [DatePipe]
+  selector: 'app-notifications',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './notifications.component.html',
+  styleUrls: ['./notifications.component.scss'],
+  providers: [DatePipe],
 })
 export class NotificationsComponent implements OnInit {
   isDevMode = isDevMode();
   currentPage: number = 1;
   pageSize: number = 50;
   public paginatedNotifications: any[] = [];
-    totalNotifications = 0;
+  totalNotifications = 0;
   totalPages: number = Number.MAX_SAFE_INTEGER;
 
   constructor(
@@ -28,18 +28,22 @@ export class NotificationsComponent implements OnInit {
     public authService: AuthService,
     private datePipe: DatePipe,
     private jobDataService: JobDataService,
-    private userService: UserService
-  ) { }
+    private userService: UserService,
+  ) {}
 
   ngOnInit(): void {
     this.loadNotifications();
   }
 
   loadNotifications(): void {
-    this.notificationsService.getAllNotifications(this.currentPage, this.pageSize).subscribe(response => {
-      this.paginatedNotifications = response?.notifications || [];
-      this.totalPages = response?.totalCount ? Math.ceil(response.totalCount / this.pageSize) : 1;
-    });
+    this.notificationsService
+      .getAllNotifications(this.currentPage, this.pageSize)
+      .subscribe((response) => {
+        this.paginatedNotifications = response?.notifications || [];
+        this.totalPages = response?.totalCount
+          ? Math.ceil(response.totalCount / this.pageSize)
+          : 1;
+      });
   }
 
   navigateToJob(notification: Notification): void {
@@ -69,7 +73,9 @@ export class NotificationsComponent implements OnInit {
   // open + mark read + navigate
   onOpen(n: Notification) {
     if ((n as any).unread && this.notificationsService.markRead) {
-      this.notificationsService.markRead(n.id).subscribe({ next: () => (n as any).unread = false });
+      this.notificationsService
+        .markRead(n.id)
+        .subscribe({ next: () => ((n as any).unread = false) });
     }
     this.navigateToJob(n);
   }
@@ -84,7 +90,7 @@ export class NotificationsComponent implements OnInit {
   markAllRead(): void {
     if (!this.notificationsService.markAllRead) return;
     this.notificationsService.markAllRead().subscribe(() => {
-      this.paginatedNotifications.forEach(n => (n as any).unread = false);
+      this.paginatedNotifications.forEach((n) => ((n as any).unread = false));
     });
   }
 }

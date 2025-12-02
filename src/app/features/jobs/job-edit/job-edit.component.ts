@@ -1,8 +1,14 @@
-import { Component, OnInit, Inject, PLATFORM_ID, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { SubTasks } from'../../../models/sub-tasks';
-import { ActivatedRoute, Router } from "@angular/router";
-import { NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
-import { MatButton } from "@angular/material/button";
+import {
+  Component,
+  OnInit,
+  Inject,
+  PLATFORM_ID,
+  CUSTOM_ELEMENTS_SCHEMA,
+} from '@angular/core';
+import { SubTasks } from '../../../models/sub-tasks';
+import { ActivatedRoute, Router } from '@angular/router';
+import { NgForOf, NgIf, isPlatformBrowser } from '@angular/common';
+import { MatButton } from '@angular/material/button';
 import { MatCard } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { GanttChartComponent } from '../../../components/gantt-chart/gantt-chart.component';
@@ -16,31 +22,42 @@ import { FormsModule } from '@angular/forms';
 import { InitiateBiddingDialogComponent } from '../initiate-bidding-dialog/initiate-bidding-dialog.component';
 
 @Component({
-    selector: 'app-jobs',
-    standalone: true,
-    imports: [
-        FormsModule,
-        NgIf,
-        NgForOf,
-        MatButton,
-        LoaderComponent,
-        GanttChartComponent,
-        MatCard,
-    ],
-    schemas: [CUSTOM_ELEMENTS_SCHEMA],
-    templateUrl: './job-edit.component.html',
-    styleUrl: './job-edit.component.scss'
+  selector: 'app-jobs',
+  standalone: true,
+  imports: [
+    FormsModule,
+    NgIf,
+    NgForOf,
+    MatButton,
+    LoaderComponent,
+    GanttChartComponent,
+    MatCard,
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  templateUrl: './job-edit.component.html',
+  styleUrl: './job-edit.component.scss',
 })
-export class JobEditComponent implements OnInit{
+export class JobEditComponent implements OnInit {
   taskData: any;
   subtasks: SubTasks = new SubTasks();
-  calculatedSubtasks: { task: string; days: number; startDate: string; endDate: string }[] = [];
-  projectDetails: any;RoofStructure
+  calculatedSubtasks: {
+    task: string;
+    days: number;
+    startDate: string;
+    endDate: string;
+  }[] = [];
+  projectDetails: any;
+  RoofStructure;
   startDateDisplay: any;
-  initialStartDate:any;
+  initialStartDate: any;
   subTasksObtained: any;
   calculatedTables: { title: string; subtasks: any[] }[] = [];
-  calculatedChainedTables: { title: string; startDate: Date; endDate: Date ; subtasks: any[] }[] = [];
+  calculatedChainedTables: {
+    title: string;
+    startDate: Date;
+    endDate: Date;
+    subtasks: any[];
+  }[] = [];
 
   showAlert: boolean = false;
   alertMessage: string = '';
@@ -49,31 +66,32 @@ export class JobEditComponent implements OnInit{
   isBrowser: boolean;
   weatherData: any;
 
-  constructor(private route: ActivatedRoute,
-              private jobsService: JobsService,
-              private weatherService: WeatherService,
-              private biddingService: BiddingService,
-              public store: Store<SubtasksState>,
-              private router: Router,
-              public dialog: MatDialog,
-              @Inject(PLATFORM_ID) private platformId: Object
-            ) {
-              this.isBrowser = isPlatformBrowser(this.platformId);
+  constructor(
+    private route: ActivatedRoute,
+    private jobsService: JobsService,
+    private weatherService: WeatherService,
+    private biddingService: BiddingService,
+    public store: Store<SubtasksState>,
+    private router: Router,
+    public dialog: MatDialog,
+    @Inject(PLATFORM_ID) private platformId: Object,
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
   ngOnInit() {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.projectDetails = params;
-      this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
+      this.startDateDisplay = new Date(this.projectDetails.date)
+        .toISOString()
+        .split('T')[0];
     });
     this.initialStartDate = this.projectDetails.date;
 
     const state = this.store.getState();
     if (!state.subtaskGroups) {
       this.store.setState({
-        subtaskGroups: [
-          { title: 'Default Group', subtasks: [] }
-        ]
+        subtaskGroups: [{ title: 'Default Group', subtasks: [] }],
       });
     }
 
@@ -87,7 +105,7 @@ export class JobEditComponent implements OnInit{
           const matchingSubtask = this.calculatedTables.find(
             (obtainedSubtask) =>
               obtainedSubtask.title === group.title &&
-              obtainedSubtask.subtasks === group.subtasks
+              obtainedSubtask.subtasks === group.subtasks,
           );
           return matchingSubtask
             ? { ...existingSubtask, ...matchingSubtask }
@@ -106,59 +124,152 @@ export class JobEditComponent implements OnInit{
   }
   createTables(): void {
     const tables = [
-      { title: 'Foundation Subtasks' , type: 'foundation',status: 'NEW' , subtasks: this.subtasks.foundationSubtasks },
-      { title: 'WallInsulation Subtasks', type: 'wallInsulation', status: 'NEW', subtasks: this.subtasks.wallInsulationSubtasks },
-      { title: 'WallStructure Subtasks', type: 'wallStructure', status: 'NEW', subtasks: this.subtasks.wallSubtasks },
-      { title: 'Electrical & Plumbing Supply Needs Subtasks', type: 'electricalSupplyNeeds', status: 'NEW', subtasks: this.subtasks.electricalSubtasks },
-      { title: 'RoofInsulation Subtasks', type: 'roofInsulation', status: 'NEW', subtasks: this.subtasks.roofInsulationSubtasks },
-      { title: 'Roofing Subtasks', type: 'roofType', status: 'NEW', subtasks: this.subtasks.roofStructureSubtasks },
-      { title: 'Finishes Subtasks', type: 'finishes', status: 'NEW', subtasks: this.subtasks.finishesSubtasks },
+      {
+        title: 'Foundation Subtasks',
+        type: 'foundation',
+        status: 'NEW',
+        subtasks: this.subtasks.foundationSubtasks,
+      },
+      {
+        title: 'WallInsulation Subtasks',
+        type: 'wallInsulation',
+        status: 'NEW',
+        subtasks: this.subtasks.wallInsulationSubtasks,
+      },
+      {
+        title: 'WallStructure Subtasks',
+        type: 'wallStructure',
+        status: 'NEW',
+        subtasks: this.subtasks.wallSubtasks,
+      },
+      {
+        title: 'Electrical & Plumbing Supply Needs Subtasks',
+        type: 'electricalSupplyNeeds',
+        status: 'NEW',
+        subtasks: this.subtasks.electricalSubtasks,
+      },
+      {
+        title: 'RoofInsulation Subtasks',
+        type: 'roofInsulation',
+        status: 'NEW',
+        subtasks: this.subtasks.roofInsulationSubtasks,
+      },
+      {
+        title: 'Roofing Subtasks',
+        type: 'roofType',
+        status: 'NEW',
+        subtasks: this.subtasks.roofStructureSubtasks,
+      },
+      {
+        title: 'Finishes Subtasks',
+        type: 'finishes',
+        status: 'NEW',
+        subtasks: this.subtasks.finishesSubtasks,
+      },
     ];
     let currentStartDate = new Date(this.initialStartDate);
 
-    this.calculatedChainedTables = tables.map(table => {
-      const chainedSubtasks = this.chainSubtaskDates(table.subtasks, currentStartDate);
+    this.calculatedChainedTables = tables.map((table) => {
+      const chainedSubtasks = this.chainSubtaskDates(
+        table.subtasks,
+        currentStartDate,
+      );
       const AgggregatedstartDate = chainedSubtasks[0].startDate;
-      const AggregatedendDate = chainedSubtasks[chainedSubtasks.length - 1].endDate;
+      const AggregatedendDate =
+        chainedSubtasks[chainedSubtasks.length - 1].endDate;
       const lastSubtaskEndDate = new Date(AggregatedendDate);
       currentStartDate = new Date(lastSubtaskEndDate);
       currentStartDate.setDate(currentStartDate.getDate() + 1);
 
       return {
-          title: table.title,
-          startDate: new Date(AgggregatedstartDate),
-          endDate: new Date(AggregatedendDate),
-          subtasks: chainedSubtasks
+        title: table.title,
+        startDate: new Date(AgggregatedstartDate),
+        endDate: new Date(AggregatedendDate),
+        subtasks: chainedSubtasks,
       };
-  });
+    });
 
     // console.log(this.calculatedChainedTables);
 
     this.taskData = [
-      { id: '1',name: 'RoofStructure', start:  this.calculatedChainedTables[5].startDate, end: this.calculatedChainedTables[5].endDate, progress: 0, dependencies: null, },
-      { id: '2',name: 'WallInsulation', start: this.calculatedChainedTables[1].startDate, end: this.calculatedChainedTables[1].endDate, progress: 0, dependencies: null,},
-      { id: '3',name: 'WallStructure', start: this.calculatedChainedTables[2].startDate, end: this.calculatedChainedTables[2].endDate, progress: 0, dependencies: null, },
-      { id: '4',name: 'RoofInsulation', start: this.calculatedChainedTables[4].startDate, end: this.calculatedChainedTables[4].endDate, progress: 0, dependencies: null, },
-      { id: '5',name: 'Foundation', start: this.calculatedChainedTables[0].startDate, end: this.calculatedChainedTables[0].endDate, progress: 0, dependencies: null, },
-      { id: '6',name: 'Finishes', start: this.calculatedChainedTables[6].startDate, end: this.calculatedChainedTables[6].endDate,progress: 0, dependencies: null, },
-      { id: '7',name: 'ElectricalSupplyNeeds', start: this.calculatedChainedTables[3].startDate, end:this.calculatedChainedTables[3].endDate, progress: 0, dependencies: null,}
+      {
+        id: '1',
+        name: 'RoofStructure',
+        start: this.calculatedChainedTables[5].startDate,
+        end: this.calculatedChainedTables[5].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '2',
+        name: 'WallInsulation',
+        start: this.calculatedChainedTables[1].startDate,
+        end: this.calculatedChainedTables[1].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '3',
+        name: 'WallStructure',
+        start: this.calculatedChainedTables[2].startDate,
+        end: this.calculatedChainedTables[2].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '4',
+        name: 'RoofInsulation',
+        start: this.calculatedChainedTables[4].startDate,
+        end: this.calculatedChainedTables[4].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '5',
+        name: 'Foundation',
+        start: this.calculatedChainedTables[0].startDate,
+        end: this.calculatedChainedTables[0].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '6',
+        name: 'Finishes',
+        start: this.calculatedChainedTables[6].startDate,
+        end: this.calculatedChainedTables[6].endDate,
+        progress: 0,
+        dependencies: null,
+      },
+      {
+        id: '7',
+        name: 'ElectricalSupplyNeeds',
+        start: this.calculatedChainedTables[3].startDate,
+        end: this.calculatedChainedTables[3].endDate,
+        progress: 0,
+        dependencies: null,
+      },
     ];
-    this.calculatedTables = tables.map(table => {
-      const calculatedSubtasks = this.calculateSubtaskDates(table.subtasks, currentStartDate);
-      const lastSubtaskEndDate = new Date(calculatedSubtasks[calculatedSubtasks.length - 1].endDate);
+    this.calculatedTables = tables.map((table) => {
+      const calculatedSubtasks = this.calculateSubtaskDates(
+        table.subtasks,
+        currentStartDate,
+      );
+      const lastSubtaskEndDate = new Date(
+        calculatedSubtasks[calculatedSubtasks.length - 1].endDate,
+      );
       currentStartDate = new Date(lastSubtaskEndDate);
       currentStartDate.setDate(currentStartDate.getDate() + 1);
 
       return {
         title: table.title,
-        subtasks: calculatedSubtasks
+        subtasks: calculatedSubtasks,
       };
     });
   }
   calculateSubtaskDates(subtasks: any[], startDate: Date): any[] {
     let currentDate = new Date(startDate);
 
-    return subtasks.map(subtask => {
+    return subtasks.map((subtask) => {
       const startDate = new Date(currentDate);
       const endDate = new Date(currentDate);
       endDate.setDate(startDate.getDate() + subtask.days - 1);
@@ -168,7 +279,7 @@ export class JobEditComponent implements OnInit{
       return {
         ...subtask,
         startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
+        endDate: endDate.toISOString().split('T')[0],
       };
     });
   }
@@ -176,7 +287,7 @@ export class JobEditComponent implements OnInit{
   calculateDates(subtasks: any[]): any[] {
     let currentDate = new Date(this.initialStartDate);
 
-    return subtasks.map(subtask => {
+    return subtasks.map((subtask) => {
       const startDate = new Date(currentDate);
       const endDate = new Date(currentDate);
       endDate.setDate(startDate.getDate() + subtask.days - 1);
@@ -186,7 +297,7 @@ export class JobEditComponent implements OnInit{
       return {
         ...subtask,
         startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
+        endDate: endDate.toISOString().split('T')[0],
       };
     });
   }
@@ -194,27 +305,27 @@ export class JobEditComponent implements OnInit{
   chainSubtaskDates(subtasks: any[], initialStartDate: Date): any[] {
     let currentDate = new Date(initialStartDate);
 
-    return subtasks.map(subtask => {
-        const subtaskStartDate = new Date(currentDate);
-        const subtaskEndDate = new Date(currentDate);
-        subtaskEndDate.setDate(subtaskStartDate.getDate() + subtask.days - 1);
-        currentDate.setDate(subtaskEndDate.getDate() + 1);
+    return subtasks.map((subtask) => {
+      const subtaskStartDate = new Date(currentDate);
+      const subtaskEndDate = new Date(currentDate);
+      subtaskEndDate.setDate(subtaskStartDate.getDate() + subtask.days - 1);
+      currentDate.setDate(subtaskEndDate.getDate() + 1);
 
-        return {
-            ...subtask,
-            startDate: subtaskStartDate,
-            endDate: subtaskEndDate
-        };
+      return {
+        ...subtask,
+        startDate: subtaskStartDate,
+        endDate: subtaskEndDate,
+      };
     });
-}
+  }
 
   deleteSubtask(table: any, index: number): void {
     // Update the state directly to ensure consistency
-    const updatedState = this.store.getState().subtaskGroups.map(group => {
+    const updatedState = this.store.getState().subtaskGroups.map((group) => {
       if (group.title === table.title) {
         return {
           ...group,
-          subtasks: group.subtasks.filter((_, i) => i !== index)
+          subtasks: group.subtasks.filter((_, i) => i !== index),
         };
       }
       return group;
@@ -224,7 +335,8 @@ export class JobEditComponent implements OnInit{
     this.store.setState({ subtaskGroups: updatedState });
 
     // Optionally, reassign the updated subtasks back to the table for local consistency
-    table.subtasks = updatedState.find(group => group.title === table.title)?.subtasks || [];
+    table.subtasks =
+      updatedState.find((group) => group.title === table.title)?.subtasks || [];
   }
 
   addSubtask(table: any): void {
@@ -232,11 +344,11 @@ export class JobEditComponent implements OnInit{
       task: '',
       days: 0,
       startDate: '',
-      endDate: ''
+      endDate: '',
     };
 
     table.subtasks.push(newSubtask);
-    const updatedState = this.store.getState().subtaskGroups.map(group => {
+    const updatedState = this.store.getState().subtaskGroups.map((group) => {
       if (group.title === table.title) {
         return { ...group, subtasks: [...table.subtasks] };
       }
@@ -278,7 +390,8 @@ export class JobEditComponent implements OnInit{
         // console.log('Weather Condition:', this.weatherData?.forecast?.forecastday[0]?.day?.condition?.text);
       },
       error: (err) => {
-        this.weatherData = "No Weather Data as Data should be more the two weeks from now";
+        this.weatherData =
+          'No Weather Data as Data should be more the two weeks from now';
         console.error('Error:', err);
       },
     });
@@ -305,68 +418,78 @@ export class JobEditComponent implements OnInit{
       DesiredStartDate: formattedDate,
       WallStructure: this.projectDetails.wallStructure,
       WallStructureSubtask: JSON.stringify(dataInput[2].subtasks),
-      WallStructureStatus: "NEW",
+      WallStructureStatus: 'NEW',
       WallInsulation: this.projectDetails.wallInsulation,
       WallInsulationSubtask: JSON.stringify(dataInput[1].subtasks),
-      WallInsulationStatus: "NEW",
+      WallInsulationStatus: 'NEW',
       RoofStructure: this.projectDetails.roofStructure,
       RoofStructureSubtask: JSON.stringify(dataInput[5].subtasks),
-      RoofStructureStatus: "NEW",
+      RoofStructureStatus: 'NEW',
       RoofInsulation: this.projectDetails.roofInsulation,
       RoofInsulationSubtask: JSON.stringify(dataInput[4].subtasks),
-      RoofInsulationStatus: "NEW",
+      RoofInsulationStatus: 'NEW',
       ElectricalSupplyNeeds: this.projectDetails.electricalSupply,
       ElectricalSupplyNeedsSubtask: JSON.stringify(dataInput[3].subtasks),
-      ElectricalStatus: "NEW",
+      ElectricalStatus: 'NEW',
       Finishes: this.projectDetails.finishes,
       FinishesSubtask: JSON.stringify(dataInput[6].subtasks),
-      FinishesStatus: "NEW",
+      FinishesStatus: 'NEW',
       Foundation: this.projectDetails.foundation,
       FoundationSubtask: JSON.stringify(dataInput[0].subtasks),
-      FoundationStatus: "NEW",
+      FoundationStatus: 'NEW',
       BlueprintPath: this.projectDetails.blueprintPath,
-      OperatingArea: "GreenField",
+      OperatingArea: 'GreenField',
       Address: this.projectDetails.address,
-      UserId: localStorage.getItem("userId")
+      UserId: localStorage.getItem('userId'),
     };
   }
 
   publish() {
-   const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
-     width: '400px',
-     data: { requiredTrades: '', biddingType: 'PUBLIC' }
-   });
+    const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
+      width: '400px',
+      data: { requiredTrades: '', biddingType: 'PUBLIC' },
+    });
 
-   dialogRef.afterClosed().subscribe(result => {
-     if (result) {
-       const projectData = this.prepareProjectData("BIDDING");
-       this.isLoading = true;
-       this.biddingService.startBidding(this.projectDetails.jobId, result.biddingType, result.requiredTrades.split(',').map((s: string) => s.trim())).subscribe({
-         next: () => {
-           this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-             next: () => {
-               this.isLoading = false;
-               this.showAlert = true;
-               this.alertMessage = "Job is now in BIDDING status.";
-             },
-             error: err => {
-               this.isLoading = false;
-               this.showAlert = true;
-               this.alertMessage = 'An unexpected error occurred while updating the job. Contact support';
-               console.error('Error:', err);
-             }
-           });
-         },
-         error: err => {
-           this.isLoading = false;
-           this.showAlert = true;
-           this.alertMessage = 'An unexpected error occurred while starting the bidding process. Contact support';
-           console.error('Error:', err);
-         }
-       });
-     }
-   });
- }
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        const projectData = this.prepareProjectData('BIDDING');
+        this.isLoading = true;
+        this.biddingService
+          .startBidding(
+            this.projectDetails.jobId,
+            result.biddingType,
+            result.requiredTrades.split(',').map((s: string) => s.trim()),
+          )
+          .subscribe({
+            next: () => {
+              this.jobsService
+                .updateJob(projectData, this.projectDetails.jobId)
+                .subscribe({
+                  next: () => {
+                    this.isLoading = false;
+                    this.showAlert = true;
+                    this.alertMessage = 'Job is now in BIDDING status.';
+                  },
+                  error: (err) => {
+                    this.isLoading = false;
+                    this.showAlert = true;
+                    this.alertMessage =
+                      'An unexpected error occurred while updating the job. Contact support';
+                    console.error('Error:', err);
+                  },
+                });
+            },
+            error: (err) => {
+              this.isLoading = false;
+              this.showAlert = true;
+              this.alertMessage =
+                'An unexpected error occurred while starting the bidding process. Contact support';
+              console.error('Error:', err);
+            },
+          });
+      }
+    });
+  }
 
   closeAlert(): void {
     if (this.routeURL) {
@@ -375,62 +498,70 @@ export class JobEditComponent implements OnInit{
     this.showAlert = false;
   }
 
-  saveOnly(){
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
+  saveOnly() {
+    const updatedSubtaskGroups = this.store
+      .getState()
+      .subtaskGroups.map((group) => ({
+        ...group,
+        subtasks: group.subtasks.map((subtask) => ({
+          ...subtask,
+        })),
+      }));
 
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
 
-    const dataInput = this.store.getState().subtaskGroups
+    const dataInput = this.store.getState().subtaskGroups;
     // console.log('Tasks in store for Saved:', dataInput[0]);
     // console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("DRAFT");
+    const projectData = this.prepareProjectData('DRAFT');
 
     this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "SavedS Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
+    this.jobsService
+      .updateJob(projectData, this.projectDetails.jobId)
+      .subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showAlert = true;
+          this.alertMessage = 'SavedS Job Successfully';
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.showAlert = true;
+          this.alertMessage = 'An unexpected error occurred. Contact support';
+          console.error('Error:', err);
+        },
+      });
   }
 
   discard() {
-    const updatedSubtaskGroups = this.store.getState().subtaskGroups.map(group => ({
-      ...group,
-      subtasks: group.subtasks.map(subtask => ({
-        ...subtask,
-      }))
-    }));
+    const updatedSubtaskGroups = this.store
+      .getState()
+      .subtaskGroups.map((group) => ({
+        ...group,
+        subtasks: group.subtasks.map((subtask) => ({
+          ...subtask,
+        })),
+      }));
 
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     // console.log('UserId :: ', localStorage.getItem("userId"))
-    const projectData = this.prepareProjectData("DISCARD");
+    const projectData = this.prepareProjectData('DISCARD');
 
     this.isLoading = true;
-    this.jobsService.updateJob(projectData, this.projectDetails.jobId).subscribe({
-      next: response => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = "Discarded Job Successfully"
-      },
-      error: err => {
-        this.isLoading = false;
-        this.showAlert = true;
-        this.alertMessage = 'An unexpected error occurred. Contact support';
-        console.error('Error:', err);
-      }
-    });
+    this.jobsService
+      .updateJob(projectData, this.projectDetails.jobId)
+      .subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          this.showAlert = true;
+          this.alertMessage = 'Discarded Job Successfully';
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.showAlert = true;
+          this.alertMessage = 'An unexpected error occurred. Contact support';
+          console.error('Error:', err);
+        },
+      });
   }
 }

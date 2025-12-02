@@ -6,11 +6,15 @@ import autoTable from 'jspdf-autotable';
 // Helper function to format project information
 const formatProjectInfo = (text: string): string => {
   // Handle the concatenated project info
-  if (text.includes('Project:') && text.includes('Address:') && text.includes('Date:')) {
+  if (
+    text.includes('Project:') &&
+    text.includes('Address:') &&
+    text.includes('Date:')
+  ) {
     return text
       .replace(/RESIDENCEAddress:/g, 'RESIDENCE\nAddress:')
       .replace(/Address:/g, '\nAddress:')
-      .replace(/Date:/g, '\nDate:')
+      .replace(/Date:/g, '\nDate:');
   }
   return text;
 };
@@ -18,9 +22,9 @@ const formatProjectInfo = (text: string): string => {
 // Helper function to clean up excessive newlines
 const cleanNewlines = (text: string): string => {
   return text
-    .replace(/\n\n+/g, ' ')  // Replace double+ newlines with single space
-    .replace(/\n/g, ' ')     // Replace remaining single newlines with spaces
-    .trim();                 // Remove leading/trailing whitespace
+    .replace(/\n\n+/g, ' ') // Replace double+ newlines with single space
+    .replace(/\n/g, ' ') // Replace remaining single newlines with spaces
+    .trim(); // Remove leading/trailing whitespace
 };
 
 // Helper function to prevent line breaks after colons
@@ -33,14 +37,14 @@ const preventColonBreaks = (text: string): string => {
 // Helper function to clean Unicode characters that cause issues in jsPDF
 const cleanTextForPDF = (text: string): string => {
   return text
-    .replace(/CO₂/g, 'CO2')           // Replace CO₂ with CO2
-    .replace(/₂/g, '2')              // Replace any other subscript 2
-    .replace(/₁/g, '1')              // Replace subscript 1
-    .replace(/₃/g, '3')              // Replace subscript 3
-    .replace(/₄/g, '4')              // Replace subscript 4
-    .replace(/₀/g, '0')              // Replace subscript 0
-    .replace(/[^\x00-\x7F]/g, '?')   // Replace any other non-ASCII chars with ?
-    .replace(/\?+/g, '?');           // Clean up multiple ?s
+    .replace(/CO₂/g, 'CO2') // Replace CO₂ with CO2
+    .replace(/₂/g, '2') // Replace any other subscript 2
+    .replace(/₁/g, '1') // Replace subscript 1
+    .replace(/₃/g, '3') // Replace subscript 3
+    .replace(/₄/g, '4') // Replace subscript 4
+    .replace(/₀/g, '0') // Replace subscript 0
+    .replace(/[^\x00-\x7F]/g, '?') // Replace any other non-ASCII chars with ?
+    .replace(/\?+/g, '?'); // Clean up multiple ?s
 };
 
 // Function to recursively clean table data
@@ -122,7 +126,7 @@ addEventListener('message', async ({ data }) => {
           const cleanH3Text = cleanTextForPDF(element.text);
           const h3Lines = doc.splitTextToSize(cleanH3Text, usableWidth);
           doc.text(h3Lines, margin, currentY, { charSpace: 0 });
-          currentY += (h3Lines.length * 7) + 2;
+          currentY += h3Lines.length * 7 + 2;
           break;
         case 'p':
           doc.setFontSize(10);
@@ -130,10 +134,18 @@ addEventListener('message', async ({ data }) => {
           let cleanPText = cleanTextForPDF(element.text);
 
           // Special handling for project information
-          if (cleanPText.includes('Project:') && cleanPText.includes('Address:') && cleanPText.includes('Date:')) {
+          if (
+            cleanPText.includes('Project:') &&
+            cleanPText.includes('Address:') &&
+            cleanPText.includes('Date:')
+          ) {
             // Extract and format each piece of information
-            const projectMatch = cleanPText.match(/Project:\s*([^A]+?)(?=Address:|$)/);
-            const addressMatch = cleanPText.match(/Address:\s*([^D]+?)(?=Date:|$)/);
+            const projectMatch = cleanPText.match(
+              /Project:\s*([^A]+?)(?=Address:|$)/,
+            );
+            const addressMatch = cleanPText.match(
+              /Address:\s*([^D]+?)(?=Date:|$)/,
+            );
             const dateMatch = cleanPText.match(/Date:\s*(.+)/);
 
             if (projectMatch && addressMatch && dateMatch) {
@@ -151,9 +163,12 @@ addEventListener('message', async ({ data }) => {
               doc.setFont('helvetica', 'bold');
               doc.text('Address:', margin, currentY);
               doc.setFont('helvetica', 'normal');
-              const addressLines = doc.splitTextToSize(address, usableWidth - 25);
+              const addressLines = doc.splitTextToSize(
+                address,
+                usableWidth - 25,
+              );
               doc.text(addressLines, margin + 25, currentY);
-              currentY += (addressLines.length * 5);
+              currentY += addressLines.length * 5;
 
               doc.setFont('helvetica', 'bold');
               doc.text('Date:', margin, currentY);
@@ -165,13 +180,13 @@ addEventListener('message', async ({ data }) => {
               cleanPText = formatProjectInfo(cleanPText);
               const pLines = doc.splitTextToSize(cleanPText, usableWidth);
               doc.text(pLines, margin, currentY, { charSpace: 0 });
-              currentY += (pLines.length * 5) + 2;
+              currentY += pLines.length * 5 + 2;
             }
           } else {
             // Regular paragraph handling
             const pLines = doc.splitTextToSize(cleanPText, usableWidth);
             doc.text(pLines, margin, currentY, { charSpace: 0 });
-            currentY += (pLines.length * 5) + 2;
+            currentY += pLines.length * 5 + 2;
           }
           break;
         case 'ul':
@@ -187,9 +202,12 @@ addEventListener('message', async ({ data }) => {
             let cleanItem = cleanTextForPDF(item);
             cleanItem = preventColonBreaks(cleanItem);
             cleanItem = cleanNewlines(cleanItem);
-            const itemLines = doc.splitTextToSize(`• ${cleanItem}`, usableWidth - 5);
+            const itemLines = doc.splitTextToSize(
+              `• ${cleanItem}`,
+              usableWidth - 5,
+            );
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
-            currentY += (itemLines.length * 5) + 2;
+            currentY += itemLines.length * 5 + 2;
           });
           break;
         case 'ol':
@@ -206,9 +224,12 @@ addEventListener('message', async ({ data }) => {
             let cleanItem = cleanTextForPDF(item);
             cleanItem = preventColonBreaks(cleanItem);
             cleanItem = cleanNewlines(cleanItem);
-            const itemLines = doc.splitTextToSize(`${olCounter}. ${cleanItem}`, usableWidth - 5);
+            const itemLines = doc.splitTextToSize(
+              `${olCounter}. ${cleanItem}`,
+              usableWidth - 5,
+            );
             doc.text(itemLines, margin + 5, currentY, { charSpace: 0 });
-            currentY += (itemLines.length * 5) + 2;
+            currentY += itemLines.length * 5 + 2;
             olCounter++;
           });
           break;
@@ -224,11 +245,11 @@ addEventListener('message', async ({ data }) => {
             margin: { left: margin, right: margin },
             headStyles: {
               fillColor: '#FFC107',
-              textColor: '#000000'
+              textColor: '#000000',
             },
             didDrawPage: (data) => {
-               currentY = data.cursor?.y ?? currentY;
-            }
+              currentY = data.cursor?.y ?? currentY;
+            },
           });
           currentY = (doc as any).lastAutoTable.finalY + 10;
           break;
@@ -245,13 +266,12 @@ addEventListener('message', async ({ data }) => {
         `Page ${i} of ${totalPages} - This report was generated by AI. View our terms and conditions`,
         pageWidth / 2,
         pageHeight - 10,
-        { align: 'center' }
+        { align: 'center' },
       );
     }
 
     const pdfBlob = doc.output('blob');
     postMessage({ success: true, pdfBlob });
-
   } catch (error) {
     console.error('Error generating PDF in worker:', error);
     postMessage({ success: false, error: 'Failed to generate PDF' });

@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './job-bidding.component.html',
   styleUrls: ['./job-bidding.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule],
 })
 export class JobBiddingComponent implements OnInit {
   jobId!: number;
@@ -27,7 +27,7 @@ export class JobBiddingComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private biddingService: BiddingService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -36,7 +36,7 @@ export class JobBiddingComponent implements OnInit {
   }
 
   loadBids(): void {
-    this.biddingService.getBidsForJob(this.jobId).subscribe(bids => {
+    this.biddingService.getBidsForJob(this.jobId).subscribe((bids) => {
       this.bids = bids;
       this.filteredBids = [...this.bids];
     });
@@ -46,8 +46,8 @@ export class JobBiddingComponent implements OnInit {
     if (!filterValue) {
       this.filteredBids = [...this.bids];
     } else {
-      this.filteredBids = this.bids.filter(bid =>
-        bid.subcontractorName.toLowerCase().includes(filterValue.toLowerCase())
+      this.filteredBids = this.bids.filter((bid) =>
+        bid.subcontractorName.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
   }
@@ -63,9 +63,9 @@ export class JobBiddingComponent implements OnInit {
     this.filteredBids.sort((a, b) => {
       const aValue = a[column as keyof Bid];
       const bValue = b[column as keyof Bid];
-if (aValue == null || bValue == null) {
-  return 0; // or your fallback
-}
+      if (aValue == null || bValue == null) {
+        return 0; // or your fallback
+      }
       if (aValue < bValue) {
         return this.sortDirection === 'asc' ? -1 : 1;
       }
@@ -86,11 +86,13 @@ if (aValue == null || bValue == null) {
 
   selectFinalists(): void {
     const finalistIds = Array.from(this.selectedBids).map(String);
-    this.biddingService.selectFinalists(this.jobId, finalistIds).subscribe(() => {
-      // Add notification or UI update logic here
-      // console.log('Finalists selected');
-      this.loadBids(); // Refresh bids to show finalist status
-    });
+    this.biddingService
+      .selectFinalists(this.jobId, finalistIds)
+      .subscribe(() => {
+        // Add notification or UI update logic here
+        // console.log('Finalists selected');
+        this.loadBids(); // Refresh bids to show finalist status
+      });
   }
 
   awardJob(bidId: number): void {
@@ -103,7 +105,7 @@ if (aValue == null || bValue == null) {
 
   analyzeBids(): void {
     const bidIds = Array.from(this.selectedBids);
-    this.biddingService.analyzeBids(this.jobId).subscribe(result => {
+    this.biddingService.analyzeBids(this.jobId).subscribe((result) => {
       this.analysisResult = result;
       // console.log('Analysis result:', result);
     });

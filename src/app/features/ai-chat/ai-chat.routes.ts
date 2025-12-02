@@ -6,16 +6,16 @@ export const AI_CHAT_ROUTES: Routes = [
   {
     path: '',
     redirectTo: 'new',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'new',
     component: AiChatFullScreenComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard],
   },
   {
     path: ':conversationId',
     component: AiChatFullScreenComponent,
-    canActivate: [AuthGuard]
-  }
+    canActivate: [AuthGuard],
+  },
 ];

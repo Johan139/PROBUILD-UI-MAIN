@@ -8,29 +8,40 @@ import { UploadedFileInfo } from './file-upload.service';
 const BASE_URL = environment.BACKEND_URL;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NewAnalysisService {
-
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   startStandardAnalysis(request: FormData): Observable<any> {
     return this.http.post<any>(`${BASE_URL}/Jobs`, request);
   }
 
-  startWalkthrough(uploadedFiles: UploadedFileInfo[], startDate: Date, analysisType: string, budgetLevel: string, promptKeys: string[]): Observable<any> {
-    const documentUrls = uploadedFiles.map(f => f.url);
+  startWalkthrough(
+    uploadedFiles: UploadedFileInfo[],
+    startDate: Date,
+    analysisType: string,
+    budgetLevel: string,
+    promptKeys: string[],
+  ): Observable<any> {
+    const documentUrls = uploadedFiles.map((f) => f.url);
     const request = {
       documentUrls,
       startDate,
       analysisType,
       budgetLevel,
-      promptKeys
+      promptKeys,
     };
-    return this.http.post<any>(`${BASE_URL}/api/analysis/walkthrough/start`, request);
+    return this.http.post<any>(
+      `${BASE_URL}/api/analysis/walkthrough/start`,
+      request,
+    );
   }
 
-  getNextWalkthroughStep(sessionId: string, applyCostOptimisation?: boolean): Observable<any> {
+  getNextWalkthroughStep(
+    sessionId: string,
+    applyCostOptimisation?: boolean,
+  ): Observable<any> {
     let url = `${BASE_URL}/api/analysis/walkthrough/${sessionId}/next`;
     if (applyCostOptimisation) {
       url += `?applyCostOptimisation=true`;
@@ -38,7 +49,14 @@ export class NewAnalysisService {
     return this.http.get<any>(url);
   }
 
-  rerunWalkthroughStep(sessionId: string, stepIndex: number, payload: any): Observable<any> {
-    return this.http.post<any>(`${BASE_URL}/api/analysis/walkthrough/${sessionId}/rerun/${stepIndex}`, payload);
+  rerunWalkthroughStep(
+    sessionId: string,
+    stepIndex: number,
+    payload: any,
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${BASE_URL}/api/analysis/walkthrough/${sessionId}/rerun/${stepIndex}`,
+      payload,
+    );
   }
 }

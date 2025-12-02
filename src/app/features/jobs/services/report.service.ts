@@ -9,12 +9,14 @@ import { marked } from 'marked';
 export class ReportService {
   constructor(
     private jobsService: JobsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   async getEnvironmentalReportContent(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -30,8 +32,12 @@ export class ReportService {
             isRenovation = true;
           }
         }
-        if (!isRenovation) { // Fallback check
-          isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(fullResponse);
+        if (!isRenovation) {
+          // Fallback check
+          isRenovation =
+            /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(
+              fullResponse,
+            );
         }
       } catch (e) {
         console.error('Error parsing JSON from AI response for report:', e);
@@ -74,19 +80,24 @@ export class ReportService {
         'Output 1:',
         'Output 2:',
         'I am Done',
-        'Executive Summary Complete.'
+        'Executive Summary Complete.',
       ];
       linesToRemove.forEach((line) => {
         reportContent = reportContent
           .replace(
             new RegExp(line.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'),
-            ''
+            '',
           )
           .trim();
       });
 
       // Remove the dynamic introductory paragraph
-      reportContent = reportContent.replace(/As a Sustainability and Environmental Construction Analyst,[\s\S]*?\n\n/, '').trim();
+      reportContent = reportContent
+        .replace(
+          /As a Sustainability and Environmental Construction Analyst,[\s\S]*?\n\n/,
+          '',
+        )
+        .trim();
 
       return marked(reportContent);
     } catch (err) {
@@ -96,51 +107,60 @@ export class ReportService {
   }
 
   async getFullReportContent(jobId: string): Promise<string | null> {
-      try {
-        const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
-        if (!results || results.length === 0 || !results[0].fullResponse) {
-          return null;
-        }
-        let fullResponse = results[0].fullResponse;
-
-        // Remove initial JSON block
-        fullResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
-
-        // Remove unwanted lines/markers
-        const linesToRemove = [
-          'I am Done',
-          'Executive Summary Complete.',
-          'Output 1: ',
-          'Output 2: ',
-        ];
-
-        // Also remove "Ready for the next prompt X." lines
-        fullResponse = fullResponse.replace(/Ready for the next prompt \d+\./g, '');
-
-        linesToRemove.forEach((line) => {
-          fullResponse = fullResponse.replace(new RegExp(line, 'g'), '');
-        });
-
-        // Clean up extra newlines that might result from removals
-        fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
-
-        return marked(fullResponse);
-      } catch (err) {
-          console.error('Failed to get full report content:', err);
-          return null;
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
       }
+      let fullResponse = results[0].fullResponse;
+
+      // Remove initial JSON block
+      fullResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+
+      // Remove unwanted lines/markers
+      const linesToRemove = [
+        'I am Done',
+        'Executive Summary Complete.',
+        'Output 1: ',
+        'Output 2: ',
+      ];
+
+      // Also remove "Ready for the next prompt X." lines
+      fullResponse = fullResponse.replace(
+        /Ready for the next prompt \d+\./g,
+        '',
+      );
+
+      linesToRemove.forEach((line) => {
+        fullResponse = fullResponse.replace(new RegExp(line, 'g'), '');
+      });
+
+      // Clean up extra newlines that might result from removals
+      fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
+
+      return marked(fullResponse);
+    } catch (err) {
+      console.error('Failed to get full report content:', err);
+      return null;
+    }
   }
 
   async getExecutiveSummary(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
       const fullResponse = results[0].fullResponse;
 
       // Clean up JSON blocks first
-      let cleanResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+      let cleanResponse = fullResponse
+        .replace(/```json[\s\S]*?```/g, '')
+        .trim();
 
       const startMarkerRegex = /###?\s*Executive Summary/i;
       const endMarker = 'Executive Summary Complete.';
@@ -164,8 +184,8 @@ export class ReportService {
 
         return marked(content);
       } else {
-         console.warn('Executive Summary start marker not found in response.');
-         // console.log('Response snippet:', cleanResponse.substring(cleanResponse.length - 500)); // Debug log
+        console.warn('Executive Summary start marker not found in response.');
+        // console.log('Response snippet:', cleanResponse.substring(cleanResponse.length - 500)); // Debug log
       }
 
       return null;
@@ -175,14 +195,18 @@ export class ReportService {
     }
   }
 
-  async generatePdfFromHtml(htmlContent: string, fileName: string, title: string = 'Environmental Lifecycle Report'): Promise<void> {
+  async generatePdfFromHtml(
+    htmlContent: string,
+    fileName: string,
+    title: string = 'Environmental Lifecycle Report',
+  ): Promise<void> {
     const logo = new Image();
     logo.src = 'assets/logo.png';
 
     const generateReport = (logoDataUrl?: string) => {
       const worker = new Worker(
         new URL('../report-generator.worker', import.meta.url),
-        { type: 'module' }
+        { type: 'module' },
       );
 
       worker.onmessage = ({ data }) => {
@@ -203,7 +227,7 @@ export class ReportService {
         this.snackBar.open(
           'An error occurred while generating the PDF.',
           'Close',
-          { duration: 3000 }
+          { duration: 3000 },
         );
         worker.terminate();
       };
@@ -212,7 +236,7 @@ export class ReportService {
       worker.postMessage({
         reportContent: jsonContent,
         logoDataUrl: logoDataUrl,
-        title: title
+        title: title,
       });
     };
 
@@ -233,12 +257,20 @@ export class ReportService {
   }
 
   async downloadEnvironmentalReport(jobId: string): Promise<void> {
-      const content = await this.getEnvironmentalReportContent(jobId);
-      if (content) {
-          await this.generatePdfFromHtml(content, 'environmental-lifecycle-report.pdf', 'Environmental Lifecycle Report');
-      } else {
-          this.snackBar.open('Could not retrieve environmental report data.', 'Close', { duration: 3000 });
-      }
+    const content = await this.getEnvironmentalReportContent(jobId);
+    if (content) {
+      await this.generatePdfFromHtml(
+        content,
+        'environmental-lifecycle-report.pdf',
+        'Environmental Lifecycle Report',
+      );
+    } else {
+      this.snackBar.open(
+        'Could not retrieve environmental report data.',
+        'Close',
+        { duration: 3000 },
+      );
+    }
   }
 
   private _parseHtmlToJson(htmlString: string): any[] {
@@ -257,22 +289,26 @@ export class ReportService {
           break;
         case 'UL':
           const items = Array.from(el.querySelectorAll('li')).map(
-            (li) => li.textContent || ''
+            (li) => li.textContent || '',
           );
           json.push({ type: 'ul', items });
           break;
         case 'OL':
           const olItems = Array.from(el.querySelectorAll('li')).map(
-            (li) => li.textContent || ''
+            (li) => li.textContent || '',
           );
           json.push({ type: 'ol', items: olItems });
           break;
         case 'TABLE':
           const head = Array.from(el.querySelectorAll('thead tr')).map((tr) =>
-            Array.from(tr.querySelectorAll('th')).map((th) => th.textContent || '')
+            Array.from(tr.querySelectorAll('th')).map(
+              (th) => th.textContent || '',
+            ),
           );
           const body = Array.from(el.querySelectorAll('tbody tr')).map((tr) =>
-            Array.from(tr.querySelectorAll('td')).map((td) => td.textContent || '')
+            Array.from(tr.querySelectorAll('td')).map(
+              (td) => td.textContent || '',
+            ),
           );
           json.push({ type: 'table', head, body });
           break;

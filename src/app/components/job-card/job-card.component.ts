@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { Job } from '../../models/job';
 import { Bid } from '../../models/bid';
 import { Quote } from '../../features/quote/quote.model';
@@ -8,18 +15,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
-    selector: 'app-job-card',
-    templateUrl: './job-card.component.html',
-    styleUrls: ['./job-card.component.scss'],
-    standalone: true,
-    imports: [
-        CommonModule,
-        MatCardModule,
-        MatIconModule,
-        MatTooltipModule
-    ]
+  selector: 'app-job-card',
+  templateUrl: './job-card.component.html',
+  styleUrls: ['./job-card.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatIconModule, MatTooltipModule],
 })
-export class JobCardComponent  {
+export class JobCardComponent {
   @Input() job!: Job;
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;

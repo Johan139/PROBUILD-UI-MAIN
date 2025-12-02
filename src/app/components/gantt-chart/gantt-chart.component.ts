@@ -1,10 +1,20 @@
-import { Component, Input, ElementRef, ViewChild, Inject, PLATFORM_ID, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  ElementRef,
+  ViewChild,
+  Inject,
+  PLATFORM_ID,
+  AfterViewInit,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-gantt-chart',
   standalone: true,
-  template: `<div #ganttChart style="width: 100%; height: 500px;"></div>`
+  template: `<div #ganttChart style="width: 100%; height: 500px;"></div>`,
 })
 export class GanttChartComponent implements AfterViewInit, OnChanges {
   @ViewChild('ganttChart', { static: true }) ganttChart!: ElementRef;
@@ -38,7 +48,7 @@ export class GanttChartComponent implements AfterViewInit, OnChanges {
       console.warn('⚠️ No task data available for Gantt chart.');
       return;
     }
-  
+
     const data = new (window as any).google.visualization.DataTable();
     data.addColumn('string', 'Task ID');
     data.addColumn('string', 'Task Name');
@@ -48,8 +58,8 @@ export class GanttChartComponent implements AfterViewInit, OnChanges {
     data.addColumn('number', 'Duration');
     data.addColumn('number', 'Percent Complete');
     data.addColumn('string', 'Dependencies');
-  
-    const rows = this.tasks.map(task => [
+
+    const rows = this.tasks.map((task) => [
       task.id || '',
       task.name || '',
       task.resource || null,
@@ -57,27 +67,29 @@ export class GanttChartComponent implements AfterViewInit, OnChanges {
       new Date(task.end),
       null,
       task.progress ?? 0,
-      task.dependencies ?? null
+      task.dependencies ?? null,
     ]);
     data.addRows(rows);
-  
-    const chart = new (window as any).google.visualization.Gantt(this.ganttChart.nativeElement);
-  
+
+    const chart = new (window as any).google.visualization.Gantt(
+      this.ganttChart.nativeElement,
+    );
+
     // 🛠️ Dynamic width (200px per task as a base, or minimum 1000px)
     const baseWidth = this.tasks.length * 400; // scale based on task count
     const chartWidth = Math.min(Math.max(800, baseWidth), 1200); // min 800, max 1200
     this.ganttChart.nativeElement.style.width = `${chartWidth}px`;
     this.ganttChart.nativeElement.style.width = `${chartWidth}px`;
-  
+
     const options = {
-      height: (this.tasks.length * 42) + 80,
+      height: this.tasks.length * 42 + 80,
       width: chartWidth,
       backgroundColor: '#ffffff',
       gantt: {
         trackHeight: 36,
         labelStyle: {
           fontSize: 13,
-          color: '#3f51b5'
+          color: '#3f51b5',
         },
         barHeight: 30,
         barCornerRadius: 4,
@@ -86,10 +98,9 @@ export class GanttChartComponent implements AfterViewInit, OnChanges {
           stroke: '#FBD008',
           strokeWidth: 2,
         },
-      }
+      },
     };
-  
+
     chart.draw(data, options);
   }
-  
 }

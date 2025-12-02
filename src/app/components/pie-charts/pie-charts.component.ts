@@ -1,4 +1,11 @@
-import { Component, Input, ElementRef, OnInit, AfterViewInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  Input,
+  ElementRef,
+  OnInit,
+  AfterViewInit,
+  ViewChild,
+} from '@angular/core';
 import * as d3 from 'd3';
 
 @Component({
@@ -41,11 +48,12 @@ export class PieChartsComponent implements OnInit, AfterViewInit {
       .append('svg')
       .attr('viewBox', [-this.width / 2, -height / 2, this.width, height]);
 
-    const arc = d3.arc()
-      .innerRadius(innerRadius)
-      .outerRadius(outerRadius);
+    const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
 
-    const pie = d3.pie().sort(null).value((d: any) => d['apples']);
+    const pie = d3
+      .pie()
+      .sort(null)
+      .value((d: any) => d['apples']);
 
     const path = svg
       .datum(this.data)

@@ -2,16 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpEventType } from '@angular/common/http';
 import { Observable, throwError, of, Subject } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
-import { Profile, TeamMember, Document, ProfileDocument, UserAddress, AddressType } from './profile.model';
+import {
+  Profile,
+  TeamMember,
+  Document,
+  ProfileDocument,
+  UserAddress,
+  AddressType,
+} from './profile.model';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth.service';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from '@microsoft/signalr';
 import { SubscriptionOption } from '../registration/registration.component';
 import { PaymentRecord } from './profile.component';
 import { UserSubscription } from '../../models/UserSubscription';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProfileService {
   private apiUrl = `${environment.BACKEND_URL}/profile`;
@@ -25,18 +36,23 @@ export class ProfileService {
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   initializeSignalR(): void {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub')
+      .withUrl(
+        'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub',
+      )
       .configureLogging(LogLevel.Debug)
       .build();
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
-      const finalProgress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
+      const finalProgress = Math.min(
+        100,
+        50 + Math.round((cappedProgress * 50) / 100),
+      );
       this.progressSubject.next(finalProgress);
     });
 
@@ -47,14 +63,15 @@ export class ProfileService {
     this.hubConnection
       .start()
       .then()
-      .catch(err => console.error('SignalR Connection Error:', err));
+      .catch((err) => console.error('SignalR Connection Error:', err));
   }
 
   stopSignalR(): void {
     if (this.hubConnection) {
-      this.hubConnection.stop()
+      this.hubConnection
+        .stop()
         .then()
-        .catch(err => console.error('Error stopping SignalR:', err));
+        .catch((err) => console.error('Error stopping SignalR:', err));
     }
   }
 
@@ -62,7 +79,7 @@ export class ProfileService {
     const token = this.authService.getToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     });
   }
 
@@ -73,96 +90,107 @@ export class ProfileService {
       return throwError(() => new Error('User not authenticated'));
     }
     const url = `${this.apiUrl}/GetProfile/${userId}`;
-    return this.http.get<Profile>(url, { headers: this.getHeaders() })
-      .pipe(
-        catchError(error => {
-          console.error('Error fetching profile:', error);
-          return throwError(() => new Error('Failed to load profile'));
-        })
-      );
+    return this.http.get<Profile>(url, { headers: this.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error('Error fetching profile:', error);
+        return throwError(() => new Error('Failed to load profile'));
+      }),
+    );
   }
 
   getTeamMemberProfile(userId: string): Observable<Profile> {
     const url = `${this.teamsApiUrl}/members/profile/${userId}`;
     return this.http.get<Profile>(url, { headers: this.getHeaders() }).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error('Error fetching team member profile:', error);
-        return throwError(() => new Error('Failed to load team member profile'));
-      })
+        return throwError(
+          () => new Error('Failed to load team member profile'),
+        );
+      }),
     );
   }
 
   downloadJobDocument(documentId: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/download/${documentId}`, { responseType: 'blob' });
+    return this.http.get(`${this.apiUrl}/download/${documentId}`, {
+      responseType: 'blob',
+    });
   }
 
   uploadImage(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/UploadImage`, formData, {
-      reportProgress: true,
-      observe: 'events',
-      headers: new HttpHeaders({ Accept: 'application/json' }),
-    }).pipe(
-      timeout(300000), // 5 minutes timeout
-      catchError(error => {
-        console.error('Upload error:', error);
-        return throwError(() => new Error('Failed to upload image'));
+    return this.http
+      .post<any>(`${this.apiUrl}/UploadImage`, formData, {
+        reportProgress: true,
+        observe: 'events',
+        headers: new HttpHeaders({ Accept: 'application/json' }),
       })
-    );
+      .pipe(
+        timeout(300000), // 5 minutes timeout
+        catchError((error) => {
+          console.error('Upload error:', error);
+          return throwError(() => new Error('Failed to upload image'));
+        }),
+      );
   }
 
   updateProfile(profile: Profile): Observable<Profile> {
     const url = `${this.apiUrl}/update`;
-    return this.http.post<Profile>(url, profile, { headers: this.getHeaders() })
+    return this.http
+      .post<Profile>(url, profile, { headers: this.getHeaders() })
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error updating profile:', error);
           return throwError(() => new Error('Failed to update profile'));
-        })
+        }),
       );
   }
 
   uploadCertification(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/certification`, formData)
-      .pipe(
-        catchError(error => {
-          console.error('Error uploading certification:', error);
-          return throwError(() => new Error('Failed to upload certification'));
-        })
-      );
+    return this.http.post(`${this.apiUrl}/certification`, formData).pipe(
+      catchError((error) => {
+        console.error('Error uploading certification:', error);
+        return throwError(() => new Error('Failed to upload certification'));
+      }),
+    );
   }
-  getUserDocuments(userId: string): Observable<ProfileDocument []> {
-    return this.http.get<ProfileDocument []>(`${this.apiUrl}/GetDocuments/${userId}`);
+  getUserDocuments(userId: string): Observable<ProfileDocument[]> {
+    return this.http.get<ProfileDocument[]>(
+      `${this.apiUrl}/GetDocuments/${userId}`,
+    );
   }
 
   getTeamMembers(): Observable<TeamMember[]> {
     const url = `${this.apiUrl}/team`;
-    return this.http.get<TeamMember[]>(url, { headers: this.getHeaders() }).pipe(
-      catchError(error => {
-        console.error('Error fetching team members:', error);
-        return throwError(() => new Error('Failed to load team members'));
-      })
-    );
+    return this.http
+      .get<TeamMember[]>(url, { headers: this.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error('Error fetching team members:', error);
+          return throwError(() => new Error('Failed to load team members'));
+        }),
+      );
   }
 
   addTeamMember(member: TeamMember): Observable<TeamMember> {
     const url = `${this.apiUrl}/team`;
-    return this.http.post<TeamMember>(url, member, { headers: this.getHeaders() }).pipe(
-      catchError(error => {
-        console.error('Error adding team member:', error);
-        return throwError(() => new Error('Failed to add team member'));
-      })
-    );
+    return this.http
+      .post<TeamMember>(url, member, { headers: this.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error('Error adding team member:', error);
+          return throwError(() => new Error('Failed to add team member'));
+        }),
+      );
   }
 
   removeTeamMember(email: string): Observable<void> {
     const url = `${this.apiUrl}/team/${email}`;
     return this.http.delete<void>(url, { headers: this.getHeaders() }).pipe(
-      catchError(error => {
+      catchError((error) => {
         console.error('Error removing team member:', error);
         return throwError(() => new Error('Failed to remove team member'));
-      })
+      }),
     );
   }
 
@@ -198,63 +226,77 @@ export class ProfileService {
     if (!userId) {
       return throwError(() => new Error('User not logged in'));
     }
-    return this.http.get<{ hasActive: boolean }>(`${environment.BACKEND_URL}/Account/has-active-subscription/${userId}`);
+    return this.http.get<{ hasActive: boolean }>(
+      `${environment.BACKEND_URL}/Account/has-active-subscription/${userId}`,
+    );
   }
 
-  manageSubscriptions() : Observable<UserSubscription[]>
-  {
-  const userId = this.authService.currentUserSubject.value?.id;
+  manageSubscriptions(): Observable<UserSubscription[]> {
+    const userId = this.authService.currentUserSubject.value?.id;
     const url = `${this.apiUrl}/managesubscriptions/${userId}`;
 
-    return this.http.get<UserSubscription[]>(url, { headers: this.getHeaders() })
+    return this.http
+      .get<UserSubscription[]>(url, { headers: this.getHeaders() })
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error fetching profile:', error);
           return throwError(() => new Error('Failed to load profile'));
-        })
+        }),
       );
   }
 
-
-    getUserSubscription(): Observable<PaymentRecord[]> {
+  getUserSubscription(): Observable<PaymentRecord[]> {
     const userId = this.authService.currentUserSubject.value?.id;
     if (!userId) {
       console.error('No userId available');
       return throwError(() => new Error('User not authenticated'));
     }
     const url = `${this.apiUrl}/getusersubscription/${userId}`;
-    return this.http.get<PaymentRecord[]>(url, { headers: this.getHeaders() })
+    return this.http
+      .get<PaymentRecord[]>(url, { headers: this.getHeaders() })
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error fetching profile:', error);
           return throwError(() => new Error('Failed to load profile'));
-        })
+        }),
       );
   }
   getUserAddresses(userId: string): Observable<UserAddress[]> {
-  return this.http.get<UserAddress[]>(`${this.apiUrl}/GetUserAddresses/${userId}`, { headers: this.getHeaders() });
-}
+    return this.http.get<UserAddress[]>(
+      `${this.apiUrl}/GetUserAddresses/${userId}`,
+      { headers: this.getHeaders() },
+    );
+  }
 
   getAddressType(): Observable<AddressType[]> {
-  return this.http.get<AddressType[]>(`${this.apiUrl}/AddressTypes/`, { headers: this.getHeaders() });
-}
-addUserAddress(address: UserAddress): Observable<UserAddress> {
-      const url = `${this.apiUrl}/AddUserAddress`;
-      // console.log(address);
-    return this.http.post<UserAddress>(url, address, { headers: this.getHeaders() })
+    return this.http.get<AddressType[]>(`${this.apiUrl}/AddressTypes/`, {
+      headers: this.getHeaders(),
+    });
+  }
+  addUserAddress(address: UserAddress): Observable<UserAddress> {
+    const url = `${this.apiUrl}/AddUserAddress`;
+    // console.log(address);
+    return this.http
+      .post<UserAddress>(url, address, { headers: this.getHeaders() })
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error updating profile:', error);
           return throwError(() => new Error('Failed to update profile'));
-        })
+        }),
       );
-}
+  }
 
-updateUserAddress(id: number, address: UserAddress): Observable<UserAddress> {
-  return this.http.put<UserAddress>(`${this.apiUrl}/UpdateUserAddress/${id}`, address, { headers: this.getHeaders() });
-}
+  updateUserAddress(id: number, address: UserAddress): Observable<UserAddress> {
+    return this.http.put<UserAddress>(
+      `${this.apiUrl}/UpdateUserAddress/${id}`,
+      address,
+      { headers: this.getHeaders() },
+    );
+  }
 
-deleteUserAddress(id: number): Observable<void> {
-  return this.http.delete<void>(`${this.apiUrl}/DeleteUserAddress/${id}`, { headers: this.getHeaders() });
-}
+  deleteUserAddress(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/DeleteUserAddress/${id}`, {
+      headers: this.getHeaders(),
+    });
+  }
 }

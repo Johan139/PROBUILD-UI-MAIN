@@ -6,14 +6,19 @@ import { environment } from '../../environments/environment';
 const BASE_URL = environment.BACKEND_URL;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class InvitationService {
   private apiUrl = `${BASE_URL}/Invitation`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  inviteUser(invitationData: { email: string, firstName: string, lastName: string, phoneNumber?: string }): Observable<any> {
+  inviteUser(invitationData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+  }): Observable<any> {
     return this.http.post(`${this.apiUrl}/invite`, invitationData);
   }
 

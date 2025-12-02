@@ -4,12 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TeamManagementService {
   private apiUrl = `${environment.BACKEND_URL}/teams`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   addTeamMember(member: any, inviterId: string): Observable<any> {
     const memberWithInviter = { ...member, inviterId };
@@ -42,10 +42,17 @@ export class TeamManagementService {
   }
 
   getPermissions(teamMemberId: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.apiUrl}/members/${teamMemberId}/permissions`);
+    return this.http.get<string[]>(
+      `${this.apiUrl}/members/${teamMemberId}/permissions`,
+    );
   }
 
-  updatePermissions(teamMemberId: string, permissions: string[]): Observable<any> {
-    return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, { Permissions: permissions });
+  updatePermissions(
+    teamMemberId: string,
+    permissions: string[],
+  ): Observable<any> {
+    return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, {
+      Permissions: permissions,
+    });
   }
 }

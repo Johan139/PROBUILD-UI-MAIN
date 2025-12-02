@@ -6,19 +6,28 @@ import { environment } from '../../environments/environment';
 const BASE_URL = environment.BACKEND_URL;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BiddingService {
   private apiUrl = `${BASE_URL}/Bids`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  startBidding(jobId: number, biddingType: string, requiredTrades: string[]): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${jobId}/start`, { biddingType, requiredTrades });
+  startBidding(
+    jobId: number,
+    biddingType: string,
+    requiredTrades: string[],
+  ): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${jobId}/start`, {
+      biddingType,
+      requiredTrades,
+    });
   }
 
   selectFinalists(jobId: number, finalistIds: string[]): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${jobId}/select-finalists`, { finalistIds });
+    return this.http.post(`${this.apiUrl}/${jobId}/select-finalists`, {
+      finalistIds,
+    });
   }
 
   awardJob(jobId: number, winningBidId: number): Observable<any> {

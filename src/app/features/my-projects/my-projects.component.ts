@@ -27,18 +27,24 @@ import { ProjectsTableComponent } from '../../components/projects-table/projects
     ProjectCardComponent,
     ProjectsTableComponent,
     LoaderComponent,
-    MatSnackBarModule
+    MatSnackBarModule,
   ],
   templateUrl: './my-projects.component.html',
-  styleUrls: ['./my-projects.component.scss']
+  styleUrls: ['./my-projects.component.scss'],
 })
 export class MyProjectsComponent implements OnInit {
   isLoading = false;
   projects: Project[] = [];
   filteredProjects: Project[] = [];
-  projectFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" | "FAILED" = "all";
+  projectFilter: 'all' | 'BIDDING' | 'LIVE' | 'DRAFT' | 'FAILED' = 'all';
   projectView: 'grid' | 'list' = 'grid';
-  jobDisplayedColumns: string[] = ['project', 'created', 'progress', 'status', 'actions'];
+  jobDisplayedColumns: string[] = [
+    'project',
+    'created',
+    'progress',
+    'status',
+    'actions',
+  ];
 
   biddingProjectsCount = 0;
   liveProjectsCount = 0;
@@ -49,32 +55,44 @@ export class MyProjectsComponent implements OnInit {
     private router: Router,
     private jobDataService: JobDataService,
     private snackBar: MatSnackBar,
-    private projectService: ProjectService
-  ) { }
+    private projectService: ProjectService,
+  ) {}
 
   ngOnInit(): void {
-    this.projectService.projects$.subscribe(projects => {
+    this.projectService.projects$.subscribe((projects) => {
       this.projects = projects;
       this.updateCounts();
       this.setProjectFilter(this.projectFilter);
     });
-    this.projectService.isLoading.subscribe(isLoading => this.isLoading = isLoading);
+    this.projectService.isLoading.subscribe(
+      (isLoading) => (this.isLoading = isLoading),
+    );
     this.projectService.loadProjects();
   }
 
   updateCounts(): void {
-    this.biddingProjectsCount = this.projects.filter(p => p.status === 'BIDDING').length;
-    this.liveProjectsCount = this.projects.filter(p => p.status === 'LIVE').length;
-    this.draftProjectsCount = this.projects.filter(p => p.status === 'DRAFT').length;
-    this.failedProjectsCount = this.projects.filter(p => p.status === 'FAILED').length;
+    this.biddingProjectsCount = this.projects.filter(
+      (p) => p.status === 'BIDDING',
+    ).length;
+    this.liveProjectsCount = this.projects.filter(
+      (p) => p.status === 'LIVE',
+    ).length;
+    this.draftProjectsCount = this.projects.filter(
+      (p) => p.status === 'DRAFT',
+    ).length;
+    this.failedProjectsCount = this.projects.filter(
+      (p) => p.status === 'FAILED',
+    ).length;
   }
 
-  setProjectFilter(filter: "all" | "BIDDING" | "LIVE" | "DRAFT" | "FAILED"): void {
+  setProjectFilter(
+    filter: 'all' | 'BIDDING' | 'LIVE' | 'DRAFT' | 'FAILED',
+  ): void {
     this.projectFilter = filter;
     if (filter === 'all') {
       this.filteredProjects = this.projects;
     } else {
-      this.filteredProjects = this.projects.filter(p => p.status === filter);
+      this.filteredProjects = this.projects.filter((p) => p.status === filter);
     }
   }
 
@@ -103,10 +121,12 @@ export class MyProjectsComponent implements OnInit {
 
   archiveProject(jobId: number): void {
     this.projectService.archiveProject(jobId);
-    this.snackBar.open('Project archived successfully', 'Close', { duration: 3000 });
+    this.snackBar.open('Project archived successfully', 'Close', {
+      duration: 3000,
+    });
   }
 
-  uploadThumbnail(event: { jobId: number, file: File }): void {
+  uploadThumbnail(event: { jobId: number; file: File }): void {
     this.projectService.uploadThumbnail(event.jobId, event.file);
   }
 

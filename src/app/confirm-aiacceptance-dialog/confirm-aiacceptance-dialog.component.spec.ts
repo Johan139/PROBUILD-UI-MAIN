@@ -8,9 +8,8 @@ describe('ConfirmAIAcceptanceDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConfirmAIAcceptanceDialogComponent]
-    })
-    .compileComponents();
+      imports: [ConfirmAIAcceptanceDialogComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ConfirmAIAcceptanceDialogComponent);
     component = fixture.componentInstance;

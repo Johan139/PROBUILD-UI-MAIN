@@ -27,27 +27,27 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
-    selector: 'app-calendar',
-    standalone: true,
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        FormsModule,
-        MatCardModule,
-        MatDividerModule,
-        MatButtonModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        FullCalendarModule,
-        MatButtonToggleModule,
-        MatSelectModule,
-        MatTooltipModule,
-        JobCardComponent,
-        MatIconModule
-    ],
-    templateUrl: './calendar.component.html',
-    styleUrls: ['./calendar.component.scss']
+  selector: 'app-calendar',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatCardModule,
+    MatDividerModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FullCalendarModule,
+    MatButtonToggleModule,
+    MatSelectModule,
+    MatTooltipModule,
+    JobCardComponent,
+    MatIconModule,
+  ],
+  templateUrl: './calendar.component.html',
+  styleUrls: ['./calendar.component.scss'],
 })
 export class CalendarComponent implements OnInit {
   calendarOptions: CalendarOptions;
@@ -57,7 +57,7 @@ export class CalendarComponent implements OnInit {
   events: CalendarEvent[] = [];
   viewMode: 'projects' | 'tasks' = 'projects';
   allEvents: EventInput[] = [];
-  statusFilter: "all" | "BIDDING" | "LIVE" | "DRAFT" = "all";
+  statusFilter: 'all' | 'BIDDING' | 'LIVE' | 'DRAFT' = 'all';
 
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
@@ -70,7 +70,7 @@ export class CalendarComponent implements OnInit {
     private calendarService: CalendarService,
     private jobsService: JobsService,
     private jobDataService: JobDataService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {
     this.calendarOptions = {
       plugins: [dayGridPlugin, interactionPlugin, timeGridPlugin, listPlugin],
@@ -83,18 +83,18 @@ export class CalendarComponent implements OnInit {
       headerToolbar: {
         left: 'prevYear,prev,next,nextYear today',
         center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay,dayGridYear'
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,dayGridYear',
       },
       buttonText: {
         today: 'Today',
         month: 'Month',
         week: 'Week',
         day: 'Day',
-        year: 'Year'
+        year: 'Year',
       },
       events: [],
       eventClick: this.handleEventClick.bind(this),
-      editable: true
+      editable: true,
     };
   }
 
@@ -114,110 +114,119 @@ export class CalendarComponent implements OnInit {
 
     this.jobsService.getAllJobsByUserId(userId).subscribe({
       next: (response: any[]) => {
-        const normalizedJobs = response.map(j => ({
-            ...j,
-            jobId: j.jobId || j.id,
-            jobType: j.jobType || j.JobType || 'Unknown',
-            potentialStartDate: j.potentialStartDate || j.PotentialStartDate,
-            potentialEndDate: j.potentialEndDate || j.PotentialEndDate,
-            durationInDays: j.durationInDays || j.DurationInDays,
-            address: j.address || j.Address || j.formattedAddress || j.FormattedAddress,
-            city: j.city || j.City,
-            state: j.state || j.State
+        const normalizedJobs = response.map((j) => ({
+          ...j,
+          jobId: j.jobId || j.id,
+          jobType: j.jobType || j.JobType || 'Unknown',
+          potentialStartDate: j.potentialStartDate || j.PotentialStartDate,
+          potentialEndDate: j.potentialEndDate || j.PotentialEndDate,
+          durationInDays: j.durationInDays || j.DurationInDays,
+          address:
+            j.address || j.Address || j.formattedAddress || j.FormattedAddress,
+          city: j.city || j.City,
+          state: j.state || j.State,
         })) as Job[];
 
         // Filter out failed jobs
-        this.jobs = normalizedJobs.filter(job => job.status !== 'FAILED');
+        this.jobs = normalizedJobs.filter((job) => job.status !== 'FAILED');
         this.filteredJobs = this.jobs;
 
         // Assign a unique color to each job
         this.jobs.forEach((job) => {
-            if (job.jobId && !this.jobColors[job.jobId]) {
-                this.jobColors[job.jobId] = this.getRandomColor();
-            }
+          if (job.jobId && !this.jobColors[job.jobId]) {
+            this.jobColors[job.jobId] = this.getRandomColor();
+          }
         });
 
         const allEvents: EventInput[] = [];
-        const jobPromises = this.jobs.map((job) =>
-          new Promise<void>((resolve) => {
-            const processSubtasks = (subtaskGroups: any[]) => {
-              const subtaskEvents: EventInput[] = [];
-              let minDate: Date | null = null;
-              let maxDate: Date | null = null;
+        const jobPromises = this.jobs.map(
+          (job) =>
+            new Promise<void>((resolve) => {
+              const processSubtasks = (subtaskGroups: any[]) => {
+                const subtaskEvents: EventInput[] = [];
+                let minDate: Date | null = null;
+                let maxDate: Date | null = null;
 
-              subtaskGroups.forEach(group => {
-                group.subtasks.forEach((subtask: any) => {
-                  if (subtask.startDate && subtask.endDate) {
-                    const startDate = new Date(subtask.startDate);
-                    const endDate = new Date(subtask.endDate);
+                subtaskGroups.forEach((group) => {
+                  group.subtasks.forEach((subtask: any) => {
+                    if (subtask.startDate && subtask.endDate) {
+                      const startDate = new Date(subtask.startDate);
+                      const endDate = new Date(subtask.endDate);
 
-                    if (!minDate || startDate < minDate) {
-                      minDate = startDate;
-                    }
-                    if (!maxDate || endDate > maxDate) {
-                      maxDate = endDate;
-                    }
-
-                    subtaskEvents.push({
-                      title: `[${job.projectName}] Subtask: ${subtask.task}`,
-                      start: subtask.startDate,
-                      end: subtask.endDate,
-                      backgroundColor: this.getRandomColor(),
-                      borderColor: this.getRandomColor(),
-                      textColor: '#111827',
-                      extendedProps: {
-                        jobId: job.jobId,
-                        jobStatus: job.status
+                      if (!minDate || startDate < minDate) {
+                        minDate = startDate;
                       }
-                    });
-                  }
+                      if (!maxDate || endDate > maxDate) {
+                        maxDate = endDate;
+                      }
+
+                      subtaskEvents.push({
+                        title: `[${job.projectName}] Subtask: ${subtask.task}`,
+                        start: subtask.startDate,
+                        end: subtask.endDate,
+                        backgroundColor: this.getRandomColor(),
+                        borderColor: this.getRandomColor(),
+                        textColor: '#111827',
+                        extendedProps: {
+                          jobId: job.jobId,
+                          jobStatus: job.status,
+                        },
+                      });
+                    }
+                  });
                 });
-              });
 
-              if (minDate && maxDate) {
-                const projectColor = this.jobColors[job.jobId];
-                allEvents.push({
-                  title: `Project: ${job.projectName}`,
-                  start: (minDate as Date).toISOString().split('T')[0],
-                  end: (maxDate as Date).toISOString().split('T')[0],
-                  backgroundColor: projectColor,
-                  borderColor: projectColor,
-                  textColor: '#111827',
-                  allDay: true,
-                  extendedProps: {
-                    jobId: job.jobId,
-                    jobStatus: job.status
-                  }
-                });
+                if (minDate && maxDate) {
+                  const projectColor = this.jobColors[job.jobId];
+                  allEvents.push({
+                    title: `Project: ${job.projectName}`,
+                    start: (minDate as Date).toISOString().split('T')[0],
+                    end: (maxDate as Date).toISOString().split('T')[0],
+                    backgroundColor: projectColor,
+                    borderColor: projectColor,
+                    textColor: '#111827',
+                    allDay: true,
+                    extendedProps: {
+                      jobId: job.jobId,
+                      jobStatus: job.status,
+                    },
+                  });
 
-                job.potentialStartDate = minDate as Date;
-                job.potentialEndDate = maxDate as Date;
-                const diffTime = Math.abs((maxDate as Date).getTime() - (minDate as Date).getTime());
-                job.durationInDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-              }
-
-              allEvents.push(...subtaskEvents);
-              resolve();
-            };
-
-            this.jobsService.getJobSubtasks(job.jobId).subscribe({
-              next: (subtasks) => {
-                if (subtasks && subtasks.length > 0) {
-                  const grouped = this.jobDataService['groupSubtasksByTitle'](subtasks);
-                  processSubtasks(grouped);
-                } else {
-                  this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
+                  job.potentialStartDate = minDate as Date;
+                  job.potentialEndDate = maxDate as Date;
+                  const diffTime = Math.abs(
+                    (maxDate as Date).getTime() - (minDate as Date).getTime(),
+                  );
+                  job.durationInDays =
+                    Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                 }
-              },
-              error: () => {
-                this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
-              }
-            });
-          })
+
+                allEvents.push(...subtaskEvents);
+                resolve();
+              };
+
+              this.jobsService.getJobSubtasks(job.jobId).subscribe({
+                next: (subtasks) => {
+                  if (subtasks && subtasks.length > 0) {
+                    const grouped =
+                      this.jobDataService['groupSubtasksByTitle'](subtasks);
+                    processSubtasks(grouped);
+                  } else {
+                    this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
+                  }
+                },
+                error: () => {
+                  this.fetchSubtasksFromBom(job.jobId).then(processSubtasks);
+                },
+              });
+            }),
         );
 
         Promise.all(jobPromises).then(() => {
-          this.allEvents = [...(this.calendarOptions.events as EventInput[]), ...allEvents];
+          this.allEvents = [
+            ...(this.calendarOptions.events as EventInput[]),
+            ...allEvents,
+          ];
           this.updateCalendarView();
           this.isLoading = false;
           this.filterJobs();
@@ -227,7 +236,7 @@ export class CalendarComponent implements OnInit {
         console.error('Error fetching jobs:', error);
         this.errorMessage = 'Failed to load jobs. Please try again.';
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -237,7 +246,8 @@ export class CalendarComponent implements OnInit {
         next: (results) => {
           if (results && results[0]?.fullResponse) {
             const markdown = results[0].fullResponse;
-            const parsedGroups = this.jobDataService['parseTimelineToTaskGroups'](markdown);
+            const parsedGroups =
+              this.jobDataService['parseTimelineToTaskGroups'](markdown);
             resolve(parsedGroups);
           } else {
             resolve([]);
@@ -246,7 +256,7 @@ export class CalendarComponent implements OnInit {
         error: (err) => {
           console.error(`Error fetching BOM for job ${jobId}:`, err);
           resolve([]);
-        }
+        },
       });
     });
   }
@@ -268,7 +278,7 @@ export class CalendarComponent implements OnInit {
       '#F0B90B',
       '#E1AD01',
       '#D4AF37',
-      '#C5A000'
+      '#C5A000',
     ];
     return yellowPalette[Math.floor(Math.random() * yellowPalette.length)];
   }
@@ -280,12 +290,12 @@ export class CalendarComponent implements OnInit {
     this.calendarService.getEvents().subscribe({
       next: (events: CalendarEvent[]) => {
         this.events = events;
-        this.calendarOptions.events = events.map(event => ({
+        this.calendarOptions.events = events.map((event) => ({
           id: event.id,
           title: event.title,
           start: event.startDate,
           end: event.endDate,
-          description: event.description
+          description: event.description,
         })) as EventInput[];
         this.successMessage = 'Events loaded successfully';
         this.isLoading = false;
@@ -294,24 +304,28 @@ export class CalendarComponent implements OnInit {
         console.error('Error fetching events:', error);
         this.errorMessage = 'Failed to load events. Please try again.';
         this.isLoading = false;
-      }
+      },
     });
   }
 
   handleEventClick(info: any): void {
-    const eventType = info.event.title.startsWith('Project:') ? 'project' : 'task';
+    const eventType = info.event.title.startsWith('Project:')
+      ? 'project'
+      : 'task';
     if (eventType === 'project') {
       const projectName = info.event.title.replace('Project: ', '');
       this.viewMode = 'tasks';
       this.updateCalendarView(projectName);
     } else {
-      alert(`Event: ${info.event.title}\nDescription: ${info.event.extendedProps.description}`);
+      alert(
+        `Event: ${info.event.title}\nDescription: ${info.event.extendedProps.description}`,
+      );
     }
   }
 
   toggleJobSelection(jobId: number): void {
     if (this.selectedJobIds.includes(jobId)) {
-      this.selectedJobIds = this.selectedJobIds.filter(id => id !== jobId);
+      this.selectedJobIds = this.selectedJobIds.filter((id) => id !== jobId);
     } else {
       this.selectedJobIds.push(jobId);
     }
@@ -329,7 +343,9 @@ export class CalendarComponent implements OnInit {
 
   jobHasEvents(jobId: number): boolean {
     if (!this.allEvents) return false;
-    return this.allEvents.some(event => event.extendedProps?.['jobId'] === jobId);
+    return this.allEvents.some(
+      (event) => event.extendedProps?.['jobId'] === jobId,
+    );
   }
 
   filterJobs(): void {
@@ -337,14 +353,15 @@ export class CalendarComponent implements OnInit {
 
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
-      result = result.filter(job =>
-        job.projectName.toLowerCase().includes(term) ||
-        (job.jobId && job.jobId.toString().includes(term))
+      result = result.filter(
+        (job) =>
+          job.projectName.toLowerCase().includes(term) ||
+          (job.jobId && job.jobId.toString().includes(term)),
       );
     }
 
     if (this.hideEmptyProjects) {
-        result = result.filter(job => this.jobHasEvents(job.jobId));
+      result = result.filter((job) => this.jobHasEvents(job.jobId));
     }
 
     this.filteredJobs = result;
@@ -354,34 +371,42 @@ export class CalendarComponent implements OnInit {
     let filteredEvents = this.allEvents;
 
     if (this.statusFilter !== 'all') {
-      filteredEvents = filteredEvents.filter(event => event.extendedProps?.['jobStatus'] === this.statusFilter);
+      filteredEvents = filteredEvents.filter(
+        (event) => event.extendedProps?.['jobStatus'] === this.statusFilter,
+      );
     }
 
     if (this.selectedJobIds.length > 0) {
-        filteredEvents = filteredEvents.filter(event =>
-            event.extendedProps?.['jobId'] && this.selectedJobIds.includes(event.extendedProps?.['jobId'])
-        );
+      filteredEvents = filteredEvents.filter(
+        (event) =>
+          event.extendedProps?.['jobId'] &&
+          this.selectedJobIds.includes(event.extendedProps?.['jobId']),
+      );
     }
 
     if (this.viewMode === 'projects') {
-      this.calendarOptions.events = filteredEvents.filter(event => event.title?.startsWith('Project:'));
+      this.calendarOptions.events = filteredEvents.filter((event) =>
+        event.title?.startsWith('Project:'),
+      );
     } else {
       if (projectName) {
-        this.calendarOptions.events = filteredEvents.filter(event => {
+        this.calendarOptions.events = filteredEvents.filter((event) => {
           return event.title?.startsWith(`[${projectName}] Subtask:`);
         });
       } else {
-        this.calendarOptions.events = filteredEvents.filter(event => event.title?.includes('Subtask:'));
+        this.calendarOptions.events = filteredEvents.filter((event) =>
+          event.title?.includes('Subtask:'),
+        );
       }
     }
   }
 
   openAddEventDialog(): void {
     const dialogRef = this.dialog.open(AddEventDialogComponent, {
-      width: '600px'
+      width: '600px',
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.calendarService.addEvent(result).subscribe({
           next: (newEvent: CalendarEvent) => {
@@ -398,7 +423,7 @@ export class CalendarComponent implements OnInit {
           error: (error) => {
             console.error('Error adding event:', error);
             this.errorMessage = 'Failed to add event. Please try again.';
-          }
+          },
         });
       }
     });

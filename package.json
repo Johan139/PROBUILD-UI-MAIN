@@ -8,7 +8,8 @@
     "test": "ng test",
     "set-env": "node set-env.js",
     "build": "npm run set-env && ng build --configuration production",
-    "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs"
+    "serve:ssr:ProBuildAI": "node dist/pro-build-ai/server/server.mjs",
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "private": true,
   "dependencies": {
@@ -86,6 +87,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "prettier": "^3.7.3",
     "typescript": "~5.5.2"
   }
 }
