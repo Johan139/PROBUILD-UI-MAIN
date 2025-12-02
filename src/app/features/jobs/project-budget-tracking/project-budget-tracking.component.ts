@@ -71,7 +71,7 @@ export class ProjectBudgetTrackingComponent implements OnInit {
     private bomService: BomService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
@@ -94,7 +94,7 @@ export class ProjectBudgetTrackingComponent implements OnInit {
   get totalForecast(): number {
     return this.budgetItems.reduce(
       (sum, item) => sum + (item.forecastToComplete ?? item.estimatedCost),
-      0
+      0,
     );
   }
 
@@ -127,11 +127,11 @@ export class ProjectBudgetTrackingComponent implements OnInit {
     if (this.budgetTableTab === 'Subcontractor') {
       return this.budgetItems.filter(
         (item) =>
-          item.category === 'Subcontractor' || item.category === 'Labor'
+          item.category === 'Subcontractor' || item.category === 'Labor',
       );
     }
     return this.budgetItems.filter(
-      (item) => item.category === this.budgetTableTab
+      (item) => item.category === this.budgetTableTab,
     );
   }
 

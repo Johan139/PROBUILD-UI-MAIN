@@ -1579,69 +1579,67 @@ export class ProfileComponent implements OnInit {
     });
 
     // Expect either a string (pkgCode) or an object with pkgCode & billingCycle
-    dialogRef
-      .afterClosed()
-      .subscribe(
-        (
-          result?:
-            | string
-            | {
-                subscriptionPackage: string;
-                billingCycle?: 'monthly' | 'yearly';
-              },
-        ) => {
-          if (!result) return;
+    dialogRef.afterClosed().subscribe(
+      (
+        result?:
+          | string
+          | {
+              subscriptionPackage: string;
+              billingCycle?: 'monthly' | 'yearly';
+            },
+      ) => {
+        if (!result) return;
 
-          const pkgCode =
-            typeof result === 'string' ? result : result.subscriptionPackage;
-          const billingCycle =
-            typeof result === 'string'
-              ? 'monthly'
-              : (result.billingCycle ?? 'monthly');
-          // console.log(pkgCode)
-          // reflect selection
-          this.profileForm.patchValue({ subscriptionPackage: pkgCode });
-          this.profileForm.get('subscriptionPackage')?.markAsDirty();
+        const pkgCode =
+          typeof result === 'string' ? result : result.subscriptionPackage;
+        const billingCycle =
+          typeof result === 'string'
+            ? 'monthly'
+            : (result.billingCycle ?? 'monthly');
+        // console.log(pkgCode)
+        // reflect selection
+        this.profileForm.patchValue({ subscriptionPackage: pkgCode });
+        this.profileForm.get('subscriptionPackage')?.markAsDirty();
 
-          // 🔀 Branch: trial (no subscription) → Checkout; normal (has subscription) → API upgrade
-          if (subscriptionId.includes('trial')) {
-            this.startCheckoutForUpgrade(
-              pkgCode,
-              assignedUser,
-              billingCycle,
-              subscriptionId,
-            );
-
-            return;
-          }
-
-          this.rowBusy.add(subscriptionId);
-          const payload: SubscriptionUpgradeDTO = {
-            subscriptionId,
-            packageName: pkgCode,
-            userId: String(localStorage.getItem('userId')),
+        // 🔀 Branch: trial (no subscription) → Checkout; normal (has subscription) → API upgrade
+        if (subscriptionId.includes('trial')) {
+          this.startCheckoutForUpgrade(
+            pkgCode,
             assignedUser,
-          };
+            billingCycle,
+            subscriptionId,
+          );
 
-          this.stripeService.upgradeSubscriptionByPackage(payload).subscribe({
-            next: () => {
-              this.snackBar.open(
-                'Subscription upgraded. Proration will be billed on your next invoice.',
-                'Close',
-                { duration: 3500 },
-              );
-              this.manageSubscriptions();
-            },
-            error: (err) => {
-              console.error('Upgrade failed', err);
-              this.snackBar.open('Failed to upgrade subscription.', 'Close', {
-                duration: 3500,
-              });
-            },
-            complete: () => this.rowBusy.delete(subscriptionId),
-          });
-        },
-      );
+          return;
+        }
+
+        this.rowBusy.add(subscriptionId);
+        const payload: SubscriptionUpgradeDTO = {
+          subscriptionId,
+          packageName: pkgCode,
+          userId: String(localStorage.getItem('userId')),
+          assignedUser,
+        };
+
+        this.stripeService.upgradeSubscriptionByPackage(payload).subscribe({
+          next: () => {
+            this.snackBar.open(
+              'Subscription upgraded. Proration will be billed on your next invoice.',
+              'Close',
+              { duration: 3500 },
+            );
+            this.manageSubscriptions();
+          },
+          error: (err) => {
+            console.error('Upgrade failed', err);
+            this.snackBar.open('Failed to upgrade subscription.', 'Close', {
+              duration: 3500,
+            });
+          },
+          complete: () => this.rowBusy.delete(subscriptionId),
+        });
+      },
+    );
   }
 
   /** Emails with an active/trial subscription */

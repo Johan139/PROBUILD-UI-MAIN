@@ -101,13 +101,16 @@ import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
 import { BudgetLineItem } from '../../models/budget-line-item.model';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
-import { ProjectOverviewComponent, Project } from './project-overview/project-overview.component';
+import {
+  ProjectOverviewComponent,
+  Project,
+} from './project-overview/project-overview.component';
 import {
   UploadedFileInfo,
   FileUploadService,
 } from '../../services/file-upload.service';
 import { JobsService } from '../../services/jobs.service';
-import { ProjectBudgetTrackingComponent } from "./project-budget-tracking/project-budget-tracking.component";
+import { ProjectBudgetTrackingComponent } from './project-budget-tracking/project-budget-tracking.component';
 
 @Component({
   selector: 'app-jobs',
@@ -145,8 +148,8 @@ import { ProjectBudgetTrackingComponent } from "./project-budget-tracking/projec
     SharedModule,
     ProjectBlueprintViewerComponent,
     ProjectOverviewComponent,
-    ProjectBudgetTrackingComponent
-],
+    ProjectBudgetTrackingComponent,
+  ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
 })
@@ -521,7 +524,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         team: 45,
         progress: 35,
         bids: 12,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-1.png'
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-1.png',
       },
       {
         id: '2',
@@ -533,7 +536,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         team: 12,
         progress: 0,
         bids: 8,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-2.png'
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-2.png',
       },
       {
         id: '3',
@@ -545,8 +548,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         team: 5,
         progress: 0,
         bids: 0,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-3.png'
-      }
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-3.png',
+      },
     ];
 
     this.sessionId = uuidv4();

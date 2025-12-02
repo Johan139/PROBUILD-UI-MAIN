@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter, ElementRef, ViewChild } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ElementRef,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -6,7 +13,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { MeasurementService } from '../../../services/measurement.service';
@@ -37,7 +47,7 @@ import {
   DollarSign,
   Eye,
   Edit,
-  Trash2
+  Trash2,
 } from 'lucide-angular';
 
 export interface Project {
@@ -66,10 +76,10 @@ export interface Project {
     MatInputModule,
     MatAutocompleteModule,
     LoaderComponent,
-    LucideAngularModule
+    LucideAngularModule,
   ],
   templateUrl: './project-overview.component.html',
-  styleUrls: ['./project-overview.component.scss']
+  styleUrls: ['./project-overview.component.scss'],
 })
 export class ProjectOverviewComponent {
   @Input() projects: Project[] = [];
@@ -100,15 +110,19 @@ export class ProjectOverviewComponent {
     public authService: AuthService,
     private addressService: AddressService,
     private jobDataService: JobDataService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   getStatusLabel(status: string): string {
     switch (status) {
-      case 'bidding': return 'Bidding Phase';
-      case 'live': return 'Live Project';
-      case 'draft': return 'Draft';
-      default: return status;
+      case 'bidding':
+        return 'Bidding Phase';
+      case 'live':
+        return 'Live Project';
+      case 'draft':
+        return 'Draft';
+      default:
+        return status;
     }
   }
 
@@ -125,7 +139,7 @@ export class ProjectOverviewComponent {
   }
 
   onActivateClick(id: string) {
-      console.log('Activate project:', id);
+    console.log('Activate project:', id);
   }
 
   // Address Editing Logic

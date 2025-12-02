@@ -183,7 +183,7 @@ export class ProjectBlueprintViewerComponent implements OnInit {
   }
 
   isUploaded(
-    flow: FlowState
+    flow: FlowState,
   ): flow is Extract<FlowState, { step: 'uploaded' }> {
     return flow.step === 'uploaded';
   }
@@ -231,7 +231,7 @@ export class ProjectBlueprintViewerComponent implements OnInit {
                       this.emitFileUpdate(
                         newFiles,
                         newSelected,
-                        new Uint8Array(reader.result as ArrayBuffer)
+                        new Uint8Array(reader.result as ArrayBuffer),
                       );
                     }
                   };
@@ -254,7 +254,7 @@ export class ProjectBlueprintViewerComponent implements OnInit {
   private emitFileUpdate(
     files: UploadedFileInfo[],
     selected: UploadedFileInfo | null,
-    pdfSrc: string | Uint8Array | null
+    pdfSrc: string | Uint8Array | null,
   ) {
     this.fileUploaded.emit({
       files: files,
@@ -309,12 +309,12 @@ export class ProjectBlueprintViewerComponent implements OnInit {
           this.renderer.setAttribute(
             this.fileInput.nativeElement,
             'webkitdirectory',
-            'true'
+            'true',
           );
         } else {
           this.renderer.removeAttribute(
             this.fileInput.nativeElement,
-            'webkitdirectory'
+            'webkitdirectory',
           );
         }
         this.fileInput.nativeElement.click();
