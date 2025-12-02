@@ -141,12 +141,12 @@ export class RegistrationComponent implements OnInit {
 
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
-  isGoogleRegistration = false;
-
+selectedPlanFromUrl: string | null = null;
+isGoogleRegistration = false;
   tradeCtrl = new FormControl();
-  filteredTrades: Observable<{ value: string; display: string }[]>;
-  selectedTrades: { value: string; display: string }[] = [];
-
+  filteredTrades: Observable<{ value: string; display: string; }[]>;
+  selectedTrades: { value: string; display: string; }[] = [];
+selectedBillingFromUrl: string | null = null;
   supplierTypeCtrl = new FormControl();
   filteredSupplierTypes: Observable<{ value: string; display: string }[]>;
   selectedSupplierTypes: { value: string; display: string }[] = [];
@@ -210,10 +210,23 @@ export class RegistrationComponent implements OnInit {
   ngOnInit() {
     this.loadSubscriptionPackages();
 
-    this.profileService.getAddressType().subscribe({
-      next: (types) => (this.addressTypes = types),
-      error: (err) => console.error('Failed to load address types', err),
-    });
+const plan = this.route.snapshot.queryParamMap.get('plan');
+let billing = this.route.snapshot.queryParamMap.get('billing')?.toLowerCase() as BillingCycle | null;
+
+// Validate billing value
+if (billing !== 'monthly' && billing !== 'yearly') {
+  billing = 'monthly'; // fallback
+}
+
+this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
+this.selectedBillingFromUrl = billing;
+
+
+      this.profileService.getAddressType().subscribe({
+    next: (types) => (this.addressTypes = types),
+    error: (err) => console.error('Failed to load address types', err)
+  });
+
 
     this.registrationForm = this.formBuilder.group({
       firstName: [{ value: '', disabled: true }, Validators.required],
@@ -276,7 +289,7 @@ export class RegistrationComponent implements OnInit {
       deliveryTime: '',
       userName: '',
     });
-
+  this.registrationForm.get('billingCycle')?.setValue(this.selectedBillingFromUrl);
     this.user = 'PERSONAL_USE';
 
     this.registrationService.getAllCountryNumberCodes().subscribe((data) => {
@@ -665,21 +678,32 @@ export class RegistrationComponent implements OnInit {
     //this.user = userSelected.value
   }
 
-  private loadSubscriptionPackages(): void {
-    this.stripeService.getSubscriptions().subscribe({
-      next: (subscriptions) => {
-        this.subscriptionPackages = subscriptions.map((s) => ({
-          value: s.subscription,
-          display: `${s.subscription}`,
-          amount: s.amount,
-          annualAmount: s.annualAmount,
-        }));
-      },
-      error: (err) => {
-        console.error('Failed to load subscription packages:', err);
-      },
-    });
-  }
+private loadSubscriptionPackages(): void {
+  this.stripeService.getSubscriptions().subscribe({
+    next: (subscriptions) => {
+      this.subscriptionPackages = subscriptions.map(s => ({
+        value: s.subscription,
+        display: `${s.subscription}`,
+        amount: s.amount,
+        annualAmount: s.annualAmount
+      }));
+
+      if (this.selectedPlanFromUrl) {
+        const match = this.subscriptionPackages.find(
+          p => p.value.toLowerCase() === this.selectedPlanFromUrl
+        );
+
+        if (match) {
+          this.registrationForm.get('subscriptionPackage')?.setValue(match.value);
+        }
+      }
+    },
+    error: (err) => {
+      console.error('Failed to load subscription packages:', err);
+    }
+  });
+}
+
 
   certificationChange(selectedOption: any) {
     if (selectedOption === 'FULLY_LICENSED') this.certified = true;

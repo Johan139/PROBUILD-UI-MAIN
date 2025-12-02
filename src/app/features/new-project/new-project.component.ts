@@ -205,7 +205,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private snackBar: MatSnackBar,
     private localStorageService: LocalStorageService,
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.clientForm = this.formBuilder.group({
@@ -228,8 +228,8 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     ];
     this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
       map((prompts) =>
-        prompts.filter((p) => !hiddenPrompts.includes(p.promptKey)),
-      ),
+        prompts.filter((p) => !hiddenPrompts.includes(p.promptKey))
+      )
     );
   }
 
@@ -246,7 +246,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   addressForm: FormGroup;
   sessionId!: string;
   private readonly CLIENT_FORM_KEY = 'newProjectClientForm';
-
+  private shouldDeleteTempFiles = true;
   async ngOnInit(): Promise<void> {
     this.sessionId = uuidv4();
     this.loadForm();
@@ -257,6 +257,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.signalrService.analysisProgress.subscribe((update) => {
       this.state.next({ ...this.state.getValue(), analysisProgress: update });
       if (update.isComplete || update.hasFailed) {
+        this.shouldDeleteTempFiles = false;
         this.isLoading = false;
         if (!update.hasFailed) {
           this.setFlow('done');
@@ -275,7 +276,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.addressControl.valueChanges.subscribe((value) => {
+    this.addressForm.get('formattedAddress')!.valueChanges.subscribe((value) => {
       if (typeof value === 'string' && value.trim()) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: value }, (predictions, status) => {
@@ -305,7 +306,9 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.deleteTemporaryFiles();
+    if (this.shouldDeleteTempFiles) {
+      this.deleteTemporaryFiles();
+    }
   }
 
   deleteTemporaryFiles(): void {
@@ -331,13 +334,13 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   isUploaded(
-    flow: FlowState,
+    flow: FlowState
   ): flow is Extract<FlowState, { step: 'uploaded' }> {
     return flow.step === 'uploaded';
   }
 
   isExtracting(
-    flow: FlowState,
+    flow: FlowState
   ): flow is Extract<FlowState, { step: 'extracting' }> {
     return flow.step === 'extracting';
   }
@@ -347,13 +350,13 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   isWalkthrough(
-    flow: FlowState,
+    flow: FlowState
   ): flow is Extract<FlowState, { step: 'walkthrough' }> {
     return flow.step === 'walkthrough';
   }
 
   isFinalizing(
-    flow: FlowState,
+    flow: FlowState
   ): flow is Extract<FlowState, { step: 'finalizing' }> {
     return flow.step === 'finalizing';
   }
@@ -454,7 +457,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       {
         k: 'Address',
         done: ['address', 'walkthrough', 'finalizing', 'done'].includes(
-          this.flow.step,
+          this.flow.step
         ),
       },
       {
@@ -485,7 +488,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
     if (this.selectedPlace && this.selectedPlace.place_id) {
       const placesService = new google.maps.places.PlacesService(
-        document.createElement('div'),
+        document.createElement('div')
       );
       placesService.getDetails(
         {
@@ -518,7 +521,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
                 if (types.includes('country')) country = component.long_name;
               });
             }
-
+            this.shouldDeleteTempFiles = false;
             formData.append('streetNumber', streetNumber);
             formData.append('streetName', streetName);
             formData.append('city', city);
@@ -533,7 +536,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
             formData.append('googlePlaceId', this.selectedPlace!.place_id);
             this.submitStandardAnalysis(formData);
           }
-        },
+        }
       );
     } else {
       this.submitStandardAnalysis(formData);
@@ -547,7 +550,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       this.snackBar.open(
         'Error: Could not get user ID. Please try logging in again.',
         'Close',
-        { duration: 10000 },
+        { duration: 10000 }
       );
       return;
     }
@@ -558,7 +561,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       this.snackBar.open(
         'Error: Could not establish a connection with the server. Please refresh the page.',
         'Close',
-        { duration: 10000 },
+        { duration: 10000 }
       );
       return;
     }
@@ -588,7 +591,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         this.snackBar.open(
           'Error: Analysis failed to start. Please try again.',
           'Close',
-          { duration: 10000 },
+          { duration: 10000 }
         );
       },
     });
@@ -596,7 +599,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
   startWalkthrough(): void {
     if (!this.selectedFile) return;
-
+    this.shouldDeleteTempFiles = false;
     const promptKeys =
       (this.analysisType === 'Selected' ? this.selectedPrompts.value : []) ??
       [];
@@ -606,7 +609,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         this.clientForm.value.startDate,
         this.analysisType,
         this.budgetLevel,
-        promptKeys,
+        promptKeys
       )
       .subscribe({
         next: (response) => {
@@ -625,7 +628,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
           this.snackBar.open(
             'Error: Failed to start walkthrough. Please try again.',
             'Close',
-            { duration: 10000 },
+            { duration: 10000 }
           );
         },
       });
@@ -639,7 +642,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.newAnalysisService
       .getNextWalkthroughStep(
         currentState.walkthroughSessionId,
-        this.applyCostOptimisation,
+        this.applyCostOptimisation
       )
       .subscribe({
         next: (nextStep) => {
@@ -657,7 +660,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
           this.snackBar.open(
             'Error: Failed to get next step. Please try again.',
             'Close',
-            { duration: 10000 },
+            { duration: 10000 }
           );
         },
       });
@@ -694,7 +697,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       .rerunWalkthroughStep(
         currentState.walkthroughSessionId,
         currentStep.stepIndex,
-        payload,
+        payload
       )
       .subscribe({
         next: (updatedStep) => {
@@ -715,7 +718,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
           this.snackBar.open(
             'Error: Failed to rerun step. Please try again.',
             'Close',
-            { duration: 10000 },
+            { duration: 10000 }
           );
         },
       });
@@ -756,8 +759,8 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         } else {
           reject(
             new Error(
-              'Google Maps API script loaded but google object is not defined',
-            ),
+              'Google Maps API script loaded but google object is not defined'
+            )
           );
         }
       };
@@ -799,7 +802,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         this.fileUploadService.deleteTemporaryFile(fileToRemove.url).subscribe({
           next: () => {
             this.uploadedFiles = this.uploadedFiles.filter(
-              (f) => f.url !== fileToRemove.url,
+              (f) => f.url !== fileToRemove.url
             );
             if (this.selectedFile?.url === fileToRemove.url) {
               if (this.uploadedFiles.length > 0) {
@@ -812,7 +815,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
                     reader.onload = () => {
                       if (reader.result) {
                         this.pdfSrc = new Uint8Array(
-                          reader.result as ArrayBuffer,
+                          reader.result as ArrayBuffer
                         );
                       }
                     };
@@ -827,7 +830,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
             this.snackBar.open(
               `File "${fileToRemove.name}" has been removed.`,
               'Close',
-              { duration: 3000 },
+              { duration: 3000 }
             );
           },
           error: (error) => {
@@ -835,7 +838,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
             this.snackBar.open(
               `Error removing file "${fileToRemove.name}". Please try again.`,
               'Close',
-              { duration: 5000 },
+              { duration: 5000 }
             );
           },
         });
