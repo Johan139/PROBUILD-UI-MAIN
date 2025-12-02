@@ -1,22 +1,63 @@
-import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, Router } from "@angular/router";
-import { NgForOf, NgIf, isPlatformBrowser, DecimalPipe, CurrencyPipe, CommonModule } from "@angular/common";
-import { MatButton } from "@angular/material/button";
-import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
+import {
+  Component,
+  OnInit,
+  Inject,
+  PLATFORM_ID,
+  TemplateRef,
+  ViewChild,
+  OnDestroy,
+  ElementRef,
+  AfterViewInit,
+  ChangeDetectorRef,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  NgForOf,
+  NgIf,
+  isPlatformBrowser,
+  DecimalPipe,
+  CurrencyPipe,
+  CommonModule,
+} from '@angular/common';
+import { MatButton } from '@angular/material/button';
+import {
+  MatCard,
+  MatCardHeader,
+  MatCardTitle,
+  MatCardContent,
+} from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
 import { LoaderComponent } from '../../loader/loader.component';
-import { FormGroup, FormsModule, FormControl, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import {
+  FormGroup,
+  FormsModule,
+  FormControl,
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+} from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, debounceTime, switchMap, of, map, filter, take } from 'rxjs';
+import {
+  Subscription,
+  debounceTime,
+  switchMap,
+  of,
+  map,
+  filter,
+  take,
+} from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -24,7 +65,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { Location } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { TimelineComponent, TimelineGroup } from '../../components/timeline/timeline.component';
+import {
+  TimelineComponent,
+  TimelineGroup,
+} from '../../components/timeline/timeline.component';
 import { JobDataService } from './services/job-data.service';
 import { SubtaskService } from './services/subtask.service';
 import { DocumentService } from './services/document.service';
@@ -39,58 +83,68 @@ import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
-import { MeasurementService, TemperatureUnit } from '../../services/measurement.service';
+import {
+  MeasurementService,
+  TemperatureUnit,
+} from '../../services/measurement.service';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { TeamManagementService } from '../../services/team-management.service';
-import { JobAssignment, JobUser, JobAssignmentLink } from './job-assignment/job-assignment.model';
+import {
+  JobAssignment,
+  JobUser,
+  JobAssignmentLink,
+} from './job-assignment/job-assignment.model';
 import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from '../../shared/shared.module';
 import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
 import { BudgetLineItem } from '../../models/budget-line-item.model';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
-import { UploadedFileInfo, FileUploadService } from '../../services/file-upload.service';
+import {
+  UploadedFileInfo,
+  FileUploadService,
+} from '../../services/file-upload.service';
 import { JobsService } from '../../services/jobs.service';
 
 @Component({
-    selector: 'app-jobs',
-    standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule,
-        ReactiveFormsModule,
-        NgIf,
-        NgForOf,
-        DecimalPipe,
-        CurrencyPipe,
-        MatButton,
-        MatCard,
-        MatCardHeader,
-        MatCardTitle,
-        MatCardContent,
-        MatDivider,
-        MatIconModule,
-        MatTooltipModule,
-        LoaderComponent,
-        MatDialogModule,
-        MatListModule,
-        MatIconModule,
-        MatProgressBarModule,
-        MatFormFieldModule,
-        MatInputModule,
-        FileSizePipe,
-        MatCheckboxModule,
-        TimelineComponent,
-        MatAutocompleteModule,
-        MatMenuModule,
-        MatExpansionModule,
-        MatSelectModule,
-        SharedModule,
-        ProjectBlueprintViewerComponent
-    ],
-    templateUrl: './jobs.component.html',
-    styleUrl: './jobs.component.scss'
+  selector: 'app-jobs',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NgIf,
+    NgForOf,
+    DecimalPipe,
+    CurrencyPipe,
+    MatButton,
+    MatCard,
+    MatCardHeader,
+    MatCardTitle,
+    MatCardContent,
+    MatDivider,
+    MatIconModule,
+    MatTooltipModule,
+    LoaderComponent,
+    MatDialogModule,
+    MatListModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FileSizePipe,
+    MatCheckboxModule,
+    TimelineComponent,
+    MatAutocompleteModule,
+    MatMenuModule,
+    MatExpansionModule,
+    MatSelectModule,
+    SharedModule,
+    ProjectBlueprintViewerComponent,
+  ],
+  templateUrl: './jobs.component.html',
+  styleUrl: './jobs.component.scss',
 })
 export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -144,7 +198,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   temperatureUnit: TemperatureUnit = 'C';
 
   // Tab State
-  activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' = 'budget';
+  activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' =
+    'budget';
 
   // Blueprint Viewer Data
   blueprintFiles: UploadedFileInfo[] = [];
@@ -161,13 +216,18 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   newBudgetItem: Partial<BudgetLineItem> = {};
   editingItemId: number | null = null;
   editingItem: BudgetLineItem | null = null; // Copy of item being edited
-  budgetTableTab: 'all' | 'Subcontractor' | 'Materials' | 'Equipment' | 'Other' = 'all';
+  budgetTableTab:
+    | 'all'
+    | 'Subcontractor'
+    | 'Materials'
+    | 'Equipment'
+    | 'Other' = 'all';
 
   // Team Data
   assignedTeamMembers: JobUser[] = [];
   isLoadingTeam: boolean = false;
   teamForm: FormGroup;
-  availableRoles: { value: string; display: string; }[] = [];
+  availableRoles: { value: string; display: string }[] = [];
   isSendingInvite: boolean = false;
 
   constructor(
@@ -198,7 +258,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     private fb: FormBuilder,
     private budgetService: BudgetService,
     private fileUploadService: FileUploadService,
-    private jobsService: JobsService
+    private jobsService: JobsService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -208,10 +268,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       role: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]]
+      email: ['', [Validators.required, Validators.email]],
     });
 
-    this.availableRoles = userTypes.filter(role => role.value !== 'GENERAL_CONTRACTOR');
+    this.availableRoles = userTypes.filter(
+      (role) => role.value !== 'GENERAL_CONTRACTOR',
+    );
   }
 
   // Budget Calculations
@@ -225,7 +287,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   get totalForecast(): number {
     // If no forecast provided, assume estimated cost for now
-    return this.budgetItems.reduce((sum, item) => sum + (item.forecastToComplete ?? item.estimatedCost), 0);
+    return this.budgetItems.reduce(
+      (sum, item) => sum + (item.forecastToComplete ?? item.estimatedCost),
+      0,
+    );
   }
 
   get variance(): number {
@@ -246,7 +311,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   get procurementCommitments(): number {
     return this.budgetItems
-      .filter(item => item.category === 'Materials')
+      .filter((item) => item.category === 'Materials')
       .reduce((sum, item) => sum + item.estimatedCost, 0);
   }
 
@@ -267,16 +332,21 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       return this.budgetItems;
     }
     if (this.budgetTableTab === 'Subcontractor') {
-        // Include 'Labor' category items in Subcontractor tab for consolidation
-        return this.budgetItems.filter(item => item.category === 'Subcontractor' || item.category === 'Labor');
+      // Include 'Labor' category items in Subcontractor tab for consolidation
+      return this.budgetItems.filter(
+        (item) =>
+          item.category === 'Subcontractor' || item.category === 'Labor',
+      );
     }
-    return this.budgetItems.filter(item => item.category === this.budgetTableTab);
+    return this.budgetItems.filter(
+      (item) => item.category === this.budgetTableTab,
+    );
   }
 
   get subcontractorSummary(): BudgetLineItem[] {
     // Return all items categorized as Subcontractor, sorted by highest Actual Cost
     return this.budgetItems
-      .filter(item => item.category === 'Subcontractor')
+      .filter((item) => item.category === 'Subcontractor')
       .sort((a, b) => b.actualCost - a.actualCost)
       .slice(0, 5); // Show top 5
   }
@@ -285,13 +355,14 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Import AI Estimates',
-        message: 'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
+        message:
+          'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
         confirmButtonText: 'Import',
-        cancelButtonText: 'Cancel'
-      }
+        cancelButtonText: 'Cancel',
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.processAiImport();
       }
@@ -301,13 +372,15 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private processAiImport(): void {
     // TODO: Check for duplicates first? For now just append as requested, user can delete.
     if (!this.processingResults || this.processingResults.length === 0) {
-        this.isLoadingBudget = true;
-        this.bomService.getBillOfMaterials(this.projectDetails.jobId).subscribe(results => {
-            this.processingResults = results.length ? results : [results];
-            this.runImportLogic();
+      this.isLoadingBudget = true;
+      this.bomService
+        .getBillOfMaterials(this.projectDetails.jobId)
+        .subscribe((results) => {
+          this.processingResults = results.length ? results : [results];
+          this.runImportLogic();
         });
     } else {
-        this.runImportLogic();
+      this.runImportLogic();
     }
   }
 
@@ -317,162 +390,219 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     const report = this.processingResults[0]?.parsedReport;
 
     if (report && report.sections) {
-        report.sections.forEach((section: any) => {
-            let category = 'Other';
-            let phase = section.title.replace(/ - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i, '').trim();
+      report.sections.forEach((section: any) => {
+        let category = 'Other';
+        let phase = section.title
+          .replace(
+            / - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i,
+            '',
+          )
+          .trim();
 
-            if (section.title.toLowerCase().includes('material')) category = 'Materials';
-            else if (section.title.toLowerCase().includes('labor') || section.title.toLowerCase().includes('subcontractor')) category = 'Subcontractor';
+        if (section.title.toLowerCase().includes('material'))
+          category = 'Materials';
+        else if (
+          section.title.toLowerCase().includes('labor') ||
+          section.title.toLowerCase().includes('subcontractor')
+        )
+          category = 'Subcontractor';
 
-            // Filter out summary tables
+        // Filter out summary tables
+        if (
+          (section.title.toLowerCase().includes('total') &&
+            section.title.toLowerCase().includes('breakdown')) ||
+          section.title.toLowerCase().includes('project cost breakdown') ||
+          section.title.toLowerCase().includes('project cost summary') ||
+          section.title.toLowerCase().includes('summary of costs')
+        ) {
+          return;
+        }
+
+        if (section.type === 'table' && section.content) {
+          // Helper to find index by header name (case insensitive)
+          const getIndex = (headers: string[], ...names: string[]) =>
+            headers.findIndex((h) =>
+              names.some((n) => h.toLowerCase().includes(n.toLowerCase())),
+            );
+
+          const headers = section.headers || [];
+
+          // Column Indices
+          const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
+          const tradeIdx = getIndex(headers, 'Trade');
+          const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
+          const unitIdx = getIndex(headers, 'Unit');
+          const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
+          const detailIdx = getIndex(
+            headers,
+            'Size/Detail',
+            'Detail',
+            'Size',
+            'Dimensions',
+          );
+
+          // Make 'Total Cost' more specific to avoid grabbing CSI codes
+          const costIdx = getIndex(
+            headers,
+            'Total Cost',
+            'Total Estimated Cost',
+            'Est. Cost',
+            'Total Price',
+          );
+          const unitCostIdx = getIndex(
+            headers,
+            'Unit Cost',
+            'Rate',
+            'Hourly Rate',
+          );
+
+          section.content.forEach((row: any[]) => {
+            let item =
+              itemIdx > -1
+                ? row[itemIdx]
+                : tradeIdx > -1
+                  ? row[tradeIdx]
+                  : 'Unknown Item';
+            const trade = tradeIdx > -1 ? row[tradeIdx] : phase; // Fallback to Phase if no Trade column
+
+            // Row-Level Filter: Skip summary rows that might appear in regular tables
             if (
-                (section.title.toLowerCase().includes('total') && section.title.toLowerCase().includes('breakdown')) ||
-                section.title.toLowerCase().includes('project cost breakdown') ||
-                section.title.toLowerCase().includes('project cost summary') ||
-                section.title.toLowerCase().includes('summary of costs')
+              item.toLowerCase().includes('total') ||
+              item.toLowerCase().includes('subtotal') ||
+              item.toLowerCase().includes('overhead') ||
+              item.toLowerCase().includes('contingency') ||
+              item.toLowerCase().includes('escalation') ||
+              item.toLowerCase().includes('calculated gc bid')
             ) {
-                return;
+              return;
             }
 
-            if (section.type === 'table' && section.content) {
-                // Helper to find index by header name (case insensitive)
-                const getIndex = (headers: string[], ...names: string[]) =>
-                    headers.findIndex(h => names.some(n => h.toLowerCase().includes(n.toLowerCase())));
-
-                const headers = section.headers || [];
-
-                // Column Indices
-                const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
-                const tradeIdx = getIndex(headers, 'Trade');
-                const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
-                const unitIdx = getIndex(headers, 'Unit');
-                const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
-                const detailIdx = getIndex(headers, 'Size/Detail', 'Detail', 'Size', 'Dimensions');
-
-                // Make 'Total Cost' more specific to avoid grabbing CSI codes
-                const costIdx = getIndex(headers, 'Total Cost', 'Total Estimated Cost', 'Est. Cost', 'Total Price');
-                const unitCostIdx = getIndex(headers, 'Unit Cost', 'Rate', 'Hourly Rate');
-
-                section.content.forEach((row: any[]) => {
-                    let item = itemIdx > -1 ? row[itemIdx] : (tradeIdx > -1 ? row[tradeIdx] : 'Unknown Item');
-                    const trade = tradeIdx > -1 ? row[tradeIdx] : phase; // Fallback to Phase if no Trade column
-
-                    // Row-Level Filter: Skip summary rows that might appear in regular tables
-                    if (item.toLowerCase().includes('total') ||
-                        item.toLowerCase().includes('subtotal') ||
-                        item.toLowerCase().includes('overhead') ||
-                        item.toLowerCase().includes('contingency') ||
-                        item.toLowerCase().includes('escalation') ||
-                        item.toLowerCase().includes('calculated gc bid')) {
-                        return;
-                    }
-
-                    // Enrich Item Name with Specification
-                    if (specIdx > -1 && row[specIdx]) {
-                        item += ` - ${row[specIdx]}`;
-                    }
-
-                    // Enrich Notes with Size/Detail
-                    let notes = 'Imported from AI Analysis';
-                    if (detailIdx > -1 && row[detailIdx]) {
-                        notes = `${row[detailIdx]}; ${notes}`;
-                    }
-
-                    let cost = 0;
-                    let qty = 0;
-                    let unitCost = 0;
-
-                    // Parse Quantity
-                    if (qtyIdx > -1) {
-                         const qStr = row[qtyIdx]?.toString() || '';
-                         qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
-                    }
-
-                    // Parse Unit Cost
-                    if (unitCostIdx > -1) {
-                         const ucStr = row[unitCostIdx]?.toString() || '';
-                         unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
-                    }
-
-                    // Parse Total Cost with validation
-                    if (costIdx > -1) {
-                        const cStr = row[costIdx]?.toString() || '';
-                        cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
-                    }
-
-                    // Validation: If we have Qty and UnitCost, use them to calculate/verify Total
-                    const calculatedCost = qty * unitCost;
-                    if (calculatedCost > 0) {
-                        // If Total Cost is missing, zero, or suspiciously different (e.g. > 10% variance), trust the calculation
-                        if (cost === 0 || Math.abs(cost - calculatedCost) > (calculatedCost * 0.1)) {
-                            cost = calculatedCost;
-                        }
-                    } else if (cost === 0 && costIdx === -1) {
-                         // Only fallback to last column if we really have no other data
-                         // and ensure it looks like a price (contains dot or currency symbol)
-                         const lastVal = row[row.length - 1]?.toString() || '';
-                         if (lastVal.includes('.') || lastVal.includes('$')) {
-                             cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
-                         }
-                    }
-
-                    const unit = unitIdx > -1 ? row[unitIdx] : (category === 'Labor' ? 'Hours' : 'ea');
-
-                    // Skip items that couldn't be identified or have no cost
-                    if (item === 'Unknown Item') {
-                        return;
-                    }
-
-                    if (cost > 0) {
-                        newItems.push({
-                            jobId: Number(this.projectDetails.jobId),
-                            category: category,
-                            phase: phase,
-                            item: item,
-                            trade: trade,
-                            estimatedCost: cost,
-                            actualCost: 0,
-                            percentComplete: 0,
-                            quantity: qty > 0 ? qty : undefined,
-                            unit: qty > 0 ? unit : undefined,
-                            unitCost: unitCost > 0 ? unitCost : undefined,
-                            status: 'Pending',
-                            notes: notes,
-                            source: 'AI',
-                            id: 0
-                        } as BudgetLineItem);
-                    }
-                });
+            // Enrich Item Name with Specification
+            if (specIdx > -1 && row[specIdx]) {
+              item += ` - ${row[specIdx]}`;
             }
-        });
+
+            // Enrich Notes with Size/Detail
+            let notes = 'Imported from AI Analysis';
+            if (detailIdx > -1 && row[detailIdx]) {
+              notes = `${row[detailIdx]}; ${notes}`;
+            }
+
+            let cost = 0;
+            let qty = 0;
+            let unitCost = 0;
+
+            // Parse Quantity
+            if (qtyIdx > -1) {
+              const qStr = row[qtyIdx]?.toString() || '';
+              qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
+            }
+
+            // Parse Unit Cost
+            if (unitCostIdx > -1) {
+              const ucStr = row[unitCostIdx]?.toString() || '';
+              unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
+            }
+
+            // Parse Total Cost with validation
+            if (costIdx > -1) {
+              const cStr = row[costIdx]?.toString() || '';
+              cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
+            }
+
+            // Validation: If we have Qty and UnitCost, use them to calculate/verify Total
+            const calculatedCost = qty * unitCost;
+            if (calculatedCost > 0) {
+              // If Total Cost is missing, zero, or suspiciously different (e.g. > 10% variance), trust the calculation
+              if (
+                cost === 0 ||
+                Math.abs(cost - calculatedCost) > calculatedCost * 0.1
+              ) {
+                cost = calculatedCost;
+              }
+            } else if (cost === 0 && costIdx === -1) {
+              // Only fallback to last column if we really have no other data
+              // and ensure it looks like a price (contains dot or currency symbol)
+              const lastVal = row[row.length - 1]?.toString() || '';
+              if (lastVal.includes('.') || lastVal.includes('$')) {
+                cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
+              }
+            }
+
+            const unit =
+              unitIdx > -1
+                ? row[unitIdx]
+                : category === 'Labor'
+                  ? 'Hours'
+                  : 'ea';
+
+            // Skip items that couldn't be identified or have no cost
+            if (item === 'Unknown Item') {
+              return;
+            }
+
+            if (cost > 0) {
+              newItems.push({
+                jobId: Number(this.projectDetails.jobId),
+                category: category,
+                phase: phase,
+                item: item,
+                trade: trade,
+                estimatedCost: cost,
+                actualCost: 0,
+                percentComplete: 0,
+                quantity: qty > 0 ? qty : undefined,
+                unit: qty > 0 ? unit : undefined,
+                unitCost: unitCost > 0 ? unitCost : undefined,
+                status: 'Pending',
+                notes: notes,
+                source: 'AI',
+                id: 0,
+              } as BudgetLineItem);
+            }
+          });
+        }
+      });
     }
 
     if (newItems.length === 0) {
-        this.isLoadingBudget = false;
-        this.snackBar.open('No estimable items found in AI report.', 'Close', { duration: 3000 });
-        return;
+      this.isLoadingBudget = false;
+      this.snackBar.open('No estimable items found in AI report.', 'Close', {
+        duration: 3000,
+      });
+      return;
     }
 
     // warning if clicked twice. Check if items with source='AI' already exist.
-    const existingAiItems = this.budgetItems.filter(i => i.source === 'AI');
+    const existingAiItems = this.budgetItems.filter((i) => i.source === 'AI');
     if (existingAiItems.length > 0) {
-        if (!confirm(`You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`)) {
-            this.isLoadingBudget = false;
-            return;
-        }
+      if (
+        !confirm(
+          `You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`,
+        )
+      ) {
+        this.isLoadingBudget = false;
+        return;
+      }
     }
 
     this.budgetService.addBudgetItemsBatch(newItems).subscribe({
-        next: (savedItems) => {
-            this.budgetItems = [...this.budgetItems, ...savedItems];
-            this.isLoadingBudget = false;
-            this.snackBar.open(`Successfully imported ${savedItems.length} items from AI.`, 'Close', { duration: 3000 });
-        },
-        error: (err) => {
-            console.error('Batch import failed', err);
-            this.isLoadingBudget = false;
-            this.snackBar.open('Failed to import items.', 'Close', { duration: 3000 });
-        }
+      next: (savedItems) => {
+        this.budgetItems = [...this.budgetItems, ...savedItems];
+        this.isLoadingBudget = false;
+        this.snackBar.open(
+          `Successfully imported ${savedItems.length} items from AI.`,
+          'Close',
+          { duration: 3000 },
+        );
+      },
+      error: (err) => {
+        console.error('Batch import failed', err);
+        this.isLoadingBudget = false;
+        this.snackBar.open('Failed to import items.', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 
@@ -498,7 +628,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     return 'error';
   }
 
-  setActiveTab(tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints'): void {
+  setActiveTab(
+    tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
+  ): void {
     this.activeTab = tab;
   }
 
@@ -509,71 +641,88 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       next: (docs) => {
         // Filter for PDFs and map to UploadedFileInfo
         this.blueprintFiles = docs
-          .filter((doc: any) => (doc.name && doc.name.toLowerCase().endsWith('.pdf')) || (doc.type && doc.type.includes('pdf')))
-          .map((doc: any) => ({
-            name: doc.name || 'Untitled Document',
-            url: '', // No direct URL available
-            type: doc.type || 'application/pdf',
-            size: doc.size || 0,
-            id: doc.id
-          } as any));
+          .filter(
+            (doc: any) =>
+              (doc.name && doc.name.toLowerCase().endsWith('.pdf')) ||
+              (doc.type && doc.type.includes('pdf')),
+          )
+          .map(
+            (doc: any) =>
+              ({
+                name: doc.name || 'Untitled Document',
+                url: '', // No direct URL available
+                type: doc.type || 'application/pdf',
+                size: doc.size || 0,
+                id: doc.id,
+              }) as any,
+          );
 
         if (this.blueprintFiles.length > 0) {
-           this.handleBlueprintSelected(this.blueprintFiles[0]);
+          this.handleBlueprintSelected(this.blueprintFiles[0]);
         } else {
-           this.isLoadingBlueprints = false;
+          this.isLoadingBlueprints = false;
         }
       },
       error: (err) => {
         console.error('Error loading blueprints', err);
         this.isLoadingBlueprints = false;
-        this.snackBar.open('Failed to load blueprints.', 'Close', { duration: 3000 });
-      }
+        this.snackBar.open('Failed to load blueprints.', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 
   handleBlueprintSelected(file: UploadedFileInfo): void {
-      this.selectedBlueprint = file;
-      this.isLoadingBlueprints = true;
+    this.selectedBlueprint = file;
+    this.isLoadingBlueprints = true;
 
-      const docId = (file as any).id;
-      if (docId) {
-          this.jobsService.downloadJobDocument(docId).subscribe({
-            next: (blob) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    if (reader.result) {
-                        this.blueprintPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-                        this.isLoadingBlueprints = false;
-                    }
-                };
-                reader.readAsArrayBuffer(blob);
-            },
-            error: (err) => {
-                console.error('Error downloading document', err);
-                this.isLoadingBlueprints = false;
-                this.snackBar.open('Failed to load blueprint content.', 'Close', { duration: 3000 });
-            }
-          });
-      } else if (file.url) {
-          this.fileUploadService.getFile(file.url).subscribe({
-            next: (blob) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                if (reader.result) {
-                  this.blueprintPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-                  this.isLoadingBlueprints = false;
-                }
-              };
-              reader.readAsArrayBuffer(blob);
-            },
-            error: (err) => {
-              console.error('Error fetching blueprint blob', err);
+    const docId = (file as any).id;
+    if (docId) {
+      this.jobsService.downloadJobDocument(docId).subscribe({
+        next: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (reader.result) {
+              this.blueprintPdfSrc = new Uint8Array(
+                reader.result as ArrayBuffer,
+              );
               this.isLoadingBlueprints = false;
-              this.snackBar.open('Failed to load blueprint file.', 'Close', { duration: 3000 });
             }
+          };
+          reader.readAsArrayBuffer(blob);
+        },
+        error: (err) => {
+          console.error('Error downloading document', err);
+          this.isLoadingBlueprints = false;
+          this.snackBar.open('Failed to load blueprint content.', 'Close', {
+            duration: 3000,
           });
-      }
+        },
+      });
+    } else if (file.url) {
+      this.fileUploadService.getFile(file.url).subscribe({
+        next: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (reader.result) {
+              this.blueprintPdfSrc = new Uint8Array(
+                reader.result as ArrayBuffer,
+              );
+              this.isLoadingBlueprints = false;
+            }
+          };
+          reader.readAsArrayBuffer(blob);
+        },
+        error: (err) => {
+          console.error('Error fetching blueprint blob', err);
+          this.isLoadingBlueprints = false;
+          this.snackBar.open('Failed to load blueprint file.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
+    }
   }
 
   loadBudget(): void {
@@ -605,44 +754,56 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Error loading budget', err);
         this.isLoadingBudget = false;
-        this.snackBar.open('Failed to load budget.', 'Close', { duration: 3000 });
-      }
+        this.snackBar.open('Failed to load budget.', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 
   syncBudget(): void {
     // Check if there are unsaved changes or unaccepted subtasks
-    const unaccepted = this.store.getState().subtaskGroups
-      .flatMap(group => group.subtasks)
-      .filter(st => !st.deleted && !st.accepted);
+    const unaccepted = this.store
+      .getState()
+      .subtaskGroups.flatMap((group) => group.subtasks)
+      .filter((st) => !st.deleted && !st.accepted);
 
     if (unaccepted.length > 0) {
-      this.snackBar.open('Please accept all subtasks and Save the job before syncing the budget.', 'Close', { duration: 5000 });
+      this.snackBar.open(
+        'Please accept all subtasks and Save the job before syncing the budget.',
+        'Close',
+        { duration: 5000 },
+      );
       return;
     }
 
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Sync Budget',
-        message: 'This will update the budget based on the last SAVED project timeline. Any unsaved changes will not be included. Continue?',
+        message:
+          'This will update the budget based on the last SAVED project timeline. Any unsaved changes will not be included. Continue?',
         confirmButtonText: 'Sync',
-        cancelButtonText: 'Cancel'
-      }
+        cancelButtonText: 'Cancel',
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.isLoadingBudget = true;
         this.budgetService.syncBudget(this.projectDetails.jobId).subscribe({
           next: () => {
-            this.snackBar.open('Budget synced successfully.', 'Close', { duration: 3000 });
+            this.snackBar.open('Budget synced successfully.', 'Close', {
+              duration: 3000,
+            });
             this.loadBudget();
           },
           error: (err) => {
             console.error('Error syncing budget', err);
             this.isLoadingBudget = false;
-            this.snackBar.open('Failed to sync budget.', 'Close', { duration: 3000 });
-          }
+            this.snackBar.open('Failed to sync budget.', 'Close', {
+              duration: 3000,
+            });
+          },
         });
       }
     });
@@ -662,7 +823,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       percentComplete: 0,
       notes: '',
       status: 'Pending',
-      source: 'Manual'
+      source: 'Manual',
     };
   }
 
@@ -672,18 +833,26 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   recalculateEstimatedCost(item: Partial<BudgetLineItem>): void {
-    if ((item.quantity || item.quantity === 0) && (item.unitCost || item.unitCost === 0)) {
+    if (
+      (item.quantity || item.quantity === 0) &&
+      (item.unitCost || item.unitCost === 0)
+    ) {
       item.estimatedCost = item.quantity * item.unitCost;
       // Default forecast to estimated if not set, or update it if it matches estimated
-      if (item.forecastToComplete === undefined || item.forecastToComplete === 0) {
-          item.forecastToComplete = item.estimatedCost;
+      if (
+        item.forecastToComplete === undefined ||
+        item.forecastToComplete === 0
+      ) {
+        item.forecastToComplete = item.estimatedCost;
       }
     }
   }
 
   saveNewLineItem(): void {
     if (!this.newBudgetItem.item || !this.newBudgetItem.trade) {
-      this.snackBar.open('Please fill in Item and Trade fields.', 'Close', { duration: 3000 });
+      this.snackBar.open('Please fill in Item and Trade fields.', 'Close', {
+        duration: 3000,
+      });
       return;
     }
 
@@ -693,9 +862,12 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       estimatedCost: this.newBudgetItem.estimatedCost || 0,
       actualCost: this.newBudgetItem.actualCost || 0,
       // Default forecast to estimated cost if not manually entered
-      forecastToComplete: this.newBudgetItem.forecastToComplete ?? this.newBudgetItem.estimatedCost ?? 0,
+      forecastToComplete:
+        this.newBudgetItem.forecastToComplete ??
+        this.newBudgetItem.estimatedCost ??
+        0,
       percentComplete: this.newBudgetItem.percentComplete || 0,
-      jobId: Number(this.projectDetails.jobId)
+      jobId: Number(this.projectDetails.jobId),
     } as BudgetLineItem;
 
     this.isLoadingBudget = true;
@@ -705,13 +877,17 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.isLoadingBudget = false;
         this.isAddingLineItem = false;
         this.newBudgetItem = {};
-        this.snackBar.open('Line item added successfully.', 'Close', { duration: 3000 });
+        this.snackBar.open('Line item added successfully.', 'Close', {
+          duration: 3000,
+        });
       },
       error: (err) => {
         console.error('Error adding budget item', err);
         this.isLoadingBudget = false;
-        this.snackBar.open('Failed to add line item.', 'Close', { duration: 3000 });
-      }
+        this.snackBar.open('Failed to add line item.', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 
@@ -729,24 +905,32 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     if (!this.editingItem) return;
 
     this.isLoadingBudget = true;
-    this.budgetService.updateBudgetItem(this.editingItem.id, this.editingItem).subscribe({
-      next: (updatedItem) => {
-        // Update local list
-        const index = this.budgetItems.findIndex(i => i.id === updatedItem.id);
-        if (index !== -1) {
-          this.budgetItems[index] = updatedItem;
-        }
-        this.isLoadingBudget = false;
-        this.editingItemId = null;
-        this.editingItem = null;
-        this.snackBar.open('Line item updated successfully.', 'Close', { duration: 3000 });
-      },
-      error: (err) => {
-        console.error('Error updating budget item', err);
-        this.isLoadingBudget = false;
-        this.snackBar.open('Failed to update line item.', 'Close', { duration: 3000 });
-      }
-    });
+    this.budgetService
+      .updateBudgetItem(this.editingItem.id, this.editingItem)
+      .subscribe({
+        next: (updatedItem) => {
+          // Update local list
+          const index = this.budgetItems.findIndex(
+            (i) => i.id === updatedItem.id,
+          );
+          if (index !== -1) {
+            this.budgetItems[index] = updatedItem;
+          }
+          this.isLoadingBudget = false;
+          this.editingItemId = null;
+          this.editingItem = null;
+          this.snackBar.open('Line item updated successfully.', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: (err) => {
+          console.error('Error updating budget item', err);
+          this.isLoadingBudget = false;
+          this.snackBar.open('Failed to update line item.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
   }
 
   deleteLineItem(item: BudgetLineItem): void {
@@ -755,24 +939,28 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         title: 'Delete Line Item',
         message: `Are you sure you want to delete "${item.item}"?`,
         confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel'
-      }
+        cancelButtonText: 'Cancel',
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.isLoadingBudget = true;
         this.budgetService.deleteBudgetItem(item.id).subscribe({
           next: () => {
-            this.budgetItems = this.budgetItems.filter(i => i.id !== item.id);
+            this.budgetItems = this.budgetItems.filter((i) => i.id !== item.id);
             this.isLoadingBudget = false;
-            this.snackBar.open('Line item deleted.', 'Close', { duration: 3000 });
+            this.snackBar.open('Line item deleted.', 'Close', {
+              duration: 3000,
+            });
           },
           error: (err) => {
             console.error('Error deleting budget item', err);
             this.isLoadingBudget = false;
-            this.snackBar.open('Failed to delete line item.', 'Close', { duration: 3000 });
-          }
+            this.snackBar.open('Failed to delete line item.', 'Close', {
+              duration: 3000,
+            });
+          },
         });
       }
     });
@@ -798,12 +986,15 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.jobAssignmentService.getJobAssignment().subscribe({
       next: (assignments) => {
         const jobId = Number(this.projectDetails.jobId);
-        const assignment = assignments.find(a => a.id === jobId);
+        const assignment = assignments.find((a) => a.id === jobId);
         if (assignment && assignment.jobUser) {
           this.assignedTeamMembers = assignment.jobUser;
           // Update Local Storage with fresh data
           if (this.isBrowser) {
-            localStorage.setItem(storageKey, JSON.stringify(this.assignedTeamMembers));
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify(this.assignedTeamMembers),
+            );
           }
         } else {
           this.assignedTeamMembers = [];
@@ -814,8 +1005,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => {
         console.error('Error loading assignments', err);
         this.isLoadingTeam = false;
-        this.snackBar.open('Failed to load team members', 'Close', { duration: 3000 });
-      }
+        this.snackBar.open('Failed to load team members', 'Close', {
+          duration: 3000,
+        });
+      },
     });
   }
 
@@ -826,67 +1019,92 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       const inviterId = this.currentUserId;
 
       if (!inviterId) {
-         this.snackBar.open('Cannot invite: User ID not found.', 'Close', { duration: 3000 });
-         this.isSendingInvite = false;
-         return;
+        this.snackBar.open('Cannot invite: User ID not found.', 'Close', {
+          duration: 3000,
+        });
+        this.isSendingInvite = false;
+        return;
       }
 
       // First add to team
       this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
         next: (member) => {
-           // Then assign to this job
-           const assignmentLink: JobAssignmentLink = {
-             userId: member.id,
-             jobId: Number(this.projectDetails.jobId),
-             jobRole: newMember.role
-           };
+          // Then assign to this job
+          const assignmentLink: JobAssignmentLink = {
+            userId: member.id,
+            jobId: Number(this.projectDetails.jobId),
+            jobRole: newMember.role,
+          };
 
-           this.jobAssignmentService.createJobAssignment(assignmentLink).subscribe({
-             next: () => {
-               this.snackBar.open('Team member invited and assigned!', 'Close', { duration: 3000 });
-               this.isSendingInvite = false;
-               this.teamForm.reset();
-               // Refresh list
-               this.loadAssignedTeam();
-             },
-             error: (err) => {
-                console.error('Error assigning to job', err);
-                this.snackBar.open('Member invited but failed to assign to job.', 'Close', { duration: 3000 });
+          this.jobAssignmentService
+            .createJobAssignment(assignmentLink)
+            .subscribe({
+              next: () => {
+                this.snackBar.open(
+                  'Team member invited and assigned!',
+                  'Close',
+                  { duration: 3000 },
+                );
                 this.isSendingInvite = false;
-             }
-           });
+                this.teamForm.reset();
+                // Refresh list
+                this.loadAssignedTeam();
+              },
+              error: (err) => {
+                console.error('Error assigning to job', err);
+                this.snackBar.open(
+                  'Member invited but failed to assign to job.',
+                  'Close',
+                  { duration: 3000 },
+                );
+                this.isSendingInvite = false;
+              },
+            });
         },
         error: (error) => {
           if (error.status === 409) {
-             this.snackBar.open(error.error.message, 'Close', { duration: 5000 });
+            this.snackBar.open(error.error.message, 'Close', {
+              duration: 5000,
+            });
           } else {
-             this.snackBar.open('Failed to invite team member.', 'Close', { duration: 3000 });
+            this.snackBar.open('Failed to invite team member.', 'Close', {
+              duration: 3000,
+            });
           }
           this.isSendingInvite = false;
-        }
+        },
       });
     }
   }
 
   removeTeamMember(user: JobUser): void {
-     if (!confirm(`Are you sure you want to remove ${user.firstName} from this project?`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to remove ${user.firstName} from this project?`,
+      )
+    )
+      return;
 
-     const link: JobAssignmentLink = {
-       userId: user.id,
-       jobId: Number(this.projectDetails.jobId),
-       jobRole: user.jobRole || ''
-     };
+    const link: JobAssignmentLink = {
+      userId: user.id,
+      jobId: Number(this.projectDetails.jobId),
+      jobRole: user.jobRole || '',
+    };
 
-     this.jobAssignmentService.deleteUserAssignment(link).subscribe({
-       next: () => {
-         this.snackBar.open('User removed from project.', 'Close', { duration: 3000 });
-         this.loadAssignedTeam();
-       },
-       error: (err) => {
-         console.error('Error removing user', err);
-         this.snackBar.open('Failed to remove user.', 'Close', { duration: 3000 });
-       }
-     });
+    this.jobAssignmentService.deleteUserAssignment(link).subscribe({
+      next: () => {
+        this.snackBar.open('User removed from project.', 'Close', {
+          duration: 3000,
+        });
+        this.loadAssignedTeam();
+      },
+      error: (err) => {
+        console.error('Error removing user', err);
+        this.snackBar.open('Failed to remove user.', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
   }
 
   get isDialogOpen(): boolean {
@@ -895,7 +1113,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit() {
     this.sessionId = uuidv4();
-    this.measurementService.getSettings().subscribe(settings => {
+    this.measurementService.getSettings().subscribe((settings) => {
       this.temperatureUnit = settings.temperature;
     });
     this.signalrService.startConnection();
@@ -907,58 +1125,79 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.resetFileInput();
     });
 
-    this.route.queryParams.pipe(
-      take(1),
-      switchMap(params => {
-        this.jobDataService.fetchJobData(params);
-        return this.store.select(state => state.projectDetails);
-      }),
-      filter(projectDetails => !!projectDetails)
-    ).subscribe(projectDetails => {
-      this.projectDetails = projectDetails;
-      if (this.projectDetails?.date) {
-  const d = new Date(this.projectDetails.date);
-  this.startDateDisplay = isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
-} else {
-  this.startDateDisplay = null;
-}
-
-      if (this.projectDetails?.jobId) {
-        this.loadBlueprints();
-        this.loadAssignedTeam();
-        this.loadBudget();
-        this.authService.currentUser$.pipe(
-          filter(user => !!user),
-          take(1)
-        ).subscribe(user => {
-          if (user) {
-            this.currentUserId = user.id;
-            this.checkProjectOwnerStatus(this.projectDetails.jobId, user.id);
-          }
-        });
-      }
-    });
-
-    this.store.select(state => state.projectDetails).pipe(
-      switchMap(projectDetails => {
-        if (!projectDetails || !projectDetails.latitude || !projectDetails.longitude) {
-          return of([]);
+    this.route.queryParams
+      .pipe(
+        take(1),
+        switchMap((params) => {
+          this.jobDataService.fetchJobData(params);
+          return this.store.select((state) => state.projectDetails);
+        }),
+        filter((projectDetails) => !!projectDetails),
+      )
+      .subscribe((projectDetails) => {
+        this.projectDetails = projectDetails;
+        if (this.projectDetails?.date) {
+          const d = new Date(this.projectDetails.date);
+          this.startDateDisplay = isNaN(d.getTime())
+            ? null
+            : d.toISOString().split('T')[0];
+        } else {
+          this.startDateDisplay = null;
         }
-        return this.timelineService.timelineGroups$.pipe(
-          switchMap(timelineGroups =>
-            this.store.select(s => s.forecast).pipe(
-              map(forecast => {
-                if (!forecast) return timelineGroups;
-                return this.weatherImpactService.applyWeatherImpact(timelineGroups, forecast);
-              })
+
+        if (this.projectDetails?.jobId) {
+          this.loadBlueprints();
+          this.loadAssignedTeam();
+          this.loadBudget();
+          this.authService.currentUser$
+            .pipe(
+              filter((user) => !!user),
+              take(1),
             )
-          )
-        );
-      })
-    ).subscribe(processedTimelineGroups => {
-      this.timelineGroups = processedTimelineGroups;
-      this.cdr.detectChanges();
-    });
+            .subscribe((user) => {
+              if (user) {
+                this.currentUserId = user.id;
+                this.checkProjectOwnerStatus(
+                  this.projectDetails.jobId,
+                  user.id,
+                );
+              }
+            });
+        }
+      });
+
+    this.store
+      .select((state) => state.projectDetails)
+      .pipe(
+        switchMap((projectDetails) => {
+          if (
+            !projectDetails ||
+            !projectDetails.latitude ||
+            !projectDetails.longitude
+          ) {
+            return of([]);
+          }
+          return this.timelineService.timelineGroups$.pipe(
+            switchMap((timelineGroups) =>
+              this.store
+                .select((s) => s.forecast)
+                .pipe(
+                  map((forecast) => {
+                    if (!forecast) return timelineGroups;
+                    return this.weatherImpactService.applyWeatherImpact(
+                      timelineGroups,
+                      forecast,
+                    );
+                  }),
+                ),
+            ),
+          );
+        }),
+      )
+      .subscribe((processedTimelineGroups) => {
+        this.timelineGroups = processedTimelineGroups;
+        this.cdr.detectChanges();
+      });
   }
 
   ngAfterViewInit(): void {
@@ -968,8 +1207,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           .pipe(
             debounceTime(300),
             switchMap((value) =>
-              this.addressService.getPlacePredictions(value)
-            )
+              this.addressService.getPlacePredictions(value),
+            ),
           )
           .subscribe((predictions) => {
             this.addressSuggestions = predictions;
@@ -1013,7 +1252,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   resetFileInput(): void {
     const fileInput = document.getElementById(
-      'file-upload'
+      'file-upload',
     ) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
@@ -1045,7 +1284,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.currentNoteTarget.id,
         this.noteText,
         userId || '',
-        this.sessionId
+        this.sessionId,
       )
       .subscribe(() => {
         this.jobCardForm.reset();
@@ -1086,7 +1325,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateBOMPDF(): void {
-    this.bomService.generateBOMPDF(this.processingResults, this.projectDetails.projectName);
+    this.bomService.generateBOMPDF(
+      this.processingResults,
+      this.projectDetails.projectName,
+    );
   }
 
   downloadEnvironmentalReport(jobId: string): void {
@@ -1102,23 +1344,30 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportHtml = null;
     this.reportTitle = 'Full Project Analysis Report';
 
-    this.reportService.getFullReportContent(this.projectDetails.jobId)
-      .then(content => {
+    this.reportService
+      .getFullReportContent(this.projectDetails.jobId)
+      .then((content) => {
         if (content) {
           this.reportHtml = content;
           this.dialog.open(this.reportDialog, {
             width: '90vw',
             height: '90vh',
             maxWidth: '1200px',
-            maxHeight: '90vh'
+            maxHeight: '90vh',
           });
         } else {
-          this.snackBar.open('Could not retrieve report content.', 'Close', { duration: 3000 });
+          this.snackBar.open('Could not retrieve report content.', 'Close', {
+            duration: 3000,
+          });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
-        this.snackBar.open('An error occurred while fetching the report.', 'Close', { duration: 3000 });
+        this.snackBar.open(
+          'An error occurred while fetching the report.',
+          'Close',
+          { duration: 3000 },
+        );
       })
       .finally(() => {
         this.isReportLoading = false;
@@ -1131,23 +1380,30 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportHtml = null;
     this.reportTitle = 'Executive Summary';
 
-    this.reportService.getExecutiveSummary(this.projectDetails.jobId)
-      .then(content => {
+    this.reportService
+      .getExecutiveSummary(this.projectDetails.jobId)
+      .then((content) => {
         if (content) {
           this.reportHtml = content;
           this.dialog.open(this.reportDialog, {
             width: '90vw',
             height: '90vh',
             maxWidth: '1200px',
-            maxHeight: '90vh'
+            maxHeight: '90vh',
           });
         } else {
-          this.snackBar.open('Could not retrieve Executive Summary.', 'Close', { duration: 3000 });
+          this.snackBar.open('Could not retrieve Executive Summary.', 'Close', {
+            duration: 3000,
+          });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
-        this.snackBar.open('An error occurred while fetching the Executive Summary.', 'Close', { duration: 3000 });
+        this.snackBar.open(
+          'An error occurred while fetching the Executive Summary.',
+          'Close',
+          { duration: 3000 },
+        );
       })
       .finally(() => {
         this.isReportLoading = false;
@@ -1160,23 +1416,32 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportHtml = null;
     this.reportTitle = 'Environmental Lifecycle Report';
 
-    this.reportService.getEnvironmentalReportContent(this.projectDetails.jobId)
-      .then(content => {
+    this.reportService
+      .getEnvironmentalReportContent(this.projectDetails.jobId)
+      .then((content) => {
         if (content) {
           this.reportHtml = content;
           this.dialog.open(this.reportDialog, {
             width: '90vw',
             height: '90vh',
             maxWidth: '1200px',
-            maxHeight: '90vh'
+            maxHeight: '90vh',
           });
         } else {
-          this.snackBar.open('Could not retrieve Environmental Report.', 'Close', { duration: 3000 });
+          this.snackBar.open(
+            'Could not retrieve Environmental Report.',
+            'Close',
+            { duration: 3000 },
+          );
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
-        this.snackBar.open('An error occurred while fetching the Environmental Report.', 'Close', { duration: 3000 });
+        this.snackBar.open(
+          'An error occurred while fetching the Environmental Report.',
+          'Close',
+          { duration: 3000 },
+        );
       })
       .finally(() => {
         this.isReportLoading = false;
@@ -1194,7 +1459,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     const cleanTitle = this.reportTitle.replace(/ /g, '_');
     const fileName = `${this.projectDetails.projectName}_${cleanTitle}.pdf`;
 
-    this.reportService.generatePdfFromHtml(this.reportHtml, fileName, this.reportTitle)
+    this.reportService
+      .generatePdfFromHtml(this.reportHtml, fileName, this.reportTitle)
       .finally(() => {
         this.isGeneratingReport = false;
       });
@@ -1202,19 +1468,23 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   downloadAsSpreadsheet(format: 'csv' | 'excel'): void {
     const data: { [key: string]: any[] } = {};
-    this.processingResults.forEach(result => {
-      result.parsedReport.sections.forEach((section: { title: string; headers: any[]; content: any[][]; }) => {
-        if (!data[section.title]) {
-          data[section.title] = [];
-        }
-        section.content.forEach((row: { [x: string]: any; }) => {
-          const newRow: { [key: string]: any } = {};
-          section.headers.forEach((header: string | number, index: string | number) => {
-            newRow[header] = row[index];
+    this.processingResults.forEach((result) => {
+      result.parsedReport.sections.forEach(
+        (section: { title: string; headers: any[]; content: any[][] }) => {
+          if (!data[section.title]) {
+            data[section.title] = [];
+          }
+          section.content.forEach((row: { [x: string]: any }) => {
+            const newRow: { [key: string]: any } = {};
+            section.headers.forEach(
+              (header: string | number, index: string | number) => {
+                newRow[header] = row[index];
+              },
+            );
+            data[section.title].push(newRow);
           });
-          data[section.title].push(newRow);
-        });
-      });
+        },
+      );
     });
 
     const date = new Date().toISOString().slice(0, 10);
@@ -1224,13 +1494,14 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
         data: {
           title: 'Download Multiple CSVs',
-          message: 'This will download a separate CSV file for each section of the Bill of Materials. Do you want to continue?',
+          message:
+            'This will download a separate CSV file for each section of the Bill of Materials. Do you want to continue?',
           confirmButtonText: 'Yes, Download All',
-          cancelButtonText: 'Cancel'
-        }
+          cancelButtonText: 'Cancel',
+        },
       });
 
-      dialogRef.afterClosed().subscribe(result => {
+      dialogRef.afterClosed().subscribe((result) => {
         if (result) {
           this.spreadsheetService.generateCsv(data, fileName);
         }
@@ -1318,36 +1589,48 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       });
   }
 
-  handleGroupMove(event: { groupId: string; newStartDate: Date; newEndDate: Date; }): void {
-    this.authService.currentUser$.pipe(
-      filter(user => !!user),
-      take(1)
-    ).subscribe(user => {
-      this.timelineService.handleGroupMove(event, this.projectDetails.jobId, user.id);
-    });
+  handleGroupMove(event: {
+    groupId: string;
+    newStartDate: Date;
+    newEndDate: Date;
+  }): void {
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+      )
+      .subscribe((user) => {
+        this.timelineService.handleGroupMove(
+          event,
+          this.projectDetails.jobId,
+          user.id,
+        );
+      });
   }
 
   NavigateBack(): void {
     this.location.back();
   }
 
-
   publishJob(): void {
     const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
       width: '400px',
-      data: {}
+      data: {},
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result && result.biddingType) {
         this.projectDetails.biddingType = result.biddingType;
-        this.projectDetails.requiredSubcontractorTypes = result.requiredSubcontractorTypes;
+        this.projectDetails.requiredSubcontractorTypes =
+          result.requiredSubcontractorTypes;
         this.projectDetails.status = 'BIDDING';
-        this.subtaskService.publishJob(this.projectDetails.jobId, this.projectDetails).subscribe(() => {
-          this.snackBar.open('Job published successfully!', 'Close', {
-            duration: 3000
+        this.subtaskService
+          .publishJob(this.projectDetails.jobId, this.projectDetails)
+          .subscribe(() => {
+            this.snackBar.open('Job published successfully!', 'Close', {
+              duration: 3000,
+            });
           });
-        });
       }
     });
   }
@@ -1362,21 +1645,27 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
-    this.store.select(state => state.projectDetails).subscribe(projectDetails => {
-      if (projectDetails && projectDetails.userId === userId) {
-        this.isProjectOwner = true;
-      } else {
-        this.jobAssignmentService.getJobAssignment().subscribe(assignments => {
-          const numericJobId = +jobId;
-          const jobAssignment = assignments.find(assignment => assignment.id === numericJobId);
-          if (jobAssignment) {
-            const user = jobAssignment.jobUser.find(u => u.id === userId);
-            this.isProjectOwner = !!user;
-          } else {
-            this.isProjectOwner = false;
-          }
-        });
-      }
-    });
+    this.store
+      .select((state) => state.projectDetails)
+      .subscribe((projectDetails) => {
+        if (projectDetails && projectDetails.userId === userId) {
+          this.isProjectOwner = true;
+        } else {
+          this.jobAssignmentService
+            .getJobAssignment()
+            .subscribe((assignments) => {
+              const numericJobId = +jobId;
+              const jobAssignment = assignments.find(
+                (assignment) => assignment.id === numericJobId,
+              );
+              if (jobAssignment) {
+                const user = jobAssignment.jobUser.find((u) => u.id === userId);
+                this.isProjectOwner = !!user;
+              } else {
+                this.isProjectOwner = false;
+              }
+            });
+        }
+      });
   }
 }

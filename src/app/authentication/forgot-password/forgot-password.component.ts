@@ -1,5 +1,10 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { NgIf } from '@angular/common';
@@ -11,20 +16,20 @@ import { ForgotPasswordService } from './forgot-password.service';
 import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
-    selector: 'app-forgot-password',
-    standalone: true,
-    imports: [
-        ReactiveFormsModule,
-        MatCardModule,
-        NgIf,
-        MatFormFieldModule,
-        MatInputModule,
-        LoaderComponent,
-        MatButtonModule,
-        MatDividerModule,
-    ],
-    templateUrl: './forgot-password.component.html',
-    styleUrls: ['./forgot-password.component.scss']
+  selector: 'app-forgot-password',
+  standalone: true,
+  imports: [
+    ReactiveFormsModule,
+    MatCardModule,
+    NgIf,
+    MatFormFieldModule,
+    MatInputModule,
+    LoaderComponent,
+    MatButtonModule,
+    MatDividerModule,
+  ],
+  templateUrl: './forgot-password.component.html',
+  styleUrls: ['./forgot-password.component.scss'],
 })
 export class ForgotPasswordComponent {
   forgotPasswordForm: FormGroup;
@@ -35,7 +40,7 @@ export class ForgotPasswordComponent {
   constructor(
     private formBuilder: FormBuilder,
     private forgotPasswordService: ForgotPasswordService,
-    private router: Router
+    private router: Router,
   ) {
     this.forgotPasswordForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
@@ -50,7 +55,8 @@ export class ForgotPasswordComponent {
         next: () => {
           this.isLoading = false;
           this.showAlert = true;
-          this.alertMessage = 'A password reset link has been sent to your email. Please check your inbox and spam folder.';
+          this.alertMessage =
+            'A password reset link has been sent to your email. Please check your inbox and spam folder.';
         },
         error: (error) => {
           this.isLoading = false;

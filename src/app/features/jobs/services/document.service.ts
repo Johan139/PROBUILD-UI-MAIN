@@ -19,7 +19,7 @@ export class DocumentService {
   constructor(
     private httpClient: HttpClient,
     private jobsService: JobsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   fetchDocuments(jobId: string): Observable<any[]> {
@@ -42,22 +42,21 @@ export class DocumentService {
         this.documentsError = 'Failed to load documents.';
         this.isDocumentsLoading = false;
         return of([]);
-      })
+      }),
     );
   }
 
   viewDocument(document: any): void {
     this.jobsService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
-
-         const blob = new Blob([response], { type: 'application/pdf' }); // Force PDF MIME type
+        const blob = new Blob([response], { type: 'application/pdf' }); // Force PDF MIME type
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');
         if (!newTab) {
           this.snackBar.open(
             'Failed to open document. Please allow pop-ups for this site.',
             'Close',
-            { duration: 3000 }
+            { duration: 3000 },
           );
         }
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
@@ -86,11 +85,7 @@ export class DocumentService {
     }
   }
 
-  uploadFile(
-    file: File,
-    jobId: string,
-    sessionId: string
-  ): Observable<any> {
+  uploadFile(file: File, jobId: string, sessionId: string): Observable<any> {
     const formData = new FormData();
     formData.append('Blueprint', file);
     formData.append('Title', 'test');

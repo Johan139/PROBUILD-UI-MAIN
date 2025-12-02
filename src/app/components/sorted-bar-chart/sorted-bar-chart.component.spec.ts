@@ -8,9 +8,8 @@ describe('SortedBarChartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SortedBarChartComponent]
-    })
-    .compileComponents();
+      imports: [SortedBarChartComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SortedBarChartComponent);
     component = fixture.componentInstance;

@@ -13,7 +13,7 @@ const BASE_URL = environment.BACKEND_URL + '/Notes';
 export class NoteService {
   constructor(
     private httpClient: HttpClient,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   saveNote(
@@ -22,7 +22,7 @@ export class NoteService {
     subtaskId: string,
     noteText: string,
     createdByUserId: string,
-    sessionId: string
+    sessionId: string,
   ): Observable<any> {
     const formData = new FormData();
     formData.append('JobId', jobId);
@@ -32,23 +32,21 @@ export class NoteService {
     formData.append('CreatedByUserId', createdByUserId || '');
     formData.append('SessionId', sessionId);
 
-    return this.httpClient
-      .post(BASE_URL + '/SaveSubtaskNote', formData)
-      .pipe(
-        tap(() => {
-          this.snackBar.open('Note saved successfully!', 'Close', {
-            duration: 3000,
-            panelClass: ['custom-snackbar'],
-          });
-        }),
-        catchError((err) => {
-          this.snackBar.open('Failed to save note. Try again.', 'Close', {
-            duration: 4000,
-            panelClass: ['custom-snackbar'],
-          });
-          return of(err);
-        })
-      );
+    return this.httpClient.post(BASE_URL + '/SaveSubtaskNote', formData).pipe(
+      tap(() => {
+        this.snackBar.open('Note saved successfully!', 'Close', {
+          duration: 3000,
+          panelClass: ['custom-snackbar'],
+        });
+      }),
+      catchError((err) => {
+        this.snackBar.open('Failed to save note. Try again.', 'Close', {
+          duration: 4000,
+          panelClass: ['custom-snackbar'],
+        });
+        return of(err);
+      }),
+    );
   }
 
   approveNote(note: any, reason: string): Observable<any> {
@@ -69,12 +67,16 @@ export class NoteService {
         });
       }),
       catchError((err) => {
-        this.snackBar.open('Failed to approve note. Please try again.', 'Close', {
-          duration: 3000,
-          panelClass: ['custom-snackbar'],
-        });
+        this.snackBar.open(
+          'Failed to approve note. Please try again.',
+          'Close',
+          {
+            duration: 3000,
+            panelClass: ['custom-snackbar'],
+          },
+        );
         return of(err);
-      })
+      }),
     );
   }
 
@@ -96,12 +98,16 @@ export class NoteService {
         });
       }),
       catchError((err) => {
-        this.snackBar.open('Failed to reject note. Please try again.', 'Close', {
-          duration: 3000,
-          panelClass: ['custom-snackbar'],
-        });
+        this.snackBar.open(
+          'Failed to reject note. Please try again.',
+          'Close',
+          {
+            duration: 3000,
+            panelClass: ['custom-snackbar'],
+          },
+        );
         return of(err);
-      })
+      }),
     );
   }
 
@@ -114,7 +120,7 @@ export class NoteService {
             duration: 3000,
           });
           return of([]);
-        })
+        }),
       );
   }
 
@@ -127,30 +133,38 @@ export class NoteService {
             duration: 3000,
           });
           return of([]);
-        })
+        }),
       );
   }
 
   getArchivedNotes(userId: string): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${BASE_URL}/notes/archived/${userId}`).pipe(
-      catchError((err) => {
-        this.snackBar.open('Failed to fetch archived notes.', 'Close', {
-          duration: 3000,
-        });
-        return of([]);
-      })
-    );
+    return this.httpClient
+      .get<any[]>(`${BASE_URL}/notes/archived/${userId}`)
+      .pipe(
+        catchError((err) => {
+          this.snackBar.open('Failed to fetch archived notes.', 'Close', {
+            duration: 3000,
+          });
+          return of([]);
+        }),
+      );
   }
 
   getArchivedNotesForAssignedJobs(userId: string): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${BASE_URL}/notes/archived/assigned/${userId}`).pipe(
-      catchError((err) => {
-        this.snackBar.open('Failed to fetch assigned archived notes.', 'Close', {
-          duration: 3000,
-        });
-        return of([]);
-      })
-    );
+    return this.httpClient
+      .get<any[]>(`${BASE_URL}/notes/archived/assigned/${userId}`)
+      .pipe(
+        catchError((err) => {
+          this.snackBar.open(
+            'Failed to fetch assigned archived notes.',
+            'Close',
+            {
+              duration: 3000,
+            },
+          );
+          return of([]);
+        }),
+      );
   }
 
   archiveNote(noteId: number): Observable<any> {
@@ -161,18 +175,24 @@ export class NoteService {
         });
       }),
       catchError((err) => {
-        this.snackBar.open('Failed to archive note. Please try again.', 'Close', {
-          duration: 3000,
-        });
+        this.snackBar.open(
+          'Failed to archive note. Please try again.',
+          'Close',
+          {
+            duration: 3000,
+          },
+        );
         return of(err);
-      })
+      }),
     );
   }
 
   downloadNoteDocument(documentId: number): Observable<Blob> {
-    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, { responseType: 'blob' });
+    return this.httpClient.get(`${BASE_URL}/downloadNote/${documentId}`, {
+      responseType: 'blob',
+    });
   }
-  
+
   getNoteDocuments(noteId: number): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/GetNoteDocuments/${noteId}`);
   }

@@ -1,4 +1,4 @@
-@use 'styles/util/mixins' as u;
+@use "styles/util/mixins" as u;
 
 :host {
   display: block;
@@ -18,7 +18,7 @@
   color: var(--color-text);
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
 }
 
 .progress-bar-container {
@@ -38,7 +38,7 @@
 .progress-bar-value {
   height: 100%;
   background-color: var(--brand-yellow-primary);
-  transition: width .2s ease;
+  transition: width 0.2s ease;
 }
 
 .blueprint-viewer-canvas {
@@ -51,7 +51,9 @@
   position: absolute;
   inset: 0;
   opacity: 0.4;
-  background-image: linear-gradient(var(--gray-500) 1px, transparent 1px), linear-gradient(90deg, var(--gray-500) 1px, transparent 1px);
+  background-image:
+    linear-gradient(var(--gray-500) 1px, transparent 1px),
+    linear-gradient(90deg, var(--gray-500) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -60,7 +62,7 @@
   border-radius: var(--radius-xl);
   border-width: 2px;
   box-shadow: 0 0 0 4px rgba(252, 209, 9, 0.2);
-  transition: all .35s ease;
+  transition: all 0.35s ease;
 }
 
 .upload-overlay {
@@ -284,7 +286,7 @@
   align-items: center;
   gap: var(--space-4);
   font-size: var(--fs-sm);
-  color: var(--color-text)
+  color: var(--color-text);
 }
 
 .analysis-options label {

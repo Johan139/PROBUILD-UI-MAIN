@@ -9,7 +9,6 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Project } from '../../../models/project';
 
-
 @Component({
   selector: 'app-project-card',
   standalone: true,
@@ -21,10 +20,10 @@ import { Project } from '../../../models/project';
     MatProgressBarModule,
     MatMenuModule,
     MatTooltipModule,
-    MatSnackBarModule
+    MatSnackBarModule,
   ],
   templateUrl: './project-card.component.html',
-  styleUrls: ['./project-card.component.scss']
+  styleUrls: ['./project-card.component.scss'],
 })
 export class ProjectCardComponent {
   @Input() project!: Project;
@@ -33,26 +32,29 @@ export class ProjectCardComponent {
   @Output() onDelete = new EventEmitter<number>();
   @Output() onActivate = new EventEmitter<number>();
   @Output() onArchive = new EventEmitter<number>();
-  @Output() onUploadThumbnail = new EventEmitter<{ jobId: number, file: File }>();
+  @Output() onUploadThumbnail = new EventEmitter<{
+    jobId: number;
+    file: File;
+  }>();
 
   constructor(private snackBar: MatSnackBar) {}
 
   statusColors = {
-    BIDDING: "bg-blue-500",
-    LIVE: "bg-green-500",
-    DRAFT: "bg-gray-500",
-    FAILED: "bg-red-500",
-    DISCARD: "bg-purple-500",
-    NEW: "bg-yellow-500",
+    BIDDING: 'bg-blue-500',
+    LIVE: 'bg-green-500',
+    DRAFT: 'bg-gray-500',
+    FAILED: 'bg-red-500',
+    DISCARD: 'bg-purple-500',
+    NEW: 'bg-yellow-500',
   };
 
   statusLabels = {
-    BIDDING: "Bidding Phase",
-    LIVE: "Live Project",
-    DRAFT: "Preliminary",
-    FAILED: "Failed",
-    DISCARD: "Discarded",
-    NEW: "New",
+    BIDDING: 'Bidding Phase',
+    LIVE: 'Live Project',
+    DRAFT: 'Preliminary',
+    FAILED: 'Failed',
+    DISCARD: 'Discarded',
+    NEW: 'New',
   };
 
   onFileSelected(event: Event): void {
@@ -62,9 +64,13 @@ export class ProjectCardComponent {
       if (allowedTypes.includes(file.type)) {
         this.onUploadThumbnail.emit({ jobId: this.project.jobId, file: file });
       } else {
-        this.snackBar.open('Invalid file type. Please upload a PNG or JPEG file.', 'Close', {
-          duration: 3000,
-        });
+        this.snackBar.open(
+          'Invalid file type. Please upload a PNG or JPEG file.',
+          'Close',
+          {
+            duration: 3000,
+          },
+        );
       }
     }
   }

@@ -50,28 +50,40 @@
         "length": "231.51'",
         "lengthInches": 2778.12,
         "bearing": "N 20D 54' 51\" W",
-        "line": [ { "x": 481, "y": 425 }, { "x": 401, "y": 642 } ]
+        "line": [
+          { "x": 481, "y": 425 },
+          { "x": 401, "y": 642 }
+        ]
       },
       {
         "id": "pl_002",
         "length": "274.46'",
         "lengthInches": 3293.52,
         "bearing": "N 68D 02' 16\" E",
-        "line": [ { "x": 481, "y": 425 }, { "x": 2356, "y": 526 } ]
+        "line": [
+          { "x": 481, "y": 425 },
+          { "x": 2356, "y": 526 }
+        ]
       },
       {
         "id": "pl_003",
         "length": "22.53'",
         "lengthInches": 270.36,
         "bearing": "S 21D 00' 52\" E",
-        "line": [ { "x": 2356, "y": 526 }, { "x": 2420, "y": 547 } ]
+        "line": [
+          { "x": 2356, "y": 526 },
+          { "x": 2420, "y": 547 }
+        ]
       },
       {
         "id": "pl_004",
         "length": "272.66'",
         "lengthInches": 3271.92,
         "bearing": "S 43D 08' 16\" W",
-        "line": [ { "x": 401, "y": 642 }, { "x": 1500, "y": 2186 } ]
+        "line": [
+          { "x": 401, "y": 642 },
+          { "x": 1500, "y": 2186 }
+        ]
       }
     ],
     "easements": [
@@ -105,25 +117,37 @@
         "id": "setback_001",
         "type": "BUILDING LINE",
         "distance": "10'",
-        "line": [ { "x": 551, "y": 435 }, { "x": 2300, "y": 520 } ]
+        "line": [
+          { "x": 551, "y": 435 },
+          { "x": 2300, "y": 520 }
+        ]
       },
       {
         "id": "setback_002",
         "type": "BUILDING LINE",
         "distance": "10'",
-        "line": [ { "x": 512, "y": 655 }, { "x": 1412, "y": 2174 } ]
+        "line": [
+          { "x": 512, "y": 655 },
+          { "x": 1412, "y": 2174 }
+        ]
       },
       {
         "id": "setback_003",
         "type": "BUILDING LINE",
         "distance": "20'",
-        "line": [ { "x": 519, "y": 442 }, { "x": 440, "y": 658 } ]
+        "line": [
+          { "x": 519, "y": 442 },
+          { "x": 440, "y": 658 }
+        ]
       },
       {
         "id": "setback_004",
         "type": "BUILDING SETBACK",
         "distance": null,
-        "line": [ { "x": 2307, "y": 612 }, { "x": 2235, "y": 1228 } ]
+        "line": [
+          { "x": 2307, "y": 612 },
+          { "x": 2235, "y": 1228 }
+        ]
       }
     ],
     "driveways": [
@@ -147,8 +171,16 @@
       }
     ],
     "utilities": [
-      { "id": "util_001", "type": "PROPANE LOCATION", "position": { "x": 1968, "y": 1283 } },
-      { "id": "util_002", "type": "WATER METER", "position": { "x": 2207, "y": 997 } }
+      {
+        "id": "util_001",
+        "type": "PROPANE LOCATION",
+        "position": { "x": 1968, "y": 1283 }
+      },
+      {
+        "id": "util_002",
+        "type": "WATER METER",
+        "position": { "x": 2207, "y": 997 }
+      }
     ],
     "roadways": [
       {
@@ -266,14 +298,54 @@
     }
   ],
   "annotations": [
-    { "id": "anno_001", "type": "TEXT", "text": "SITE PLAN", "position": { "x": 1817, "y": 1823 } },
-    { "id": "anno_002", "type": "TEXT", "text": "LOT SQUARE FOOTAGE = 43,838 SF", "position": { "x": 1820, "y": 1918 } },
-    { "id": "anno_003", "type": "TEXT", "text": "216 SHELF ROCK ROAD", "position": { "x": 1835, "y": 2062 } },
-    { "id": "anno_004", "type": "TEXT", "text": "BLOCK H, LOT 4", "position": { "x": 1835, "y": 2139 } },
-    { "id": "anno_005", "type": "TEXT", "text": "WILLIAMSON COUNTY, TEXAS", "position": { "x": 1835, "y": 2191 } },
-    { "id": "anno_006", "type": "TEXT", "text": "HOUSE", "position": { "x": 1600, "y": 1007 } },
-    { "id": "anno_007", "type": "TEXT", "text": "DRIVEWAY", "position": { "x": 1563, "y": 1284 } },
-    { "id": "anno_008", "type": "SYMBOL", "text": "NORTH", "position": { "x": 2217, "y": 2131 } }
+    {
+      "id": "anno_001",
+      "type": "TEXT",
+      "text": "SITE PLAN",
+      "position": { "x": 1817, "y": 1823 }
+    },
+    {
+      "id": "anno_002",
+      "type": "TEXT",
+      "text": "LOT SQUARE FOOTAGE = 43,838 SF",
+      "position": { "x": 1820, "y": 1918 }
+    },
+    {
+      "id": "anno_003",
+      "type": "TEXT",
+      "text": "216 SHELF ROCK ROAD",
+      "position": { "x": 1835, "y": 2062 }
+    },
+    {
+      "id": "anno_004",
+      "type": "TEXT",
+      "text": "BLOCK H, LOT 4",
+      "position": { "x": 1835, "y": 2139 }
+    },
+    {
+      "id": "anno_005",
+      "type": "TEXT",
+      "text": "WILLIAMSON COUNTY, TEXAS",
+      "position": { "x": 1835, "y": 2191 }
+    },
+    {
+      "id": "anno_006",
+      "type": "TEXT",
+      "text": "HOUSE",
+      "position": { "x": 1600, "y": 1007 }
+    },
+    {
+      "id": "anno_007",
+      "type": "TEXT",
+      "text": "DRIVEWAY",
+      "position": { "x": 1563, "y": 1284 }
+    },
+    {
+      "id": "anno_008",
+      "type": "SYMBOL",
+      "text": "NORTH",
+      "position": { "x": 2217, "y": 2131 }
+    }
   ],
   "structuralElements": [],
   "symbols": [

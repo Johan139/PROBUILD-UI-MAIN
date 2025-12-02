@@ -8,9 +8,8 @@ describe('ActiveUserDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ActiveUserDashboardComponent]
-    })
-    .compileComponents();
+      imports: [ActiveUserDashboardComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ActiveUserDashboardComponent);
     component = fixture.componentInstance;

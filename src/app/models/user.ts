@@ -1,4 +1,4 @@
-import { Portfolio } from "./portfolio";
+import { Portfolio } from './portfolio';
 
 export class User {
   id!: string;

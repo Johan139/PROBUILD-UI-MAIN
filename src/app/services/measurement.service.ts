@@ -10,7 +10,7 @@ export interface MeasurementSettings {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MeasurementService {
   private static readonly STORAGE_KEY = 'measurement_settings';
@@ -19,7 +19,9 @@ export class MeasurementService {
 
   constructor() {
     const savedSettings = this.loadSettingsFromStorage();
-    this.settingsSubject = new BehaviorSubject<MeasurementSettings>(savedSettings);
+    this.settingsSubject = new BehaviorSubject<MeasurementSettings>(
+      savedSettings,
+    );
   }
 
   private loadSettingsFromStorage(): MeasurementSettings {
@@ -29,7 +31,10 @@ export class MeasurementService {
         return JSON.parse(saved);
       }
     } catch (e) {
-      console.error('Could not parse measurement settings from local storage', e);
+      console.error(
+        'Could not parse measurement settings from local storage',
+        e,
+      );
     }
     return this.getDefaults();
   }
@@ -52,16 +57,22 @@ export class MeasurementService {
     const updatedSettings = { ...currentSettings, ...newSettings };
     this.settingsSubject.next(updatedSettings);
     try {
-      localStorage.setItem(MeasurementService.STORAGE_KEY, JSON.stringify(updatedSettings));
+      localStorage.setItem(
+        MeasurementService.STORAGE_KEY,
+        JSON.stringify(updatedSettings),
+      );
     } catch (e) {
       console.error('Could not save measurement settings to local storage', e);
     }
   }
 
-  public convertTemperature(tempCelsius: number, toUnit?: TemperatureUnit): number {
+  public convertTemperature(
+    tempCelsius: number,
+    toUnit?: TemperatureUnit,
+  ): number {
     const unit = toUnit || this.settingsSubject.getValue().temperature;
     if (unit === 'F') {
-      return (tempCelsius * 9 / 5) + 32;
+      return (tempCelsius * 9) / 5 + 32;
     }
     return tempCelsius;
   }
@@ -69,17 +80,49 @@ export class MeasurementService {
   public getUnits(): string[] {
     return [
       // Imperial Units
-      'sq ft', 'ft', 'in', 'yd', 'mi', 'acre',
-      'lb', 'oz', 'ton', 'gal', 'qt', 'pt', 'fl oz',
+      'sq ft',
+      'ft',
+      'in',
+      'yd',
+      'mi',
+      'acre',
+      'lb',
+      'oz',
+      'ton',
+      'gal',
+      'qt',
+      'pt',
+      'fl oz',
 
       // Metric Units
-      'sq m', 'm', 'cm', 'mm', 'km', 'ha',
-      'kg', 'g', 't', 'L', 'mL',
+      'sq m',
+      'm',
+      'cm',
+      'mm',
+      'km',
+      'ha',
+      'kg',
+      'g',
+      't',
+      'L',
+      'mL',
 
-      // Other 
-      'Each', 'Box', 'Case', 'Pallet', 'Bag', 'Roll',
-      'Linear ft', 'Linear m', 'Cubic yd', 'Cubic m',
-      'Sheet', 'Piece', 'Unit', 'Day', 'Hour'
+      // Other
+      'Each',
+      'Box',
+      'Case',
+      'Pallet',
+      'Bag',
+      'Roll',
+      'Linear ft',
+      'Linear m',
+      'Cubic yd',
+      'Cubic m',
+      'Sheet',
+      'Piece',
+      'Unit',
+      'Day',
+      'Hour',
     ];
   }
 }

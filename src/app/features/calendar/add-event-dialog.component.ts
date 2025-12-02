@@ -1,6 +1,11 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef, MatDialogModule, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
+import {
+  MatDialogRef,
+  MatDialogModule,
+  MatDialogContent,
+  MatDialogActions,
+} from '@angular/material/dialog';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,36 +18,39 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 
 @Component({
-    selector: 'app-add-event-dialog',
-    standalone: true,
-    imports: [
-        ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatDialogModule,
-        MatIconModule,
-        MatDividerModule,
-        CommonModule,
-        MatDatepickerModule,
-        MatNativeDateModule,
-        MatDialogContent,
-        MatDialogActions
-    ],
-    templateUrl: './add-event-dialog.component.html',
-    styleUrls: ['./add-event-dialog.component.scss'],
+  selector: 'app-add-event-dialog',
+  standalone: true,
+  imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatIconModule,
+    MatDividerModule,
+    CommonModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatDialogContent,
+    MatDialogActions,
+  ],
+  templateUrl: './add-event-dialog.component.html',
+  styleUrls: ['./add-event-dialog.component.scss'],
 })
 export class AddEventDialogComponent {
   eventForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private dialogRef: MatDialogRef<AddEventDialogComponent>) {
+  constructor(
+    private fb: FormBuilder,
+    private dialogRef: MatDialogRef<AddEventDialogComponent>,
+  ) {
     this.eventForm = this.fb.group({
       title: ['', Validators.required],
       startDate: ['', Validators.required],
       startTime: [''],
       endDate: [''],
       endTime: [''],
-      description: ['']
+      description: [''],
     });
   }
 

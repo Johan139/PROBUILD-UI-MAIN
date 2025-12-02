@@ -1,17 +1,21 @@
 import { Injectable } from '@angular/core';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from '@microsoft/signalr';
 import { Subject } from 'rxjs';
 import { AuthService } from '../../../authentication/auth.service';
 import { environment } from '../../../../environments/environment';
 
 export interface AnalysisProgressUpdate {
-    jobId: number;
-    statusMessage: string;
-    currentStep: number;
-    totalSteps: number;
-    isComplete: boolean;
-    hasFailed: boolean;
-    errorMessage: string;
+  jobId: number;
+  statusMessage: string;
+  currentStep: number;
+  totalSteps: number;
+  isComplete: boolean;
+  hasFailed: boolean;
+  errorMessage: string;
 }
 
 @Injectable({
@@ -34,20 +38,19 @@ export class SignalrService {
     const hubUrl = `${baseUrl}/hubs/progressHub`;
 
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(
-        hubUrl,
-        {
-          accessTokenFactory: async () => {
-            const token = await this.authService.getToken();
-            return token || '';
-          }
-        }
-      )
+      .withUrl(hubUrl, {
+        accessTokenFactory: async () => {
+          const token = await this.authService.getToken();
+          return token || '';
+        },
+      })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Debug)
       .build();
 
-    this.hubConnection.onreconnecting(error => console.warn('Connection lost. Reconnecting...', error));
+    this.hubConnection.onreconnecting((error) =>
+      console.warn('Connection lost. Reconnecting...', error),
+    );
     this.hubConnection
       .start()
       .then()
@@ -61,14 +64,17 @@ export class SignalrService {
       this.uploadComplete.next(fileCount);
     });
 
-    this.hubConnection.on('ReceiveAnalysisProgress', (data: AnalysisProgressUpdate) => {
+    this.hubConnection.on(
+      'ReceiveAnalysisProgress',
+      (data: AnalysisProgressUpdate) => {
         this.analysisProgress.next(data);
-    });
+      },
+    );
   }
 
   public getConnectionId = (): string | null => {
     return this.hubConnection?.connectionId ?? null;
-  }
+  };
 
   public stopConnection(): void {
     if (this.hubConnection) {

@@ -22,10 +22,9 @@ export class Store<T> {
 
   // Select a slice of the state
   select<K>(selector: (state: T) => K): Observable<K> {
-    return this.state$.asObservable().pipe(
-      map(selector),
-      distinctUntilChanged()
-    );
+    return this.state$
+      .asObservable()
+      .pipe(map(selector), distinctUntilChanged());
   }
 
   // Update the state

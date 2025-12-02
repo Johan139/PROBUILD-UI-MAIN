@@ -1,16 +1,42 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnInit, Renderer2, Inject, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ViewChild,
+  ElementRef,
+  OnInit,
+  Renderer2,
+  Inject,
+  PLATFORM_ID,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { LucideAngularModule, HardHat, MapPin, MousePointer, Hand, ZoomIn, ZoomOut, Maximize2, Ruler, RotateCw, CheckCircle } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  HardHat,
+  MapPin,
+  MousePointer,
+  Hand,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Ruler,
+  RotateCw,
+  CheckCircle,
+} from 'lucide-angular';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { v4 as uuidv4 } from 'uuid';
 import { Observable } from 'rxjs';
 import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
-import { UploadedFileInfo, FileUploadService } from '../../services/file-upload.service';
+import {
+  UploadedFileInfo,
+  FileUploadService,
+} from '../../services/file-upload.service';
 import { Prompt } from '../../features/ai-chat/models/ai-chat.models';
 import { UploadOptionsDialogComponent } from '../../features/jobs/job-quote/upload-options-dialog.component';
 import { ConfirmationDialogComponent } from '../../features/new-project/confirmation-dialog.component';
@@ -38,10 +64,10 @@ export type FlowState =
     PdfJsViewerModule,
     MatFormFieldModule,
     MatSelectModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   templateUrl: './project-blueprint-viewer.component.html',
-  styleUrls: ['./project-blueprint-viewer.component.scss']
+  styleUrls: ['./project-blueprint-viewer.component.scss'],
 })
 export class ProjectBlueprintViewerComponent implements OnInit {
   @Input() mode: ViewerMode = 'create';
@@ -59,10 +85,16 @@ export class ProjectBlueprintViewerComponent implements OnInit {
 
   // Outputs to notify parent of changes
   @Output() flowChange = new EventEmitter<FlowState>();
-  @Output() fileUploaded = new EventEmitter<{files: UploadedFileInfo[], selected: UploadedFileInfo | null, pdfSrc: string | Uint8Array | null}>();
+  @Output() fileUploaded = new EventEmitter<{
+    files: UploadedFileInfo[];
+    selected: UploadedFileInfo | null;
+    pdfSrc: string | Uint8Array | null;
+  }>();
   @Output() fileSelected = new EventEmitter<UploadedFileInfo>();
   @Output() fileRemoved = new EventEmitter<UploadedFileInfo>();
-  @Output() analysisModeChange = new EventEmitter<'full' | 'selected' | 'renovation'>();
+  @Output() analysisModeChange = new EventEmitter<
+    'full' | 'selected' | 'renovation'
+  >();
   @Output() startProject = new EventEmitter<void>();
   @Output() cancelProject = new EventEmitter<void>();
   @Output() addressConfirmed = new EventEmitter<string>();
@@ -122,35 +154,43 @@ export class ProjectBlueprintViewerComponent implements OnInit {
     public dialog: MatDialog,
     private renderer: Renderer2,
     private fileUploadService: FileUploadService,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {}
 
   ngOnInit(): void {
     if (this.mode === 'view' && this.viewModeFiles.length > 0) {
-        // In view mode, we might want to auto-select the first file if provided
-        // Logic handled by parent or ngOnChanges if needed
+      // In view mode, we might want to auto-select the first file if provided
+      // Logic handled by parent or ngOnChanges if needed
     }
   }
 
-  isExtracting(flow: FlowState): flow is Extract<FlowState, { step: 'extracting' }> {
+  isExtracting(
+    flow: FlowState,
+  ): flow is Extract<FlowState, { step: 'extracting' }> {
     return flow.step === 'extracting';
   }
 
-  isFinalizing(flow: FlowState): flow is Extract<FlowState, { step: 'finalizing' }> {
+  isFinalizing(
+    flow: FlowState,
+  ): flow is Extract<FlowState, { step: 'finalizing' }> {
     return flow.step === 'finalizing';
   }
 
-  isWalkthrough(flow: FlowState): flow is Extract<FlowState, { step: 'walkthrough' }> {
+  isWalkthrough(
+    flow: FlowState,
+  ): flow is Extract<FlowState, { step: 'walkthrough' }> {
     return flow.step === 'walkthrough';
   }
 
-  isUploaded(flow: FlowState): flow is Extract<FlowState, { step: 'uploaded' }> {
-      return flow.step === 'uploaded';
+  isUploaded(
+    flow: FlowState,
+  ): flow is Extract<FlowState, { step: 'uploaded' }> {
+    return flow.step === 'uploaded';
   }
 
   get currentKey(): string {
     if (this.isWalkthrough(this.flow)) {
-       // @ts-ignore - TS doesn't narrow the type automatically here despite the check
+      // @ts-ignore - TS doesn't narrow the type automatically here despite the check
       return this.SECTION_ORDER[this.flow.index].key;
     }
     return 'Foundation';
@@ -170,42 +210,57 @@ export class ProjectBlueprintViewerComponent implements OnInit {
       const fileArray = Array.from(files);
       const sessionId = uuidv4(); // Generate a temp session ID for this upload batch
 
-      this.fileUploadService.uploadFiles(fileArray, sessionId).subscribe(upload => {
-        if (upload.files) {
-          const isFirstUpload = this.uploadedFiles.length === 0;
-          const newFiles = [...this.uploadedFiles, ...upload.files];
-          let newSelected = this.selectedFile;
-          let newPdfSrc = this.pdfSrc;
+      this.fileUploadService
+        .uploadFiles(fileArray, sessionId)
+        .subscribe((upload) => {
+          if (upload.files) {
+            const isFirstUpload = this.uploadedFiles.length === 0;
+            const newFiles = [...this.uploadedFiles, ...upload.files];
+            let newSelected = this.selectedFile;
+            let newPdfSrc = this.pdfSrc;
 
-          if (isFirstUpload && newFiles.length > 0) {
-            newSelected = newFiles[0];
-            // Need to fetch the blob for the first file to display it
-            this.fileUploadService.getFile(newSelected.url).subscribe(blob => {
-                 const reader = new FileReader();
-                 reader.onload = () => {
-                     if (reader.result) {
-                         this.emitFileUpdate(newFiles, newSelected, new Uint8Array(reader.result as ArrayBuffer));
-                     }
-                 };
-                 reader.readAsArrayBuffer(blob);
-            });
-            // Emit flow change to parent
-            this.flowChange.emit({ step: 'uploaded', fileName: newSelected.name });
-          } else {
-             // Just update the file list if it's not the first one
-             this.emitFileUpdate(newFiles, newSelected, newPdfSrc);
+            if (isFirstUpload && newFiles.length > 0) {
+              newSelected = newFiles[0];
+              // Need to fetch the blob for the first file to display it
+              this.fileUploadService
+                .getFile(newSelected.url)
+                .subscribe((blob) => {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    if (reader.result) {
+                      this.emitFileUpdate(
+                        newFiles,
+                        newSelected,
+                        new Uint8Array(reader.result as ArrayBuffer),
+                      );
+                    }
+                  };
+                  reader.readAsArrayBuffer(blob);
+                });
+              // Emit flow change to parent
+              this.flowChange.emit({
+                step: 'uploaded',
+                fileName: newSelected.name,
+              });
+            } else {
+              // Just update the file list if it's not the first one
+              this.emitFileUpdate(newFiles, newSelected, newPdfSrc);
+            }
           }
-        }
-      });
+        });
     }
   }
 
-  private emitFileUpdate(files: UploadedFileInfo[], selected: UploadedFileInfo | null, pdfSrc: string | Uint8Array | null) {
-      this.fileUploaded.emit({
-          files: files,
-          selected: selected,
-          pdfSrc: pdfSrc
-      });
+  private emitFileUpdate(
+    files: UploadedFileInfo[],
+    selected: UploadedFileInfo | null,
+    pdfSrc: string | Uint8Array | null,
+  ) {
+    this.fileUploaded.emit({
+      files: files,
+      selected: selected,
+      pdfSrc: pdfSrc,
+    });
   }
 
   onPdfSelectionChange(file: UploadedFileInfo): void {
@@ -216,27 +271,27 @@ export class ProjectBlueprintViewerComponent implements OnInit {
       this.displayPdfByUrl(file.url);
 
       if (this.mode === 'create') {
-          this.flowChange.emit({ step: 'uploaded', fileName: file.name });
+        this.flowChange.emit({ step: 'uploaded', fileName: file.name });
       }
     }
   }
 
   displayPdfByUrl(url: string): void {
-      this.fileUploadService.getFile(url).subscribe(blob => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (reader.result) {
-             const newPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
-             this.fileUploaded.emit({
-                 files: this.uploadedFiles,
-                 selected: this.uploadedFiles.find(f => f.url === url) || null,
-                 pdfSrc: newPdfSrc
-             });
-             this.viewerId = uuidv4();
-          }
-        };
-        reader.readAsArrayBuffer(blob);
-      });
+    this.fileUploadService.getFile(url).subscribe((blob) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          const newPdfSrc = new Uint8Array(reader.result as ArrayBuffer);
+          this.fileUploaded.emit({
+            files: this.uploadedFiles,
+            selected: this.uploadedFiles.find((f) => f.url === url) || null,
+            pdfSrc: newPdfSrc,
+          });
+          this.viewerId = uuidv4();
+        }
+      };
+      reader.readAsArrayBuffer(blob);
+    });
   }
 
   removeFile(file: UploadedFileInfo): void {
@@ -248,12 +303,19 @@ export class ProjectBlueprintViewerComponent implements OnInit {
     if (this.mode === 'view') return;
     const dialogRef = this.dialog.open(UploadOptionsDialogComponent);
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         if (result === 'folder') {
-          this.renderer.setAttribute(this.fileInput.nativeElement, 'webkitdirectory', 'true');
+          this.renderer.setAttribute(
+            this.fileInput.nativeElement,
+            'webkitdirectory',
+            'true',
+          );
         } else {
-          this.renderer.removeAttribute(this.fileInput.nativeElement, 'webkitdirectory');
+          this.renderer.removeAttribute(
+            this.fileInput.nativeElement,
+            'webkitdirectory',
+          );
         }
         this.fileInput.nativeElement.click();
       }
@@ -291,29 +353,28 @@ export class ProjectBlueprintViewerComponent implements OnInit {
   }
 
   onAnalysisModeChange(mode: 'full' | 'selected' | 'renovation') {
-      this.analysisModeChange.emit(mode);
+    this.analysisModeChange.emit(mode);
   }
 
   onStartProject() {
-      this.startProject.emit();
+    this.startProject.emit();
   }
 
   onCancel() {
-      this.cancelProject.emit();
+    this.cancelProject.emit();
   }
 
   onConfirmAddress() {
-      // TODO: Logic to confirm address. Or remove as might not be needed
+    // TODO: Logic to confirm address. Or remove as might not be needed
   }
 
   confirmAddressAction() {
-      if (this.flow.step === 'address') {
-         this.addressConfirmed.emit(this.flow.detectedAddress);
-      }
+    if (this.flow.step === 'address') {
+      this.addressConfirmed.emit(this.flow.detectedAddress);
+    }
   }
 
   editAddressAction() {
-      this.addressEdit.emit();
+    this.addressEdit.emit();
   }
 }
-

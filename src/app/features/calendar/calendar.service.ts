@@ -7,21 +7,21 @@ import { environment } from '../../../environments/environment';
 import { AuthService } from '../../authentication/auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CalendarService {
   private apiUrl = `${environment.BACKEND_URL}/calendar`;
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     });
   }
 
@@ -30,12 +30,15 @@ export class CalendarService {
     if (!userId) {
       return of([]); // Simulate empty response for unauthenticated users
     }
-    return this.http.get<CalendarEvent[]>(`${this.apiUrl}/events/${userId}`, { headers: this.getHeaders() })
+    return this.http
+      .get<
+        CalendarEvent[]
+      >(`${this.apiUrl}/events/${userId}`, { headers: this.getHeaders() })
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error fetching events:', error);
           return of([]); // Return empty array on error
-        })
+        }),
       );
   }
 
@@ -44,12 +47,17 @@ export class CalendarService {
     if (!userId) {
       return of(event); // Simulate success for unauthenticated users
     }
-    return this.http.post<CalendarEvent>(`${this.apiUrl}/events`, { ...event, userId }, { headers: this.getHeaders() })
+    return this.http
+      .post<CalendarEvent>(
+        `${this.apiUrl}/events`,
+        { ...event, userId },
+        { headers: this.getHeaders() },
+      )
       .pipe(
-        catchError(error => {
+        catchError((error) => {
           console.error('Error adding event:', error);
           return of(event); // Simulate success on error
-        })
+        }),
       );
   }
 }

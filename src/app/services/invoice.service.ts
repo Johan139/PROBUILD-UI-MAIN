@@ -1,5 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpEventType, HttpHeaders } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpEventType,
+  HttpHeaders,
+} from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subject } from 'rxjs';
 import { timeout } from 'rxjs/operators';
@@ -9,23 +14,26 @@ import { Invoice } from '../models/invoice';
 const BASE_URL = environment.BACKEND_URL;
 
 export interface UploadProgress {
-    progress: number;
-    isUploading: boolean;
+  progress: number;
+  isUploading: boolean;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class InvoiceService {
-
   private apiUrl = `${BASE_URL}/api/invoices`;
 
   constructor(
     private httpClient: HttpClient,
-    private snackBar: MatSnackBar
-  ) { }
+    private snackBar: MatSnackBar,
+  ) {}
 
-  uploadInvoice(file: File, jobId: number, amount: number): Observable<UploadProgress> {
+  uploadInvoice(
+    file: File,
+    jobId: number,
+    amount: number,
+  ): Observable<UploadProgress> {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('jobId', jobId.toString());
@@ -42,11 +50,18 @@ export class InvoiceService {
       .pipe(timeout(300000)) // 5-minute timeout
       .subscribe({
         next: (httpEvent) => {
-          if (httpEvent.type === HttpEventType.UploadProgress && httpEvent.total) {
-            const progress = Math.round((100 * httpEvent.loaded) / httpEvent.total);
+          if (
+            httpEvent.type === HttpEventType.UploadProgress &&
+            httpEvent.total
+          ) {
+            const progress = Math.round(
+              (100 * httpEvent.loaded) / httpEvent.total,
+            );
             uploadSubject.next({ progress: progress, isUploading: true });
           } else if (httpEvent.type === HttpEventType.Response) {
-            this.snackBar.open('Invoice uploaded successfully!', 'Close', { duration: 3000 });
+            this.snackBar.open('Invoice uploaded successfully!', 'Close', {
+              duration: 3000,
+            });
             uploadSubject.next({ progress: 100, isUploading: false });
             uploadSubject.complete();
           }
@@ -57,7 +72,7 @@ export class InvoiceService {
           uploadSubject.error(error);
         },
       });
-      return uploadSubject.asObservable();
+    return uploadSubject.asObservable();
   }
 
   getInvoicesForJob(jobId: number): Observable<Invoice[]> {
@@ -65,7 +80,9 @@ export class InvoiceService {
   }
 
   updateInvoiceStatus(invoiceId: string, status: string): Observable<any> {
-    return this.httpClient.put(`${this.apiUrl}/${invoiceId}/status`, { status });
+    return this.httpClient.put(`${this.apiUrl}/${invoiceId}/status`, {
+      status,
+    });
   }
 
   private handleUploadError(error: HttpErrorResponse): void {
@@ -76,10 +93,12 @@ export class InvoiceService {
       errorMessage = `An error occurred: ${error.error.message}`;
     } else if (error.status === 400) {
       // Bad request from the server
-      errorMessage = 'Invalid request. Please check the uploaded file and data.';
+      errorMessage =
+        'Invalid request. Please check the uploaded file and data.';
     } else if (error.status === 413) {
       // Payload Too Large
-      errorMessage = 'The file size is too large. Please upload a smaller file.';
+      errorMessage =
+        'The file size is too large. Please upload a smaller file.';
     } else if (error.status === 500) {
       // Internal Server Error
       errorMessage = 'A server error occurred. Please try again later.';
@@ -87,7 +106,7 @@ export class InvoiceService {
 
     this.snackBar.open(errorMessage, 'Close', {
       duration: 5000,
-      panelClass: ['error-snackbar']
+      panelClass: ['error-snackbar'],
     });
   }
 }

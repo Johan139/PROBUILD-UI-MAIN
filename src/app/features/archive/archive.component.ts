@@ -18,28 +18,34 @@ import { MatCardModule } from '@angular/material/card';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
-    selector: 'app-archive',
-    templateUrl: './archive.component.html',
-    styleUrls: ['./archive.component.scss'],
-    standalone: true,
-    imports: [
-        CommonModule,
-        MatTableModule,
-        MatButtonModule,
-        MatIconModule,
-        MatMenuModule,
-        DatePipe,
-        LoaderComponent,
-        MatCardModule,
-        MatTabsModule,
-    ]
+  selector: 'app-archive',
+  templateUrl: './archive.component.html',
+  styleUrls: ['./archive.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    DatePipe,
+    LoaderComponent,
+    MatCardModule,
+    MatTabsModule,
+  ],
 })
 export class ArchiveComponent implements OnInit {
   archivedNotes: any[] = [];
   archivedJobs: any[] = [];
   isLoading = true;
   displayedColumns: string[] = ['project', 'task', 'created', 'status', 'view'];
-  jobDisplayedColumns: string[] = ['projectName', 'jobType', 'status', 'completionDate', 'actions'];
+  jobDisplayedColumns: string[] = [
+    'projectName',
+    'jobType',
+    'status',
+    'completionDate',
+    'actions',
+  ];
   private userId: string | null = null;
   openingNoteId: string | null = null;
 
@@ -49,7 +55,7 @@ export class ArchiveComponent implements OnInit {
     private dialog: MatDialog,
     private authService: AuthService,
     private userService: UserService,
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.loadArchivedNotes();
@@ -65,7 +71,7 @@ export class ArchiveComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -73,17 +79,17 @@ export class ArchiveComponent implements OnInit {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Unarchive Project',
-        message: `Are you sure you want to unarchive "${job.projectName}"? It will be moved back to your projects list.`
-      }
+        message: `Are you sure you want to unarchive "${job.projectName}"? It will be moved back to your projects list.`,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.jobsService.unarchiveJob(job.jobId).subscribe({
           next: () => {
             this.loadArchivedJobs();
           },
-          error: (err) => console.error('Error unarchiving job', err)
+          error: (err) => console.error('Error unarchiving job', err),
         });
       }
     });
@@ -93,17 +99,17 @@ export class ArchiveComponent implements OnInit {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Permanently Delete Project',
-        message: `Are you sure you want to permanently delete "${job.projectName}"? This action cannot be undone.`
-      }
+        message: `Are you sure you want to permanently delete "${job.projectName}"? This action cannot be undone.`,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.jobsService.deleteJob(job.jobId).subscribe({
           next: () => {
             this.loadArchivedJobs();
           },
-          error: (err) => console.error('Error deleting job', err)
+          error: (err) => console.error('Error deleting job', err),
         });
       }
     });
@@ -113,46 +119,50 @@ export class ArchiveComponent implements OnInit {
     this.isLoading = true;
     combineLatest([
       this.authService.currentUser$,
-      this.authService.userPermissions$
-    ]).pipe(
-      switchMap(([user, permissions]) => {
-        if (user) {
-          this.userId = user.id;
-          const isTeamMember = !!user.inviterId;
-          const canManageNotes = permissions.includes('manageSubtaskNotes');
+      this.authService.userPermissions$,
+    ])
+      .pipe(
+        switchMap(([user, permissions]) => {
+          if (user) {
+            this.userId = user.id;
+            const isTeamMember = !!user.inviterId;
+            const canManageNotes = permissions.includes('manageSubtaskNotes');
 
-          if (isTeamMember && canManageNotes) {
-            return this.noteService.getArchivedNotesForAssignedJobs(user.id);
-          } else if (!isTeamMember) {
-            return this.noteService.getArchivedNotes(user.id);
+            if (isTeamMember && canManageNotes) {
+              return this.noteService.getArchivedNotesForAssignedJobs(user.id);
+            } else if (!isTeamMember) {
+              return this.noteService.getArchivedNotes(user.id);
+            }
           }
-        }
-        return of([]);
-      })
-    ).subscribe({
-      next: (notes) => {
-        this.archivedNotes = notes;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.isLoading = false;
-      }
-    });
+          return of([]);
+        }),
+      )
+      .subscribe({
+        next: (notes) => {
+          this.archivedNotes = notes;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.isLoading = false;
+        },
+      });
   }
 
   openNoteDetail(note: any): void {
     this.openingNoteId = note.notes[0].id;
-    const userIds = [...new Set(note.notes.map((n: any) => n.createdByUserId))].filter(id => !!id) as string[];
+    const userIds = [
+      ...new Set(note.notes.map((n: any) => n.createdByUserId)),
+    ].filter((id) => !!id) as string[];
     if (userIds.length === 0) {
       this.openDialogWithUserNames(note, new Map<string, string>());
       return;
     }
 
-    const userRequests = userIds.map(id => this.userService.getUserById(id));
+    const userRequests = userIds.map((id) => this.userService.getUserById(id));
 
-    forkJoin(userRequests).subscribe(users => {
+    forkJoin(userRequests).subscribe((users) => {
       const userNames = new Map<string, string>();
-      users.forEach(user => {
+      users.forEach((user) => {
         if (user) {
           userNames.set(user.id, `${user.firstName} ${user.lastName}`);
         }
@@ -165,7 +175,7 @@ export class ArchiveComponent implements OnInit {
     const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
       width: '80vw',
       maxWidth: '900px',
-      data: { ...note, userNames, isArchived: true }
+      data: { ...note, userNames, isArchived: true },
     });
 
     dialogRef.afterClosed().subscribe(() => {

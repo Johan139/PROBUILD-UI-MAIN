@@ -5,12 +5,12 @@ import { environment } from '../../../../environments/environment';
 import { BudgetLineItem } from '../../../models/budget-line-item.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BudgetService {
   private apiUrl = `${environment.BACKEND_URL}/budget`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getBudget(jobId: number): Observable<BudgetLineItem[]> {
     return this.http.get<BudgetLineItem[]>(`${this.apiUrl}/${jobId}`);
@@ -24,7 +24,10 @@ export class BudgetService {
     return this.http.post<BudgetLineItem[]>(`${this.apiUrl}/batch`, items);
   }
 
-  updateBudgetItem(id: number, item: BudgetLineItem): Observable<BudgetLineItem> {
+  updateBudgetItem(
+    id: number,
+    item: BudgetLineItem,
+  ): Observable<BudgetLineItem> {
     return this.http.put<BudgetLineItem>(`${this.apiUrl}/${id}`, item);
   }
 

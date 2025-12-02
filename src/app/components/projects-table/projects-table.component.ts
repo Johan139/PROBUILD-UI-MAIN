@@ -1,4 +1,13 @@
-import { Component, Input, Output, EventEmitter, ViewChild, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ViewChild,
+  AfterViewInit,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -18,10 +27,10 @@ import { Project } from '../../models/project';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   templateUrl: './projects-table.component.html',
-  styleUrls: ['./projects-table.component.scss']
+  styleUrls: ['./projects-table.component.scss'],
 })
 export class ProjectsTableComponent implements AfterViewInit, OnChanges {
   @Input() projects: Project[] = [];
@@ -29,7 +38,13 @@ export class ProjectsTableComponent implements AfterViewInit, OnChanges {
   @Output() onEdit = new EventEmitter<number>();
   @Output() onArchive = new EventEmitter<number>();
 
-  displayedColumns: string[] = ['projectName', 'createdAt', 'progress', 'status', 'actions'];
+  displayedColumns: string[] = [
+    'projectName',
+    'createdAt',
+    'progress',
+    'status',
+    'actions',
+  ];
   dataSource = new MatTableDataSource<Project>([]);
 
   @ViewChild(MatSort) sort!: MatSort;

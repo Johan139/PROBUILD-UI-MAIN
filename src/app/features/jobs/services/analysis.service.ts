@@ -18,14 +18,17 @@ export interface AnalysisResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AnalysisService {
-
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   performAnalysis(request: AnalysisRequestDto): Observable<AnalysisResponse> {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
-    return this.http.post<AnalysisResponse>(`${BASE_URL}/Ai/perform-selected`, request, { headers });
+    return this.http.post<AnalysisResponse>(
+      `${BASE_URL}/Ai/perform-selected`,
+      request,
+      { headers },
+    );
   }
 }

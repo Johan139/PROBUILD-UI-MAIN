@@ -1,4 +1,4 @@
-import { UploadedFileInfo } from "../services/file-upload.service";
+import { UploadedFileInfo } from '../services/file-upload.service';
 
 export interface FireAndForgetRequestDto {
   analysisType: 'sequential' | 'selected' | 'renovation';

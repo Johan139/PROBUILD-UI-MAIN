@@ -1,5 +1,21 @@
-import { Component, Inject, OnInit, OnDestroy, PLATFORM_ID, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  Component,
+  Inject,
+  OnInit,
+  OnDestroy,
+  PLATFORM_ID,
+  ElementRef,
+  ViewChild,
+  AfterViewInit,
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormField, MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,10 +37,17 @@ import { LoaderComponent } from '../../../loader/loader.component';
 import { timeout, switchMap, filter, take, map } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { DatePipe } from '@angular/common';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  LogLevel,
+} from '@microsoft/signalr';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { QuoteService } from '../../quote/quote.service';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -32,7 +55,10 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { AuthService } from '../../../authentication/auth.service';
-import { FileUploadService, UploadedFileInfo } from '../../../services/file-upload.service';
+import {
+  FileUploadService,
+  UploadedFileInfo,
+} from '../../../services/file-upload.service';
 import { AnalysisService } from '../services/analysis.service';
 import { AiChatService } from '../../ai-chat/services/ai-chat.service';
 import { AiChatStateService } from '../../ai-chat/services/ai-chat-state.service';
@@ -49,46 +75,46 @@ const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
 
 @Component({
-    selector: 'app-job-quote',
-    standalone: true,
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        MatFormField,
-        MatSelectModule,
-        MatDatepickerModule,
-        ReactiveFormsModule,
-        MatCardModule,
-        MatDivider,
-        FormsModule,
-        NgIf,
-        NgFor,
-        // Angular Material Modules
-        MatFormFieldModule,
-        MatSelectModule,
-        MatDatepickerModule,
-        MatCardModule,
-        MatDividerModule,
-        MatInputModule,
-        MatButtonModule,
-        MatProgressBarModule,
-        MatTooltipModule,
-        MatDialogModule,
-        MatAutocompleteModule,
-        MatTableModule,
-        MatExpansionModule,
-        MatIconModule,
-        MatCheckboxModule,
-        MatRadioModule,
-        // Custom Components and Pipes
-        LoaderComponent,
-        SubscriptionWarningComponent,
-        PdfViewerComponent,
-        MatToolbarModule
-    ],
-    providers: [provideNativeDateAdapter(), DatePipe],
-    templateUrl: './job-quote.component.html',
-    styleUrls: ['./job-quote.component.scss']
+  selector: 'app-job-quote',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormField,
+    MatSelectModule,
+    MatDatepickerModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatDivider,
+    FormsModule,
+    NgIf,
+    NgFor,
+    // Angular Material Modules
+    MatFormFieldModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatCardModule,
+    MatDividerModule,
+    MatInputModule,
+    MatButtonModule,
+    MatProgressBarModule,
+    MatTooltipModule,
+    MatDialogModule,
+    MatAutocompleteModule,
+    MatTableModule,
+    MatExpansionModule,
+    MatIconModule,
+    MatCheckboxModule,
+    MatRadioModule,
+    // Custom Components and Pipes
+    LoaderComponent,
+    SubscriptionWarningComponent,
+    PdfViewerComponent,
+    MatToolbarModule,
+  ],
+  providers: [provideNativeDateAdapter(), DatePipe],
+  templateUrl: './job-quote.component.html',
+  styleUrls: ['./job-quote.component.scss'],
 })
 export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
@@ -113,16 +139,22 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   uploadedFileInfos: UploadedFileInfo[] = [];
   userContextFile: File | null = null;
   activeBlueprints: BlueprintDocument[] = [];
-  activeDocument: { url: string, name: string} | null = null;
+  activeDocument: { url: string; name: string } | null = null;
   //predictions: any[] = [];
   autocompleteService: google.maps.places.AutocompleteService | undefined;
   //autocomplete: google.maps.places.Autocomplete | undefined;
   options: { description: string; place_id: string }[] = [];
-  addressControl = new FormControl<string>('',[Validators.required]);
+  addressControl = new FormControl<string>('', [Validators.required]);
   selectedPlace: { description: string; place_id: string } | null = null;
   private isGoogleMapsLoaded: boolean = false; // Track if Google Maps script is loaded
   activeBidsDataSource = new MatTableDataSource<any>();
-  activeBidColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
+  activeBidColumns: string[] = [
+    'number',
+    'createdBy',
+    'createdDate',
+    'total',
+    'actions',
+  ];
 
   analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
   availablePrompts$: Observable<Prompt[]>;
@@ -145,13 +177,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     private analysisService: AnalysisService,
     private aiChatService: AiChatService,
     private aiChatStateService: AiChatStateService,
-    public overlayState: OverlayStateService
+    public overlayState: OverlayStateService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
-    const hiddenPromptsForJobQuote = ['SYSTEM_COMPREHENSIVE_ANALYSIS', 'SYSTEM_RENOVATION_ANALYSIS'];
+    const hiddenPromptsForJobQuote = [
+      'SYSTEM_COMPREHENSIVE_ANALYSIS',
+      'SYSTEM_RENOVATION_ANALYSIS',
+    ];
     this.availablePrompts$ = this.aiChatStateService.prompts$.pipe(
-      map(prompts => prompts.filter(p => !hiddenPromptsForJobQuote.includes(p.promptKey)))
+      map((prompts) =>
+        prompts.filter((p) => !hiddenPromptsForJobQuote.includes(p.promptKey)),
+      ),
     );
   }
 
@@ -185,37 +222,53 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       generateDetailsWithAi: [false],
     });
 
-    this.jobCardForm.get('generateDetailsWithAi')?.valueChanges.subscribe(value => {
-      const jobDetailControls = [
-        'jobType', 'quantity', 'wallStructure', 'wallInsulation',
-        'roofStructure', 'roofInsulation', 'foundation', 'finishes',
-        'electricalSupply', 'stories', 'buildingSize'
-      ];
+    this.jobCardForm
+      .get('generateDetailsWithAi')
+      ?.valueChanges.subscribe((value) => {
+        const jobDetailControls = [
+          'jobType',
+          'quantity',
+          'wallStructure',
+          'wallInsulation',
+          'roofStructure',
+          'roofInsulation',
+          'foundation',
+          'finishes',
+          'electricalSupply',
+          'stories',
+          'buildingSize',
+        ];
 
-      jobDetailControls.forEach(controlName => {
-        const control = this.jobCardForm.get(controlName);
-        if (value) {
-          control?.clearValidators();
-          control?.disable();
-        } else {
-          control?.setValidators([Validators.required]);
-          control?.enable();
-        }
-        control?.updateValueAndValidity();
+        jobDetailControls.forEach((controlName) => {
+          const control = this.jobCardForm.get(controlName);
+          if (value) {
+            control?.clearValidators();
+            control?.disable();
+          } else {
+            control?.setValidators([Validators.required]);
+            control?.enable();
+          }
+          control?.updateValueAndValidity();
+        });
       });
-    });
 
     this.hubConnection = new HubConnectionBuilder()
-    .withUrl('https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub', {
-      accessTokenFactory: () => localStorage.getItem('authToken') || ''
-    })
-    .withAutomaticReconnect()
-    .configureLogging(LogLevel.Debug)
-    .build();
+      .withUrl(
+        'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub',
+        {
+          accessTokenFactory: () => localStorage.getItem('authToken') || '',
+        },
+      )
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Debug)
+      .build();
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
-      this.progress = Math.min(100, 50 + Math.round((cappedProgress * 50) / 100));
+      this.progress = Math.min(
+        100,
+        50 + Math.round((cappedProgress * 50) / 100),
+      );
       // console.log(`Server-to-Azure Progress: ${this.progress}% (Raw SignalR: ${cappedProgress}%)`);
     });
 
@@ -225,26 +278,31 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       // console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
 
-    this.authService.currentUser$.pipe(
-      filter(user => !!user),
-      take(1),
-      switchMap(user => {
-        return this.httpClient.get<{ hasActive: boolean }>(`${BASE_URL}/Account/has-active-subscription/${user.id}`);
-      })
-    ).subscribe({
-      next: (res) => {
-        this.subscriptionActive = res.hasActive;
-        if (!res.hasActive) {
-          this.alertMessage = "You do not have an active subscription. Please subscribe to create a job quote.";
-        }
-      },
-      error: (err) => {
-        console.error('Subscription check failed', err);
-        this.alertMessage = "Unable to verify subscription. Try again later.";
-        this.showAlert = true;
-        this.router.navigate(['/dashboard']);
-      }
-    });
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+        switchMap((user) => {
+          return this.httpClient.get<{ hasActive: boolean }>(
+            `${BASE_URL}/Account/has-active-subscription/${user.id}`,
+          );
+        }),
+      )
+      .subscribe({
+        next: (res) => {
+          this.subscriptionActive = res.hasActive;
+          if (!res.hasActive) {
+            this.alertMessage =
+              'You do not have an active subscription. Please subscribe to create a job quote.';
+          }
+        },
+        error: (err) => {
+          console.error('Subscription check failed', err);
+          this.alertMessage = 'Unable to verify subscription. Try again later.';
+          this.showAlert = true;
+          this.router.navigate(['/dashboard']);
+        },
+      });
     // this.hubConnection
     //   .start()
     //   .then(() => console.log('SignalR connection established successfully'))
@@ -269,34 +327,36 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (this.isBrowser) {
-      this.authService.currentUser$.pipe(
-        filter(user => !!user),
-        take(1),
-        switchMap(user => {
-          if (user && user.id) {
-            this.isLoading = true;
-            // Check if the user is a team member (e.g., has an inviterId)
-            if (user.inviterId) {
-              return this.jobService.getAssignedJobsForTeamMember(user.id);
-            } else {
-              return this.jobService.getAllJobsByUserId(user.id);
+      this.authService.currentUser$
+        .pipe(
+          filter((user) => !!user),
+          take(1),
+          switchMap((user) => {
+            if (user && user.id) {
+              this.isLoading = true;
+              // Check if the user is a team member (e.g., has an inviterId)
+              if (user.inviterId) {
+                return this.jobService.getAssignedJobsForTeamMember(user.id);
+              } else {
+                return this.jobService.getAllJobsByUserId(user.id);
+              }
             }
-          }
-          return of([]); // Return empty observable if no user
-        })
-      ).subscribe({
-        next: (response: any) => {
+            return of([]); // Return empty observable if no user
+          }),
+        )
+        .subscribe({
+          next: (response: any) => {
             if (response) {
-                this.jobListFull = response;
-                this.loadJobs();
+              this.jobListFull = response;
+              this.loadJobs();
             }
             this.isLoading = false;
-        },
-        error: (error) => {
+          },
+          error: (error) => {
             console.error('Error fetching jobs:', error);
             this.isLoading = false;
-        }
-    });
+          },
+        });
     }
 
     this.loadActiveBids();
@@ -352,7 +412,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       if (typeof value === 'string' && value.trim()) {
         const service = new google.maps.places.AutocompleteService();
         service.getPlacePredictions({ input: value }, (predictions, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
             this.options = predictions.map((pred) => ({
               description: pred.description,
               place_id: pred.place_id,
@@ -369,9 +432,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.hubConnection) {
-      this.hubConnection.stop()
+      this.hubConnection
+        .stop()
         .then()
-        .catch(err => console.error('Error stopping SignalR:', err));
+        .catch((err) => console.error('Error stopping SignalR:', err));
     }
     //this.deleteTemporaryFiles();
   }
@@ -390,7 +454,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         if (typeof google !== 'undefined' && google.maps) {
           resolve();
         } else {
-          reject(new Error('Google Maps API script loaded but google object is not defined'));
+          reject(
+            new Error(
+              'Google Maps API script loaded but google object is not defined',
+            ),
+          );
         }
       };
 
@@ -412,13 +480,16 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       service.getPlacePredictions(
         { input: input },
         (predictions: any[] | null, status: string) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
             resolve(predictions);
           } else {
             resolve([]);
             console.warn('Place predictions failed with status:', status);
           }
-        }
+        },
       );
     });
   }
@@ -438,19 +509,26 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
+    const placesService = new google.maps.places.PlacesService(
+      this.addressInput.nativeElement,
+    );
     placesService.getDetails(
       { placeId: placeId, fields: ['name', 'formatted_address', 'geometry'] },
-      (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+      (
+        place: google.maps.places.PlaceResult | null,
+        status: google.maps.places.PlacesServiceStatus,
+      ) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
           // console.log('Place details:', place);
         } else {
           console.warn('Place details failed with status:', status);
-          if (status === google.maps.places.PlacesServiceStatus.INVALID_REQUEST) {
+          if (
+            status === google.maps.places.PlacesServiceStatus.INVALID_REQUEST
+          ) {
             console.error('Invalid placeId:', placeId);
           }
         }
-      }
+      },
     );
   }
 
@@ -463,7 +541,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         console.error('Failed to load active bids', err);
         this.activeBidsDataSource.data = [];
-      }
+      },
     });
   }
 
@@ -480,14 +558,17 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   openQuote(quoteId: string | null): void {
     // console.log('Attempting to open quote with ID:', quoteId);
     this.router.navigate(['/quote'], {
-      queryParams: { quoteId: quoteId }
+      queryParams: { quoteId: quoteId },
     });
   }
 
   navigatePage(direction: 'prev' | 'next'): void {
     if (direction === 'prev' && this.currentPage > 1) {
       this.currentPage--;
-    } else if (direction === 'next' && this.currentPage * this.pageSize < this.jobListFull.length) {
+    } else if (
+      direction === 'next' &&
+      this.currentPage * this.pageSize < this.jobListFull.length
+    ) {
       this.currentPage++;
     }
     this.loadJobs();
@@ -557,11 +638,18 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     formData.append('company', formValue.company);
     formData.append('position', formValue.position);
     formData.append('sessionId', this.sessionId);
-    formData.append('temporaryFileUrls', JSON.stringify(this.uploadedFileInfos.map(f => f.url)));
+    formData.append(
+      'temporaryFileUrls',
+      JSON.stringify(this.uploadedFileInfos.map((f) => f.url)),
+    );
     formData.append('userContextText', formValue.userContextText);
 
     if (this.userContextFile) {
-      formData.append('userContextFile', this.userContextFile, this.userContextFile.name);
+      formData.append(
+        'userContextFile',
+        this.userContextFile,
+        this.userContextFile.name,
+      );
     }
     formData.append('generateDetailsWithAi', formValue.generateDetailsWithAi);
 
@@ -570,29 +658,51 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.analysisType === 'Selected') {
       const selectedPromptIds = this.selectedPrompts.value as number[] | null;
       if (selectedPromptIds && selectedPromptIds.length > 0) {
-        this.availablePrompts$.pipe(take(1)).subscribe(allPrompts => {
+        this.availablePrompts$.pipe(take(1)).subscribe((allPrompts) => {
           const selectedPromptKeys = selectedPromptIds
-            .map(id => allPrompts.find(p => p.id === id)?.promptKey)
+            .map((id) => allPrompts.find((p) => p.id === id)?.promptKey)
             .filter((key): key is string => !!key);
-          selectedPromptKeys.forEach(key => formData.append('promptKeys', key));
+          selectedPromptKeys.forEach((key) =>
+            formData.append('promptKeys', key),
+          );
         });
       }
     }
 
     if (this.selectedPlace && this.selectedPlace.place_id) {
-      const placesService = new google.maps.places.PlacesService(this.addressInput.nativeElement);
+      const placesService = new google.maps.places.PlacesService(
+        this.addressInput.nativeElement,
+      );
       placesService.getDetails(
-        { placeId: this.selectedPlace.place_id, fields: ['geometry', 'formatted_address', 'address_components', 'types'] },
-        (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
+        {
+          placeId: this.selectedPlace.place_id,
+          fields: [
+            'geometry',
+            'formatted_address',
+            'address_components',
+            'types',
+          ],
+        },
+        (
+          place: google.maps.places.PlaceResult | null,
+          status: google.maps.places.PlacesServiceStatus,
+        ) => {
           // console.log('Place details status:', status);
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             // console.log('Google Maps place details:', place);
             // console.log('Geometry:', place.geometry);
             // console.log('Location:', place.geometry?.location);
-            const lat = place.geometry?.location?.lat ? place.geometry.location.lat() : undefined;
-            const lng = place.geometry?.location?.lng ? place.geometry.location.lng() : undefined;
+            const lat = place.geometry?.location?.lat
+              ? place.geometry.location.lat()
+              : undefined;
+            const lng = place.geometry?.location?.lng
+              ? place.geometry.location.lng()
+              : undefined;
             // console.log('Latitude:', lat, 'Longitude:', lng);
-            formData.set('address', place.formatted_address || formValue.address);
+            formData.set(
+              'address',
+              place.formatted_address || formValue.address,
+            );
 
             let streetNumber = '';
             let streetName = '';
@@ -602,7 +712,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
             let country = '';
 
             if (place.address_components) {
-              place.address_components.forEach(component => {
+              place.address_components.forEach((component) => {
                 const types = component.types;
                 if (types.includes('street_number')) {
                   streetNumber = component.long_name;
@@ -639,16 +749,27 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
               this.submitFormData(formData, callback);
             } else {
-              console.warn('Latitude or Longitude undefined for place_id:', this.selectedPlace!.place_id);
+              console.warn(
+                'Latitude or Longitude undefined for place_id:',
+                this.selectedPlace!.place_id,
+              );
               console.warn('Place types:', place.types);
               formData.append('googlePlaceId', this.selectedPlace!.place_id);
 
               // Fallback to Geocoding API
               // console.log('Falling back to Geocoding API for address:', formValue.address);
-              this.httpClient.get('https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key='+ Google_API)
+              this.httpClient
+                .get(
+                  'https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(formValue.address)}&key=' +
+                    Google_API,
+                )
                 .subscribe({
                   next: (response: any) => {
-                    if (response.status === 'OK' && response.results && response.results.length > 0) {
+                    if (
+                      response.status === 'OK' &&
+                      response.results &&
+                      response.results.length > 0
+                    ) {
                       const location = response.results[0].geometry.location;
                       const lat = location.lat;
                       const lng = location.lng;
@@ -664,21 +785,24 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                   error: (error) => {
                     console.error('Geocoding API error:', error);
                     this.submitFormData(formData, callback); // Proceed without lat/long
-                  }
+                  },
                 });
             }
           } else {
             console.warn('Failed to fetch place details for lat/long:', status);
             this.submitFormData(formData, callback);
           }
-        }
+        },
       );
     } else {
       this.submitFormData(formData, callback);
     }
   }
 
-  private submitFormData(formData: FormData, callback?: (jobResponse: JobResponse) => void): void {
+  private submitFormData(
+    formData: FormData,
+    callback?: (jobResponse: JobResponse) => void,
+  ): void {
     this.progress = 0;
 
     this.httpClient
@@ -706,7 +830,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                   operatingArea: res.operatingArea,
                   address: res.address,
                   documents: res.documents,
-                  latitude : res.latitude,
+                  latitude: res.latitude,
                   longitude: res.longitude,
                   ...this.jobCardForm.value,
                 };
@@ -714,7 +838,9 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.showAlert = true;
                 this.uploadedFileInfos = [];
                 this.dialog.closeAll();
-                this.router.navigate(['view-quote'], { queryParams: responseParams });
+                this.router.navigate(['view-quote'], {
+                  queryParams: responseParams,
+                });
               }
             }
           }
@@ -731,10 +857,10 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadJob(id: any): void {
-    this.jobService.getSpecificJob(id).subscribe(res => {
+    this.jobService.getSpecificJob(id).subscribe((res) => {
       const parsedDate = new Date(res.desiredStartDate);
       const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-      
+
       const responseParams = {
         jobId: res.jobId,
         operatingArea: res.operatingArea,
@@ -751,7 +877,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         foundation: res.foundation,
         date: formattedDate,
         documents: res.documents,
-        latitude : res.latitude,
+        latitude: res.latitude,
         longitude: res.longitude,
       };
       this.router.navigate(['view-quote'], { queryParams: responseParams });
@@ -790,11 +916,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.jobCardForm.get('buildingSize')?.setValue(newValue.toFixed(2), { emitEvent: true });
+    this.jobCardForm
+      .get('buildingSize')
+      ?.setValue(newValue.toFixed(2), { emitEvent: true });
     this.selectedUnit = unit;
   }
-
-
 
   onCancel(): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
@@ -803,7 +929,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       disableClose: true,
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result === true) {
         // console.log('Cancel clicked. Files to be deleted:', this.uploadedFileInfos.map(f => f.url));
         //this.deleteTemporaryFiles();
@@ -816,21 +942,23 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteTemporaryFiles(): void {
-    const urlsToDelete = this.uploadedFileInfos.map(f => f.url);
+    const urlsToDelete = this.uploadedFileInfos.map((f) => f.url);
     if (urlsToDelete.length === 0) {
       return;
     }
-    this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
-      blobUrls: urlsToDelete,
-    }).subscribe({
-      next: () => {
-        this.uploadedFileInfos = [];
-      },
-      error: (error) => {
-        console.error('Error deleting temporary files:', error);
-        this.uploadedFileInfos = [];
-      },
-    });
+    this.httpClient
+      .post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
+        blobUrls: urlsToDelete,
+      })
+      .subscribe({
+        next: () => {
+          this.uploadedFileInfos = [];
+        },
+        error: (error) => {
+          console.error('Error deleting temporary files:', error);
+          this.uploadedFileInfos = [];
+        },
+      });
   }
   documents: any[] = [];
   error = '';
@@ -842,9 +970,9 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.documents = this.uploadedFileInfos.map(fileInfo => ({
+    this.documents = this.uploadedFileInfos.map((fileInfo) => ({
       ...fileInfo,
-      displayName: this.getDisplayName(fileInfo.name)
+      displayName: this.getDisplayName(fileInfo.name),
     }));
     this.isLoading = false;
   }
@@ -855,11 +983,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getUploadedFileNames(): string {
-    return this.uploadedFileInfos.map(f => f.name).join(', ');
+    return this.uploadedFileInfos.map((f) => f.name).join(', ');
   }
 
   openUploadDialog(): void {
-    this.fileUploadService.openUploadOptionsDialog().subscribe(result => {
+    this.fileUploadService.openUploadOptionsDialog().subscribe((result) => {
       if (result === 'files') {
         this.fileInput.nativeElement.click();
       } else if (result === 'folder') {
@@ -874,13 +1002,15 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     const files = Array.from(input.files);
-    this.fileUploadService.uploadFiles(files, this.sessionId).subscribe(upload => {
-      this.progress = upload.progress;
-      this.isUploading = upload.isUploading;
-      if (upload.files) {
-        this.uploadedFileInfos = [...this.uploadedFileInfos, ...upload.files];
-      }
-    });
+    this.fileUploadService
+      .uploadFiles(files, this.sessionId)
+      .subscribe((upload) => {
+        this.progress = upload.progress;
+        this.isUploading = upload.isUploading;
+        if (upload.files) {
+          this.uploadedFileInfos = [...this.uploadedFileInfos, ...upload.files];
+        }
+      });
   }
 
   onUserContextFileSelected(event: Event): void {
@@ -889,7 +1019,6 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       this.userContextFile = input.files[0];
     }
   }
-
 
   getFileSize(url: string): number {
     try {
@@ -918,7 +1047,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error viewing document:', err);
-      }
+      },
     });
   }
   close() {
@@ -955,32 +1084,36 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public viewUploadedFiles(): void {
-    const documents: JobDocument[] = this.uploadedFileInfos.map((fileInfo, index) => ({
-      id: index, // Using index as a temporary unique ID
-      fileName: fileInfo.name,
-      blobUrl: fileInfo.url,
-      type: fileInfo.type,
-      sessionId: this.sessionId,
-      jobId: 0, // This might not be available yet
-      uploadedAt: new Date().toISOString(),
-      displayName: this.getDisplayName(fileInfo.name),
-      size: fileInfo.size
-    }));
+    const documents: JobDocument[] = this.uploadedFileInfos.map(
+      (fileInfo, index) => ({
+        id: index, // Using index as a temporary unique ID
+        fileName: fileInfo.name,
+        blobUrl: fileInfo.url,
+        type: fileInfo.type,
+        sessionId: this.sessionId,
+        jobId: 0, // This might not be available yet
+        uploadedAt: new Date().toISOString(),
+        displayName: this.getDisplayName(fileInfo.name),
+        size: fileInfo.size,
+      }),
+    );
     this.fileUploadService.viewUploadedFiles(documents);
   }
 
   loadBlueprintData(jobId: number): void {
-      this.httpClient.get<any>(`/api/blueprints/by-job/${jobId}`).subscribe(data => {
+    this.httpClient
+      .get<any>(`/api/blueprints/by-job/${jobId}`)
+      .subscribe((data) => {
         this.activeDocument = null; // Ensure standard PDF viewer is cleared
-        this.activeBlueprints = [{
-          name: data.name,
-          pdfUrl: data.pdfUrl,
-          pageImageUrls: data.pageImageUrls,
-          totalPages: data.totalPages,
-          analysisData: JSON.parse(data.analysisJson)
-        }];
+        this.activeBlueprints = [
+          {
+            name: data.name,
+            pdfUrl: data.pdfUrl,
+            pageImageUrls: data.pageImageUrls,
+            totalPages: data.totalPages,
+            analysisData: JSON.parse(data.analysisJson),
+          },
+        ];
       });
   }
 }
-
-

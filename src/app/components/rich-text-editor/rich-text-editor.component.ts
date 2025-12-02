@@ -1,4 +1,12 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import Quill from 'quill';
 
 @Component({
@@ -6,7 +14,7 @@ import Quill from 'quill';
   standalone: true,
   imports: [],
   templateUrl: './rich-text-editor.component.html',
-  styleUrls: ['./rich-text-editor.component.scss']
+  styleUrls: ['./rich-text-editor.component.scss'],
 })
 export class RichTextEditorComponent implements AfterViewInit {
   @ViewChild('editor') editorElement!: ElementRef;
@@ -20,13 +28,13 @@ export class RichTextEditorComponent implements AfterViewInit {
       theme: 'snow',
       modules: {
         toolbar: [
-          [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+          [{ header: [1, 2, 3, 4, 5, 6, false] }],
           ['bold', 'italic', 'underline', 'strike'],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
           ['link', 'image'],
-          ['clean']
-        ]
-      }
+          ['clean'],
+        ],
+      },
     });
 
     if (this.initialContent) {

@@ -1,28 +1,74 @@
-<div class="jobs-container" [attr.inert]="showAlert || isDialogOpen ? '' : null">
+<div
+  class="jobs-container"
+  [attr.inert]="showAlert || isDialogOpen ? '' : null"
+>
   <div class="job-header">
     <div class="header-left">
-      <button class="back-btn" (click)="NavigateBack()" matTooltip="Go Back" matTooltipShowDelay="500">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+      <button
+        class="back-btn"
+        (click)="NavigateBack()"
+        matTooltip="Go Back"
+        matTooltipShowDelay="500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m12 19-7-7 7-7" />
+          <path d="M19 12H5" />
         </svg>
       </button>
       <div>
-        <h2>{{projectDetails?.projectName}}</h2>
-        <span class="project-id">Project ID: {{projectDetails?.jobId}}</span>
+        <h2>{{ projectDetails?.projectName }}</h2>
+        <span class="project-id">Project ID: {{ projectDetails?.jobId }}</span>
       </div>
     </div>
     <div class="action-buttons">
-      <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="publishJob()" matTooltip="Make this job available for bidding by subcontractors and vendors" matTooltipShowDelay="500">
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn publish-btn"
+        mat-raised-button
+        (click)="publishJob()"
+        matTooltip="Make this job available for bidding by subcontractors and vendors"
+        matTooltipShowDelay="500"
+      >
         Publish Job
       </button>
-      <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()" matTooltip="Save the current state of the job and subtasks without publishing" matTooltipShowDelay="500">
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn save-btn"
+        mat-raised-button
+        (click)="subtaskService.saveOnly()"
+        matTooltip="Save the current state of the job and subtasks without publishing"
+        matTooltipShowDelay="500"
+      >
         Save Job
       </button>
-      <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()" matTooltip="Discard all changes and revert the job to its last saved state" matTooltipShowDelay="500">
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn delete-btn"
+        mat-raised-button
+        (click)="subtaskService.discard()"
+        matTooltip="Discard all changes and revert the job to its last saved state"
+        matTooltipShowDelay="500"
+      >
         Discard Job
       </button>
       <!-- Reports Dropdown -->
-      <button class="submit-btn save-btn" mat-raised-button [matMenuTriggerFor]="reportsMenu" matTooltip="View project reports and documents" matTooltipShowDelay="500">
+      <button
+        class="submit-btn save-btn"
+        mat-raised-button
+        [matMenuTriggerFor]="reportsMenu"
+        matTooltip="View project reports and documents"
+        matTooltipShowDelay="500"
+      >
         <mat-icon>download</mat-icon>
         Export Report
       </button>
@@ -31,7 +77,11 @@
           <mat-icon>description</mat-icon>
           <span>View Documents</span>
         </button>
-        <button mat-menu-item (click)="openReportDialog()" [disabled]="isReportLoading">
+        <button
+          mat-menu-item
+          (click)="openReportDialog()"
+          [disabled]="isReportLoading"
+        >
           <mat-icon>assessment</mat-icon>
           <span *ngIf="!isReportLoading">View Full Report</span>
           <span *ngIf="isReportLoading">Loading...</span>
@@ -40,12 +90,21 @@
           <mat-icon>list_alt</mat-icon>
           <span>View Bill of Materials</span>
         </button>
-        <button mat-menu-item (click)="openExecutiveSummaryDialog()" [disabled]="isReportLoading">
+        <button
+          mat-menu-item
+          (click)="openExecutiveSummaryDialog()"
+          [disabled]="isReportLoading"
+        >
           <mat-icon>summarize</mat-icon>
           <span *ngIf="!isReportLoading">View Executive Summary</span>
           <span *ngIf="isReportLoading">Loading...</span>
         </button>
-        <button mat-menu-item *ngIf="!projectDetails?.isSelected" (click)="openEnvironmentalReportDialog()" [disabled]="isReportLoading">
+        <button
+          mat-menu-item
+          *ngIf="!projectDetails?.isSelected"
+          (click)="openEnvironmentalReportDialog()"
+          [disabled]="isReportLoading"
+        >
           <mat-icon>eco</mat-icon>
           <span *ngIf="!isReportLoading">View Environmental Report</span>
           <span *ngIf="isReportLoading">Loading...</span>
@@ -56,11 +115,36 @@
 
   <!-- Tabs -->
   <div class="nav-tabs">
-    <button (click)="setActiveTab('overview')" [class.active]="activeTab === 'overview'">Overview</button>
-    <button (click)="setActiveTab('budget')" [class.active]="activeTab === 'budget'">Budget Tracking</button>
-    <button (click)="setActiveTab('timeline')" [class.active]="activeTab === 'timeline'">Timeline</button>
-    <button (click)="setActiveTab('team')" [class.active]="activeTab === 'team'">Team & Subcontractors</button>
-    <button (click)="setActiveTab('blueprints')" [class.active]="activeTab === 'blueprints'">Blueprint Viewer</button>
+    <button
+      (click)="setActiveTab('overview')"
+      [class.active]="activeTab === 'overview'"
+    >
+      Overview
+    </button>
+    <button
+      (click)="setActiveTab('budget')"
+      [class.active]="activeTab === 'budget'"
+    >
+      Budget Tracking
+    </button>
+    <button
+      (click)="setActiveTab('timeline')"
+      [class.active]="activeTab === 'timeline'"
+    >
+      Timeline
+    </button>
+    <button
+      (click)="setActiveTab('team')"
+      [class.active]="activeTab === 'team'"
+    >
+      Team & Subcontractors
+    </button>
+    <button
+      (click)="setActiveTab('blueprints')"
+      [class.active]="activeTab === 'blueprints'"
+    >
+      Blueprint Viewer
+    </button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -72,45 +156,94 @@
             <app-loader></app-loader>
           </div>
           <div class="job-details">
-            <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
+            <p><strong>Start Date:</strong> {{ startDateDisplay }}</p>
             <div class="address-container">
               <div *ngIf="!isEditingAddress" class="address-display">
-                <span><strong>Address: </strong>
-                  <span *ngIf="projectDetails?.address">{{projectDetails?.address}}</span>
-                  <span *ngIf="!projectDetails?.address && projectDetails?.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
+                <span
+                  ><strong>Address: </strong>
+                  <span *ngIf="projectDetails?.address">{{
+                    projectDetails?.address
+                  }}</span>
+                  <span
+                    *ngIf="
+                      !projectDetails?.address &&
+                      projectDetails?.jobAddress?.formatted_address
+                    "
+                    >{{ projectDetails.jobAddress.formatted_address }}</span
+                  >
                 </span>
-                <button *ngIf="authService.hasPermission('editJobs')" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
+                <button
+                  *ngIf="authService.hasPermission('editJobs')"
+                  mat-icon-button
+                  (click)="toggleAddressEdit(true)"
+                  class="edit-icon"
+                >
                   <mat-icon>edit</mat-icon>
                 </button>
               </div>
               <div *ngIf="isEditingAddress" class="address-edit">
                 <mat-form-field appearance="fill">
                   <mat-label>Address</mat-label>
-                  <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto" placeholder="Enter an address" />
-                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-                    <mat-option *ngFor="let suggestion of addressSuggestions" [value]="suggestion">
+                  <input
+                    #addressInput
+                    matInput
+                    [formControl]="addressControl"
+                    [matAutocomplete]="auto"
+                    placeholder="Enter an address"
+                  />
+                  <mat-autocomplete
+                    #auto="matAutocomplete"
+                    (optionSelected)="onAddressSelected($event)"
+                  >
+                    <mat-option
+                      *ngFor="let suggestion of addressSuggestions"
+                      [value]="suggestion"
+                    >
                       {{ suggestion.description }}
                     </mat-option>
                   </mat-autocomplete>
                 </mat-form-field>
                 <div class="edit-buttons">
-                  <button mat-raised-button color="primary" (click)="saveAddress()" [disabled]="isLoading">Save</button>
-                  <button mat-button (click)="toggleAddressEdit(false)">Cancel</button>
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="saveAddress()"
+                    [disabled]="isLoading"
+                  >
+                    Save
+                  </button>
+                  <button mat-button (click)="toggleAddressEdit(false)">
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
-            <div *ngIf="store.getState().forecast?.length" class="weather-scroll-container">
-              <div *ngFor="let day of store.getState().forecast" class="forecast-card">
+            <div
+              *ngIf="store.getState().forecast?.length"
+              class="weather-scroll-container"
+            >
+              <div
+                *ngFor="let day of store.getState().forecast"
+                class="forecast-card"
+              >
                 <div class="date">{{ day.date }}</div>
                 <img [src]="day.iconUrl" alt="Weather Icon" />
                 <div class="condition">{{ day.condition }}</div>
                 <div class="temp">
-                  <span class="high">{{ measurementService.convertTemperature(day.highTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
-                  <span class="low">{{ measurementService.convertTemperature(day.lowTemp) | number:'1.0-0' }}°{{ temperatureUnit }}</span>
+                  <span class="high"
+                    >{{
+                      measurementService.convertTemperature(day.highTemp)
+                        | number : "1.0-0"
+                    }}°{{ temperatureUnit }}</span
+                  >
+                  <span class="low"
+                    >{{
+                      measurementService.convertTemperature(day.lowTemp)
+                        | number : "1.0-0"
+                    }}°{{ temperatureUnit }}</span
+                  >
                 </div>
-                <div class="precip">
-                  {{ day.precipitationProbability }}%
-                </div>
+                <div class="precip">{{ day.precipitationProbability }}%</div>
               </div>
             </div>
 
@@ -132,7 +265,9 @@
           <span>Total Budget</span>
           <mat-icon class="text-yellow">attach_money</mat-icon>
         </div>
-        <p class="metric-value">${{totalEstimated / 1000 | number:'1.0-0'}}K</p>
+        <p class="metric-value">
+          ${{ totalEstimated / 1000 | number : "1.0-0" }}K
+        </p>
         <p class="metric-subtext">Original estimate</p>
       </div>
 
@@ -141,9 +276,12 @@
           <span>Actual Spent</span>
           <mat-icon class="text-blue">trending_up</mat-icon>
         </div>
-        <p class="metric-value">${{totalActual / 1000 | number:'1.0-0'}}K</p>
+        <p class="metric-value">
+          ${{ totalActual / 1000 | number : "1.0-0" }}K
+        </p>
         <p class="metric-subtext">
-          {{(totalActual / totalEstimated) * 100 | number:'1.1-1'}}% of budget
+          {{ (totalActual / totalEstimated) * 100 | number : "1.1-1" }}% of
+          budget
         </p>
       </div>
 
@@ -152,7 +290,9 @@
           <span>Forecast at Completion</span>
           <mat-icon class="text-purple">trending_down</mat-icon>
         </div>
-        <p class="metric-value">${{totalForecast / 1000 | number:'1.0-0'}}K</p>
+        <p class="metric-value">
+          ${{ totalForecast / 1000 | number : "1.0-0" }}K
+        </p>
         <p class="metric-subtext">Projected final cost</p>
       </div>
 
@@ -160,14 +300,20 @@
         <div class="card-header-row">
           <span>Variance</span>
           <mat-icon [ngClass]="variance >= 0 ? 'text-green' : 'text-red'">
-            {{variance >= 0 ? 'check_circle' : 'error'}}
+            {{ variance >= 0 ? "check_circle" : "error" }}
           </mat-icon>
         </div>
-        <p class="metric-value" [ngClass]="variance >= 0 ? 'text-green' : 'text-red'">
-          {{variance >= 0 ? '+' : ''}}${{variance / 1000 | number:'1.0-0'}}K
+        <p
+          class="metric-value"
+          [ngClass]="variance >= 0 ? 'text-green' : 'text-red'"
+        >
+          {{ variance >= 0 ? "+" : "" }}${{
+            variance / 1000 | number : "1.0-0"
+          }}K
         </p>
         <p class="metric-subtext">
-          {{variance >= 0 ? 'Under' : 'Over'}} budget by {{variancePercent}}%
+          {{ variance >= 0 ? "Under" : "Over" }} budget by
+          {{ variancePercent }}%
         </p>
       </div>
     </div>
@@ -181,9 +327,9 @@
           </div>
           <div class="metric-details">
             <p class="label">Cost Performance Index</p>
-            <p class="value">{{cpi}}</p>
+            <p class="value">{{ cpi }}</p>
             <p class="subtext">
-              {{cpi >= '1' ? "Efficient spending" : "Over budget trend"}}
+              {{ cpi >= "1" ? "Efficient spending" : "Over budget trend" }}
             </p>
           </div>
         </div>
@@ -209,7 +355,9 @@
           </div>
           <div class="metric-details">
             <p class="label">Procurement Commitments</p>
-            <p class="value">${{procurementCommitments / 1000 | number:'1.0-0'}}K</p>
+            <p class="value">
+              ${{ procurementCommitments / 1000 | number : "1.0-0" }}K
+            </p>
             <p class="subtext">Materials ordered</p>
           </div>
         </div>
@@ -222,18 +370,29 @@
         <h3>
           <ng-container [ngSwitch]="budgetTableTab">
             <span *ngSwitchCase="'all'">Budget Breakdown</span>
-            <span *ngSwitchCase="'Subcontractor'">Subcontractor & Labor Breakdown</span>
+            <span *ngSwitchCase="'Subcontractor'"
+              >Subcontractor & Labor Breakdown</span
+            >
             <span *ngSwitchCase="'Materials'">Materials Breakdown</span>
             <span *ngSwitchCase="'Equipment'">Equipment Costs</span>
             <span *ngSwitchCase="'Other'">Other Costs</span>
           </ng-container>
         </h3>
         <div class="button-group">
-          <button class="btn-outline-custom" (click)="importAiEstimates()" *ngIf="!isAddingLineItem" matTooltip="Import estimates from AI Analysis">
+          <button
+            class="btn-outline-custom"
+            (click)="importAiEstimates()"
+            *ngIf="!isAddingLineItem"
+            matTooltip="Import estimates from AI Analysis"
+          >
             <mat-icon>smart_toy</mat-icon>
             Import AI
           </button>
-          <button class="btn-outline-custom" (click)="startAddLineItem()" *ngIf="!isAddingLineItem">
+          <button
+            class="btn-outline-custom"
+            (click)="startAddLineItem()"
+            *ngIf="!isAddingLineItem"
+          >
             <mat-icon>add</mat-icon>
             Add Line Item
           </button>
@@ -242,11 +401,36 @@
 
       <!-- Budget Table Tabs -->
       <div class="nav-tabs sub-tabs">
-        <button (click)="setBudgetTableTab('all')" [class.active]="budgetTableTab === 'all'">All</button>
-        <button (click)="setBudgetTableTab('Subcontractor')" [class.active]="budgetTableTab === 'Subcontractor'">Subcontractors & Labor</button>
-        <button (click)="setBudgetTableTab('Materials')" [class.active]="budgetTableTab === 'Materials'">Materials</button>
-        <button (click)="setBudgetTableTab('Equipment')" [class.active]="budgetTableTab === 'Equipment'">Equipment</button>
-        <button (click)="setBudgetTableTab('Other')" [class.active]="budgetTableTab === 'Other'">Other</button>
+        <button
+          (click)="setBudgetTableTab('all')"
+          [class.active]="budgetTableTab === 'all'"
+        >
+          All
+        </button>
+        <button
+          (click)="setBudgetTableTab('Subcontractor')"
+          [class.active]="budgetTableTab === 'Subcontractor'"
+        >
+          Subcontractors & Labor
+        </button>
+        <button
+          (click)="setBudgetTableTab('Materials')"
+          [class.active]="budgetTableTab === 'Materials'"
+        >
+          Materials
+        </button>
+        <button
+          (click)="setBudgetTableTab('Equipment')"
+          [class.active]="budgetTableTab === 'Equipment'"
+        >
+          Equipment
+        </button>
+        <button
+          (click)="setBudgetTableTab('Other')"
+          [class.active]="budgetTableTab === 'Other'"
+        >
+          Other
+        </button>
       </div>
 
       <div class="budget-table-container">
@@ -255,14 +439,49 @@
             <tr>
               <th>Status</th>
               <th>Item</th>
-              <th *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">Vendor</th>
-              <th *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">Trade</th>
-              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment' || budgetTableTab === 'Subcontractor'">
-                {{ budgetTableTab === 'Subcontractor' ? 'Hours' : 'Qty' }}
+              <th
+                *ngIf="
+                  budgetTableTab === 'Subcontractor' ||
+                  budgetTableTab === 'all' ||
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment'
+                "
+              >
+                Vendor
               </th>
-              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">Unit</th>
-              <th *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment' || budgetTableTab === 'Subcontractor'">
-                {{ budgetTableTab === 'Subcontractor' ? 'Rate' : 'Unit Cost' }}
+              <th
+                *ngIf="
+                  budgetTableTab !== 'Materials' &&
+                  budgetTableTab !== 'Equipment'
+                "
+              >
+                Trade
+              </th>
+              <th
+                *ngIf="
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment' ||
+                  budgetTableTab === 'Subcontractor'
+                "
+              >
+                {{ budgetTableTab === "Subcontractor" ? "Hours" : "Qty" }}
+              </th>
+              <th
+                *ngIf="
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment'
+                "
+              >
+                Unit
+              </th>
+              <th
+                *ngIf="
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment' ||
+                  budgetTableTab === 'Subcontractor'
+                "
+              >
+                {{ budgetTableTab === "Subcontractor" ? "Rate" : "Unit Cost" }}
               </th>
               <th class="text-right">Estimated</th>
               <th class="text-right">Actual</th>
@@ -277,38 +496,137 @@
             <!-- Add New Item Row -->
             <tr *ngIf="isAddingLineItem" class="edit-row bg-primary-soft">
               <td><mat-icon>add_circle_outline</mat-icon></td>
-              <td><input class="table-input" [(ngModel)]="newBudgetItem.item" placeholder="Item Name"></td>
-
-              <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
-                <input class="table-input" [(ngModel)]="newBudgetItem.vendor" placeholder="Vendor">
+              <td>
+                <input
+                  class="table-input"
+                  [(ngModel)]="newBudgetItem.item"
+                  placeholder="Item Name"
+                />
               </td>
-              <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">
-                <input class="table-input" [(ngModel)]="newBudgetItem.trade" placeholder="Trade">
+
+              <td
+                *ngIf="
+                  budgetTableTab === 'Subcontractor' ||
+                  budgetTableTab === 'all' ||
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment'
+                "
+              >
+                <input
+                  class="table-input"
+                  [(ngModel)]="newBudgetItem.vendor"
+                  placeholder="Vendor"
+                />
+              </td>
+              <td
+                *ngIf="
+                  budgetTableTab !== 'Materials' &&
+                  budgetTableTab !== 'Equipment'
+                "
+              >
+                <input
+                  class="table-input"
+                  [(ngModel)]="newBudgetItem.trade"
+                  placeholder="Trade"
+                />
               </td>
 
-              <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
-                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.quantity" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0"></td>
-                <td><input class="table-input" [(ngModel)]="newBudgetItem.unit" placeholder="Unit"></td>
-                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.unitCost" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0.00"></td>
+              <ng-container
+                *ngIf="
+                  budgetTableTab === 'Materials' ||
+                  budgetTableTab === 'Equipment'
+                "
+              >
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="newBudgetItem.quantity"
+                    (ngModelChange)="recalculateEstimatedCost(newBudgetItem)"
+                    placeholder="0"
+                  />
+                </td>
+                <td>
+                  <input
+                    class="table-input"
+                    [(ngModel)]="newBudgetItem.unit"
+                    placeholder="Unit"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="newBudgetItem.unitCost"
+                    (ngModelChange)="recalculateEstimatedCost(newBudgetItem)"
+                    placeholder="0.00"
+                  />
+                </td>
               </ng-container>
 
               <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
-                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.quantity" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0"></td>
-                <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.unitCost" (ngModelChange)="recalculateEstimatedCost(newBudgetItem)" placeholder="0.00"></td>
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="newBudgetItem.quantity"
+                    (ngModelChange)="recalculateEstimatedCost(newBudgetItem)"
+                    placeholder="0"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="newBudgetItem.unitCost"
+                    (ngModelChange)="recalculateEstimatedCost(newBudgetItem)"
+                    placeholder="0.00"
+                  />
+                </td>
               </ng-container>
 
-              <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.estimatedCost" placeholder="0"></td>
-              <td><input type="number" class="table-input text-right" [(ngModel)]="newBudgetItem.actualCost" placeholder="0"></td>
+              <td>
+                <input
+                  type="number"
+                  class="table-input text-right"
+                  [(ngModel)]="newBudgetItem.estimatedCost"
+                  placeholder="0"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="table-input text-right"
+                  [(ngModel)]="newBudgetItem.actualCost"
+                  placeholder="0"
+                />
+              </td>
               <td class="text-center">-</td>
               <td class="text-right text-muted">0%</td>
               <td class="text-right text-muted">-</td>
-              <td><input class="table-input" [(ngModel)]="newBudgetItem.notes" placeholder="Notes"></td>
+              <td>
+                <input
+                  class="table-input"
+                  [(ngModel)]="newBudgetItem.notes"
+                  placeholder="Notes"
+                />
+              </td>
               <td>
                 <div class="action-buttons-row">
-                  <button mat-icon-button class="text-green" (click)="saveNewLineItem()" matTooltip="Save">
+                  <button
+                    mat-icon-button
+                    class="text-green"
+                    (click)="saveNewLineItem()"
+                    matTooltip="Save"
+                  >
                     <mat-icon>check</mat-icon>
                   </button>
-                  <button mat-icon-button class="text-red" (click)="cancelAddLineItem()" matTooltip="Cancel">
+                  <button
+                    mat-icon-button
+                    class="text-red"
+                    (click)="cancelAddLineItem()"
+                    matTooltip="Cancel"
+                  >
                     <mat-icon>close</mat-icon>
                   </button>
                 </div>
@@ -319,64 +637,168 @@
               <ng-container *ngIf="editingItemId !== ticket.id; else editMode">
                 <td>
                   <!-- Check Circle (Green) -->
-                  <svg *ngIf="getStatusIcon(ticket.estimatedCost, ticket.forecastToComplete) === 'check_circle'"
-                       xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                       class="text-green">
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                    <path d="m9 12 2 2 4-4"/>
+                  <svg
+                    *ngIf="
+                      getStatusIcon(
+                        ticket.estimatedCost,
+                        ticket.forecastToComplete
+                      ) === 'check_circle'
+                    "
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="text-green"
+                  >
+                    <path
+                      d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                    />
+                    <path d="m9 12 2 2 4-4" />
                   </svg>
                   <!-- Alert Circle (Yellow/Red) -->
-                  <svg *ngIf="getStatusIcon(ticket.estimatedCost, ticket.forecastToComplete) !== 'check_circle'"
-                       xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                       [ngClass]="getStatusColor(ticket.estimatedCost, ticket.forecastToComplete)">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" x2="12" y1="8" y2="12"/>
-                    <line x1="12" x2="12.01" y1="16" y2="16"/>
+                  <svg
+                    *ngIf="
+                      getStatusIcon(
+                        ticket.estimatedCost,
+                        ticket.forecastToComplete
+                      ) !== 'check_circle'
+                    "
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    [ngClass]="
+                      getStatusColor(
+                        ticket.estimatedCost,
+                        ticket.forecastToComplete
+                      )
+                    "
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" x2="12" y1="8" y2="12" />
+                    <line x1="12" x2="12.01" y1="16" y2="16" />
                   </svg>
                 </td>
-                <td class="font-medium" [matTooltip]="ticket.phase ? 'Phase: ' + ticket.phase : ''">{{ticket.item}}</td>
+                <td
+                  class="font-medium"
+                  [matTooltip]="ticket.phase ? 'Phase: ' + ticket.phase : ''"
+                >
+                  {{ ticket.item }}
+                </td>
 
-                <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'" class="text-muted">{{ticket.vendor || '-'}}</td>
-                <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'" class="text-muted">{{ticket.trade}}</td>
+                <td
+                  *ngIf="
+                    budgetTableTab === 'Subcontractor' ||
+                    budgetTableTab === 'all' ||
+                    budgetTableTab === 'Materials' ||
+                    budgetTableTab === 'Equipment'
+                  "
+                  class="text-muted"
+                >
+                  {{ ticket.vendor || "-" }}
+                </td>
+                <td
+                  *ngIf="
+                    budgetTableTab !== 'Materials' &&
+                    budgetTableTab !== 'Equipment'
+                  "
+                  class="text-muted"
+                >
+                  {{ ticket.trade }}
+                </td>
 
-                <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
-                  <td class="text-right">{{ticket.quantity}}</td>
-                  <td class="text-muted">{{ticket.unit}}</td>
-                  <td class="text-right">${{ticket.unitCost}}</td>
+                <ng-container
+                  *ngIf="
+                    budgetTableTab === 'Materials' ||
+                    budgetTableTab === 'Equipment'
+                  "
+                >
+                  <td class="text-right">{{ ticket.quantity }}</td>
+                  <td class="text-muted">{{ ticket.unit }}</td>
+                  <td class="text-right">${{ ticket.unitCost }}</td>
                 </ng-container>
 
                 <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
-                  <td class="text-right">{{ticket.quantity}}</td>
-                  <td class="text-right">${{ticket.unitCost}}</td>
+                  <td class="text-right">{{ ticket.quantity }}</td>
+                  <td class="text-right">${{ ticket.unitCost }}</td>
                 </ng-container>
 
-                <td class="text-right font-medium">${{ticket.estimatedCost | number:'1.0-0'}}</td>
-                <td class="text-right">${{ticket.actualCost | number:'1.0-0'}}</td>
-                <td class="text-right font-medium" [ngClass]="getStatusColor(ticket.estimatedCost, ticket.forecastToComplete)">
-                  {{getVariance(ticket) >= 0 ? '+' : ''}}${{getVariance(ticket) | number:'1.0-0'}}
-                  <span style="font-size: 0.75rem; margin-left: 4px;">({{getVariancePercent(ticket)}}%)</span>
+                <td class="text-right font-medium">
+                  ${{ ticket.estimatedCost | number : "1.0-0" }}
+                </td>
+                <td class="text-right">
+                  ${{ ticket.actualCost | number : "1.0-0" }}
+                </td>
+                <td
+                  class="text-right font-medium"
+                  [ngClass]="
+                    getStatusColor(
+                      ticket.estimatedCost,
+                      ticket.forecastToComplete
+                    )
+                  "
+                >
+                  {{ getVariance(ticket) >= 0 ? "+" : "" }}${{
+                    getVariance(ticket) | number : "1.0-0"
+                  }}
+                  <span style="font-size: 0.75rem; margin-left: 4px"
+                    >({{ getVariancePercent(ticket) }}%)</span
+                  >
                 </td>
                 <td class="text-right">
                   <div class="progress-bar-wrapper">
                     <div class="progress-track">
-                      <div class="progress-fill" [style.width.%]="ticket.percentComplete"></div>
+                      <div
+                        class="progress-fill"
+                        [style.width.%]="ticket.percentComplete"
+                      ></div>
                     </div>
-                    <span class="font-medium">{{ticket.percentComplete}}%</span>
+                    <span class="font-medium"
+                      >{{ ticket.percentComplete }}%</span
+                    >
                   </div>
                 </td>
                 <td class="text-right font-medium">
                   <!-- Non-editable view (when not editing row) -->
-                  ${{ (ticket?.forecastToComplete ?? 0) | number:'1.0-0' }}
+                  ${{ ticket?.forecastToComplete ?? 0 | number : "1.0-0" }}
                 </td>
-                <td class="text-muted" style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" [matTooltip]="ticket.notes">
-                  {{ticket.notes}}
+                <td
+                  class="text-muted"
+                  style="
+                    max-width: 200px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                  "
+                  [matTooltip]="ticket.notes"
+                >
+                  {{ ticket.notes }}
                 </td>
                 <td>
                   <div class="action-buttons-row">
-                    <button mat-icon-button (click)="startEditLineItem(ticket)" matTooltip="Edit">
+                    <button
+                      mat-icon-button
+                      (click)="startEditLineItem(ticket)"
+                      matTooltip="Edit"
+                    >
                       <mat-icon>edit</mat-icon>
                     </button>
-                    <button mat-icon-button color="warn" (click)="deleteLineItem(ticket)" matTooltip="Delete">
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      (click)="deleteLineItem(ticket)"
+                      matTooltip="Delete"
+                    >
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -386,42 +808,153 @@
               <!-- Edit Mode Template -->
               <ng-template #editMode>
                 <td><mat-icon>edit</mat-icon></td>
-                <td><input class="table-input" [(ngModel)]="editingItem!.item" placeholder="Item Name"></td>
-
-                <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all' || budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
-                  <input class="table-input" [(ngModel)]="editingItem!.vendor" placeholder="Vendor">
+                <td>
+                  <input
+                    class="table-input"
+                    [(ngModel)]="editingItem!.item"
+                    placeholder="Item Name"
+                  />
                 </td>
-                <td *ngIf="budgetTableTab !== 'Materials' && budgetTableTab !== 'Equipment'">
-                  <input class="table-input" [(ngModel)]="editingItem!.trade" placeholder="Trade">
+
+                <td
+                  *ngIf="
+                    budgetTableTab === 'Subcontractor' ||
+                    budgetTableTab === 'all' ||
+                    budgetTableTab === 'Materials' ||
+                    budgetTableTab === 'Equipment'
+                  "
+                >
+                  <input
+                    class="table-input"
+                    [(ngModel)]="editingItem!.vendor"
+                    placeholder="Vendor"
+                  />
+                </td>
+                <td
+                  *ngIf="
+                    budgetTableTab !== 'Materials' &&
+                    budgetTableTab !== 'Equipment'
+                  "
+                >
+                  <input
+                    class="table-input"
+                    [(ngModel)]="editingItem!.trade"
+                    placeholder="Trade"
+                  />
                 </td>
 
-                <ng-container *ngIf="budgetTableTab === 'Materials' || budgetTableTab === 'Equipment'">
-                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.quantity" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0"></td>
-                  <td><input class="table-input" [(ngModel)]="editingItem!.unit" placeholder="Unit"></td>
-                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.unitCost" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0.00"></td>
+                <ng-container
+                  *ngIf="
+                    budgetTableTab === 'Materials' ||
+                    budgetTableTab === 'Equipment'
+                  "
+                >
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-right"
+                      [(ngModel)]="editingItem!.quantity"
+                      (ngModelChange)="recalculateEstimatedCost(editingItem!)"
+                      placeholder="0"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      class="table-input"
+                      [(ngModel)]="editingItem!.unit"
+                      placeholder="Unit"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-right"
+                      [(ngModel)]="editingItem!.unitCost"
+                      (ngModelChange)="recalculateEstimatedCost(editingItem!)"
+                      placeholder="0.00"
+                    />
+                  </td>
                 </ng-container>
 
                 <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
-                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.quantity" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0"></td>
-                  <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.unitCost" (ngModelChange)="recalculateEstimatedCost(editingItem!)" placeholder="0.00"></td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-right"
+                      [(ngModel)]="editingItem!.quantity"
+                      (ngModelChange)="recalculateEstimatedCost(editingItem!)"
+                      placeholder="0"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      class="table-input text-right"
+                      [(ngModel)]="editingItem!.unitCost"
+                      (ngModelChange)="recalculateEstimatedCost(editingItem!)"
+                      placeholder="0.00"
+                    />
+                  </td>
                 </ng-container>
 
-                <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.estimatedCost" placeholder="0"></td>
-                <td><input type="number" class="table-input text-right" [(ngModel)]="editingItem!.actualCost" placeholder="0"></td>
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="editingItem!.estimatedCost"
+                    placeholder="0"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="editingItem!.actualCost"
+                    placeholder="0"
+                  />
+                </td>
                 <td class="text-center">-</td>
                 <td class="text-right text-muted">
-                  <input type="number" class="table-input text-right" [(ngModel)]="editingItem!.percentComplete" placeholder="0" min="0" max="100">
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="editingItem!.percentComplete"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                  />
                 </td>
                 <td class="text-right text-muted">
-                    <input type="number" class="table-input text-right" [(ngModel)]="editingItem!.forecastToComplete" placeholder="0">
+                  <input
+                    type="number"
+                    class="table-input text-right"
+                    [(ngModel)]="editingItem!.forecastToComplete"
+                    placeholder="0"
+                  />
                 </td>
-                <td><input class="table-input" [(ngModel)]="editingItem!.notes" placeholder="Notes"></td>
+                <td>
+                  <input
+                    class="table-input"
+                    [(ngModel)]="editingItem!.notes"
+                    placeholder="Notes"
+                  />
+                </td>
                 <td>
                   <div class="action-buttons-row">
-                    <button mat-icon-button class="text-green" (click)="saveEditLineItem()" matTooltip="Save">
+                    <button
+                      mat-icon-button
+                      class="text-green"
+                      (click)="saveEditLineItem()"
+                      matTooltip="Save"
+                    >
                       <mat-icon>check</mat-icon>
                     </button>
-                    <button mat-icon-button class="text-red" (click)="cancelEditLineItem()" matTooltip="Cancel">
+                    <button
+                      mat-icon-button
+                      class="text-red"
+                      (click)="cancelEditLineItem()"
+                      matTooltip="Cancel"
+                    >
                       <mat-icon>close</mat-icon>
                     </button>
                   </div>
@@ -433,18 +966,35 @@
             <tr>
               <td></td>
               <td>TOTAL</td>
-              <td *ngIf="budgetTableTab === 'Subcontractor' || budgetTableTab === 'all'"></td>
+              <td
+                *ngIf="
+                  budgetTableTab === 'Subcontractor' || budgetTableTab === 'all'
+                "
+              ></td>
               <td *ngIf="budgetTableTab !== 'Materials'"></td>
               <ng-container *ngIf="budgetTableTab === 'Materials'">
-                <td></td><td></td><td></td>
+                <td></td>
+                <td></td>
+                <td></td>
               </ng-container>
-              <td class="text-right">${{totalEstimated / 1000 | number:'1.0-0'}}K</td>
-              <td class="text-right">${{totalActual / 1000 | number:'1.0-0'}}K</td>
-              <td class="text-right" [ngClass]="variance >= 0 ? 'text-green' : 'text-red'">
-                {{variance >= 0 ? '+' : ''}}${{variance / 1000 | number:'1.0-0'}}K
+              <td class="text-right">
+                ${{ totalEstimated / 1000 | number : "1.0-0" }}K
+              </td>
+              <td class="text-right">
+                ${{ totalActual / 1000 | number : "1.0-0" }}K
+              </td>
+              <td
+                class="text-right"
+                [ngClass]="variance >= 0 ? 'text-green' : 'text-red'"
+              >
+                {{ variance >= 0 ? "+" : "" }}${{
+                  variance / 1000 | number : "1.0-0"
+                }}K
               </td>
               <td></td>
-              <td class="text-right">${{totalForecast / 1000 | number:'1.0-0'}}K</td>
+              <td class="text-right">
+                ${{ totalForecast / 1000 | number : "1.0-0" }}K
+              </td>
               <td></td>
               <td></td>
             </tr>
@@ -458,13 +1008,24 @@
       <mat-card>
         <mat-card-header>
           <mat-card-title class="summary-header-title">
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px">
               <!-- Lucide Users Icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-primary"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
               Subcontractor Cost Summary
             </div>
@@ -477,14 +1038,22 @@
                 <p class="name">{{ sub.vendor || sub.trade || sub.item }}</p>
                 <p class="draws">{{ sub.trade }}</p>
               </div>
-              <div style="text-align: right;">
-                <p class="amount">${{ sub.actualCost | number:'1.0-0' }}</p>
-                <p class="status" [ngClass]="getStatusColor(sub.estimatedCost, sub.forecastToComplete)">
-                  {{ getVariance(sub) >= 0 ? 'Under Budget' : 'Over Budget' }}
+              <div style="text-align: right">
+                <p class="amount">${{ sub.actualCost | number : "1.0-0" }}</p>
+                <p
+                  class="status"
+                  [ngClass]="
+                    getStatusColor(sub.estimatedCost, sub.forecastToComplete)
+                  "
+                >
+                  {{ getVariance(sub) >= 0 ? "Under Budget" : "Over Budget" }}
                 </p>
               </div>
             </div>
-            <div *ngIf="subcontractorSummary.length === 0" class="text-muted text-center p-4">
+            <div
+              *ngIf="subcontractorSummary.length === 0"
+              class="text-muted text-center p-4"
+            >
               No subcontractor costs recorded yet.
             </div>
           </div>
@@ -494,14 +1063,27 @@
       <mat-card>
         <mat-card-header>
           <mat-card-title class="summary-header-title">
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px">
               <!-- Lucide FileText Icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" x2="8" y1="13" y2="13"/>
-                <line x1="16" x2="8" y1="17" y2="17"/>
-                <line x1="10" x2="8" y1="9" y2="9"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-primary"
+              >
+                <path
+                  d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" x2="8" y1="13" y2="13" />
+                <line x1="16" x2="8" y1="17" y2="17" />
+                <line x1="10" x2="8" y1="9" y2="9" />
               </svg>
               Recent Change Orders
             </div>
@@ -541,18 +1123,21 @@
     <mat-accordion multi>
       <mat-expansion-panel [expanded]="true">
         <mat-expansion-panel-header>
-          <mat-panel-title class="timeline-title">Probuild Construction Timeline</mat-panel-title>
+          <mat-panel-title class="timeline-title"
+            >Probuild Construction Timeline</mat-panel-title
+          >
         </mat-expansion-panel-header>
-          <mat-divider class="timeline-divider"></mat-divider>
-            <div class="timeline-wrapper">
-              <app-timeline
-                [taskGroups]="timelineGroups"
-                [isProjectOwner]="isProjectOwner"
-                (onGroupClick)="timelineService.handleGroupClick($event)"
-                (onGroupMove)="handleGroupMove($event)"
-                (onEditGroup)="timelineService.handleEditGroup($event)">
-              </app-timeline>
-            </div>
+        <mat-divider class="timeline-divider"></mat-divider>
+        <div class="timeline-wrapper">
+          <app-timeline
+            [taskGroups]="timelineGroups"
+            [isProjectOwner]="isProjectOwner"
+            (onGroupClick)="timelineService.handleGroupClick($event)"
+            (onGroupMove)="handleGroupMove($event)"
+            (onEditGroup)="timelineService.handleEditGroup($event)"
+          >
+          </app-timeline>
+        </div>
       </mat-expansion-panel>
 
       <!-- Subtasks Section -->
@@ -562,10 +1147,17 @@
         </mat-expansion-panel-header>
         <mat-divider></mat-divider>
         <div class="subtask-section">
-          <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
+          <div
+            class="subtask-table"
+            *ngFor="let table of store.getState().subtaskGroups"
+          >
             <div class="table-header">
-              <h3>{{table.title}}</h3>
-              <button *ngIf="authService.hasPermission('createJobs')" class="submit-btn" (click)="subtaskService.addSubtask(table)">
+              <h3>{{ table.title }}</h3>
+              <button
+                *ngIf="authService.hasPermission('createJobs')"
+                class="submit-btn"
+                (click)="subtaskService.addSubtask(table)"
+              >
                 Add Subtask
               </button>
             </div>
@@ -583,37 +1175,78 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
+                <tr
+                  *ngFor="
+                    let subtask of subtaskService.getVisibleSubtasks(table);
+                    let i = index
+                  "
+                >
                   <td>
-                    <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
+                    <input
+                      type="text"
+                      [(ngModel)]="subtask.task"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                    />
                   </td>
                   <td>
-                    <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
-                           (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
+                    <input
+                      type="number"
+                      [(ngModel)]="subtask.days"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                      (change)="
+                        isProjectOwner &&
+                          subtaskService.updateSubtaskDates(table, i)
+                      "
+                    />
                   </td>
                   <td>
-                    <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
-                           (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
+                    <input
+                      type="date"
+                      [(ngModel)]="subtask.startDate"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                      (change)="
+                        isProjectOwner &&
+                          subtaskService.updateSubtaskDates(table, i)
+                      "
+                    />
                   </td>
                   <td>
-                    <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
+                    <input
+                      type="date"
+                      [(ngModel)]="subtask.endDate"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                    />
                   </td>
                   <td>
-                    {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
+                    {{ subtask.status || "Pending" }}
+                    <!-- ✅ Non-editable status display -->
                   </td>
                   <td>
-                    <button *ngIf="authService.hasPermission('deleteJobs')" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
+                    <button
+                      *ngIf="authService.hasPermission('deleteJobs')"
+                      class="submit-btn delete-btn"
+                      (click)="subtaskService.deleteSubtask(table, i)"
+                    >
                       Delete
                     </button>
-
                   </td>
                   <td>
-                    <button class="submit-btn" (click)="openNoteDialog(subtask)">
+                    <button
+                      class="submit-btn"
+                      (click)="openNoteDialog(subtask)"
+                    >
                       Update
                     </button>
                   </td>
                   <td>
-                    <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
+                    <mat-checkbox
+                      [(ngModel)]="subtask.accepted"
+                      [disabled]="!isProjectOwner"
+                    ></mat-checkbox>
                   </td>
                 </tr>
               </tbody>
@@ -621,49 +1254,94 @@
           </div>
         </div>
         <div class="action-buttons">
-           <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()" matTooltip="Mark all subtasks as approved">
-               Accept All Subtasks
-           </button>
-      <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="publishJob()" matTooltip="Make this job available for bidding by subcontractors and vendors" matTooltipShowDelay="500">
-        Publish Job
-      </button>
-      <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()" matTooltip="Save the current state of the job and subtasks without publishing" matTooltipShowDelay="500">
-        Save Job
-      </button>
-      <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()" matTooltip="Discard all changes and revert the job to its last saved state" matTooltipShowDelay="500">
-        Discard Job
-      </button>
-      <!-- Reports Dropdown -->
-      <button class="submit-btn save-btn" mat-raised-button [matMenuTriggerFor]="reportsMenu" matTooltip="View project reports and documents" matTooltipShowDelay="500">
-        <mat-icon>download</mat-icon>
-        Export Report
-      </button>
-      <mat-menu #reportsMenu="matMenu">
-        <button mat-menu-item (click)="openDocumentsDialog()">
-          <mat-icon>description</mat-icon>
-          <span>View Documents</span>
-        </button>
-        <button mat-menu-item (click)="openReportDialog()" [disabled]="isReportLoading">
-          <mat-icon>assessment</mat-icon>
-          <span *ngIf="!isReportLoading">View Full Report</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button mat-menu-item (click)="openBillOfMaterialsDialog()">
-          <mat-icon>list_alt</mat-icon>
-          <span>View Bill of Materials</span>
-        </button>
-        <button mat-menu-item (click)="openExecutiveSummaryDialog()" [disabled]="isReportLoading">
-          <mat-icon>summarize</mat-icon>
-          <span *ngIf="!isReportLoading">View Executive Summary</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button mat-menu-item *ngIf="!projectDetails?.isSelected" (click)="openEnvironmentalReportDialog()" [disabled]="isReportLoading">
-          <mat-icon>eco</mat-icon>
-          <span *ngIf="!isReportLoading">View Environmental Report</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-      </mat-menu>
-    </div>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            (click)="subtaskService.acceptAllSubtasks()"
+            matTooltip="Mark all subtasks as approved"
+          >
+            Accept All Subtasks
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn publish-btn"
+            mat-raised-button
+            (click)="publishJob()"
+            matTooltip="Make this job available for bidding by subcontractors and vendors"
+            matTooltipShowDelay="500"
+          >
+            Publish Job
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="subtaskService.saveOnly()"
+            matTooltip="Save the current state of the job and subtasks without publishing"
+            matTooltipShowDelay="500"
+          >
+            Save Job
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn delete-btn"
+            mat-raised-button
+            (click)="subtaskService.discard()"
+            matTooltip="Discard all changes and revert the job to its last saved state"
+            matTooltipShowDelay="500"
+          >
+            Discard Job
+          </button>
+          <!-- Reports Dropdown -->
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            [matMenuTriggerFor]="reportsMenu"
+            matTooltip="View project reports and documents"
+            matTooltipShowDelay="500"
+          >
+            <mat-icon>download</mat-icon>
+            Export Report
+          </button>
+          <mat-menu #reportsMenu="matMenu">
+            <button mat-menu-item (click)="openDocumentsDialog()">
+              <mat-icon>description</mat-icon>
+              <span>View Documents</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>assessment</mat-icon>
+              <span *ngIf="!isReportLoading">View Full Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button mat-menu-item (click)="openBillOfMaterialsDialog()">
+              <mat-icon>list_alt</mat-icon>
+              <span>View Bill of Materials</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openExecutiveSummaryDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>summarize</mat-icon>
+              <span *ngIf="!isReportLoading">View Executive Summary</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button
+              mat-menu-item
+              *ngIf="!projectDetails?.isSelected"
+              (click)="openEnvironmentalReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>eco</mat-icon>
+              <span *ngIf="!isReportLoading">View Environmental Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+          </mat-menu>
+        </div>
       </mat-expansion-panel>
     </mat-accordion>
   </div>
@@ -674,39 +1352,63 @@
       <!-- Invite Form -->
       <mat-card>
         <mat-card-header>
-           <mat-card-title>Invite New Member</mat-card-title>
+          <mat-card-title>Invite New Member</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <form [formGroup]="teamForm" (ngSubmit)="inviteTeamMember()">
-            <div class="form-row" style="flex-direction: column;">
-              <mat-form-field appearance="fill" style="width: 100%;">
+            <div class="form-row" style="flex-direction: column">
+              <mat-form-field appearance="fill" style="width: 100%">
                 <mat-label>First Name</mat-label>
                 <input matInput formControlName="firstName" placeholder=" " />
-                <mat-error *ngIf="teamForm.get('firstName')?.hasError('required')"> Mandatory Field </mat-error>
+                <mat-error
+                  *ngIf="teamForm.get('firstName')?.hasError('required')"
+                >
+                  Mandatory Field
+                </mat-error>
               </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-form-field appearance="fill" style="width: 100%">
                 <mat-label>Last Name</mat-label>
                 <input matInput formControlName="lastName" placeholder=" " />
-                <mat-error *ngIf="teamForm.get('lastName')?.hasError('required')"> Mandatory Field </mat-error>
+                <mat-error
+                  *ngIf="teamForm.get('lastName')?.hasError('required')"
+                >
+                  Mandatory Field
+                </mat-error>
               </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-form-field appearance="fill" style="width: 100%">
                 <mat-label>Role</mat-label>
                 <mat-select formControlName="role">
-                  <mat-option *ngFor="let role of availableRoles" [value]="role.value">
+                  <mat-option
+                    *ngFor="let role of availableRoles"
+                    [value]="role.value"
+                  >
                     {{ role.display }}
                   </mat-option>
                 </mat-select>
-                <mat-error *ngIf="teamForm.get('role')?.hasError('required')"> Mandatory Field </mat-error>
+                <mat-error *ngIf="teamForm.get('role')?.hasError('required')">
+                  Mandatory Field
+                </mat-error>
               </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%;">
+              <mat-form-field appearance="fill" style="width: 100%">
                 <mat-label>Email</mat-label>
                 <input matInput formControlName="email" placeholder=" " />
-                <mat-error *ngIf="teamForm.get('email')?.hasError('required')"> Mandatory Field </mat-error>
-                <mat-error *ngIf="teamForm.get('email')?.hasError('email')"> Invalid email format </mat-error>
+                <mat-error *ngIf="teamForm.get('email')?.hasError('required')">
+                  Mandatory Field
+                </mat-error>
+                <mat-error *ngIf="teamForm.get('email')?.hasError('email')">
+                  Invalid email format
+                </mat-error>
               </mat-form-field>
 
-              <button mat-raised-button color="primary" type="submit" [disabled]="teamForm.invalid || isSendingInvite" matTooltip="Send invite and assign to this job" matTooltipShowDelay="500">
-                {{ isSendingInvite ? 'Sending...' : 'Invite & Assign' }}
+              <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                [disabled]="teamForm.invalid || isSendingInvite"
+                matTooltip="Send invite and assign to this job"
+                matTooltipShowDelay="500"
+              >
+                {{ isSendingInvite ? "Sending..." : "Invite & Assign" }}
               </button>
             </div>
           </form>
@@ -719,28 +1421,52 @@
           <mat-card-title>Assigned Team Members</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-           <div *ngIf="isLoadingTeam">
-             <app-loader></app-loader>
-           </div>
+          <div *ngIf="isLoadingTeam">
+            <app-loader></app-loader>
+          </div>
 
-           <div class="sub-list" *ngIf="!isLoadingTeam">
-             <div *ngIf="assignedTeamMembers.length === 0" style="padding: 1rem; text-align: center; color: var(--color-text-muted);">
-               No team members assigned to this project yet.
-             </div>
-             <div class="sub-item" *ngFor="let user of assignedTeamMembers">
-               <div>
-                 <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
-                 <p class="draws">{{ (user.jobRole || '') | roleDisplay }}</p>
-               </div>
-               <div>
-                 <button class="btn-icon-danger" (click)="removeTeamMember(user)" matTooltip="Remove from project" matTooltipShowDelay="500">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="16" y1="11" y2="11"/>
-                   </svg>
-                 </button>
-               </div>
-             </div>
-           </div>
+          <div class="sub-list" *ngIf="!isLoadingTeam">
+            <div
+              *ngIf="assignedTeamMembers.length === 0"
+              style="
+                padding: 1rem;
+                text-align: center;
+                color: var(--color-text-muted);
+              "
+            >
+              No team members assigned to this project yet.
+            </div>
+            <div class="sub-item" *ngFor="let user of assignedTeamMembers">
+              <div>
+                <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
+                <p class="draws">{{ user.jobRole || "" | roleDisplay }}</p>
+              </div>
+              <div>
+                <button
+                  class="btn-icon-danger"
+                  (click)="removeTeamMember(user)"
+                  matTooltip="Remove from project"
+                  matTooltipShowDelay="500"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="22" x2="16" y1="11" y2="11" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </mat-card-content>
       </mat-card>
     </div>
@@ -749,7 +1475,7 @@
   <!-- BLUEPRINTS TAB -->
   <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
     <div *ngIf="isLoadingBlueprints" class="loading-overlay">
-        <app-loader></app-loader>
+      <app-loader></app-loader>
     </div>
     <mat-card>
       <mat-card-content>
@@ -758,12 +1484,12 @@
           [uploadedFiles]="blueprintFiles"
           [selectedFile]="selectedBlueprint"
           [pdfSrc]="blueprintPdfSrc"
-          (fileSelected)="handleBlueprintSelected($event)">
+          (fileSelected)="handleBlueprintSelected($event)"
+        >
         </app-project-blueprint-viewer>
       </mat-card-content>
     </mat-card>
   </div>
-
 </div>
 
 <!-- Documents Dialog -->
@@ -778,19 +1504,31 @@
       </div>
       <!-- Show content only when not loading -->
       <div *ngIf="!isDocumentsLoading">
-        <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
+        <div
+          *ngIf="documents.length === 0 && !documentsError"
+          class="no-documents"
+        >
           <p>No documents available for this quote.</p>
         </div>
         <div *ngIf="documentsError" class="no-documents">
-          <p>{{documentsError}}</p>
+          <p>{{ documentsError }}</p>
         </div>
         <div *ngIf="documents.length > 0" class="documents-list">
-          <div class="document-item" *ngFor="let doc of documents; let i = index">
+          <div
+            class="document-item"
+            *ngFor="let doc of documents; let i = index"
+          >
             <div class="document-info">
-              <span class="document-name">{{doc.fileName}}</span>
-              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
+              <span class="document-name">{{ doc.fileName }}</span>
+              <span class="document-meta"
+                >{{ doc.type }} - {{ doc.size | filesize }}</span
+              >
             </div>
-            <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+            <button
+              class="view-btn"
+              mat-raised-button
+              (click)="viewDocument(doc)"
+            >
               View
             </button>
           </div>
@@ -798,7 +1536,13 @@
       </div>
     </mat-dialog-content>
     <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeDocumentsDialog()"
+      >
+        Close
+      </button>
     </mat-dialog-actions>
   </div>
 </ng-template>
@@ -813,22 +1557,38 @@
         <p>Loading processing results...</p>
       </div>
       <div *ngIf="!isBomLoading">
-        <div *ngIf="processingResults.length === 0 || bomError" class="no-documents" [attr.error]="bomError ? '' : null">
-          <p>{{bomError || 'No document processing results available.'}}</p>
+        <div
+          *ngIf="processingResults.length === 0 || bomError"
+          class="no-documents"
+          [attr.error]="bomError ? '' : null"
+        >
+          <p>{{ bomError || "No document processing results available." }}</p>
         </div>
-        <div *ngIf="processingResults.length > 0 && !bomError" class="report-list">
-          <div class="report-item" *ngFor="let result of processingResults; let i = index">
-            <div class="report-section" *ngFor="let section of result.parsedReport.sections">
-              <h3 class="report-section-title">{{section.title}}</h3>
+        <div
+          *ngIf="processingResults.length > 0 && !bomError"
+          class="report-list"
+        >
+          <div
+            class="report-item"
+            *ngFor="let result of processingResults; let i = index"
+          >
+            <div
+              class="report-section"
+              *ngFor="let section of result.parsedReport.sections"
+            >
+              <h3 class="report-section-title">{{ section.title }}</h3>
               <div class="report-section-content">
                 <!-- Handle text content -->
                 <div *ngIf="section.type === 'text'" class="report-text">
-                  <p *ngFor="let item of section.content" [innerHTML]="item"></p>
+                  <p
+                    *ngFor="let item of section.content"
+                    [innerHTML]="item"
+                  ></p>
                 </div>
                 <!-- Handle list content -->
                 <div *ngIf="section.type === 'list'" class="report-list-items">
                   <ul>
-                    <li *ngFor="let item of section.content">{{item}}</li>
+                    <li *ngFor="let item of section.content">{{ item }}</li>
                   </ul>
                 </div>
                 <!-- Handle table content (Materials List) -->
@@ -836,12 +1596,14 @@
                   <table class="themed-table">
                     <thead>
                       <tr>
-                        <th *ngFor="let header of section.headers">{{header}}</th>
+                        <th *ngFor="let header of section.headers">
+                          {{ header }}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let row of section.content">
-                        <td *ngFor="let cell of row">{{cell}}</td>
+                        <td *ngFor="let cell of row">{{ cell }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -853,13 +1615,31 @@
       </div>
     </mat-dialog-content>
     <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">Download PDF</button>
-      <button class="submit-btn" mat-raised-button [matMenuTriggerFor]="spreadsheetMenu">Download as Spreadsheet</button>
+      <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">
+        Download PDF
+      </button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        [matMenuTriggerFor]="spreadsheetMenu"
+      >
+        Download as Spreadsheet
+      </button>
       <mat-menu #spreadsheetMenu="matMenu">
-        <button mat-menu-item (click)="downloadAsSpreadsheet('csv')">Download as CSV</button>
-        <button mat-menu-item (click)="downloadAsSpreadsheet('excel')">Download as Excel</button>
+        <button mat-menu-item (click)="downloadAsSpreadsheet('csv')">
+          Download as CSV
+        </button>
+        <button mat-menu-item (click)="downloadAsSpreadsheet('excel')">
+          Download as Excel
+        </button>
       </mat-menu>
-      <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeBillOfMaterialsDialog()"
+      >
+        Close
+      </button>
     </mat-dialog-actions>
   </div>
 </ng-template>
@@ -883,25 +1663,54 @@
     <mat-dialog-actions align="end" class="note-actions">
       <div class="form-row button-row">
         <div class="button-group">
-          <button class="submit-btn save-btn" mat-raised-button (click)="closeNoteDialog()">Cancel</button>
-          <button class="submit-btn save-btn" mat-raised-button (click)="saveNoteDialog()">Save</button>
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="closeNoteDialog()"
+          >
+            Cancel
+          </button>
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="saveNoteDialog()"
+          >
+            Save
+          </button>
         </div>
         <div class="upload-container">
           <div *ngIf="isUploading" class="upload-progress">
             <p>Upload Progress: {{ progress }}%</p>
-            <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="progress"
+            ></mat-progress-bar>
           </div>
-          <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-            <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
+          <div
+            *ngIf="!isUploading && uploadedFilesCount > 0"
+            class="upload-complete"
+          >
+            <p
+              [matTooltip]="uploadedFileNames.join(', ')"
+              matTooltipPosition="above"
+            >
               {{ uploadedFilesCount }} file(s) uploaded successfully
             </p>
           </div>
           <div class="custom-file-upload">
             <label for="file-upload" class="upload-label submit-btn">
-              <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+              <img
+                src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                alt="Upload Icon"
+                class="upload-icon"
+              />
               Upload File
             </label>
-            <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+            <input
+              id="file-upload"
+              type="file"
+              (change)="onFileSelected($event)"
+            />
           </div>
         </div>
       </div>
@@ -915,17 +1724,31 @@
     <h2 mat-dialog-title>{{ reportTitle }}</h2>
     <mat-dialog-content class="report-content">
       <div *ngIf="reportError" class="no-documents" error>
-        <p>{{reportError}}</p>
+        <p>{{ reportError }}</p>
       </div>
-      <div *ngIf="reportHtml" class="report-text-content" [innerHTML]="reportHtml">
-      </div>
+      <div
+        *ngIf="reportHtml"
+        class="report-text-content"
+        [innerHTML]="reportHtml"
+      ></div>
     </mat-dialog-content>
     <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="downloadFullReport()" [disabled]="isGeneratingReport">
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="downloadFullReport()"
+        [disabled]="isGeneratingReport"
+      >
         <span *ngIf="!isGeneratingReport">Download PDF</span>
         <span *ngIf="isGeneratingReport">Generating...</span>
       </button>
-      <button class="submit-btn" mat-raised-button (click)="closeReportDialog()">Close</button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeReportDialog()"
+      >
+        Close
+      </button>
     </mat-dialog-actions>
   </div>
 </ng-template>
@@ -933,7 +1756,13 @@
 <!-- Alert Modal -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
-    <p>{{alertMessage}}</p>
-    <button class="alert-button submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
+    <p>{{ alertMessage }}</p>
+    <button
+      class="alert-button submit-btn"
+      mat-raised-button
+      (click)="closeAlert()"
+    >
+      OK
+    </button>
   </div>
 </div>

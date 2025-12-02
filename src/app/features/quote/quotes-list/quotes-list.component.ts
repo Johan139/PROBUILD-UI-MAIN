@@ -9,24 +9,33 @@ import { HttpClientModule } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-    selector: 'app-quotes-list',
-    standalone: true,
-    imports: [
-        MatTableModule,
-        MatButtonModule,
-        MatCardModule,
-        HttpClientModule,
-        MatIconModule,
-    ],
-    templateUrl: './quotes-list.component.html',
-    styleUrls: ['./quotes-list.component.scss'],
-    providers: [QuoteService]
+  selector: 'app-quotes-list',
+  standalone: true,
+  imports: [
+    MatTableModule,
+    MatButtonModule,
+    MatCardModule,
+    HttpClientModule,
+    MatIconModule,
+  ],
+  templateUrl: './quotes-list.component.html',
+  styleUrls: ['./quotes-list.component.scss'],
+  providers: [QuoteService],
 })
 export class QuotesListComponent implements OnInit {
-  displayedColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
+  displayedColumns: string[] = [
+    'number',
+    'createdBy',
+    'createdDate',
+    'total',
+    'actions',
+  ];
   dataSource = new MatTableDataSource<Quote>([]);
 
-  constructor(private quoteService: QuoteService, private router: Router) {}
+  constructor(
+    private quoteService: QuoteService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loadQuotes();
@@ -49,7 +58,7 @@ export class QuotesListComponent implements OnInit {
   openQuote(quoteId: string | null): void {
     // console.log('Attempting to open quote with ID:', quoteId);
     this.router.navigate(['/quote'], {
-      queryParams: { quoteId: quoteId }
+      queryParams: { quoteId: quoteId },
     });
   }
 }

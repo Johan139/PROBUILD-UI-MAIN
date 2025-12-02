@@ -12,12 +12,13 @@ export class SignalrService {
 
   constructor(
     private aiChatStateService: AiChatStateService,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   public async startConnection(): Promise<void> {
     // Fast-path: already connected
-    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) return;
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected)
+      return;
     if (this.connectionPromise) return this.connectionPromise;
 
     if (!this.authService.isLoggedIn()) {
@@ -30,31 +31,31 @@ export class SignalrService {
 
     // (Re)build if missing or was disposed
     if (!this.hubConnection) {
-   this.hubConnection = new signalR.HubConnectionBuilder()
-  .withUrl(hubUrl, {
-    // ensure Promise<string>, never null
-    accessTokenFactory: async (): Promise<string> =>
-      (await this.authService.getToken()) ?? '',
-    skipNegotiation: false,
-  })
-  .withAutomaticReconnect()
-  .configureLogging(signalR.LogLevel.Information)
-  .build();
+      this.hubConnection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl, {
+          // ensure Promise<string>, never null
+          accessTokenFactory: async (): Promise<string> =>
+            (await this.authService.getToken()) ?? '',
+          skipNegotiation: false,
+        })
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
 
       this.hubConnection.on('ReceiveMessage', (message: ChatMessage) => {
         this.aiChatStateService.addMessage(message);
         console.debug('SignalR: message received');
       });
 
-      this.hubConnection.onreconnecting(err => {
+      this.hubConnection.onreconnecting((err) => {
         console.warn('SignalR: reconnecting...', err);
       });
 
-      this.hubConnection.onreconnected(connectionId => {
+      this.hubConnection.onreconnected((connectionId) => {
         // console.info('SignalR: reconnected.', { connectionId });
       });
 
-      this.hubConnection.onclose(err => {
+      this.hubConnection.onclose((err) => {
         if (err) {
           console.error('SignalR: connection closed due to error:', err);
         } else {
@@ -64,9 +65,10 @@ export class SignalrService {
       });
     }
 
-    this.connectionPromise = this.hubConnection.start()
+    this.connectionPromise = this.hubConnection
+      .start()
       .then()
-      .catch(err => {
+      .catch((err) => {
         console.error('SignalR: failed to start:', err);
         this.connectionPromise = undefined;
         throw err;
@@ -101,30 +103,32 @@ export class SignalrService {
   public async leaveConversationGroup(conversationId: string): Promise<void> {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
       try {
-       await this.hubConnection!.invoke('LeaveConversation', conversationId);
+        await this.hubConnection!.invoke('LeaveConversation', conversationId);
         console.debug('SignalR: left group', conversationId);
       } catch (err) {
         console.error(`SignalR: error leaving group ${conversationId}:`, err);
       }
     }
   }
-private streamChunkListener?: (conversationId: string, chunk: string) => void;
+  private streamChunkListener?: (conversationId: string, chunk: string) => void;
 
-onReceiveStreamChunk(callback: (conversationId: string, chunk: string) => void): void {
-  if (this.streamChunkListener) {
-    this.hubConnection?.off("ReceiveStreamChunk", this.streamChunkListener);
+  onReceiveStreamChunk(
+    callback: (conversationId: string, chunk: string) => void,
+  ): void {
+    if (this.streamChunkListener) {
+      this.hubConnection?.off('ReceiveStreamChunk', this.streamChunkListener);
+    }
+    this.streamChunkListener = callback;
+    this.hubConnection?.on('ReceiveStreamChunk', this.streamChunkListener);
   }
-  this.streamChunkListener = callback;
-  this.hubConnection?.on("ReceiveStreamChunk", this.streamChunkListener);
-}
 
-private streamEndListener?: (conversationId: string) => void;
+  private streamEndListener?: (conversationId: string) => void;
 
-onStreamEnd(callback: (conversationId: string) => void): void {
-  if (this.streamEndListener) {
-    this.hubConnection?.off("StreamComplete", this.streamEndListener);
+  onStreamEnd(callback: (conversationId: string) => void): void {
+    if (this.streamEndListener) {
+      this.hubConnection?.off('StreamComplete', this.streamEndListener);
+    }
+    this.streamEndListener = callback;
+    this.hubConnection?.on('StreamComplete', this.streamEndListener);
   }
-  this.streamEndListener = callback;
-  this.hubConnection?.on("StreamComplete", this.streamEndListener);
-}
 }

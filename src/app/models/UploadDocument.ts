@@ -1,7 +1,7 @@
 export interface UploadDocument {
-    id: string;
-    status: string;
-    fileUrls: string[];
-    fileNames: string[];
-    message: string;
-  }
+  id: string;
+  status: string;
+  fileUrls: string[];
+  fileNames: string[];
+  message: string;
+}

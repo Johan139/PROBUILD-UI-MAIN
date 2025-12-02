@@ -28,7 +28,7 @@ export interface Profile {
   subscriptionPackage: string | null;
   isVerified: boolean;
   userAddresses?: UserAddress[];
-  countryNumberCode: string ;
+  countryNumberCode: string;
 }
 
 export interface TeamMember {
@@ -73,11 +73,10 @@ export interface UserAddress {
   addressType?: string;
 }
 
-export interface AddressType{
+export interface AddressType {
   id: string;
   name: string;
-  description: string; 
+  description: string;
   isdefault: number;
   displayorder: number;
 }
-

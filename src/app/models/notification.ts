@@ -7,5 +7,4 @@ export interface Notification {
   senderFullName: string;
   unread?: boolean;
   isRead?: boolean;
-  
 }

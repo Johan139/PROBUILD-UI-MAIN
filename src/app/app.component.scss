@@ -1,6 +1,7 @@
-@use 'styles/util/mixins' as u;
+@use "styles/util/mixins" as u;
 
-:host, .page-wrapper {
+:host,
+.page-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -12,10 +13,17 @@
 .header {
   background: var(--color-primary);
   color: var(--gray-900);
-  border-bottom: var(--space-1) solid color-mix(in oklab, var(--color-primary) 60%, transparent);
-  .spacer { flex: 1 1 auto; }
-  button[mat-icon-button] { color: var(--gray-900); }
-  .logo-link img { display: block; }
+  border-bottom: var(--space-1) solid
+    color-mix(in oklab, var(--color-primary) 60%, transparent);
+  .spacer {
+    flex: 1 1 auto;
+  }
+  button[mat-icon-button] {
+    color: var(--gray-900);
+  }
+  .logo-link img {
+    display: block;
+  }
 }
 
 .company-bar {
@@ -63,7 +71,9 @@ mat-sidenav-content {
   background: var(--gray-800);
   color: #fff;
 
-  &.is-collapsed { width: 72px; }
+  &.is-collapsed {
+    width: 72px;
+  }
 }
 
 .nav-list {
@@ -81,16 +91,22 @@ mat-sidenav-content {
   height: 44px;
   border-radius: var(--radius-sm);
   margin: 2px var(--space-2);
-  color: rgba(255,255,255,.92);
+  color: rgba(255, 255, 255, 0.92);
   text-decoration: none;
   @include u.interactive-states;
 
   /* icon + label colors on dark surface */
-  .nav-icon { color: rgba(255,255,255,.92); }
-  .nav-label { color: rgba(255,255,255,.92); }
+  .nav-icon {
+    color: rgba(255, 255, 255, 0.92);
+  }
+  .nav-label {
+    color: rgba(255, 255, 255, 0.92);
+  }
 
   /* hover background */
-  &:hover { background: rgba(255,255,255,.06); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
 
   /* active left rail + subtle bg */
   .active-indicator {
@@ -118,7 +134,9 @@ mat-sidenav-content {
 /* collapsed rail: center icons, hide labels, keep tooltips */
 .sidenav.is-collapsed .nav-item {
   justify-content: center;
-  .nav-label { display: none; }
+  .nav-label {
+    display: none;
+  }
 }
 
 .content-shell {
@@ -129,13 +147,21 @@ mat-sidenav-content {
 }
 
 /* Footer pinned to bottom via flex in content-shell */
-.flex-spacer { flex: 1 1 auto; }
+.flex-spacer {
+  flex: 1 1 auto;
+}
 
 /* Responsive tweaks */
 @media (max-width: 768px) {
-  .sidenav { width: 72px; }
-  .sidenav:not(.is-collapsed) { width: 200px; }
-  .content-shell { padding: var(--space-3); }
+  .sidenav {
+    width: 72px;
+  }
+  .sidenav:not(.is-collapsed) {
+    width: 200px;
+  }
+  .content-shell {
+    padding: var(--space-3);
+  }
 }
 
 .mat-mdc-list-base .mat-mdc-list-item .mdc-list-item__ripple::before,
@@ -145,7 +171,8 @@ mat-sidenav-content {
 
 .nav-item:focus-visible {
   outline: 0;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 60%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in oklab, var(--color-primary) 60%, transparent);
   border-radius: var(--radius-sm);
 }
 
@@ -169,8 +196,8 @@ mat-sidenav-content {
 .mat-mdc-list-base .mdc-list-item .mdc-list-item__ripple::after,
 .mat-mdc-list-base .mdc-list-item--activated .mdc-list-item__ripple::before,
 .mat-mdc-list-base .mdc-list-item--activated .mdc-list-item__ripple::after,
-.mat-mdc-list-base .mdc-list-item--selected  .mdc-list-item__ripple::before,
-.mat-mdc-list-base .mdc-list-item--selected  .mdc-list-item__ripple::after {
+.mat-mdc-list-base .mdc-list-item--selected .mdc-list-item__ripple::before,
+.mat-mdc-list-base .mdc-list-item--selected .mdc-list-item__ripple::after {
   background-color: transparent !important;
   opacity: 0 !important;
 }
