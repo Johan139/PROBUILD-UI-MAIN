@@ -103,12 +103,14 @@
               <div [formGroup]="addressForm" class="address-container">
                 <mat-form-field appearance="fill" class="address-form-field">
                   <mat-label>Address</mat-label>
+
                   <input
                     matInput
-                    [formControl]="addressControl"
+                    formControlName="formattedAddress"
                     [matAutocomplete]="auto"
                     placeholder="Enter an address"
                   />
+
                   <mat-autocomplete
                     #auto="matAutocomplete"
                     (optionSelected)="onAddressSelected($event)"
