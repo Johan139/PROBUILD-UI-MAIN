@@ -101,11 +101,13 @@ import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
 import { BudgetLineItem } from '../../models/budget-line-item.model';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
+import { ProjectOverviewComponent, Project } from './project-overview/project-overview.component';
 import {
   UploadedFileInfo,
   FileUploadService,
 } from '../../services/file-upload.service';
 import { JobsService } from '../../services/jobs.service';
+import { ProjectBudgetTrackingComponent } from "./project-budget-tracking/project-budget-tracking.component";
 
 @Component({
   selector: 'app-jobs',
@@ -142,7 +144,9 @@ import { JobsService } from '../../services/jobs.service';
     MatSelectModule,
     SharedModule,
     ProjectBlueprintViewerComponent,
-  ],
+    ProjectOverviewComponent,
+    ProjectBudgetTrackingComponent
+],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
 })
@@ -207,21 +211,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   blueprintPdfSrc: string | Uint8Array | null = null;
   isLoadingBlueprints: boolean = false;
 
-  // Budget Data
-  budgetItems: BudgetLineItem[] = [];
-  isLoadingBudget: boolean = false;
-
-  // Budget UI State
-  isAddingLineItem: boolean = false;
-  newBudgetItem: Partial<BudgetLineItem> = {};
-  editingItemId: number | null = null;
-  editingItem: BudgetLineItem | null = null; // Copy of item being edited
-  budgetTableTab:
-    | 'all'
-    | 'Subcontractor'
-    | 'Materials'
-    | 'Equipment'
-    | 'Other' = 'all';
+  // Project Overview Data
+  overviewProjects: Project[] = [];
 
   // Team Data
   assignedTeamMembers: JobUser[] = [];
@@ -274,358 +265,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.availableRoles = userTypes.filter(
       (role) => role.value !== 'GENERAL_CONTRACTOR',
     );
-  }
-
-  // Budget Calculations
-  get totalEstimated(): number {
-    return this.budgetItems.reduce((sum, item) => sum + item.estimatedCost, 0);
-  }
-
-  get totalActual(): number {
-    return this.budgetItems.reduce((sum, item) => sum + item.actualCost, 0);
-  }
-
-  get totalForecast(): number {
-    // If no forecast provided, assume estimated cost for now
-    return this.budgetItems.reduce(
-      (sum, item) => sum + (item.forecastToComplete ?? item.estimatedCost),
-      0,
-    );
-  }
-
-  get variance(): number {
-    return this.totalEstimated - this.totalForecast;
-  }
-
-  get variancePercent(): string {
-    return this.totalEstimated > 0
-      ? ((this.variance / this.totalEstimated) * 100).toFixed(1)
-      : '0.0';
-  }
-
-  get cpi(): string {
-    return this.totalForecast > 0
-      ? (this.totalEstimated / this.totalForecast).toFixed(2)
-      : '1.00';
-  }
-
-  get procurementCommitments(): number {
-    return this.budgetItems
-      .filter((item) => item.category === 'Materials')
-      .reduce((sum, item) => sum + item.estimatedCost, 0);
-  }
-
-  getVariance(item: BudgetLineItem): number {
-    const forecast = item.forecastToComplete ?? item.estimatedCost;
-    return item.estimatedCost - forecast;
-  }
-
-  getVariancePercent(item: BudgetLineItem): string {
-    const v = this.getVariance(item);
-    return item.estimatedCost > 0
-      ? ((v / item.estimatedCost) * 100).toFixed(1)
-      : '0.0';
-  }
-
-  get filteredBudgetItems(): BudgetLineItem[] {
-    if (this.budgetTableTab === 'all') {
-      return this.budgetItems;
-    }
-    if (this.budgetTableTab === 'Subcontractor') {
-      // Include 'Labor' category items in Subcontractor tab for consolidation
-      return this.budgetItems.filter(
-        (item) =>
-          item.category === 'Subcontractor' || item.category === 'Labor',
-      );
-    }
-    return this.budgetItems.filter(
-      (item) => item.category === this.budgetTableTab,
-    );
-  }
-
-  get subcontractorSummary(): BudgetLineItem[] {
-    // Return all items categorized as Subcontractor, sorted by highest Actual Cost
-    return this.budgetItems
-      .filter((item) => item.category === 'Subcontractor')
-      .sort((a, b) => b.actualCost - a.actualCost)
-      .slice(0, 5); // Show top 5
-  }
-
-  importAiEstimates(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: 'Import AI Estimates',
-        message:
-          'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
-        confirmButtonText: 'Import',
-        cancelButtonText: 'Cancel',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.processAiImport();
-      }
-    });
-  }
-
-  private processAiImport(): void {
-    // TODO: Check for duplicates first? For now just append as requested, user can delete.
-    if (!this.processingResults || this.processingResults.length === 0) {
-      this.isLoadingBudget = true;
-      this.bomService
-        .getBillOfMaterials(this.projectDetails.jobId)
-        .subscribe((results) => {
-          this.processingResults = results.length ? results : [results];
-          this.runImportLogic();
-        });
-    } else {
-      this.runImportLogic();
-    }
-  }
-
-  private runImportLogic(): void {
-    this.isLoadingBudget = true;
-    const newItems: BudgetLineItem[] = [];
-    const report = this.processingResults[0]?.parsedReport;
-
-    if (report && report.sections) {
-      report.sections.forEach((section: any) => {
-        let category = 'Other';
-        let phase = section.title
-          .replace(
-            / - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i,
-            '',
-          )
-          .trim();
-
-        if (section.title.toLowerCase().includes('material'))
-          category = 'Materials';
-        else if (
-          section.title.toLowerCase().includes('labor') ||
-          section.title.toLowerCase().includes('subcontractor')
-        )
-          category = 'Subcontractor';
-
-        // Filter out summary tables
-        if (
-          (section.title.toLowerCase().includes('total') &&
-            section.title.toLowerCase().includes('breakdown')) ||
-          section.title.toLowerCase().includes('project cost breakdown') ||
-          section.title.toLowerCase().includes('project cost summary') ||
-          section.title.toLowerCase().includes('summary of costs')
-        ) {
-          return;
-        }
-
-        if (section.type === 'table' && section.content) {
-          // Helper to find index by header name (case insensitive)
-          const getIndex = (headers: string[], ...names: string[]) =>
-            headers.findIndex((h) =>
-              names.some((n) => h.toLowerCase().includes(n.toLowerCase())),
-            );
-
-          const headers = section.headers || [];
-
-          // Column Indices
-          const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
-          const tradeIdx = getIndex(headers, 'Trade');
-          const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
-          const unitIdx = getIndex(headers, 'Unit');
-          const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
-          const detailIdx = getIndex(
-            headers,
-            'Size/Detail',
-            'Detail',
-            'Size',
-            'Dimensions',
-          );
-
-          // Make 'Total Cost' more specific to avoid grabbing CSI codes
-          const costIdx = getIndex(
-            headers,
-            'Total Cost',
-            'Total Estimated Cost',
-            'Est. Cost',
-            'Total Price',
-          );
-          const unitCostIdx = getIndex(
-            headers,
-            'Unit Cost',
-            'Rate',
-            'Hourly Rate',
-          );
-
-          section.content.forEach((row: any[]) => {
-            let item =
-              itemIdx > -1
-                ? row[itemIdx]
-                : tradeIdx > -1
-                  ? row[tradeIdx]
-                  : 'Unknown Item';
-            const trade = tradeIdx > -1 ? row[tradeIdx] : phase; // Fallback to Phase if no Trade column
-
-            // Row-Level Filter: Skip summary rows that might appear in regular tables
-            if (
-              item.toLowerCase().includes('total') ||
-              item.toLowerCase().includes('subtotal') ||
-              item.toLowerCase().includes('overhead') ||
-              item.toLowerCase().includes('contingency') ||
-              item.toLowerCase().includes('escalation') ||
-              item.toLowerCase().includes('calculated gc bid')
-            ) {
-              return;
-            }
-
-            // Enrich Item Name with Specification
-            if (specIdx > -1 && row[specIdx]) {
-              item += ` - ${row[specIdx]}`;
-            }
-
-            // Enrich Notes with Size/Detail
-            let notes = 'Imported from AI Analysis';
-            if (detailIdx > -1 && row[detailIdx]) {
-              notes = `${row[detailIdx]}; ${notes}`;
-            }
-
-            let cost = 0;
-            let qty = 0;
-            let unitCost = 0;
-
-            // Parse Quantity
-            if (qtyIdx > -1) {
-              const qStr = row[qtyIdx]?.toString() || '';
-              qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
-            }
-
-            // Parse Unit Cost
-            if (unitCostIdx > -1) {
-              const ucStr = row[unitCostIdx]?.toString() || '';
-              unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
-            }
-
-            // Parse Total Cost with validation
-            if (costIdx > -1) {
-              const cStr = row[costIdx]?.toString() || '';
-              cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
-            }
-
-            // Validation: If we have Qty and UnitCost, use them to calculate/verify Total
-            const calculatedCost = qty * unitCost;
-            if (calculatedCost > 0) {
-              // If Total Cost is missing, zero, or suspiciously different (e.g. > 10% variance), trust the calculation
-              if (
-                cost === 0 ||
-                Math.abs(cost - calculatedCost) > calculatedCost * 0.1
-              ) {
-                cost = calculatedCost;
-              }
-            } else if (cost === 0 && costIdx === -1) {
-              // Only fallback to last column if we really have no other data
-              // and ensure it looks like a price (contains dot or currency symbol)
-              const lastVal = row[row.length - 1]?.toString() || '';
-              if (lastVal.includes('.') || lastVal.includes('$')) {
-                cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
-              }
-            }
-
-            const unit =
-              unitIdx > -1
-                ? row[unitIdx]
-                : category === 'Labor'
-                  ? 'Hours'
-                  : 'ea';
-
-            // Skip items that couldn't be identified or have no cost
-            if (item === 'Unknown Item') {
-              return;
-            }
-
-            if (cost > 0) {
-              newItems.push({
-                jobId: Number(this.projectDetails.jobId),
-                category: category,
-                phase: phase,
-                item: item,
-                trade: trade,
-                estimatedCost: cost,
-                actualCost: 0,
-                percentComplete: 0,
-                quantity: qty > 0 ? qty : undefined,
-                unit: qty > 0 ? unit : undefined,
-                unitCost: unitCost > 0 ? unitCost : undefined,
-                status: 'Pending',
-                notes: notes,
-                source: 'AI',
-                id: 0,
-              } as BudgetLineItem);
-            }
-          });
-        }
-      });
-    }
-
-    if (newItems.length === 0) {
-      this.isLoadingBudget = false;
-      this.snackBar.open('No estimable items found in AI report.', 'Close', {
-        duration: 3000,
-      });
-      return;
-    }
-
-    // warning if clicked twice. Check if items with source='AI' already exist.
-    const existingAiItems = this.budgetItems.filter((i) => i.source === 'AI');
-    if (existingAiItems.length > 0) {
-      if (
-        !confirm(
-          `You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`,
-        )
-      ) {
-        this.isLoadingBudget = false;
-        return;
-      }
-    }
-
-    this.budgetService.addBudgetItemsBatch(newItems).subscribe({
-      next: (savedItems) => {
-        this.budgetItems = [...this.budgetItems, ...savedItems];
-        this.isLoadingBudget = false;
-        this.snackBar.open(
-          `Successfully imported ${savedItems.length} items from AI.`,
-          'Close',
-          { duration: 3000 },
-        );
-      },
-      error: (err) => {
-        console.error('Batch import failed', err);
-        this.isLoadingBudget = false;
-        this.snackBar.open('Failed to import items.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  setBudgetTableTab(tab: any): void {
-    this.budgetTableTab = tab;
-    this.cancelAddLineItem(); // Cancel add if switching tabs
-    this.cancelEditLineItem();
-  }
-
-  getStatusColor(estimated: number, forecast: number | undefined): string {
-    const f = forecast ?? estimated;
-    const diff = estimated > 0 ? ((f - estimated) / estimated) * 100 : 0;
-    if (diff <= 0) return 'text-color-green';
-    if (diff <= 5) return 'text-color-yellow';
-    return 'text-color-red';
-  }
-
-  getStatusIcon(estimated: number, forecast: number | undefined): string {
-    const f = forecast ?? estimated;
-    const diff = estimated > 0 ? ((f - estimated) / estimated) * 100 : 0;
-    if (diff <= 0) return 'check_circle';
-    if (diff <= 5) return 'error_outline';
-    return 'error';
   }
 
   setActiveTab(
@@ -723,247 +362,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         },
       });
     }
-  }
-
-  loadBudget(): void {
-    if (!this.projectDetails?.jobId) return;
-
-    // Stale-While-Revalidate: Load from Local Storage first
-    const storageKey = `budget_${this.projectDetails.jobId}`;
-    if (this.isBrowser) {
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        try {
-          this.budgetItems = JSON.parse(cached);
-        } catch (e) {
-          // console.error('Error parsing cached budget data', e);
-        }
-      }
-    }
-
-    this.isLoadingBudget = true;
-    this.budgetService.getBudget(this.projectDetails.jobId).subscribe({
-      next: (items) => {
-        this.budgetItems = items;
-        // Update Local Storage with fresh data
-        if (this.isBrowser) {
-          localStorage.setItem(storageKey, JSON.stringify(this.budgetItems));
-        }
-        this.isLoadingBudget = false;
-      },
-      error: (err) => {
-        console.error('Error loading budget', err);
-        this.isLoadingBudget = false;
-        this.snackBar.open('Failed to load budget.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  syncBudget(): void {
-    // Check if there are unsaved changes or unaccepted subtasks
-    const unaccepted = this.store
-      .getState()
-      .subtaskGroups.flatMap((group) => group.subtasks)
-      .filter((st) => !st.deleted && !st.accepted);
-
-    if (unaccepted.length > 0) {
-      this.snackBar.open(
-        'Please accept all subtasks and Save the job before syncing the budget.',
-        'Close',
-        { duration: 5000 },
-      );
-      return;
-    }
-
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: 'Sync Budget',
-        message:
-          'This will update the budget based on the last SAVED project timeline. Any unsaved changes will not be included. Continue?',
-        confirmButtonText: 'Sync',
-        cancelButtonText: 'Cancel',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.isLoadingBudget = true;
-        this.budgetService.syncBudget(this.projectDetails.jobId).subscribe({
-          next: () => {
-            this.snackBar.open('Budget synced successfully.', 'Close', {
-              duration: 3000,
-            });
-            this.loadBudget();
-          },
-          error: (err) => {
-            console.error('Error syncing budget', err);
-            this.isLoadingBudget = false;
-            this.snackBar.open('Failed to sync budget.', 'Close', {
-              duration: 3000,
-            });
-          },
-        });
-      }
-    });
-  }
-
-  // Budget Inline Actions
-  startAddLineItem(): void {
-    this.isAddingLineItem = true;
-    this.newBudgetItem = {
-      jobId: Number(this.projectDetails.jobId),
-      item: '',
-      trade: '',
-      category: this.budgetTableTab === 'all' ? 'Labor' : this.budgetTableTab, // Default category
-      estimatedCost: 0,
-      actualCost: 0,
-      forecastToComplete: 0,
-      percentComplete: 0,
-      notes: '',
-      status: 'Pending',
-      source: 'Manual',
-    };
-  }
-
-  cancelAddLineItem(): void {
-    this.isAddingLineItem = false;
-    this.newBudgetItem = {};
-  }
-
-  recalculateEstimatedCost(item: Partial<BudgetLineItem>): void {
-    if (
-      (item.quantity || item.quantity === 0) &&
-      (item.unitCost || item.unitCost === 0)
-    ) {
-      item.estimatedCost = item.quantity * item.unitCost;
-      // Default forecast to estimated if not set, or update it if it matches estimated
-      if (
-        item.forecastToComplete === undefined ||
-        item.forecastToComplete === 0
-      ) {
-        item.forecastToComplete = item.estimatedCost;
-      }
-    }
-  }
-
-  saveNewLineItem(): void {
-    if (!this.newBudgetItem.item || !this.newBudgetItem.trade) {
-      this.snackBar.open('Please fill in Item and Trade fields.', 'Close', {
-        duration: 3000,
-      });
-      return;
-    }
-
-    // Default values if missing
-    const itemToSave: BudgetLineItem = {
-      ...this.newBudgetItem,
-      estimatedCost: this.newBudgetItem.estimatedCost || 0,
-      actualCost: this.newBudgetItem.actualCost || 0,
-      // Default forecast to estimated cost if not manually entered
-      forecastToComplete:
-        this.newBudgetItem.forecastToComplete ??
-        this.newBudgetItem.estimatedCost ??
-        0,
-      percentComplete: this.newBudgetItem.percentComplete || 0,
-      jobId: Number(this.projectDetails.jobId),
-    } as BudgetLineItem;
-
-    this.isLoadingBudget = true;
-    this.budgetService.addBudgetItem(itemToSave).subscribe({
-      next: (newItem) => {
-        this.budgetItems = [...this.budgetItems, newItem]; // Add to local list
-        this.isLoadingBudget = false;
-        this.isAddingLineItem = false;
-        this.newBudgetItem = {};
-        this.snackBar.open('Line item added successfully.', 'Close', {
-          duration: 3000,
-        });
-      },
-      error: (err) => {
-        console.error('Error adding budget item', err);
-        this.isLoadingBudget = false;
-        this.snackBar.open('Failed to add line item.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  startEditLineItem(item: BudgetLineItem): void {
-    this.editingItemId = item.id;
-    this.editingItem = { ...item }; // Deep copy for editing
-  }
-
-  cancelEditLineItem(): void {
-    this.editingItemId = null;
-    this.editingItem = null;
-  }
-
-  saveEditLineItem(): void {
-    if (!this.editingItem) return;
-
-    this.isLoadingBudget = true;
-    this.budgetService
-      .updateBudgetItem(this.editingItem.id, this.editingItem)
-      .subscribe({
-        next: (updatedItem) => {
-          // Update local list
-          const index = this.budgetItems.findIndex(
-            (i) => i.id === updatedItem.id,
-          );
-          if (index !== -1) {
-            this.budgetItems[index] = updatedItem;
-          }
-          this.isLoadingBudget = false;
-          this.editingItemId = null;
-          this.editingItem = null;
-          this.snackBar.open('Line item updated successfully.', 'Close', {
-            duration: 3000,
-          });
-        },
-        error: (err) => {
-          console.error('Error updating budget item', err);
-          this.isLoadingBudget = false;
-          this.snackBar.open('Failed to update line item.', 'Close', {
-            duration: 3000,
-          });
-        },
-      });
-  }
-
-  deleteLineItem(item: BudgetLineItem): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: 'Delete Line Item',
-        message: `Are you sure you want to delete "${item.item}"?`,
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.isLoadingBudget = true;
-        this.budgetService.deleteBudgetItem(item.id).subscribe({
-          next: () => {
-            this.budgetItems = this.budgetItems.filter((i) => i.id !== item.id);
-            this.isLoadingBudget = false;
-            this.snackBar.open('Line item deleted.', 'Close', {
-              duration: 3000,
-            });
-          },
-          error: (err) => {
-            console.error('Error deleting budget item', err);
-            this.isLoadingBudget = false;
-            this.snackBar.open('Failed to delete line item.', 'Close', {
-              duration: 3000,
-            });
-          },
-        });
-      }
-    });
   }
 
   loadAssignedTeam(): void {
@@ -1112,6 +510,45 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    this.overviewProjects = [
+      {
+        id: '1',
+        title: 'Downtown Office Complex',
+        address: '123 Business Ave, Downtown',
+        status: 'live',
+        budget: '$12.5M',
+        deadline: 'Dec 2025',
+        team: 45,
+        progress: 35,
+        bids: 12,
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-1.png'
+      },
+      {
+        id: '2',
+        title: 'Riverfront Apartments',
+        address: '456 River Rd, Riverside',
+        status: 'bidding',
+        budget: '$8.2M',
+        deadline: 'Mar 2026',
+        team: 12,
+        progress: 0,
+        bids: 8,
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-2.png'
+      },
+      {
+        id: '3',
+        title: 'Suburban Mall Extension',
+        address: '789 Shopping Blvd, Suburbia',
+        status: 'draft',
+        budget: '$4.5M',
+        deadline: 'Oct 2025',
+        team: 5,
+        progress: 0,
+        bids: 0,
+        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-3.png'
+      }
+    ];
+
     this.sessionId = uuidv4();
     this.measurementService.getSettings().subscribe((settings) => {
       this.temperatureUnit = settings.temperature;
@@ -1148,7 +585,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         if (this.projectDetails?.jobId) {
           this.loadBlueprints();
           this.loadAssignedTeam();
-          this.loadBudget();
           this.authService.currentUser$
             .pipe(
               filter((user) => !!user),

@@ -1,0 +1,563 @@
+<div class="dashboard-container">
+  <!-- Job Details Card -->
+  <mat-card class="job-details-card">
+    <mat-card-content>
+      <div *ngIf="isLoading">
+        <app-loader></app-loader>
+      </div>
+      <div class="job-details">
+        <p><strong>Start Date:</strong> {{ startDateDisplay }}</p>
+        <div class="address-container">
+          <div *ngIf="!isEditingAddress" class="address-display">
+            <span
+              ><strong>Address: </strong>
+              <span *ngIf="projectDetails?.address">{{
+                projectDetails?.address
+              }}</span>
+              <span
+                *ngIf="
+                  !projectDetails?.address &&
+                  projectDetails?.jobAddress?.formatted_address
+                "
+                >{{ projectDetails.jobAddress.formatted_address }}</span
+              >
+            </span>
+            <button
+              *ngIf="authService.hasPermission('editJobs')"
+              mat-icon-button
+              (click)="toggleAddressEdit(true)"
+              class="edit-icon"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+          </div>
+          <div *ngIf="isEditingAddress" class="address-edit">
+            <mat-form-field appearance="fill">
+              <mat-label>Address</mat-label>
+              <input
+                #addressInput
+                matInput
+                [formControl]="addressControl"
+                [matAutocomplete]="auto"
+                placeholder="Enter an address"
+              />
+              <mat-autocomplete
+                #auto="matAutocomplete"
+                (optionSelected)="onAddressSelected($event)"
+              >
+                <mat-option
+                  *ngFor="let suggestion of addressSuggestions"
+                  [value]="suggestion"
+                >
+                  {{ suggestion.description }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+            <div class="edit-buttons">
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="saveAddress()"
+                [disabled]="isLoading"
+              >
+                Save
+              </button>
+              <button mat-button (click)="toggleAddressEdit(false)">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="forecast?.length" class="weather-scroll-container">
+          <div *ngFor="let day of forecast" class="forecast-card">
+            <div class="date">{{ day.date }}</div>
+            <img [src]="day.iconUrl" alt="Weather Icon" />
+            <div class="condition">{{ day.condition }}</div>
+            <div class="temp">
+              <span class="high"
+                >{{
+                  measurementService.convertTemperature(day.highTemp)
+                    | number: "1.0-0"
+                }}°{{ temperatureUnit }}</span
+              >
+              <span class="low"
+                >{{
+                  measurementService.convertTemperature(day.lowTemp)
+                    | number: "1.0-0"
+                }}°{{ temperatureUnit }}</span
+              >
+            </div>
+            <div class="precip">{{ day.precipitationProbability }}%</div>
+          </div>
+        </div>
+
+        <div *ngIf="weatherError" class="weather-error">
+          {{ weatherError }}
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="overview-header">
+    <div class="header-text">
+      <h3 class="title">Project Overview Dashboard</h3>
+      <p class="subtitle">
+        Comprehensive view of all your construction projects
+      </p>
+    </div>
+    <div class="status-indicator">
+      <div class="dot pulse"></div>
+      <span class="label">All Projects On Track</span>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <!-- LEFT COLUMN -->
+    <div class="grid-column">
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="building-2" class="header-icon"></lucide-icon>
+          Active Project Summary
+        </h4>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <p class="stat-label">Total Projects</p>
+              <p class="stat-value">{{ projects.length }}</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-label">Active Value</p>
+              <p class="stat-value">$4.3M</p>
+            </div>
+          </div>
+          <div class="info-list">
+            <div class="info-row">
+              <div class="info-label-group">
+                <lucide-icon name="user" class="icon-muted"></lucide-icon>
+                <span class="label">GC Account Owner</span>
+              </div>
+              <span class="value">Sarah Mitchell</span>
+            </div>
+            <div class="info-row">
+              <div class="info-label-group">
+                <lucide-icon name="users" class="icon-muted"></lucide-icon>
+                <span class="label">Assigned Team</span>
+              </div>
+              <span class="value">24 Members</span>
+            </div>
+            <div class="info-row">
+              <div class="info-label-group">
+                <lucide-icon name="map-pin" class="icon-muted"></lucide-icon>
+                <span class="label">Active Sites</span>
+              </div>
+              <span class="value">{{ liveProjectsCount }} Locations</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="file-stack" class="header-icon"></lucide-icon>
+          Blueprint Intelligence
+        </h4>
+        <div class="info-list">
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon name="hash" class="icon-muted"></lucide-icon>
+              <span class="label">Total Sheets Uploaded</span>
+            </div>
+            <span class="value">127 sheets</span>
+          </div>
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon name="home" class="icon-muted"></lucide-icon>
+              <span class="label">Rooms Detected</span>
+            </div>
+            <div class="info-action-group">
+              <span class="value">342 rooms</span>
+              <button class="btn-text">View List</button>
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon name="ruler" class="icon-muted"></lucide-icon>
+              <span class="label">Elements Detected</span>
+            </div>
+            <span class="value">1,247 elements</span>
+          </div>
+          <div class="info-row success-row">
+            <div class="info-label-group">
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+              <span class="label">Measurement Accuracy</span>
+            </div>
+            <span class="value text-success">98.4%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="clock" class="header-icon"></lucide-icon>
+          Timeline Overview
+        </h4>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <p class="stat-label">Total Duration</p>
+              <p class="stat-value">48 weeks</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-label">Current Week</p>
+              <p class="stat-value">Week 16</p>
+            </div>
+          </div>
+          <div class="outlook-panel">
+            <p class="outlook-title">Next 7-Day Outlook</p>
+            <div class="outlook-list">
+              <div class="outlook-item">
+                <div class="dot blue"></div>
+                <span>Foundation inspection - Downtown Office</span>
+              </div>
+              <div class="outlook-item">
+                <div class="dot blue"></div>
+                <span>Electrical rough-in - Shopping Mall</span>
+              </div>
+              <div class="outlook-item">
+                <div class="dot blue"></div>
+                <span>Drywall installation - Residential Tower</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="activity" class="header-icon"></lucide-icon>
+          Live Site Activity
+        </h4>
+        <div class="info-list">
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon name="camera" class="icon-blue"></lucide-icon>
+              <span class="label">Photos Uploaded Today</span>
+            </div>
+            <span class="value">47 photos</span>
+          </div>
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+              <span class="label">Tasks Completed Today</span>
+            </div>
+            <span class="value">12 tasks</span>
+          </div>
+          <div class="info-row warning-row">
+            <div class="info-label-group">
+              <lucide-icon
+                name="alert-circle"
+                class="icon-warning"
+              ></lucide-icon>
+              <span class="label">Tasks Behind Schedule</span>
+            </div>
+            <span class="value text-warning">3 tasks</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="grid-column">
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="pie-chart" class="header-icon"></lucide-icon>
+          BOM + Cost Snapshot
+        </h4>
+        <div class="card-content">
+          <div class="highlight-panel">
+            <p class="stat-label">Total Project Cost</p>
+            <p class="stat-value-large">$4,287,500</p>
+          </div>
+          <div class="cost-breakdown">
+            <p class="section-subtitle">Cost by Division</p>
+            <div class="cost-item">
+              <span>03 - Concrete</span>
+              <span class="cost-value">$892K</span>
+            </div>
+            <div class="cost-item">
+              <span>04 - Masonry</span>
+              <span class="cost-value">$345K</span>
+            </div>
+            <div class="cost-item">
+              <span>06 - Wood & Plastics</span>
+              <span class="cost-value">$567K</span>
+            </div>
+            <div class="cost-item">
+              <span>09 - Finishes</span>
+              <span class="cost-value">$1.2M</span>
+            </div>
+          </div>
+          <div class="cost-footer">
+            <span class="label">Material vs Labour</span>
+            <span class="value">62% / 38%</span>
+          </div>
+          <button class="btn-action">Open Full Estimate →</button>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="hammer" class="header-icon"></lucide-icon>
+          Bidding Status Summary
+        </h4>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-box">
+              <p class="stat-label">Trades Required</p>
+              <p class="stat-value">12</p>
+            </div>
+            <div class="stat-box">
+              <p class="stat-label">Bids Received</p>
+              <p class="stat-value text-success">4</p>
+            </div>
+          </div>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="label">Invited (Platform)</span>
+              <span class="value">7 trades</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Invited (External)</span>
+              <span class="value">3 trades</span>
+            </div>
+            <div class="info-row warning-row">
+              <span class="label">Pending Response</span>
+              <span class="value text-warning">6 trades</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <p class="stat-label">Bidding Round</p>
+            <p class="value">First Round - Closes Dec 15</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="users" class="header-icon"></lucide-icon>
+          Subcontractor Overview
+        </h4>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-box">
+              <p class="stat-label">Confirmed Subs</p>
+              <p class="stat-value">8</p>
+            </div>
+            <div class="stat-box">
+              <p class="stat-label">Pending Subs</p>
+              <p class="stat-value text-warning">4</p>
+            </div>
+          </div>
+          <div class="sub-list">
+            <div class="sub-item">
+              <span>Concrete & Foundation</span>
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+            </div>
+            <div class="sub-item">
+              <span>Electrical</span>
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+            </div>
+            <div class="sub-item">
+              <span>Plumbing</span>
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+            </div>
+            <div class="sub-item">
+              <span>HVAC</span>
+              <lucide-icon name="clock" class="icon-warning"></lucide-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="shield-alert" class="header-icon"></lucide-icon>
+          Compliance & Risk Indicators
+        </h4>
+        <div class="info-list">
+          <div class="info-row success-row">
+            <div class="info-label-group">
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+              <span class="label">Building Codes</span>
+            </div>
+            <span class="value text-success">Compliant</span>
+          </div>
+          <div class="info-row success-row">
+            <div class="info-label-group">
+              <lucide-icon
+                name="check-circle-2"
+                class="icon-success"
+              ></lucide-icon>
+              <span class="label">Permits Status</span>
+            </div>
+            <span class="value text-success">All Approved</span>
+          </div>
+          <div class="info-row warning-row">
+            <div class="info-label-group">
+              <lucide-icon name="cloud-rain" class="icon-warning"></lucide-icon>
+              <span class="label">Weather Risk</span>
+            </div>
+            <span class="value text-warning">Moderate</span>
+          </div>
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-icon name="file-warning" class="icon-muted"></lucide-icon>
+              <span class="label">Conflict Detection</span>
+            </div>
+            <span class="value">2 items flagged</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-icon name="folder" class="header-icon"></lucide-icon>
+          Document Hub
+        </h4>
+        <div class="button-list">
+          <button class="btn-action-row">
+            <lucide-icon name="file-stack" class="btn-icon"></lucide-icon>
+            Contracts (8)
+          </button>
+          <button class="btn-action-row">
+            <lucide-icon name="file-warning" class="btn-icon"></lucide-icon>
+            RFIs (12)
+          </button>
+          <button class="btn-action-row">
+            <lucide-icon name="check-circle-2" class="btn-icon"></lucide-icon>
+            Inspections (5)
+          </button>
+          <button class="btn-action-row">
+            <lucide-icon name="camera" class="btn-icon"></lucide-icon>
+            Progress Photos (247)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Projects -->
+  <div class="recent-projects-section">
+    <h4 class="section-title">Recent Projects</h4>
+    <div class="projects-grid">
+      <div *ngFor="let project of projects.slice(0, 3)" class="project-card">
+        <!-- Thumbnail -->
+        <div class="card-thumbnail">
+          <img
+            [src]="project.thumbnailUrl || '/assets/placeholder-logo.png'"
+            [alt]="project.title"
+            class="thumbnail-image"
+          />
+          <div class="status-badge-container">
+            <span class="status-badge" [ngClass]="project.status">
+              {{ getStatusLabel(project.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="card-body">
+          <div class="project-header">
+            <h3 class="project-title">{{ project.title }}</h3>
+            <div class="project-location">
+              <lucide-icon name="map-pin" class="icon-sm"></lucide-icon>
+              <span>{{ project.address }}</span>
+            </div>
+          </div>
+
+          <!-- Project Stats -->
+          <div class="project-stats-grid">
+            <div *ngIf="project.budget" class="project-stat">
+              <lucide-icon name="dollar-sign" class="icon-muted"></lucide-icon>
+              <span class="stat-text">{{ project.budget }}</span>
+            </div>
+            <div *ngIf="project.deadline" class="project-stat">
+              <lucide-icon name="clock" class="icon-muted"></lucide-icon>
+              <span class="stat-text">{{ project.deadline }}</span>
+            </div>
+            <div *ngIf="project.bids !== undefined" class="project-stat">
+              <lucide-icon name="users" class="icon-muted"></lucide-icon>
+              <span class="stat-text">{{ project.bids }} bids</span>
+            </div>
+            <div *ngIf="project.team !== undefined" class="project-stat">
+              <lucide-icon name="users" class="icon-muted"></lucide-icon>
+              <span class="stat-text">{{ project.team }} members</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div
+            *ngIf="project.status === 'live' && project.progress !== undefined"
+            class="progress-section"
+          >
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-value">{{ project.progress }}%</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                [style.width.%]="project.progress"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card-actions">
+            <ng-container *ngIf="project.status === 'draft'">
+              <button class="btn-primary" (click)="onActivateClick(project.id)">
+                Activate Project
+              </button>
+              <button class="btn-icon" (click)="onEditClick(project.id)">
+                <lucide-icon name="edit" class="icon-sm"></lucide-icon>
+              </button>
+              <button class="btn-icon" (click)="onDeleteClick(project.id)">
+                <lucide-icon name="trash-2" class="icon-sm"></lucide-icon>
+              </button>
+            </ng-container>
+            <ng-container *ngIf="project.status !== 'draft'">
+              <button class="btn-outline" (click)="onViewClick(project.id)">
+                <lucide-icon
+                  name="eye"
+                  class="icon-sm btn-icon-left"
+                ></lucide-icon>
+                View Details
+              </button>
+              <button class="btn-icon" (click)="onEditClick(project.id)">
+                <lucide-icon name="edit" class="icon-sm"></lucide-icon>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
