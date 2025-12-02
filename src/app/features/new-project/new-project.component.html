@@ -83,29 +83,43 @@
                   <input matInput formControlName="projectName" />
                 </mat-form-field>
               </div>
-<mat-form-field appearance="fill">
-    <mat-label>Start Date</mat-label>
-    <input matInput [matDatepicker]="picker" formControlName="startDate" readonly (click)="picker.open()">
-    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-    <mat-datepicker #picker></mat-datepicker>
-  </mat-form-field>
-</div>
-        <div class="form-row" [formGroup]="addressForm">
-  <div class="address-container">
-    <mat-form-field appearance="fill" class="address-form-field">
-      <mat-label>Address</mat-label>
-      <input matInput formControlName="formattedAddress"
-             [matAutocomplete]="auto"
-             placeholder="Enter an address">
-      <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-        <mat-option *ngFor="let option of options" [value]="option">
-          {{ option.description }}
-        </mat-option>
-      </mat-autocomplete>
-    </mat-form-field>
-  </div>
-           
-
+              <mat-form-field appearance="fill">
+                <mat-label>Start Date</mat-label>
+                <input
+                  matInput
+                  [matDatepicker]="picker"
+                  formControlName="startDate"
+                  readonly
+                  (click)="picker.open()"
+                />
+                <mat-datepicker-toggle
+                  matSuffix
+                  [for]="picker"
+                ></mat-datepicker-toggle>
+                <mat-datepicker #picker></mat-datepicker>
+              </mat-form-field>
+            </div>
+            <div class="form-row">
+              <div [formGroup]="addressForm" class="address-container">
+                <mat-form-field appearance="fill" class="address-form-field">
+                  <mat-label>Address</mat-label>
+                  <input
+                    matInput
+                    [formControl]="addressControl"
+                    [matAutocomplete]="auto"
+                    placeholder="Enter an address"
+                  />
+                  <mat-autocomplete
+                    #auto="matAutocomplete"
+                    (optionSelected)="onAddressSelected($event)"
+                  >
+                    <mat-option *ngFor="let option of options" [value]="option">
+                      {{ option.description }}
+                    </mat-option>
+                  </mat-autocomplete>
+                </mat-form-field>
+              </div>
+            </div>
             <mat-form-field appearance="fill">
               <mat-label>Budget Level</mat-label>
               <mat-select [(ngModel)]="budgetLevel">
