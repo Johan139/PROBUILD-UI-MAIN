@@ -101,13 +101,20 @@
   <div class="overview-header">
     <div class="header-text">
       <h3 class="title">Project Overview Dashboard</h3>
-      <p class="subtitle">
-        Comprehensive view of all your construction projects
-      </p>
     </div>
     <div class="status-indicator">
-      <div class="dot pulse"></div>
-      <span class="label">All Projects On Track</span>
+      <div
+        class="dot pulse"
+        [class.red]="behindScheduleCount > 0"
+        [class.green]="behindScheduleCount === 0"
+      ></div>
+      <span class="label">
+        {{
+          behindScheduleCount > 0
+            ? behindScheduleCount + " Tasks Behind Schedule"
+            : "All Tasks On Track"
+        }}
+      </span>
     </div>
   </div>
 
@@ -116,119 +123,131 @@
     <div class="grid-column">
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="building-2" class="header-icon"></lucide-icon>
+          <lucide-angular
+            [img]="Building2"
+            class="header-icon"
+          ></lucide-angular>
           Active Project Summary
         </h4>
         <div class="card-content">
           <div class="stats-grid">
-            <div class="stat-item">
+            <!-- <div class="stat-item">
               <p class="stat-label">Total Projects</p>
-              <p class="stat-value">{{ projects.length }}</p>
-            </div>
+              <p class="stat-value">HARDCODED 1</p>
+            </div> -->
             <div class="stat-item">
               <p class="stat-label">Active Value</p>
-              <p class="stat-value">$4.3M</p>
+              <p class="stat-value">
+                {{ activeValue | currency: "USD" : "symbol" : "1.0-0" }}
+              </p>
             </div>
           </div>
           <div class="info-list">
             <div class="info-row">
               <div class="info-label-group">
-                <lucide-icon name="user" class="icon-muted"></lucide-icon>
+                <lucide-angular
+                  [img]="User"
+                  class="icon-muted"
+                ></lucide-angular>
                 <span class="label">GC Account Owner</span>
               </div>
-              <span class="value">Sarah Mitchell</span>
+              <span class="value">{{ ownerName }}</span>
             </div>
             <div class="info-row">
               <div class="info-label-group">
-                <lucide-icon name="users" class="icon-muted"></lucide-icon>
+                <lucide-angular
+                  [img]="Users"
+                  class="icon-muted"
+                ></lucide-angular>
                 <span class="label">Assigned Team</span>
               </div>
-              <span class="value">24 Members</span>
+              <span class="value">{{ teamMemberCount }} Members</span>
             </div>
-            <div class="info-row">
+            <!-- <div class="info-row">
               <div class="info-label-group">
-                <lucide-icon name="map-pin" class="icon-muted"></lucide-icon>
+                <lucide-angular
+                  [img]="MapPin"
+                  class="icon-muted"
+                ></lucide-angular>
                 <span class="label">Active Sites</span>
               </div>
-              <span class="value">{{ liveProjectsCount }} Locations</span>
-            </div>
+              <span class="value">HARDCODED Locations</span>
+            </div> -->
           </div>
         </div>
       </div>
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="file-stack" class="header-icon"></lucide-icon>
+          <lucide-angular
+            [img]="FileStack"
+            class="header-icon"
+          ></lucide-angular>
           Blueprint Intelligence
         </h4>
         <div class="info-list">
           <div class="info-row">
             <div class="info-label-group">
-              <lucide-icon name="hash" class="icon-muted"></lucide-icon>
+              <lucide-angular [img]="Hash" class="icon-muted"></lucide-angular>
               <span class="label">Total Sheets Uploaded</span>
             </div>
-            <span class="value">127 sheets</span>
+            <span class="value">HARDCODED sheets</span>
           </div>
           <div class="info-row">
             <div class="info-label-group">
-              <lucide-icon name="home" class="icon-muted"></lucide-icon>
+              <lucide-angular [img]="Home" class="icon-muted"></lucide-angular>
               <span class="label">Rooms Detected</span>
             </div>
             <div class="info-action-group">
-              <span class="value">342 rooms</span>
+              <span class="value">HARDCODED rooms</span>
               <button class="btn-text">View List</button>
             </div>
           </div>
           <div class="info-row">
             <div class="info-label-group">
-              <lucide-icon name="ruler" class="icon-muted"></lucide-icon>
+              <lucide-angular [img]="Ruler" class="icon-muted"></lucide-angular>
               <span class="label">Elements Detected</span>
             </div>
-            <span class="value">1,247 elements</span>
+            <span class="value">HARDCODED elements</span>
           </div>
           <div class="info-row success-row">
             <div class="info-label-group">
-              <lucide-icon
-                name="check-circle-2"
+              <lucide-angular
+                [img]="CheckCircle2"
                 class="icon-success"
-              ></lucide-icon>
+              ></lucide-angular>
               <span class="label">Measurement Accuracy</span>
             </div>
-            <span class="value text-success">98.4%</span>
+            <span class="value text-success">HARDCODED%</span>
           </div>
         </div>
       </div>
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="clock" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="Clock" class="header-icon"></lucide-angular>
           Timeline Overview
         </h4>
         <div class="card-content">
           <div class="stats-grid">
             <div class="stat-item">
               <p class="stat-label">Total Duration</p>
-              <p class="stat-value">48 weeks</p>
+              <p class="stat-value">{{ totalDuration }} weeks</p>
             </div>
             <div class="stat-item">
               <p class="stat-label">Current Week</p>
-              <p class="stat-value">Week 16</p>
+              <p class="stat-value">Week {{ currentWeek }}</p>
             </div>
           </div>
           <div class="outlook-panel">
             <p class="outlook-title">Next 7-Day Outlook</p>
             <div class="outlook-list">
-              <div class="outlook-item">
+              <div *ngFor="let task of outlookTasks" class="outlook-item">
                 <div class="dot blue"></div>
-                <span>Foundation inspection - Downtown Office</span>
+                <span>{{ task.name }}</span>
               </div>
-              <div class="outlook-item">
-                <div class="dot blue"></div>
-                <span>Electrical rough-in - Shopping Mall</span>
-              </div>
-              <div class="outlook-item">
-                <div class="dot blue"></div>
-                <span>Drywall installation - Residential Tower</span>
+              <div *ngIf="outlookTasks.length === 0" class="outlook-item">
+                <span>No tasks scheduled for next 7 days</span>
               </div>
             </div>
           </div>
@@ -237,36 +256,90 @@
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="activity" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="Activity" class="header-icon"></lucide-angular>
           Live Site Activity
         </h4>
         <div class="info-list">
           <div class="info-row">
             <div class="info-label-group">
-              <lucide-icon name="camera" class="icon-blue"></lucide-icon>
+              <lucide-angular [img]="Camera" class="icon-blue"></lucide-angular>
               <span class="label">Photos Uploaded Today</span>
             </div>
-            <span class="value">47 photos</span>
+            <span class="value">HARDCODED photos</span>
           </div>
           <div class="info-row">
             <div class="info-label-group">
-              <lucide-icon
-                name="check-circle-2"
+              <lucide-angular
+                [img]="CheckCircle2"
                 class="icon-success"
-              ></lucide-icon>
+              ></lucide-angular>
               <span class="label">Tasks Completed Today</span>
             </div>
-            <span class="value">12 tasks</span>
+            <span class="value">HARDCODED tasks</span>
           </div>
           <div class="info-row warning-row">
             <div class="info-label-group">
-              <lucide-icon
-                name="alert-circle"
+              <lucide-angular
+                [img]="AlertCircle"
                 class="icon-warning"
-              ></lucide-icon>
+              ></lucide-angular>
               <span class="label">Tasks Behind Schedule</span>
             </div>
-            <span class="value text-warning">3 tasks</span>
+            <span class="value text-warning"
+              >{{ behindScheduleCount }} tasks</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-card">
+        <h4 class="card-header">
+          <lucide-angular
+            [img]="ShieldAlert"
+            class="header-icon"
+          ></lucide-angular>
+          Compliance & Risk Indicators
+        </h4>
+        <div class="info-list">
+          <div class="info-row success-row">
+            <div class="info-label-group">
+              <lucide-angular
+                [img]="CheckCircle2"
+                class="icon-success"
+              ></lucide-angular>
+              <span class="label">Building Codes</span>
+            </div>
+            <span class="value text-success">HARDCODED</span>
+          </div>
+          <div class="info-row success-row">
+            <div class="info-label-group">
+              <lucide-angular
+                [img]="CheckCircle2"
+                class="icon-success"
+              ></lucide-angular>
+              <span class="label">Permits Status</span>
+            </div>
+            <span class="value text-success">HARDCODED</span>
+          </div>
+          <div class="info-row warning-row">
+            <div class="info-label-group">
+              <lucide-angular
+                [img]="CloudRain"
+                class="icon-warning"
+              ></lucide-angular>
+              <span class="label">Weather Risk</span>
+            </div>
+            <span class="value text-warning">HARDCODED</span>
+          </div>
+          <div class="info-row">
+            <div class="info-label-group">
+              <lucide-angular
+                [img]="FileWarning"
+                class="icon-muted"
+              ></lucide-angular>
+              <span class="label">Conflict Detection</span>
+            </div>
+            <span class="value">HARDCODED items flagged</span>
           </div>
         </div>
       </div>
@@ -276,119 +349,121 @@
     <div class="grid-column">
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="pie-chart" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="PieChart" class="header-icon"></lucide-angular>
           BOM + Cost Snapshot
         </h4>
         <div class="card-content">
           <div class="highlight-panel">
             <p class="stat-label">Total Project Cost</p>
-            <p class="stat-value-large">$4,287,500</p>
+            <p class="stat-value-large">
+              {{ activeValue | currency: "USD" : "symbol" : "1.0-0" }}
+            </p>
           </div>
           <div class="cost-breakdown">
             <p class="section-subtitle">Cost by Division</p>
-            <div class="cost-item">
-              <span>03 - Concrete</span>
-              <span class="cost-value">$892K</span>
+            <div *ngFor="let phase of costByPhase" class="cost-item">
+              <span>{{ phase.name }}</span>
+              <span class="cost-value">{{
+                phase.value | currency: "USD" : "symbol" : "1.0-0"
+              }}</span>
             </div>
-            <div class="cost-item">
-              <span>04 - Masonry</span>
-              <span class="cost-value">$345K</span>
-            </div>
-            <div class="cost-item">
-              <span>06 - Wood & Plastics</span>
-              <span class="cost-value">$567K</span>
-            </div>
-            <div class="cost-item">
-              <span>09 - Finishes</span>
-              <span class="cost-value">$1.2M</span>
+            <div *ngIf="costByPhase.length === 0" class="cost-item">
+              <span>No cost data available</span>
             </div>
           </div>
           <div class="cost-footer">
             <span class="label">Material vs Labour</span>
-            <span class="value">62% / 38%</span>
+            <span class="value"
+              >{{ materialPercent }}% / {{ laborPercent }}%</span
+            >
           </div>
-          <button class="btn-action">Open Full Estimate →</button>
+          <button class="btn-action" (click)="onOpenBudget()">
+            Open Full Estimate →
+          </button>
         </div>
       </div>
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="hammer" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="Hammer" class="header-icon"></lucide-angular>
           Bidding Status Summary
         </h4>
         <div class="card-content">
           <div class="stats-grid">
             <div class="stat-box">
               <p class="stat-label">Trades Required</p>
-              <p class="stat-value">12</p>
+              <p class="stat-value">HARDCODED</p>
             </div>
             <div class="stat-box">
               <p class="stat-label">Bids Received</p>
-              <p class="stat-value text-success">4</p>
+              <p class="stat-value text-success">{{ bidsReceived }}</p>
             </div>
           </div>
           <div class="info-list">
             <div class="info-row">
               <span class="label">Invited (Platform)</span>
-              <span class="value">7 trades</span>
+              <span class="value">HARDCODED trades</span>
             </div>
             <div class="info-row">
               <span class="label">Invited (External)</span>
-              <span class="value">3 trades</span>
+              <span class="value">HARDCODED trades</span>
             </div>
             <div class="info-row warning-row">
               <span class="label">Pending Response</span>
-              <span class="value text-warning">6 trades</span>
+              <span class="value text-warning">HARDCODED trades</span>
             </div>
           </div>
           <div class="card-footer">
             <p class="stat-label">Bidding Round</p>
-            <p class="value">First Round - Closes Dec 15</p>
+            <p class="value">HARDCODED Round</p>
           </div>
         </div>
       </div>
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="users" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="Users" class="header-icon"></lucide-angular>
           Subcontractor Overview
         </h4>
         <div class="card-content">
           <div class="stats-grid">
             <div class="stat-box">
               <p class="stat-label">Confirmed Subs</p>
-              <p class="stat-value">8</p>
+              <p class="stat-value">HARDCODED</p>
             </div>
             <div class="stat-box">
               <p class="stat-label">Pending Subs</p>
-              <p class="stat-value text-warning">4</p>
+              <p class="stat-value text-warning">HARDCODED</p>
             </div>
           </div>
           <div class="sub-list">
             <div class="sub-item">
               <span>Concrete & Foundation</span>
-              <lucide-icon
-                name="check-circle-2"
+              <lucide-angular
+                [img]="CheckCircle2"
                 class="icon-success"
-              ></lucide-icon>
+              ></lucide-angular>
             </div>
             <div class="sub-item">
               <span>Electrical</span>
-              <lucide-icon
-                name="check-circle-2"
+              <lucide-angular
+                [img]="CheckCircle2"
                 class="icon-success"
-              ></lucide-icon>
+              ></lucide-angular>
             </div>
             <div class="sub-item">
               <span>Plumbing</span>
-              <lucide-icon
-                name="check-circle-2"
+              <lucide-angular
+                [img]="CheckCircle2"
                 class="icon-success"
-              ></lucide-icon>
+              ></lucide-angular>
             </div>
             <div class="sub-item">
               <span>HVAC</span>
-              <lucide-icon name="clock" class="icon-warning"></lucide-icon>
+              <lucide-angular
+                [img]="Clock"
+                class="icon-warning"
+              ></lucide-angular>
             </div>
           </div>
         </div>
@@ -396,68 +471,31 @@
 
       <div class="overview-card">
         <h4 class="card-header">
-          <lucide-icon name="shield-alert" class="header-icon"></lucide-icon>
-          Compliance & Risk Indicators
-        </h4>
-        <div class="info-list">
-          <div class="info-row success-row">
-            <div class="info-label-group">
-              <lucide-icon
-                name="check-circle-2"
-                class="icon-success"
-              ></lucide-icon>
-              <span class="label">Building Codes</span>
-            </div>
-            <span class="value text-success">Compliant</span>
-          </div>
-          <div class="info-row success-row">
-            <div class="info-label-group">
-              <lucide-icon
-                name="check-circle-2"
-                class="icon-success"
-              ></lucide-icon>
-              <span class="label">Permits Status</span>
-            </div>
-            <span class="value text-success">All Approved</span>
-          </div>
-          <div class="info-row warning-row">
-            <div class="info-label-group">
-              <lucide-icon name="cloud-rain" class="icon-warning"></lucide-icon>
-              <span class="label">Weather Risk</span>
-            </div>
-            <span class="value text-warning">Moderate</span>
-          </div>
-          <div class="info-row">
-            <div class="info-label-group">
-              <lucide-icon name="file-warning" class="icon-muted"></lucide-icon>
-              <span class="label">Conflict Detection</span>
-            </div>
-            <span class="value">2 items flagged</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="overview-card">
-        <h4 class="card-header">
-          <lucide-icon name="folder" class="header-icon"></lucide-icon>
+          <lucide-angular [img]="Folder" class="header-icon"></lucide-angular>
           Document Hub
         </h4>
         <div class="button-list">
           <button class="btn-action-row">
-            <lucide-icon name="file-stack" class="btn-icon"></lucide-icon>
-            Contracts (8)
+            <lucide-angular [img]="FileStack" class="btn-icon"></lucide-angular>
+            Contracts (HARDCODED)
           </button>
           <button class="btn-action-row">
-            <lucide-icon name="file-warning" class="btn-icon"></lucide-icon>
-            RFIs (12)
+            <lucide-angular
+              [img]="FileWarning"
+              class="btn-icon"
+            ></lucide-angular>
+            RFIs (HARDCODED)
           </button>
           <button class="btn-action-row">
-            <lucide-icon name="check-circle-2" class="btn-icon"></lucide-icon>
-            Inspections (5)
+            <lucide-angular
+              [img]="CheckCircle2"
+              class="btn-icon"
+            ></lucide-angular>
+            Inspections (HARDCODED)
           </button>
           <button class="btn-action-row">
-            <lucide-icon name="camera" class="btn-icon"></lucide-icon>
-            Progress Photos (247)
+            <lucide-angular [img]="Camera" class="btn-icon"></lucide-angular>
+            Progress Photos (HARDCODED)
           </button>
         </div>
       </div>
@@ -465,99 +503,61 @@
   </div>
 
   <!-- Recent Projects -->
-  <div class="recent-projects-section">
-    <h4 class="section-title">Recent Projects</h4>
-    <div class="projects-grid">
-      <div *ngFor="let project of projects.slice(0, 3)" class="project-card">
-        <!-- Thumbnail -->
-        <div class="card-thumbnail">
-          <img
-            [src]="project.thumbnailUrl || '/assets/placeholder-logo.png'"
-            [alt]="project.title"
-            class="thumbnail-image"
-          />
-          <div class="status-badge-container">
-            <span class="status-badge" [ngClass]="project.status">
-              {{ getStatusLabel(project.status) }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="card-body">
-          <div class="project-header">
-            <h3 class="project-title">{{ project.title }}</h3>
-            <div class="project-location">
-              <lucide-icon name="map-pin" class="icon-sm"></lucide-icon>
-              <span>{{ project.address }}</span>
-            </div>
-          </div>
-
-          <!-- Project Stats -->
-          <div class="project-stats-grid">
-            <div *ngIf="project.budget" class="project-stat">
-              <lucide-icon name="dollar-sign" class="icon-muted"></lucide-icon>
-              <span class="stat-text">{{ project.budget }}</span>
-            </div>
-            <div *ngIf="project.deadline" class="project-stat">
-              <lucide-icon name="clock" class="icon-muted"></lucide-icon>
-              <span class="stat-text">{{ project.deadline }}</span>
-            </div>
-            <div *ngIf="project.bids !== undefined" class="project-stat">
-              <lucide-icon name="users" class="icon-muted"></lucide-icon>
-              <span class="stat-text">{{ project.bids }} bids</span>
-            </div>
-            <div *ngIf="project.team !== undefined" class="project-stat">
-              <lucide-icon name="users" class="icon-muted"></lucide-icon>
-              <span class="stat-text">{{ project.team }} members</span>
-            </div>
-          </div>
-
-          <!-- Progress Bar -->
-          <div
-            *ngIf="project.status === 'live' && project.progress !== undefined"
-            class="progress-section"
-          >
-            <div class="progress-header">
-              <span class="progress-label">Progress</span>
-              <span class="progress-value">{{ project.progress }}%</span>
-            </div>
-            <div class="progress-track">
-              <div
-                class="progress-fill"
-                [style.width.%]="project.progress"
-              ></div>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="card-actions">
-            <ng-container *ngIf="project.status === 'draft'">
-              <button class="btn-primary" (click)="onActivateClick(project.id)">
-                Activate Project
-              </button>
-              <button class="btn-icon" (click)="onEditClick(project.id)">
-                <lucide-icon name="edit" class="icon-sm"></lucide-icon>
-              </button>
-              <button class="btn-icon" (click)="onDeleteClick(project.id)">
-                <lucide-icon name="trash-2" class="icon-sm"></lucide-icon>
-              </button>
-            </ng-container>
-            <ng-container *ngIf="project.status !== 'draft'">
-              <button class="btn-outline" (click)="onViewClick(project.id)">
-                <lucide-icon
-                  name="eye"
-                  class="icon-sm btn-icon-left"
-                ></lucide-icon>
-                View Details
-              </button>
-              <button class="btn-icon" (click)="onEditClick(project.id)">
-                <lucide-icon name="edit" class="icon-sm"></lucide-icon>
-              </button>
-            </ng-container>
-          </div>
-        </div>
+  <div class="recent-projects">
+    <div class="carousel-header">
+      <h4 class="section-title">Recent Projects</h4>
+      <div class="view-toggle">
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('grid')"
+          [class.active]="projectView === 'grid'"
+          matTooltip="Grid View"
+          [matTooltipShowDelay]="500"
+        >
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('list')"
+          [class.active]="projectView === 'list'"
+          matTooltip="List View"
+          [matTooltipShowDelay]="500"
+        >
+          <mat-icon>list</mat-icon>
+        </button>
       </div>
+      <div class="carousel-controls" *ngIf="projectView === 'grid'">
+        <button
+          mat-icon-button
+          (click)="prevProject()"
+          [disabled]="currentIndex === 0"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="nextProject()"
+          [disabled]="currentIndex >= projects.length - 3"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div *ngIf="projectView === 'grid'" class="projects-carousel">
+      <app-project-card
+        *ngFor="let project of visibleProjects"
+        [project]="project"
+        (onView)="loadJob($event)"
+        (onArchive)="archiveJob($event)"
+      ></app-project-card>
+    </div>
+    <div *ngIf="projectView === 'list'">
+      <app-projects-table
+        [projects]="projects"
+        (onView)="loadJob($event)"
+        (onArchive)="archiveJob($event)"
+      >
+      </app-projects-table>
     </div>
   </div>
 </div>
