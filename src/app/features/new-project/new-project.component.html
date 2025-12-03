@@ -186,8 +186,8 @@
             isLoading
               ? 'Analysis in progress...'
               : !selectedFile
-              ? 'Please select a blueprint first'
-              : 'Begin the analysis with the selected options'
+                ? 'Please select a blueprint first'
+                : 'Begin the analysis with the selected options'
           "
         >
           <button
@@ -240,7 +240,11 @@
       </div>
 
       <!-- Enhanced Walkthrough Container -->
-      <div *ngIf="flowType === 'walkthrough'" class="walkthrough-container">
+      <div
+        *ngIf="flowType === 'walkthrough'"
+        class="walkthrough-container"
+        [formGroup]="clientForm"
+      >
         <!-- Stepper/Progress Bar -->
         <div class="walkthrough-stepper">
           <ng-container *ngIf="state$ | async as state">
@@ -281,7 +285,7 @@
 
         <mat-form-field appearance="fill">
           <mat-label>Budget Level</mat-label>
-          <mat-select [(ngModel)]="budgetLevel">
+          <mat-select formControlName="budgetLevel">
             <mat-option value="high">High</mat-option>
             <mat-option value="medium">Medium</mat-option>
             <mat-option value="low">Low</mat-option>

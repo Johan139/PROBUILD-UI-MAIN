@@ -23,32 +23,7 @@ import { MeasurementService } from '../../../services/measurement.service';
 import { AuthService } from '../../../authentication/auth.service';
 import { AddressService } from '../services/address.service';
 import { JobDataService } from '../services/job-data.service';
-import {
-  LucideAngularModule,
-  Building2,
-  User,
-  Users,
-  MapPin,
-  FileStack,
-  Hash,
-  Home,
-  Ruler,
-  CheckCircle2,
-  Clock,
-  PieChart,
-  Hammer,
-  ShieldAlert,
-  CloudRain,
-  FileWarning,
-  Folder,
-  Camera,
-  Activity,
-  AlertCircle,
-  DollarSign,
-  Eye,
-  Edit,
-  Trash2,
-} from 'lucide-angular';
+import { LucideIconsModule } from '../../../shared/lucide-icons.module';
 
 export interface Project {
   id: string;
@@ -76,8 +51,9 @@ export interface Project {
     MatInputModule,
     MatAutocompleteModule,
     LoaderComponent,
-    LucideAngularModule,
+    LucideIconsModule,
   ],
+
   templateUrl: './project-overview.component.html',
   styleUrls: ['./project-overview.component.scss'],
 })
