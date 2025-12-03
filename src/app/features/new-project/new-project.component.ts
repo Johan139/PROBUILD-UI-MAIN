@@ -217,6 +217,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       companyName: [''],
       position: [''],
       startDate: ['', Validators.required],
+      budgetLevel: ['medium', Validators.required],
     });
 
     this.addressForm = this.formBuilder.group({
