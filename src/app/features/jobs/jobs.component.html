@@ -148,7 +148,7 @@
   </div>
 
   <!-- OVERVIEW TAB -->
-  <div *ngIf="activeTab === 'overview'" class="tab-content fade-in">
+  <div [hidden]="activeTab !== 'overview'" class="tab-content fade-in">
     <div class="fullcolumn">
       <app-project-overview
         [projects]="overviewProjects"
@@ -160,6 +160,9 @@
         [forecast]="store.getState().forecast"
         [weatherError]="store.getState().weatherError"
         [temperatureUnit]="temperatureUnit"
+        [teamMemberCount]="assignedTeamMembers.length"
+        [timelineData]="timelineGroups"
+        (navigateToTab)="handleTabNavigation($event)"
       ></app-project-overview>
     </div>
   </div>

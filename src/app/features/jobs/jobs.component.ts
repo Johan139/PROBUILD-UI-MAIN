@@ -101,15 +101,14 @@ import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
 import { BudgetLineItem } from '../../models/budget-line-item.model';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
-import {
-  ProjectOverviewComponent,
-  Project,
-} from './project-overview/project-overview.component';
+import { ProjectOverviewComponent } from './project-overview/project-overview.component';
+import { Project } from '../../models/project';
 import {
   UploadedFileInfo,
   FileUploadService,
 } from '../../services/file-upload.service';
 import { JobsService } from '../../services/jobs.service';
+import { ProjectService } from '../../services/project.service';
 import { ProjectBudgetTrackingComponent } from './project-budget-tracking/project-budget-tracking.component';
 
 @Component({
@@ -253,6 +252,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     private budgetService: BudgetService,
     private fileUploadService: FileUploadService,
     private jobsService: JobsService,
+    private projectService: ProjectService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -274,6 +274,16 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
   ): void {
     this.activeTab = tab;
+  }
+
+  handleTabNavigation(tab: string): void {
+    if (
+      ['overview', 'budget', 'timeline', 'team', 'blueprints'].includes(tab)
+    ) {
+      this.setActiveTab(
+        tab as 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
+      );
+    }
   }
 
   loadBlueprints(): void {
@@ -513,44 +523,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
-    this.overviewProjects = [
-      {
-        id: '1',
-        title: 'Downtown Office Complex',
-        address: '123 Business Ave, Downtown',
-        status: 'live',
-        budget: '$12.5M',
-        deadline: 'Dec 2025',
-        team: 45,
-        progress: 35,
-        bids: 12,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-1.png',
-      },
-      {
-        id: '2',
-        title: 'Riverfront Apartments',
-        address: '456 River Rd, Riverside',
-        status: 'bidding',
-        budget: '$8.2M',
-        deadline: 'Mar 2026',
-        team: 12,
-        progress: 0,
-        bids: 8,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-2.png',
-      },
-      {
-        id: '3',
-        title: 'Suburban Mall Extension',
-        address: '789 Shopping Blvd, Suburbia',
-        status: 'draft',
-        budget: '$4.5M',
-        deadline: 'Oct 2025',
-        team: 5,
-        progress: 0,
-        bids: 0,
-        thumbnailUrl: 'assets/sample-pdfs/png/hernandez_cd/hernandez_cd-3.png',
-      },
-    ];
+    this.projectService.projects$.subscribe(
+      (projects) => (this.overviewProjects = projects),
+    );
+    this.projectService.loadProjects();
 
     this.sessionId = uuidv4();
     this.measurementService.getSettings().subscribe((settings) => {
