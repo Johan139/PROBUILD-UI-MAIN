@@ -78,6 +78,7 @@ import {
     ProjectCardComponent,
     ProjectsTableComponent,
   ],
+
   templateUrl: './project-overview.component.html',
   styleUrls: ['./project-overview.component.scss'],
 })
