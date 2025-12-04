@@ -110,6 +110,7 @@ import {
 import { JobsService } from '../../services/jobs.service';
 import { ProjectService } from '../../services/project.service';
 import { ProjectBudgetTrackingComponent } from './project-budget-tracking/project-budget-tracking.component';
+import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dialog.component';
 
 @Component({
   selector: 'app-jobs',
@@ -158,6 +159,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('reportDialog') reportDialog!: TemplateRef<any>;
   @ViewChild('noteDialog') noteDialog!: TemplateRef<any>;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild(ProjectOverviewComponent)
+  projectOverviewComponent!: ProjectOverviewComponent;
   addressSuggestions: { description: string; place_id: string }[] = [];
 
   projectDetails: any;
@@ -753,14 +756,17 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .finally(() => (this.isGeneratingReport = false));
   }
 
-  openReportDialog(): void {
+  private handleReportAction(
+    title: string,
+    action: (jobId: string) => Promise<string | null>,
+    errorMsg: string,
+  ): void {
     this.isReportLoading = true;
     this.reportError = null;
     this.reportHtml = null;
-    this.reportTitle = 'Full Project Analysis Report';
+    this.reportTitle = title;
 
-    this.reportService
-      .getFullReportContent(this.projectDetails.jobId)
+    action(this.projectDetails.jobId)
       .then((content) => {
         if (content) {
           this.reportHtml = content;
@@ -771,96 +777,58 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
             maxHeight: '90vh',
           });
         } else {
-          this.snackBar.open('Could not retrieve report content.', 'Close', {
+          this.snackBar.open(`Could not retrieve ${title}.`, 'Close', {
             duration: 3000,
           });
         }
       })
       .catch((err) => {
         console.error(err);
-        this.snackBar.open(
-          'An error occurred while fetching the report.',
-          'Close',
-          { duration: 3000 },
-        );
+        this.snackBar.open(errorMsg, 'Close', { duration: 3000 });
       })
       .finally(() => {
         this.isReportLoading = false;
       });
+  }
+
+  openProcurementScheduleDialog(): void {
+    this.handleReportAction(
+      'Procurement & Submittal Schedule',
+      (id) => this.reportService.getProcurementSchedule(id),
+      'An error occurred while fetching the Procurement Schedule.',
+    );
+  }
+
+  openDailyConstructionPlanDialog(): void {
+    this.handleReportAction(
+      'Daily Construction & Logistics Plan',
+      (id) => this.reportService.getDailyConstructionPlan(id),
+      'An error occurred while fetching the Daily Construction Plan.',
+    );
+  }
+
+  openReportDialog(): void {
+    this.handleReportAction(
+      'Full Project Analysis Report',
+      (id) => this.reportService.getFullReportContent(id),
+      'An error occurred while fetching the report.',
+    );
   }
 
   openExecutiveSummaryDialog(): void {
-    this.isReportLoading = true;
-    this.reportError = null;
-    this.reportHtml = null;
-    this.reportTitle = 'Executive Summary';
-
-    this.reportService
-      .getExecutiveSummary(this.projectDetails.jobId)
-      .then((content) => {
-        if (content) {
-          this.reportHtml = content;
-          this.dialog.open(this.reportDialog, {
-            width: '90vw',
-            height: '90vh',
-            maxWidth: '1200px',
-            maxHeight: '90vh',
-          });
-        } else {
-          this.snackBar.open('Could not retrieve Executive Summary.', 'Close', {
-            duration: 3000,
-          });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        this.snackBar.open(
-          'An error occurred while fetching the Executive Summary.',
-          'Close',
-          { duration: 3000 },
-        );
-      })
-      .finally(() => {
-        this.isReportLoading = false;
-      });
+    this.handleReportAction(
+      'Executive Summary',
+      (id) => this.reportService.getExecutiveSummary(id),
+      'An error occurred while fetching the Executive Summary.',
+    );
   }
 
   openEnvironmentalReportDialog(): void {
-    this.isReportLoading = true;
-    this.reportError = null;
-    this.reportHtml = null;
-    this.reportTitle = 'Environmental Lifecycle Report';
-
-    this.reportService
-      .getEnvironmentalReportContent(this.projectDetails.jobId)
-      .then((content) => {
-        if (content) {
-          this.reportHtml = content;
-          this.dialog.open(this.reportDialog, {
-            width: '90vw',
-            height: '90vh',
-            maxWidth: '1200px',
-            maxHeight: '90vh',
-          });
-        } else {
-          this.snackBar.open(
-            'Could not retrieve Environmental Report.',
-            'Close',
-            { duration: 3000 },
-          );
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        this.snackBar.open(
-          'An error occurred while fetching the Environmental Report.',
-          'Close',
-          { duration: 3000 },
-        );
-      })
-      .finally(() => {
-        this.isReportLoading = false;
-      });
+    this.handleReportAction(
+      'Environmental Lifecycle Report',
+      (id) => this.reportService.getEnvironmentalReportContent(id),
+      'An error occurred while fetching the Environmental Report.',
+    );
   }
 
   closeReportDialog(): void {
@@ -946,6 +914,29 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   viewDocument(document: any) {
     this.documentService.viewDocument(document);
+  }
+
+  triggerEditAddress(): void {
+    this.setActiveTab('overview');
+    // Slight delay to ensure tab switch and view init
+    setTimeout(() => {
+      if (this.projectOverviewComponent) {
+        this.projectOverviewComponent.toggleAddressEdit(true);
+      }
+    }, 100);
+  }
+
+  openEditClientDialog(): void {
+    const dialogRef = this.dialog.open(EditClientDialogComponent, {
+      width: '500px',
+      data: { jobId: this.projectDetails.jobId },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.jobDataService.fetchJobData(this.projectDetails);
+      }
+    });
   }
 
   toggleAddressEdit(isEditing: boolean): void {

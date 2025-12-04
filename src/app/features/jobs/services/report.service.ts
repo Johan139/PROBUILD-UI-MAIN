@@ -195,6 +195,74 @@ export class ReportService {
     }
   }
 
+  async getProcurementSchedule(jobId: string): Promise<string | null> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const startMarker = '### Phase 24: Procurement & Submittal Schedule';
+      const endMarker = 'Ready for the next prompt 24';
+
+      let startIndex = fullResponse.indexOf(startMarker);
+      if (startIndex !== -1) {
+        const endIndex = fullResponse.indexOf(endMarker, startIndex);
+        let content =
+          endIndex !== -1
+            ? fullResponse.substring(startIndex, endIndex).trim()
+            : fullResponse.substring(startIndex).trim();
+
+        // Ensure title is present and clean
+        content = content.replace(startMarker, '').trim();
+        content = `### Procurement & Submittal Schedule\n\n${content}`;
+
+        return marked(content);
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to get procurement schedule:', err);
+      return null;
+    }
+  }
+
+  async getDailyConstructionPlan(jobId: string): Promise<string | null> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const startMarker = '### Phase 25: Daily Construction & Logistics Plan';
+      const endMarker = 'Ready for the next prompt 25';
+
+      let startIndex = fullResponse.indexOf(startMarker);
+      if (startIndex !== -1) {
+        const endIndex = fullResponse.indexOf(endMarker, startIndex);
+        let content =
+          endIndex !== -1
+            ? fullResponse.substring(startIndex, endIndex).trim()
+            : fullResponse.substring(startIndex).trim();
+
+        // Ensure title is present and clean
+        content = content.replace(startMarker, '').trim();
+        content = `### Daily Construction & Logistics Plan\n\n${content}`;
+
+        return marked(content);
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to get daily construction plan:', err);
+      return null;
+    }
+  }
+
   async generatePdfFromHtml(
     htmlContent: string,
     fileName: string,

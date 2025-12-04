@@ -131,7 +131,7 @@
               </mat-select>
             </mat-form-field>
           </mat-expansion-panel>
-          <mat-expansion-panel>
+          <mat-expansion-panel [expanded]="true">
             <mat-expansion-panel-header>
               <mat-panel-title>Client Details</mat-panel-title>
             </mat-expansion-panel-header>
@@ -163,6 +163,56 @@
                   <mat-label>Position</mat-label>
                   <input matInput formControlName="position" />
                 </mat-form-field>
+              </div>
+            </div>
+          </mat-expansion-panel>
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title>User Context</mat-panel-title>
+              <mat-panel-description>
+                Provide additional context for the AI analysis - text or a file
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div [formGroup]="clientForm">
+              <div class="form-row">
+                <mat-form-field appearance="fill" class="full-width" floatLabel="always">
+                  <mat-label>User Context</mat-label>
+                  <textarea
+                    matInput
+                    formControlName="userContextText"
+                    placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."
+                  ></textarea>
+                </mat-form-field>
+              </div>
+              <div class="form-row">
+                <button
+                  mat-raised-button
+                  type="button"
+                  (click)="userContextFileInput.click()"
+                  class="submit-btn save-btn"
+                >
+                  <img
+                    src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                    alt="Upload Icon"
+                    class="upload-icon"
+                  />
+                  Upload Context File
+                </button>
+                <input
+                  type="file"
+                  #userContextFileInput
+                  hidden
+                  (change)="onUserContextFileSelected($event)"
+                  id="userContextFile"
+                />
+                <div *ngIf="userContextFile" class="upload-complete">
+                  <p
+                    [matTooltip]="userContextFile.name"
+                    matTooltipPosition="above"
+                  >
+                    {{ userContextFile.name }} uploaded successfully
+                  </p>
+                </div>
               </div>
             </div>
           </mat-expansion-panel>

@@ -89,7 +89,6 @@ export class ProjectOverviewComponent {
   @Input() teamMemberCount: number = 0;
   @Input() timelineData: TimelineGroup[] = [];
 
-
   // Job Details & Weather Inputs
   @Input() projectDetails: any;
   @Input() isLoading: boolean = false;
@@ -137,6 +136,7 @@ export class ProjectOverviewComponent {
 
   // Dynamic Data Properties
   ownerName: string = 'HARDCODED';
+  clientName: string = '';
   activeValue: number = 0;
   costByPhase: { name: string; value: number }[] = [];
   materialPercent: number = 62; // Default HARDCODED fallback
@@ -163,7 +163,7 @@ export class ProjectOverviewComponent {
     private jobsService: JobsService,
     private projectService: ProjectService,
     private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnChanges(): void {
@@ -182,6 +182,7 @@ export class ProjectOverviewComponent {
       try {
         const data = JSON.parse(cached);
         this.ownerName = data.ownerName || this.ownerName;
+        this.clientName = data.clientName || '';
         this.activeValue = data.activeValue || 0;
         this.costByPhase = data.costByPhase || [];
         this.materialPercent = data.materialPercent || 62;
@@ -196,6 +197,7 @@ export class ProjectOverviewComponent {
   private saveToCache(): void {
     const data = {
       ownerName: this.ownerName,
+      clientName: this.clientName,
       activeValue: this.activeValue,
       costByPhase: this.costByPhase,
       materialPercent: this.materialPercent,
@@ -211,21 +213,34 @@ export class ProjectOverviewComponent {
 
     const jobId = this.projectDetails.jobId;
 
-    // 2. Get Owner Name
+    // 2. Get Owner Name & Client Name
     this.jobsService.getSpecificJob(jobId).subscribe({
       next: (job: any) => {
         if (job?.user) {
           this.ownerName = `${job.user.firstName} ${job.user.lastName}`;
-          this.saveToCache();
         } else if (this.projectDetails?.userId) {
           // Fallback to current user if matches
           this.authService.currentUser$.subscribe((user) => {
             if (user && user.id === this.projectDetails.userId) {
               this.ownerName = `${user.firstName} ${user.lastName}`;
-              this.saveToCache();
             }
           });
         }
+
+        // Fetch client details
+        this.jobsService.getClientDetails(Number(jobId)).subscribe({
+          next: (client) => {
+            if (client) {
+              this.clientName = `${client.firstName} ${client.lastName}`;
+              if (client.companyName) {
+                this.clientName += ` (${client.companyName})`;
+              }
+              this.saveToCache();
+            }
+          },
+          error: (err) => console.error('Failed to load client details', err),
+        });
+        this.saveToCache();
       },
       error: () => (this.ownerName = 'Unknown'),
     });
@@ -293,11 +308,15 @@ export class ProjectOverviewComponent {
   processTimelineData(): void {
     if (!this.timelineData || this.timelineData.length === 0) return;
 
-    const allTasks = this.timelineData.flatMap(g => g.subtasks);
+    const allTasks = this.timelineData.flatMap((g) => g.subtasks);
     if (allTasks.length === 0) return;
 
-    const startDates = allTasks.map(t => new Date(t.startDate || t.start).getTime()).filter(d => !isNaN(d));
-    const endDates = allTasks.map(t => new Date(t.endDate || t.end).getTime()).filter(d => !isNaN(d));
+    const startDates = allTasks
+      .map((t) => new Date(t.startDate || t.start).getTime())
+      .filter((d) => !isNaN(d));
+    const endDates = allTasks
+      .map((t) => new Date(t.endDate || t.end).getTime())
+      .filter((d) => !isNaN(d));
 
     if (startDates.length > 0 && endDates.length > 0) {
       const minStart = Math.min(...startDates);
@@ -305,12 +324,16 @@ export class ProjectOverviewComponent {
 
       // Total Duration in weeks
       const durationMs = maxEnd - minStart;
-      this.totalDuration = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)));
+      this.totalDuration = Math.max(
+        1,
+        Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)),
+      );
 
       // Current Week
       const now = new Date().getTime();
       const elapsedMs = now - minStart;
-      this.currentWeek = elapsedMs > 0 ? Math.ceil(elapsedMs / (1000 * 60 * 60 * 24 * 7)) : 0;
+      this.currentWeek =
+        elapsedMs > 0 ? Math.ceil(elapsedMs / (1000 * 60 * 60 * 24 * 7)) : 0;
     }
 
     // Outlook (Next 7 Days)
@@ -330,7 +353,7 @@ export class ProjectOverviewComponent {
       }));
 
     // Tasks Behind Schedule
-    this.behindScheduleCount = allTasks.filter(t => {
+    this.behindScheduleCount = allTasks.filter((t) => {
       const end = new Date(t.endDate || t.end);
       return end < today && t.status !== 'completed' && !t.accepted;
     }).length;

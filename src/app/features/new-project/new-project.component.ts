@@ -147,6 +147,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   currentUserComments: string = '';
   applyCostOptimisation: boolean = false;
   hasScrolledToBottom: boolean = false;
+  userContextFile: File | null = null;
 
   private state = new BehaviorSubject<AnalysisState>({
     flowType: 'standard',
@@ -218,6 +219,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       position: [''],
       startDate: ['', Validators.required],
       budgetLevel: ['medium', Validators.required],
+      userContextText: [''],
     });
 
     this.addressForm = this.formBuilder.group({
@@ -576,6 +578,15 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('budgetLevel', this.budgetLevel);
     formData.append('generateDetailsWithAi', 'true');
     formData.append('sessionId', this.sessionId);
+    formData.append('userContextText', this.clientForm.value.userContextText);
+
+    if (this.userContextFile) {
+      formData.append(
+        'userContextFile',
+        this.userContextFile,
+        this.userContextFile.name,
+      );
+    }
 
     const fileUrls = this.uploadedFiles.map((f) => f.url);
     formData.append('temporaryFileUrls', JSON.stringify(fileUrls));
@@ -786,6 +797,13 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.addressForm
       .get('formattedAddress')
       ?.setValue(selectedAddress.description);
+  }
+
+  onUserContextFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input?.files?.length) {
+      this.userContextFile = input.files[0];
+    }
   }
 
   requireMatch(control: AbstractControl): ValidationErrors | null {
