@@ -149,7 +149,7 @@ export class TrialRegistrationComponent implements OnInit {
   supplierTypeCtrl = new FormControl();
   filteredSupplierTypes: Observable<{ value: string; display: string }[]>;
   selectedSupplierTypes: { value: string; display: string }[] = [];
-
+  showOnlyBasicFields = true;
   registrationForm: FormGroup;
   user: string = '';
   certified = false;
@@ -243,8 +243,8 @@ export class TrialRegistrationComponent implements OnInit {
       formattedAddress: [''],
       googlePlaceId: [''],
       vatNo: [''],
-      addressType: ['', Validators.required],
-      userType: ['PERSONAL_USE', Validators.required],
+      addressType: [''],
+      userType: ['PERSONAL_USE'],
 
       constructionType: [],
 
