@@ -149,7 +149,6 @@
     data-lpignore="true"
     data-form-type="other"
     (focus)="addressInput.select()"
-    required
   />
       <mat-error *ngIf="registrationForm.get('formattedAddress')?.hasError('required')">
         Mandatory Field: Input Required.
