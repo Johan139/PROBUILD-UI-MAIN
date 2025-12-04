@@ -9,7 +9,11 @@
           <mat-card-content>
             <mat-divider></mat-divider>
             <div class="profile-content">
-              <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" *ngIf="profileForm.controls">
+              <form
+                [formGroup]="profileForm"
+                (ngSubmit)="onSubmit()"
+                *ngIf="profileForm.controls"
+              >
                 <mat-tab-group>
                   <!-- Profile Tab -->
                   <mat-tab label="Profile">
@@ -23,67 +27,120 @@
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>First Name</mat-label>
-                          <input matInput formControlName="firstName" placeholder=" " [readonly]="authService.isTeamMember()"
-                             />
-                          <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')"> Mandatory Field: Input
-                            Required. </mat-error>
+                          <input
+                            matInput
+                            formControlName="firstName"
+                            placeholder=" "
+                            [readonly]="authService.isTeamMember()"
+                          />
+                          <mat-error
+                            *ngIf="
+                              profileForm.get('firstName')?.hasError('required')
+                            "
+                          >
+                            Mandatory Field: Input Required.
+                          </mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Last Name</mat-label>
-                          <input matInput formControlName="lastName" placeholder=" "
-                             />
-                          <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')"> Mandatory Field: Input
-                            Required. </mat-error>
+                          <input
+                            matInput
+                            formControlName="lastName"
+                            placeholder=" "
+                          />
+                          <mat-error
+                            *ngIf="
+                              profileForm.get('lastName')?.hasError('required')
+                            "
+                          >
+                            Mandatory Field: Input Required.
+                          </mat-error>
                         </mat-form-field>
                         <div class="phone-field-container">
-  <!-- Country Code Select -->
-  <mat-form-field appearance="fill" class="country-code-field">
-    <mat-label>Code</mat-label>
-    <mat-select
-      [(value)]="selectedCountryCode"
-      (selectionChange)="onCountryCodeChange($event.value)">
-      <mat-option>
-        <input
-          matInput
-          placeholder="Search..."
-          [formControl]="countryFilterCtrl"
-          (keydown)="$event.stopPropagation()"
-        />
-      </mat-option>
-      <mat-option *ngFor="let c of filteredCountryCodes | async" [value]="c">
-        {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
+                          <!-- Country Code Select -->
+                          <mat-form-field
+                            appearance="fill"
+                            class="country-code-field"
+                          >
+                            <mat-label>Code</mat-label>
+                            <mat-select
+                              [(value)]="selectedCountryCode"
+                              (selectionChange)="
+                                onCountryCodeChange($event.value)
+                              "
+                            >
+                              <mat-option>
+                                <input
+                                  matInput
+                                  placeholder="Search..."
+                                  [formControl]="countryFilterCtrl"
+                                  (keydown)="$event.stopPropagation()"
+                                />
+                              </mat-option>
+                              <mat-option
+                                *ngFor="let c of filteredCountryCodes | async"
+                                [value]="c"
+                              >
+                                {{ c.countryCode }} ({{
+                                  c.countryPhoneNumberCode
+                                }})
+                              </mat-option>
+                            </mat-select>
+                          </mat-form-field>
 
-  <!-- Actual Mobile Input -->
-  <mat-form-field appearance="fill" class="mobile-number-field">
-    <mat-label>Mobile Number</mat-label>
-    <input
-      matInput
-      type="tel"
-      formControlName="phoneNumber"
-      placeholder="Enter mobile number"
-      required
-      (input)="onPhoneInput($event)"
-    />
-    <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
-      Mandatory Field: Input Required.
-    </mat-error>
-  </mat-form-field>
-</div>
+                          <!-- Actual Mobile Input -->
+                          <mat-form-field
+                            appearance="fill"
+                            class="mobile-number-field"
+                          >
+                            <mat-label>Mobile Number</mat-label>
+                            <input
+                              matInput
+                              type="tel"
+                              formControlName="phoneNumber"
+                              placeholder="Enter mobile number"
+                              required
+                              (input)="onPhoneInput($event)"
+                            />
+                            <mat-error
+                              *ngIf="
+                                profileForm
+                                  .get('phoneNumber')
+                                  ?.hasError('required')
+                              "
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
+                          </mat-form-field>
+                        </div>
                         <mat-form-field appearance="fill">
                           <mat-label>User Type</mat-label>
-                          <mat-select formControlName="userType" panelClass="custom-select-panel"
+                          <mat-select
+                            formControlName="userType"
+                            panelClass="custom-select-panel"
+                          >
+                            <mat-option value="GENERAL_CONTRACTOR"
+                              >General Contractor</mat-option
                             >
-                            <mat-option value="GENERAL_CONTRACTOR">General Contractor</mat-option>
-                            <mat-option value="PROJECT_MANAGER">Project Manager</mat-option>
-                            <mat-option value="CHIEF_ESTIMATOR">Chief Estimator</mat-option>
-                            <mat-option value="GENERAL_SUPERINTENDANT">General Superintendant</mat-option>
-                            <mat-option value="SUPERINTENDANT">Superintendant</mat-option>
-                            <mat-option value="ASSISTANT_SUPERINTENDANT">Assistant Superintendant</mat-option>
+                            <mat-option value="PROJECT_MANAGER"
+                              >Project Manager</mat-option
+                            >
+                            <mat-option value="CHIEF_ESTIMATOR"
+                              >Chief Estimator</mat-option
+                            >
+                            <mat-option value="GENERAL_SUPERINTENDANT"
+                              >General Superintendant</mat-option
+                            >
+                            <mat-option value="SUPERINTENDANT"
+                              >Superintendant</mat-option
+                            >
+                            <mat-option value="ASSISTANT_SUPERINTENDANT"
+                              >Assistant Superintendant</mat-option
+                            >
                             <mat-option value="FOREMAN">Foreman</mat-option>
-                            <mat-option value="SUBCONTRACTOR">Subcontractor</mat-option>
+                            <mat-option value="SUBCONTRACTOR"
+                              >Subcontractor</mat-option
+                            >
                             <mat-option value="VENDOR">Vendor</mat-option>
                           </mat-select>
                         </mat-form-field>
@@ -95,7 +152,10 @@
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>Availability</mat-label>
-                          <mat-select formControlName="availability" panelClass="custom-select-panel">
+                          <mat-select
+                            formControlName="availability"
+                            panelClass="custom-select-panel"
+                          >
                             <mat-option value=""></mat-option>
                             <mat-option value="Full-time">Full-time</mat-option>
                             <mat-option value="Part-time">Part-time</mat-option>
@@ -104,66 +164,122 @@
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Certification Status</mat-label>
-                          <mat-select formControlName="certificationStatus" panelClass="custom-select-panel">
+                          <mat-select
+                            formControlName="certificationStatus"
+                            panelClass="custom-select-panel"
+                          >
                             <mat-option value=""></mat-option>
                             <mat-option value="Certified">Certified</mat-option>
                             <mat-option value="Pending">Pending</mat-option>
-                            <mat-option value="Not Certified">Not Certified</mat-option>
+                            <mat-option value="Not Certified"
+                              >Not Certified</mat-option
+                            >
                           </mat-select>
                         </mat-form-field>
                         <div class="upload-container">
                           <div *ngIf="isUploading" class="upload-progress">
                             <p>Upload Progress: {{ progress }}%</p>
-                            <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+                            <mat-progress-bar
+                              mode="determinate"
+                              [value]="progress"
+                            ></mat-progress-bar>
                           </div>
-                          <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-                            <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
-                              {{ uploadedFilesCount }} file(s) uploaded successfully
+                          <div
+                            *ngIf="!isUploading && uploadedFilesCount > 0"
+                            class="upload-complete"
+                          >
+                            <p
+                              [matTooltip]="uploadedFileNames.join(', ')"
+                              matTooltipPosition="above"
+                            >
+                              {{ uploadedFilesCount }} file(s) uploaded
+                              successfully
                             </p>
                           </div>
                           <div class="custom-file-upload">
-                            <label for="file-upload" class="upload-label submit-btn">
-                              <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon"
-                                class="upload-icon" /> Upload File </label>
-                            <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+                            <label
+                              for="file-upload"
+                              class="upload-label submit-btn"
+                            >
+                              <img
+                                src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                                alt="Upload Icon"
+                                class="upload-icon"
+                              />
+                              Upload File
+                            </label>
+                            <input
+                              id="file-upload"
+                              type="file"
+                              (change)="onFileSelected($event)"
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
                     <!-- Submit Button -->
                     <div class="form-row">
-                      <button mat-raised-button type="submit" class="submit-btn">
-                        {{ isSaving ? 'Saving...' : 'Save Profile' }}
+                      <button
+                        mat-raised-button
+                        type="submit"
+                        class="submit-btn"
+                      >
+                        {{ isSaving ? "Saving..." : "Save Profile" }}
                       </button>
-
-
                     </div>
-
                   </mat-tab>
                   <!-- Company Profile Tab -->
-                  <mat-tab *ngIf="canViewCompanyDetails() && !authService.isTeamMember()" label="Company Profile">
+                  <mat-tab
+                    *ngIf="!authService.isTeamMember()"
+                    label="Company Profile"
+                  >
                     <!-- Company Details -->
                     <div class="section">
                       <h3>Company Details</h3>
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>Company Name</mat-label>
-                          <input matInput formControlName="companyName" placeholder=" " />
-                          <mat-error *ngIf="profileForm.get('companyName')?.hasError('required')"> Mandatory Field:
-                            Input Required. </mat-error>
+                          <input
+                            matInput
+                            formControlName="companyName"
+                            placeholder=" "
+                          />
+                          <mat-error
+                            *ngIf="
+                              profileForm
+                                .get('companyName')
+                                ?.hasError('required')
+                            "
+                          >
+                            Mandatory Field: Input Required.
+                          </mat-error>
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>No. of Employees</mat-label>
-                          <input matInput formControlName="nrEmployees" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="nrEmployees"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Years of Operation</mat-label>
-                          <input matInput formControlName="yearsOfOperation" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="yearsOfOperation"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Construction Type</mat-label>
-                          <mat-select formControlName="constructionType" multiple>
-                            <mat-option *ngFor="let type of constructionTypes" [value]="type.value">{{ type.display }}
+                          <mat-select
+                            formControlName="constructionType"
+                            multiple
+                          >
+                            <mat-option
+                              *ngFor="let type of constructionTypes"
+                              [value]="type.value"
+                              >{{ type.display }}
                             </mat-option>
                           </mat-select>
                         </mat-form-field>
@@ -171,11 +287,19 @@
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>Company Registration No</mat-label>
-                          <input matInput formControlName="companyRegNo" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="companyRegNo"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>VAT Number</mat-label>
-                          <input matInput formControlName="vatNo" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="vatNo"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                       </div>
                     </div>
@@ -185,24 +309,46 @@
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>Trade</mat-label>
-                          <input matInput formControlName="trade" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="trade"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Supplier Type</mat-label>
-                          <input matInput formControlName="supplierType" placeholder=" " />
+                          <input
+                            matInput
+                            formControlName="supplierType"
+                            placeholder=" "
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Products Offered</mat-label>
-                          <mat-select formControlName="productsOffered" multiple>
-                            <mat-option *ngFor="let product of supplierProducts" [value]="product.value">
-                              {{ product.display }}</mat-option>
+                          <mat-select
+                            formControlName="productsOffered"
+                            multiple
+                          >
+                            <mat-option
+                              *ngFor="let product of supplierProducts"
+                              [value]="product.value"
+                            >
+                              {{ product.display }}</mat-option
+                            >
                           </mat-select>
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Project Preferences</mat-label>
-                          <mat-select formControlName="projectPreferences" multiple>
-                            <mat-option *ngFor="let preference of preferenceOptions" [value]="preference.value">
-                              {{ preference.display }}</mat-option>
+                          <mat-select
+                            formControlName="projectPreferences"
+                            multiple
+                          >
+                            <mat-option
+                              *ngFor="let preference of preferenceOptions"
+                              [value]="preference.value"
+                            >
+                              {{ preference.display }}</mat-option
+                            >
                           </mat-select>
                         </mat-form-field>
                       </div>
@@ -215,14 +361,20 @@
                         <mat-form-field appearance="fill">
                           <mat-label>Delivery Area</mat-label>
                           <mat-select formControlName="deliveryArea" multiple>
-                            <mat-option *ngFor="let area of deliveryAreas" [value]="area.value">{{ area.display }}
+                            <mat-option
+                              *ngFor="let area of deliveryAreas"
+                              [value]="area.value"
+                              >{{ area.display }}
                             </mat-option>
                           </mat-select>
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Lead Time</mat-label>
                           <mat-select formControlName="deliveryTime">
-                            <mat-option *ngFor="let time of leadTimeDelivery" [value]="time.value">{{ time.display }}
+                            <mat-option
+                              *ngFor="let time of leadTimeDelivery"
+                              [value]="time.value"
+                              >{{ time.display }}
                             </mat-option>
                           </mat-select>
                         </mat-form-field>
@@ -266,118 +418,239 @@
                       <div class="form-row">
                         <mat-form-field appearance="fill">
                           <mat-label>Notification Radius (Miles)</mat-label>
-                          <input matInput type="number" formControlName="notificationRadius" placeholder="100" />
+                          <input
+                            matInput
+                            type="number"
+                            formControlName="notificationRadius"
+                            placeholder="100"
+                          />
                         </mat-form-field>
                         <mat-form-field appearance="fill">
                           <mat-label>Job Preferences</mat-label>
                           <mat-select formControlName="jobPreferences" multiple>
-                            <mat-option *ngFor="let preference of preferenceOptions" [value]="preference.value">
-                              {{ preference.display }}</mat-option>
+                            <mat-option
+                              *ngFor="let preference of preferenceOptions"
+                              [value]="preference.value"
+                            >
+                              {{ preference.display }}</mat-option
+                            >
                           </mat-select>
                         </mat-form-field>
                       </div>
                     </div>
                     <div class="form-row">
-                      <button mat-raised-button type="submit" class="submit-btn">
-                        {{ isSaving ? 'Saving...' : 'Save Profile' }}
+                      <button
+                        mat-raised-button
+                        type="submit"
+                        class="submit-btn"
+                      >
+                        {{ isSaving ? "Saving..." : "Save Profile" }}
                       </button>
                     </div>
                   </mat-tab>
-                                    <!-- Addresses Tab -->
-<mat-tab label="Addresses">
-  <div class="section addresses-section">
-    <h3>Address Details</h3>
-      <div class="address-footer">
-      <button mat-raised-button color="primary" type="button" class="submit-btn" (click)="openAddressDialog()">
-        Add New Address
-      </button>
-    </div>
-    <!-- This scrolls ONLY the table -->
-    <div class="address-table-scroll">
-      <mat-table [dataSource]="addressDataSource" class="mat-elevation-z8">
-        <ng-container matColumnDef="formattedAddress">
-          <mat-header-cell *matHeaderCellDef>Address</mat-header-cell>
-          <mat-cell *matCellDef="let addr">{{ addr.formattedAddress }}</mat-cell>
-        </ng-container>
+                  <!-- Addresses Tab -->
+                  <mat-tab label="Addresses">
+                    <div class="section addresses-section">
+                      <h3>Address Details</h3>
+                      <div class="address-footer">
+                        <button
+                          mat-raised-button
+                          color="primary"
+                          type="button"
+                          class="submit-btn"
+                          (click)="openAddressDialog()"
+                        >
+                          Add New Address
+                        </button>
+                      </div>
+                      <!-- This scrolls ONLY the table -->
+                      <div class="address-table-scroll">
+                        <mat-table
+                          [dataSource]="addressDataSource"
+                          class="mat-elevation-z8"
+                        >
+                          <ng-container matColumnDef="formattedAddress">
+                            <mat-header-cell *matHeaderCellDef
+                              >Address</mat-header-cell
+                            >
+                            <mat-cell *matCellDef="let addr">{{
+                              addr.formattedAddress
+                            }}</mat-cell>
+                          </ng-container>
 
-        <ng-container matColumnDef="city">
-          <mat-header-cell *matHeaderCellDef>City</mat-header-cell>
-          <mat-cell *matCellDef="let addr">{{ addr.city }}</mat-cell>
-        </ng-container>
+                          <ng-container matColumnDef="city">
+                            <mat-header-cell *matHeaderCellDef
+                              >City</mat-header-cell
+                            >
+                            <mat-cell *matCellDef="let addr">{{
+                              addr.city
+                            }}</mat-cell>
+                          </ng-container>
 
-        <ng-container matColumnDef="state">
-          <mat-header-cell *matHeaderCellDef>State</mat-header-cell>
-          <mat-cell *matCellDef="let addr">{{ addr.state }}</mat-cell>
-        </ng-container>
+                          <ng-container matColumnDef="state">
+                            <mat-header-cell *matHeaderCellDef
+                              >State</mat-header-cell
+                            >
+                            <mat-cell *matCellDef="let addr">{{
+                              addr.state
+                            }}</mat-cell>
+                          </ng-container>
 
-        <ng-container matColumnDef="country">
-          <mat-header-cell *matHeaderCellDef>Country</mat-header-cell>
-          <mat-cell *matCellDef="let addr">{{ addr.country }}</mat-cell>
-        </ng-container>
+                          <ng-container matColumnDef="country">
+                            <mat-header-cell *matHeaderCellDef
+                              >Country</mat-header-cell
+                            >
+                            <mat-cell *matCellDef="let addr">{{
+                              addr.country
+                            }}</mat-cell>
+                          </ng-container>
 
-        <ng-container matColumnDef="actions">
-          <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-          <mat-cell *matCellDef="let addr">
-            <button mat-icon-button color="primary" type="button" (click)="editAddress(addr)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" type="button" (click)="deleteAddress(addr)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </mat-cell>
-        </ng-container>
+                          <ng-container matColumnDef="actions">
+                            <mat-header-cell *matHeaderCellDef
+                              >Actions</mat-header-cell
+                            >
+                            <mat-cell *matCellDef="let addr">
+                              <button
+                                mat-icon-button
+                                color="primary"
+                                type="button"
+                                (click)="editAddress(addr)"
+                              >
+                                <mat-icon>edit</mat-icon>
+                              </button>
+                              <button
+                                mat-icon-button
+                                color="warn"
+                                type="button"
+                                (click)="deleteAddress(addr)"
+                              >
+                                <mat-icon>delete</mat-icon>
+                              </button>
+                            </mat-cell>
+                          </ng-container>
 
-        <mat-header-row *matHeaderRowDef="['formattedAddress','city','state','country','actions']"></mat-header-row>
-        <mat-row *matRowDef="let row; columns: ['formattedAddress','city','state','country','actions']"></mat-row>
-      </mat-table>
-    </div>
+                          <mat-header-row
+                            *matHeaderRowDef="[
+                              'formattedAddress',
+                              'city',
+                              'state',
+                              'country',
+                              'actions'
+                            ]"
+                          ></mat-header-row>
+                          <mat-row
+                            *matRowDef="
+                              let row;
+                              columns: [
+                                'formattedAddress',
+                                'city',
+                                'state',
+                                'country',
+                                'actions'
+                              ]
+                            "
+                          ></mat-row>
+                        </mat-table>
+                      </div>
+                    </div>
+                  </mat-tab>
 
-  </div>
-
-</mat-tab>
-
-
-                  
                   <!-- Team Management Tab -->
-                  <mat-tab label="Team Management"
-                    *ngIf="authService.hasPermission('addTeamMembers') || authService.hasPermission('deleteTeamMembers') || authService.hasPermission('editTeamMembers')">
-                    <div class="section" *ngIf="authService.hasPermission('addTeamMembers')">
+                  <mat-tab
+                    label="Team Management"
+                    *ngIf="
+                      authService.hasPermission('addTeamMembers') ||
+                      authService.hasPermission('deleteTeamMembers') ||
+                      authService.hasPermission('editTeamMembers')
+                    "
+                  >
+                    <div
+                      class="section"
+                      *ngIf="authService.hasPermission('addTeamMembers')"
+                    >
                       <h3>Add Team Member</h3>
                       <form [formGroup]="teamForm" (ngSubmit)="addTeamMember()">
                         <div class="form-row">
                           <mat-form-field appearance="fill">
                             <mat-label>First Name</mat-label>
-                            <input matInput formControlName="firstName" placeholder=" " />
-                            <mat-error *ngIf="teamForm.get('firstName')?.hasError('required')"> Mandatory Field: Input
-                              Required. </mat-error>
+                            <input
+                              matInput
+                              formControlName="firstName"
+                              placeholder=" "
+                            />
+                            <mat-error
+                              *ngIf="
+                                teamForm.get('firstName')?.hasError('required')
+                              "
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
                           </mat-form-field>
                           <mat-form-field appearance="fill">
                             <mat-label>Last Name</mat-label>
-                            <input matInput formControlName="lastName" placeholder=" " />
-                            <mat-error *ngIf="teamForm.get('lastName')?.hasError('required')"> Mandatory Field: Input
-                              Required. </mat-error>
+                            <input
+                              matInput
+                              formControlName="lastName"
+                              placeholder=" "
+                            />
+                            <mat-error
+                              *ngIf="
+                                teamForm.get('lastName')?.hasError('required')
+                              "
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
                           </mat-form-field>
                           <mat-form-field appearance="fill">
                             <mat-label>Role</mat-label>
-                            <mat-select formControlName="role" panelClass="custom-select-panel">
-                              <mat-option *ngFor="let role of availableRoles" [value]="role.value">
+                            <mat-select
+                              formControlName="role"
+                              panelClass="custom-select-panel"
+                            >
+                              <mat-option
+                                *ngFor="let role of availableRoles"
+                                [value]="role.value"
+                              >
                                 {{ role.display }}
                               </mat-option>
                             </mat-select>
-                            <mat-error *ngIf="teamForm.get('role')?.hasError('required')"> Mandatory Field: Input
-                              Required. </mat-error>
+                            <mat-error
+                              *ngIf="teamForm.get('role')?.hasError('required')"
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
                           </mat-form-field>
                           <mat-form-field appearance="fill">
                             <mat-label>Email</mat-label>
-                            <input matInput formControlName="email" placeholder=" " />
-                            <mat-error *ngIf="teamForm.get('email')?.hasError('required')"> Mandatory Field: Input
-                              Required. </mat-error>
-                            <mat-error *ngIf="teamForm.get('email')?.hasError('email')"> Invalid email format.
+                            <input
+                              matInput
+                              formControlName="email"
+                              placeholder=" "
+                            />
+                            <mat-error
+                              *ngIf="
+                                teamForm.get('email')?.hasError('required')
+                              "
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
+                            <mat-error
+                              *ngIf="teamForm.get('email')?.hasError('email')"
+                            >
+                              Invalid email format.
                             </mat-error>
                           </mat-form-field>
-                          <button mat-raised-button type="submit" class="submit-btn"
-                            [disabled]="teamForm.invalid || isSendingInvite">
-                            {{ isSendingInvite ? 'Sending Invite...' : 'Add Member' }}
+                          <button
+                            mat-raised-button
+                            type="submit"
+                            class="submit-btn"
+                            [disabled]="teamForm.invalid || isSendingInvite"
+                          >
+                            {{
+                              isSendingInvite
+                                ? "Sending Invite..."
+                                : "Add Member"
+                            }}
                           </button>
                         </div>
                       </form>
@@ -386,91 +659,206 @@
                       <h3>Team Members</h3>
                       <mat-tab-group>
                         <mat-tab label="Active">
-                          <mat-table [dataSource]="activeTeamMembers" class="mat-elevation-z8">
+                          <mat-table
+                            [dataSource]="activeTeamMembers"
+                            class="mat-elevation-z8"
+                          >
                             <ng-container matColumnDef="name">
-                              <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.firstName }} {{ member.lastName }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Name</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member"
+                                >{{ member.firstName }}
+                                {{ member.lastName }}</mat-cell
+                              >
                             </ng-container>
                             <ng-container matColumnDef="role">
-                              <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.role | roleDisplay }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Role</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.role | roleDisplay
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="email">
-                              <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.email }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Email</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.email
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.status }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Status</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.status
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Actions</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let member">
-                                <button type="button" mat-icon-button [matMenuTriggerFor]="activeMenu">
+                                <button
+                                  type="button"
+                                  mat-icon-button
+                                  [matMenuTriggerFor]="activeMenu"
+                                >
                                   <mat-icon>more_vert</mat-icon>
                                 </button>
                                 <mat-menu #activeMenu="matMenu">
-                                  <button mat-menu-item
-                                    (click)="openPermissionsDialog(member.id, member.firstName, member.lastName)"
-                                    *ngIf="authService.hasPermission('editTeamMembers')">
+                                  <button
+                                    mat-menu-item
+                                    (click)="
+                                      openPermissionsDialog(
+                                        member.id,
+                                        member.firstName,
+                                        member.lastName
+                                      )
+                                    "
+                                    *ngIf="
+                                      authService.hasPermission(
+                                        'editTeamMembers'
+                                      )
+                                    "
+                                  >
                                     <mat-icon>manage_accounts</mat-icon>
                                     <span>Manage Permissions</span>
                                   </button>
-                                  <button mat-menu-item (click)="openConfirmationDialog(member.id, 'deactivate')"
-                                    *ngIf="authService.hasPermission('editTeamMembers')">
+                                  <button
+                                    mat-menu-item
+                                    (click)="
+                                      openConfirmationDialog(
+                                        member.id,
+                                        'deactivate'
+                                      )
+                                    "
+                                    *ngIf="
+                                      authService.hasPermission(
+                                        'editTeamMembers'
+                                      )
+                                    "
+                                  >
                                     <mat-icon>person_remove</mat-icon>
                                     <span>Deactivate</span>
                                   </button>
-                                  <button mat-menu-item (click)="openConfirmationDialog(member.id, 'delete')"
-                                    *ngIf="authService.hasPermission('deleteTeamMembers')">
+                                  <button
+                                    mat-menu-item
+                                    (click)="
+                                      openConfirmationDialog(
+                                        member.id,
+                                        'delete'
+                                      )
+                                    "
+                                    *ngIf="
+                                      authService.hasPermission(
+                                        'deleteTeamMembers'
+                                      )
+                                    "
+                                  >
                                     <mat-icon>delete</mat-icon>
                                     <span>Delete</span>
                                   </button>
                                 </mat-menu>
                               </mat-cell>
                             </ng-container>
-                            <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                            <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+                            <mat-header-row
+                              *matHeaderRowDef="displayedColumns"
+                            ></mat-header-row>
+                            <mat-row
+                              *matRowDef="let row; columns: displayedColumns"
+                            ></mat-row>
                           </mat-table>
                         </mat-tab>
-                        <mat-tab label="Deactivated" *ngIf="deactivatedTeamMembers.length > 0">
-                          <mat-table [dataSource]="deactivatedTeamMembers" class="mat-elevation-z8">
+                        <mat-tab
+                          label="Deactivated"
+                          *ngIf="deactivatedTeamMembers.length > 0"
+                        >
+                          <mat-table
+                            [dataSource]="deactivatedTeamMembers"
+                            class="mat-elevation-z8"
+                          >
                             <ng-container matColumnDef="name">
-                              <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.firstName }} {{ member.lastName }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Name</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member"
+                                >{{ member.firstName }}
+                                {{ member.lastName }}</mat-cell
+                              >
                             </ng-container>
                             <ng-container matColumnDef="role">
-                              <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.role | roleDisplay }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Role</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.role | roleDisplay
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="email">
-                              <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.email }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Email</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.email
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-                              <mat-cell *matCellDef="let member">{{ member.status }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Status</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let member">{{
+                                member.status
+                              }}</mat-cell>
                             </ng-container>
                             <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef
+                                >Actions</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let member">
-                                <button type="button" mat-icon-button [matMenuTriggerFor]="deactivatedMenu">
+                                <button
+                                  type="button"
+                                  mat-icon-button
+                                  [matMenuTriggerFor]="deactivatedMenu"
+                                >
                                   <mat-icon>more_vert</mat-icon>
                                 </button>
                                 <mat-menu #deactivatedMenu="matMenu">
-                                  <button mat-menu-item (click)="openConfirmationDialog(member.id, 'reactivate')">
+                                  <button
+                                    mat-menu-item
+                                    (click)="
+                                      openConfirmationDialog(
+                                        member.id,
+                                        'reactivate'
+                                      )
+                                    "
+                                  >
                                     <mat-icon>person_add</mat-icon>
                                     <span>Reactivate</span>
                                   </button>
-                                  <button mat-menu-item (click)="openConfirmationDialog(member.id, 'delete')">
+                                  <button
+                                    mat-menu-item
+                                    (click)="
+                                      openConfirmationDialog(
+                                        member.id,
+                                        'delete'
+                                      )
+                                    "
+                                  >
                                     <mat-icon>delete</mat-icon>
                                     <span>Delete Permanently</span>
                                   </button>
                                 </mat-menu>
                               </mat-cell>
                             </ng-container>
-                            <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                            <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+                            <mat-header-row
+                              *matHeaderRowDef="displayedColumns"
+                            ></mat-header-row>
+                            <mat-row
+                              *matRowDef="let row; columns: displayedColumns"
+                            ></mat-row>
                           </mat-table>
                         </mat-tab>
                       </mat-tab-group>
@@ -480,29 +868,50 @@
                   <mat-tab label="Documents">
                     <div class="section">
                       <h3>Profile Documents</h3>
-                      <mat-table [dataSource]="documents" class="mat-elevation-z8">
+                      <mat-table
+                        [dataSource]="documents"
+                        class="mat-elevation-z8"
+                      >
                         <ng-container matColumnDef="name">
-                          <mat-header-cell *matHeaderCellDef>Document Name</mat-header-cell>
-                          <mat-cell *matCellDef="let doc">{{ doc.name }}</mat-cell>
+                          <mat-header-cell *matHeaderCellDef
+                            >Document Name</mat-header-cell
+                          >
+                          <mat-cell *matCellDef="let doc">{{
+                            doc.name
+                          }}</mat-cell>
                         </ng-container>
                         <ng-container matColumnDef="type">
-                          <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
-                          <mat-cell *matCellDef="let doc">{{ doc.type }}</mat-cell>
+                          <mat-header-cell *matHeaderCellDef
+                            >Type</mat-header-cell
+                          >
+                          <mat-cell *matCellDef="let doc">{{
+                            doc.type
+                          }}</mat-cell>
                         </ng-container>
                         <ng-container matColumnDef="uploadedDate">
-                          <mat-header-cell *matHeaderCellDef>Uploaded Date</mat-header-cell>
-                          <mat-cell *matCellDef="let doc">{{ doc.uploadedDate }}</mat-cell>
+                          <mat-header-cell *matHeaderCellDef
+                            >Uploaded Date</mat-header-cell
+                          >
+                          <mat-cell *matCellDef="let doc">{{
+                            doc.uploadedDate
+                          }}</mat-cell>
                         </ng-container>
                         <ng-container matColumnDef="actions">
-                          <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                          <mat-header-cell *matHeaderCellDef
+                            >Actions</mat-header-cell
+                          >
                           <mat-cell *matCellDef="let doc">
                             <button mat-icon-button (click)="viewDocument(doc)">
                               <mat-icon>visibility</mat-icon>
                             </button>
                           </mat-cell>
                         </ng-container>
-                        <mat-header-row *matHeaderRowDef="documentColumns"></mat-header-row>
-                        <mat-row *matRowDef="let row; columns: documentColumns;"></mat-row>
+                        <mat-header-row
+                          *matHeaderRowDef="documentColumns"
+                        ></mat-header-row>
+                        <mat-row
+                          *matRowDef="let row; columns: documentColumns"
+                        ></mat-row>
                       </mat-table>
                     </div>
                   </mat-tab>
@@ -512,7 +921,9 @@
                       <h3>Your Subscriptions</h3>
 
                       <div *ngIf="isLoadingSubscriptions" class="form-row">
-                        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                        <mat-progress-bar
+                          mode="indeterminate"
+                        ></mat-progress-bar>
                       </div>
 
                       <div *ngIf="subscriptionsError" class="form-row">
@@ -523,196 +934,369 @@
                       <mat-tab-group *ngIf="!isLoadingSubscriptions">
                         <!-- Active (mine) -->
                         <mat-tab label="Active">
-                          <mat-table [dataSource]="activeSubscriptionsData" matSort #activeSort="matSort"
-                            class="mat-elevation-z8">
+                          <mat-table
+                            [dataSource]="activeSubscriptionsData"
+                            matSort
+                            #activeSort="matSort"
+                            class="mat-elevation-z8"
+                          >
                             <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Package</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.package }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Package</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.package
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Valid Until</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Valid Until</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.validUntil ? (s.validUntil | date:'mediumDate') : '—' }}
+                                {{
+                                  s.validUntil
+                                    ? (s.validUntil | date : "mediumDate")
+                                    : "—"
+                                }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Amount</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.amount | currency }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Amount</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.amount | currency
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Assigned User</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Assigned User</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.assignedUser || '—' }}</mat-cell>
+                                {{ s.assignedUser || "—" }}</mat-cell
+                              >
                             </ng-container>
 
                             <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Status</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.status || '—' }}
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Status</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s"
+                                >{{ s.status || "—" }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-                              <mat-cell *matCellDef="let s" class="actions-cell">
-                                <button mat-raised-button color="primary" (click)="upgradeSubscription(s)"
-                                  [disabled]="rowBusy.has(s.subscriptionId) || !canManageRow(s)" class="submit-btn" type="button" *ngIf="!authService.isTeamMember()">
-
+                              <mat-header-cell *matHeaderCellDef
+                                >Actions</mat-header-cell
+                              >
+                              <mat-cell
+                                *matCellDef="let s"
+                                class="actions-cell"
+                              >
+                                <button
+                                  mat-raised-button
+                                  color="primary"
+                                  (click)="upgradeSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s.subscriptionId) ||
+                                    !canManageRow(s)
+                                  "
+                                  class="submit-btn"
+                                  type="button"
+                                  *ngIf="!authService.isTeamMember()"
+                                >
                                   Upgrade
                                 </button>
-                                <button mat-raised-button color="warn" (click)="cancelSubscription(s)"
-                                  [disabled]="rowBusy.has(s.subscriptionId) || !canManageRow(s)" class="submit-btn" type="button" *ngIf="!authService.isTeamMember()">
+                                <button
+                                  mat-raised-button
+                                  color="warn"
+                                  (click)="cancelSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s.subscriptionId) ||
+                                    !canManageRow(s)
+                                  "
+                                  class="submit-btn"
+                                  type="button"
+                                  *ngIf="!authService.isTeamMember()"
+                                >
                                   Cancel
                                 </button>
                               </mat-cell>
                             </ng-container>
 
-                            <mat-header-row *matHeaderRowDef="subscriptionColumns"></mat-header-row>
-                            <mat-row *matRowDef="let row; columns: subscriptionColumns"></mat-row>
+                            <mat-header-row
+                              *matHeaderRowDef="subscriptionColumns"
+                            ></mat-header-row>
+                            <mat-row
+                              *matRowDef="let row; columns: subscriptionColumns"
+                            ></mat-row>
                           </mat-table>
 
-                          <mat-paginator #activePaginator [pageSize]="10" [pageSizeOptions]="[5,10,25]"
-                            showFirstLastButtons></mat-paginator>
+                          <mat-paginator
+                            #activePaginator
+                            [pageSize]="10"
+                            [pageSizeOptions]="[5, 10, 25]"
+                            showFirstLastButtons
+                          ></mat-paginator>
 
-                          <div *ngIf="activeSubscriptionsData.data.length === 0" class="form-row">
+                          <div
+                            *ngIf="activeSubscriptionsData.data.length === 0"
+                            class="form-row"
+                          >
                             <em>No active subscriptions.</em>
                           </div>
                           <br />
-
                         </mat-tab>
 
                         <!-- Team -->
                         <mat-tab label="Team">
-                          <mat-table [dataSource]="teamSubscriptionsData" matSort #teamSort="matSort"
-                            class="mat-elevation-z8">
+                          <mat-table
+                            [dataSource]="teamSubscriptionsData"
+                            matSort
+                            #teamSort="matSort"
+                            class="mat-elevation-z8"
+                          >
                             <!-- reuse same columns -->
                             <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Package</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.package }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Package</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.package
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Valid Until</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Valid Until</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.validUntil ? (s.validUntil | date:'mediumDate') : '—' }}
+                                {{
+                                  s.validUntil
+                                    ? (s.validUntil | date : "mediumDate")
+                                    : "—"
+                                }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Amount</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.amount | currency }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Amount</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.amount | currency
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Assigned User</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Assigned User</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.assignedUserName || '—' }}</mat-cell>
+                                {{ s.assignedUserName || "—" }}</mat-cell
+                              >
                             </ng-container>
 
                             <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Status</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.status || '—' }}
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Status</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s"
+                                >{{ s.status || "—" }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-                              <mat-cell *matCellDef="let s" class="actions-cell">
-                                <button mat-raised-button color="primary" (click)="upgradeSubscription(s)"
-                                  [disabled]="rowBusy.has(s) || !canManageRow(s)" class="submit-btn" type="button">
+                              <mat-header-cell *matHeaderCellDef
+                                >Actions</mat-header-cell
+                              >
+                              <mat-cell
+                                *matCellDef="let s"
+                                class="actions-cell"
+                              >
+                                <button
+                                  mat-raised-button
+                                  color="primary"
+                                  (click)="upgradeSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s) || !canManageRow(s)
+                                  "
+                                  class="submit-btn"
+                                  type="button"
+                                >
                                   Upgrade
                                 </button>
-                                <button mat-raised-button color="warn" (click)="cancelSubscription(s)"
-                                  [disabled]="rowBusy.has(s.subscriptionId) || !canManageRow(s)" class="submit-btn" type="button">
+                                <button
+                                  mat-raised-button
+                                  color="warn"
+                                  (click)="cancelSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s.subscriptionId) ||
+                                    !canManageRow(s)
+                                  "
+                                  class="submit-btn"
+                                  type="button"
+                                >
                                   Cancel
                                 </button>
                               </mat-cell>
                             </ng-container>
 
-                            <mat-header-row *matHeaderRowDef="subscriptionColumns"></mat-header-row>
-                            <mat-row *matRowDef="let row; columns: subscriptionColumns"></mat-row>
+                            <mat-header-row
+                              *matHeaderRowDef="subscriptionColumns"
+                            ></mat-header-row>
+                            <mat-row
+                              *matRowDef="let row; columns: subscriptionColumns"
+                            ></mat-row>
                           </mat-table>
 
-                          <mat-paginator #teamPaginator [pageSize]="10" [pageSizeOptions]="[5,10,25]"
-                            showFirstLastButtons></mat-paginator>
+                          <mat-paginator
+                            #teamPaginator
+                            [pageSize]="10"
+                            [pageSizeOptions]="[5, 10, 25]"
+                            showFirstLastButtons
+                          ></mat-paginator>
 
-                          <div *ngIf="teamSubscriptionsData.data.length === 0" class="form-row">
+                          <div
+                            *ngIf="teamSubscriptionsData.data.length === 0"
+                            class="form-row"
+                          >
                             <em>No team subscriptions.</em>
                           </div>
                         </mat-tab>
 
                         <!-- Inactive -->
                         <mat-tab label="Inactive">
-                          <mat-table [dataSource]="inactiveSubscriptionsData" matSort #inactiveSort="matSort"
-                            class="mat-elevation-z8">
+                          <mat-table
+                            [dataSource]="inactiveSubscriptionsData"
+                            matSort
+                            #inactiveSort="matSort"
+                            class="mat-elevation-z8"
+                          >
                             <!-- reuse columns -->
                             <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Package</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.package }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Package</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.package
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Valid Until</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Valid Until</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.validUntil ? (s.validUntil | date:'mediumDate') : '—' }}
+                                {{
+                                  s.validUntil
+                                    ? (s.validUntil | date : "mediumDate")
+                                    : "—"
+                                }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Amount</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.amount | currency }}</mat-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Amount</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s">{{
+                                s.amount | currency
+                              }}</mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Assigned User</mat-header-cell>
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Assigned User</mat-header-cell
+                              >
                               <mat-cell *matCellDef="let s">
-                                {{ s.assignedUserName || '—' }}</mat-cell>
+                                {{ s.assignedUserName || "—" }}</mat-cell
+                              >
                             </ng-container>
 
                             <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header>Status</mat-header-cell>
-                              <mat-cell *matCellDef="let s">{{ s.status || '—' }}
+                              <mat-header-cell *matHeaderCellDef mat-sort-header
+                                >Status</mat-header-cell
+                              >
+                              <mat-cell *matCellDef="let s"
+                                >{{ s.status || "—" }}
                               </mat-cell>
                             </ng-container>
 
                             <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-                              <mat-cell *matCellDef="let s" class="actions-cell">
-                                <button mat-raised-button color="primary" (click)="upgradeSubscription(s)"
-                                  [disabled]="rowBusy.has(s.subscriptionId) || isInactiveRow(s)" type="button">
-
+                              <mat-header-cell *matHeaderCellDef
+                                >Actions</mat-header-cell
+                              >
+                              <mat-cell
+                                *matCellDef="let s"
+                                class="actions-cell"
+                              >
+                                <button
+                                  mat-raised-button
+                                  color="primary"
+                                  (click)="upgradeSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s.subscriptionId) ||
+                                    isInactiveRow(s)
+                                  "
+                                  type="button"
+                                >
                                   Upgrade
                                 </button>
-                                <button mat-raised-button color="warn" (click)="cancelSubscription(s)"
-                                  [disabled]="rowBusy.has(s.subscriptionId) || isInactiveRow(s)" type="button">
+                                <button
+                                  mat-raised-button
+                                  color="warn"
+                                  (click)="cancelSubscription(s)"
+                                  [disabled]="
+                                    rowBusy.has(s.subscriptionId) ||
+                                    isInactiveRow(s)
+                                  "
+                                  type="button"
+                                >
                                   Cancel
                                 </button>
                               </mat-cell>
                             </ng-container>
 
-                            <mat-header-row *matHeaderRowDef="subscriptionColumns"></mat-header-row>
-                            <mat-row *matRowDef="let row; columns: subscriptionColumns"></mat-row>
+                            <mat-header-row
+                              *matHeaderRowDef="subscriptionColumns"
+                            ></mat-header-row>
+                            <mat-row
+                              *matRowDef="let row; columns: subscriptionColumns"
+                            ></mat-row>
                           </mat-table>
 
-                          <mat-paginator #inactivePaginator [pageSize]="10" [pageSizeOptions]="[5,10,25]"
-                            showFirstLastButtons></mat-paginator>
+                          <mat-paginator
+                            #inactivePaginator
+                            [pageSize]="10"
+                            [pageSizeOptions]="[5, 10, 25]"
+                            showFirstLastButtons
+                          ></mat-paginator>
 
-                          <div *ngIf="inactiveSubscriptionsData.data.length === 0" class="form-row">
+                          <div
+                            *ngIf="inactiveSubscriptionsData.data.length === 0"
+                            class="form-row"
+                          >
                             <em>No inactive subscriptions.</em>
                           </div>
-
                         </mat-tab>
-
                       </mat-tab-group>
-                      <button mat-raised-button type="button" class="submit-btn"
-                        (click)="openSubscriptionCreateDialog()" *ngIf="!authService.isTeamMember()">
+                      <button
+                        mat-raised-button
+                        type="button"
+                        class="submit-btn"
+                        (click)="openSubscriptionCreateDialog()"
+                        *ngIf="!authService.isTeamMember()"
+                      >
                         Add Subscription
                       </button>
                     </div>
                   </mat-tab>
-                 </mat-tab-group>
+                </mat-tab-group>
               </form>
             </div>
           </mat-card-content>
