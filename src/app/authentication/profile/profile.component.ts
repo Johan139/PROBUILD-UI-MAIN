@@ -30,8 +30,6 @@ import {
   certificationOptions,
 } from '../../data/registration-data';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { MatTabGroup } from '@angular/material/tabs';
-import { ViewChildren, QueryList } from '@angular/core';
 import { SubscriptionRow } from '../../models/SubscriptionRow';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -72,11 +70,6 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
-import { LogoService } from '../../services/logo.service';
-import {
-  MeasurementService,
-  MeasurementSettings,
-} from '../../services/measurement.service';
 import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 
 const BASE_URL = environment.BACKEND_URL;
@@ -140,12 +133,9 @@ export type ActiveMap = Record<
   styleUrls: ['./profile.component.scss'],
 })
 export class ProfileComponent implements OnInit {
-  cardTitle = 'User Profile';
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('fileInput') fileInput!: ElementRef;
-  logoUrl: string | null = null;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
   selectedPlace: { description: string; place_id: string } | null = null;
@@ -249,7 +239,7 @@ export class ProfileComponent implements OnInit {
   @ViewChild('activeSort') activeSort!: MatSort;
   @ViewChild('teamSort') teamSort!: MatSort;
   @ViewChild('inactiveSort') inactiveSort!: MatSort;
-  @ViewChildren(MatTabGroup) tabGroups!: QueryList<MatTabGroup>;
+
   constructor(
     private profileService: ProfileService,
     public authService: AuthService,
@@ -266,8 +256,6 @@ export class ProfileComponent implements OnInit {
     @Inject(PLATFORM_ID) private platformId: Object,
     private snackBar: MatSnackBar,
     private teamManagementService: TeamManagementService,
-    private logoService: LogoService,
-    private measurementService: MeasurementService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -311,8 +299,6 @@ export class ProfileComponent implements OnInit {
       googlePlaceId: [''],
       notificationRadius: [100],
       jobPreferences: [[]],
-      measurementSystem: ['Metric'],
-      temperatureUnit: ['C'],
     });
 
     this.teamForm = this.fb.group({
@@ -368,18 +354,6 @@ export class ProfileComponent implements OnInit {
         );
       } else {
         this.options = [];
-      }
-    });
-    this.route.queryParamMap.subscribe((params) => {
-      const tab = params.get('tab');
-      if (tab === 'subscriptions') {
-        // Wait for ALL async data loads + Angular render
-        setTimeout(() => {
-          const groups = this.tabGroups.toArray();
-          if (groups.length > 0) {
-            groups[0].selectedIndex = 5; // Main profile tab group
-          }
-        }, 500);
       }
     });
   }
@@ -456,7 +430,7 @@ export class ProfileComponent implements OnInit {
         this.isLoading = false;
       }
     });
-    // console.log(this.subscriptionPackages)
+    console.log(this.subscriptionPackages);
     this.route.queryParamMap.pipe(take(1)).subscribe((params) => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', {
@@ -482,7 +456,7 @@ export class ProfileComponent implements OnInit {
     this.profileService.uploadComplete$.subscribe((fileCount) => {
       this.isUploading = false;
       this.resetFileInput();
-      // console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
+      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
 
     if (this.isBrowser) {
@@ -497,33 +471,6 @@ export class ProfileComponent implements OnInit {
           console.error('Google Maps script loading error:', err),
         );
     }
-
-    this.measurementService.getSettings().subscribe((settings) => {
-      if (
-        this.profileForm.get('measurementSystem')?.value !== settings.system
-      ) {
-        this.profileForm
-          .get('measurementSystem')
-          ?.setValue(settings.system, { emitEvent: false });
-      }
-      if (
-        this.profileForm.get('temperatureUnit')?.value !== settings.temperature
-      ) {
-        this.profileForm
-          .get('temperatureUnit')
-          ?.setValue(settings.temperature, { emitEvent: false });
-      }
-    });
-
-    this.profileForm
-      .get('measurementSystem')
-      ?.valueChanges.subscribe((value) => {
-        this.measurementService.updateSettings({ system: value });
-      });
-
-    this.profileForm.get('temperatureUnit')?.valueChanges.subscribe((value) => {
-      this.measurementService.updateSettings({ temperature: value });
-    });
   }
   private _filterCountries(value: string | null): any[] {
     const filterValue = (value ?? '').toLowerCase();
@@ -682,7 +629,6 @@ export class ProfileComponent implements OnInit {
           this.isVerified = profileData.isVerified ?? false;
 
           this.loadTeamMembers();
-          this.loadUserLogo();
           this.isLoading = false;
         },
         error: () => {
@@ -738,7 +684,7 @@ export class ProfileComponent implements OnInit {
 
           this.profileForm.patchValue(patchObj);
           this.addressControl.setValue(patchObj.address);
-          // console.log('🔄 Google Place data patched:', patchObj);
+          console.log('🔄 Google Place data patched:', patchObj);
         }
       },
     );
@@ -747,7 +693,7 @@ export class ProfileComponent implements OnInit {
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
-        // console.log(subscriptions)
+        console.log(subscriptions);
         this.subscriptionPackages = subscriptions.map((s) => ({
           value: s.subscription,
           display: `${s.subscription}`,
@@ -1073,16 +1019,21 @@ export class ProfileComponent implements OnInit {
   openAddressDialog(address?: UserAddress): void {
     const dialogRef = this.dialog.open(AddressDialogComponent, {
       width: '600px',
-      data: address || null,
+      data: address ?? null,
     });
 
     dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
-      if (result) {
-        if (address) {
-          this.updateAddress(result);
-        } else {
-          this.saveNewAddress(result);
-        }
+      if (!result) return;
+
+      // -----------------------------------
+      // 🔥 CRITICAL FIX:
+      // When editing, force the ID to remain
+      // -----------------------------------
+      if (address) {
+        result.id = address.id; // ensure update always has correct ID
+        this.updateAddress(result);
+      } else {
+        this.saveNewAddress(result);
       }
     });
   }
@@ -1164,7 +1115,7 @@ export class ProfileComponent implements OnInit {
         SessionId: this.sessionId,
       });
       const updatedProfile: Profile = this.profileForm.value;
-      // console.log(updatedProfile)
+      console.log(updatedProfile);
       updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
@@ -1272,12 +1223,6 @@ export class ProfileComponent implements OnInit {
           this.teamMembers = [...this.teamMembers, member];
           this.loadTeamMembers();
           this.teamForm.reset();
-          Object.keys(this.teamForm.controls).forEach((key) => {
-            const control = this.teamForm.get(key);
-            control?.setErrors(null);
-            control?.markAsPristine();
-            control?.markAsUntouched();
-          });
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
@@ -1312,7 +1257,7 @@ export class ProfileComponent implements OnInit {
     ) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      // console.log('File input reset');
+      console.log('File input reset');
     }
   }
 
@@ -1596,7 +1541,7 @@ export class ProfileComponent implements OnInit {
           typeof result === 'string'
             ? 'monthly'
             : (result.billingCycle ?? 'monthly');
-        // console.log(pkgCode)
+        console.log(pkgCode);
         // reflect selection
         this.profileForm.patchValue({ subscriptionPackage: pkgCode });
         this.profileForm.get('subscriptionPackage')?.markAsDirty();
@@ -1655,7 +1600,7 @@ export class ProfileComponent implements OnInit {
       const email = String(r.assignedUserName ?? '')
         .trim()
         .toLowerCase();
-      // console.log(email)
+      console.log(email);
       if (email && ACTIVE.has(status)) emails.add(email);
     }
     return emails;
@@ -1716,13 +1661,17 @@ export class ProfileComponent implements OnInit {
     // short, descriptive message
     const notice =
       selfBlocked && teamBlockedCount > 0
-        ? `You already have a subscription. ${teamBlockedCount} team member${teamBlockedCount > 1 ? 's' : ''} already subscribed.`
+        ? `You already have a subscription. ${teamBlockedCount} team member${
+            teamBlockedCount > 1 ? 's' : ''
+          } already subscribed.`
         : selfBlocked
           ? 'You already have an active subscription.'
           : teamBlockedCount > 0
-            ? `${teamBlockedCount} team member${teamBlockedCount > 1 ? 's' : ''} already subscribed.`
+            ? `${teamBlockedCount} team member${
+                teamBlockedCount > 1 ? 's' : ''
+              } already subscribed.`
             : null;
-    // console.log(this.subscriptionPackages)
+    console.log(this.subscriptionPackages);
     this.dialog
       .open(SubscriptionCreateComponent, {
         width: '600px',
@@ -1920,7 +1869,7 @@ export class ProfileComponent implements OnInit {
     // Update GUID reference
     this.profileForm.patchValue({ countryNumberCode: selected.id });
 
-    // console.log(`☎ Updated number: ${newPhone}`);
+    console.log(`☎ Updated number: ${newPhone}`);
   }
 
   ngOnDestroy(): void {
@@ -1985,13 +1934,13 @@ export class ProfileComponent implements OnInit {
     this.snackBar.open(`Switched to ${newRole} role`, 'Close', {
       duration: 3000,
     });
-    // console.log('Role switched to:', newRole);
-    // console.log('Visibility - Personal:', this.canViewPersonalInfo());
-    // console.log('Visibility - Company:', this.canViewCompanyDetails());
-    // console.log('Visibility - Certification:', this.canViewCertification());
-    // console.log('Visibility - Trade:', this.canViewTradeSupplier());
-    // console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
-    // console.log('Visibility - Subscription:', this.canViewSubscription());
+    console.log('Role switched to:', newRole);
+    console.log('Visibility - Personal:', this.canViewPersonalInfo());
+    console.log('Visibility - Company:', this.canViewCompanyDetails());
+    console.log('Visibility - Certification:', this.canViewCertification());
+    console.log('Visibility - Trade:', this.canViewTradeSupplier());
+    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
+    console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
   // TODO: Implement these methods based on user roles once development complete
@@ -2058,83 +2007,8 @@ export class ProfileComponent implements OnInit {
       'VENDOR',
     ].includes(this.userRole || '');
   }
-
-  triggerFileInput(): void {
-    this.fileInput.nativeElement.click();
-  }
-
-  onLogoChange(event: Event): void {
-    const file = (event.target as HTMLInputElement)?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) {
-      return;
-    }
-
-    this.logoService.setUserLogo(file).subscribe({
-      next: () => {
-        this.loadUserLogo();
-        this.snackBar.open('Logo updated successfully', 'Close', {
-          duration: 3000,
-        });
-      },
-      error: (err) => {
-        console.error('Logo upload failed', err);
-        this.snackBar.open('Failed to update logo', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  removeLogo(): void {
-    this.logoService.deleteUserLogo().subscribe({
-      next: () => {
-        this.logoUrl = null;
-        this.snackBar.open('Logo removed successfully', 'Close', {
-          duration: 3000,
-        });
-      },
-      error: (err) => {
-        console.error('Failed to remove logo', err);
-        this.snackBar.open('Failed to remove logo', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  loadUserLogo(): void {
-    this.logoService.getUserLogo().subscribe({
-      next: (logo) => {
-        this.logoUrl = logo.url;
-      },
-      error: () => {
-        this.logoUrl = null;
-      },
-    });
-  }
-  updateCardTitle(event: any): void {
-    switch (event.index) {
-      case 0:
-        this.cardTitle = 'User Profile';
-        break;
-      case 1:
-        this.cardTitle = 'Company Profile';
-        break;
-      case 2:
-        this.cardTitle = 'Team Management';
-        break;
-      case 3:
-        this.cardTitle = 'Documents';
-        break;
-      case 4:
-        this.cardTitle = 'Subscriptions';
-        break;
-      default:
-        this.cardTitle = 'User Profile';
-    }
-  }
 }
-
+// To this:
 export interface ProfileDocument {
   id: number;
   userId: string;

@@ -57,6 +57,7 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'register', component: RegistrationComponent },
+  { path: 'trial-registration', component: TrialRegistrationComponent },
   { path: 'confirm-email', component: ConfirmEmailComponent },
   { path: 'job-quote', component: JobQuoteComponent, canActivate: [AuthGuard] },
   {

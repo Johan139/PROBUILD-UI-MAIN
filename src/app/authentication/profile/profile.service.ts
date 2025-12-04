@@ -62,7 +62,7 @@ export class ProfileService {
 
     this.hubConnection
       .start()
-      .then()
+      .then(() => console.log('SignalR connection established successfully'))
       .catch((err) => console.error('SignalR Connection Error:', err));
   }
 
@@ -70,7 +70,7 @@ export class ProfileService {
     if (this.hubConnection) {
       this.hubConnection
         .stop()
-        .then()
+        .then(() => console.log('SignalR connection stopped'))
         .catch((err) => console.error('Error stopping SignalR:', err));
     }
   }
@@ -275,7 +275,6 @@ export class ProfileService {
   }
   addUserAddress(address: UserAddress): Observable<UserAddress> {
     const url = `${this.apiUrl}/AddUserAddress`;
-    // console.log(address);
     return this.http
       .post<UserAddress>(url, address, { headers: this.getHeaders() })
       .pipe(

@@ -6,6 +6,7 @@ import {
   FormBuilder,
   FormGroup,
   Validators,
+  FormArray,
   FormControl,
 } from '@angular/forms';
 import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
@@ -28,10 +29,15 @@ import { InvitationService } from '../../services/invitation.service';
 import { merge, Observable, of } from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
 import { MatDivider } from '@angular/material/divider';
-import { StripeService } from '../../services/StripeService';
+import {
+  PaymentIntentRequest,
+  StripeService,
+} from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
+import { COUNTRIES } from '../../data/countries';
+import { STATES } from '../../data/states';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -88,6 +94,7 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatInputModule,
     MatFormFieldModule,
     MatButton,
+    LoaderComponent,
     MatDivider,
     MatAutocompleteModule,
     AsyncPipe,
@@ -122,7 +129,7 @@ export class RegistrationComponent implements OnInit {
   employeeNumber = employeeNumber;
   operationalYears = operationalYears;
   certificationOptions = certificationOptions;
-
+  showOnlyBasicFields = true;
   subscriptionPackages: {
     value: string;
     display: string;
@@ -142,7 +149,6 @@ export class RegistrationComponent implements OnInit {
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
   selectedPlanFromUrl: string | null = null;
-  isGoogleRegistration = false;
   tradeCtrl = new FormControl();
   filteredTrades: Observable<{ value: string; display: string }[]>;
   selectedTrades: { value: string; display: string }[] = [];
@@ -209,7 +215,6 @@ export class RegistrationComponent implements OnInit {
   }
   ngOnInit() {
     this.loadSubscriptionPackages();
-
     const plan = this.route.snapshot.queryParamMap.get('plan');
     let billing = this.route.snapshot.queryParamMap
       .get('billing')
@@ -220,14 +225,13 @@ export class RegistrationComponent implements OnInit {
       billing = 'monthly'; // fallback
     }
 
-    this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
-    this.selectedBillingFromUrl = billing;
-
     this.profileService.getAddressType().subscribe({
       next: (types) => (this.addressTypes = types),
       error: (err) => console.error('Failed to load address types', err),
     });
 
+    this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
+    this.selectedBillingFromUrl = billing;
     this.registrationForm = this.formBuilder.group({
       firstName: [{ value: '', disabled: true }, Validators.required],
       lastName: [{ value: '', disabled: true }, Validators.required],
@@ -267,8 +271,8 @@ export class RegistrationComponent implements OnInit {
       formattedAddress: [''],
       googlePlaceId: [''],
       vatNo: [''],
-      addressType: ['', Validators.required],
-      userType: ['PERSONAL_USE', Validators.required],
+      addressType: [''],
+      userType: ['PERSONAL_USE'],
 
       constructionType: [],
 
@@ -320,7 +324,9 @@ export class RegistrationComponent implements OnInit {
             distinctUntilChanged(),
             map((value) => this._filterCountryCodes(value ?? '')),
           );
-          // console.log(`🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`);
+          console.log(
+            `🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`,
+          );
         },
         error: (err) => {
           console.warn(
@@ -337,7 +343,7 @@ export class RegistrationComponent implements OnInit {
 
     // Fetch all states once
     this.registrationService.getAllStates().subscribe((allStates) => {
-      // console.log('All states:', allStates); // <-- Add this
+      console.log('All states:', allStates); // <-- Add this
       this.states = allStates;
 
       const countryCtrl = this.registrationForm.get('country')!;
@@ -421,7 +427,7 @@ export class RegistrationComponent implements OnInit {
 
         this.invitationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
-            // console.log('Invitation data:', data);
+            console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
             if (data.role) {
               const userType = this.userTypes.find(
@@ -445,41 +451,6 @@ export class RegistrationComponent implements OnInit {
         this.registrationForm.get('email')?.enable();
       }
     });
-
-    let googleData: any = null;
-
-    // Try to get from navigation state first
-    const nav = this.router.getCurrentNavigation();
-    googleData = nav?.extras?.state?.['googleData'];
-
-    // Fallback to sessionStorage if page refreshed or reloaded
-    if (!googleData) {
-      const stored = sessionStorage.getItem('googleData');
-      if (stored) {
-        googleData = JSON.parse(stored);
-      }
-    }
-
-    if (googleData) {
-      this.isGoogleRegistration = true;
-      this.registrationForm.patchValue({
-        email: googleData.email,
-        firstName: googleData.firstName,
-        lastName: googleData.lastName,
-      });
-
-      // Disable Google-managed fields
-      this.registrationForm.get('email')?.disable();
-      this.registrationForm.get('firstName')?.disable();
-      this.registrationForm.get('lastName')?.disable();
-
-      // Remove password requirement
-      this.registrationForm.get('password')?.clearValidators();
-      this.registrationForm.get('password')?.updateValueAndValidity();
-
-      // 🧹 Clear after use
-      sessionStorage.removeItem('googleData');
-    }
   }
   async ngAfterViewInit(): Promise<void> {
     if (!this.isBrowser) return;
@@ -557,15 +528,15 @@ export class RegistrationComponent implements OnInit {
       countryCode: countryCode,
     });
 
-    // console.log('📍 Google Maps selection', {
-    //   formattedAddress: place.formatted_address,
-    //   city,
-    //   state,
-    //   country,
-    //   lat,
-    //   lng,
-    //   countryCode
-    // });
+    console.log('📍 Google Maps selection', {
+      formattedAddress: place.formatted_address,
+      city,
+      state,
+      country,
+      lat,
+      lng,
+      countryCode,
+    });
   }
 
   countryDisplayFn = (country: any): string => {
@@ -690,6 +661,7 @@ export class RegistrationComponent implements OnInit {
           annualAmount: s.annualAmount,
         }));
 
+        // 🔥 Auto-select plan ONLY after list loads
         if (this.selectedPlanFromUrl) {
           const match = this.subscriptionPackages.find(
             (p) => p.value.toLowerCase() === this.selectedPlanFromUrl,
@@ -707,7 +679,6 @@ export class RegistrationComponent implements OnInit {
       },
     });
   }
-
   certificationChange(selectedOption: any) {
     if (selectedOption === 'FULLY_LICENSED') this.certified = true;
   }
@@ -823,7 +794,7 @@ export class RegistrationComponent implements OnInit {
           }
 
           // 🔍 Debug log
-          // console.log('📞 Final phone number saved:', formValue.phoneNumber);
+          console.log('📞 Final phone number saved:', formValue.phoneNumber);
 
           if (this.user === 'SUBCONTRACTOR') {
             formValue.trades = this.selectedTrades.map((trade) => trade.value);
@@ -846,7 +817,7 @@ export class RegistrationComponent implements OnInit {
             formValue.longitudeFromIP = metadata.longitude;
             formValue.timezone = metadata.timezone;
             formValue.operatingSystem = this.getOperatingSystem();
-            // console.log(this.selectedCountryCode?.id)
+            console.log(this.selectedCountryCode?.id);
             formValue.countryNumberCode = this.selectedCountryCode?.id || null;
             // Ensure only the ID is sent
             if (typeof formValue.country === 'object') {
@@ -919,7 +890,7 @@ export class RegistrationComponent implements OnInit {
                   } else {
                     const billingCycle = this.registrationForm.value
                       .billingCycle as 'monthly' | 'yearly';
-                    // console.log(billingCycle)
+                    console.log(billingCycle);
                     this.dialog.open(PaymentPromptDialogComponent, {
                       data: {
                         userId,
@@ -1297,7 +1268,7 @@ export class RegistrationComponent implements OnInit {
     stateCtrl?.markAsTouched();
     stateCtrl?.updateValueAndValidity();
 
-    // console.log('✅ Selected state:', selected);
+    console.log('✅ Selected state:', selected);
   }
 
   private loadGoogleMapsScript(): Promise<void> {
