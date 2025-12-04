@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { Job } from '../../models/job';
 import { Bid } from '../../models/bid';
 import { Quote } from '../../features/quote/quote.model';
@@ -12,25 +19,19 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   templateUrl: './job-card.component.html',
   styleUrls: ['./job-card.component.scss'],
   standalone: true,
-  imports: [
-    CommonModule,
-    MatCardModule,
-    MatIconModule,
-    MatTooltipModule
-  ]
+  imports: [CommonModule, MatCardModule, MatIconModule, MatTooltipModule],
 })
-export class JobCardComponent  {
+export class JobCardComponent {
   @Input() job!: Job;
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
+  @Input() showNewTag: boolean = true;
   @Input() bid: Bid | null = null;
   @Input() quote: Quote | null = null;
   @Output() viewQuote = new EventEmitter<Quote | Bid>();
   @Output() viewPdf = new EventEmitter<string>();
   @Output() withdrawBid = new EventEmitter<Quote | Bid>();
   @Output() editBid = new EventEmitter<Quote | Bid>();
-
-
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];

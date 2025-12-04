@@ -80,146 +80,674 @@
   "mepSystems": {
     "electrical": {
       "outlets": [
-        { "id": "outlet_001", "type": "DUPLEX", "position": { "x": 851, "y": 551 } },
-        { "id": "outlet_002", "type": "DUPLEX", "position": { "x": 1099, "y": 551 } },
-        { "id": "outlet_003", "type": "DUPLEX", "position": { "x": 1117, "y": 643 } },
-        { "id": "outlet_004", "type": "DUPLEX", "position": { "x": 1117, "y": 809 } },
-        { "id": "outlet_005", "type": "DUPLEX", "position": { "x": 836, "y": 643 } },
-        { "id": "outlet_006", "type": "DUPLEX", "position": { "x": 836, "y": 809 } },
-        { "id": "outlet_007", "type": "DUPLEX", "position": { "x": 851, "y": 882 } },
-        { "id": "outlet_008", "type": "DUPLEX", "position": { "x": 1099, "y": 882 } },
-        { "id": "outlet_009", "type": "DUPLEX", "position": { "x": 1117, "y": 971 } },
-        { "id": "outlet_010", "type": "DUPLEX", "position": { "x": 1117, "y": 1136 } },
-        { "id": "outlet_011", "type": "DUPLEX", "position": { "x": 836, "y": 971 } },
-        { "id": "outlet_012", "type": "DUPLEX", "position": { "x": 836, "y": 1136 } },
-        { "id": "outlet_013", "type": "DUPLEX", "position": { "x": 401, "y": 1141 } },
-        { "id": "outlet_014", "type": "DUPLEX", "position": { "x": 618, "y": 882 } },
-        { "id": "outlet_015", "type": "DUPLEX", "position": { "x": 618, "y": 1400 } },
-        { "id": "outlet_016", "type": "GFI", "position": { "x": 832, "y": 1400 } },
-        { "id": "outlet_017", "type": "DUPLEX", "position": { "x": 832, "y": 2438 } },
-        { "id": "outlet_018", "type": "DUPLEX", "position": { "x": 618, "y": 2438 } },
-        { "id": "outlet_019", "type": "DUPLEX", "position": { "x": 401, "y": 1890 } },
-        { "id": "outlet_020", "type": "DUPLEX", "position": { "x": 1262, "y": 1500 } },
-        { "id": "outlet_021", "type": "DUPLEX", "position": { "x": 1117, "y": 1230 } },
-        { "id": "outlet_022", "type": "GFI_SWITCHED", "position": { "x": 1117, "y": 1295 } },
-        { "id": "outlet_023", "type": "DUPLEX", "position": { "x": 1117, "y": 1360 } },
-        { "id": "outlet_024", "type": "DUPLEX", "position": { "x": 1353, "y": 1114 } },
-        { "id": "outlet_025", "type": "DUPLEX", "position": { "x": 1496, "y": 1114 } },
-        { "id": "outlet_026", "type": "DUPLEX", "position": { "x": 1582, "y": 1195 } },
-        { "id": "outlet_027", "type": "DUPLEX", "position": { "x": 1582, "y": 1500 } },
-        { "id": "outlet_028", "type": "GFI", "position": { "x": 1262, "y": 2266 } },
-        { "id": "outlet_029", "type": "GFI_SWITCHED", "position": { "x": 1481, "y": 2320 } },
-        { "id": "outlet_030", "type": "DUPLEX", "position": { "x": 1262, "y": 1960 } },
-        { "id": "outlet_031", "type": "DUPLEX", "position": { "x": 1481, "y": 1960 } },
-        { "id": "outlet_032", "type": "DUPLEX", "position": { "x": 1481, "y": 1713 } },
-        { "id": "outlet_033", "type": "DUPLEX", "position": { "x": 1774, "y": 1713 } },
-        { "id": "outlet_034", "type": "DUPLEX", "position": { "x": 1628, "y": 2094 } },
-        { "id": "outlet_035", "type": "GFI", "position": { "x": 1698, "y": 2222 } },
-        { "id": "outlet_036", "type": "DUPLEX", "position": { "x": 1481, "y": 2222 } },
-        { "id": "outlet_037", "type": "DUPLEX", "position": { "x": 1774, "y": 2222 } },
-        { "id": "outlet_038", "type": "DUPLEX", "position": { "x": 1790, "y": 2438 } },
-        { "id": "outlet_039", "type": "DUPLEX", "position": { "x": 2025, "y": 2438 } },
-        { "id": "outlet_040", "type": "DUPLEX", "position": { "x": 2042, "y": 2320 } },
-        { "id": "outlet_041", "type": "DUPLEX", "position": { "x": 2042, "y": 2063 } },
-        { "id": "outlet_042", "type": "DUPLEX", "position": { "x": 2025, "y": 1984 } },
-        { "id": "outlet_043", "type": "DUPLEX", "position": { "x": 1790, "y": 1984 } },
-        { "id": "outlet_044", "type": "DUPLEX", "position": { "x": 1774, "y": 1870 } },
-        { "id": "outlet_045", "type": "DUPLEX", "position": { "x": 1774, "y": 1545 } },
-        { "id": "outlet_046", "type": "DUPLEX", "position": { "x": 2042, "y": 1545 } },
-        { "id": "outlet_047", "type": "DUPLEX", "position": { "x": 2042, "y": 1377 } },
-        { "id": "outlet_048", "type": "GFI", "position": { "x": 2060, "y": 1828 } },
-        { "id": "outlet_049", "type": "GFI", "position": { "x": 2465, "y": 1828 } },
-        { "id": "outlet_050", "type": "DUPLEX", "position": { "x": 2480, "y": 2063 } },
-        { "id": "outlet_051", "type": "DUPLEX", "position": { "x": 2480, "y": 2320 } },
-        { "id": "outlet_052", "type": "DUPLEX", "position": { "x": 2261, "y": 2438 } },
-        { "id": "outlet_053", "type": "DUPLEX", "position": { "x": 2060, "y": 2438 } },
-        { "id": "outlet_054", "type": "DUPLEX", "position": { "x": 2261, "y": 1984 } },
-        { "id": "outlet_055", "type": "GFI", "position": { "x": 2400, "y": 1243 } },
-        { "id": "outlet_056", "type": "DUPLEX", "position": { "x": 2480, "y": 1500 } },
-        { "id": "outlet_057", "type": "DUPLEX", "position": { "x": 2480, "y": 948 } },
-        { "id": "outlet_058", "type": "DUPLEX", "position": { "x": 2261, "y": 669 } },
-        { "id": "outlet_059", "type": "DUPLEX", "position": { "x": 2045, "y": 948 } },
-        { "id": "outlet_060", "type": "GFI_SWITCHED", "position": { "x": 1582, "y": 948 } },
-        { "id": "outlet_061", "type": "GFI_SWITCHED", "position": { "x": 2045, "y": 684 } },
-        { "id": "outlet_062", "type": "DUPLEX", "position": { "x": 1353, "y": 669 } },
-        { "id": "outlet_063", "type": "DUPLEX", "position": { "x": 1117, "y": 750 } },
-        { "id": "outlet_064", "type": "FLOOR_OUTLET", "position": { "x": 1812, "y": 1400 } },
-        { "id": "outlet_065", "type": "DUPLEX", "position": { "x": 1582, "y": 1340 } },
-        { "id": "outlet_066", "type": "220V", "position": { "x": 1720, "y": 1622 } },
-        { "id": "outlet_067", "type": "CEILING_OUTLET", "position": { "x": 725, "y": 1141 } },
-        { "id": "outlet_068", "type": "CEILING_OUTLET", "position": { "x": 1050, "y": 1900 } }
+        {
+          "id": "outlet_001",
+          "type": "DUPLEX",
+          "position": { "x": 851, "y": 551 }
+        },
+        {
+          "id": "outlet_002",
+          "type": "DUPLEX",
+          "position": { "x": 1099, "y": 551 }
+        },
+        {
+          "id": "outlet_003",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 643 }
+        },
+        {
+          "id": "outlet_004",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 809 }
+        },
+        {
+          "id": "outlet_005",
+          "type": "DUPLEX",
+          "position": { "x": 836, "y": 643 }
+        },
+        {
+          "id": "outlet_006",
+          "type": "DUPLEX",
+          "position": { "x": 836, "y": 809 }
+        },
+        {
+          "id": "outlet_007",
+          "type": "DUPLEX",
+          "position": { "x": 851, "y": 882 }
+        },
+        {
+          "id": "outlet_008",
+          "type": "DUPLEX",
+          "position": { "x": 1099, "y": 882 }
+        },
+        {
+          "id": "outlet_009",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 971 }
+        },
+        {
+          "id": "outlet_010",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 1136 }
+        },
+        {
+          "id": "outlet_011",
+          "type": "DUPLEX",
+          "position": { "x": 836, "y": 971 }
+        },
+        {
+          "id": "outlet_012",
+          "type": "DUPLEX",
+          "position": { "x": 836, "y": 1136 }
+        },
+        {
+          "id": "outlet_013",
+          "type": "DUPLEX",
+          "position": { "x": 401, "y": 1141 }
+        },
+        {
+          "id": "outlet_014",
+          "type": "DUPLEX",
+          "position": { "x": 618, "y": 882 }
+        },
+        {
+          "id": "outlet_015",
+          "type": "DUPLEX",
+          "position": { "x": 618, "y": 1400 }
+        },
+        {
+          "id": "outlet_016",
+          "type": "GFI",
+          "position": { "x": 832, "y": 1400 }
+        },
+        {
+          "id": "outlet_017",
+          "type": "DUPLEX",
+          "position": { "x": 832, "y": 2438 }
+        },
+        {
+          "id": "outlet_018",
+          "type": "DUPLEX",
+          "position": { "x": 618, "y": 2438 }
+        },
+        {
+          "id": "outlet_019",
+          "type": "DUPLEX",
+          "position": { "x": 401, "y": 1890 }
+        },
+        {
+          "id": "outlet_020",
+          "type": "DUPLEX",
+          "position": { "x": 1262, "y": 1500 }
+        },
+        {
+          "id": "outlet_021",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 1230 }
+        },
+        {
+          "id": "outlet_022",
+          "type": "GFI_SWITCHED",
+          "position": { "x": 1117, "y": 1295 }
+        },
+        {
+          "id": "outlet_023",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 1360 }
+        },
+        {
+          "id": "outlet_024",
+          "type": "DUPLEX",
+          "position": { "x": 1353, "y": 1114 }
+        },
+        {
+          "id": "outlet_025",
+          "type": "DUPLEX",
+          "position": { "x": 1496, "y": 1114 }
+        },
+        {
+          "id": "outlet_026",
+          "type": "DUPLEX",
+          "position": { "x": 1582, "y": 1195 }
+        },
+        {
+          "id": "outlet_027",
+          "type": "DUPLEX",
+          "position": { "x": 1582, "y": 1500 }
+        },
+        {
+          "id": "outlet_028",
+          "type": "GFI",
+          "position": { "x": 1262, "y": 2266 }
+        },
+        {
+          "id": "outlet_029",
+          "type": "GFI_SWITCHED",
+          "position": { "x": 1481, "y": 2320 }
+        },
+        {
+          "id": "outlet_030",
+          "type": "DUPLEX",
+          "position": { "x": 1262, "y": 1960 }
+        },
+        {
+          "id": "outlet_031",
+          "type": "DUPLEX",
+          "position": { "x": 1481, "y": 1960 }
+        },
+        {
+          "id": "outlet_032",
+          "type": "DUPLEX",
+          "position": { "x": 1481, "y": 1713 }
+        },
+        {
+          "id": "outlet_033",
+          "type": "DUPLEX",
+          "position": { "x": 1774, "y": 1713 }
+        },
+        {
+          "id": "outlet_034",
+          "type": "DUPLEX",
+          "position": { "x": 1628, "y": 2094 }
+        },
+        {
+          "id": "outlet_035",
+          "type": "GFI",
+          "position": { "x": 1698, "y": 2222 }
+        },
+        {
+          "id": "outlet_036",
+          "type": "DUPLEX",
+          "position": { "x": 1481, "y": 2222 }
+        },
+        {
+          "id": "outlet_037",
+          "type": "DUPLEX",
+          "position": { "x": 1774, "y": 2222 }
+        },
+        {
+          "id": "outlet_038",
+          "type": "DUPLEX",
+          "position": { "x": 1790, "y": 2438 }
+        },
+        {
+          "id": "outlet_039",
+          "type": "DUPLEX",
+          "position": { "x": 2025, "y": 2438 }
+        },
+        {
+          "id": "outlet_040",
+          "type": "DUPLEX",
+          "position": { "x": 2042, "y": 2320 }
+        },
+        {
+          "id": "outlet_041",
+          "type": "DUPLEX",
+          "position": { "x": 2042, "y": 2063 }
+        },
+        {
+          "id": "outlet_042",
+          "type": "DUPLEX",
+          "position": { "x": 2025, "y": 1984 }
+        },
+        {
+          "id": "outlet_043",
+          "type": "DUPLEX",
+          "position": { "x": 1790, "y": 1984 }
+        },
+        {
+          "id": "outlet_044",
+          "type": "DUPLEX",
+          "position": { "x": 1774, "y": 1870 }
+        },
+        {
+          "id": "outlet_045",
+          "type": "DUPLEX",
+          "position": { "x": 1774, "y": 1545 }
+        },
+        {
+          "id": "outlet_046",
+          "type": "DUPLEX",
+          "position": { "x": 2042, "y": 1545 }
+        },
+        {
+          "id": "outlet_047",
+          "type": "DUPLEX",
+          "position": { "x": 2042, "y": 1377 }
+        },
+        {
+          "id": "outlet_048",
+          "type": "GFI",
+          "position": { "x": 2060, "y": 1828 }
+        },
+        {
+          "id": "outlet_049",
+          "type": "GFI",
+          "position": { "x": 2465, "y": 1828 }
+        },
+        {
+          "id": "outlet_050",
+          "type": "DUPLEX",
+          "position": { "x": 2480, "y": 2063 }
+        },
+        {
+          "id": "outlet_051",
+          "type": "DUPLEX",
+          "position": { "x": 2480, "y": 2320 }
+        },
+        {
+          "id": "outlet_052",
+          "type": "DUPLEX",
+          "position": { "x": 2261, "y": 2438 }
+        },
+        {
+          "id": "outlet_053",
+          "type": "DUPLEX",
+          "position": { "x": 2060, "y": 2438 }
+        },
+        {
+          "id": "outlet_054",
+          "type": "DUPLEX",
+          "position": { "x": 2261, "y": 1984 }
+        },
+        {
+          "id": "outlet_055",
+          "type": "GFI",
+          "position": { "x": 2400, "y": 1243 }
+        },
+        {
+          "id": "outlet_056",
+          "type": "DUPLEX",
+          "position": { "x": 2480, "y": 1500 }
+        },
+        {
+          "id": "outlet_057",
+          "type": "DUPLEX",
+          "position": { "x": 2480, "y": 948 }
+        },
+        {
+          "id": "outlet_058",
+          "type": "DUPLEX",
+          "position": { "x": 2261, "y": 669 }
+        },
+        {
+          "id": "outlet_059",
+          "type": "DUPLEX",
+          "position": { "x": 2045, "y": 948 }
+        },
+        {
+          "id": "outlet_060",
+          "type": "GFI_SWITCHED",
+          "position": { "x": 1582, "y": 948 }
+        },
+        {
+          "id": "outlet_061",
+          "type": "GFI_SWITCHED",
+          "position": { "x": 2045, "y": 684 }
+        },
+        {
+          "id": "outlet_062",
+          "type": "DUPLEX",
+          "position": { "x": 1353, "y": 669 }
+        },
+        {
+          "id": "outlet_063",
+          "type": "DUPLEX",
+          "position": { "x": 1117, "y": 750 }
+        },
+        {
+          "id": "outlet_064",
+          "type": "FLOOR_OUTLET",
+          "position": { "x": 1812, "y": 1400 }
+        },
+        {
+          "id": "outlet_065",
+          "type": "DUPLEX",
+          "position": { "x": 1582, "y": 1340 }
+        },
+        {
+          "id": "outlet_066",
+          "type": "220V",
+          "position": { "x": 1720, "y": 1622 }
+        },
+        {
+          "id": "outlet_067",
+          "type": "CEILING_OUTLET",
+          "position": { "x": 725, "y": 1141 }
+        },
+        {
+          "id": "outlet_068",
+          "type": "CEILING_OUTLET",
+          "position": { "x": 1050, "y": 1900 }
+        }
       ],
       "switches": [
-        { "id": "switch_001", "type": "SINGLE_POLE", "position": { "x": 1050, "y": 882 } },
-        { "id": "switch_002", "type": "SINGLE_POLE", "position": { "x": 836, "y": 750 } },
-        { "id": "switch_003", "type": "SINGLE_POLE", "position": { "x": 1050, "y": 1195 } },
-        { "id": "switch_004", "type": "SINGLE_POLE", "position": { "x": 836, "y": 1056 } },
-        { "id": "switch_005", "type": "SINGLE_POLE", "position": { "x": 780, "y": 1340 } },
-        { "id": "switch_006", "type": "THREE_WAY", "position": { "x": 1262, "y": 1770 } },
-        { "id": "switch_007", "type": "THREE_WAY", "position": { "x": 1184, "y": 1400 } },
-        { "id": "switch_008", "type": "SINGLE_POLE", "position": { "x": 1515, "y": 1622 } },
-        { "id": "switch_009", "type": "SINGLE_POLE", "position": { "x": 1275, "y": 2150 } },
-        { "id": "switch_010", "type": "SINGLE_POLE", "position": { "x": 1715, "y": 2094 } },
-        { "id": "switch_011", "type": "SINGLE_POLE", "position": { "x": 1774, "y": 2025 } },
-        { "id": "switch_012", "type": "SINGLE_POLE", "position": { "x": 1774, "y": 1600 } },
-        { "id": "switch_013", "type": "THREE_WAY", "position": { "x": 1985, "y": 1232 } },
-        { "id": "switch_014", "type": "THREE_WAY", "position": { "x": 1650, "y": 950 } },
-        { "id": "switch_015", "type": "SINGLE_POLE", "position": { "x": 2110, "y": 1232 } },
-        { "id": "switch_016", "type": "THREE_WAY", "position": { "x": 2200, "y": 1232 } },
-        { "id": "switch_017", "type": "THREE_WAY", "position": { "x": 2110, "y": 720 } },
-        { "id": "switch_018", "type": "SINGLE_POLE", "position": { "x": 2150, "y": 1758 } },
-        { "id": "switch_019", "type": "SINGLE_POLE", "position": { "x": 2150, "y": 1984 } },
-        { "id": "switch_020", "type": "SINGLE_POLE", "position": { "x": 2300, "y": 1984 } },
-        { "id": "switch_021", "type": "SINGLE_POLE", "position": { "x": 2042, "y": 2125 } }
+        {
+          "id": "switch_001",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1050, "y": 882 }
+        },
+        {
+          "id": "switch_002",
+          "type": "SINGLE_POLE",
+          "position": { "x": 836, "y": 750 }
+        },
+        {
+          "id": "switch_003",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1050, "y": 1195 }
+        },
+        {
+          "id": "switch_004",
+          "type": "SINGLE_POLE",
+          "position": { "x": 836, "y": 1056 }
+        },
+        {
+          "id": "switch_005",
+          "type": "SINGLE_POLE",
+          "position": { "x": 780, "y": 1340 }
+        },
+        {
+          "id": "switch_006",
+          "type": "THREE_WAY",
+          "position": { "x": 1262, "y": 1770 }
+        },
+        {
+          "id": "switch_007",
+          "type": "THREE_WAY",
+          "position": { "x": 1184, "y": 1400 }
+        },
+        {
+          "id": "switch_008",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1515, "y": 1622 }
+        },
+        {
+          "id": "switch_009",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1275, "y": 2150 }
+        },
+        {
+          "id": "switch_010",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1715, "y": 2094 }
+        },
+        {
+          "id": "switch_011",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1774, "y": 2025 }
+        },
+        {
+          "id": "switch_012",
+          "type": "SINGLE_POLE",
+          "position": { "x": 1774, "y": 1600 }
+        },
+        {
+          "id": "switch_013",
+          "type": "THREE_WAY",
+          "position": { "x": 1985, "y": 1232 }
+        },
+        {
+          "id": "switch_014",
+          "type": "THREE_WAY",
+          "position": { "x": 1650, "y": 950 }
+        },
+        {
+          "id": "switch_015",
+          "type": "SINGLE_POLE",
+          "position": { "x": 2110, "y": 1232 }
+        },
+        {
+          "id": "switch_016",
+          "type": "THREE_WAY",
+          "position": { "x": 2200, "y": 1232 }
+        },
+        {
+          "id": "switch_017",
+          "type": "THREE_WAY",
+          "position": { "x": 2110, "y": 720 }
+        },
+        {
+          "id": "switch_018",
+          "type": "SINGLE_POLE",
+          "position": { "x": 2150, "y": 1758 }
+        },
+        {
+          "id": "switch_019",
+          "type": "SINGLE_POLE",
+          "position": { "x": 2150, "y": 1984 }
+        },
+        {
+          "id": "switch_020",
+          "type": "SINGLE_POLE",
+          "position": { "x": 2300, "y": 1984 }
+        },
+        {
+          "id": "switch_021",
+          "type": "SINGLE_POLE",
+          "position": { "x": 2042, "y": 2125 }
+        }
       ],
       "lights": [
-        { "id": "light_001", "type": "RECESSED_CAN", "position": { "x": 976, "y": 620 } },
-        { "id": "light_002", "type": "RECESSED_CAN", "position": { "x": 976, "y": 825 } },
-        { "id": "light_003", "type": "RECESSED_CAN", "position": { "x": 976, "y": 948 } },
-        { "id": "light_004", "type": "RECESSED_CAN", "position": { "x": 976, "y": 1114 } },
-        { "id": "light_005", "type": "WALL_SCONCE", "position": { "x": 765, "y": 1400 } },
-        { "id": "light_006", "type": "WALL_SCONCE", "position": { "x": 470, "y": 1400 } },
-        { "id": "light_007", "type": "WALL_SCONCE", "position": { "x": 1050, "y": 2438 } },
-        { "id": "light_008", "type": "CEILING_MOUNT", "position": { "x": 618, "y": 1141 } },
-        { "id": "light_009", "type": "CEILING_MOUNT", "position": { "x": 832, "y": 1890 } },
-        { "id": "light_010", "type": "CEILING_MOUNT", "position": { "x": 1050, "y": 1890 } },
-        { "id": "light_011", "type": "CEILING_MOUNT", "position": { "x": 976, "y": 1300 } },
-        { "id": "light_012", "type": "RECESSED_CAN", "position": { "x": 1210, "y": 1195 } },
-        { "id": "light_013", "type": "RECESSED_CAN", "position": { "x": 1210, "y": 1450 } },
-        { "id": "light_014", "type": "RECESSED_CAN", "position": { "x": 1496, "y": 1195 } },
-        { "id": "light_015", "type": "RECESSED_CAN", "position": { "x": 1496, "y": 1450 } },
-        { "id": "light_016", "type": "PENDANT", "position": { "x": 1353, "y": 1230 } },
-        { "id": "light_017", "type": "PENDANT", "position": { "x": 1353, "y": 1295 } },
-        { "id": "light_018", "type": "PENDANT", "position": { "x": 1353, "y": 1360 } },
-        { "id": "light_019", "type": "CHANDELIER", "position": { "x": 1353, "y": 884 } },
-        { "id": "light_020", "type": "CEILING_FAN", "position": { "x": 1812, "y": 948 } },
-        { "id": "light_021", "type": "WALL_SCONCE", "position": { "x": 1481, "y": 2150 } },
-        { "id": "light_022", "type": "CEILING_MOUNT", "position": { "x": 1372, "y": 1890 } },
-        { "id": "light_023", "type": "CEILING_MOUNT", "position": { "x": 1628, "y": 1860 } },
-        { "id": "light_024", "type": "EXHAUST_FAN_LIGHT", "position": { "x": 1628, "y": 2190 } },
-        { "id": "light_025", "type": "CEILING_FAN", "position": { "x": 1908, "y": 2217 } },
-        { "id": "light_026", "type": "CEILING_FAN", "position": { "x": 1908, "y": 1758 } },
-        { "id": "light_027", "type": "CEILING_FAN", "position": { "x": 2261, "y": 948 } },
-        { "id": "light_028", "type": "RECESSED_CAN", "position": { "x": 2140, "y": 1313 } },
-        { "id": "light_029", "type": "RECESSED_CAN", "position": { "x": 2380, "y": 1313 } },
-        { "id": "light_030", "type": "RECESSED_CAN", "position": { "x": 2140, "y": 1675 } },
-        { "id": "light_031", "type": "RECESSED_CAN", "position": { "x": 2380, "y": 1675 } },
-        { "id": "light_032", "type": "EXHAUST_FAN_LIGHT", "position": { "x": 2261, "y": 1500 } },
-        { "id": "light_033", "type": "EXHAUST_FAN_LIGHT", "position": { "x": 2128, "y": 1870 } },
-        { "id": "light_034", "type": "CEILING_FAN", "position": { "x": 2261, "y": 2217 } },
-        { "id": "light_035", "type": "CEILING_MOUNT", "position": { "x": 1908, "y": 1377 } },
-        { "id": "light_036", "type": "CEILING_MOUNT", "position": { "x": 2346, "y": 1870 } },
-        { "id": "light_037", "type": "CEILING_MOUNT", "position": { "x": 2094, "y": 1500 } }
+        {
+          "id": "light_001",
+          "type": "RECESSED_CAN",
+          "position": { "x": 976, "y": 620 }
+        },
+        {
+          "id": "light_002",
+          "type": "RECESSED_CAN",
+          "position": { "x": 976, "y": 825 }
+        },
+        {
+          "id": "light_003",
+          "type": "RECESSED_CAN",
+          "position": { "x": 976, "y": 948 }
+        },
+        {
+          "id": "light_004",
+          "type": "RECESSED_CAN",
+          "position": { "x": 976, "y": 1114 }
+        },
+        {
+          "id": "light_005",
+          "type": "WALL_SCONCE",
+          "position": { "x": 765, "y": 1400 }
+        },
+        {
+          "id": "light_006",
+          "type": "WALL_SCONCE",
+          "position": { "x": 470, "y": 1400 }
+        },
+        {
+          "id": "light_007",
+          "type": "WALL_SCONCE",
+          "position": { "x": 1050, "y": 2438 }
+        },
+        {
+          "id": "light_008",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 618, "y": 1141 }
+        },
+        {
+          "id": "light_009",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 832, "y": 1890 }
+        },
+        {
+          "id": "light_010",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 1050, "y": 1890 }
+        },
+        {
+          "id": "light_011",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 976, "y": 1300 }
+        },
+        {
+          "id": "light_012",
+          "type": "RECESSED_CAN",
+          "position": { "x": 1210, "y": 1195 }
+        },
+        {
+          "id": "light_013",
+          "type": "RECESSED_CAN",
+          "position": { "x": 1210, "y": 1450 }
+        },
+        {
+          "id": "light_014",
+          "type": "RECESSED_CAN",
+          "position": { "x": 1496, "y": 1195 }
+        },
+        {
+          "id": "light_015",
+          "type": "RECESSED_CAN",
+          "position": { "x": 1496, "y": 1450 }
+        },
+        {
+          "id": "light_016",
+          "type": "PENDANT",
+          "position": { "x": 1353, "y": 1230 }
+        },
+        {
+          "id": "light_017",
+          "type": "PENDANT",
+          "position": { "x": 1353, "y": 1295 }
+        },
+        {
+          "id": "light_018",
+          "type": "PENDANT",
+          "position": { "x": 1353, "y": 1360 }
+        },
+        {
+          "id": "light_019",
+          "type": "CHANDELIER",
+          "position": { "x": 1353, "y": 884 }
+        },
+        {
+          "id": "light_020",
+          "type": "CEILING_FAN",
+          "position": { "x": 1812, "y": 948 }
+        },
+        {
+          "id": "light_021",
+          "type": "WALL_SCONCE",
+          "position": { "x": 1481, "y": 2150 }
+        },
+        {
+          "id": "light_022",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 1372, "y": 1890 }
+        },
+        {
+          "id": "light_023",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 1628, "y": 1860 }
+        },
+        {
+          "id": "light_024",
+          "type": "EXHAUST_FAN_LIGHT",
+          "position": { "x": 1628, "y": 2190 }
+        },
+        {
+          "id": "light_025",
+          "type": "CEILING_FAN",
+          "position": { "x": 1908, "y": 2217 }
+        },
+        {
+          "id": "light_026",
+          "type": "CEILING_FAN",
+          "position": { "x": 1908, "y": 1758 }
+        },
+        {
+          "id": "light_027",
+          "type": "CEILING_FAN",
+          "position": { "x": 2261, "y": 948 }
+        },
+        {
+          "id": "light_028",
+          "type": "RECESSED_CAN",
+          "position": { "x": 2140, "y": 1313 }
+        },
+        {
+          "id": "light_029",
+          "type": "RECESSED_CAN",
+          "position": { "x": 2380, "y": 1313 }
+        },
+        {
+          "id": "light_030",
+          "type": "RECESSED_CAN",
+          "position": { "x": 2140, "y": 1675 }
+        },
+        {
+          "id": "light_031",
+          "type": "RECESSED_CAN",
+          "position": { "x": 2380, "y": 1675 }
+        },
+        {
+          "id": "light_032",
+          "type": "EXHAUST_FAN_LIGHT",
+          "position": { "x": 2261, "y": 1500 }
+        },
+        {
+          "id": "light_033",
+          "type": "EXHAUST_FAN_LIGHT",
+          "position": { "x": 2128, "y": 1870 }
+        },
+        {
+          "id": "light_034",
+          "type": "CEILING_FAN",
+          "position": { "x": 2261, "y": 2217 }
+        },
+        {
+          "id": "light_035",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 1908, "y": 1377 }
+        },
+        {
+          "id": "light_036",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 2346, "y": 1870 }
+        },
+        {
+          "id": "light_037",
+          "type": "CEILING_MOUNT",
+          "position": { "x": 2094, "y": 1500 }
+        }
       ],
       "panels": [
-        { "id": "panel_001", "type": "ELECTRICAL_PANEL", "position": { "x": 1262, "y": 1450 } }
+        {
+          "id": "panel_001",
+          "type": "ELECTRICAL_PANEL",
+          "position": { "x": 1262, "y": 1450 }
+        }
       ],
       "specialSystems": [
-        { "id": "media_001", "type": "MEDIA_JACK", "position": { "x": 976, "y": 882 } },
-        { "id": "media_002", "type": "MEDIA_JACK", "position": { "x": 1812, "y": 1622 } },
-        { "id": "media_003", "type": "MEDIA_JACK", "position": { "x": 1908, "y": 1984 } },
-        { "id": "media_004", "type": "MEDIA_JACK", "position": { "x": 2261, "y": 1984 } },
-        { "id": "media_005", "type": "MEDIA_JACK", "position": { "x": 2261, "y": 669 } }
+        {
+          "id": "media_001",
+          "type": "MEDIA_JACK",
+          "position": { "x": 976, "y": 882 }
+        },
+        {
+          "id": "media_002",
+          "type": "MEDIA_JACK",
+          "position": { "x": 1812, "y": 1622 }
+        },
+        {
+          "id": "media_003",
+          "type": "MEDIA_JACK",
+          "position": { "x": 1908, "y": 1984 }
+        },
+        {
+          "id": "media_004",
+          "type": "MEDIA_JACK",
+          "position": { "x": 2261, "y": 1984 }
+        },
+        {
+          "id": "media_005",
+          "type": "MEDIA_JACK",
+          "position": { "x": 2261, "y": 669 }
+        }
       ]
     }
   },

@@ -15,7 +15,7 @@ export class AddressService {
 
   constructor(
     private httpClient: HttpClient,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   loadGoogleMapsScript(): Promise<void> {
@@ -35,8 +35,8 @@ export class AddressService {
         } else {
           reject(
             new Error(
-              'Google Maps API script loaded but google object is not defined'
-            )
+              'Google Maps API script loaded but google object is not defined',
+            ),
           );
         }
       };
@@ -49,7 +49,7 @@ export class AddressService {
   }
 
   getPlacePredictions(
-    input: string | null
+    input: string | null,
   ): Observable<{ description: string; place_id: string }[]> {
     if (!input || !this.isGoogleMapsLoaded) {
       return of([]);
@@ -67,20 +67,20 @@ export class AddressService {
               predictions.map((p) => ({
                 description: p.description,
                 place_id: p.place_id,
-              }))
+              })),
             );
           } else {
             observer.next([]);
           }
           observer.complete();
-        }
+        },
       );
     });
   }
 
   onAddressSelected(
     event: MatAutocompleteSelectedEvent,
-    addressInput: ElementRef<HTMLInputElement>
+    addressInput: ElementRef<HTMLInputElement>,
   ): Observable<any> {
     const selectedOption = event.option.value;
     if (!selectedOption || !selectedOption.place_id) {
@@ -91,7 +91,7 @@ export class AddressService {
       return of(null);
     }
     const placesService = new google.maps.places.PlacesService(
-      addressInput.nativeElement
+      addressInput.nativeElement,
     );
 
     return new Observable((observer) => {
@@ -107,13 +107,10 @@ export class AddressService {
           ],
         },
         (place, status) => {
-          if (
-            status === google.maps.places.PlacesServiceStatus.OK &&
-            place
-          ) {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             const getAddressComponent = (
               components: google.maps.GeocoderAddressComponent[],
-              type: string
+              type: string,
             ) => {
               const component = components.find((c) => c.types.includes(type));
               return component ? component.long_name : '';
@@ -127,24 +124,24 @@ export class AddressService {
               const selectedAddress = {
                 streetNumber: getAddressComponent(
                   place.address_components,
-                  'street_number'
+                  'street_number',
                 ),
                 streetName: getAddressComponent(
                   place.address_components,
-                  'route'
+                  'route',
                 ),
                 city: getAddressComponent(place.address_components, 'locality'),
                 state: getAddressComponent(
                   place.address_components,
-                  'administrative_area_level_1'
+                  'administrative_area_level_1',
                 ),
                 zipCode: getAddressComponent(
                   place.address_components,
-                  'postal_code'
+                  'postal_code',
                 ),
                 country: getAddressComponent(
                   place.address_components,
-                  'country'
+                  'country',
                 ),
                 latitude: place.geometry.location.lat(),
                 longitude: place.geometry.location.lng(),
@@ -163,7 +160,7 @@ export class AddressService {
             observer.next(null);
           }
           observer.complete();
-        }
+        },
       );
     });
   }
@@ -173,14 +170,14 @@ export class AddressService {
       this.snackBar.open(
         'Please select a valid address from the suggestions.',
         'Close',
-        { duration: 3000 }
+        { duration: 3000 },
       );
       return of(null);
     }
 
     return this.httpClient.put(
       `${BASE_URL}/Jobs/${jobId}/address`,
-      selectedAddress
+      selectedAddress,
     );
   }
 }

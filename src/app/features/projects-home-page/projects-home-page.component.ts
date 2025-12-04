@@ -5,8 +5,6 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './projects-home-page.component.html',
-  styleUrl: './projects-home-page.component.scss'
+  styleUrl: './projects-home-page.component.scss',
 })
-export class ProjectsHomePageComponent {
-
-}
+export class ProjectsHomePageComponent {}

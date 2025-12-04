@@ -1,8 +1,12 @@
 export interface BoundingBox {
-  x: number; y: number; width: number; height: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 export interface Point {
-  x: number; y: number;
+  x: number;
+  y: number;
 }
 export interface TextLabel {
   text: string;
@@ -20,11 +24,17 @@ export interface Room {
   areaInSquareFeet?: number;
 }
 export interface Fixture {
-  id: string; type: string; roomId: string; boundingBox: BoundingBox;
+  id: string;
+  type: string;
+  roomId: string;
+  boundingBox: BoundingBox;
 }
 export interface BlueprintMetadata {
-  imageWidth: number; imageHeight: number;
+  imageWidth: number;
+  imageHeight: number;
 }
 export interface BlueprintAnalysisData {
-  metadata: BlueprintMetadata; rooms: Room[]; fixtures: Fixture[];
+  metadata: BlueprintMetadata;
+  rooms: Room[];
+  fixtures: Fixture[];
 }

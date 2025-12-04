@@ -37,9 +37,11 @@ export class ThemeService {
     });
 
     // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      this.isDarkMode.set(e.matches);
-    });
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', (e) => {
+        this.isDarkMode.set(e.matches);
+      });
   }
 
   private getInitialDarkMode(): boolean {
@@ -48,8 +50,11 @@ export class ThemeService {
       if (storedPreference) {
         return JSON.parse(storedPreference);
       }
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return (
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      );
     }
-    return false; // Default to light mode 
+    return false; // Default to light mode
   }
 }

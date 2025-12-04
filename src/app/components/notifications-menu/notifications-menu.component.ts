@@ -12,13 +12,9 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
   selector: 'app-notifications-menu',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    MatButtonModule,
-  ],
+  imports: [CommonModule, MatIconModule, MatButtonModule],
   templateUrl: './notifications-menu.component.html',
-  styleUrls: ['./notifications-menu.component.scss']
+  styleUrls: ['./notifications-menu.component.scss'],
 })
 export class NotificationsMenuComponent implements OnInit {
   recentNotifications$!: Observable<Notification[]>;
@@ -31,20 +27,21 @@ export class NotificationsMenuComponent implements OnInit {
     public notificationsService: NotificationsService,
     private userService: UserService,
     private jobDataService: JobDataService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit() {
     this.recentNotifications$ = this.notificationsService.notifications$;
-    this.hasUnreadNotifications$ = this.notificationsService.hasUnreadNotifications$;
+    this.hasUnreadNotifications$ =
+      this.notificationsService.hasUnreadNotifications$;
     this.notificationsService.getAllNotifications(1, 50).subscribe();
   }
 
   toggleMenu() {
     this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      this.notificationsService.markAllRead().subscribe();
-    }
+    // if (this.isOpen) {
+    //   this.notificationsService.markAllRead().subscribe();
+    // }
   }
 
   closeMenu() {
@@ -57,6 +54,7 @@ export class NotificationsMenuComponent implements OnInit {
   }
 
   navigateToJob(notification: any): void {
+    this.notificationsService.markRead(notification.id).subscribe();
     this.jobDataService.navigateToJob(notification);
     this.closeMenu();
   }

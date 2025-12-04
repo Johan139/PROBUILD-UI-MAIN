@@ -41,4 +41,5 @@ export interface Job {
   numberOfBids?: number;
   createdAt?: Date;
   biddingStartDate?: Date;
+  archivedAt?: Date;
 }

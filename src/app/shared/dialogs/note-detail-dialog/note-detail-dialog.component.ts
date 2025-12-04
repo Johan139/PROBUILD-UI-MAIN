@@ -1,5 +1,9 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import {
+  MatDialog,
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+} from '@angular/material/dialog';
 import { NoteService } from '../../../features/jobs/services/note.service';
 import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../authentication/auth.service';
@@ -13,31 +17,38 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-    selector: 'app-note-detail-dialog',
-    templateUrl: './note-detail-dialog.component.html',
-    styleUrls: ['./note-detail-dialog.component.scss'],
-    standalone: true,
-    imports: [CommonModule, MatButtonModule, MatDialogModule, DatePipe, MatFormFieldModule, MatInputModule, FormsModule, MatIconModule]
+  selector: 'app-note-detail-dialog',
+  standalone: true,
+  templateUrl: './note-detail-dialog.component.html',
+  styleUrls: ['./note-detail-dialog.component.scss'],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatDialogModule,
+    DatePipe,
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    MatIconModule,
+  ],
 })
 export class NoteDetailDialogComponent implements OnInit {
+  constructor(
+    public dialogRef: MatDialogRef<NoteDetailDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any,
+    private noteService: NoteService,
+    private userService: UserService,
+    private dialog: MatDialog,
+    public authService: AuthService,
+  ) {}
 
-    constructor(
-        public dialogRef: MatDialogRef<NoteDetailDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) public data: any,
-        private noteService: NoteService,
-        private userService: UserService,
-        private dialog: MatDialog,
-        public authService: AuthService
-    ) { }
+  ngOnInit(): void {}
 
-    ngOnInit(): void {
-    }
+  getUserName(userId: string): string {
+    return this.data.userNames.get(userId) || 'Loading...';
+  }
 
-    getUserName(userId: string): string {
-        return this.data.userNames.get(userId) || 'Loading...';
-    }
-
-    getStatus(note: any): string {
+  getStatus(note: any): string {
     if (note.archived) {
       return 'Archived';
     }
@@ -51,22 +62,22 @@ export class NoteDetailDialogComponent implements OnInit {
   }
 
   startApproval(note: any): void {
-    console.log('Note object in startApproval:', note);
+    // console.log('Note object in startApproval:', note);
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
         title: 'Approve Note',
         message: 'Please enter the reason for approval:',
-        input: true
-      }
+        input: true,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         const noteToApprove = {
           ...note,
           jobId: this.data.jobId,
-          jobSubtaskId: this.data.jobSubtaskId
+          jobSubtaskId: this.data.jobSubtaskId,
         };
         this.noteService.approveNote(noteToApprove, result).subscribe(() => {
           this.dialogRef.close(true);
@@ -81,16 +92,16 @@ export class NoteDetailDialogComponent implements OnInit {
       data: {
         title: 'Reject Note',
         message: 'Please enter the reason for rejection:',
-        input: true
-      }
+        input: true,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         const noteToReject = {
           ...note,
           jobId: this.data.jobId,
-          jobSubtaskId: this.data.jobSubtaskId
+          jobSubtaskId: this.data.jobSubtaskId,
         };
         this.noteService.rejectNote(noteToReject, result).subscribe(() => {
           this.dialogRef.close(true);

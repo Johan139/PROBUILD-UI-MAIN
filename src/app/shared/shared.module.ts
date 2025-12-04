@@ -5,17 +5,8 @@ import { ContractSigningComponent } from '../features/contracts/contract-signing
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
-  declarations: [
-    RoleDisplayPipe,
-    ContractSigningComponent
-  ],
-  imports: [
-    CommonModule,
-    FormsModule
-  ],
-  exports: [
-    RoleDisplayPipe,
-    ContractSigningComponent
-  ]
+  declarations: [RoleDisplayPipe, ContractSigningComponent],
+  imports: [CommonModule, FormsModule],
+  exports: [RoleDisplayPipe, ContractSigningComponent],
 })
-export class SharedModule { }
+export class SharedModule {}

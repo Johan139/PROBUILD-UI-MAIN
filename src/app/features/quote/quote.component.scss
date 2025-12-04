@@ -1,5 +1,9 @@
+@use 'styles/util/mixins' as u;
+
 :host {
-  --cyan-desaturated: hsl(190 32% 88%);
+  display: block;
+  background: var(--color-canvas);
+  color: var(--color-text);
 }
 
 .container-fluid {
@@ -16,456 +20,218 @@
   box-shadow: var(--shadow-2);
 }
 
-.container {
-  width: 95vw !important;
-  margin: 2rem auto;
-  padding: 24px;
-}
-
 .quote-card {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-2);
-  border-radius: 8px;
+  @include u.card-style;
+  background: var(--color-surface);
+  border-radius: 12px;
   padding: 16px;
-  height: auto;
-
-  * {
-    box-sizing: border-box;
-  }
 
   mat-card-header {
-    background-color: var(--color-primary);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-    padding: 16px;
+    padding: var(--space-5) var(--space-5) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+
+    mat-card-title {
+      font: var(--fw-bold) var(--fs-xl) / var(--lh-tight) var(--font-sans);
+      color: var(--color-text);
+      letter-spacing: .2px;
+    }
   }
 
-  mat-card-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text-inverse);
-    text-transform: uppercase;
-    margin-bottom: 12px;
+  mat-card-content {
+    padding: var(--space-5);
   }
-
-  mat-divider {
-    background-color: var(--color-primary);
-    border: none;
-    height: 2px;
-    margin: 16px 0;
-  }
-}
-
-mat-card-content {
-  margin-top: 16px;
 }
 
 .form-row,
-.contact-row,
-.item-row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
+.contact-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
-  gap: 20px;
+
+  > * {
+    grid-column: span 6;
+  }
+
+  @media (max-width: 900px) {
+    > * {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
-.full-width {
-  width: 100%;
+.items-table-container {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 mat-form-field {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 
-  ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-    background-color: var(--color-surface) !important;
-    border-radius: 6px;
-    border: 1px solid var(--color-border);
+  ::ng-deep .mdc-text-field--filled {
+    background: var(--color-surface) !important;
+    border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+    border-radius: 8px;
   }
 
   ::ng-deep .mdc-floating-label {
-    position: static !important;
-    font-size: 0.9rem;
     color: var(--color-text);
+    font-weight: 600;
   }
 
-  ::ng-deep .mdc-text-field .mdc-floating-label {
-    transform: translateY(-60%) !important;
-  }
-}
-
-textarea.mat-input-element,
-textarea.form-control {
-  min-height: 80px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  padding: 8px;
-  resize: vertical;
-}
-
-input.form-control,
-input.form-control-sm {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 8px;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  background-color: var(--color-surface);
-}
-
-.input-group {
-  display: flex;
-  align-items: center;
-
-  .input-group-text {
-    border: 1px solid var(--color-border);
-    border-right: none;
-    border-radius: 6px 0 0 6px;
-    padding: 8px;
-    background-color: var(--cyan-desaturated);
-  }
-
-  input {
-    border-left: none;
-    border-radius: 0 6px 6px 0;
+  ::ng-deep .mdc-text-field--focused:not(.mdc-text-field--disabled) {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 35%, transparent);
+    border-color: var(--color-primary) !important;
   }
 }
 
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-}
-
-.items-table-container {
-  width: 100%;
-  max-width: 100%;
-  background-color: var(--color-surface);
-  border-radius: 8px;
-  padding: 1rem;
-  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .themed-table {
   width: 100%;
-  border-collapse: collapse;
-  table-layout: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: clip;
 
-  th, td {
-    padding: 8px;
-    border: 1px solid var(--color-border);
+  .mat-mdc-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--color-surface-subtle);
     color: var(--color-text);
-    box-sizing: border-box;
+    font-weight: var(--fw-bold);
   }
 
-  th {
-    background-color: var(--color-primary);
-    font-weight: 500;
-    text-align: left;
-    border-bottom: 2px solid var(--color-border);
+  .mat-mdc-row:hover {
+    background: var(--color-surface-hover);
   }
 
-  td {
-    vertical-align: middle;
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    padding: 10px 12px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
   }
 
-  tr:hover {
-    background-color: var(--color-surface-hover);
-  }
-
-  /* Column-specific widths */
-  th[mat-header-cell], td[mat-cell] {
-    &[matColumnDef="description"] {
-      width: 40%;
-      min-width: 200px;
-    }
-    &[matColumnDef="quantity"] {
-      width: 15%;
-      min-width: 100px;
-    }
-    &[matColumnDef="unitPrice"] {
-      width: 15%;
-      min-width: 100px;
-    }
-    &[matColumnDef="total"] {
-      width: 20%;
-      min-width: 120px;
-    }
-    &[matColumnDef="remove"] {
-      width: 5%;
-      min-width: 50px;
+  .mat-mdc-cell {
+    mat-form-field {
+      ::ng-deep .mdc-text-field {
+        background: transparent !important;
+        border: none !important;
+      }
     }
   }
-
-  input.form-control-sm, textarea.form-control-sm {
-    width: 100%;
-    box-sizing: border-box;
-  }
-}
-
-.mat-mdc-table {
-  background-color: var(--color-surface);
 }
 
 .totals-section {
+  grid-column: 7 / -1;
   background: var(--color-canvas);
   padding: 16px;
   border-radius: 8px;
-  margin-top: 20px;
   font-weight: 500;
   color: var(--color-text);
 
-  div {
+  .total-row {
+    display: flex;
+    justify-content: space-between;
     margin-bottom: 8px;
-  }
-
-  mat-form-field {
-    margin-right: 10px;
-  }
-}
-
-.extra-cost-buttons {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.extra-cost-buttons .btn-link {
-  font-size: 0.8rem;
-  padding: 2px 8px;
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-radius: 4px;
-  line-height: 1.2;
-  transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: var(--color-primary-hover);
   }
 }
 
 .action-section {
-  margin-top: 32px;
-  text-align: right;
+  grid-column: 1 / -1;
   display: flex;
-  gap: 8px;
   justify-content: flex-end;
-
+  gap: 16px !important;
+  margin-top: 32px;
   button {
     margin-left: 8px;
   }
 }
 
-button.mat-raised-button,
-button.btn {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
-  min-width: 120px;
+.btn-primary {
+  background: var(--brand-yellow-primary) !important;
+  color: var(--gray-900) !important;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-weight: var(--fw-semibold);
+  border: 1px solid transparent;
+  @include u.interactive-states;
 
   &:hover {
-    background-color: var(--color-primary-hover);
-  }
-
-  &[disabled] {
-    opacity: 0.6;
-    cursor: not-allowed;
+    background: var(--brand-yellow-accent);
   }
 }
 
-button.btn-outline-primary {
-  border: 1px solid var(--brand-cyan-500);
-  color: var(--brand-cyan-500);
-  background-color: transparent;
-  padding: 8px 16px;
-
-  &:hover {
-    background-color: var(--cyan-desaturated);
-  }
-}
-
-button[mat-icon-button] {
-  color: var(--color-text);
-  width: 36px;
-  height: 36px;
-  line-height: 36px;
-
-  &:hover {
-    color: var(--brand-cyan-500);
-  }
-}
-
-button.icon-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  color: var(--color-text);
-  cursor: pointer;
-
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
-  }
-
-  &:hover {
-    color: var(--brand-cyan-500);
-  }
-}
-
-.placeholder {
-  width: 120px;
-  height: 120px;
-  border: 2px dashed var(--brand-cyan-500);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: var(--color-text);
-  background-color: var(--color-surface);
-  border-radius: 6px;
+.right-align {
+  text-align: right;
 }
 
 .logo-container {
+  grid-column: span 4 !important;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: 8px;
+  background-color: var(--color-surface-subtle);
 
-.logo-image {
-  max-height: 100px;
-  max-width: 200px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-}
+  .placeholder {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: background-color 0.2s ease;
 
-.file-input {
-  display: none;
-}
+    &:hover {
+      background-color: var(--color-surface);
+    }
 
-.amount {
-  font-weight: bold;
-  align-self: center;
-  margin-left: 8px;
-  color: var(--color-text);
-}
-
-@media print {
-  .container {
-    width: 100% !important;
-    margin: 0;
-    padding: 10mm;
+    .material-icons {
+      font-size: 2rem;
+    }
   }
 
-  button, .file-input, .btn-link, .remove-logo {
-    display: none !important;
+  .logo-image {
+    width: 100px;
+    height: 100px;
+    object-fit: scale-down;
+    border-radius: 8px;
   }
 
-  .items-table-container tr:hover {
-    background-color: transparent;
-  }
-
-  button.mat-raised-button,
-  button.btn,
-  button.btn-outline-primary,
-  button[mat-icon-button],
-  button.icon-btn {
+  .file-input {
     display: none;
   }
-}
 
-@media (max-width: 768px) {
-  .container {
-    padding: 16px;
+  .remove-logo {
+    color: var(--color-text);
   }
 
-  .form-row,
-  .contact-row,
-  .item-row {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  mat-form-field,
-  .input-group {
-    min-width: 100%;
-  }
-
-  .items-table-container {
-    padding: 0.5rem;
-  }
-
-  .themed-table {
-    th, td {
-      font-size: 0.8rem;
-      padding: 6px;
-    }
-
-    th[mat-header-cell], td[mat-cell] {
-      &[matColumnDef="description"] {
-        width: 100%;
-        min-width: 150px;
-      }
-      &[matColumnDef="quantity"] {
-        width: 100%;
-        min-width: 80px;
-      }
-      &[matColumnDef="unitPrice"] {
-        width: 100%;
-        min-width: 80px;
-      }
-      &[matColumnDef="total"] {
-        width: 100%;
-        min-width: 100px;
-      }
-      &[matColumnDef="remove"] {
-        width: 100%;
-        min-width: 40px;
-      }
-    }
-  }
-
-  button.mat-raised-button,
-  button.btn {
-    padding: 8px 16px;
-    min-width: 100px;
-  }
-
-  .quote-card {
-    padding: 12px;
-  }
-
-  mat-card-title {
-    font-size: 1.2rem;
-  }
-
-  .logo-container {
-    align-items: center;
-  }
-
-  .extra-cost-buttons {
-    flex-direction: column;
-    gap: 4px;
+  ::ng-deep .mat-raised-button {
+    gap: 8px !important;
   }
 }
 
-.centered-spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
+
+  .mat-column-unit {
+    width: 50px;
+  }
+
+  .mat-column-total {
+    width: 250px;
+  }

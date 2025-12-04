@@ -1,27 +1,31 @@
-import {Component, OnInit} from '@angular/core';
-import {MatCardModule} from "@angular/material/card";
-import {MatGridListModule} from "@angular/material/grid-list";
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormArray, FormControl } from '@angular/forms';
-import {AsyncPipe, CommonModule, NgForOf, NgIf} from "@angular/common";
-import { MatSelectModule} from "@angular/material/select";
-import {MatInputModule} from "@angular/material/input";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import {MatButton} from "@angular/material/button";
-import {HttpClient} from "@angular/common/http";
-import {Router, ActivatedRoute} from "@angular/router";
+import { Component, OnInit } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatGridListModule } from '@angular/material/grid-list';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormControl,
+} from '@angular/forms';
+import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatButton } from '@angular/material/button';
+import { HttpClient } from '@angular/common/http';
+import { Router, ActivatedRoute } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import {catchError, debounceTime, distinctUntilChanged, filter, map, startWith} from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
 import {merge, Observable, of} from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
-import {MatDivider} from "@angular/material/divider";
-import { PaymentIntentRequest, StripeService } from '../../services/StripeService';
+import { MatDivider } from '@angular/material/divider';
+import { StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './payment-prompt-dialog.component';
 import { TermsConfirmationDialogComponent } from './terms-confirmation-dialog/terms-confirmation-dialog.component';
-import { COUNTRIES } from '../../data/countries';
-import { STATES } from '../../data/states';
-import {MatAutocompleteModule} from "@angular/material/autocomplete";
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
@@ -41,7 +45,7 @@ import {
   availabilityOptions,
   employeeNumber,
   operationalYears,
-  certificationOptions
+  certificationOptions,
 } from '../../data/registration-data';
 import { RegistrationService } from '../../services/registration.service';
 import { ElementRef, Inject, PLATFORM_ID, ViewChild, AfterViewInit } from '@angular/core';
@@ -71,19 +75,18 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatInputModule,
     MatFormFieldModule,
     MatButton,
-    LoaderComponent,
     MatDivider,
     MatAutocompleteModule,
     AsyncPipe,
     MatCheckboxModule,
     MatChipsModule,
     MatRadioModule,
-    MatIconModule
+    MatIconModule,
   ],
   templateUrl: './registration.component.html',
-  styleUrl: './registration.component.scss'
+  styleUrl: './registration.component.scss',
 })
-export class RegistrationComponent implements OnInit{
+export class RegistrationComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
@@ -107,7 +110,12 @@ export class RegistrationComponent implements OnInit{
   operationalYears = operationalYears;
   certificationOptions = certificationOptions;
 
-  subscriptionPackages: { value: string, display: string, amount: number, annualAmount:number }[] = [];
+  subscriptionPackages: {
+    value: string;
+    display: string;
+    amount: number;
+    annualAmount: number;
+  }[] = [];
 
   countries: any[] = [];
   states: any[] = [];
@@ -120,17 +128,18 @@ filteredCountryCodes!: Observable<any[]>;
   
   userTypes = userTypes;
   separatorKeysCodes: number[] = [ENTER, COMMA];
-selectedPlanFromUrl: string | null = null;
+  selectedPlanFromUrl: string | null = null;
+  isGoogleRegistration = false;
   tradeCtrl = new FormControl();
-  filteredTrades: Observable<{ value: string; display: string; }[]>;
-  selectedTrades: { value: string; display: string; }[] = [];
-selectedBillingFromUrl: string | null = null;
+  filteredTrades: Observable<{ value: string; display: string }[]>;
+  selectedTrades: { value: string; display: string }[] = [];
+  selectedBillingFromUrl: string | null = null;
   supplierTypeCtrl = new FormControl();
-  filteredSupplierTypes: Observable<{ value: string; display: string; }[]>;
-  selectedSupplierTypes: { value: string; display: string; }[] = [];
+  filteredSupplierTypes: Observable<{ value: string; display: string }[]>;
+  selectedSupplierTypes: { value: string; display: string }[] = [];
 
   registrationForm: FormGroup;
-  user:string = "";
+  user: string = '';
   certified = false;
   isLoading: boolean = false;
 
@@ -150,23 +159,39 @@ selectedBillingFromUrl: string | null = null;
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
-      map(value => {
-        const searchString = ((typeof value === 'string' ? value : '') || '').toLowerCase();
-        return this.trades.filter(trade =>
-          !this.selectedTrades.some(st => st.value === trade.value) &&
-          trade.display.toLowerCase().includes(searchString)
+      map((value) => {
+        const searchString = (
+          (typeof value === 'string' ? value : '') || ''
+        ).toLowerCase();
+        return this.trades.filter(
+          (trade) =>
+            !this.selectedTrades.some((st) => st.value === trade.value) &&
+            trade.display.toLowerCase().includes(searchString),
         );
-      })
+      }),
     );
     this.filteredSupplierTypes = this.supplierTypeCtrl.valueChanges.pipe(
       startWith(null),
-      map(value => {
-        const searchString = ((typeof value === 'string' ? value : '') || '').toLowerCase();
-        return this.supplierTypes.filter(type =>
-          !this.selectedSupplierTypes.some(st => st.value === type.value) &&
-          type.display.toLowerCase().includes(searchString)
+      map((value) => {
+        const searchString = (
+          (typeof value === 'string' ? value : '') || ''
+        ).toLowerCase();
+        return this.supplierTypes.filter(
+          (type) =>
+            !this.selectedSupplierTypes.some((st) => st.value === type.value) &&
+            type.display.toLowerCase().includes(searchString),
         );
-      })
+      }),
+    );
+  }
+  private _filterCountryCodes(value: string): any[] {
+    const search = (value || '').toLowerCase().trim();
+    if (!search) return this.countryNumberCode;
+
+    return this.countryNumberCode.filter(
+      (c) =>
+        c.countryCode?.toLowerCase().includes(search) ||
+        c.countryPhoneNumberCode?.toLowerCase().includes(search),
     );
   }
 private _filterCountryCodes(value: string): any[] {
@@ -180,13 +205,24 @@ private _filterCountryCodes(value: string): any[] {
 }
   ngOnInit() {
     this.loadSubscriptionPackages();
-const plan = this.route.snapshot.queryParamMap.get('plan');
-let billing = this.route.snapshot.queryParamMap.get('billing')?.toLowerCase() as BillingCycle | null;
 
-// Validate billing value
-if (billing !== 'monthly' && billing !== 'yearly') {
-  billing = 'monthly'; // fallback
-}
+    const plan = this.route.snapshot.queryParamMap.get('plan');
+    let billing = this.route.snapshot.queryParamMap
+      .get('billing')
+      ?.toLowerCase() as BillingCycle | null;
+
+    // Validate billing value
+    if (billing !== 'monthly' && billing !== 'yearly') {
+      billing = 'monthly'; // fallback
+    }
+
+    this.selectedPlanFromUrl = plan?.toLowerCase() ?? null;
+    this.selectedBillingFromUrl = billing;
+
+    this.profileService.getAddressType().subscribe({
+      next: (types) => (this.addressTypes = types),
+      error: (err) => console.error('Failed to load address types', err),
+    });
 
 
       this.profileService.getAddressType().subscribe({
@@ -212,8 +248,10 @@ this.selectedBillingFromUrl = billing;
         [
           Validators.required,
           Validators.minLength(10),
-          Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/)
-        ]
+          Validators.pattern(
+            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+          ),
+        ],
       ],
       companyName: [''],
       companyRegNo: [''],
@@ -237,22 +275,24 @@ this.selectedBillingFromUrl = billing;
 
       countryNumberCode:[''],
 
-      nrEmployees: (''),
-      yearsOfOperation: (''),
-      certificationStatus: (''),
-      certificationDocumentPath: (''),
-      availability:(''),
+      nrEmployees: '',
+      yearsOfOperation: '',
+      certificationStatus: '',
+      certificationDocumentPath: '',
+      availability: '',
 
       subscriptionPackage: ['', Validators.required],
-      projectPreferences: ([]),
+      projectPreferences: [],
 
-      productsOffered:([]),
+      productsOffered: [],
 
-      deliveryArea: ([]),
-      deliveryTime: (''),
-      userName:(''),
+      deliveryArea: [],
+      deliveryTime: '',
+      userName: '',
     });
-  this.registrationForm.get('billingCycle')?.setValue(this.selectedBillingFromUrl);
+    this.registrationForm
+      .get('billingCycle')
+      ?.setValue(this.selectedBillingFromUrl);
     this.user = 'PERSONAL_USE';
 
  this.registrationService.getAllCountryNumberCodes().subscribe(data => {
@@ -331,8 +371,10 @@ this.registrationService.getAllStates().subscribe(allStates => {
 //   })
 // );
 
-  });
+      //     // 2️⃣ If a state object is already selected → hide list completely
+      //     if (typeof stateVal === 'object') return [];
 
+      //     const search = (stateVal ?? '').toLowerCase();
 
   // Countries filter
 const countryCtrl = this.registrationForm.get('country')!;
@@ -354,20 +396,55 @@ const countryCtrl = this.registrationForm.get('country')!;
 //   })
 // );
 
+      //     // 3️⃣ No text search → show all states in that country
+      //     if (!search) return inCountry;
 
+      //     return inCountry.filter(
+      //       s =>
+      //         (s.stateName ?? '').toLowerCase().includes(search) ||
+      //         (s.stateCode ?? '').toLowerCase().includes(search)
+      //     );
+      //   })
+      // );
+    });
 
-    this.registrationForm.get('userType')?.valueChanges.subscribe(value => {
+    // Countries filter
+    const countryCtrl = this.registrationForm.get('country')!;
+    // this.filteredCountries = countryCtrl.valueChanges.pipe(
+    //   debounceTime(150),
+    //   distinctUntilChanged(),
+    //   startWith(''),
+    //   map(value => {
+    //     // 1️⃣ User typing → filter
+    //     if (typeof value === 'string') {
+    //       const term = value.toLowerCase();
+    //       return this.countries.filter(c =>
+    //         c.countryName.toLowerCase().includes(term) ||
+    //         c.countryCode.toLowerCase().includes(term)
+    //       );
+    //     }
+    //     // 2️⃣ User selected an object → don’t reset list
+    //     return [];
+    //   })
+    // );
+
+    this.registrationForm.get('userType')?.valueChanges.subscribe((value) => {
       this.user = value;
       this.selectedTrades = [];
       this.selectedSupplierTypes = [];
     });
 
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.token = params['token'];
       if (this.token) {
         // When a token is present, remove required validators from fields that are not needed for invited users
-        const fieldsToUpdate = ['country', 'state', 'city', 'subscriptionPackage'];
-        fieldsToUpdate.forEach(fieldName => {
+        const fieldsToUpdate = [
+          'country',
+          'state',
+          'city',
+          'subscriptionPackage',
+        ];
+        fieldsToUpdate.forEach((fieldName) => {
           const control = this.registrationForm.get(fieldName);
           if (control) {
             control.clearValidators();
@@ -377,10 +454,12 @@ const countryCtrl = this.registrationForm.get('country')!;
 
         this.invitationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
-            console.log('Invitation data:', data);
+            // console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
             if (data.role) {
-              const userType = this.userTypes.find(t => t.display === data.role);
+              const userType = this.userTypes.find(
+                (t) => t.display === data.role,
+              );
               if (userType) {
                 this.registrationForm.get('userType')?.setValue(userType.value);
                 this.user = userType.value;
@@ -391,7 +470,7 @@ const countryCtrl = this.registrationForm.get('country')!;
           error: () => {
             this.alertMessage = 'Invalid or expired invitation token.';
             this.showAlert = true;
-          }
+          },
         });
       } else {
         this.registrationForm.get('firstName')?.enable();
@@ -399,6 +478,52 @@ const countryCtrl = this.registrationForm.get('country')!;
         this.registrationForm.get('email')?.enable();
       }
     });
+
+    let googleData: any = null;
+
+    // Try to get from navigation state first
+    const nav = this.router.getCurrentNavigation();
+    googleData = nav?.extras?.state?.['googleData'];
+
+    // Fallback to sessionStorage if page refreshed or reloaded
+    if (!googleData) {
+      const stored = sessionStorage.getItem('googleData');
+      if (stored) {
+        googleData = JSON.parse(stored);
+      }
+    }
+
+    if (googleData) {
+      this.isGoogleRegistration = true;
+      this.registrationForm.patchValue({
+        email: googleData.email,
+        firstName: googleData.firstName,
+        lastName: googleData.lastName,
+      });
+
+      // Disable Google-managed fields
+      this.registrationForm.get('email')?.disable();
+      this.registrationForm.get('firstName')?.disable();
+      this.registrationForm.get('lastName')?.disable();
+
+      // Remove password requirement
+      this.registrationForm.get('password')?.clearValidators();
+      this.registrationForm.get('password')?.updateValueAndValidity();
+
+      // 🧹 Clear after use
+      sessionStorage.removeItem('googleData');
+    }
+  }
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser) return;
+
+    try {
+      await this.loadGoogleMapsScript();
+      this.isGoogleMapsLoaded = true;
+      this.initAutocomplete();
+    } catch (err) {
+      console.error('Failed to load Google Maps API:', err);
+    }
   }
 async ngAfterViewInit(): Promise<void> {
   if (!this.isBrowser) return;
@@ -488,7 +613,9 @@ stateDisplayFn = (state: any) => state?.stateName ?? '';
   addTrade(event: any): void {
     const value = (event.value || '').trim();
     if (value) {
-      const selectedTrade = this.trades.find(trade => trade.display.toLowerCase() === value.toLowerCase());
+      const selectedTrade = this.trades.find(
+        (trade) => trade.display.toLowerCase() === value.toLowerCase(),
+      );
       if (selectedTrade && !this.selectedTrades.includes(selectedTrade)) {
         this.selectedTrades.push(selectedTrade);
       }
@@ -524,11 +651,12 @@ openCountryPanel() {
     this.tradeCtrl.setValue(null);
   }
 
-
   addSupplierType(event: any): void {
     const value = (event.value || '').trim();
     if (value) {
-      const selectedType = this.supplierTypes.find(type => type.display.toLowerCase() === value.toLowerCase());
+      const selectedType = this.supplierTypes.find(
+        (type) => type.display.toLowerCase() === value.toLowerCase(),
+      );
       if (selectedType && !this.selectedSupplierTypes.includes(selectedType)) {
         this.selectedSupplierTypes.push(selectedType);
       }
@@ -567,11 +695,13 @@ private _filterCountries(value: any): any[] {
 
   updatePhoneNumberValidator(countryCode: string) {
     const phoneNumberControl = this.registrationForm.get('phoneNumber');
-    const selectedCountry = this.countries.find(country => country.value === countryCode);
+    const selectedCountry = this.countries.find(
+      (country) => country.value === countryCode,
+    );
     if (selectedCountry && phoneNumberControl && selectedCountry.phonePattern) {
       phoneNumberControl.setValidators([
         Validators.required,
-        Validators.pattern(selectedCountry.phonePattern)
+        Validators.pattern(selectedCountry.phonePattern),
       ]);
     } else if (phoneNumberControl) {
       // Reset to default or no pattern
@@ -580,89 +710,88 @@ private _filterCountries(value: any): any[] {
     phoneNumberControl?.updateValueAndValidity();
   }
 
-  userType(userSelected: any){
+  userType(userSelected: any) {
     //This is now handled by the valueChanges subscription in ngOnInit
     //this.user = userSelected.value
   }
 
-private loadSubscriptionPackages(): void {
-  this.stripeService.getSubscriptions().subscribe({
-    next: (subscriptions) => {
-      this.subscriptionPackages = subscriptions.map(s => ({
-        value: s.subscription,
-        display: `${s.subscription}`,
-        amount: s.amount,
-        annualAmount: s.annualAmount
-      }));
+  private loadSubscriptionPackages(): void {
+    this.stripeService.getSubscriptions().subscribe({
+      next: (subscriptions) => {
+        this.subscriptionPackages = subscriptions.map((s) => ({
+          value: s.subscription,
+          display: `${s.subscription}`,
+          amount: s.amount,
+          annualAmount: s.annualAmount,
+        }));
 
-      // 🔥 Auto-select plan ONLY after list loads
-      if (this.selectedPlanFromUrl) {
-        const match = this.subscriptionPackages.find(
-          p => p.value.toLowerCase() === this.selectedPlanFromUrl
-        );
+        if (this.selectedPlanFromUrl) {
+          const match = this.subscriptionPackages.find(
+            (p) => p.value.toLowerCase() === this.selectedPlanFromUrl,
+          );
 
-        if (match) {
-          this.registrationForm.get('subscriptionPackage')?.setValue(match.value);
+          if (match) {
+            this.registrationForm
+              .get('subscriptionPackage')
+              ?.setValue(match.value);
+          }
         }
-      }
-    },
-    error: (err) => {
-      console.error('Failed to load subscription packages:', err);
+      },
+      error: (err) => {
+        console.error('Failed to load subscription packages:', err);
+      },
+    });
+  }
+
+  certificationChange(selectedOption: any) {
+    if (selectedOption === 'FULLY_LICENSED') this.certified = true;
+  }
+  getUserMetadata(): Observable<any> {
+    return this.httpClient.get('https://ipapi.co/json/');
+  }
+
+  private getOperatingSystem(): string {
+    const userAgent = navigator.userAgent;
+
+    // Windows
+    if (/Windows NT 10.0/.test(userAgent)) return 'Windows 10 or 11';
+    if (/Windows NT 6.3/.test(userAgent)) return 'Windows 8.1';
+    if (/Windows NT 6.2/.test(userAgent)) return 'Windows 8';
+    if (/Windows NT 6.1/.test(userAgent)) return 'Windows 7';
+    if (/Windows NT 6.0/.test(userAgent)) return 'Windows Vista';
+    if (/Windows NT 5.1/.test(userAgent)) return 'Windows XP';
+
+    // macOS
+    if (/Mac OS X 10[\._]15/.test(userAgent)) return 'macOS Catalina';
+    if (/Mac OS X 11[\._]/.test(userAgent)) return 'macOS Big Sur';
+    if (/Mac OS X 12[\._]/.test(userAgent)) return 'macOS Monterey';
+    if (/Mac OS X 13[\._]/.test(userAgent)) return 'macOS Ventura';
+    if (/Mac OS X 14[\._]/.test(userAgent)) return 'macOS Sonoma or later';
+
+    // iOS
+    if (/iPhone/.test(userAgent)) return 'iOS (iPhone)';
+    if (/iPad/.test(userAgent)) return 'iOS (iPad)';
+
+    // Android
+    if (/Android/.test(userAgent)) {
+      const match = userAgent.match(/Android\s([0-9\.]+)/);
+      return match ? `Android ${match[1]}` : 'Android';
     }
-  });
-}
-  certificationChange(selectedOption:any) {
-    if(selectedOption === "FULLY_LICENSED")
-      this.certified = true;
+
+    // Linux
+    if (/Linux/.test(userAgent)) return 'Linux';
+
+    return 'Unknown OS';
   }
-getUserMetadata(): Observable<any> {
-  return this.httpClient.get('https://ipapi.co/json/');
-}
-
-
-private getOperatingSystem(): string {
-  const userAgent = navigator.userAgent;
-
-  // Windows
-  if (/Windows NT 10.0/.test(userAgent)) return "Windows 10 or 11";
-  if (/Windows NT 6.3/.test(userAgent)) return "Windows 8.1";
-  if (/Windows NT 6.2/.test(userAgent)) return "Windows 8";
-  if (/Windows NT 6.1/.test(userAgent)) return "Windows 7";
-  if (/Windows NT 6.0/.test(userAgent)) return "Windows Vista";
-  if (/Windows NT 5.1/.test(userAgent)) return "Windows XP";
-
-  // macOS
-  if (/Mac OS X 10[\._]15/.test(userAgent)) return "macOS Catalina";
-  if (/Mac OS X 11[\._]/.test(userAgent)) return "macOS Big Sur";
-  if (/Mac OS X 12[\._]/.test(userAgent)) return "macOS Monterey";
-  if (/Mac OS X 13[\._]/.test(userAgent)) return "macOS Ventura";
-  if (/Mac OS X 14[\._]/.test(userAgent)) return "macOS Sonoma or later";
-
-  // iOS
-  if (/iPhone/.test(userAgent)) return "iOS (iPhone)";
-  if (/iPad/.test(userAgent)) return "iOS (iPad)";
-
-  // Android
-  if (/Android/.test(userAgent)) {
-    const match = userAgent.match(/Android\s([0-9\.]+)/);
-    return match ? `Android ${match[1]}` : "Android";
-  }
-
-  // Linux
-  if (/Linux/.test(userAgent)) return "Linux";
-
-  return "Unknown OS";
-}
 
   onSubmit(): void {
-
     if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;
         const data = {
           token: this.token,
           password: this.registrationForm.get('password')?.value,
-          phoneNumber: this.registrationForm.get('phoneNumber')?.value
+          phoneNumber: this.registrationForm.get('phoneNumber')?.value,
         };
         this.invitationService.registerInvited(data).subscribe({
           next: () => {
@@ -675,32 +804,32 @@ private getOperatingSystem(): string {
             this.isLoading = false;
             this.alertMessage = 'Failed to complete registration.';
             this.showAlert = true;
-          }
+          },
         });
-          //THE USER MUST BE REGISTERED IN THE USER TABLE AS WELL.
-    const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
-    const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+        //THE USER MUST BE REGISTERED IN THE USER TABLE AS WELL.
+        const selectedPackageValue =
+          this.registrationForm.value.subscriptionPackage;
+        const selectedPackage = this.subscriptionPackages.find(
+          (p) => p.value === selectedPackageValue,
+        );
 
-    if (!this.registrationForm.valid) {
-      this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
-      this.showAlert = true;
-      return;
-    }
+        if (!this.registrationForm.valid) {
+          this.alertMessage =
+            'Please fill in all required fields or check for all fields are correct.';
+          this.showAlert = true;
+          return;
+        }
 
-    // ✅ Open terms dialog before submitting
-    const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
-      disableClose: true,
-      width: '500px'
-    });
+        // ✅ Open terms dialog before submitting
+        const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
+          disableClose: true,
+          width: '500px',
+        });
 
-    dialogRef.afterClosed().subscribe(userAgreed => {
-      if (!userAgreed) {
-        return; // Stop if user did not agree
-      }
-
-      this.isLoading = true;
-
-      const formValue = this.registrationForm.getRawValue();
+        dialogRef.afterClosed().subscribe((userAgreed) => {
+          if (!userAgreed) {
+            return; // Stop if user did not agree
+          }
 
 // ✅ Combine country code + cleaned phone number before saving
 let rawPhone = formValue.phoneNumber || '';
@@ -725,10 +854,12 @@ console.log('📞 Final phone number saved:', formValue.phoneNumber);
         formValue.trades = this.selectedTrades.map(trade => trade.value);
       }
 
-      if (this.user === 'VENDOR') {
-        formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
-      }
+          const formValue = this.registrationForm.getRawValue();
 
+          // ✅ Combine country code + cleaned phone number before saving
+          let rawPhone = formValue.phoneNumber || '';
+          let countryCode =
+            this.selectedCountryCode?.countryPhoneNumberCode || '';
 
 // Just before sending formValue to the backend
 this.getUserMetadata().subscribe((metadata) => {
@@ -751,81 +882,150 @@ if (typeof formValue.state === 'object') {
   formValue.state = formValue.state?.id;
 }
 
-      this.httpClient.post(`${BASE_URL}/Account/register`, formValue, {
-      })
-      .pipe(
-        catchError((error) => {
-          this.isLoading = false;
-          if (error.status === 400) {
-            if (error.error[0]?.code === 'DuplicateUserName') {
-              this.alertMessage = 'You are already Registered, please proceed to Login';
-            } else {
-              this.alertMessage = 'Data is malformed. Please check all input fields.';
-            }
-          } else if (error.status === 500) {
-            this.alertMessage = 'Oops something went wrong, please try again later.';
+          // If user already started with +countryCode, keep as is
+          if (
+            cleaned.startsWith(countryCode.replace('+', '')) ||
+            cleaned.startsWith(countryCode)
+          ) {
+            formValue.phoneNumber = cleaned.startsWith('+')
+              ? cleaned
+              : `+${cleaned}`;
           } else {
-            this.alertMessage = 'An unexpected error occurred. Contact support@probuildai.com';
+            // Remove leading zeros from local numbers
+            const normalized = cleaned.replace(/^0+/, '');
+            formValue.phoneNumber = `${countryCode}${normalized}`;
           }
-          this.showAlert = true;
-          return of(null);
-        })
-      )
-      .subscribe((res: any) => {
-        this.isLoading = false;
-        if (res) {
-          this.alertMessage = 'Registration successful! Check your inbox for a verification email to activate your account.';
-          const userId = res.userId;
-          if(this.registrationForm.value.subscriptionPackage.includes('Basic'))
-          {
-            this.routeURL = 'login';
-            this.showAlert = true;
-          }
-          else if(this.registrationForm.value.subscriptionPackage.includes('Trial'))
-          {
-            const userId = res.userId;
-            const packageName = this.registrationForm.value.subscriptionPackage;
-            // Trigger trial subscription
-            this.httpClient.post(`${BASE_URL}/Account/trailversion`, { userId, packageName }, {
-              headers: { 'Content-Type': 'application/json' }
-            }).subscribe(() => {
-              this.alertMessage = 'Your trial account is now active. Please confirm your email and sign in to begin.';
-              this.routeURL = 'login';
-              this.showAlert = true;
-            });
-          }
-          else
-          {
-            const billingCycle = this.registrationForm.value.billingCycle as 'monthly' | 'yearly';
-            console.log(billingCycle)
-            this.dialog.open(PaymentPromptDialogComponent, {
-              data: {
-                userId,
-                packageName: selectedPackage?.value || 'Unknown',
-                amount: selectedPackage?.amount || 0,
-                source: 'register',
-                billingCycle: billingCycle
-              },
-              disableClose: true,
-              width: '400px'
-            });
 
-            this.showAlert = true;
-            this.routeURL = 'login';
+          // 🔍 Debug log
+          // console.log('📞 Final phone number saved:', formValue.phoneNumber);
+
+          if (this.user === 'SUBCONTRACTOR') {
+            formValue.trades = this.selectedTrades.map((trade) => trade.value);
           }
-        }
-      });
-    });
-});
+
+          if (this.user === 'VENDOR') {
+            formValue.supplierTypes = this.selectedSupplierTypes.map(
+              (type) => type.value,
+            );
+          }
+
+          // Just before sending formValue to the backend
+          this.getUserMetadata().subscribe((metadata) => {
+            // Attach IP/location metadata
+            formValue.ipAddress = metadata.ip;
+            formValue.cityFromIP = metadata.city;
+            formValue.regionFromIP = metadata.region; // changed
+            formValue.countryFromIP = metadata.country_name;
+            formValue.latitudeFromIP = metadata.latitude;
+            formValue.longitudeFromIP = metadata.longitude;
+            formValue.timezone = metadata.timezone;
+            formValue.operatingSystem = this.getOperatingSystem();
+            // console.log(this.selectedCountryCode?.id)
+            formValue.countryNumberCode = this.selectedCountryCode?.id || null;
+            // Ensure only the ID is sent
+            if (typeof formValue.country === 'object') {
+              formValue.country = formValue.country?.id;
+            }
+            if (typeof formValue.state === 'object') {
+              formValue.state = formValue.state?.id;
+            }
+
+            this.httpClient
+              .post(`${BASE_URL}/Account/register`, formValue, {})
+              .pipe(
+                catchError((error) => {
+                  this.isLoading = false;
+                  if (error.status === 400) {
+                    if (error.error[0]?.code === 'DuplicateUserName') {
+                      this.alertMessage =
+                        'You are already Registered, please proceed to Login';
+                    } else {
+                      this.alertMessage =
+                        'Data is malformed. Please check all input fields.';
+                    }
+                  } else if (error.status === 500) {
+                    this.alertMessage =
+                      'Oops something went wrong, please try again later.';
+                  } else {
+                    this.alertMessage =
+                      'An unexpected error occurred. Contact support@probuildai.com';
+                  }
+                  this.showAlert = true;
+                  return of(null);
+                }),
+              )
+              .subscribe((res: any) => {
+                this.isLoading = false;
+                if (res) {
+                  this.alertMessage =
+                    'Registration successful! Check your inbox for a verification email to activate your account.';
+                  const userId = res.userId;
+                  if (
+                    this.registrationForm.value.subscriptionPackage.includes(
+                      'Basic',
+                    )
+                  ) {
+                    this.routeURL = 'login';
+                    this.showAlert = true;
+                  } else if (
+                    this.registrationForm.value.subscriptionPackage.includes(
+                      'Trial',
+                    )
+                  ) {
+                    const userId = res.userId;
+                    const packageName =
+                      this.registrationForm.value.subscriptionPackage;
+                    // Trigger trial subscription
+                    this.httpClient
+                      .post(
+                        `${BASE_URL}/Account/trailversion`,
+                        { userId, packageName },
+                        {
+                          headers: { 'Content-Type': 'application/json' },
+                        },
+                      )
+                      .subscribe(() => {
+                        this.alertMessage =
+                          'Your trial account is now active. Please confirm your email and sign in to begin.';
+                        this.routeURL = 'login';
+                        this.showAlert = true;
+                      });
+                  } else {
+                    const billingCycle = this.registrationForm.value
+                      .billingCycle as 'monthly' | 'yearly';
+                    // console.log(billingCycle)
+                    this.dialog.open(PaymentPromptDialogComponent, {
+                      data: {
+                        userId,
+                        packageName: selectedPackage?.value || 'Unknown',
+                        amount: selectedPackage?.amount || 0,
+                        source: 'register',
+                        billingCycle: billingCycle,
+                      },
+                      disableClose: true,
+                      width: '400px',
+                    });
+
+                    this.showAlert = true;
+                    this.routeURL = 'login';
+                  }
+                }
+              });
+          });
+        });
       }
       return;
     }
 
-    const selectedPackageValue = this.registrationForm.value.subscriptionPackage;
-    const selectedPackage = this.subscriptionPackages.find(p => p.value === selectedPackageValue);
+    const selectedPackageValue =
+      this.registrationForm.value.subscriptionPackage;
+    const selectedPackage = this.subscriptionPackages.find(
+      (p) => p.value === selectedPackageValue,
+    );
 
     if (!this.registrationForm.valid) {
-      this.alertMessage = 'Please fill in all required fields or check for all fields are correct.';
+      this.alertMessage =
+        'Please fill in all required fields or check for all fields are correct.';
       this.showAlert = true;
       return;
     }
@@ -833,10 +1033,10 @@ if (typeof formValue.state === 'object') {
     // ✅ Open terms dialog before submitting
     const dialogRef = this.dialog.open(TermsConfirmationDialogComponent, {
       disableClose: true,
-      width: '500px'
+      width: '500px',
     });
 
-    dialogRef.afterClosed().subscribe(userAgreed => {
+    dialogRef.afterClosed().subscribe((userAgreed) => {
       if (!userAgreed) {
         return; // Stop if user did not agree
       }
@@ -861,11 +1061,13 @@ if (cleaned.startsWith(countryCode.replace('+', '')) || cleaned.startsWith(count
 }
 
       if (this.user === 'SUBCONTRACTOR') {
-        formValue.trades = this.selectedTrades.map(trade => trade.value);
+        formValue.trades = this.selectedTrades.map((trade) => trade.value);
       }
 
       if (this.user === 'VENDOR') {
-        formValue.supplierTypes = this.selectedSupplierTypes.map(type => type.value);
+        formValue.supplierTypes = this.selectedSupplierTypes.map(
+          (type) => type.value,
+        );
       }
 
 
@@ -923,36 +1125,73 @@ formValue.operatingSystem = this.getOperatingSystem();
               this.alertMessage = 'Your trial account is now active. Please confirm your email and sign in to begin.';
               this.routeURL = 'login';
               this.showAlert = true;
-            });
-          }
-          else
-          {
-               const billingCycle = this.registrationForm.value.billingCycle as 'monthly' | 'yearly';
-            this.dialog.open(PaymentPromptDialogComponent, {
-              data: {
-                userId,
-                packageName: selectedPackage?.value || 'Unknown',
-                amount: selectedPackage?.amount || 0,
-                source: 'register',
-                billingCycle: billingCycle
-              },
-              disableClose: true,
-              width: '400px'
-            });
+              return of(null);
+            }),
+          )
+          .subscribe((res: any) => {
+            this.isLoading = false;
+            if (res) {
+              this.alertMessage =
+                'Registration successful! Check your inbox for a verification email to activate your account.';
+              const userId = res.userId;
+              if (
+                this.registrationForm.value.subscriptionPackage.includes(
+                  'Basic',
+                )
+              ) {
+                this.routeURL = 'login';
+                this.showAlert = true;
+              } else if (
+                this.registrationForm.value.subscriptionPackage.includes(
+                  'Trial',
+                )
+              ) {
+                const userId = res.userId;
+                const packageName =
+                  this.registrationForm.value.subscriptionPackage;
+                // Trigger trial subscription
+                this.httpClient
+                  .post(
+                    `${BASE_URL}/Account/trailversion`,
+                    { userId, packageName },
+                    {
+                      headers: { 'Content-Type': 'application/json' },
+                    },
+                  )
+                  .subscribe(() => {
+                    this.alertMessage =
+                      'Your trial account is now active. Please confirm your email and sign in to begin.';
+                    this.routeURL = 'login';
+                    this.showAlert = true;
+                  });
+              } else {
+                const billingCycle = this.registrationForm.value
+                  .billingCycle as 'monthly' | 'yearly';
+                this.dialog.open(PaymentPromptDialogComponent, {
+                  data: {
+                    userId,
+                    packageName: selectedPackage?.value || 'Unknown',
+                    amount: selectedPackage?.amount || 0,
+                    source: 'register',
+                    billingCycle: billingCycle,
+                  },
+                  disableClose: true,
+                  width: '400px',
+                });
 
-            this.showAlert = true;
-            this.routeURL = 'login';
-          }
-        }
+                this.showAlert = true;
+                this.routeURL = 'login';
+              }
+            }
+          });
       });
-    });
     });
   }
 
   showPaymentPrompt() {
     this.dialog.open(PaymentPromptDialogComponent, {
       disableClose: true,
-      width: '400px'
+      width: '400px',
     });
   }
 
@@ -962,19 +1201,20 @@ formValue.operatingSystem = this.getOperatingSystem();
       return '';
     }
     return this.constructionTypes
-      .filter(type => selectedValues.includes(type.value))
-      .map(type => type.display)
+      .filter((type) => selectedValues.includes(type.value))
+      .map((type) => type.display)
       .join(', ');
   }
 
   getProjectPreferencesDisplayValue(): string {
-    const selectedValues = this.registrationForm.get('projectPreferences')?.value;
+    const selectedValues =
+      this.registrationForm.get('projectPreferences')?.value;
     if (!selectedValues || selectedValues.length === 0) {
       return '';
     }
     return this.preferenceOptions
-      .filter(pref => selectedValues.includes(pref.value))
-      .map(pref => pref.display)
+      .filter((pref) => selectedValues.includes(pref.value))
+      .map((pref) => pref.display)
       .join(', ');
   }
 
@@ -984,8 +1224,8 @@ formValue.operatingSystem = this.getOperatingSystem();
       return '';
     }
     return this.supplierProducts
-      .filter(prod => selectedValues.includes(prod.value))
-      .map(prod => prod.display)
+      .filter((prod) => selectedValues.includes(prod.value))
+      .map((prod) => prod.display)
       .join(', ');
   }
 
@@ -995,13 +1235,13 @@ formValue.operatingSystem = this.getOperatingSystem();
       return '';
     }
     return this.deliveryAreas
-      .filter(area => selectedValues.includes(area.value))
-      .map(area => area.display)
+      .filter((area) => selectedValues.includes(area.value))
+      .map((area) => area.display)
       .join(', ');
   }
 
   closeAlert(): void {
-    if(this.routeURL != ''){
+    if (this.routeURL != '') {
       this.router.navigateByUrl('login');
     }
     this.showAlert = false;

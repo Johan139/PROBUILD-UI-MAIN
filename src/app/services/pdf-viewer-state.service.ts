@@ -3,7 +3,7 @@ import { BehaviorSubject, ReplaySubject } from 'rxjs';
 import { BlueprintDocument } from '../components/pdf-viewer/pdf-viewer.component';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PdfViewerStateService {
   private isPoppedOutSubject = new BehaviorSubject<boolean>(false);
@@ -15,7 +15,8 @@ export class PdfViewerStateService {
   private visibilitySubject = new BehaviorSubject<boolean>(true);
   visibility$ = this.visibilitySubject.asObservable();
 
-  private selectedBlueprintSubject = new ReplaySubject<BlueprintDocument | null>(1);
+  private selectedBlueprintSubject =
+    new ReplaySubject<BlueprintDocument | null>(1);
   selectedBlueprint$ = this.selectedBlueprintSubject.asObservable();
 
   setIsPoppedOut(isPoppedOut: boolean): void {
@@ -23,12 +24,12 @@ export class PdfViewerStateService {
   }
 
   setBlueprints(blueprints: BlueprintDocument[]): void {
-    console.log('StateService: Setting blueprints', blueprints);
+    // console.log('StateService: Setting blueprints', blueprints);
     this.blueprintsSubject.next(blueprints);
   }
 
   setSelectedBlueprint(blueprint: BlueprintDocument | null): void {
-    console.log('StateService: Setting selected blueprint', blueprint);
+    // console.log('StateService: Setting selected blueprint', blueprint);
     this.selectedBlueprintSubject.next(blueprint);
   }
 

@@ -19,10 +19,10 @@ import { Portfolio } from '../../models/portfolio';
     MatCardModule,
     MatListModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './user-profile.component.html',
-  styleUrls: ['./user-profile.component.scss']
+  styleUrls: ['./user-profile.component.scss'],
 })
 export class UserProfileComponent implements OnInit {
   user: User | null = null;
@@ -34,8 +34,8 @@ export class UserProfileComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private userService: UserService,
-    private ratingService: RatingService
-  ) { }
+    private ratingService: RatingService,
+  ) {}
 
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id');
@@ -55,7 +55,7 @@ export class UserProfileComponent implements OnInit {
       error: (err) => {
         console.error('Error fetching user profile:', err);
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -67,7 +67,7 @@ export class UserProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching user ratings:', err);
-      }
+      },
     });
   }
 

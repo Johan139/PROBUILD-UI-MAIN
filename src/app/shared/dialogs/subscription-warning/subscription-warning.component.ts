@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './subscription-warning.component.html',
   styleUrls: ['./subscription-warning.component.scss'],
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule],
 })
 export class SubscriptionWarningComponent {
   @Input() subscriptionActive: boolean = false;

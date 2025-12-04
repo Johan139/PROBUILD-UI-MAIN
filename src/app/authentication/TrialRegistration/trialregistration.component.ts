@@ -180,7 +180,7 @@ export class TrialRegistrationComponent implements OnInit {
             !this.selectedTrades.some((st) => st.value === trade.value) &&
             trade.display.toLowerCase().includes(searchString)
         );
-      })
+      }),
     );
     this.filteredSupplierTypes = this.supplierTypeCtrl.valueChanges.pipe(
       startWith(null),
@@ -193,7 +193,7 @@ export class TrialRegistrationComponent implements OnInit {
             !this.selectedSupplierTypes.some((st) => st.value === type.value) &&
             type.display.toLowerCase().includes(searchString)
         );
-      })
+      }),
     );
   }
 

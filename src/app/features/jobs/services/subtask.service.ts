@@ -18,7 +18,7 @@ export class SubtaskService {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private jobsService: JobsService,
-    private http: HttpClient
+    private http: HttpClient,
   ) {}
 
   addSubtask(table: any): void {
@@ -51,12 +51,14 @@ export class SubtaskService {
     dialogRef.afterClosed().subscribe((result) => {
       if (result === true) {
         table.subtasks[index].deleted = true;
-        const updatedState = this.store.getState().subtaskGroups.map((group) => {
-          if (group.title === table.title) {
-            return { ...group, subtasks: [...table.subtasks] };
-          }
-          return group;
-        });
+        const updatedState = this.store
+          .getState()
+          .subtaskGroups.map((group) => {
+            if (group.title === table.title) {
+              return { ...group, subtasks: [...table.subtasks] };
+            }
+            return group;
+          });
         this.store.setState({ subtaskGroups: updatedState });
       }
     });
@@ -130,7 +132,7 @@ export class SubtaskService {
           panelClass: ['custom-snackbar'],
           verticalPosition: 'top',
           horizontalPosition: 'center',
-        }
+        },
       );
       return;
     }
@@ -161,7 +163,7 @@ export class SubtaskService {
             groupTitle: group.title,
             deleted,
             accepted,
-          })
+          }),
         ),
       }));
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
@@ -172,54 +174,69 @@ export class SubtaskService {
         groupTitle: group.title,
         jobId: this.store.getState().projectDetails.jobId,
         deleted: subtask.deleted ?? false,
-      }))
+      })),
     );
     const userId: string | null = localStorage.getItem('userId');
 
-    this.jobsService.updateJob(jobData, this.store.getState().projectDetails.jobId).subscribe({
-      next: (response) => {
-        this.jobsService.saveSubtasks(subtaskList, userId).subscribe({
-          next: () => {
-            this.snackBar.open('Saved Job Successfully', 'Close', {
-              duration: 3000,
-            });
-          },
-          error: (err) => {
-            this.snackBar.open('Job saved Successfully', 'Close', {
-              duration: 3000,
-            });
-          },
-        });
-      },
-      error: (err) => {
-        this.snackBar.open(
-          'An unexpected error occurred while saving the job.',
-          'Close',
-          { duration: 3000 }
-        );
-      },
-    });
+    this.jobsService
+      .updateJob(jobData, this.store.getState().projectDetails.jobId)
+      .subscribe({
+        next: (response) => {
+          this.jobsService.saveSubtasks(subtaskList, userId).subscribe({
+            next: () => {
+              this.snackBar.open('Saved Job Successfully', 'Close', {
+                duration: 3000,
+              });
+            },
+            error: (err) => {
+              this.snackBar.open('Job saved Successfully', 'Close', {
+                duration: 3000,
+              });
+            },
+          });
+        },
+        error: (err) => {
+          this.snackBar.open(
+            'An unexpected error occurred while saving the job.',
+            'Close',
+            { duration: 3000 },
+          );
+        },
+      });
   }
 
   private prepareProjectData(status: string): any {
     const projectDetails = this.store.getState().projectDetails;
     const subtaskGroups = this.store.getState().subtaskGroups;
-    const formattedDate = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = (date: Date | string) => {
+      let d;
+      if (date instanceof Date) {
+        d = date;
+      } else if (typeof date === 'string') {
+        d = new Date(date);
+      } else {
+        d = new Date(); // Fallback for null/undefined
+      }
+
+      if (isNaN(d.getTime())) {
+        d = new Date(); // Fallback for invalid date string
+      }
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
 
     return {
-      Id: projectDetails.jobId || 0,
+      JobId: projectDetails.jobId || 0,
       ProjectName: projectDetails.projectName || '',
       JobType: projectDetails.jobType || '',
       Qty: Number(projectDetails.quantity) || 1,
       DesiredStartDate: formattedDate(
         projectDetails.desiredStartDate
           ? new Date(projectDetails.desiredStartDate)
-          : new Date()
+          : new Date(),
       ),
       WallStructure: projectDetails.wallStructure || '',
       WallStructureSubtask: JSON.stringify(subtaskGroups[2]?.subtasks || []),
@@ -236,7 +253,7 @@ export class SubtaskService {
       FinishesSubtask: JSON.stringify(subtaskGroups[6]?.subtasks || []),
       ElectricalSupplyNeeds: projectDetails.electricalSupply || '',
       ElectricalSupplyNeedsSubtask: JSON.stringify(
-        subtaskGroups[3]?.subtasks || []
+        subtaskGroups[3]?.subtasks || [],
       ),
       Stories: Number(projectDetails.stories) || 0,
       BuildingSize: Number(projectDetails.buildingSize) || 0,
@@ -266,7 +283,7 @@ export class SubtaskService {
           this.snackBar.open(
             'An unexpected error occurred. Contact support',
             'Close',
-            { duration: 3000 }
+            { duration: 3000 },
           );
         },
       });
@@ -286,11 +303,12 @@ export class SubtaskService {
           this.snackBar.open(
             'An unexpected error occurred. Contact support',
             'Close',
-            { duration: 3000 }
+            { duration: 3000 },
           );
         },
       });
   }
+
   publishJob(jobId: number, job: any): Observable<any> {
     return this.jobsService.updateJob(job, jobId);
   }

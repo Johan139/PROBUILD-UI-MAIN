@@ -5,8 +5,6 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './master-services-agreement.component.html',
-  styleUrl: './master-services-agreement.component.scss'
+  styleUrl: './master-services-agreement.component.scss',
 })
-export class MasterServicesAgreementComponent {
-
-}
+export class MasterServicesAgreementComponent {}

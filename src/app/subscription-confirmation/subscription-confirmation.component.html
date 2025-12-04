@@ -12,9 +12,18 @@
 
   <label>Subscription Type:</label>
   <div>
-    <label><input type="radio" formControlName="subscriptionType" value="monthly" /> Monthly - $525</label>
-    <label><input type="radio" formControlName="subscriptionType" value="annual" /> Annual - $5,250</label>
-    <label><input type="radio" formControlName="subscriptionType" value="promo" /> Promo Annual - $4,400</label>
+    <label
+      ><input type="radio" formControlName="subscriptionType" value="monthly" />
+      Monthly - $525</label
+    >
+    <label
+      ><input type="radio" formControlName="subscriptionType" value="annual" />
+      Annual - $5,250</label
+    >
+    <label
+      ><input type="radio" formControlName="subscriptionType" value="promo" />
+      Promo Annual - $4,400</label
+    >
   </div>
 
   <label>Platform Tier:</label>
@@ -32,10 +41,21 @@
   <textarea formControlName="customTerms"></textarea>
 
   <div class="consents">
-    <label><input type="checkbox" formControlName="acceptMSA" /> I accept the Master Services Agreement</label>
-    <label><input type="checkbox" formControlName="acceptPrivacy" /> I acknowledge the Privacy Policy</label>
-    <label><input type="checkbox" formControlName="confirmAuthority" /> I confirm I'm authorized to subscribe</label>
+    <label
+      ><input type="checkbox" formControlName="acceptMSA" /> I accept the Master
+      Services Agreement</label
+    >
+    <label
+      ><input type="checkbox" formControlName="acceptPrivacy" /> I acknowledge
+      the Privacy Policy</label
+    >
+    <label
+      ><input type="checkbox" formControlName="confirmAuthority" /> I confirm
+      I'm authorized to subscribe</label
+    >
   </div>
 
-  <button type="submit" [disabled]="form.invalid">Confirm My Subscription</button>
+  <button type="submit" [disabled]="form.invalid">
+    Confirm My Subscription
+  </button>
 </form>

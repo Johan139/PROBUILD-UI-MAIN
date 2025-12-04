@@ -201,6 +201,53 @@
   }
 }
 
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border-radius: 8px;
+  background-color: var(--color-surface-subtle);
+
+  .placeholder {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: var(--color-surface);
+    }
+
+    .material-icons {
+      font-size: 2rem;
+    }
+  }
+
+  .logo-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .file-input {
+    display: none;
+  }
+
+  .remove-logo {
+    color: var(--color-text);
+  }
+}
+
 /* Buttons */
 .submit-btn {
   background: var(--color-primary);
@@ -251,4 +298,13 @@
   .upload-icon { width: 20px; height: 20px; }
   .mat-elevation-z8 mat-header-cell,
   .mat-elevation-z8 mat-cell { padding: 8px; font-size: .95rem; }
+}
+
+::ng-deep .mat-mdc-select-placeholder {
+  position: absolute;
+  top: 20px;
+}
+
+::ng-deep .mat-mdc-form-field-infix {
+  margin-top: -8px;
 }

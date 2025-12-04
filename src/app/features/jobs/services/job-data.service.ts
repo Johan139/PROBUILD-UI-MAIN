@@ -4,14 +4,7 @@ import { WeatherService } from '../../../services/weather.service';
 import { Store } from '../../../store/store.service';
 import { SubtasksState } from '../../../state/subtasks.state';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import {
-  catchError,
-  map,
-  of,
-  switchMap,
-  tap,
-  throwError,
-} from 'rxjs';
+import { catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { formatDate } from '@angular/common';
 
@@ -40,7 +33,7 @@ export class JobDataService {
         if (updatedProjectDetails.latitude && updatedProjectDetails.longitude) {
           this.getWeatherCondition(
             parseFloat(updatedProjectDetails.latitude),
-            parseFloat(updatedProjectDetails.longitude)
+            parseFloat(updatedProjectDetails.longitude),
           ).subscribe();
         }
       }),
@@ -50,7 +43,7 @@ export class JobDataService {
           duration: 3000,
         });
         return throwError(() => err);
-      })
+      }),
     );
   }
 
@@ -70,7 +63,7 @@ export class JobDataService {
           weatherError: 'Failed to load weather forecast',
         });
         return throwError(() => err);
-      })
+      }),
     );
   }
 
@@ -81,73 +74,102 @@ export class JobDataService {
         if (details.latitude && details.longitude) {
           this.getWeatherCondition(
             parseFloat(details.latitude),
-            parseFloat(details.longitude)
+            parseFloat(details.longitude),
           ).subscribe();
         }
       },
     });
 
-    this.jobsService.getJobSubtasks(projectDetails.jobId).pipe(
-      switchMap((data: any) => {
-        if (!data || data.length === 0) {
-          return this.jobsService.GetBillOfMaterials(projectDetails.jobId).pipe(
-            map((results: any) => {
-              const markdown = results[0]?.fullResponse;
-              return { markdown, source: 'bom' };
-            })
-          );
+    // Stale-While-Revalidate: Load from Local Storage first
+    const storageKey = `subtasks_${projectDetails.jobId}`;
+    if (typeof localStorage !== 'undefined') {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          this.store.setState({ subtaskGroups: parsed });
+        } catch (e) {
+          // console.error('Error parsing cached subtasks', e);
         }
-        return of({ data, source: 'subtasks' });
-      }),
-      catchError((err: any) => {
-        if (err.status === 404) {
-          return this.jobsService.GetBillOfMaterials(projectDetails.jobId).pipe(
-            map((results: any) => {
-              const markdown = results[0]?.fullResponse;
-              return { markdown, source: 'bom' };
-            })
-          );
-        }
-        return throwError(() => err);
-      })
-    ).subscribe({
-      next: (result: any) => {
-        if (result.source === 'subtasks') {
-          const grouped = this.groupSubtasksByTitle(result.data);
-          this.store.setState({ subtaskGroups: grouped });
-        } else if (result.source === 'bom' && result.markdown) {
-          const parsedGroups = this.parseTimelineToTaskGroups(result.markdown);
-          this.store.setState({ subtaskGroups: parsedGroups });
-
-          // Also extract isSelected flag and update projectDetails
-          try {
-            const jsonMatch = result.markdown.match(/```json([\s\S]*?)```/);
-            if (jsonMatch && jsonMatch[1]) {
-              const parsedJson = JSON.parse(jsonMatch[1]);
-              const currentDetails = this.store.getState().projectDetails;
-              const newDetails = { ...currentDetails };
-              if (parsedJson.isSelected === 'true') {
-                newDetails.isSelected = true;
-              }
-              if (parsedJson.isRenovation === 'true') {
-                newDetails.isRenovation = true;
-              }
-              this.store.setState({ projectDetails: newDetails });
-            }
-          } catch (e) {
-            console.error('Error parsing isSelected flag:', e);
-          }
-        }
-      },
-      error: (err: any) => {
-        console.error(err);
-        this.store.setState({ subtaskGroups: [] });
       }
-    });
+    }
+
+    this.jobsService
+      .getJobSubtasks(projectDetails.jobId)
+      .pipe(
+        switchMap((data: any) => {
+          if (!data || data.length === 0) {
+            return this.jobsService
+              .GetBillOfMaterials(projectDetails.jobId)
+              .pipe(
+                map((results: any) => {
+                  const markdown = results[0]?.fullResponse;
+                  return { markdown, source: 'bom' };
+                }),
+              );
+          }
+          return of({ data, source: 'subtasks' });
+        }),
+        catchError((err: any) => {
+          if (err.status === 404) {
+            return this.jobsService
+              .GetBillOfMaterials(projectDetails.jobId)
+              .pipe(
+                map((results: any) => {
+                  const markdown = results[0]?.fullResponse;
+                  return { markdown, source: 'bom' };
+                }),
+              );
+          }
+          return throwError(() => err);
+        }),
+      )
+      .subscribe({
+        next: (result: any) => {
+          if (result.source === 'subtasks') {
+            const grouped = this.groupSubtasksByTitle(result.data);
+            this.store.setState({ subtaskGroups: grouped });
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(storageKey, JSON.stringify(grouped));
+            }
+          } else if (result.source === 'bom' && result.markdown) {
+            const parsedGroups = this.parseTimelineToTaskGroups(
+              result.markdown,
+            );
+            this.store.setState({ subtaskGroups: parsedGroups });
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(storageKey, JSON.stringify(parsedGroups));
+            }
+
+            // Also extract isSelected flag and update projectDetails
+            try {
+              const jsonMatch = result.markdown.match(/```json([\s\S]*?)```/);
+              if (jsonMatch && jsonMatch[1]) {
+                const parsedJson = JSON.parse(jsonMatch[1]);
+                const currentDetails = this.store.getState().projectDetails;
+                const newDetails = { ...currentDetails };
+                if (parsedJson.isSelected === 'true') {
+                  newDetails.isSelected = true;
+                }
+                if (parsedJson.isRenovation === 'true') {
+                  newDetails.isRenovation = true;
+                }
+                this.store.setState({ projectDetails: newDetails });
+              }
+            } catch (e) {
+              console.error('Error parsing isSelected flag:', e);
+            }
+          }
+        },
+        error: (err: any) => {
+          console.error(err);
+          this.store.setState({ subtaskGroups: [] });
+        },
+      });
   }
 
   private groupSubtasksByTitle(
-    subtasks: any[]
+    subtasks: any[],
   ): { title: string; subtasks: any[]; progress: number }[] {
     const groupedMap = new Map<string, any[]>();
     for (const st of subtasks) {
@@ -170,7 +192,7 @@ export class JobDataService {
     }
     return Array.from(groupedMap.entries()).map(([title, subtasks]) => {
       const completedCount = subtasks.filter(
-        (s) => s.status && s.status.toLowerCase() === 'completed'
+        (s) => s.status && s.status.toLowerCase() === 'completed',
       ).length;
       const progress =
         subtasks.length > 0
@@ -185,7 +207,7 @@ export class JobDataService {
   }
 
   private parseTimelineToTaskGroups(
-    report: string
+    report: string,
   ): { title: string; subtasks: any[] }[] {
     if (!report) return [];
 
@@ -203,8 +225,12 @@ export class JobDataService {
           isRenovation = true;
         }
       }
-      if (!isRenovation) { // Fallback check
-        isRenovation = /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(report);
+      if (!isRenovation) {
+        // Fallback check
+        isRenovation =
+          /This concludes the comprehensive project analysis for the .*?\. Standing by\./.test(
+            report,
+          );
       }
     } catch (e) {
       console.error('Error parsing JSON for timeline:', e);
@@ -221,11 +247,18 @@ export class JobDataService {
           tableStarted = true;
           continue;
         }
-        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+        if (
+          !tableStarted ||
+          !trimmedLine.startsWith('|') ||
+          trimmedLine.includes('---')
+        ) {
           continue;
         }
 
-        const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+        const columns = trimmedLine
+          .split('|')
+          .map((c) => c.trim())
+          .slice(1, -1);
         if (columns.length < 6) continue;
 
         const phaseRaw = columns[0].replace(/\*\*/g, '').trim();
@@ -239,7 +272,12 @@ export class JobDataService {
         const endDateStr = columns[5];
 
         // Filter out the "Total Project Duration" line by checking the task name column
-        if (phaseRaw.toLowerCase().replace(/\*/g, '').includes('total project duration')) {
+        if (
+          phaseRaw
+            .toLowerCase()
+            .replace(/\*/g, '')
+            .includes('total project duration')
+        ) {
           continue;
         }
 
@@ -279,7 +317,9 @@ export class JobDataService {
         'R-6': 'R-6: Fixtures, Fittings & Equipment (FF&E)',
       };
 
-      const timelineMatch = report.match(/### \*\*(Part A: Detailed Task Schedule|S-2: Project Timeline & Schedule)\*\*([\s\S]*?)(?=### \*\*Part B:|### \*\*S-3:|$)/);
+      const timelineMatch = report.match(
+        /### \*\*(Part A: Detailed Task Schedule|S-2: Project Timeline & Schedule)\*\*([\s\S]*?)(?=### \*\*Part B:|### \*\*S-3:|$)/,
+      );
       if (!timelineMatch || !timelineMatch[2]) return [];
 
       const lines = timelineMatch[2].trim().split('\n');
@@ -288,18 +328,28 @@ export class JobDataService {
 
       for (const line of lines) {
         const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('| Task ID') || trimmedLine.startsWith('| **Pre-Construction**')) {
+        if (
+          trimmedLine.startsWith('| Task ID') ||
+          trimmedLine.startsWith('| **Pre-Construction**')
+        ) {
           tableStarted = true;
           continue;
         }
-        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+        if (
+          !tableStarted ||
+          !trimmedLine.startsWith('|') ||
+          trimmedLine.includes('---')
+        ) {
           continue;
         }
 
-        const columns = trimmedLine.split('|').map(c => c.trim()).slice(1, -1);
+        const columns = trimmedLine
+          .split('|')
+          .map((c) => c.trim())
+          .slice(1, -1);
 
-        if (columns.filter(c => c !== '').length <= 1) {
-            continue;
+        if (columns.filter((c) => c !== '').length <= 1) {
+          continue;
         }
 
         // Handle different table structures
@@ -311,28 +361,28 @@ export class JobDataService {
           startDate = columns[4];
           endDate = columns[5];
         } else if (columns.length >= 6) {
-            const phaseRaw = columns[0].replace(/\*\*/g, '').trim();
-            if(phaseRaw) currentPhase = phaseRaw;
-            taskName = columns[1];
-            phaseId = currentPhase;
-            duration = columns[3];
-            startDate = columns[4];
-            endDate = columns[5];
+          const phaseRaw = columns[0].replace(/\*\*/g, '').trim();
+          if (phaseRaw) currentPhase = phaseRaw;
+          taskName = columns[1];
+          phaseId = currentPhase;
+          duration = columns[3];
+          startDate = columns[4];
+          endDate = columns[5];
         } else {
-            continue;
+          continue;
         }
 
         if (taskName && taskName.toLowerCase().includes('project complete')) {
-            continue;
+          continue;
         }
 
         if (phaseId.trim() === '-') {
-            continue;
+          continue;
         }
 
         const rNumberMatch = phaseId.match(/(R-\d+)/);
         if (rNumberMatch && renovationPhaseMap[rNumberMatch[1]]) {
-            phaseId = renovationPhaseMap[rNumberMatch[1]];
+          phaseId = renovationPhaseMap[rNumberMatch[1]];
         }
 
         if (!taskGroupMap.has(phaseId)) {
@@ -342,8 +392,12 @@ export class JobDataService {
         taskGroupMap.get(phaseId)?.push({
           task: this.cleanTaskName(taskName),
           days: parseInt(duration, 10) || 0,
-          startDate: this.parseDate(startDate) ? this.formatDateToYYYYMMDD(this.parseDate(startDate)!) : '',
-          endDate: this.parseDate(endDate) ? this.formatDateToYYYYMMDD(this.parseDate(endDate)!) : '',
+          startDate: this.parseDate(startDate)
+            ? this.formatDateToYYYYMMDD(this.parseDate(startDate)!)
+            : '',
+          endDate: this.parseDate(endDate)
+            ? this.formatDateToYYYYMMDD(this.parseDate(endDate)!)
+            : '',
           status: 'Pending',
           cost: 0,
           deleted: false,
@@ -354,21 +408,42 @@ export class JobDataService {
       // Existing logic for Full Analysis
       const lines = report.split('\n');
       let tableStarted = false;
-      const headerRegex = /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+      const headerRegex =
+        /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
       let currentPhase = '';
+
+      // Only parse the "Phase 22: Timeline" section
+      let inTimelineSection = false;
 
       for (const line of lines) {
         const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('Ready for the next prompt 20')) break;
+
+        if (trimmedLine.includes('### Phase 22: Timeline')) {
+          inTimelineSection = true;
+        }
+
+        if (!inTimelineSection) continue;
+
+        if (trimmedLine.startsWith('Ready for the next prompt 22')) {
+          break;
+        }
+
         if (!tableStarted && headerRegex.test(trimmedLine)) {
           tableStarted = true;
           continue;
         }
-        if (!tableStarted || !trimmedLine.startsWith('|') || trimmedLine.includes('---')) {
+        if (
+          !tableStarted ||
+          !trimmedLine.startsWith('|') ||
+          trimmedLine.includes('---')
+        ) {
           continue;
         }
 
-        const columns = trimmedLine.split('|').map((c) => c.trim()).slice(1, -1);
+        const columns = trimmedLine
+          .split('|')
+          .map((c) => c.trim())
+          .slice(1, -1);
         if (columns.length < 6) continue;
 
         let phaseRaw = columns[0];
@@ -377,7 +452,10 @@ export class JobDataService {
         const startDate = columns[4];
         const endDate = columns[5];
 
-        if (phaseRaw.includes('Financial Milestone') || taskName.includes('Financial Milestone')) {
+        if (
+          phaseRaw.includes('Financial Milestone') ||
+          taskName.includes('Financial Milestone')
+        ) {
           continue;
         }
 
@@ -418,7 +496,11 @@ export class JobDataService {
   }
 
   private parseDate(dateStr: string): Date | null {
-    if (!dateStr || dateStr.trim() === '-' || dateStr.toLowerCase().includes('assumed complete')) {
+    if (
+      !dateStr ||
+      dateStr.trim() === '-' ||
+      dateStr.toLowerCase().includes('assumed complete')
+    ) {
       return null;
     }
     const date = new Date(dateStr);
@@ -436,7 +518,11 @@ export class JobDataService {
     return name;
   }
 
-  prepareProjectData(status: string, projectDetails: any, subtaskGroups: any[]): any {
+  prepareProjectData(
+    status: string,
+    projectDetails: any,
+    subtaskGroups: any[],
+  ): any {
     const formattedDate = (date: Date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -452,7 +538,7 @@ export class JobDataService {
       DesiredStartDate: formattedDate(
         projectDetails.desiredStartDate
           ? new Date(projectDetails.desiredStartDate)
-          : new Date()
+          : new Date(),
       ),
       WallStructure: projectDetails.wallStructure || '',
       WallStructureSubtask: JSON.stringify(subtaskGroups[2]?.subtasks || []),
@@ -469,7 +555,7 @@ export class JobDataService {
       FinishesSubtask: JSON.stringify(subtaskGroups[6]?.subtasks || []),
       ElectricalSupplyNeeds: projectDetails.electricalSupply || '',
       ElectricalSupplyNeedsSubtask: JSON.stringify(
-        subtaskGroups[3]?.subtasks || []
+        subtaskGroups[3]?.subtasks || [],
       ),
       Stories: Number(projectDetails.stories) || 0,
       BuildingSize: Number(projectDetails.buildingSize) || 0,
@@ -481,33 +567,36 @@ export class JobDataService {
     };
   }
 
- public navigateToJob(notification: any, dateFormat: string = 'dd/MM/yyyy'): void {
-  const jobId = notification.jobId || notification.id || notification;
+  public navigateToJob(
+    notification: any,
+    dateFormat: string = 'dd/MM/yyyy',
+  ): void {
+    const jobId = notification.jobId || notification.id || notification;
 
-  this.jobsService.getSpecificJob(jobId).subscribe(job => {
-    const parsedDate = new Date(job.desiredStartDate);
-    const formattedDate = formatDate(parsedDate, dateFormat, 'en-GB');
-    const params = {
-      jobId: job.jobId,
-      operatingArea: job.operatingArea,
-      address: job.address,
-      projectName: job.projectName,
-      jobType: job.jobType,
-      buildingSize: job.buildingSize,
-      wallStructure: job.wallStructure,
-      wallInsulation: job.wallInsulation,
-      roofStructure: job.roofStructure,
-      roofInsulation: job.roofInsulation,
-      electricalSupply: job.electricalSupply,
-      finishes: job.finishes,
-      foundation: job.foundation,
-      date: formattedDate,
-      documents: job.documents,
-      latitude: job.latitude,
-      longitude: job.longitude,
-      biddingType: job.biddingType,
-    };
-    this.router.navigate(['/view-quote'], { queryParams: params });
-  });
-}
+    this.jobsService.getSpecificJob(jobId).subscribe((job) => {
+      const parsedDate = new Date(job.desiredStartDate);
+      const formattedDate = formatDate(parsedDate, dateFormat, 'en-GB');
+      const params = {
+        jobId: job.jobId,
+        operatingArea: job.operatingArea,
+        address: job.address,
+        projectName: job.projectName,
+        jobType: job.jobType,
+        buildingSize: job.buildingSize,
+        wallStructure: job.wallStructure,
+        wallInsulation: job.wallInsulation,
+        roofStructure: job.roofStructure,
+        roofInsulation: job.roofInsulation,
+        electricalSupply: job.electricalSupply,
+        finishes: job.finishes,
+        foundation: job.foundation,
+        date: formattedDate,
+        documents: job.documents,
+        latitude: job.latitude,
+        longitude: job.longitude,
+        biddingType: job.biddingType,
+      };
+      this.router.navigate(['/view-quote'], { queryParams: params });
+    });
+  }
 }

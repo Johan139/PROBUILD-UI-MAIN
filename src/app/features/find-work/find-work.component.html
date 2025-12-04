@@ -1,4 +1,8 @@
 <div class="find-work-container">
+  <div class="header-container">
+    <h1>Find Work</h1>
+    <p>Search for projects in your area</p>
+  </div>
   <div class="tabs">
     <button (click)="setActiveTab('allJobs')" [class.active]="activeTab === 'allJobs'">All Jobs</button>
     <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
@@ -16,14 +20,14 @@
         </div>
         <div class="advanced-filters">
           <div>
-            <label for="distance">Distance: {{ distance }} {{ distanceUnit }}</label>
-            <input type="range" id="distance" min="0" max="100000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
+            <label for="distance">Distance from your current location: {{ distance }} {{ distanceUnit }}</label>
+            <input type="range" id="distance" min="0" max="1000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
           </div>
           <div class="filter-row">
             <button mat-icon-button (click)="toggleSortDirection()" class="sort-direction-button">
               <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
             </button>
-            <mat-form-field>
+            <mat-form-field matTooltip="Sort jobs by distance, start date, or recently added" [matTooltipShowDelay]="500">
               <mat-label>Sort by</mat-label>
               <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
                 <mat-option value="distance">Distance</mat-option>
@@ -31,7 +35,7 @@
                 <mat-option value="postedDate">Recently Added</mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field>
+            <mat-form-field matTooltip="Filter jobs by specific trades" [matTooltipShowDelay]="500">
               <mat-label>Trades</mat-label>
               <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
                 <mat-option *ngFor="let trade of allTrades" [value]="trade">
@@ -39,7 +43,7 @@
                 </mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field>
+            <mat-form-field matTooltip="Filter jobs by type" [matTooltipShowDelay]="500">
               <mat-label>Job Type</mat-label>
               <mat-select multiple [(ngModel)]="selectedJobTypes" (ngModelChange)="applyFilters()">
                 <mat-option *ngFor="let type of allJobTypes" [value]="type.value">{{type.viewValue}}</mat-option>

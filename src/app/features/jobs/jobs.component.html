@@ -1,176 +1,550 @@
-<div class="container" [attr.inert]="showAlert || isDialogOpen ? '' : null">
-  <div class="row">
+<div
+  class="jobs-container"
+  [attr.inert]="showAlert || isDialogOpen ? '' : null"
+>
+  <div class="job-header">
+    <div class="header-left">
+      <button
+        class="back-btn"
+        (click)="NavigateBack()"
+        matTooltip="Go Back"
+        matTooltipShowDelay="500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m12 19-7-7 7-7" />
+          <path d="M19 12H5" />
+        </svg>
+      </button>
+      <div>
+        <h2>{{ projectDetails?.projectName }}</h2>
+        <span class="project-id">Project ID: {{ projectDetails?.jobId }}</span>
+      </div>
+    </div>
+    <div class="action-buttons">
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn publish-btn"
+        mat-raised-button
+        (click)="publishJob()"
+        matTooltip="Make this job available for bidding by subcontractors and vendors"
+        matTooltipShowDelay="500"
+      >
+        Publish Job
+      </button>
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn save-btn"
+        mat-raised-button
+        (click)="subtaskService.saveOnly()"
+        matTooltip="Save the current state of the job and subtasks without publishing"
+        matTooltipShowDelay="500"
+      >
+        Save Job
+      </button>
+      <button
+        *ngIf="isProjectOwner"
+        class="submit-btn delete-btn"
+        mat-raised-button
+        (click)="subtaskService.discard()"
+        matTooltip="Discard all changes and revert the job to its last saved state"
+        matTooltipShowDelay="500"
+      >
+        Discard Job
+      </button>
+      <!-- Reports Dropdown -->
+      <button
+        class="submit-btn save-btn"
+        mat-raised-button
+        [matMenuTriggerFor]="reportsMenu"
+        matTooltip="View project reports and documents"
+        matTooltipShowDelay="500"
+      >
+        <mat-icon>download</mat-icon>
+        Export Report
+      </button>
+      <mat-menu #reportsMenu="matMenu">
+        <button mat-menu-item (click)="openDocumentsDialog()">
+          <mat-icon>description</mat-icon>
+          <span>View Documents</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="openReportDialog()"
+          [disabled]="isReportLoading"
+        >
+          <mat-icon>assessment</mat-icon>
+          <span *ngIf="!isReportLoading">View Full Report</span>
+          <span *ngIf="isReportLoading">Loading...</span>
+        </button>
+        <button mat-menu-item (click)="openBillOfMaterialsDialog()">
+          <mat-icon>list_alt</mat-icon>
+          <span>View Bill of Materials</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="openExecutiveSummaryDialog()"
+          [disabled]="isReportLoading"
+        >
+          <mat-icon>summarize</mat-icon>
+          <span *ngIf="!isReportLoading">View Executive Summary</span>
+          <span *ngIf="isReportLoading">Loading...</span>
+        </button>
+        <button
+          mat-menu-item
+          *ngIf="!projectDetails?.isSelected"
+          (click)="openEnvironmentalReportDialog()"
+          [disabled]="isReportLoading"
+        >
+          <mat-icon>eco</mat-icon>
+          <span *ngIf="!isReportLoading">View Environmental Report</span>
+          <span *ngIf="isReportLoading">Loading...</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="nav-tabs">
+    <button
+      (click)="setActiveTab('overview')"
+      [class.active]="activeTab === 'overview'"
+    >
+      Overview
+    </button>
+    <button
+      (click)="setActiveTab('budget')"
+      [class.active]="activeTab === 'budget'"
+    >
+      Budget Tracking
+    </button>
+    <button
+      (click)="setActiveTab('timeline')"
+      [class.active]="activeTab === 'timeline'"
+    >
+      Timeline
+    </button>
+    <button
+      (click)="setActiveTab('team')"
+      [class.active]="activeTab === 'team'"
+    >
+      Team & Subcontractors
+    </button>
+    <button
+      (click)="setActiveTab('blueprints')"
+      [class.active]="activeTab === 'blueprints'"
+    >
+      Blueprint Viewer
+    </button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div [hidden]="activeTab !== 'overview'" class="tab-content fade-in">
     <div class="fullcolumn">
+      <app-project-overview
+        [projects]="overviewProjects"
+        [liveProjectsCount]="12"
+        [biddingProjectsCount]="5"
+        [projectDetails]="projectDetails"
+        [isLoading]="isLoading"
+        [startDateDisplay]="startDateDisplay"
+        [forecast]="store.getState().forecast"
+        [weatherError]="store.getState().weatherError"
+        [temperatureUnit]="temperatureUnit"
+        [teamMemberCount]="assignedTeamMembers.length"
+        [timelineData]="timelineGroups"
+        (navigateToTab)="handleTabNavigation($event)"
+      ></app-project-overview>
+    </div>
+  </div>
+
+  <!-- BUDGET TRACKING TAB -->
+  <div *ngIf="activeTab === 'budget'" class="tab-content fade-in">
+    <app-project-budget-tracking
+      [projectDetails]="projectDetails"
+    ></app-project-budget-tracking>
+  </div>
+
+  <!-- TIMELINE TAB -->
+  <div *ngIf="activeTab === 'timeline'" class="tab-content fade-in">
+    <mat-accordion multi>
+      <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title class="timeline-title"
+            >Probuild Construction Timeline</mat-panel-title
+          >
+        </mat-expansion-panel-header>
+        <mat-divider class="timeline-divider"></mat-divider>
+        <div class="timeline-wrapper">
+          <app-timeline
+            [taskGroups]="timelineGroups"
+            [isProjectOwner]="isProjectOwner"
+            (onGroupClick)="timelineService.handleGroupClick($event)"
+            (onGroupMove)="handleGroupMove($event)"
+            (onEditGroup)="timelineService.handleEditGroup($event)"
+          >
+          </app-timeline>
+        </div>
+      </mat-expansion-panel>
+
+      <!-- Subtasks Section -->
+      <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Tasks and Subtasks</mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-divider></mat-divider>
+        <div class="subtask-section">
+          <div
+            class="subtask-table"
+            *ngFor="let table of store.getState().subtaskGroups"
+          >
+            <div class="table-header">
+              <h3>{{ table.title }}</h3>
+              <button
+                *ngIf="authService.hasPermission('createJobs')"
+                class="submit-btn"
+                (click)="subtaskService.addSubtask(table)"
+              >
+                Add Subtask
+              </button>
+            </div>
+            <table class="themed-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Days</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Task Status</th>
+                  <th>Actions</th>
+                  <th>Notes</th>
+                  <th>Approve</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="
+                    let subtask of subtaskService.getVisibleSubtasks(table);
+                    let i = index
+                  "
+                >
+                  <td>
+                    <input
+                      type="text"
+                      [(ngModel)]="subtask.task"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      [(ngModel)]="subtask.days"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                      (change)="
+                        isProjectOwner &&
+                          subtaskService.updateSubtaskDates(table, i)
+                      "
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      [(ngModel)]="subtask.startDate"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                      (change)="
+                        isProjectOwner &&
+                          subtaskService.updateSubtaskDates(table, i)
+                      "
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      [(ngModel)]="subtask.endDate"
+                      class="no-border"
+                      [readonly]="!isProjectOwner"
+                    />
+                  </td>
+                  <td>
+                    {{ subtask.status || "Pending" }}
+                    <!-- ✅ Non-editable status display -->
+                  </td>
+                  <td>
+                    <button
+                      *ngIf="authService.hasPermission('deleteJobs')"
+                      class="submit-btn delete-btn"
+                      (click)="subtaskService.deleteSubtask(table, i)"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      class="submit-btn"
+                      (click)="openNoteDialog(subtask)"
+                    >
+                      Update
+                    </button>
+                  </td>
+                  <td>
+                    <mat-checkbox
+                      [(ngModel)]="subtask.accepted"
+                      [disabled]="!isProjectOwner"
+                    ></mat-checkbox>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            (click)="subtaskService.acceptAllSubtasks()"
+            matTooltip="Mark all subtasks as approved"
+          >
+            Accept All Subtasks
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn publish-btn"
+            mat-raised-button
+            (click)="publishJob()"
+            matTooltip="Make this job available for bidding by subcontractors and vendors"
+            matTooltipShowDelay="500"
+          >
+            Publish Job
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="subtaskService.saveOnly()"
+            matTooltip="Save the current state of the job and subtasks without publishing"
+            matTooltipShowDelay="500"
+          >
+            Save Job
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn delete-btn"
+            mat-raised-button
+            (click)="subtaskService.discard()"
+            matTooltip="Discard all changes and revert the job to its last saved state"
+            matTooltipShowDelay="500"
+          >
+            Discard Job
+          </button>
+          <!-- Reports Dropdown -->
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            [matMenuTriggerFor]="reportsMenu"
+            matTooltip="View project reports and documents"
+            matTooltipShowDelay="500"
+          >
+            <mat-icon>download</mat-icon>
+            Export Report
+          </button>
+          <mat-menu #reportsMenu="matMenu">
+            <button mat-menu-item (click)="openDocumentsDialog()">
+              <mat-icon>description</mat-icon>
+              <span>View Documents</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>assessment</mat-icon>
+              <span *ngIf="!isReportLoading">View Full Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button mat-menu-item (click)="openBillOfMaterialsDialog()">
+              <mat-icon>list_alt</mat-icon>
+              <span>View Bill of Materials</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openExecutiveSummaryDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>summarize</mat-icon>
+              <span *ngIf="!isReportLoading">View Executive Summary</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button
+              mat-menu-item
+              *ngIf="!projectDetails?.isSelected"
+              (click)="openEnvironmentalReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>eco</mat-icon>
+              <span *ngIf="!isReportLoading">View Environmental Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+
+  <!-- TEAM TAB -->
+  <div *ngIf="activeTab === 'team'" class="tab-content fade-in">
+    <div class="two-column-grid">
+      <!-- Invite Form -->
       <mat-card>
         <mat-card-header>
-          <mat-card-title>Job: {{projectDetails.projectName}}</mat-card-title>
+          <mat-card-title>Invite New Member</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <mat-divider></mat-divider>
-          <div *ngIf="isLoading">
+          <form [formGroup]="teamForm" (ngSubmit)="inviteTeamMember()">
+            <div class="form-row" style="flex-direction: column">
+              <mat-form-field appearance="fill" style="width: 100%">
+                <mat-label>First Name</mat-label>
+                <input matInput formControlName="firstName" placeholder=" " />
+                <mat-error
+                  *ngIf="teamForm.get('firstName')?.hasError('required')"
+                >
+                  Mandatory Field
+                </mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="fill" style="width: 100%">
+                <mat-label>Last Name</mat-label>
+                <input matInput formControlName="lastName" placeholder=" " />
+                <mat-error
+                  *ngIf="teamForm.get('lastName')?.hasError('required')"
+                >
+                  Mandatory Field
+                </mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="fill" style="width: 100%">
+                <mat-label>Role</mat-label>
+                <mat-select formControlName="role">
+                  <mat-option
+                    *ngFor="let role of availableRoles"
+                    [value]="role.value"
+                  >
+                    {{ role.display }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="teamForm.get('role')?.hasError('required')">
+                  Mandatory Field
+                </mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="fill" style="width: 100%">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" placeholder=" " />
+                <mat-error *ngIf="teamForm.get('email')?.hasError('required')">
+                  Mandatory Field
+                </mat-error>
+                <mat-error *ngIf="teamForm.get('email')?.hasError('email')">
+                  Invalid email format
+                </mat-error>
+              </mat-form-field>
+
+              <button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                [disabled]="teamForm.invalid || isSendingInvite"
+                matTooltip="Send invite and assign to this job"
+                matTooltipShowDelay="500"
+              >
+                {{ isSendingInvite ? "Sending..." : "Invite & Assign" }}
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Member List -->
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Assigned Team Members</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="isLoadingTeam">
             <app-loader></app-loader>
           </div>
 
-          <!-- Project Details Section -->
-          <div class="job-details">
-            <p><strong>Start Date:</strong> {{startDateDisplay}}</p>
-            <div class="address-container">
-              <div *ngIf="!isEditingAddress" class="address-display">
-                <span><strong>Address: </strong>
-                  <span *ngIf="projectDetails.address">{{projectDetails.address}}</span>
-                  <span *ngIf="!projectDetails.address && projectDetails.jobAddress?.formatted_address">{{projectDetails.jobAddress.formatted_address}}</span>
-                </span>
-                <button *ngIf="authService.hasPermission('editJobs')" mat-icon-button (click)="toggleAddressEdit(true)" class="edit-icon">
-                  <mat-icon>edit</mat-icon>
+          <div class="sub-list" *ngIf="!isLoadingTeam">
+            <div
+              *ngIf="assignedTeamMembers.length === 0"
+              style="
+                padding: 1rem;
+                text-align: center;
+                color: var(--color-text-muted);
+              "
+            >
+              No team members assigned to this project yet.
+            </div>
+            <div class="sub-item" *ngFor="let user of assignedTeamMembers">
+              <div>
+                <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
+                <p class="draws">{{ user.jobRole || "" | roleDisplay }}</p>
+              </div>
+              <div>
+                <button
+                  class="btn-icon-danger"
+                  (click)="removeTeamMember(user)"
+                  matTooltip="Remove from project"
+                  matTooltipShowDelay="500"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="22" x2="16" y1="11" y2="11" />
+                  </svg>
                 </button>
               </div>
-              <div *ngIf="isEditingAddress" class="address-edit">
-                <mat-form-field appearance="fill">
-                  <mat-label>Address</mat-label>
-                  <input #addressInput matInput [formControl]="addressControl" [matAutocomplete]="auto" placeholder="Enter an address" />
-                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-                    <mat-option *ngFor="let suggestion of addressSuggestions" [value]="suggestion">
-                      {{ suggestion.description }}
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
-                <div class="edit-buttons">
-                  <button mat-raised-button color="primary" (click)="saveAddress()" [disabled]="isLoading">Save</button>
-                  <button mat-button (click)="toggleAddressEdit(false)">Cancel</button>
-                </div>
-              </div>
             </div>
-            <div *ngIf="store.getState().forecast?.length" class="weather-scroll-container">
-              <div *ngFor="let day of store.getState().forecast" class="forecast-card">
-                <div class="date">{{ day.date }}</div>
-                <img [src]="day.iconUrl" alt="Weather Icon" />
-                <div class="condition">{{ day.condition }}</div>
-                <div class="temp">
-                  <span class="high">{{ day.highTemp }}°</span>
-                  <span class="low">{{ day.lowTemp }}°</span>
-                </div>
-                <div class="precip">
-                  {{ day.precipitationProbability }}%
-                </div>
-              </div>
-            </div>
-
-            <div *ngIf="store.getState().weatherError" class="weather-error">
-              {{ store.getState().weatherError }}
-            </div>
-          </div>
-
-          <!-- Timeline Section -->
-          <div class="timeline-section">
-            <mat-card-title class="timeline-title">Probuild Construction Timeline</mat-card-title>
-            <mat-divider class="timeline-divider"></mat-divider>
-            <div class="chart-container">
-              <div class="timeline-wrapper">
-                <app-timeline
-                  [taskGroups]="timelineGroups"
-                  [isProjectOwner]="isProjectOwner"
-                  (onGroupClick)="timelineService.handleGroupClick($event)"
-                  (onGroupMove)="handleGroupMove($event)"
-                  (onEditGroup)="timelineService.handleEditGroup($event)">
-                </app-timeline>
-              </div>
-            </div>
-          </div>
-
-<!-- Subtasks Section -->
-<mat-card-title>Tasks and Subtasks</mat-card-title>
-<mat-divider></mat-divider>
-<div class="subtask-section">
-  <div class="subtask-table" *ngFor="let table of store.getState().subtaskGroups">
-    <div class="table-header">
-      <h3>{{table.title}}</h3>
-      <button *ngIf="authService.hasPermission('createJobs')" class="submit-btn" (click)="subtaskService.addSubtask(table)">
-        Add Subtask
-      </button>
-    </div>
-    <table class="themed-table">
-      <thead>
-        <tr>
-          <th>Task</th>
-          <th>Days</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th>Task Status</th>
-          <th>Actions</th>
-          <th>Notes</th>
-          <th>Approve</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let subtask of subtaskService.getVisibleSubtasks(table); let i = index">
-          <td>
-            <input type="text" [(ngModel)]="subtask.task" class="no-border" [readonly]="!isProjectOwner" />
-          </td>
-          <td>
-            <input type="number" [(ngModel)]="subtask.days" class="no-border" [readonly]="!isProjectOwner"
-                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="subtask.startDate" class="no-border" [readonly]="!isProjectOwner"
-                   (change)="isProjectOwner && subtaskService.updateSubtaskDates(table, i)" />
-          </td>
-          <td>
-            <input type="date" [(ngModel)]="subtask.endDate" class="no-border" [readonly]="!isProjectOwner" />
-          </td>
-          <td>
-            {{ subtask.status || 'Pending' }} <!-- ✅ Non-editable status display -->
-          </td>
-          <td>
-            <button *ngIf="authService.hasPermission('deleteJobs')" class="submit-btn delete-btn" (click)="subtaskService.deleteSubtask(table, i)">
-              Delete
-            </button>
-
-          </td>
-          <td>
-            <button class="submit-btn" (click)="openNoteDialog(subtask)">
-              Update
-            </button>
-          </td>
-          <td>
-            <mat-checkbox [(ngModel)]="subtask.accepted" [disabled]="!isProjectOwner"></mat-checkbox>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-          <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button *ngIf="isProjectOwner" class="submit-btn publish-btn" mat-raised-button (click)="publishJob()" matTooltip="Make this job available for bidding by subcontractors and vendors">
-              Publish Job
-            </button>
-            <button *ngIf="isProjectOwner" class="submit-btn save-btn" mat-raised-button (click)="subtaskService.saveOnly()" matTooltip="Save the current state of the job and subtasks without publishing">
-              Save Job
-            </button>
-            <button *ngIf="isProjectOwner" class="submit-btn delete-btn" mat-raised-button (click)="subtaskService.discard()" matTooltip="Discard all changes and revert the job to its last saved state">
-              Discard Job
-            </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()" matTooltip="View all documents associated with this job">
-              View Documents
-            </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()" matTooltip="View the AI-generated Bill of Materials for this job">
-              View Bill of Materials
-            </button>
-            <button *ngIf="!projectDetails.isSelected" class="submit-btn save-btn" mat-raised-button (click)="downloadEnvironmentalReport(projectDetails.jobId)" [disabled]="isGeneratingReport" matTooltip="Download a detailed environmental impact report for this job">
-              <span *ngIf="!isGeneratingReport">Download Environmental Report</span>
-              <span *ngIf="isGeneratingReport">Generating...</span>
-            </button>
-            <button class="submit-btn save-btn" mat-raised-button (click)="NavigateBack()" matTooltip="Return to the previous page">
-              Back
-            </button>
-            <button *ngIf="isProjectOwner" class="submit-btn save-btn" (click)="subtaskService.acceptAllSubtasks()" matTooltip="Mark all subtasks as approved">
-               Accept All Subtasks
-            </button>
           </div>
         </mat-card-content>
       </mat-card>
     </div>
+  </div>
+
+  <!-- BLUEPRINTS TAB -->
+  <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
+    <div *ngIf="isLoadingBlueprints" class="loading-overlay">
+      <app-loader></app-loader>
+    </div>
+    <mat-card>
+      <mat-card-content>
+        <app-project-blueprint-viewer
+          [mode]="'view'"
+          [uploadedFiles]="blueprintFiles"
+          [selectedFile]="selectedBlueprint"
+          [pdfSrc]="blueprintPdfSrc"
+          (fileSelected)="handleBlueprintSelected($event)"
+        >
+        </app-project-blueprint-viewer>
+      </mat-card-content>
+    </mat-card>
   </div>
 </div>
 
@@ -186,19 +560,31 @@
       </div>
       <!-- Show content only when not loading -->
       <div *ngIf="!isDocumentsLoading">
-        <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
+        <div
+          *ngIf="documents.length === 0 && !documentsError"
+          class="no-documents"
+        >
           <p>No documents available for this quote.</p>
         </div>
         <div *ngIf="documentsError" class="no-documents">
-          <p>{{documentsError}}</p>
+          <p>{{ documentsError }}</p>
         </div>
         <div *ngIf="documents.length > 0" class="documents-list">
-          <div class="document-item" *ngFor="let doc of documents; let i = index">
+          <div
+            class="document-item"
+            *ngFor="let doc of documents; let i = index"
+          >
             <div class="document-info">
-              <span class="document-name">{{doc.fileName}}</span>
-              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
+              <span class="document-name">{{ doc.fileName }}</span>
+              <span class="document-meta"
+                >{{ doc.type }} - {{ doc.size | filesize }}</span
+              >
             </div>
-            <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+            <button
+              class="view-btn"
+              mat-raised-button
+              (click)="viewDocument(doc)"
+            >
               View
             </button>
           </div>
@@ -206,14 +592,20 @@
       </div>
     </mat-dialog-content>
     <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeDocumentsDialog()"
+      >
+        Close
+      </button>
     </mat-dialog-actions>
   </div>
 </ng-template>
 
 <!-- Bill of Materials Dialog -->
 <ng-template #billOfMaterialsDialog>
-  <div class="documents-dialog report-dialog">
+  <div class="documents-dialog report-dialog super-wide-dialog">
     <h2 mat-dialog-title>Document Processing Results</h2>
     <mat-dialog-content class="report-content">
       <div *ngIf="isBomLoading" class="loading-documents">
@@ -221,22 +613,38 @@
         <p>Loading processing results...</p>
       </div>
       <div *ngIf="!isBomLoading">
-        <div *ngIf="processingResults.length === 0 || bomError" class="no-documents" [attr.error]="bomError ? '' : null">
-          <p>{{bomError || 'No document processing results available.'}}</p>
+        <div
+          *ngIf="processingResults.length === 0 || bomError"
+          class="no-documents"
+          [attr.error]="bomError ? '' : null"
+        >
+          <p>{{ bomError || "No document processing results available." }}</p>
         </div>
-        <div *ngIf="processingResults.length > 0 && !bomError" class="report-list">
-          <div class="report-item" *ngFor="let result of processingResults; let i = index">
-            <div class="report-section" *ngFor="let section of result.parsedReport.sections">
-              <h3 class="report-section-title">{{section.title}}</h3>
+        <div
+          *ngIf="processingResults.length > 0 && !bomError"
+          class="report-list"
+        >
+          <div
+            class="report-item"
+            *ngFor="let result of processingResults; let i = index"
+          >
+            <div
+              class="report-section"
+              *ngFor="let section of result.parsedReport.sections"
+            >
+              <h3 class="report-section-title">{{ section.title }}</h3>
               <div class="report-section-content">
                 <!-- Handle text content -->
                 <div *ngIf="section.type === 'text'" class="report-text">
-                  <p *ngFor="let item of section.content" [innerHTML]="item"></p>
+                  <p
+                    *ngFor="let item of section.content"
+                    [innerHTML]="item"
+                  ></p>
                 </div>
                 <!-- Handle list content -->
                 <div *ngIf="section.type === 'list'" class="report-list-items">
                   <ul>
-                    <li *ngFor="let item of section.content">{{item}}</li>
+                    <li *ngFor="let item of section.content">{{ item }}</li>
                   </ul>
                 </div>
                 <!-- Handle table content (Materials List) -->
@@ -244,12 +652,14 @@
                   <table class="themed-table">
                     <thead>
                       <tr>
-                        <th *ngFor="let header of section.headers">{{header}}</th>
+                        <th *ngFor="let header of section.headers">
+                          {{ header }}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let row of section.content">
-                        <td *ngFor="let cell of row">{{cell}}</td>
+                        <td *ngFor="let cell of row">{{ cell }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -261,8 +671,31 @@
       </div>
     </mat-dialog-content>
     <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">Download PDF</button>
-      <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
+      <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">
+        Download PDF
+      </button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        [matMenuTriggerFor]="spreadsheetMenu"
+      >
+        Download as Spreadsheet
+      </button>
+      <mat-menu #spreadsheetMenu="matMenu">
+        <button mat-menu-item (click)="downloadAsSpreadsheet('csv')">
+          Download as CSV
+        </button>
+        <button mat-menu-item (click)="downloadAsSpreadsheet('excel')">
+          Download as Excel
+        </button>
+      </mat-menu>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeBillOfMaterialsDialog()"
+      >
+        Close
+      </button>
     </mat-dialog-actions>
   </div>
 </ng-template>
@@ -286,35 +719,106 @@
     <mat-dialog-actions align="end" class="note-actions">
       <div class="form-row button-row">
         <div class="button-group">
-          <button class="submit-btn save-btn" mat-raised-button (click)="closeNoteDialog()">Cancel</button>
-          <button class="submit-btn save-btn" mat-raised-button (click)="saveNoteDialog()">Save</button>
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="closeNoteDialog()"
+          >
+            Cancel
+          </button>
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="saveNoteDialog()"
+          >
+            Save
+          </button>
         </div>
         <div class="upload-container">
           <div *ngIf="isUploading" class="upload-progress">
             <p>Upload Progress: {{ progress }}%</p>
-            <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="progress"
+            ></mat-progress-bar>
           </div>
-          <div *ngIf="!isUploading && uploadedFilesCount > 0" class="upload-complete">
-            <p [matTooltip]="uploadedFileNames.join(', ')" matTooltipPosition="above">
+          <div
+            *ngIf="!isUploading && uploadedFilesCount > 0"
+            class="upload-complete"
+          >
+            <p
+              [matTooltip]="uploadedFileNames.join(', ')"
+              matTooltipPosition="above"
+            >
               {{ uploadedFilesCount }} file(s) uploaded successfully
             </p>
           </div>
           <div class="custom-file-upload">
             <label for="file-upload" class="upload-label submit-btn">
-              <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+              <img
+                src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                alt="Upload Icon"
+                class="upload-icon"
+              />
               Upload File
             </label>
-            <input id="file-upload" type="file" (change)="onFileSelected($event)" />
+            <input
+              id="file-upload"
+              type="file"
+              (change)="onFileSelected($event)"
+            />
           </div>
         </div>
       </div>
     </mat-dialog-actions>
   </div>
 </ng-template>
+
+<!-- Full Report Dialog -->
+<ng-template #reportDialog>
+  <div class="documents-dialog report-dialog super-wide-dialog">
+    <h2 mat-dialog-title>{{ reportTitle }}</h2>
+    <mat-dialog-content class="report-content">
+      <div *ngIf="reportError" class="no-documents" error>
+        <p>{{ reportError }}</p>
+      </div>
+      <div
+        *ngIf="reportHtml"
+        class="report-text-content"
+        [innerHTML]="reportHtml"
+      ></div>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="downloadFullReport()"
+        [disabled]="isGeneratingReport"
+      >
+        <span *ngIf="!isGeneratingReport">Download PDF</span>
+        <span *ngIf="isGeneratingReport">Generating...</span>
+      </button>
+      <button
+        class="submit-btn"
+        mat-raised-button
+        (click)="closeReportDialog()"
+      >
+        Close
+      </button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
 <!-- Alert Modal -->
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
-    <p>{{alertMessage}}</p>
-    <button class="alert-button submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
+    <p>{{ alertMessage }}</p>
+    <button
+      class="alert-button submit-btn"
+      mat-raised-button
+      (click)="closeAlert()"
+    >
+      OK
+    </button>
   </div>
 </div>

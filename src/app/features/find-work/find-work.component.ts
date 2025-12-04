@@ -2,7 +2,16 @@
 // TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
 // TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
 // TODO: hide this entire thing from general contractors (maybe?)
-import { Component, OnInit, OnDestroy, ViewChild, CUSTOM_ELEMENTS_SCHEMA, ViewChildren, QueryList, effect } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  CUSTOM_ELEMENTS_SCHEMA,
+  ViewChildren,
+  QueryList,
+  effect,
+} from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
 import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
@@ -71,7 +80,6 @@ interface JobMarker {
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
-
 export class FindWorkComponent implements OnInit, OnDestroy {
   @ViewChildren(MatPaginator) paginators = new QueryList<MatPaginator>();
   dataSource = new MatTableDataSource<Job>([]);
@@ -124,29 +132,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
+  radiusCircle: google.maps.Circle | null = null;
 
   applyMapTheme(theme: 'light' | 'dark') {
-
     const newMapId = theme === 'dark' ? darkMapId : lightMapId;
 
-    console.log(`Applying mapId: ${newMapId}`);
+    // console.log(`Applying mapId: ${newMapId}`);
     this.mapOptions = { ...this.mapOptions, mapId: newMapId };
 
     if (this.map) {
-    // Force map to re-render with new theme
-    const currentCenter = this.map.getCenter();
-    const currentZoom = this.map.getZoom();
+      // Force map to re-render with new theme
+      const currentCenter = this.map.getCenter();
+      const currentZoom = this.map.getZoom();
 
-    this.map.setOptions({ mapId: newMapId });
+      this.map.setOptions({ mapId: newMapId });
 
-    // Sometimes needed to force refresh
-    google.maps.event.trigger(this.map, 'resize');
-    if (currentCenter) {
-      this.map.setCenter(currentCenter);
-      this.map.setZoom(currentZoom || this.zoom);
+      // Sometimes needed to force refresh
+      google.maps.event.trigger(this.map, 'resize');
+      if (currentCenter) {
+        this.map.setCenter(currentCenter);
+        this.map.setZoom(currentZoom || this.zoom);
+      }
     }
   }
-}
 
   mapOptions: google.maps.MapOptions = {
     zoomControl: true,
@@ -160,7 +168,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     mapId: lightMapId,
     disableDefaultUI: false,
     gestureHandling: 'greedy',
-    styles: []
+    styles: [],
   };
 
   markerPositions: JobMarker[] = [];
@@ -174,7 +182,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private router: Router,
     private biddingService: BiddingService,
     private quoteService: QuoteService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
   ) {
     this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
     this.setupMapLoadingSubscription();
@@ -184,21 +192,23 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.applyMapTheme(isDark ? 'dark' : 'light');
 
       if (this.map) {
-      this.applyMapTheme(isDark ? 'dark' : 'light');
-    } else {
-      const mapId = isDark ? darkMapId : lightMapId;
-      this.mapOptions = { ...this.mapOptions, mapId };
-    }
-  });
+        this.applyMapTheme(isDark ? 'dark' : 'light');
+      } else {
+        const mapId = isDark ? darkMapId : lightMapId;
+        this.mapOptions = { ...this.mapOptions, mapId };
+      }
+    });
   }
 
   ngOnInit(): void {
-    this.selectedJobTypes = this.allJobTypes.map(t => t.value);
+    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
     this.loadJobs();
     this.centerOnBrowserLocation();
-    this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe(user => {
-      this.userTrade = user?.trade;
-    });
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user) => {
+        this.userTrade = user?.trade;
+      });
     this.determineDistanceUnit();
   }
 
@@ -213,25 +223,24 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.jobs.length > 0) {
       setTimeout(() => this.updateMapMarkers(), 100);
     }
+    this.updateRadiusCircle();
   }
 
   private setupMapLoadingSubscription(): void {
-    this.isApiLoaded$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(loaded => {
-        this.isMapLoading = !loaded;
-        if (!loaded) {
-          // Add a delay to distinguish between loading and error
-          setTimeout(() => {
-            if (!this.isMapLoading) return;
-            this.mapLoadError = true;
-            this.isMapLoading = false;
-          }, 10000); // 10 second timeout
-        } else {
-          this.mapLoadError = false;
-          // Update marker options with animation once Google Maps is loaded
-        }
-      });
+    this.isApiLoaded$.pipe(takeUntil(this.destroy$)).subscribe((loaded) => {
+      this.isMapLoading = !loaded;
+      if (!loaded) {
+        // Add a delay to distinguish between loading and error
+        setTimeout(() => {
+          if (!this.isMapLoading) return;
+          this.mapLoadError = true;
+          this.isMapLoading = false;
+        }, 10000); // 10 second timeout
+      } else {
+        this.mapLoadError = false;
+        // Update marker options with animation once Google Maps is loaded
+      }
+    });
   }
 
   loadJobs(): void {
@@ -245,86 +254,92 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     const jobs$ = this.jobsService.getAllJobs();
     const quotes$ = this.quoteService.getAllQuotes();
     const bids$ = this.jobsService.getBiddedJobs(userId);
-
-    forkJoin([jobs$, quotes$, bids$]).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ([jobs, quotes, bids]) => {
-        if (!jobs || jobs.length === 0) {
-          this.jobs = [];
-          this.filteredJobs = [];
-        } else {
-          this.jobs = jobs.map(job => {
-            const lat = parseFloat(job.latitude as any);
-            const lng = parseFloat(job.longitude as any);
-            if (isNaN(lat) || isNaN(lng)) {
-            }
-            return {
-              ...job,
-              latitude: lat,
-              longitude: lng
-            };
-          });
-        }
-
-        this.myQuotes = quotes;
-        this.draftQuotes.clear();
-        quotes.forEach(quote => {
-          if (quote.status === 'Draft' && quote.jobID) {
-            this.draftQuotes.set(quote.jobID, quote.id!);
+    forkJoin([jobs$, quotes$, bids$])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ([jobs, quotes, bids]) => {
+          if (!jobs || jobs.length === 0) {
+            this.jobs = [];
+            this.filteredJobs = [];
+          } else {
+            this.jobs = jobs.map((job) => {
+              const lat = parseFloat(job.latitude as any);
+              const lng = parseFloat(job.longitude as any);
+              if (isNaN(lat) || isNaN(lng)) {
+              }
+              return {
+                ...job,
+                latitude: lat,
+                longitude: lng,
+              };
+            });
           }
-        });
 
-        this.myBids = bids;
-        this.biddedJobIds = new Set(bids.map(b => b.jobId));
+          this.myQuotes = quotes;
+          this.draftQuotes.clear();
+          quotes.forEach((quote) => {
+            if (quote.status === 'Draft' && quote.jobID) {
+              this.draftQuotes.set(quote.jobID, quote.id!);
+            }
+          });
 
-        this.allTrades = [...new Set(this.jobs.flatMap(job => job.trades))].sort();
-        this.selectedTrades = [...this.allTrades];
-        this.loadFiltersFromLocalStorage();
-        this.getUserLocationAndCalculateDistances();
-        this.applyQuoteFilter();
+          this.myBids = bids;
+          this.biddedJobIds = new Set(bids.map((b) => b.jobId));
 
-        this.dataSource.data = this.filteredJobs;
-        this.filtersLoading = false;
-        if (this.paginators.toArray()[0]) {
-          this.dataSource.paginator = this.paginators.toArray()[0];
-        }
-        this.jobsLoading = false;
+          this.allTrades = [
+            ...new Set(this.jobs.flatMap((job) => job.trades)),
+          ].sort();
+          this.selectedTrades = [...this.allTrades];
+          this.loadFiltersFromLocalStorage();
+          this.getUserLocationAndCalculateDistances();
+          this.applyQuoteFilter();
 
-        if (this.map) {
-          setTimeout(() => this.updateMapMarkers(), 100);
-        }
-      },
-      error: (error) => {
-        this.jobsLoading = false;
-      }
-    });
+          this.dataSource.data = this.filteredJobs;
+          this.filtersLoading = false;
+          if (this.paginators.toArray()[0]) {
+            this.dataSource.paginator = this.paginators.toArray()[0];
+          }
+          this.jobsLoading = false;
+
+          if (this.map) {
+            setTimeout(() => this.updateMapMarkers(), 100);
+          }
+        },
+        error: (error) => {
+          this.jobsLoading = false;
+        },
+      });
   }
 
   applyQuoteFilter(): void {
     const combined: Bid[] = [];
     const processedJobIds = new Set<string>();
 
-    this.myQuotes.forEach(quote => {
+    this.myQuotes.forEach((quote) => {
       if (quote.jobID) {
-        const job = this.jobs.find(j => j.jobId === parseInt(quote.jobID!));
+        const job = this.jobs.find((j) => j.jobId === parseInt(quote.jobID!));
         if (job) {
           combined.push({
             id: 0, // Placeholder
             jobId: quote.jobID.toString(),
             subcontractorId: this.authService.getUserId()!,
-            subcontractorName: this.authService.currentUserSubject.value?.firstName + ' ' + this.authService.currentUserSubject.value?.lastName,
+            subcontractorName:
+              this.authService.currentUserSubject.value?.firstName +
+              ' ' +
+              this.authService.currentUserSubject.value?.lastName,
             amount: quote.total,
             status: quote.status!,
             isFinalist: false,
             quoteId: quote.id ?? undefined,
             documentUrl: '',
-            job: job
+            job: job,
           });
           processedJobIds.add(quote.jobID);
         }
       }
     });
 
-    this.myBids.forEach(bid => {
+    this.myBids.forEach((bid) => {
       if (!processedJobIds.has(bid.jobId.toString())) {
         combined.push(bid);
       }
@@ -332,7 +347,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     let filtered = combined;
     if (this.quoteStatusFilter !== 'All') {
-      filtered = combined.filter(item => item.status === this.quoteStatusFilter);
+      filtered = combined.filter(
+        (item) => item.status === this.quoteStatusFilter,
+      );
     }
 
     this.myBidsDataSource.data = filtered;
@@ -348,7 +365,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     if (tab === 'allJobs' && this.jobs.length === 0) {
       this.loadJobs();
-    } else if (tab === 'myBids' && this.myBids.length === 0 && this.myQuotes.length === 0) {
+    } else if (
+      tab === 'myBids' &&
+      this.myBids.length === 0 &&
+      this.myQuotes.length === 0
+    ) {
       this.loadJobs();
     }
   }
@@ -363,62 +384,72 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.markerClusterer.clearMarkers();
     }
 
-    this.markerPositions.forEach(marker => {
+    this.markerPositions.forEach((marker) => {
       if (marker.marker) {
         marker.marker.map = null;
       }
     });
     this.markerPositions = [];
 
-    google.maps.importLibrary("marker").then(markerLibrary => {
-      const { AdvancedMarkerElement, PinElement } = markerLibrary as google.maps.MarkerLibrary;
+    google.maps
+      .importLibrary('marker')
+      .then((markerLibrary) => {
+        const { AdvancedMarkerElement, PinElement } =
+          markerLibrary as google.maps.MarkerLibrary;
 
-      const jobsToMark = this.jobs.filter(job => { // Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
-        const lat = job.latitude;
-        const lng = job.longitude;
-        return !isNaN(lat) && !isNaN(lng);
+        const jobsToMark = this.jobs.filter((job) => {
+          // Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
+          const lat = job.latitude;
+          const lng = job.longitude;
+          return !isNaN(lat) && !isNaN(lng);
+        });
+
+        const markers = jobsToMark.map((job) => {
+          const position = { lat: job.latitude, lng: job.longitude };
+          const pinElement = new PinElement({
+            background: '#e6bf00',
+            borderColor: '#FFFFFF',
+            glyphColor: '#FFFFFF',
+            scale: 1.2,
+          });
+
+          const marker = new AdvancedMarkerElement({
+            position,
+            title: job.projectName,
+            content: pinElement.element,
+          });
+
+          marker.addListener('click', () => {
+            this.onMarkerClick({
+              jobId: job.jobId,
+              position,
+              title: job.projectName,
+            });
+          });
+
+          this.markerPositions.push({
+            position,
+            title: job.projectName,
+            jobId: job.jobId,
+            marker: marker,
+          });
+
+          return marker;
+        });
+
+        if (!this.markerClusterer) {
+          this.markerClusterer = new MarkerClusterer({
+            map: this.map,
+            markers: [],
+          });
+        }
+
+        this.markerClusterer.addMarkers(markers);
+      })
+      .catch((error) => {
+        console.error('Error loading marker library');
       });
-
-      const markers = jobsToMark.map(job => {
-        const position = { lat: job.latitude, lng: job.longitude };
-        const pinElement = new PinElement({
-          background: '#e6bf00',
-          borderColor: '#FFFFFF',
-          glyphColor: '#FFFFFF',
-          scale: 1.2,
-        });
-
-        const marker = new AdvancedMarkerElement({
-          position,
-          title: job.projectName,
-          content: pinElement.element,
-        });
-
-        marker.addListener('click', () => {
-          this.onMarkerClick({ jobId: job.jobId, position, title: job.projectName });
-        });
-
-        this.markerPositions.push({
-          position,
-          title: job.projectName,
-          jobId: job.jobId,
-          marker: marker
-        });
-
-        return marker;
-      });
-
-      if (!this.markerClusterer) {
-        this.markerClusterer = new MarkerClusterer({ map: this.map, markers: [] });
-      }
-
-      this.markerClusterer.addMarkers(markers);
-
-    }).catch(error => {
-      console.error('Error loading marker library');
-    });
   }
-
 
   // private centerMapOnJobs(): void {
   //   if (this.jobs.length === 0) return;
@@ -469,31 +500,40 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       navigator.geolocation.getCurrentPosition((position) => {
         this.center = {
           lat: position.coords.latitude,
-          lng: position.coords.longitude
+          lng: position.coords.longitude,
         };
         this.zoom = 10;
       });
     }
+    this.updateRadiusCircle();
   }
 
   private getUserLocationAndCalculateDistances(): void {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
 
-        this.jobs.forEach(job => {
-          const jobLat = job.latitude;
-          const jobLng = job.longitude;
-          job.distance = this.calculateDistance(userLat, userLng, jobLat, jobLng);
-        });
+          this.jobs.forEach((job) => {
+            const jobLat = job.latitude;
+            const jobLng = job.longitude;
+            job.distance = this.calculateDistance(
+              userLat,
+              userLng,
+              jobLat,
+              jobLng,
+            );
+          });
 
-        this.sortJobsByDistance();
-      }, (error) => {
-        console.error('Error getting user location:', error);
-        // If location fails, apply filters without distance
-        this.applyFilters();
-      });
+          this.sortJobsByDistance();
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+          // If location fails, apply filters without distance
+          this.applyFilters();
+        },
+      );
     } else {
       // If geolocation is not supported, apply filters without distance
       this.applyFilters();
@@ -509,14 +549,21 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
   }
 
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = this.distanceUnit === 'mi' ? 3959 : 6371; // Radius of the Earth in miles or km
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(this.deg2rad(lat1)) *
+        Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -526,12 +573,14 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   private sortJobsByDistance(): void {
-    this.jobs.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    this.jobs.sort(
+      (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity),
+    );
     this.applyFilters(); // Apply filters AFTER sorting is complete
   }
 
   onMarkerClick(marker: JobMarker): void {
-    this.selectedJob = this.jobs.find(j => j.jobId === marker.jobId) || null;
+    this.selectedJob = this.jobs.find((j) => j.jobId === marker.jobId) || null;
   }
 
   closeJobInfo(): void {
@@ -557,9 +606,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   highlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find(m => m.jobId === jobId);
+    const marker = this.markerPositions.find((m) => m.jobId === jobId);
     if (marker && marker.marker) {
-      google.maps.importLibrary("marker").then((markerLib) => {
+      google.maps.importLibrary('marker').then((markerLib) => {
         const { PinElement } = markerLib as any;
         const pinElement = new PinElement({
           background: '#fbd008',
@@ -573,9 +622,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   unhighlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find(m => m.jobId === jobId);
+    const marker = this.markerPositions.find((m) => m.jobId === jobId);
     if (marker && marker.marker) {
-      google.maps.importLibrary("marker").then((markerLib) => {
+      google.maps.importLibrary('marker').then((markerLib) => {
         const { PinElement } = markerLib as any;
         const pinElement = new PinElement({
           background: '#e6bf00',
@@ -589,47 +638,65 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    const selectedPrefs = Object.keys(this.selectedPreferences)
-      .filter(key => this.selectedPreferences[key]);
+    const selectedPrefs = Object.keys(this.selectedPreferences).filter(
+      (key) => this.selectedPreferences[key],
+    );
 
     let filtered = [...this.jobs];
 
     if (selectedPrefs.length > 0) {
-      filtered = filtered.filter(job => {
+      filtered = filtered.filter((job) => {
         if (!job.jobPreferences) {
           return true;
         }
-        return selectedPrefs.some(pref => job.jobPreferences.includes(pref));
+        return selectedPrefs.some((pref) => job.jobPreferences.includes(pref));
       });
     }
 
     if (this.searchTerm) {
       const lowercasedTerm = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(job =>
-        (job.projectName && job.projectName.toLowerCase().includes(lowercasedTerm)) ||
-        (job.jobType && job.jobType.toLowerCase().includes(lowercasedTerm)) ||
-        (job.description && job.description.toLowerCase().includes(lowercasedTerm))
+      filtered = filtered.filter(
+        (job) =>
+          (job.projectName &&
+            job.projectName.toLowerCase().includes(lowercasedTerm)) ||
+          (job.jobType && job.jobType.toLowerCase().includes(lowercasedTerm)) ||
+          (job.description &&
+            job.description.toLowerCase().includes(lowercasedTerm)),
       );
     }
 
-    filtered = filtered.filter(job => job.distance === undefined || job.distance <= this.distance);
+    filtered = filtered.filter(
+      (job) => job.distance === undefined || job.distance <= this.distance,
+    );
 
     // Calculate trade counts based on currently filtered jobs (before applying trade filter itself)
-    this.tradeCounts = this.allTrades.reduce((acc, trade) => {
-      acc[trade] = filtered.filter(job => job.trades.includes(trade)).length;
-      return acc;
-    }, {} as { [trade: string]: number });
+    this.tradeCounts = this.allTrades.reduce(
+      (acc, trade) => {
+        acc[trade] = filtered.filter((job) =>
+          job.trades?.includes(trade),
+        ).length;
+        return acc;
+      },
+      {} as { [trade: string]: number },
+    );
 
-
-    if (this.selectedTrades && this.selectedTrades.length > 0 && this.selectedTrades.length < this.allTrades.length) {
-      filtered = filtered.filter(job =>
-        job.trades.some(trade => this.selectedTrades.includes(trade))
+    if (
+      this.selectedTrades &&
+      this.selectedTrades.length > 0 &&
+      this.selectedTrades.length < this.allTrades.length
+    ) {
+      filtered = filtered.filter((job) =>
+        job.trades?.some((trade) => this.selectedTrades.includes(trade)),
       );
     }
 
-    if (this.selectedJobTypes && this.selectedJobTypes.length > 0 && this.selectedJobTypes.length < this.allJobTypes.length) {
-      filtered = filtered.filter(job =>
-        job.jobType && this.selectedJobTypes.includes(job.jobType)
+    if (
+      this.selectedJobTypes &&
+      this.selectedJobTypes.length > 0 &&
+      this.selectedJobTypes.length < this.allJobTypes.length
+    ) {
+      filtered = filtered.filter(
+        (job) => job.jobType && this.selectedJobTypes.includes(job.jobType),
       );
     }
 
@@ -639,13 +706,14 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.updateMapMarkers();
     }
     this.saveFiltersToLocalStorage();
+    this.updateRadiusCircle();
   }
 
   clearFilters(): void {
     this.searchTerm = '';
     this.distance = 100;
     this.selectedTrades = [...this.allTrades];
-    this.selectedJobTypes = this.allJobTypes.map(t => t.value);
+    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
     this.sortBy = 'distance';
     this.sortDirection = 'asc';
     this.applyFilters();
@@ -656,19 +724,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     switch (this.sortBy) {
       case 'distance':
-        this.filteredJobs.sort((a, b) => ((a.distance ?? Infinity) - (b.distance ?? Infinity)) * direction);
+        this.filteredJobs.sort(
+          (a, b) =>
+            ((a.distance ?? Infinity) - (b.distance ?? Infinity)) * direction,
+        );
         break;
       case 'startDate':
         this.filteredJobs.sort((a, b) => {
-          const dateA = a.potentialStartDate ? new Date(a.potentialStartDate).getTime() : Infinity;
-          const dateB = b.potentialStartDate ? new Date(b.potentialStartDate).getTime() : Infinity;
+          const dateA = a.potentialStartDate
+            ? new Date(a.potentialStartDate).getTime()
+            : Infinity;
+          const dateB = b.potentialStartDate
+            ? new Date(b.potentialStartDate).getTime()
+            : Infinity;
           return (dateA - dateB) * direction;
         });
         break;
       case 'postedDate':
         this.filteredJobs.sort((a, b) => {
-          const dateA = a.biddingStartDate ? new Date(a.biddingStartDate).getTime() : 0;
-          const dateB = b.biddingStartDate ? new Date(b.biddingStartDate).getTime() : 0;
+          const dateA = a.biddingStartDate
+            ? new Date(a.biddingStartDate).getTime()
+            : 0;
+          const dateB = b.biddingStartDate
+            ? new Date(b.biddingStartDate).getTime()
+            : 0;
           return (dateB - dateA) * direction;
         });
         break;
@@ -685,7 +764,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (job.latitude && job.longitude) {
       this.center = {
         lat: job.latitude,
-        lng: job.longitude
+        lng: job.longitude,
       };
       this.zoom = 12;
     }
@@ -707,9 +786,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       const filters = JSON.parse(savedFilters);
       this.distance = filters.distance ?? this.distance;
       this.selectedTrades = filters.selectedTrades ?? [...this.allTrades];
-      this.selectedJobTypes = filters.selectedJobTypes ?? this.allJobTypes.map(t => t.value);
+      this.selectedJobTypes =
+        filters.selectedJobTypes ?? this.allJobTypes.map((t) => t.value);
       this.sortBy = filters.sortBy ?? this.sortBy;
-      }
+    }
   }
 
   openBidDialog(jobId: number, event: MouseEvent): void {
@@ -717,10 +797,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
       width: '800px',
-      data: { jobId: jobId }
+      data: { jobId: jobId },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result === 'create') {
         this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
       } else if (result) {
@@ -734,64 +814,99 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   getQuoteForBid(bid: Bid): Quote | null {
-    return this.myQuotes.find(q => q.id === bid.quoteId) ?? null;
+    return this.myQuotes.find((q) => q.id === bid.quoteId) ?? null;
   }
 
   getQuoteForJob(jobId: number): Quote | null {
-    const quote = this.myQuotes.find(q => q.jobID?.toString() === jobId.toString()) || null;
+    const quote =
+      this.myQuotes.find((q) => q.jobID?.toString() === jobId.toString()) ||
+      null;
     return quote;
   }
 
   getBidForJob(jobId: number): Bid | null {
-    const bid = this.myBids.find(b => b.jobId?.toString() === jobId.toString()) || null;
+    const bid =
+      this.myBids.find((b) => b.jobId?.toString() === jobId.toString()) || null;
     return bid;
   }
 
- onViewQuote(item: Bid | Quote): void {
-   const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-   if (quoteId) {
-     this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId } });
-   }
- }
+  onViewQuote(item: Bid | Quote): void {
+    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
+    if (quoteId) {
+      this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId } });
+    }
+  }
 
- onViewPdf(url: string): void {
-   window.open(url, '_blank');
- }
+  onViewPdf(url: string): void {
+    window.open(url, '_blank');
+  }
 
- onWithdrawBid(item: Bid | Quote): void {
-   const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-     width: '400px',
-     data: {
-       title: 'Confirm Withdrawal',
-       message: 'Are you sure you want to withdraw this bid? This action cannot be undone.'
-     }
-   });
+  onWithdrawBid(item: Bid | Quote): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Confirm Withdrawal',
+        message:
+          'Are you sure you want to withdraw this bid? This action cannot be undone.',
+      },
+    });
 
-   dialogRef.afterClosed().subscribe(result => {
-     if (result) {
-       if ('quoteId' in item) { // It's a Bid
-         this.biddingService.withdrawBid(item.id).subscribe({
-           next: () => this.loadJobs(),
-           error: (err) => console.error('Failed to withdraw bid:', err)
-         });
-       } else { // It's a Quote
-         this.quoteService.changeStatus(item.id?.toString()!, 'Withdrawn').subscribe({
-           next: () => this.loadJobs(),
-           error: (err) => console.error('Failed to withdraw quote:', err)
-         });
-       }
-     }
-   });
- }
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        if ('quoteId' in item) {
+          // It's a Bid
+          this.biddingService.withdrawBid(item.id).subscribe({
+            next: () => this.loadJobs(),
+            error: (err) => console.error('Failed to withdraw bid:', err),
+          });
+        } else {
+          // It's a Quote
+          this.quoteService
+            .changeStatus(item.id?.toString()!, 'Withdrawn')
+            .subscribe({
+              next: () => this.loadJobs(),
+              error: (err) => console.error('Failed to withdraw quote:', err),
+            });
+        }
+      }
+    });
+  }
 
- onEditBid(item: Bid | Quote): void {
-   const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-   if (quoteId) {
-     this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId, edit: true } });
-   }
- }
+  onEditBid(item: Bid | Quote): void {
+    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
+    if (quoteId) {
+      this.router.navigate(['/quote'], {
+        queryParams: { quoteId: quoteId, edit: true },
+      });
+    }
+  }
 
- hasBidded(jobId: number): boolean {
-   return this.biddedJobIds.has(jobId);
- }
+  hasBidded(jobId: number): boolean {
+    return this.biddedJobIds.has(jobId);
+  }
+
+  updateRadiusCircle(): void {
+    if (!this.map) return;
+
+    const radiusInMeters =
+      this.distanceUnit === 'mi'
+        ? this.distance * 1609.34
+        : this.distance * 1000;
+
+    if (this.radiusCircle) {
+      this.radiusCircle.setCenter(this.center);
+      this.radiusCircle.setRadius(radiusInMeters);
+    } else {
+      this.radiusCircle = new google.maps.Circle({
+        strokeColor: '#61A0AF',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#61A0AF',
+        fillOpacity: 0.15,
+        map: this.map,
+        center: this.center,
+        radius: radiusInMeters,
+      });
+    }
+  }
 }

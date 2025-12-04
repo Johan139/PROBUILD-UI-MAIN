@@ -10,12 +10,15 @@ import { ConnectionDto } from '../features/connections/connections.component';
 const BASE_URL = environment.BACKEND_URL;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ConnectionService {
   private apiUrl = `${BASE_URL}/connections`;
 
-  constructor(private http: HttpClient, private authService: AuthService) { }
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {}
 
   getConnections(): Observable<ConnectionDto[]> {
     return this.http.get<ConnectionDto[]>(this.apiUrl);

@@ -1,4 +1,4 @@
-import { JobDocument } from "../../../models/JobDocument";
+import { JobDocument } from '../../../models/JobDocument';
 
 export interface ChatMessage {
   Id: number;
@@ -29,23 +29,23 @@ export interface StartInitialReplyDto {
 }
 
 export interface Prompt {
-   id: number;
-   promptName: string;
-   promptKey: string;
-   displayName?: string;
-   description?: string;
+  id: number;
+  promptName: string;
+  promptKey: string;
+  displayName?: string;
+  description?: string;
 }
 
 export interface AiChatState {
- isChatOpen: boolean;
- isFullScreen: boolean;
- isLoading: boolean;
- error: string | null;
- prompts: Prompt[];
- conversations: Conversation[];
- activeConversationId: string | null;
- messages: ChatMessage[];
- currentConversation: Conversation | null;
- documents: JobDocument[];
- selectedPrompts: number[];
+  isChatOpen: boolean;
+  isFullScreen: boolean;
+  isLoading: boolean;
+  error: string | null;
+  prompts: Prompt[];
+  conversations: Conversation[];
+  activeConversationId: string | null;
+  messages: ChatMessage[];
+  currentConversation: Conversation | null;
+  documents: JobDocument[];
+  selectedPrompts: number[];
 }

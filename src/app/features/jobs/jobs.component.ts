@@ -1,30 +1,74 @@
-import { Component, OnInit, Inject, PLATFORM_ID, TemplateRef, ViewChild, OnDestroy, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, Router } from "@angular/router";
-import { AsyncPipe, NgForOf, NgIf, isPlatformBrowser } from "@angular/common";
-import { MatButton } from "@angular/material/button";
-import { MatCard, MatCardHeader, MatCardTitle, MatCardContent } from '@angular/material/card';
+import {
+  Component,
+  OnInit,
+  Inject,
+  PLATFORM_ID,
+  TemplateRef,
+  ViewChild,
+  OnDestroy,
+  ElementRef,
+  AfterViewInit,
+  ChangeDetectorRef,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  NgForOf,
+  NgIf,
+  isPlatformBrowser,
+  DecimalPipe,
+  CurrencyPipe,
+  CommonModule,
+} from '@angular/common';
+import { MatButton } from '@angular/material/button';
+import {
+  MatCard,
+  MatCardHeader,
+  MatCardTitle,
+  MatCardContent,
+} from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
-import { GanttChartComponent } from '../../components/gantt-chart/gantt-chart.component';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
 import { LoaderComponent } from '../../loader/loader.component';
-import { FormGroup, FormsModule, FormControl, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormGroup,
+  FormsModule,
+  FormControl,
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+} from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { FileSizePipe } from '../Documents/filesize.pipe';
-import { Subscription, timeout, debounceTime, switchMap, of, Observable, map, filter, take } from 'rxjs';
+import {
+  Subscription,
+  debounceTime,
+  switchMap,
+  of,
+  map,
+  filter,
+  take,
+} from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { Location } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { TimelineComponent, TimelineTask, TimelineGroup } from '../../components/timeline/timeline.component';
+import {
+  TimelineComponent,
+  TimelineGroup,
+} from '../../components/timeline/timeline.component';
 import { JobDataService } from './services/job-data.service';
 import { SubtaskService } from './services/subtask.service';
 import { DocumentService } from './services/document.service';
@@ -39,15 +83,45 @@ import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
+import {
+  MeasurementService,
+  TemperatureUnit,
+} from '../../services/measurement.service';
+import { SpreadsheetService } from './services/spreadsheet.service';
+import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { TeamManagementService } from '../../services/team-management.service';
+import {
+  JobAssignment,
+  JobUser,
+  JobAssignmentLink,
+} from './job-assignment/job-assignment.model';
+import { MatSelectModule } from '@angular/material/select';
+import { SharedModule } from '../../shared/shared.module';
+import { userTypes } from '../../data/user-types';
+import { BudgetService } from './services/budget.service';
+import { BudgetLineItem } from '../../models/budget-line-item.model';
+import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
+import { ProjectOverviewComponent } from './project-overview/project-overview.component';
+import { Project } from '../../models/project';
+import {
+  UploadedFileInfo,
+  FileUploadService,
+} from '../../services/file-upload.service';
+import { JobsService } from '../../services/jobs.service';
+import { ProjectService } from '../../services/project.service';
+import { ProjectBudgetTrackingComponent } from './project-budget-tracking/project-budget-tracking.component';
 
 @Component({
   selector: 'app-jobs',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     NgIf,
     NgForOf,
+    DecimalPipe,
+    CurrencyPipe,
     MatButton,
     MatCard,
     MatCardHeader,
@@ -66,14 +140,22 @@ import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initia
     FileSizePipe,
     MatCheckboxModule,
     TimelineComponent,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    MatMenuModule,
+    MatExpansionModule,
+    MatSelectModule,
+    SharedModule,
+    ProjectBlueprintViewerComponent,
+    ProjectOverviewComponent,
+    ProjectBudgetTrackingComponent,
   ],
   templateUrl: './jobs.component.html',
-  styleUrl: './jobs.component.scss'
+  styleUrl: './jobs.component.scss',
 })
 export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
+  @ViewChild('reportDialog') reportDialog!: TemplateRef<any>;
   @ViewChild('noteDialog') noteDialog!: TemplateRef<any>;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
   addressSuggestions: { description: string; place_id: string }[] = [];
@@ -111,10 +193,35 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   jobCardForm: FormGroup;
   sessionId: string = '';
   public isGeneratingReport = false;
+  public isReportLoading = false;
+  public reportHtml: string | null = null;
+  public reportTitle: string = 'Full Project Analysis Report';
+  public reportError: string | null = null;
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
   timelineGroups: TimelineGroup[] = [];
+  temperatureUnit: TemperatureUnit = 'C';
+
+  // Tab State
+  activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' =
+    'budget';
+
+  // Blueprint Viewer Data
+  blueprintFiles: UploadedFileInfo[] = [];
+  selectedBlueprint: UploadedFileInfo | null = null;
+  blueprintPdfSrc: string | Uint8Array | null = null;
+  isLoadingBlueprints: boolean = false;
+
+  // Project Overview Data
+  overviewProjects: Project[] = [];
+
+  // Team Data
+  assignedTeamMembers: JobUser[] = [];
+  isLoadingTeam: boolean = false;
+  teamForm: FormGroup;
+  availableRoles: { value: string; display: string }[] = [];
+  isSendingInvite: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -135,12 +242,280 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     public timelineService: TimelineService,
     private signalrService: SignalrService,
     private jobAssignmentService: JobAssignmentService,
+    private teamManagementService: TeamManagementService,
     public authService: AuthService,
     private weatherService: WeatherService,
-    private weatherImpactService: WeatherImpactService
+    private weatherImpactService: WeatherImpactService,
+    public measurementService: MeasurementService,
+    private spreadsheetService: SpreadsheetService,
+    private fb: FormBuilder,
+    private budgetService: BudgetService,
+    private fileUploadService: FileUploadService,
+    private jobsService: JobsService,
+    private projectService: ProjectService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
+
+    // Initialise Team Form
+    this.teamForm = this.fb.group({
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      role: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+    });
+
+    this.availableRoles = userTypes.filter(
+      (role) => role.value !== 'GENERAL_CONTRACTOR',
+    );
+  }
+
+  setActiveTab(
+    tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
+  ): void {
+    this.activeTab = tab;
+  }
+
+  handleTabNavigation(tab: string): void {
+    if (
+      ['overview', 'budget', 'timeline', 'team', 'blueprints'].includes(tab)
+    ) {
+      this.setActiveTab(
+        tab as 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
+      );
+    }
+  }
+
+  loadBlueprints(): void {
+    if (!this.projectDetails?.jobId) return;
+    this.isLoadingBlueprints = true;
+    this.documentService.fetchDocuments(this.projectDetails.jobId).subscribe({
+      next: (docs) => {
+        // Filter for PDFs and map to UploadedFileInfo
+        this.blueprintFiles = docs
+          .filter(
+            (doc: any) =>
+              (doc.name && doc.name.toLowerCase().endsWith('.pdf')) ||
+              (doc.type && doc.type.includes('pdf')),
+          )
+          .map(
+            (doc: any) =>
+              ({
+                name: doc.name || 'Untitled Document',
+                url: '', // No direct URL available
+                type: doc.type || 'application/pdf',
+                size: doc.size || 0,
+                id: doc.id,
+              }) as any,
+          );
+
+        if (this.blueprintFiles.length > 0) {
+          this.handleBlueprintSelected(this.blueprintFiles[0]);
+        } else {
+          this.isLoadingBlueprints = false;
+        }
+      },
+      error: (err) => {
+        console.error('Error loading blueprints', err);
+        this.isLoadingBlueprints = false;
+        this.snackBar.open('Failed to load blueprints.', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  handleBlueprintSelected(file: UploadedFileInfo): void {
+    this.selectedBlueprint = file;
+    this.isLoadingBlueprints = true;
+
+    const docId = (file as any).id;
+    if (docId) {
+      this.jobsService.downloadJobDocument(docId).subscribe({
+        next: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (reader.result) {
+              this.blueprintPdfSrc = new Uint8Array(
+                reader.result as ArrayBuffer,
+              );
+              this.isLoadingBlueprints = false;
+            }
+          };
+          reader.readAsArrayBuffer(blob);
+        },
+        error: (err) => {
+          console.error('Error downloading document', err);
+          this.isLoadingBlueprints = false;
+          this.snackBar.open('Failed to load blueprint content.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
+    } else if (file.url) {
+      this.fileUploadService.getFile(file.url).subscribe({
+        next: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (reader.result) {
+              this.blueprintPdfSrc = new Uint8Array(
+                reader.result as ArrayBuffer,
+              );
+              this.isLoadingBlueprints = false;
+            }
+          };
+          reader.readAsArrayBuffer(blob);
+        },
+        error: (err) => {
+          console.error('Error fetching blueprint blob', err);
+          this.isLoadingBlueprints = false;
+          this.snackBar.open('Failed to load blueprint file.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
+    }
+  }
+
+  loadAssignedTeam(): void {
+    if (!this.projectDetails?.jobId) return;
+
+    // Stale-While-Revalidate: Load from Local Storage first
+    const storageKey = `team_${this.projectDetails.jobId}`;
+    if (this.isBrowser) {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        try {
+          this.assignedTeamMembers = JSON.parse(cached);
+        } catch (e) {
+          // console.error('Error parsing cached team data', e);
+        }
+      }
+    }
+
+    this.isLoadingTeam = true;
+    this.jobAssignmentService.getJobAssignment().subscribe({
+      next: (assignments) => {
+        const jobId = Number(this.projectDetails.jobId);
+        const assignment = assignments.find((a) => a.id === jobId);
+        if (assignment && assignment.jobUser) {
+          this.assignedTeamMembers = assignment.jobUser;
+          // Update Local Storage with fresh data
+          if (this.isBrowser) {
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify(this.assignedTeamMembers),
+            );
+          }
+        } else {
+          this.assignedTeamMembers = [];
+        }
+        this.isLoadingTeam = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading assignments', err);
+        this.isLoadingTeam = false;
+        this.snackBar.open('Failed to load team members', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  inviteTeamMember(): void {
+    if (this.teamForm.valid) {
+      this.isSendingInvite = true;
+      const newMember = this.teamForm.value;
+      const inviterId = this.currentUserId;
+
+      if (!inviterId) {
+        this.snackBar.open('Cannot invite: User ID not found.', 'Close', {
+          duration: 3000,
+        });
+        this.isSendingInvite = false;
+        return;
+      }
+
+      // First add to team
+      this.teamManagementService.addTeamMember(newMember, inviterId).subscribe({
+        next: (member) => {
+          // Then assign to this job
+          const assignmentLink: JobAssignmentLink = {
+            userId: member.id,
+            jobId: Number(this.projectDetails.jobId),
+            jobRole: newMember.role,
+          };
+
+          this.jobAssignmentService
+            .createJobAssignment(assignmentLink)
+            .subscribe({
+              next: () => {
+                this.snackBar.open(
+                  'Team member invited and assigned!',
+                  'Close',
+                  { duration: 3000 },
+                );
+                this.isSendingInvite = false;
+                this.teamForm.reset();
+                // Refresh list
+                this.loadAssignedTeam();
+              },
+              error: (err) => {
+                console.error('Error assigning to job', err);
+                this.snackBar.open(
+                  'Member invited but failed to assign to job.',
+                  'Close',
+                  { duration: 3000 },
+                );
+                this.isSendingInvite = false;
+              },
+            });
+        },
+        error: (error) => {
+          if (error.status === 409) {
+            this.snackBar.open(error.error.message, 'Close', {
+              duration: 5000,
+            });
+          } else {
+            this.snackBar.open('Failed to invite team member.', 'Close', {
+              duration: 3000,
+            });
+          }
+          this.isSendingInvite = false;
+        },
+      });
+    }
+  }
+
+  removeTeamMember(user: JobUser): void {
+    if (
+      !confirm(
+        `Are you sure you want to remove ${user.firstName} from this project?`,
+      )
+    )
+      return;
+
+    const link: JobAssignmentLink = {
+      userId: user.id,
+      jobId: Number(this.projectDetails.jobId),
+      jobRole: user.jobRole || '',
+    };
+
+    this.jobAssignmentService.deleteUserAssignment(link).subscribe({
+      next: () => {
+        this.snackBar.open('User removed from project.', 'Close', {
+          duration: 3000,
+        });
+        this.loadAssignedTeam();
+      },
+      error: (err) => {
+        console.error('Error removing user', err);
+        this.snackBar.open('Failed to remove user.', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
   }
 
   get isDialogOpen(): boolean {
@@ -148,8 +523,16 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    this.projectService.projects$.subscribe(
+      (projects) => (this.overviewProjects = projects),
+    );
+    this.projectService.loadProjects();
+
     this.sessionId = uuidv4();
-    this.signalrService.startConnection(this.sessionId);
+    this.measurementService.getSettings().subscribe((settings) => {
+      this.temperatureUnit = settings.temperature;
+    });
+    this.signalrService.startConnection();
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
     });
@@ -158,50 +541,78 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.resetFileInput();
     });
 
-    this.route.queryParams.pipe(
-      take(1),
-      switchMap(params => {
-        this.jobDataService.fetchJobData(params);
-        return this.store.select(state => state.projectDetails);
-      }),
-      filter(projectDetails => !!projectDetails)
-    ).subscribe(projectDetails => {
-      this.projectDetails = projectDetails;
-      this.startDateDisplay = new Date(this.projectDetails.date).toISOString().split('T')[0];
-
-      if (this.projectDetails?.jobId) {
-        this.authService.currentUser$.pipe(
-          filter(user => !!user),
-          take(1)
-        ).subscribe(user => {
-          if (user) {
-            this.currentUserId = user.id;
-            this.checkProjectOwnerStatus(this.projectDetails.jobId, user.id);
-          }
-        });
-      }
-    });
-
-    this.store.select(state => state.projectDetails).pipe(
-      switchMap(projectDetails => {
-        if (!projectDetails || !projectDetails.latitude || !projectDetails.longitude) {
-          return of([]);
+    this.route.queryParams
+      .pipe(
+        take(1),
+        switchMap((params) => {
+          this.jobDataService.fetchJobData(params);
+          return this.store.select((state) => state.projectDetails);
+        }),
+        filter((projectDetails) => !!projectDetails),
+      )
+      .subscribe((projectDetails) => {
+        this.projectDetails = projectDetails;
+        if (this.projectDetails?.date) {
+          const d = new Date(this.projectDetails.date);
+          this.startDateDisplay = isNaN(d.getTime())
+            ? null
+            : d.toISOString().split('T')[0];
+        } else {
+          this.startDateDisplay = null;
         }
-        return this.timelineService.timelineGroups$.pipe(
-          switchMap(timelineGroups =>
-            this.store.select(s => s.forecast).pipe(
-              map(forecast => {
-                if (!forecast) return timelineGroups;
-                return this.weatherImpactService.applyWeatherImpact(timelineGroups, forecast);
-              })
+
+        if (this.projectDetails?.jobId) {
+          this.loadBlueprints();
+          this.loadAssignedTeam();
+          this.authService.currentUser$
+            .pipe(
+              filter((user) => !!user),
+              take(1),
             )
-          )
-        );
-      })
-    ).subscribe(processedTimelineGroups => {
-      this.timelineGroups = processedTimelineGroups;
-      this.cdr.detectChanges();
-    });
+            .subscribe((user) => {
+              if (user) {
+                this.currentUserId = user.id;
+                this.checkProjectOwnerStatus(
+                  this.projectDetails.jobId,
+                  user.id,
+                );
+              }
+            });
+        }
+      });
+
+    this.store
+      .select((state) => state.projectDetails)
+      .pipe(
+        switchMap((projectDetails) => {
+          if (
+            !projectDetails ||
+            !projectDetails.latitude ||
+            !projectDetails.longitude
+          ) {
+            return of([]);
+          }
+          return this.timelineService.timelineGroups$.pipe(
+            switchMap((timelineGroups) =>
+              this.store
+                .select((s) => s.forecast)
+                .pipe(
+                  map((forecast) => {
+                    if (!forecast) return timelineGroups;
+                    return this.weatherImpactService.applyWeatherImpact(
+                      timelineGroups,
+                      forecast,
+                    );
+                  }),
+                ),
+            ),
+          );
+        }),
+      )
+      .subscribe((processedTimelineGroups) => {
+        this.timelineGroups = processedTimelineGroups;
+        this.cdr.detectChanges();
+      });
   }
 
   ngAfterViewInit(): void {
@@ -211,8 +622,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           .pipe(
             debounceTime(300),
             switchMap((value) =>
-              this.addressService.getPlacePredictions(value)
-            )
+              this.addressService.getPlacePredictions(value),
+            ),
           )
           .subscribe((predictions) => {
             this.addressSuggestions = predictions;
@@ -256,7 +667,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   resetFileInput(): void {
     const fileInput = document.getElementById(
-      'file-upload'
+      'file-upload',
     ) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
@@ -288,7 +699,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.currentNoteTarget.id,
         this.noteText,
         userId || '',
-        this.sessionId
+        this.sessionId,
       )
       .subscribe(() => {
         this.jobCardForm.reset();
@@ -329,7 +740,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateBOMPDF(): void {
-    this.bomService.generateBOMPDF(this.processingResults);
+    this.bomService.generateBOMPDF(
+      this.processingResults,
+      this.projectDetails.projectName,
+    );
   }
 
   downloadEnvironmentalReport(jobId: string): void {
@@ -337,6 +751,179 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.reportService
       .downloadEnvironmentalReport(jobId)
       .finally(() => (this.isGeneratingReport = false));
+  }
+
+  openReportDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = 'Full Project Analysis Report';
+
+    this.reportService
+      .getFullReportContent(this.projectDetails.jobId)
+      .then((content) => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh',
+          });
+        } else {
+          this.snackBar.open('Could not retrieve report content.', 'Close', {
+            duration: 3000,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        this.snackBar.open(
+          'An error occurred while fetching the report.',
+          'Close',
+          { duration: 3000 },
+        );
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  openExecutiveSummaryDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = 'Executive Summary';
+
+    this.reportService
+      .getExecutiveSummary(this.projectDetails.jobId)
+      .then((content) => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh',
+          });
+        } else {
+          this.snackBar.open('Could not retrieve Executive Summary.', 'Close', {
+            duration: 3000,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        this.snackBar.open(
+          'An error occurred while fetching the Executive Summary.',
+          'Close',
+          { duration: 3000 },
+        );
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  openEnvironmentalReportDialog(): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = 'Environmental Lifecycle Report';
+
+    this.reportService
+      .getEnvironmentalReportContent(this.projectDetails.jobId)
+      .then((content) => {
+        if (content) {
+          this.reportHtml = content;
+          this.dialog.open(this.reportDialog, {
+            width: '90vw',
+            height: '90vh',
+            maxWidth: '1200px',
+            maxHeight: '90vh',
+          });
+        } else {
+          this.snackBar.open(
+            'Could not retrieve Environmental Report.',
+            'Close',
+            { duration: 3000 },
+          );
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        this.snackBar.open(
+          'An error occurred while fetching the Environmental Report.',
+          'Close',
+          { duration: 3000 },
+        );
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
+  closeReportDialog(): void {
+    this.dialog.closeAll();
+  }
+
+  downloadFullReport(): void {
+    if (!this.reportHtml) return;
+
+    this.isGeneratingReport = true;
+    const cleanTitle = this.reportTitle.replace(/ /g, '_');
+    const fileName = `${this.projectDetails.projectName}_${cleanTitle}.pdf`;
+
+    this.reportService
+      .generatePdfFromHtml(this.reportHtml, fileName, this.reportTitle)
+      .finally(() => {
+        this.isGeneratingReport = false;
+      });
+  }
+
+  downloadAsSpreadsheet(format: 'csv' | 'excel'): void {
+    const data: { [key: string]: any[] } = {};
+    this.processingResults.forEach((result) => {
+      result.parsedReport.sections.forEach(
+        (section: { title: string; headers: any[]; content: any[][] }) => {
+          if (!data[section.title]) {
+            data[section.title] = [];
+          }
+          section.content.forEach((row: { [x: string]: any }) => {
+            const newRow: { [key: string]: any } = {};
+            section.headers.forEach(
+              (header: string | number, index: string | number) => {
+                newRow[header] = row[index];
+              },
+            );
+            data[section.title].push(newRow);
+          });
+        },
+      );
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    const fileName = `${this.projectDetails.projectName}_BOM_${date}`;
+
+    if (format === 'csv') {
+      const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Download Multiple CSVs',
+          message:
+            'This will download a separate CSV file for each section of the Bill of Materials. Do you want to continue?',
+          confirmButtonText: 'Yes, Download All',
+          cancelButtonText: 'Cancel',
+        },
+      });
+
+      dialogRef.afterClosed().subscribe((result) => {
+        if (result) {
+          this.spreadsheetService.generateCsv(data, fileName);
+        }
+      });
+    } else if (format === 'excel') {
+      this.spreadsheetService.generateExcel(data, fileName);
+    }
   }
 
   openDocumentsDialog() {
@@ -417,36 +1004,48 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       });
   }
 
-  handleGroupMove(event: { groupId: string; newStartDate: Date; newEndDate: Date; }): void {
-    this.authService.currentUser$.pipe(
-      filter(user => !!user),
-      take(1)
-    ).subscribe(user => {
-      this.timelineService.handleGroupMove(event, this.projectDetails.jobId, user.id);
-    });
+  handleGroupMove(event: {
+    groupId: string;
+    newStartDate: Date;
+    newEndDate: Date;
+  }): void {
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+      )
+      .subscribe((user) => {
+        this.timelineService.handleGroupMove(
+          event,
+          this.projectDetails.jobId,
+          user.id,
+        );
+      });
   }
 
   NavigateBack(): void {
     this.location.back();
   }
 
-
   publishJob(): void {
     const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
       width: '400px',
-      data: {}
+      data: {},
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result && result.biddingType) {
         this.projectDetails.biddingType = result.biddingType;
-        this.projectDetails.requiredSubcontractorTypes = result.requiredSubcontractorTypes;
+        this.projectDetails.requiredSubcontractorTypes =
+          result.requiredSubcontractorTypes;
         this.projectDetails.status = 'BIDDING';
-        this.subtaskService.publishJob(this.projectDetails.jobId, this.projectDetails).subscribe(() => {
-          this.snackBar.open('Job published successfully!', 'Close', {
-            duration: 3000
+        this.subtaskService
+          .publishJob(this.projectDetails.jobId, this.projectDetails)
+          .subscribe(() => {
+            this.snackBar.open('Job published successfully!', 'Close', {
+              duration: 3000,
+            });
           });
-        });
       }
     });
   }
@@ -461,21 +1060,27 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
-    this.store.select(state => state.projectDetails).subscribe(projectDetails => {
-      if (projectDetails && projectDetails.userId === userId) {
-        this.isProjectOwner = true;
-      } else {
-        this.jobAssignmentService.getJobAssignment().subscribe(assignments => {
-          const numericJobId = +jobId;
-          const jobAssignment = assignments.find(assignment => assignment.id === numericJobId);
-          if (jobAssignment) {
-            const user = jobAssignment.jobUser.find(u => u.id === userId);
-            this.isProjectOwner = !!user;
-          } else {
-            this.isProjectOwner = false;
-          }
-        });
-      }
-    });
+    this.store
+      .select((state) => state.projectDetails)
+      .subscribe((projectDetails) => {
+        if (projectDetails && projectDetails.userId === userId) {
+          this.isProjectOwner = true;
+        } else {
+          this.jobAssignmentService
+            .getJobAssignment()
+            .subscribe((assignments) => {
+              const numericJobId = +jobId;
+              const jobAssignment = assignments.find(
+                (assignment) => assignment.id === numericJobId,
+              );
+              if (jobAssignment) {
+                const user = jobAssignment.jobUser.find((u) => u.id === userId);
+                this.isProjectOwner = !!user;
+              } else {
+                this.isProjectOwner = false;
+              }
+            });
+        }
+      });
   }
 }

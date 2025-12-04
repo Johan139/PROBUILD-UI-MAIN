@@ -1,13 +1,21 @@
-.permissions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 10px;
+.permission-group {
+  margin-bottom: 20px;
+
+  h3 {
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  mat-checkbox {
+    display: inline-block;
+    width: 200px;
+    margin-right: 15px;
+    margin-bottom: 10px;
+  }
 }
 
-mat-dialog-content {
-  padding-top: 20px;
-}
-
-mat-dialog-actions {
-  justify-content: flex-end;
+.select-all-container {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ccc;
 }

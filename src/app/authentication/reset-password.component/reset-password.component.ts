@@ -1,5 +1,10 @@
 import { Component, Injectable, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -31,8 +36,8 @@ import { LoaderComponent } from '../../loader/loader.component';
     MatDividerModule,
     MatProgressSpinnerModule,
     LoaderComponent,
-    HttpClientModule
-  ]
+    HttpClientModule,
+  ],
 })
 export class ResetPasswordComponent implements OnInit {
   resetForm!: FormGroup;
@@ -55,25 +60,39 @@ export class ResetPasswordComponent implements OnInit {
     this.token = this.route.snapshot.queryParamMap.get('token') || '';
     this.email = this.route.snapshot.queryParamMap.get('email') || '';
 
-    this.resetForm = this.fb.group({
-      password: ['',[
-          Validators.required,
-          Validators.minLength(10),
-          Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/)
-        ]],
-      confirmPassword: ['',[
-          Validators.required,
-          Validators.minLength(10),
-          Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/)
-        ]]
-    }, {
-      validator: this.passwordMatchValidator
-    });
+    this.resetForm = this.fb.group(
+      {
+        password: [
+          '',
+          [
+            Validators.required,
+            Validators.minLength(10),
+            Validators.pattern(
+              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+            ),
+          ],
+        ],
+        confirmPassword: [
+          '',
+          [
+            Validators.required,
+            Validators.minLength(10),
+            Validators.pattern(
+              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+            ),
+          ],
+        ],
+      },
+      {
+        validator: this.passwordMatchValidator,
+      },
+    );
   }
 
   passwordMatchValidator(form: FormGroup) {
     return form.get('password')?.value === form.get('confirmPassword')?.value
-      ? null : { mismatch: true };
+      ? null
+      : { mismatch: true };
   }
 
   onSubmit(): void {
@@ -84,19 +103,19 @@ export class ResetPasswordComponent implements OnInit {
     if (this.resetForm.invalid) return;
 
     const resetData = {
-        token: this.token,           // no encodeURIComponent here!
-        email: this.email,
-        Password: this.resetForm.value.password
-      };
+      token: this.token, // no encodeURIComponent here!
+      email: this.email,
+      Password: this.resetForm.value.password,
+    };
 
     this.forgotPasswordService.resetPassword(resetData).subscribe({
-        next: () => {
-          this.success = 'Password successfully reset. You can now log in.';
-          setTimeout(() => this.router.navigate(['/login']), 3000);
-        },
-        error: err => {
-          this.error = err.error.error;
-        }
-      });
+      next: () => {
+        this.success = 'Password successfully reset. You can now log in.';
+        setTimeout(() => this.router.navigate(['/login']), 3000);
+      },
+      error: (err) => {
+        this.error = err.error.error;
+      },
+    });
   }
 }
