@@ -25,11 +25,7 @@ export class RegistrationService {
     return this.httpClient.get<any[]>(`${BASE_URL_ACCOUNT}/states`);
   }
 
-getAllStates(): Observable<any[]> {
-  return this.httpClient.get<any[]>(`${BASE_URL_ACCOUNT}/states`);
-}
-
-getAllCountryNumberCodes(): Observable<any[]> {
-  return this.httpClient.get<any[]>(`${BASE_URL_ACCOUNT}/countries-codes`);
-}
+  getAllCountryNumberCodes(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL_ACCOUNT}/countries-codes`);
+  }
 }
