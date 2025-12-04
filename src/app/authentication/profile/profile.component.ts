@@ -149,6 +149,9 @@ export class ProfileComponent implements OnInit {
   isSaving = false;
   rowBusy = new Set<string>();
   isSendingInvite = false;
+  userLatitude: number | null = null;
+  userLongitude: number | null = null;
+
   isBrowser: boolean;
   subscriptionPackages: {
     value: string;
@@ -336,8 +339,20 @@ export class ProfileComponent implements OnInit {
 
     this.addressControl.valueChanges.subscribe((value) => {
       if (typeof value === 'string' && value.trim()) {
+        const request: google.maps.places.AutocompletionRequest = {
+          input: value,
+        };
+
+        if (this.userLatitude && this.userLongitude) {
+          request.location = new google.maps.LatLng(
+            this.userLatitude,
+            this.userLongitude,
+          );
+          request.radius = 50000; // 50 km radius — adjust as needed
+        }
+
         this.autocompleteService?.getPlacePredictions(
-          { input: value },
+          request,
           (predictions, status) => {
             if (
               status === google.maps.places.PlacesServiceStatus.OK &&
@@ -470,6 +485,21 @@ export class ProfileComponent implements OnInit {
         .catch((err) =>
           console.error('Google Maps script loading error:', err),
         );
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.userLatitude = pos.coords.latitude;
+          this.userLongitude = pos.coords.longitude;
+          console.log(
+            '📍 User location:',
+            this.userLatitude,
+            this.userLongitude,
+          );
+        },
+        (err) => {
+          console.warn('Geolocation blocked or failed:', err);
+        },
+      );
     }
   }
   private _filterCountries(value: string | null): any[] {
