@@ -702,7 +702,7 @@ export class TrialRegistrationComponent implements OnInit {
         });
         //THE USER MUST BE REGISTERED IN THE USER TABLE AS WELL.
         const selectedPackageValue =
-          this.registrationForm.value.subscriptionPackage;
+          this.registrationForm.getRawValue().subscriptionPackage;
         const selectedPackage = this.subscriptionPackages.find(
           (p) => p.value === selectedPackageValue
         );
@@ -805,20 +805,20 @@ export class TrialRegistrationComponent implements OnInit {
                     'Registration successful! Check your inbox for a verification email to activate your account.';
                   const userId = res.userId;
                   if (
-                    this.registrationForm.value.subscriptionPackage.includes(
-                      'Basic'
-                    )
+                    this.registrationForm
+                      .getRawValue()
+                      .subscriptionPackage.includes('Basic')
                   ) {
                     this.routeURL = 'login';
                     this.showAlert = true;
                   } else if (
-                    this.registrationForm.value.subscriptionPackage.includes(
-                      'Trial'
-                    )
+                    this.registrationForm
+                      .getRawValue()
+                      .subscriptionPackage.includes('Trial')
                   ) {
                     const userId = res.userId;
                     const packageName =
-                      this.registrationForm.value.subscriptionPackage;
+                      this.registrationForm.getRawValue().subscriptionPackage;
                     // Trigger trial subscription
                     this.httpClient
                       .post(
@@ -862,7 +862,7 @@ export class TrialRegistrationComponent implements OnInit {
     }
 
     const selectedPackageValue =
-      this.registrationForm.value.subscriptionPackage;
+      this.registrationForm.getRawValue().subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(
       (p) => p.value === selectedPackageValue
     );
@@ -959,20 +959,20 @@ export class TrialRegistrationComponent implements OnInit {
                 'Registration successful! Check your inbox for a verification email to activate your account.';
               const userId = res.userId;
               if (
-                this.registrationForm.value.subscriptionPackage.includes(
-                  'Basic'
-                )
+                this.registrationForm
+                  .getRawValue()
+                  .subscriptionPackage?.includes('Basic')
               ) {
                 this.routeURL = 'login';
                 this.showAlert = true;
               } else if (
-                this.registrationForm.value.subscriptionPackage.includes(
-                  'Trial'
-                )
+                this.registrationForm
+                  .getRawValue()
+                  .subscriptionPackage?.includes('Trial')
               ) {
                 const userId = res.userId;
                 const packageName =
-                  this.registrationForm.value.subscriptionPackage;
+                  this.registrationForm.getRawValue().subscriptionPackage;
                 // Trigger trial subscription
                 this.httpClient
                   .post(
