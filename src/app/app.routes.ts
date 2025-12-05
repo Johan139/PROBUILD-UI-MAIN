@@ -33,6 +33,7 @@ import { TrialRegistrationComponent } from './authentication/TrialRegistration/t
 import { NewProjectComponent } from './features/new-project/new-project.component';
 import { MyProjectsComponent } from './features/my-projects/my-projects.component';
 import { FindWorkComponent } from './features/find-work/find-work.component';
+import { AcceptInviteComponent } from './authentication/accept-invite-team/accept-invite.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -59,6 +60,7 @@ export const routes: Routes = [
   { path: 'register', component: RegistrationComponent },
   { path: 'trial-registration', component: TrialRegistrationComponent },
   { path: 'confirm-email', component: ConfirmEmailComponent },
+  { path: 'accept-invite', component: AcceptInviteComponent },
   { path: 'job-quote', component: JobQuoteComponent, canActivate: [AuthGuard] },
   {
     path: 'job-assignment',

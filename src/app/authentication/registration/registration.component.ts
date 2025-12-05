@@ -425,7 +425,7 @@ export class RegistrationComponent implements OnInit {
           }
         });
 
-        this.invitationService.getInvitation(this.token).subscribe({
+        this.registrationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
             console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
@@ -729,7 +729,7 @@ export class RegistrationComponent implements OnInit {
           password: this.registrationForm.get('password')?.value,
           phoneNumber: this.registrationForm.get('phoneNumber')?.value,
         };
-        this.invitationService.registerInvited(data).subscribe({
+        this.registrationService.registerInvited(data).subscribe({
           next: () => {
             this.isLoading = false;
             this.alertMessage = 'Registration successful. You can now log in.';
