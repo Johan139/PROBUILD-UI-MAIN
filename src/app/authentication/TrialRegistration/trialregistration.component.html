@@ -22,13 +22,10 @@
                       formControlName="firstName"
                       placeholder=" "
                       required
+                      (input)="markFieldTouched('firstName')"
                     />
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('firstName')?.hasError('required')
-                      "
-                    >
-                      Mandatory Field: Input Required.
+                    <mat-error>
+                      <span *ngIf="getFieldError('firstName')">{{ getFieldError('firstName') }}</span>
                     </mat-error>
                   </mat-form-field>
 
@@ -39,13 +36,10 @@
                       formControlName="lastName"
                       placeholder=" "
                       required
+                      (input)="markFieldTouched('lastName')"
                     />
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('lastName')?.hasError('required')
-                      "
-                    >
-                      Mandatory Field: Input Required.
+                    <mat-error>
+                      <span *ngIf="getFieldError('lastName')">{{ getFieldError('lastName') }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
@@ -92,16 +86,10 @@
                         formControlName="phoneNumber"
                         placeholder="Enter mobile number"
                         required
-                        (input)="onPhoneInput($event)"
+                        (input)="onPhoneInput($event); markFieldTouched('phoneNumber')"
                       />
-                      <mat-error
-                        *ngIf="
-                          registrationForm
-                            .get('phoneNumber')
-                            ?.hasError('required')
-                        "
-                      >
-                        Mandatory Field: Input Required.
+                      <mat-error>
+                        <span *ngIf="getFieldError('phoneNumber')">{{ getFieldError('phoneNumber') }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -110,7 +98,7 @@
                       <mat-label>User Type</mat-label>
                       <mat-select
                         formControlName="userType"
-                        (selectionChange)="userType($event)"
+                        (selectionChange)="userType($event); markFieldTouched('userType')"
                         required
                       >
                         <mat-option
@@ -120,12 +108,8 @@
                           {{ type.display }}
                         </mat-option>
                       </mat-select>
-                      <mat-error
-                        *ngIf="
-                          registrationForm.get('userType')?.hasError('required')
-                        "
-                      >
-                        Mandatory Field: Input Required.
+                      <mat-error>
+                        <span *ngIf="getFieldError('userType')">{{ getFieldError('userType') }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -144,16 +128,10 @@
                       formControlName="email"
                       placeholder=" "
                       required
+                      (input)="markFieldTouched('email')"
                     />
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('email')?.hasError('required')
-                      "
-                    >
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                    <mat-error *ngIf="registrationForm.get('email')?.invalid">
-                      Please enter a valid email address
+                    <mat-error>
+                      <span *ngIf="getFieldError('email')">{{ getFieldError('email') }}</span>
                     </mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="fill">
@@ -164,28 +142,10 @@
                       formControlName="password"
                       placeholder=" "
                       required
+                      (input)="markFieldTouched('password')"
                     />
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('password')?.hasError('required')
-                      "
-                    >
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('password')?.hasError('minlength')
-                      "
-                    >
-                      Password must be at least 10 characters long.
-                    </mat-error>
-                    <mat-error
-                      *ngIf="
-                        registrationForm.get('password')?.hasError('pattern')
-                      "
-                    >
-                      Password must contain at least one uppercase letter, one
-                      lowercase letter, and one special character.
+                    <mat-error>
+                      <span *ngIf="getFieldError('password')">{{ getFieldError('password') }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
@@ -224,15 +184,10 @@
                         data-lpignore="true"
                         data-form-type="other"
                         (focus)="addressInput.select()"
+                        (input)="markFieldTouched('formattedAddress')"
                       />
-                      <mat-error
-                        *ngIf="
-                          registrationForm
-                            .get('formattedAddress')
-                            ?.hasError('required')
-                        "
-                      >
-                        Mandatory Field: Input Required.
+                      <mat-error>
+                        <span *ngIf="getFieldError('formattedAddress')">{{ getFieldError('formattedAddress') }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -244,7 +199,11 @@
                       class="address-type-field"
                     >
                       <mat-label>Address Type</mat-label>
-                      <mat-select formControlName="addressType" required>
+                      <mat-select 
+                        formControlName="addressType" 
+                        required
+                        (selectionChange)="markFieldTouched('addressType')"
+                      >
                         <mat-option
                           *ngFor="let t of addressTypes"
                           [value]="t.id"
@@ -252,14 +211,8 @@
                           {{ t.name }}
                         </mat-option>
                       </mat-select>
-                      <mat-error
-                        *ngIf="
-                          registrationForm
-                            .get('addressType')
-                            ?.hasError('required')
-                        "
-                      >
-                        Mandatory Field: Input Required.
+                      <mat-error>
+                        <span *ngIf="getFieldError('addressType')">{{ getFieldError('addressType') }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -518,7 +471,11 @@
                 <div class="form-row">
                   <mat-form-field appearance="fill">
                     <mat-label>Subscription Package</mat-label>
-                    <mat-select formControlName="subscriptionPackage" required>
+                    <mat-select 
+                      formControlName="subscriptionPackage" 
+                      required
+                      (selectionChange)="markFieldTouched('subscriptionPackage')"
+                    >
                       <mat-option
                         *ngFor="let subscription of subscriptionPackages"
                         [value]="subscription.value"
@@ -533,14 +490,8 @@
                         }}
                       </mat-option>
                     </mat-select>
-                    <mat-error
-                      *ngIf="
-                        registrationForm
-                          .get('subscriptionPackage')
-                          ?.hasError('required')
-                      "
-                    >
-                      Mandatory Field: Input Required.
+                    <mat-error>
+                      <span *ngIf="getFieldError('subscriptionPackage')">{{ getFieldError('subscriptionPackage') }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>

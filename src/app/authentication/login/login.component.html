@@ -55,20 +55,23 @@
               matSuffix
               type="button"
               (click)="togglePasswordVisibility()"
-              [attr.aria-label]="hidePassword ? 'Show password' : 'Hide password'"
+              [attr.aria-label]="
+                hidePassword ? 'Show password' : 'Hide password'
+              "
               [attr.aria-pressed]="!hidePassword"
             >
-              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              <mat-icon>{{
+                hidePassword ? "visibility_off" : "visibility"
+              }}</mat-icon>
             </button>
-            <mat-hint id="passwordHint">At least 10 chars, mixed case & symbol</mat-hint>
+            <mat-hint id="passwordHint"
+              >At least 10 chars, mixed case & symbol</mat-hint
+            >
             <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
               Password is required.
             </mat-error>
             <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
               Password must be at least 10 characters long.
-            </mat-error>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('pattern')">
-              Must include uppercase, lowercase, and a special character.
             </mat-error>
           </mat-form-field>
         </div>
@@ -89,33 +92,38 @@
           type="submit"
           [disabled]="loginForm.invalid || isLoading"
         >
-          {{ isLoading ? 'Signing in…' : 'Login' }}
+          {{ isLoading ? "Signing in…" : "Login" }}
         </button>
-
-        <!-- Divider -->
-<mat-divider class="my-4"></mat-divider>
-
-<!-- Google Sign-In Button -->
-<div id="googleSignInDiv" class="google-btn-container"></div>
       </form>
     </mat-card-content>
   </mat-card>
 </div>
 
 <!-- Alert modal -->
-<div *ngIf="showAlert" class="alert-overlay" role="dialog" aria-modal="true" aria-label="Notification">
+<div
+  *ngIf="showAlert"
+  class="alert-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Notification"
+>
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
 
-<div *ngIf="showResendLink">
-  <div class="forgot-password-link-resend">
-    <button type="button" class="link-button" (click)="resendEmail()">
-      Resend Verification Email
-    </button>
-  </div>
-</div>
+    <div *ngIf="showResendLink">
+      <div class="forgot-password-link-resend">
+        <button type="button" class="link-button" (click)="resendEmail()">
+          Resend Verification Email
+        </button>
+      </div>
+    </div>
 
-    <button class="submit-btn" mat-flat-button type="button" (click)="closeAlert()">
+    <button
+      class="submit-btn"
+      mat-flat-button
+      type="button"
+      (click)="closeAlert()"
+    >
       Close
     </button>
   </div>

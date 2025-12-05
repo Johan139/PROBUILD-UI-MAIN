@@ -224,7 +224,7 @@ export class TrialRegistrationComponent implements OnInit {
           Validators.required,
           Validators.minLength(10),
           Validators.pattern(
-            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!\@\#\$\%\^\&\*\?\_\-])[A-Za-z\d!\@\#\$\%\^\&\*\?\_\-]{10,}$/,
           ),
         ],
       ],
@@ -765,7 +765,7 @@ export class TrialRegistrationComponent implements OnInit {
             formValue.longitudeFromIP = metadata.longitude;
             formValue.timezone = metadata.timezone;
             formValue.operatingSystem = this.getOperatingSystem();
-
+            formValue.countryNumberCode = this.selectedCountryCode?.id || null;
             // Ensure only the ID is sent
             if (typeof formValue.country === 'object') {
               formValue.country = formValue.country?.id;
@@ -924,7 +924,7 @@ export class TrialRegistrationComponent implements OnInit {
         formValue.latitudeFromIP = metadata.latitude;
         formValue.longitudeFromIP = metadata.longitude;
         formValue.timezone = metadata.timezone;
-
+        formValue.countryNumberCode = this.selectedCountryCode?.id || null;
         formValue.operatingSystem = this.getOperatingSystem();
         this.httpClient
           .post(`${BASE_URL}/Account/register`, formValue, {
@@ -1204,5 +1204,39 @@ export class TrialRegistrationComponent implements OnInit {
       const cleaned = currentValue.replace(/^\+\d+/, '');
       phoneCtrl?.setValue(dial + cleaned);
     }
+  }
+  // Mark field as touched to trigger real-time validation
+  markFieldTouched(fieldName: string) {
+    const field = this.registrationForm.get(fieldName);
+    field?.markAsTouched();
+  }
+
+  // Get error message for any field
+  getFieldError(fieldName: string): string {
+    const field = this.registrationForm.get(fieldName);
+
+    if (!field) return '';
+
+    // Required field error
+    if (field.hasError('required')) {
+      return 'Mandatory Field: Input Required.';
+    }
+
+    // Email-specific errors
+    if (fieldName === 'email' && field.invalid && !field.hasError('required')) {
+      return 'Please enter a valid email address';
+    }
+
+    // Password-specific errors
+    if (fieldName === 'password') {
+      if (field.hasError('minlength')) {
+        return 'Password must be at least 10 characters long.';
+      }
+      if (field.hasError('pattern')) {
+        return 'Password must contain at least one uppercase letter, one lowercase letter, and one special character: - ! @ # $ % ^ & * ? _';
+      }
+    }
+
+    return '';
   }
 }

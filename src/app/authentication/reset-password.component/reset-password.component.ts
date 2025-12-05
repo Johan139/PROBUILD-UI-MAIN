@@ -68,7 +68,7 @@ export class ResetPasswordComponent implements OnInit {
             Validators.required,
             Validators.minLength(10),
             Validators.pattern(
-              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!\@\#\$\%\^\&\*\?\_\-])[A-Za-z\d!\@\#\$\%\^\&\*\?\_\-]{10,}$/,
             ),
           ],
         ],
@@ -78,7 +78,7 @@ export class ResetPasswordComponent implements OnInit {
             Validators.required,
             Validators.minLength(10),
             Validators.pattern(
-              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+              /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!\@\#\$\%\^\&\*\?\_\-])[A-Za-z\d!\@\#\$\%\^\&\*\?\_\-]{10,}$/,
             ),
           ],
         ],
@@ -117,5 +117,52 @@ export class ResetPasswordComponent implements OnInit {
         this.error = err.error.error;
       },
     });
+  }
+  onPasswordInput() {
+    const passwordControl = this.resetForm.get('password');
+    passwordControl?.markAsTouched();
+    // Re-validate confirm password when password changes
+    this.resetForm.get('confirmPassword')?.updateValueAndValidity();
+  }
+
+  onConfirmPasswordInput() {
+    const confirmPasswordControl = this.resetForm.get('confirmPassword');
+    confirmPasswordControl?.markAsTouched();
+  }
+
+  getPasswordError(): string {
+    const passwordControl = this.resetForm.get('password');
+
+    if (!passwordControl) return '';
+
+    if (passwordControl.hasError('required')) {
+      return 'Password is required.';
+    }
+
+    if (passwordControl.hasError('minlength')) {
+      return 'Password must be at least 10 characters.';
+    }
+
+    if (passwordControl.hasError('pattern')) {
+      return 'Password must contain at least one uppercase letter, one lowercase letter, and one special character: - ! @ # $ % ^ & * ? _';
+    }
+
+    return '';
+  }
+
+  getConfirmPasswordError(): string {
+    const confirmPasswordControl = this.resetForm.get('confirmPassword');
+
+    if (!confirmPasswordControl) return '';
+
+    if (confirmPasswordControl.hasError('required')) {
+      return 'Confirm password is required.';
+    }
+
+    if (this.resetForm.errors?.['mismatch']) {
+      return 'Passwords do not match.';
+    }
+
+    return '';
   }
 }
