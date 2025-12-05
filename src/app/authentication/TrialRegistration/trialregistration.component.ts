@@ -342,7 +342,7 @@ export class TrialRegistrationComponent implements OnInit {
           }
         });
 
-        this.invitationService.getInvitation(this.token).subscribe({
+        this.registrationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
             console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);

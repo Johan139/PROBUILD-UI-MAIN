@@ -28,4 +28,15 @@ export class RegistrationService {
   getAllCountryNumberCodes(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL_ACCOUNT}/countries-codes`);
   }
+
+  getInvitation(token: string): Observable<any> {
+    return this.httpClient.get(`${BASE_URL_ACCOUNT}/invitation/${token}`);
+  }
+
+  registerInvited(data: any): Observable<any> {
+    return this.httpClient.post(
+      `${BASE_URL_ACCOUNT}/register/team-member`,
+      data,
+    );
+  }
 }
