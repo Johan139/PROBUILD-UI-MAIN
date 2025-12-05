@@ -1,0 +1,50 @@
+<div *ngIf="isLoading">
+  <app-loader></app-loader>
+</div>
+
+<div class="container w-100">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <mat-card class="confirm-email-card">
+        <mat-card-header class="text-center">
+          <mat-card-title class="title-header text-bold">
+            Team Invitation
+          </mat-card-title>
+          <mat-card-subtitle class="title-header text-color-cus">
+            You have been invited to join a team on ProBuild AI
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <form [formGroup]="acceptForm" (ngSubmit)="onAccept()">
+            <p class="text-center" style="margin-top: 1rem">
+              <strong>{{ inviterName }}</strong> has invited you to join their
+              team as:
+              <span class="text-color-cus">{{ role }}</span>
+            </p>
+
+            <div style="margin-top: 1.5rem">
+              <mat-card-actions>
+                <button
+                  class="w-100"
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                >
+                  Accept Invitation
+                </button>
+              </mat-card-actions>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="showAlert" class="alert-overlay">
+  <div class="alert-modal">
+    <p>{{ alertMessage }}</p>
+    <button mat-raised-button (click)="closeAlert()">OK</button>
+  </div>
+</div>
