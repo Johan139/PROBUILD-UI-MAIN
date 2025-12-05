@@ -10,83 +10,111 @@
           <div class="profile-content" *ngIf="!isLoading; else loadingTemplate">
             <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
               <!-- Personal Information -->
-<div class="section">
-  <h3>Personal Information</h3>
+              <div class="section">
+                <h3>Personal Information</h3>
 
-  <!-- Row 1: First + Last Name -->
-  <div class="form-row">
-    <mat-form-field appearance="fill">
-      <mat-label>First Name</mat-label>
-      <input matInput formControlName="firstName" placeholder=" " required />
-      <mat-error *ngIf="registrationForm.get('firstName')?.hasError('required')">
-        Mandatory Field: Input Required.
-      </mat-error>
-    </mat-form-field>
+                <!-- Row 1: First + Last Name -->
+                <div class="form-row">
+                  <mat-form-field appearance="fill">
+                    <mat-label>First Name</mat-label>
+                    <input
+                      matInput
+                      formControlName="firstName"
+                      placeholder=" "
+                      required
+                      (input)="markFieldTouched('firstName')"
+                    />
+                    <mat-error>
+                      <span *ngIf="getFieldError('firstName')">{{ getFieldError('firstName') }}</span>
+                    </mat-error>
+                  </mat-form-field>
 
-    <mat-form-field appearance="fill">
-      <mat-label>Last Name</mat-label>
-      <input matInput formControlName="lastName" placeholder=" " required />
-      <mat-error *ngIf="registrationForm.get('lastName')?.hasError('required')">
-        Mandatory Field: Input Required.
-      </mat-error>
-    </mat-form-field>
-  </div>
+                  <mat-form-field appearance="fill">
+                    <mat-label>Last Name</mat-label>
+                    <input
+                      matInput
+                      formControlName="lastName"
+                      placeholder=" "
+                      required
+                      (input)="markFieldTouched('lastName')"
+                    />
+                    <mat-error>
+                      <span *ngIf="getFieldError('lastName')">{{ getFieldError('lastName') }}</span>
+                    </mat-error>
+                  </mat-form-field>
+                </div>
 
-  <!-- Row 2: Phone + User Type -->
-  <div class="form-row">
-    <div class="phone-field-container">
-  <!-- Country Code Select -->
-  <mat-form-field appearance="fill" class="country-code-field">
-    <mat-label>Code</mat-label>
-    <mat-select
-      [(value)]="selectedCountryCode"
-      (selectionChange)="onCountryCodeChange($event.value)">
-      <mat-option>
-        <input
-          matInput
-          placeholder="Search..."
-          [formControl]="countryFilterCtrl"
-          (keydown)="$event.stopPropagation()"
-        />
-      </mat-option>
-      <mat-option *ngFor="let c of filteredCountryCodes | async" [value]="c">
-        {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
+                <!-- Row 2: Phone + User Type -->
+                <div class="form-row">
+                  <div class="phone-field-container">
+                    <!-- Country Code Select -->
+                    <mat-form-field
+                      appearance="fill"
+                      class="country-code-field"
+                    >
+                      <mat-label>Code</mat-label>
+                      <mat-select
+                        [(value)]="selectedCountryCode"
+                        (selectionChange)="onCountryCodeChange($event.value)"
+                      >
+                        <mat-option>
+                          <input
+                            matInput
+                            placeholder="Search..."
+                            [formControl]="countryFilterCtrl"
+                            (keydown)="$event.stopPropagation()"
+                          />
+                        </mat-option>
+                        <mat-option
+                          *ngFor="let c of filteredCountryCodes | async"
+                          [value]="c"
+                        >
+                          {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
 
-  <!-- Actual Mobile Input -->
-  <mat-form-field appearance="fill" class="mobile-number-field">
-    <mat-label>Mobile Number</mat-label>
-    <input
-      matInput
-      type="tel"
-      formControlName="phoneNumber"
-      placeholder="Enter mobile number"
-      required
-      (input)="onPhoneInput($event)"
-    />
-    <mat-error *ngIf="registrationForm.get('phoneNumber')?.hasError('required')">
-      Mandatory Field: Input Required.
-    </mat-error>
-  </mat-form-field>
-</div>
+                    <!-- Actual Mobile Input -->
+                    <mat-form-field
+                      appearance="fill"
+                      class="mobile-number-field"
+                    >
+                      <mat-label>Mobile Number</mat-label>
+                      <input
+                        matInput
+                        type="tel"
+                        formControlName="phoneNumber"
+                        placeholder="Enter mobile number"
+                        required
+                        (input)="onPhoneInput($event); markFieldTouched('phoneNumber')"
+                      />
+                      <mat-error>
+                        <span *ngIf="getFieldError('phoneNumber')">{{ getFieldError('phoneNumber') }}</span>
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
                   <div *ngIf="!showOnlyBasicFields">
-    <mat-form-field appearance="fill" class="user-type-field">
-      <mat-label>User Type</mat-label>
-      <mat-select formControlName="userType" (selectionChange)="userType($event)" required>
-        <mat-option *ngFor="let type of userTypes" [value]="type.value">
-          {{ type.display }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="registrationForm.get('userType')?.hasError('required')">
-        Mandatory Field: Input Required.
-      </mat-error>
-    </mat-form-field>
-    </div>
-  </div>
-</div>
-
+                    <mat-form-field appearance="fill" class="user-type-field">
+                      <mat-label>User Type</mat-label>
+                      <mat-select
+                        formControlName="userType"
+                        (selectionChange)="userType($event); markFieldTouched('userType')"
+                        required
+                      >
+                        <mat-option
+                          *ngFor="let type of userTypes"
+                          [value]="type.value"
+                        >
+                          {{ type.display }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-error>
+                        <span *ngIf="getFieldError('userType')">{{ getFieldError('userType') }}</span>
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
+                </div>
+              </div>
 
               <!-- Account Details -->
               <div class="section">
@@ -94,120 +122,151 @@
                 <div class="form-row">
                   <mat-form-field appearance="fill">
                     <mat-label>Email</mat-label>
-                    <input matInput type="email" formControlName="email" placeholder=" " required />
-                    <mat-error *ngIf="registrationForm.get('email')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                    <mat-error *ngIf="registrationForm.get('email')?.invalid">
-                      Please enter a valid email address
+                    <input
+                      matInput
+                      type="email"
+                      formControlName="email"
+                      placeholder=" "
+                      required
+                      (input)="markFieldTouched('email')"
+                    />
+                    <mat-error>
+                      <span *ngIf="getFieldError('email')">{{ getFieldError('email') }}</span>
                     </mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="fill">
                     <mat-label>Password</mat-label>
-                    <input matInput type="password" formControlName="password" placeholder=" " required />
-                    <mat-error *ngIf="registrationForm.get('password')?.hasError('required')">
-                      Mandatory Field: Input Required.
-                    </mat-error>
-                    <mat-error *ngIf="registrationForm.get('password')?.hasError('minlength')">
-                      Password must be at least 10 characters long.
-                    </mat-error>
-                    <mat-error *ngIf="registrationForm.get('password')?.hasError('pattern')">
-                      Password must contain at least one uppercase letter, one lowercase letter, and one special character.
+                    <input
+                      matInput
+                      type="password"
+                      formControlName="password"
+                      placeholder=" "
+                      required
+                      (input)="markFieldTouched('password')"
+                    />
+                    <mat-error>
+                      <span *ngIf="getFieldError('password')">{{ getFieldError('password') }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
               </div>
 
               <!-- Location -->
-                             <div *ngIf="!showOnlyBasicFields">
-             <div class="section">
+              <div *ngIf="!showOnlyBasicFields">
+                <div class="section">
+                  <h3>Location</h3>
 
-  <h3>Location</h3>
+                  <div class="form-row">
+                    <!-- Google Maps Address -->
+                    <mat-form-field appearance="fill" class="full-width">
+                      <mat-label>Address</mat-label>
+                      <!-- hidden decoy to intercept Chrome autofill -->
+                      <input
+                        type="text"
+                        style="opacity: 0; position: absolute; top: -9999px"
+                        tabindex="-1"
+                        autocomplete="street-address"
+                      />
+                      <input
+                        matInput
+                        #addressInput
+                        formControlName="formattedAddress"
+                        placeholder="Enter your address"
+                        type="text"
+                        name="nochrome-address"
+                        id="nochrome-address"
+                        autocomplete="nope"
+                        autocapitalize="off"
+                        autocorrect="off"
+                        spellcheck="false"
+                        aria-autocomplete="none"
+                        inputmode="text"
+                        data-lpignore="true"
+                        data-form-type="other"
+                        (focus)="addressInput.select()"
+                        (input)="markFieldTouched('formattedAddress')"
+                      />
+                      <mat-error>
+                        <span *ngIf="getFieldError('formattedAddress')">{{ getFieldError('formattedAddress') }}</span>
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
 
-  <div class="form-row">
-    <!-- Google Maps Address -->
-    <mat-form-field appearance="fill" class="full-width">
-      <mat-label>Address</mat-label>
-        <!-- hidden decoy to intercept Chrome autofill -->
-  <input
-    type="text"
-    style="opacity:0;position:absolute;top:-9999px;"
-    tabindex="-1"
-    autocomplete="street-address"
-  />
- <input
-    matInput
-    #addressInput
-    formControlName="formattedAddress"
-    placeholder="Enter your address"
-    type="text"
-    name="nochrome-address"
-    id="nochrome-address"
-    autocomplete="nope"
-    autocapitalize="off"
-    autocorrect="off"
-    spellcheck="false"
-    aria-autocomplete="none"
-    inputmode="text"
-    data-lpignore="true"
-    data-form-type="other"
-    (focus)="addressInput.select()"
-  />
-      <mat-error *ngIf="registrationForm.get('formattedAddress')?.hasError('required')">
-        Mandatory Field: Input Required.
-      </mat-error>
-    </mat-form-field>
-  </div>
-
-  <!-- NEW: Address Type (smaller width) -->
-<div class="form-row">
-  <mat-form-field appearance="fill" class="address-type-field">
-    <mat-label>Address Type</mat-label>
-    <mat-select formControlName="addressType" required>
-      <mat-option *ngFor="let t of addressTypes" [value]="t.id">
-        {{ t.name }}
-      </mat-option>
-    </mat-select>
-    <mat-error *ngIf="registrationForm.get('addressType')?.hasError('required')">
-      Mandatory Field: Input Required.
-    </mat-error>
-  </mat-form-field>
-</div>
-</div>
-</div>
-              <!-- Company Details -->
-                  <div *ngIf="!showOnlyBasicFields">
-              <div class="section">
-                <h3>Company Details</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Company Name</mat-label>
-                    <input matInput formControlName="companyName" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Company Registration</mat-label>
-                    <input matInput formControlName="companyRegNo" placeholder=" " />
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>VAT Number</mat-label>
-                    <input matInput formControlName="vatNo" placeholder=" " />
-                  </mat-form-field>
-                </div>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Years of Operation</mat-label>
-                    <mat-select formControlName="yearsOfOperation">
-                      <mat-option *ngFor="let operatingYears of operationalYears" [value]="operatingYears">{{ operatingYears }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Certification Level</mat-label>
-                    <mat-select formControlName="certificationStatus">
-                      <mat-option *ngFor="let certs of certificationOptions" [value]="certs.value">{{ certs.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
+                  <!-- NEW: Address Type (smaller width) -->
+                  <div class="form-row">
+                    <mat-form-field
+                      appearance="fill"
+                      class="address-type-field"
+                    >
+                      <mat-label>Address Type</mat-label>
+                      <mat-select 
+                        formControlName="addressType" 
+                        required
+                        (selectionChange)="markFieldTouched('addressType')"
+                      >
+                        <mat-option
+                          *ngFor="let t of addressTypes"
+                          [value]="t.id"
+                        >
+                          {{ t.name }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-error>
+                        <span *ngIf="getFieldError('addressType')">{{ getFieldError('addressType') }}</span>
+                      </mat-error>
+                    </mat-form-field>
+                  </div>
                 </div>
               </div>
+              <!-- Company Details -->
+              <div *ngIf="!showOnlyBasicFields">
+                <div class="section">
+                  <h3>Company Details</h3>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Name</mat-label>
+                      <input
+                        matInput
+                        formControlName="companyName"
+                        placeholder=" "
+                      />
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Company Registration</mat-label>
+                      <input
+                        matInput
+                        formControlName="companyRegNo"
+                        placeholder=" "
+                      />
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>VAT Number</mat-label>
+                      <input matInput formControlName="vatNo" placeholder=" " />
+                    </mat-form-field>
+                  </div>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Years of Operation</mat-label>
+                      <mat-select formControlName="yearsOfOperation">
+                        <mat-option
+                          *ngFor="let operatingYears of operationalYears"
+                          [value]="operatingYears"
+                          >{{ operatingYears }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Certification Level</mat-label>
+                      <mat-select formControlName="certificationStatus">
+                        <mat-option
+                          *ngFor="let certs of certificationOptions"
+                          [value]="certs.value"
+                          >{{ certs.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
 
                 <!-- Trades -->
                 <div class="section" *ngIf="user === 'SUBCONTRACTOR'">
@@ -216,22 +275,37 @@
                     <div class="trade-input-section">
                       <mat-form-field class="full-width" appearance="fill">
                         <mat-label>Add Trades</mat-label>
-                        <input matInput
-                              placeholder="Type to search trades..."
-                              [formControl]="tradeCtrl"
-                              [matAutocomplete]="autoTrade">
-                        <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selectedTrade($event)">
-                          <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
-                            {{trade.display}}
+                        <input
+                          matInput
+                          placeholder="Type to search trades..."
+                          [formControl]="tradeCtrl"
+                          [matAutocomplete]="autoTrade"
+                        />
+                        <mat-autocomplete
+                          #autoTrade="matAutocomplete"
+                          (optionSelected)="selectedTrade($event)"
+                        >
+                          <mat-option
+                            *ngFor="let trade of filteredTrades | async"
+                            [value]="trade"
+                          >
+                            {{ trade.display }}
                           </mat-option>
                         </mat-autocomplete>
                       </mat-form-field>
                     </div>
-                    <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
+                    <div
+                      class="selected-trades-display"
+                      *ngIf="selectedTrades.length > 0"
+                    >
                       <h4>Selected Trades:</h4>
                       <div class="chips-wrapper">
-                        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="removeTrade(trade)" [removable]="true">
-                          {{trade.display}}
+                        <mat-chip-row
+                          *ngFor="let trade of selectedTrades"
+                          (removed)="removeTrade(trade)"
+                          [removable]="true"
+                        >
+                          {{ trade.display }}
                           <button matChipRemove>
                             <mat-icon>cancel</mat-icon>
                           </button>
@@ -241,145 +315,201 @@
                   </div>
                 </div>
 
-              <!-- Supplier Types -->
-              <div class="section" *ngIf="user === 'VENDOR'">
-                <h3>Supplier Types</h3>
-                <div class="supplier-types-selection-container">
-                  <div class="supplier-type-input-section">
-                    <mat-form-field class="full-width" appearance="fill">
-                      <mat-label>Add Supplier Types</mat-label>
-                      <input matInput
-                            placeholder="Type to search supplier types..."
-                            [formControl]="supplierTypeCtrl"
-                            [matAutocomplete]="autoSupplierType">
-                      <mat-autocomplete #autoSupplierType="matAutocomplete" (optionSelected)="selectedSupplierType($event)">
-                        <mat-option *ngFor="let type of filteredSupplierTypes | async" [value]="type">
-                          {{type.display}}
-                        </mat-option>
-                      </mat-autocomplete>
-                    </mat-form-field>
-                  </div>
-                  <div class="selected-supplier-types-display" *ngIf="selectedSupplierTypes.length > 0">
-                    <h4>Selected Supplier Types:</h4>
-                    <div class="chips-wrapper">
-                      <mat-chip-row *ngFor="let type of selectedSupplierTypes" (removed)="removeSupplierType(type)" [removable]="true">
-                        {{type.display}}
-                        <button matChipRemove>
-                          <mat-icon>cancel</mat-icon>
-                        </button>
-                      </mat-chip-row>
+                <!-- Supplier Types -->
+                <div class="section" *ngIf="user === 'VENDOR'">
+                  <h3>Supplier Types</h3>
+                  <div class="supplier-types-selection-container">
+                    <div class="supplier-type-input-section">
+                      <mat-form-field class="full-width" appearance="fill">
+                        <mat-label>Add Supplier Types</mat-label>
+                        <input
+                          matInput
+                          placeholder="Type to search supplier types..."
+                          [formControl]="supplierTypeCtrl"
+                          [matAutocomplete]="autoSupplierType"
+                        />
+                        <mat-autocomplete
+                          #autoSupplierType="matAutocomplete"
+                          (optionSelected)="selectedSupplierType($event)"
+                        >
+                          <mat-option
+                            *ngFor="let type of filteredSupplierTypes | async"
+                            [value]="type"
+                          >
+                            {{ type.display }}
+                          </mat-option>
+                        </mat-autocomplete>
+                      </mat-form-field>
+                    </div>
+                    <div
+                      class="selected-supplier-types-display"
+                      *ngIf="selectedSupplierTypes.length > 0"
+                    >
+                      <h4>Selected Supplier Types:</h4>
+                      <div class="chips-wrapper">
+                        <mat-chip-row
+                          *ngFor="let type of selectedSupplierTypes"
+                          (removed)="removeSupplierType(type)"
+                          [removable]="true"
+                        >
+                          {{ type.display }}
+                          <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                        </mat-chip-row>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Builder Specific -->
-              <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
-                <h3>Builder Details</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Construction Type</mat-label>
-                    <mat-select formControlName="constructionType" multiple>
-                      <mat-select-trigger>
-                        {{ getConstructionTypeDisplayValue() }}
-                      </mat-select-trigger>
-                      <mat-option *ngFor="let type of constructionTypes" [value]="type.value">{{ type.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Organizational Size</mat-label>
-                    <mat-select formControlName="nrEmployees">
-                      <mat-option *ngFor="let type of employeeNumber" [value]="type">{{ type }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
+                <!-- Builder Specific -->
+                <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
+                  <h3>Builder Details</h3>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Construction Type</mat-label>
+                      <mat-select formControlName="constructionType" multiple>
+                        <mat-select-trigger>
+                          {{ getConstructionTypeDisplayValue() }}
+                        </mat-select-trigger>
+                        <mat-option
+                          *ngFor="let type of constructionTypes"
+                          [value]="type.value"
+                          >{{ type.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Organizational Size</mat-label>
+                      <mat-select formControlName="nrEmployees">
+                        <mat-option
+                          *ngFor="let type of employeeNumber"
+                          [value]="type"
+                          >{{ type }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Construction Specific -->
+                <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
+                  <h3>Construction Details</h3>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Project Preferences</mat-label>
+                      <mat-select formControlName="projectPreferences" multiple>
+                        <mat-select-trigger>
+                          {{ getProjectPreferencesDisplayValue() }}
+                        </mat-select-trigger>
+                        <mat-option
+                          *ngFor="let preferences of preferenceOptions"
+                          [value]="preferences.value"
+                          >{{ preferences.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Availability Options</mat-label>
+                      <mat-select formControlName="availability">
+                        <mat-option
+                          *ngFor="let availability of availabilityOptions"
+                          [value]="availability.value"
+                          >{{ availability.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <!-- Supplier Specific -->
+                <div class="section" *ngIf="user == 'VENDOR'">
+                  <h3>Supplier Details</h3>
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Products Offered</mat-label>
+                      <mat-select formControlName="productsOffered" multiple>
+                        <mat-select-trigger>
+                          {{ getProductsOfferedDisplayValue() }}
+                        </mat-select-trigger>
+                        <mat-option
+                          *ngFor="let products of supplierProducts"
+                          [value]="products.value"
+                          >{{ products.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Delivery Area</mat-label>
+                      <mat-select formControlName="deliveryArea" multiple>
+                        <mat-select-trigger>
+                          {{ getDeliveryAreaDisplayValue() }}
+                        </mat-select-trigger>
+                        <mat-option
+                          *ngFor="let areas of deliveryAreas"
+                          [value]="areas.value"
+                          >{{ areas.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Delivery Time</mat-label>
+                      <mat-select formControlName="deliveryTime">
+                        <mat-option
+                          *ngFor="let leadTime of leadTimeDelivery"
+                          [value]="leadTime.value"
+                          >{{ leadTime.display }}</mat-option
+                        >
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
                 </div>
               </div>
-
-              <!-- Construction Specific -->
-              <div class="section" *ngIf="user == 'SUBCONTRACTOR'">
-                <h3>Construction Details</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Project Preferences</mat-label>
-                    <mat-select formControlName="projectPreferences" multiple>
-                      <mat-select-trigger>
-                        {{ getProjectPreferencesDisplayValue() }}
-                      </mat-select-trigger>
-                      <mat-option *ngFor="let preferences of preferenceOptions" [value]="preferences.value">{{ preferences.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Availability Options</mat-label>
-                    <mat-select formControlName="availability">
-                      <mat-option *ngFor="let availability of availabilityOptions" [value]="availability.value">{{ availability.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-              </div>
-
-              <!-- Supplier Specific -->
-              <div class="section" *ngIf="user == 'VENDOR'">
-                <h3>Supplier Details</h3>
-                <div class="form-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Products Offered</mat-label>
-                    <mat-select formControlName="productsOffered" multiple>
-                      <mat-select-trigger>
-                        {{ getProductsOfferedDisplayValue() }}
-                      </mat-select-trigger>
-                      <mat-option *ngFor="let products of supplierProducts" [value]="products.value">{{ products.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Delivery Area</mat-label>
-                    <mat-select formControlName="deliveryArea" multiple>
-                      <mat-select-trigger>
-                        {{ getDeliveryAreaDisplayValue() }}
-                      </mat-select-trigger>
-                      <mat-option *ngFor="let areas of deliveryAreas" [value]="areas.value">{{ areas.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                  <mat-form-field appearance="fill">
-                    <mat-label>Delivery Time</mat-label>
-                    <mat-select formControlName="deliveryTime">
-                      <mat-option *ngFor="let leadTime of leadTimeDelivery" [value]="leadTime.value">{{ leadTime.display }}</mat-option>
-                    </mat-select>
-                  </mat-form-field>
-                </div>
-              </div>
-</div>
               <!-- Subscription -->
               <div class="section">
                 <h3>Subscription</h3>
                 <div class="form-row">
                   <mat-form-field appearance="fill">
                     <mat-label>Subscription Package</mat-label>
-                    <mat-select formControlName="subscriptionPackage" required>
-                      <mat-option *ngFor="let subscription of subscriptionPackages" [value]="subscription.value">
-                          {{ subscription.display }}
-                          {{
-            registrationForm.value.billingCycle === 'yearly'
-      ? (subscription.annualAmount| currency:'USD':'symbol':'1.2-2')
-      : (subscription.amount | currency:'USD':'symbol':'1.2-2')
-  }}
+                    <mat-select 
+                      formControlName="subscriptionPackage" 
+                      required
+                      (selectionChange)="markFieldTouched('subscriptionPackage')"
+                    >
+                      <mat-option
+                        *ngFor="let subscription of subscriptionPackages"
+                        [value]="subscription.value"
+                      >
+                        {{ subscription.display }}
+                        {{
+                          registrationForm.value.billingCycle === "yearly"
+                            ? (subscription.annualAmount
+                              | currency: "USD" : "symbol" : "1.2-2")
+                            : (subscription.amount
+                              | currency: "USD" : "symbol" : "1.2-2")
+                        }}
                       </mat-option>
                     </mat-select>
-                    <mat-error *ngIf="registrationForm.get('subscriptionPackage')?.hasError('required')">
-                      Mandatory Field: Input Required.
+                    <mat-error>
+                      <span *ngIf="getFieldError('subscriptionPackage')">{{ getFieldError('subscriptionPackage') }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
               </div>
-<div class="full-width" style="margin-bottom: 12px;">
-  <label class="block mb-1">Billing Cycle</label>
-  <mat-radio-group formControlName="billingCycle">
-    <mat-radio-button value="monthly">Monthly</mat-radio-button>
-    <mat-radio-button value="yearly" class="ml-4">Yearly</mat-radio-button>
-  </mat-radio-group>
-</div>
+              <div class="full-width" style="margin-bottom: 12px">
+                <label class="block mb-1">Billing Cycle</label>
+                <mat-radio-group formControlName="billingCycle">
+                  <mat-radio-button value="monthly">Monthly</mat-radio-button>
+                  <mat-radio-button value="yearly" class="ml-4"
+                    >Yearly</mat-radio-button
+                  >
+                </mat-radio-group>
+              </div>
               <!-- Submit Button -->
               <div class="form-row-button">
-                <button mat-raised-button type="submit" class="submit-btn">Register</button>
+                <button mat-raised-button type="submit" class="submit-btn">
+                  Register
+                </button>
               </div>
             </form>
           </div>
