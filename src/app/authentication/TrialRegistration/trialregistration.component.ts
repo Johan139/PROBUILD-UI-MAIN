@@ -765,7 +765,7 @@ export class TrialRegistrationComponent implements OnInit {
             formValue.longitudeFromIP = metadata.longitude;
             formValue.timezone = metadata.timezone;
             formValue.operatingSystem = this.getOperatingSystem();
-
+            formValue.countryNumberCode = this.selectedCountryCode?.id || null;
             // Ensure only the ID is sent
             if (typeof formValue.country === 'object') {
               formValue.country = formValue.country?.id;
@@ -924,7 +924,7 @@ export class TrialRegistrationComponent implements OnInit {
         formValue.latitudeFromIP = metadata.latitude;
         formValue.longitudeFromIP = metadata.longitude;
         formValue.timezone = metadata.timezone;
-
+        formValue.countryNumberCode = this.selectedCountryCode?.id || null;
         formValue.operatingSystem = this.getOperatingSystem();
         this.httpClient
           .post(`${BASE_URL}/Account/register`, formValue, {
