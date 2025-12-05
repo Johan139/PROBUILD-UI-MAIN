@@ -39,7 +39,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
@@ -71,6 +71,7 @@ import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
+import { UserAddressStoreService } from '../../services/UserAddressStoreService';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -136,6 +137,7 @@ export class ProfileComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('profileTabs') profileTabs!: MatTabGroup;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
   selectedPlace: { description: string; place_id: string } | null = null;
@@ -251,6 +253,7 @@ export class ProfileComponent implements OnInit {
     private stripeService: StripeService,
     private dialog: MatDialog,
     private matIconRegistry: MatIconRegistry,
+    private addressStore: UserAddressStoreService,
     private route: ActivatedRoute,
     private registrationService: RegistrationService,
     private router: Router,
@@ -501,7 +504,41 @@ export class ProfileComponent implements OnInit {
         },
       );
     }
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (!tab) return;
+
+      const tabIndex = this.getTabIndex(tab);
+
+      if (tabIndex !== -1) {
+        // Wait for view to render
+        setTimeout(() => {
+          if (this.profileTabs) {
+            this.profileTabs.selectedIndex = tabIndex;
+          }
+        });
+      }
+    });
   }
+  private getTabIndex(tab: string): number {
+    switch (tab.toLowerCase()) {
+      case 'profile':
+        return 0;
+      case 'company':
+        return 1;
+      case 'addresses':
+        return 2;
+      case 'team':
+        return 3;
+      case 'documents':
+        return 4;
+      case 'subscriptions':
+        return 5;
+      default:
+        return 0; // fallback
+    }
+  }
+
   private _filterCountries(value: string | null): any[] {
     const filterValue = (value ?? '').toLowerCase();
     return !filterValue
@@ -650,9 +687,11 @@ export class ProfileComponent implements OnInit {
             ) {
               this.addresses = profileData.userAddresses;
               this.addressDataSource.data = profileData.userAddresses;
+
+              // ⭐ NEW: Cache addresses for the entire app
+              this.addressStore.setAddresses(profileData.userAddresses);
             } else {
-              this.addresses = [];
-              this.addressDataSource.data = [];
+              this.addressStore.setAddresses([]); // no addresses
             }
           }
 

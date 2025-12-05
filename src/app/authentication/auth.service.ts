@@ -17,6 +17,7 @@ import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
 import { Router } from '@angular/router';
+import { UserAddressStoreService } from '../services/UserAddressStoreService';
 
 @Injectable({
   providedIn: 'root',
@@ -37,7 +38,10 @@ export class AuthService {
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<any>(null);
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private addressStore: UserAddressStoreService,
+  ) {}
 
   // ---- helpers: safe JWT parsing (Base64URL) ----
   private normalizeToken(token: string): string {
@@ -184,9 +188,9 @@ export class AuthService {
               'Email address has not been verified. Please check your inbox and spam folder.'
           ) {
             return throwError(() => this.handleLoginError(error));
-          } else if (error.status === 401) {
-            return this.loginMember(credentials);
-          }
+          } //else if (error.status === 401) {
+          //return this.loginMember(credentials);
+          //}
           return throwError(() => this.handleLoginError(error));
         }),
       );
@@ -248,21 +252,21 @@ export class AuthService {
     return error;
   }
 
-  loginMember(credentials: {
-    email: string;
-    password: string;
-  }): Observable<any> {
-    return this.http
-      .post<any>(`${this.apiUrl}/login/member`, credentials, {
-        headers: { 'Content-Type': 'application/json' },
-      })
-      .pipe(
-        switchMap((response) => this.handleSuccessfulLogin(response)),
-        catchError((error: HttpErrorResponse) =>
-          throwError(() => this.handleLoginError(error)),
-        ),
-      );
-  }
+  // loginMember(credentials: {
+  //   email: string;
+  //   password: string;
+  // }): Observable<any> {
+  //   return this.http
+  //     .post<any>(`${this.apiUrl}/login/member`, credentials, {
+  //       headers: { 'Content-Type': 'application/json' },
+  //     })
+  //     .pipe(
+  //       switchMap((response) => this.handleSuccessfulLogin(response)),
+  //       catchError((error: HttpErrorResponse) =>
+  //         throwError(() => this.handleLoginError(error)),
+  //       ),
+  //     );
+  // }
 
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);
@@ -279,6 +283,9 @@ export class AuthService {
       localStorage.removeItem('userId');
       localStorage.removeItem('loggedIn');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('fw_selectedAddressId');
+      localStorage.removeItem('findWorkFilters');
+      this.addressStore.clear();
     }
     this.currentUserSubject.next(null);
 

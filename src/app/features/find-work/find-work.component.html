@@ -4,8 +4,18 @@
     <p>Search for projects in your area</p>
   </div>
   <div class="tabs">
-    <button (click)="setActiveTab('allJobs')" [class.active]="activeTab === 'allJobs'">All Jobs</button>
-    <button (click)="setActiveTab('myBids')" [class.active]="activeTab === 'myBids'">My Bids</button>
+    <button
+      (click)="setActiveTab('allJobs')"
+      [class.active]="activeTab === 'allJobs'"
+    >
+      All Jobs
+    </button>
+    <button
+      (click)="setActiveTab('myBids')"
+      [class.active]="activeTab === 'myBids'"
+    >
+      My Bids
+    </button>
   </div>
 
   <div *ngIf="filtersLoading" class="centered-spinner-container">
@@ -16,18 +26,119 @@
     <div class="list-panel">
       <div class="list-container">
         <div class="search-container">
-          <input type="text" placeholder="Search by keyword..." [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()">
+          <input
+            type="text"
+            placeholder="Search by keyword..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="applyFilters()"
+          />
         </div>
+        <div class="location-toggle">
+          <button
+            class="toggle-btn"
+            [class.active]="locationMode === 'saved'"
+            (click)="setLocationMode('saved')"
+          >
+            Saved Address
+          </button>
+
+          <button
+            class="toggle-btn"
+            [class.active]="locationMode === 'custom'"
+            (click)="setLocationMode('custom')"
+          >
+            Custom Address
+          </button>
+        </div>
+
+        <div *ngIf="locationMode === 'custom'" class="custom-address-wrapper">
+          <input
+            #customAddressInput
+            type="text"
+            class="custom-address-input"
+            placeholder="Type address..."
+          />
+        </div>
+
+        <div *ngIf="locationMode === 'saved' && addressListLoaded">
+          <!-- No addresses -->
+          <div *ngIf="userAddresses.length === 0" class="no-address-warning">
+            <p class="warning-text">
+              To make full use of Find Work near you, please add an address in
+              your profile.
+            </p>
+            <button
+              mat-button
+              class="addAddressButton"
+              color="primary"
+              (click)="
+                router.navigate(['/profile'], {
+                  queryParams: { tab: 'addresses' },
+                })
+              "
+            >
+              Add Address
+            </button>
+          </div>
+
+          <!-- Single address -->
+          <div *ngIf="userAddresses.length === 1" class="address-info">
+            <p>
+              Using your address:
+              {{ userAddresses[0].formattedAddress }}
+            </p>
+          </div>
+
+          <!-- Multiple addresses -->
+          <div *ngIf="userAddresses.length > 1" class="address-section">
+            <mat-form-field appearance="outline" class="address-select-field">
+              <mat-label>Select address for distance filtering</mat-label>
+              <mat-select
+                [(ngModel)]="selectedAddressId"
+                (selectionChange)="onAddressSelected()"
+              >
+                <mat-option
+                  *ngFor="let addr of userAddresses"
+                  [value]="addr.id"
+                >
+                  {{ addr.formattedAddress }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
         <div class="advanced-filters">
           <div>
-            <label for="distance">Distance from your current location: {{ distance }} {{ distanceUnit }}</label>
-            <input type="range" id="distance" min="0" max="1000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
+            <label for="distance"
+              >Distance from your current location: {{ distance }}
+              {{ distanceUnit }}</label
+            >
+            <input
+              type="range"
+              id="distance"
+              min="0"
+              max="1000"
+              step="20"
+              [(ngModel)]="distance"
+              (ngModelChange)="applyFilters()"
+            />
           </div>
-          <div class="filter-row">
-            <button mat-icon-button (click)="toggleSortDirection()" class="sort-direction-button">
-              <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          <div class="filter-row filter-form-fields">
+            <button
+              mat-icon-button
+              (click)="toggleSortDirection()"
+              class="sort-direction-button"
+            >
+              <mat-icon>{{
+                sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+              }}</mat-icon>
             </button>
-            <mat-form-field matTooltip="Sort jobs by distance, start date, or recently added" [matTooltipShowDelay]="500">
+            <mat-form-field
+              appearance="outline"
+              matTooltip="Sort jobs by distance, start date, or recently added"
+              [matTooltipShowDelay]="500"
+            >
               <mat-label>Sort by</mat-label>
               <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
                 <mat-option value="distance">Distance</mat-option>
@@ -35,32 +146,72 @@
                 <mat-option value="postedDate">Recently Added</mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field matTooltip="Filter jobs by specific trades" [matTooltipShowDelay]="500">
+            <mat-form-field
+              appearance="outline"
+              matTooltip="Filter jobs by specific trades"
+              [matTooltipShowDelay]="500"
+            >
               <mat-label>Trades</mat-label>
-              <mat-select multiple [(ngModel)]="selectedTrades" (ngModelChange)="applyFilters()">
+              <mat-select
+                multiple
+                [(ngModel)]="selectedTrades"
+                (ngModelChange)="applyFilters()"
+              >
                 <mat-option *ngFor="let trade of allTrades" [value]="trade">
-                  {{trade | titlecase}} ({{ tradeCounts[trade] || 0 }})
+                  {{ trade | titlecase }} ({{ tradeCounts[trade] || 0 }})
                 </mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field matTooltip="Filter jobs by type" [matTooltipShowDelay]="500">
+            <mat-form-field
+              appearance="outline"
+              matTooltip="Filter jobs by type"
+              [matTooltipShowDelay]="500"
+            >
               <mat-label>Job Type</mat-label>
-              <mat-select multiple [(ngModel)]="selectedJobTypes" (ngModelChange)="applyFilters()">
-                <mat-option *ngFor="let type of allJobTypes" [value]="type.value">{{type.viewValue}}</mat-option>
+              <mat-select
+                multiple
+                [(ngModel)]="selectedJobTypes"
+                (ngModelChange)="applyFilters()"
+              >
+                <mat-option
+                  *ngFor="let type of allJobTypes"
+                  [value]="type.value"
+                  >{{ type.viewValue }}</mat-option
+                >
               </mat-select>
             </mat-form-field>
-            <button mat-button class="clear-filters-btn" (click)="clearFilters()">Reset</button>
+            <button
+              mat-button
+              class="clear-filters-btn"
+              (click)="clearFilters()"
+            >
+              Reset
+            </button>
           </div>
         </div>
         <div *ngIf="activeTab === 'allJobs'">
           <h2>All Jobs ({{ filteredJobs.length }})</h2>
           <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
-          <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">No jobs available</div>
-          <div *ngIf="!jobsLoading && filteredJobs.length === 0 && jobs.length > 0" class="no-jobs">
+          <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">
+            No jobs available
+          </div>
+          <div
+            *ngIf="!jobsLoading && filteredJobs.length === 0 && jobs.length > 0"
+            class="no-jobs"
+          >
             No jobs found with your current filters
           </div>
           <ul class="job-list" *ngIf="!jobsLoading && filteredJobs.length > 0">
-            <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId" class="job-item" (mouseenter)="highlightMarker(job.jobId)" (mouseleave)="unhighlightMarker(job.jobId)" (click)="onJobClick(job)">
+            <li
+              *ngFor="
+                let job of dataSource.connect() | async;
+                trackBy: trackByJobId
+              "
+              class="job-item"
+              (mouseenter)="highlightMarker(job.jobId)"
+              (mouseleave)="unhighlightMarker(job.jobId)"
+              (click)="onJobClick(job)"
+            >
               <app-job-card
                 [job]="job"
                 [userTrade]="userTrade"
@@ -69,35 +220,100 @@
                 (viewQuote)="onViewQuote($event)"
                 (withdrawBid)="onWithdrawBid($event)"
                 (editBid)="onEditBid($event)"
-                [showBidButton]="!getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)">
+                [showBidButton]="
+                  !getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)
+                "
+              >
               </app-job-card>
             </li>
           </ul>
-          <mat-paginator [length]="filteredJobs.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+          <mat-paginator
+            [length]="filteredJobs.length"
+            [pageSizeOptions]="[5, 10, 20]"
+            showFirstLastButtons
+          ></mat-paginator>
         </div>
 
         <div *ngIf="activeTab === 'myBids'">
           <h2>My Bids ({{ myBidsDataSource.data.length }})</h2>
           <div class="filter-buttons">
-            <button class="filter-pill" [class.active]="quoteStatusFilter === 'All'" (click)="quoteStatusFilter = 'All'; applyQuoteFilter()">All</button>
-            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Draft'" (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()">Draft</button>
-            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Submitted'" (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()">Submitted</button>
-            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Rejected'" (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()">Rejected</button>
+            <button
+              class="filter-pill"
+              [class.active]="quoteStatusFilter === 'All'"
+              (click)="quoteStatusFilter = 'All'; applyQuoteFilter()"
+            >
+              All
+            </button>
+            <button
+              class="filter-pill"
+              [class.active]="quoteStatusFilter === 'Draft'"
+              (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()"
+            >
+              Draft
+            </button>
+            <button
+              class="filter-pill"
+              [class.active]="quoteStatusFilter === 'Submitted'"
+              (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()"
+            >
+              Submitted
+            </button>
+            <button
+              class="filter-pill"
+              [class.active]="quoteStatusFilter === 'Rejected'"
+              (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()"
+            >
+              Rejected
+            </button>
           </div>
           <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
-          <div *ngIf="!bidsLoading && myBidsDataSource.data.length === 0" class="no-jobs">
-            <span *ngIf="quoteStatusFilter === 'All'">You haven't placed any bids yet</span>
-            <span *ngIf="quoteStatusFilter === 'Draft'">You have no draft bids</span>
-            <span *ngIf="quoteStatusFilter === 'Submitted'">You have no submitted bids</span>
-            <span *ngIf="quoteStatusFilter === 'Rejected'">You have no rejected bids</span>
+          <div
+            *ngIf="!bidsLoading && myBidsDataSource.data.length === 0"
+            class="no-jobs"
+          >
+            <span *ngIf="quoteStatusFilter === 'All'"
+              >You haven't placed any bids yet</span
+            >
+            <span *ngIf="quoteStatusFilter === 'Draft'"
+              >You have no draft bids</span
+            >
+            <span *ngIf="quoteStatusFilter === 'Submitted'"
+              >You have no submitted bids</span
+            >
+            <span *ngIf="quoteStatusFilter === 'Rejected'"
+              >You have no rejected bids</span
+            >
           </div>
-          <ul class="job-list" *ngIf="!bidsLoading && myBidsDataSource.data.length > 0">
-            <li *ngFor="let bid of myBidsDataSource.connect() | async; trackBy: trackByBidId" class="job-item">
-              <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" [quote]="getQuoteForBid(bid)" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" [userTrade]="userTrade" [showBidButton]="false">
+          <ul
+            class="job-list"
+            *ngIf="!bidsLoading && myBidsDataSource.data.length > 0"
+          >
+            <li
+              *ngFor="
+                let bid of myBidsDataSource.connect() | async;
+                trackBy: trackByBidId
+              "
+              class="job-item"
+            >
+              <app-job-card
+                *ngIf="bid.job"
+                [job]="bid.job"
+                [bid]="bid"
+                [quote]="getQuoteForBid(bid)"
+                (viewQuote)="onViewQuote($event)"
+                (withdrawBid)="onWithdrawBid($event)"
+                (editBid)="onEditBid($event)"
+                [userTrade]="userTrade"
+                [showBidButton]="false"
+              >
               </app-job-card>
             </li>
           </ul>
-          <mat-paginator [length]="myBidsDataSource.data.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+          <mat-paginator
+            [length]="myBidsDataSource.data.length"
+            [pageSizeOptions]="[5, 10, 20]"
+            showFirstLastButtons
+          ></mat-paginator>
         </div>
       </div>
     </div>
@@ -110,25 +326,33 @@
             <p>Loading map...</p>
           </div>
 
-        <!-- Error state -->
-        <div *ngIf="mapLoadError" class="map-error">
-          <p>Failed to load Google Maps. Please check your API key and internet connection.</p>
-          <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
-        </div>
+          <!-- Error state -->
+          <div *ngIf="mapLoadError" class="map-error">
+            <p>
+              Failed to load Google Maps. Please check your API key and internet
+              connection.
+            </p>
+            <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
+          </div>
 
-        <!-- Map component -->
-        <google-map
-          *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError && isMapVisible"
-          height="80%"
-          width="100%"
-          [center]="center"
-          [zoom]="zoom"
-          [options]="mapOptions"
-          (mapInitialized)="onMapInitialized($event)">
-        </google-map>
+          <!-- Map component -->
+          <google-map
+            *ngIf="
+              (isApiLoaded$ | async) &&
+              !isMapLoading &&
+              !mapLoadError &&
+              isMapVisible
+            "
+            height="80%"
+            width="100%"
+            [center]="center"
+            [zoom]="zoom"
+            [options]="mapOptions"
+            (mapInitialized)="onMapInitialized($event)"
+          >
+          </google-map>
         </div>
       </div>
     </div>
   </div>
 </div>
-

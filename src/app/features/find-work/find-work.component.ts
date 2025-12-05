@@ -21,6 +21,7 @@ import { MapLoaderService } from '../../services/map-loader.service';
 import { forkJoin, Observable, Subject, takeUntil } from 'rxjs';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { UserService } from '../../services/user.service';
+import { ProfileService } from '../../authentication/profile/profile.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
@@ -44,6 +45,8 @@ import { Quote } from '../quote/quote.model';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../theme.service';
+import { UserAddressStoreService } from '../../services/UserAddressStoreService';
+import { UserAddress } from '../../authentication/profile/profile.model';
 
 const lightMapId = 'cfb7ea445a870af896b65c20';
 const darkMapId = 'cfb7ea445a870af82d9def4b';
@@ -85,6 +88,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   dataSource = new MatTableDataSource<Job>([]);
   myBidsDataSource = new MatTableDataSource<Bid>([]);
   @ViewChild(GoogleMap) mapComponent!: GoogleMap;
+
+  @ViewChild('customAddressInput') customAddressInput!: any;
+  autocomplete: google.maps.places.Autocomplete | null = null;
   private destroy$ = new Subject<void>();
   private markersNeedUpdate = false;
   private markerClusterer: MarkerClusterer | null = null;
@@ -103,6 +109,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     'Contract-based': false,
     'On-demand': false,
   };
+  userAddresses: UserAddress[] = [];
+  locationMode: 'saved' | 'custom' = 'saved';
+  selectedAddressId: number | null = null;
+  addressListLoaded = false;
   userTrade: string | undefined;
   searchTerm: string = '';
   distance: number = 100;
@@ -113,6 +123,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   sortDirection: 'asc' | 'desc' = 'asc';
   allJobTypes = JOB_TYPES;
   selectedJobTypes: string[] = [];
+  customAddressLat: number | null = null;
+  customAddressLng: number | null = null;
+  selectedAddress: UserAddress | null = null;
 
   // UI state
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
@@ -133,6 +146,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
   radiusCircle: google.maps.Circle | null = null;
+  private userMarker: google.maps.marker.AdvancedMarkerElement | null = null;
 
   applyMapTheme(theme: 'light' | 'dark') {
     const newMapId = theme === 'dark' ? darkMapId : lightMapId;
@@ -176,10 +190,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   constructor(
     private jobsService: JobsService,
     private authService: AuthService,
+    private profileService: ProfileService,
     private mapLoader: MapLoaderService,
     private userService: UserService,
     public dialog: MatDialog,
-    private router: Router,
+    public router: Router,
+    private addressStore: UserAddressStoreService,
     private biddingService: BiddingService,
     private quoteService: QuoteService,
     private themeService: ThemeService,
@@ -201,9 +217,17 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // 🔥 Restore selected saved address
+    const savedId = localStorage.getItem('fw_selectedAddressId');
+    if (savedId) {
+      this.selectedAddressId = parseInt(savedId, 10);
+    }
+    this.loadUserAddresses();
     this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
     this.loadJobs();
-    this.centerOnBrowserLocation();
+    if (this.userAddresses.length === 0) {
+      this.centerOnBrowserLocation();
+    }
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe((user) => {
@@ -219,16 +243,113 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   onMapInitialized(map: google.maps.Map): void {
     this.map = map;
-
+    this.updateUserPin();
     if (this.jobs.length > 0) {
       setTimeout(() => this.updateMapMarkers(), 100);
     }
     this.updateRadiusCircle();
   }
+  private loadUserAddresses(): void {
+    // Load from global store first
+    this.userAddresses = this.addressStore.getAddresses() ?? [];
+
+    // 🔥 If store is empty → fetch directly from API
+    if (this.userAddresses.length === 0) {
+      const userId = this.authService.getUserId();
+      if (userId) {
+        this.profileService.getUserAddresses(userId).subscribe({
+          next: (addresses) => {
+            this.userAddresses = addresses;
+            this.addressStore.setAddresses(addresses);
+            this.afterAddressesLoaded();
+          },
+          error: () => {
+            this.afterAddressesLoaded(); // continue anyway
+          },
+        });
+        return;
+      }
+    }
+
+    this.afterAddressesLoaded();
+  }
+
+  private afterAddressesLoaded(): void {
+    this.addressListLoaded = true;
+
+    if (this.selectedAddressId) {
+      this.applySelectedAddress();
+      return;
+    }
+
+    if (this.userAddresses.length === 1) {
+      this.selectedAddressId = this.userAddresses[0].id;
+      this.applySelectedAddress();
+      return;
+    }
+
+    if (this.userAddresses.length === 0) {
+      this.filteredJobs = [...this.jobs];
+    }
+  }
+
+  onAddressSelected(): void {
+    this.selectedAddress =
+      this.userAddresses.find((a) => a.id === this.selectedAddressId) || null;
+    if (this.selectedAddressId) {
+      localStorage.setItem(
+        'fw_selectedAddressId',
+        this.selectedAddressId.toString(),
+      );
+    }
+    this.applySelectedAddress();
+  }
+
+  private applySelectedAddress(): void {
+    if (!this.selectedAddressId) return;
+
+    const address = this.userAddresses.find(
+      (a) => a.id === this.selectedAddressId,
+    );
+    if (!address) return;
+
+    const userLat = address.latitude;
+    const userLng = address.longitude;
+
+    if (!userLat || !userLng) return;
+
+    // Update map center
+    this.center = { lat: userLat, lng: userLng };
+    this.zoom = 10;
+    this.updateRadiusCircle();
+    setTimeout(() => {
+      this.updateRadiusCircle();
+      this.updateUserPin();
+    }, 50);
+    // Recalculate distances
+    this.jobs.forEach((job) => {
+      job.distance = this.calculateDistance(
+        userLat,
+        userLng,
+        job.latitude,
+        job.longitude,
+      );
+    });
+
+    this.sortJobsByDistance();
+
+    this.applyFilters();
+    if (this.map) {
+      this.updateMapMarkers();
+    }
+  }
 
   private setupMapLoadingSubscription(): void {
     this.isApiLoaded$.pipe(takeUntil(this.destroy$)).subscribe((loaded) => {
       this.isMapLoading = !loaded;
+      if (loaded && this.customAddressInput) {
+        this.setupAutocomplete();
+      }
       if (!loaded) {
         // Add a delay to distinguish between loading and error
         setTimeout(() => {
@@ -241,6 +362,100 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         // Update marker options with animation once Google Maps is loaded
       }
     });
+  }
+  setupAutocomplete() {
+    if (!this.customAddressInput) return;
+
+    this.autocomplete = new google.maps.places.Autocomplete(
+      this.customAddressInput.nativeElement,
+      {
+        fields: ['formatted_address', 'geometry'],
+        // componentRestrictions: { country: 'za' }, // optional: remove to allow global
+      },
+    );
+
+    this.autocomplete.addListener('place_changed', () => {
+      const place = this.autocomplete!.getPlace();
+
+      if (!place.geometry || !place.geometry.location) {
+        console.warn('Place has no geometry');
+        return;
+      }
+
+      this.customAddressLat = place.geometry.location.lat();
+      this.customAddressLng = place.geometry.location.lng();
+
+      // 🔥 Immediately apply new center + filtering + markers
+      this.applyCustomAddress();
+
+      // 🔥 Smooth pan animation
+      if (this.map) {
+        this.map.panTo({
+          lat: this.customAddressLat,
+          lng: this.customAddressLng,
+        });
+        this.map.setZoom(12);
+      }
+    });
+  }
+  setLocationMode(mode: 'saved' | 'custom') {
+    this.locationMode = mode;
+
+    if (mode === 'saved') {
+      this.customAddressLat = null;
+      this.customAddressLng = null;
+      this.applySelectedAddress();
+    } else {
+      // 🔥 Wait a tick so Angular renders the input, then attach autocomplete
+      setTimeout(() => {
+        if (this.customAddressInput) {
+          this.setupAutocomplete();
+        }
+      }, 50);
+
+      // If user already selected before
+      if (this.customAddressLat && this.customAddressLng) {
+        this.applyCustomAddress();
+      }
+    }
+  }
+
+  onLocationModeChange() {
+    if (this.locationMode === 'saved') {
+      this.applySelectedAddress();
+    } else {
+      // Use custom mode => recenter map only if user typed something
+      if (this.customAddressLat && this.customAddressLng) {
+        this.applyCustomAddress();
+      }
+    }
+  }
+  applyCustomAddress() {
+    if (!this.customAddressLat || !this.customAddressLng) return;
+
+    this.center = {
+      lat: this.customAddressLat,
+      lng: this.customAddressLng,
+    };
+
+    this.zoom = 12;
+
+    this.updateRadiusCircle();
+    this.updateUserPin();
+
+    // Recalculate distances for every job
+    this.jobs.forEach((job) => {
+      job.distance = this.calculateDistance(
+        this.customAddressLat!,
+        this.customAddressLng!,
+        job.latitude,
+        job.longitude,
+      );
+    });
+
+    this.sortJobsByDistance();
+    this.applyFilters();
+    this.updateMapMarkers();
   }
 
   loadJobs(): void {
@@ -301,6 +516,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           }
           this.jobsLoading = false;
 
+          if (this.selectedAddressId) {
+            this.applySelectedAddress();
+          }
           if (this.map) {
             setTimeout(() => this.updateMapMarkers(), 100);
           }
@@ -505,10 +723,31 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         this.zoom = 10;
       });
     }
-    this.updateRadiusCircle();
+    setTimeout(() => {
+      this.updateRadiusCircle();
+      this.updateUserPin();
+    }, 50);
   }
 
   private getUserLocationAndCalculateDistances(): void {
+    // If user selected an address → calculate based on that, not GPS
+    if (this.selectedAddress) {
+      const userLat = this.selectedAddress.latitude;
+      const userLng = this.selectedAddress.longitude;
+
+      this.jobs.forEach((job) => {
+        job.distance = this.calculateDistance(
+          userLat,
+          userLng,
+          job.latitude,
+          job.longitude,
+        );
+      });
+
+      this.sortJobsByDistance();
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -908,5 +1147,32 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         radius: radiusInMeters,
       });
     }
+  }
+  private updateUserPin(): void {
+    if (!this.map) return;
+
+    google.maps.importLibrary('marker').then((markerLib) => {
+      const { AdvancedMarkerElement, PinElement } = markerLib as any;
+
+      const pin = new PinElement({
+        background: '#4285F4', // Google blue
+        borderColor: '#FFFFFF',
+        glyphColor: '#FFFFFF',
+        scale: 1.4,
+      });
+
+      // Update existing pin
+      if (this.userMarker) {
+        this.userMarker.position = this.center;
+        return;
+      }
+
+      // Create new pin
+      this.userMarker = new AdvancedMarkerElement({
+        map: this.map,
+        position: this.center,
+        content: pin.element,
+      });
+    });
   }
 }

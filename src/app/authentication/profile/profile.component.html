@@ -14,7 +14,7 @@
                 (ngSubmit)="onSubmit()"
                 *ngIf="profileForm.controls"
               >
-                <mat-tab-group>
+                <mat-tab-group #profileTabs>
                   <!-- Profile Tab -->
                   <mat-tab label="Profile">
                     <!-- Role Switcher Dropdown (For Dev Testing) -->
