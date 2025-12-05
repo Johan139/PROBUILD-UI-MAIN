@@ -165,7 +165,7 @@ export class TrialRegistrationComponent implements OnInit {
     private dialog: MatDialog,
     private route: ActivatedRoute,
     private profileService: ProfileService,
-    private invitationService: InvitationService
+    private invitationService: InvitationService,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.registrationForm = this.formBuilder.group({});
@@ -178,9 +178,9 @@ export class TrialRegistrationComponent implements OnInit {
         return this.trades.filter(
           (trade) =>
             !this.selectedTrades.some((st) => st.value === trade.value) &&
-            trade.display.toLowerCase().includes(searchString)
+            trade.display.toLowerCase().includes(searchString),
         );
-      })
+      }),
     );
     this.filteredSupplierTypes = this.supplierTypeCtrl.valueChanges.pipe(
       startWith(null),
@@ -191,9 +191,9 @@ export class TrialRegistrationComponent implements OnInit {
         return this.supplierTypes.filter(
           (type) =>
             !this.selectedSupplierTypes.some((st) => st.value === type.value) &&
-            type.display.toLowerCase().includes(searchString)
+            type.display.toLowerCase().includes(searchString),
         );
-      })
+      }),
     );
   }
 
@@ -224,7 +224,7 @@ export class TrialRegistrationComponent implements OnInit {
           Validators.required,
           Validators.minLength(10),
           Validators.pattern(
-            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/
+            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!\@\#\$\%\^\&\*\?\_\-])[A-Za-z\d!\@\#\$\%\^\&\*\?\_\-]{10,}$/,
           ),
         ],
       ],
@@ -276,13 +276,13 @@ export class TrialRegistrationComponent implements OnInit {
         next: (meta) => {
           const ipCountryCode = meta?.country_code || meta?.country || 'US'; // fallback
           const detected = this.countryNumberCode.find(
-            (c) => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase()
+            (c) => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase(),
           );
           if (detected) {
             this.selectedCountryCode = detected;
           } else {
             const fallback = this.countryNumberCode.find(
-              (c) => c.countryCode === 'US'
+              (c) => c.countryCode === 'US',
             );
             this.selectedCountryCode = fallback || this.countryNumberCode[0];
           }
@@ -290,20 +290,20 @@ export class TrialRegistrationComponent implements OnInit {
           // Initialize filter stream
           this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
             startWith(''),
-            map((value) => this._filterCountryCodes(value ?? ''))
+            map((value) => this._filterCountryCodes(value ?? '')),
           );
 
           console.log(
-            `🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`
+            `🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`,
           );
         },
         error: (err) => {
           console.warn(
             'Could not detect country via IP API, defaulting to ZA',
-            err
+            err,
           );
           const fallback = this.countryNumberCode.find(
-            (c) => c.countryCode === 'ZA'
+            (c) => c.countryCode === 'ZA',
           );
           this.selectedCountryCode = fallback || this.countryNumberCode[0];
         },
@@ -348,7 +348,7 @@ export class TrialRegistrationComponent implements OnInit {
             this.registrationForm.patchValue(data);
             if (data.role) {
               const userType = this.userTypes.find(
-                (t) => t.display === data.role
+                (t) => t.display === data.role,
               );
               if (userType) {
                 this.registrationForm.get('userType')?.setValue(userType.value);
@@ -412,7 +412,7 @@ export class TrialRegistrationComponent implements OnInit {
           'place_id',
         ],
         types: ['geocode'],
-      }
+      },
     );
 
     this.autocomplete.addListener('place_changed', () => {
@@ -491,7 +491,7 @@ export class TrialRegistrationComponent implements OnInit {
     const value = (event.value || '').trim();
     if (value) {
       const selectedTrade = this.trades.find(
-        (trade) => trade.display.toLowerCase() === value.toLowerCase()
+        (trade) => trade.display.toLowerCase() === value.toLowerCase(),
       );
       if (selectedTrade && !this.selectedTrades.includes(selectedTrade)) {
         this.selectedTrades.push(selectedTrade);
@@ -530,7 +530,7 @@ export class TrialRegistrationComponent implements OnInit {
     const value = (event.value || '').trim();
     if (value) {
       const selectedType = this.supplierTypes.find(
-        (type) => type.display.toLowerCase() === value.toLowerCase()
+        (type) => type.display.toLowerCase() === value.toLowerCase(),
       );
       if (selectedType && !this.selectedSupplierTypes.includes(selectedType)) {
         this.selectedSupplierTypes.push(selectedType);
@@ -563,14 +563,14 @@ export class TrialRegistrationComponent implements OnInit {
     return this.countries.filter(
       (c) =>
         c.countryName.toLowerCase().includes(filterText) ||
-        c.countryCode.toLowerCase().includes(filterText)
+        c.countryCode.toLowerCase().includes(filterText),
     );
   }
 
   updatePhoneNumberValidator(countryCode: string) {
     const phoneNumberControl = this.registrationForm.get('phoneNumber');
     const selectedCountry = this.countries.find(
-      (country) => country.value === countryCode
+      (country) => country.value === countryCode,
     );
     if (selectedCountry && phoneNumberControl && selectedCountry.phonePattern) {
       phoneNumberControl.setValidators([
@@ -704,7 +704,7 @@ export class TrialRegistrationComponent implements OnInit {
         const selectedPackageValue =
           this.registrationForm.getRawValue().subscriptionPackage;
         const selectedPackage = this.subscriptionPackages.find(
-          (p) => p.value === selectedPackageValue
+          (p) => p.value === selectedPackageValue,
         );
 
         if (!this.registrationForm.valid) {
@@ -718,7 +718,7 @@ export class TrialRegistrationComponent implements OnInit {
                 `❌ ${key} FAILED`,
                 control.errors,
                 ' | VALUE: ',
-                control.value
+                control.value,
               );
             }
           });
@@ -750,7 +750,7 @@ export class TrialRegistrationComponent implements OnInit {
 
           if (this.user === 'VENDOR') {
             formValue.supplierTypes = this.selectedSupplierTypes.map(
-              (type) => type.value
+              (type) => type.value,
             );
           }
 
@@ -796,7 +796,7 @@ export class TrialRegistrationComponent implements OnInit {
                   }
                   this.showAlert = true;
                   return of(null);
-                })
+                }),
               )
               .subscribe((res: any) => {
                 this.isLoading = false;
@@ -826,7 +826,7 @@ export class TrialRegistrationComponent implements OnInit {
                         { userId, packageName },
                         {
                           headers: { 'Content-Type': 'application/json' },
-                        }
+                        },
                       )
                       .subscribe(() => {
                         this.alertMessage =
@@ -864,7 +864,7 @@ export class TrialRegistrationComponent implements OnInit {
     const selectedPackageValue =
       this.registrationForm.getRawValue().subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(
-      (p) => p.value === selectedPackageValue
+      (p) => p.value === selectedPackageValue,
     );
 
     if (!this.registrationForm.valid) {
@@ -878,7 +878,7 @@ export class TrialRegistrationComponent implements OnInit {
             `❌ ${key} FAILED`,
             control.errors,
             ' | VALUE: ',
-            control.value
+            control.value,
           );
         }
       });
@@ -910,7 +910,7 @@ export class TrialRegistrationComponent implements OnInit {
 
       if (this.user === 'VENDOR') {
         formValue.supplierTypes = this.selectedSupplierTypes.map(
-          (type) => type.value
+          (type) => type.value,
         );
       }
 
@@ -950,7 +950,7 @@ export class TrialRegistrationComponent implements OnInit {
               }
               this.showAlert = true;
               return of(null);
-            })
+            }),
           )
           .subscribe((res: any) => {
             this.isLoading = false;
@@ -980,7 +980,7 @@ export class TrialRegistrationComponent implements OnInit {
                     { userId, packageName },
                     {
                       headers: { 'Content-Type': 'application/json' },
-                    }
+                    },
                   )
                   .subscribe(() => {
                     this.alertMessage =
@@ -1118,7 +1118,7 @@ export class TrialRegistrationComponent implements OnInit {
 
     // 🪄 Find matching dial code based on backend mapping
     const match = this.countryNumberCode.find(
-      (x) => x.countryId?.toLowerCase() === selected.id?.toLowerCase()
+      (x) => x.countryId?.toLowerCase() === selected.id?.toLowerCase(),
     );
     this.selectedDialCode = match?.countryPhoneNumberCode || '';
 
@@ -1135,7 +1135,7 @@ export class TrialRegistrationComponent implements OnInit {
     return this.countryNumberCode.filter(
       (c) =>
         c.countryCode?.toLowerCase().includes(search) ||
-        c.countryPhoneNumberCode?.toLowerCase().includes(search)
+        c.countryPhoneNumberCode?.toLowerCase().includes(search),
     );
   }
 
@@ -1153,7 +1153,7 @@ export class TrialRegistrationComponent implements OnInit {
     if (dial) {
       // Remove duplicate dial prefixes like +27+27 or +1+1
       const duplicatePattern = new RegExp(
-        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`
+        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`,
       );
       value = value.replace(duplicatePattern, dial);
 
@@ -1204,5 +1204,39 @@ export class TrialRegistrationComponent implements OnInit {
       const cleaned = currentValue.replace(/^\+\d+/, '');
       phoneCtrl?.setValue(dial + cleaned);
     }
+  }
+  // Mark field as touched to trigger real-time validation
+  markFieldTouched(fieldName: string) {
+    const field = this.registrationForm.get(fieldName);
+    field?.markAsTouched();
+  }
+
+  // Get error message for any field
+  getFieldError(fieldName: string): string {
+    const field = this.registrationForm.get(fieldName);
+
+    if (!field) return '';
+
+    // Required field error
+    if (field.hasError('required')) {
+      return 'Mandatory Field: Input Required.';
+    }
+
+    // Email-specific errors
+    if (fieldName === 'email' && field.invalid && !field.hasError('required')) {
+      return 'Please enter a valid email address';
+    }
+
+    // Password-specific errors
+    if (fieldName === 'password') {
+      if (field.hasError('minlength')) {
+        return 'Password must be at least 10 characters long.';
+      }
+      if (field.hasError('pattern')) {
+        return 'Password must contain at least one uppercase letter, one lowercase letter, and one special character: - ! @ # $ % ^ & * ? _';
+      }
+    }
+
+    return '';
   }
 }
