@@ -25,7 +25,9 @@
                       (input)="markFieldTouched('firstName')"
                     />
                     <mat-error>
-                      <span *ngIf="getFieldError('firstName')">{{ getFieldError('firstName') }}</span>
+                      <span *ngIf="getFieldError('firstName')">{{
+                        getFieldError("firstName")
+                      }}</span>
                     </mat-error>
                   </mat-form-field>
 
@@ -39,7 +41,9 @@
                       (input)="markFieldTouched('lastName')"
                     />
                     <mat-error>
-                      <span *ngIf="getFieldError('lastName')">{{ getFieldError('lastName') }}</span>
+                      <span *ngIf="getFieldError('lastName')">{{
+                        getFieldError("lastName")
+                      }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
@@ -86,10 +90,14 @@
                         formControlName="phoneNumber"
                         placeholder="Enter mobile number"
                         required
-                        (input)="onPhoneInput($event); markFieldTouched('phoneNumber')"
+                        (input)="onPhoneInput($event)"
+                        (paste)="onPhonePaste($event)"
                       />
+
                       <mat-error>
-                        <span *ngIf="getFieldError('phoneNumber')">{{ getFieldError('phoneNumber') }}</span>
+                        <span *ngIf="getFieldError('phoneNumber')">{{
+                          getFieldError("phoneNumber")
+                        }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -98,7 +106,9 @@
                       <mat-label>User Type</mat-label>
                       <mat-select
                         formControlName="userType"
-                        (selectionChange)="userType($event); markFieldTouched('userType')"
+                        (selectionChange)="
+                          userType($event); markFieldTouched('userType')
+                        "
                         required
                       >
                         <mat-option
@@ -109,7 +119,9 @@
                         </mat-option>
                       </mat-select>
                       <mat-error>
-                        <span *ngIf="getFieldError('userType')">{{ getFieldError('userType') }}</span>
+                        <span *ngIf="getFieldError('userType')">{{
+                          getFieldError("userType")
+                        }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -131,7 +143,9 @@
                       (input)="markFieldTouched('email')"
                     />
                     <mat-error>
-                      <span *ngIf="getFieldError('email')">{{ getFieldError('email') }}</span>
+                      <span *ngIf="getFieldError('email')">{{
+                        getFieldError("email")
+                      }}</span>
                     </mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="fill">
@@ -145,7 +159,9 @@
                       (input)="markFieldTouched('password')"
                     />
                     <mat-error>
-                      <span *ngIf="getFieldError('password')">{{ getFieldError('password') }}</span>
+                      <span *ngIf="getFieldError('password')">{{
+                        getFieldError("password")
+                      }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
@@ -187,7 +203,9 @@
                         (input)="markFieldTouched('formattedAddress')"
                       />
                       <mat-error>
-                        <span *ngIf="getFieldError('formattedAddress')">{{ getFieldError('formattedAddress') }}</span>
+                        <span *ngIf="getFieldError('formattedAddress')">{{
+                          getFieldError("formattedAddress")
+                        }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -199,8 +217,8 @@
                       class="address-type-field"
                     >
                       <mat-label>Address Type</mat-label>
-                      <mat-select 
-                        formControlName="addressType" 
+                      <mat-select
+                        formControlName="addressType"
                         required
                         (selectionChange)="markFieldTouched('addressType')"
                       >
@@ -212,7 +230,9 @@
                         </mat-option>
                       </mat-select>
                       <mat-error>
-                        <span *ngIf="getFieldError('addressType')">{{ getFieldError('addressType') }}</span>
+                        <span *ngIf="getFieldError('addressType')">{{
+                          getFieldError("addressType")
+                        }}</span>
                       </mat-error>
                     </mat-form-field>
                   </div>
@@ -471,10 +491,12 @@
                 <div class="form-row">
                   <mat-form-field appearance="fill">
                     <mat-label>Subscription Package</mat-label>
-                    <mat-select 
-                      formControlName="subscriptionPackage" 
+                    <mat-select
+                      formControlName="subscriptionPackage"
                       required
-                      (selectionChange)="markFieldTouched('subscriptionPackage')"
+                      (selectionChange)="
+                        markFieldTouched('subscriptionPackage')
+                      "
                     >
                       <mat-option
                         *ngFor="let subscription of subscriptionPackages"
@@ -491,7 +513,9 @@
                       </mat-option>
                     </mat-select>
                     <mat-error>
-                      <span *ngIf="getFieldError('subscriptionPackage')">{{ getFieldError('subscriptionPackage') }}</span>
+                      <span *ngIf="getFieldError('subscriptionPackage')">{{
+                        getFieldError("subscriptionPackage")
+                      }}</span>
                     </mat-error>
                   </mat-form-field>
                 </div>
