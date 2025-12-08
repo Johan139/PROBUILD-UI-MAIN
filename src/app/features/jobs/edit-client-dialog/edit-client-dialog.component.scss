@@ -1,0 +1,60 @@
+@use 'styles/util/mixins' as u;
+
+.edit-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-4);
+
+  mat-form-field {
+    flex: 1;
+    width: 100%;
+  }
+}
+
+mat-dialog-actions {
+  padding-top: var(--space-4);
+  padding-bottom: 0;
+  gap: var(--space-2);
+
+  button[mat-button] {
+    color: var(--color-text-muted);
+    font-weight: var(--fw-medium);
+
+    &:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text);
+    }
+  }
+
+  button[mat-raised-button] {
+    background: var(--color-primary) !important;
+    color: var(--color-text-inverse) !important;
+    font-weight: var(--fw-semibold);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--color-primary-hover) !important;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    &:disabled {
+      background: var(--color-surface-disabled) !important;
+      color: var(--color-text-disabled) !important;
+      box-shadow: none;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}

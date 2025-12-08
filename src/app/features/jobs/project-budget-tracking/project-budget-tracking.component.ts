@@ -1,6 +1,8 @@
 import {
   Component,
   OnInit,
+  OnChanges,
+  SimpleChanges,
   Input,
   Inject,
   PLATFORM_ID,
@@ -45,7 +47,7 @@ import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmatio
   templateUrl: './project-budget-tracking.component.html',
   styleUrl: './project-budget-tracking.component.scss',
 })
-export class ProjectBudgetTrackingComponent implements OnInit {
+export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
 
   // Budget Data
@@ -78,6 +80,12 @@ export class ProjectBudgetTrackingComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.projectDetails?.jobId) {
+      this.loadBudget();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['projectDetails'] && this.projectDetails?.jobId) {
       this.loadBudget();
     }
   }

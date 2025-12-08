@@ -153,6 +153,16 @@
               </div>
               <span class="value">{{ ownerName }}</span>
             </div>
+            <div class="info-row" *ngIf="clientName">
+              <div class="info-label-group">
+                <lucide-angular
+                  [img]="User"
+                  class="icon-muted"
+                ></lucide-angular>
+                <span class="label">Client</span>
+              </div>
+              <span class="value">{{ clientName }}</span>
+            </div>
             <div class="info-row">
               <div class="info-label-group">
                 <lucide-angular

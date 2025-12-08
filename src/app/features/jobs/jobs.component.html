@@ -109,6 +109,46 @@
           <span *ngIf="!isReportLoading">View Environmental Report</span>
           <span *ngIf="isReportLoading">Loading...</span>
         </button>
+        <button
+          mat-menu-item
+          (click)="openProcurementScheduleDialog()"
+          [disabled]="isReportLoading"
+        >
+          <mat-icon>schedule</mat-icon>
+          <span *ngIf="!isReportLoading">View Procurement Schedule</span>
+          <span *ngIf="isReportLoading">Loading...</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="openDailyConstructionPlanDialog()"
+          [disabled]="isReportLoading"
+        >
+          <mat-icon>event_note</mat-icon>
+          <span *ngIf="!isReportLoading">View Daily Construction Plan</span>
+          <span *ngIf="isReportLoading">Loading...</span>
+        </button>
+      </mat-menu>
+
+      <!-- More Actions Dropdown -->
+      <button
+        class="submit-btn"
+        mat-raised-button
+        [matMenuTriggerFor]="moreActionsMenu"
+        matTooltip="More actions"
+        matTooltipShowDelay="500"
+      >
+        <mat-icon>more_vert</mat-icon>
+        More Actions
+      </button>
+      <mat-menu #moreActionsMenu="matMenu">
+        <button mat-menu-item (click)="triggerEditAddress()">
+          <mat-icon>edit_location</mat-icon>
+          <span>Edit Address</span>
+        </button>
+        <button mat-menu-item (click)="openEditClientDialog()">
+          <mat-icon>person_edit</mat-icon>
+          <span>Edit Client</span>
+        </button>
       </mat-menu>
     </div>
   </div>

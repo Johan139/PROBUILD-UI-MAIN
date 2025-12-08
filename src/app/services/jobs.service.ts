@@ -59,7 +59,6 @@ export class JobsService {
     return this.httpClient.get<any[]>(`${BASE_URL}/subtasks/${jobId}`);
   }
 
-  // Updated to use documentId instead of blobUrl
   downloadJobDocument(documentId: number): Observable<Blob> {
     return this.httpClient.get(`${BASE_URL}/download/${documentId}`, {
       responseType: 'blob',
@@ -146,5 +145,16 @@ export class JobsService {
     const formData = new FormData();
     formData.append('file', file);
     return this.httpClient.post(`${BASE_URL}/${jobId}/thumbnail`, formData);
+  }
+
+  getClientDetails(jobId: number): Observable<any> {
+    return this.httpClient.get<any>(`${BASE_URL}/${jobId}/client-details`);
+  }
+
+  updateClientDetails(jobId: number, details: any): Observable<any> {
+    return this.httpClient.put<any>(
+      `${BASE_URL}/${jobId}/client-details`,
+      details,
+    );
   }
 }
