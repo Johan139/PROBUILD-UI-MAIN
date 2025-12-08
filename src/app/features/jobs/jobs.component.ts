@@ -1020,7 +1020,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   publishJob(): void {
     const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
-      width: '400px',
+      width: '600px',
       data: {},
     });
 

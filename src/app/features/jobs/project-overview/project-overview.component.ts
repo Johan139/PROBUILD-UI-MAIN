@@ -139,8 +139,8 @@ export class ProjectOverviewComponent {
   clientName: string = '';
   activeValue: number = 0;
   costByPhase: { name: string; value: number }[] = [];
-  materialPercent: number = 62; // Default HARDCODED fallback
-  laborPercent: number = 38; // Default HARDCODED fallback
+  materialPercent: number = 0;
+  laborPercent: number = 0;
   bidsReceived: number = 0;
   totalDuration: number = 0;
   currentWeek: number = 0;
@@ -185,8 +185,8 @@ export class ProjectOverviewComponent {
         this.clientName = data.clientName || '';
         this.activeValue = data.activeValue || 0;
         this.costByPhase = data.costByPhase || [];
-        this.materialPercent = data.materialPercent || 62;
-        this.laborPercent = data.laborPercent || 38;
+        this.materialPercent = data.materialPercent || 0;
+        this.laborPercent = data.laborPercent || 0;
         this.bidsReceived = data.bidsReceived || 0;
       } catch (e) {
         console.error('Failed to parse cached overview data', e);
@@ -208,12 +208,12 @@ export class ProjectOverviewComponent {
   }
 
   loadProjectData(): void {
-    // 1. Load from cache first (Stale-While-Revalidate)
+    // Load from cache first (Stale-While-Revalidate)
     this.loadFromCache();
 
     const jobId = this.projectDetails.jobId;
 
-    // 2. Get Owner Name & Client Name
+    // Get Owner Name & Client Name
     this.jobsService.getSpecificJob(jobId).subscribe({
       next: (job: any) => {
         if (job?.user) {
@@ -245,7 +245,7 @@ export class ProjectOverviewComponent {
       error: () => (this.ownerName = 'Unknown'),
     });
 
-    // 3. Get Budget Stats
+    // Get Budget Stats
     this.budgetService.getBudget(jobId).subscribe({
       next: (items) => {
         this.calculateBudgetStats(items);
@@ -254,7 +254,7 @@ export class ProjectOverviewComponent {
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    // 4. Get Bids Count
+    // Get Bids Count
     this.bidsService.getBidsForJob(jobId).subscribe({
       next: (bids) => {
         this.bidsReceived = bids ? bids.length : 0;
@@ -424,7 +424,6 @@ export class ProjectOverviewComponent {
     });
   }
 
-  // Address Editing Logic
   toggleAddressEdit(isEditing: boolean): void {
     this.isEditingAddress = isEditing;
     if (isEditing) {
