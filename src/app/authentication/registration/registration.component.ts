@@ -1341,4 +1341,38 @@ export class RegistrationComponent implements OnInit {
 
     return '';
   }
+  onPhonePaste(event: ClipboardEvent) {
+    event.preventDefault();
+
+    const pasted = event.clipboardData?.getData('text') || '';
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+
+    // Strip everything except digits and +
+    let clean = pasted.replace(/[^\d+]/g, '');
+
+    // Remove all + except first
+    clean = clean.replace(/(?!^)\+/g, '');
+
+    // Remove leading + entirely so we can manually rebuild the prefix
+    clean = clean.replace(/^\+/, '');
+
+    // === CASE 1: Pasted number already starts with the correct dial ===
+    // Example: +33 6 12 55 99 88
+    if (clean.startsWith(dial.replace('+', ''))) {
+      phoneCtrl?.setValue(`+${clean}`);
+      return;
+    }
+
+    // === CASE 2: Any other international number (US, UK, etc.) ===
+    // Example: pasted +18013306029 → becomes +3318013306029
+    // Remove country prefix by stripping leading digits up to 3 chars
+    clean = clean.replace(/^\d{1,3}/, '');
+
+    // Remove leading zeros after removing international code
+    clean = clean.replace(/^0+/, '');
+
+    // Build final: selected dial + cleaned number
+    phoneCtrl?.setValue(`${dial}${clean}`);
+  }
 }
