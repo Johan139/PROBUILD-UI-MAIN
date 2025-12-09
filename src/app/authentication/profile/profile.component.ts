@@ -95,6 +95,7 @@ export interface SubscriptionUpgradeDTO {
   packageName: string; // use camelCase in TS
   userId: string;
   assignedUser: string | null;
+  billingCycle: string | null;
 }
 export type ActiveMap = Record<
   string,
@@ -175,6 +176,8 @@ export class ProfileComponent implements OnInit {
   subscriptionActive: boolean = false;
   jobCardForm: FormGroup;
   userRole: string | null = null;
+  today: Date = new Date();
+
   isVerified = false;
   countries: any[] = [];
   states: any[] = [];
@@ -488,57 +491,8 @@ export class ProfileComponent implements OnInit {
         .catch((err) =>
           console.error('Google Maps script loading error:', err),
         );
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          this.userLatitude = pos.coords.latitude;
-          this.userLongitude = pos.coords.longitude;
-          console.log(
-            '📍 User location:',
-            this.userLatitude,
-            this.userLongitude,
-          );
-        },
-        (err) => {
-          console.warn('Geolocation blocked or failed:', err);
-        },
-      );
-    }
-    this.route.queryParamMap.subscribe((params) => {
-      const tab = params.get('tab');
-      if (!tab) return;
-
-      const tabIndex = this.getTabIndex(tab);
-
-      if (tabIndex !== -1) {
-        // Wait for view to render
-        setTimeout(() => {
-          if (this.profileTabs) {
-            this.profileTabs.selectedIndex = tabIndex;
-          }
-        });
-      }
-    });
-  }
-  private getTabIndex(tab: string): number {
-    switch (tab.toLowerCase()) {
-      case 'profile':
-        return 0;
-      case 'company':
-        return 1;
-      case 'addresses':
-        return 2;
-      case 'team':
-        return 3;
-      case 'documents':
-        return 4;
-      case 'subscriptions':
-        return 5;
-      default:
-        return 0; // fallback
     }
   }
-
   private _filterCountries(value: string | null): any[] {
     const filterValue = (value ?? '').toLowerCase();
     return !filterValue
@@ -799,8 +753,11 @@ export class ProfileComponent implements OnInit {
     this.isLoadingSubscriptions = true;
     this.subscriptionsError = null;
 
-    this.profileService.manageSubscriptions().subscribe({
+    const userId = String(localStorage.getItem('userId') ?? '');
+
+    this.stripeService.getStripeSubscriptions(userId).subscribe({
       next: (res) => {
+        console.log(res);
         const raw = Array.isArray(res) ? res : (res ?? []);
 
         const normalized: SubscriptionRow[] = (raw || []).map((x: any) => {
@@ -823,16 +780,22 @@ export class ProfileComponent implements OnInit {
 
           let validUntil: Date | null = null;
           if (validUntilRaw != null) {
-            validUntil =
-              typeof validUntilRaw === 'number'
-                ? new Date(
-                    validUntilRaw < 2_000_000_000
-                      ? validUntilRaw * 1000
-                      : validUntilRaw,
-                  )
-                : new Date(validUntilRaw);
+            if (typeof validUntilRaw === 'number') {
+              // Stripe timestamps are ALWAYS seconds
+              validUntil = new Date(validUntilRaw * 1000);
+            } else if (validUntilRaw) {
+              validUntil = new Date(validUntilRaw);
+            }
           }
 
+          // Debug logging
+          console.log('Processing subscription:', {
+            pkg,
+            validUntilRaw,
+            validUntil,
+            cancelAtPeriodEnd: x.cancel_at_period_end ?? x.cancelAtPeriodEnd,
+            status: x.status,
+          });
           const amountRaw =
             x.amount ??
             x.amount_total ??
@@ -867,6 +830,10 @@ export class ProfileComponent implements OnInit {
           let status = String(x.status ?? '').toLowerCase();
           if (!status && isTrial) status = 'trialing';
 
+          // ✅ FIX: Map cancel_at_period_end to cancelAtPeriodEnd (camelCase)
+          const cancelAtPeriodEnd =
+            x.cancel_at_period_end ?? x.cancelAtPeriodEnd ?? false;
+
           return {
             package: pkg,
             validUntil,
@@ -875,20 +842,11 @@ export class ProfileComponent implements OnInit {
             assignedUserName,
             status,
             subscriptionId,
+            cancelAtPeriodEnd, // ✅ Now correctly mapped
           };
         });
 
-        // --- (old quick filters kept for reference) ---
-        const assignedIsNull = (r: SubscriptionRow) =>
-          (r.assignedUser == null || String(r.assignedUser).trim() === '') &&
-          (r.status ?? '').toLowerCase() === 'active';
-
-        const assignedIsNotNull = (r: SubscriptionRow) =>
-          (r.status ?? '').toLowerCase() === 'active' &&
-          !(r.assignedUser == null || String(r.assignedUser).trim() === '');
-        // ----------------------------------------------
-
-        // --- NEW: viewer-aware bucketing ---
+        // viewer-aware bucketing
         const meId = (
           this.authService.currentUserSubject.value?.id ??
           String(localStorage.getItem('userId') || '')
@@ -919,7 +877,6 @@ export class ProfileComponent implements OnInit {
             .trim()
             .toLowerCase();
 
-        // Match either by stored id/email in assignedUser, or by email in assignedUserName
         const isAssignedToMe = (r: SubscriptionRow) => {
           const a = assignedLower(r);
           const an = assignedNameLower(r);
@@ -928,29 +885,51 @@ export class ProfileComponent implements OnInit {
 
         const isUnassigned = (r: SubscriptionRow) => assignedLower(r) === '';
 
-        // What I should see as "Active"
         const mine = normalized.filter(
           (r) =>
             isActive(r) &&
             (iAmTeamMember
-              ? isAssignedToMe(r) // team member: seats assigned to me
-              : isUnassigned(r) || isAssignedToMe(r)), // owner: unassigned (self) or explicitly assigned to me
+              ? isAssignedToMe(r)
+              : isUnassigned(r) || isAssignedToMe(r)),
         );
 
-        // What goes to "Team"
         const team = normalized.filter(
           (r) => isActive(r) && !isUnassigned(r) && !isAssignedToMe(r),
         );
 
         const inactive = normalized.filter((r) => this.isInactiveRow(r));
-        // --- END NEW ---
 
         this.activeSubscriptionsData.data = mine;
         this.teamSubscriptionsData.data = team;
         this.inactiveSubscriptionsData.data = inactive;
-
-        // (Optional: keep the combined table in sync if you still use it anywhere)
         this.subscriptionsData.data = normalized;
+
+        setTimeout(() => {
+          this.activeSubscriptionsData.data = [
+            ...this.activeSubscriptionsData.data,
+          ];
+          this.teamSubscriptionsData.data = [
+            ...this.teamSubscriptionsData.data,
+          ];
+          this.inactiveSubscriptionsData.data = [
+            ...this.inactiveSubscriptionsData.data,
+          ];
+          this.subscriptionsData.data = [...this.subscriptionsData.data];
+        });
+
+        // ✅ Debug: Log the first active subscription to verify data structure
+        if (mine.length > 0) {
+          console.log('First active subscription data:', {
+            subscription: mine[0],
+            validUntilType: typeof mine[0].validUntil,
+            validUntilValue: mine[0].validUntil,
+            cancelAtPeriodEnd: mine[0].cancelAtPeriodEnd,
+            status: mine[0].status,
+            isBeforeToday: mine[0].validUntil
+              ? mine[0].validUntil < this.today
+              : 'N/A',
+          });
+        }
 
         this.isLoadingSubscriptions = false;
       },
@@ -1550,11 +1529,12 @@ export class ProfileComponent implements OnInit {
         source: 'profile', // 👈 makes intent explicit on backend
         assignedUser: assignedUser ?? userId,
         billingCycle,
+        SubscriptionId: subscriptionId,
       })
       .subscribe({
         next: (res) => {
           window.location.assign(res.url);
-          this.canceltrailSubscription(subscriptionId);
+          //this.canceltrailSubscription(subscriptionId);
         },
         error: (err) => {
           console.error('Checkout session error', err);
@@ -1633,15 +1613,14 @@ export class ProfileComponent implements OnInit {
           packageName: pkgCode,
           userId: String(localStorage.getItem('userId')),
           assignedUser,
+          billingCycle,
         };
 
         this.stripeService.upgradeSubscriptionByPackage(payload).subscribe({
           next: () => {
-            this.snackBar.open(
-              'Subscription upgraded. Proration will be billed on your next invoice.',
-              'Close',
-              { duration: 3500 },
-            );
+            this.snackBar.open('Subscription upgraded.', 'Close', {
+              duration: 3500,
+            });
             this.manageSubscriptions();
           },
           error: (err) => {
@@ -1797,10 +1776,49 @@ export class ProfileComponent implements OnInit {
                 },
               )
               .subscribe(() => {
-                this.alertMessage =
-                  'Your trial account is now active. Please confirm your email and sign in to begin.';
-                //this.routeURL = 'login';
-                this.showAlert = true;
+                this.dialog.closeAll();
+
+                this.snackBar.open(
+                  'Your trial account is now active.',
+                  'Close',
+                  {
+                    duration: 3000,
+                  },
+                );
+
+                // 🔥🔥🔥 Critical: Refresh subscription table UI
+                this.manageSubscriptions();
+
+                // Refresh dropdown/form logic
+                this.profileService.getUserSubscription().subscribe({
+                  next: (res) => {
+                    this.subscriptionuserPackages = res.map((s) => ({
+                      value: s.package,
+                      display: `${s.package} ($${s.amount.toFixed(2)})`,
+                      amount: s.amount,
+                    }));
+
+                    this.loadSubscriptionPackages();
+
+                    const activeCode =
+                      this.subscriptionuserPackages?.[0]?.value ?? null;
+
+                    if (activeCode) {
+                      const match = this.subscriptionPackages.find(
+                        (p) =>
+                          p.value.toLowerCase() === activeCode.toLowerCase(),
+                      );
+                      if (match) {
+                        this.profileForm
+                          .get('subscriptionPackage')
+                          ?.setValue(match.value);
+                        this.profileForm
+                          .get('subscriptionPackage')
+                          ?.markAsDirty();
+                      }
+                    }
+                  },
+                });
               });
           } else {
             this.stripeService
@@ -1811,6 +1829,7 @@ export class ProfileComponent implements OnInit {
                 source: 'profile',
                 assignedUser: assigneeUserId,
                 billingCycle,
+                SubscriptionId: '',
               })
               .subscribe({
                 next: (res) => window.location.assign(res.url),
@@ -1870,6 +1889,36 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
       },
+    });
+  }
+  undoCancellation(row: SubscriptionRow): void {
+    if (!this.canManageRow(row) || this.isInactiveRow(row)) return;
+
+    const id = row.subscriptionId;
+    if (!id) {
+      this.snackBar.open('Missing subscription id.', 'Close', {
+        duration: 2500,
+      });
+      return;
+    }
+
+    this.rowBusy.add(id);
+
+    this.stripeService.undoCancellation(id).subscribe({
+      next: () => {
+        this.snackBar.open('Subscription reactivated.', 'Close', {
+          duration: 3000,
+        });
+
+        this.manageSubscriptions(); // refresh tables
+      },
+      error: (err) => {
+        console.error('undoCancellation failed', err);
+        this.snackBar.open('Failed to restore subscription.', 'Close', {
+          duration: 3000,
+        });
+      },
+      complete: () => this.rowBusy.delete(id),
     });
   }
 

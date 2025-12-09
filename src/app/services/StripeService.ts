@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SubscriptionUpgradeDTO } from '../authentication/profile/profile.component';
 import { UpgradePreviewRequest } from '../models/UpgradePreviewRequest';
@@ -33,8 +33,9 @@ export class StripeService {
     amount: number;
     assignedUser: string;
     billingCycle: BillingCycle;
+    SubscriptionId: string;
   }): Observable<{ url: string }> {
-    // console.log(subscription)
+    console.log(subscription);
     return this.httpClient.post<{ url: string }>(
       `${BASE_URL}/create-checkout-session`,
       subscription,
@@ -66,19 +67,36 @@ export class StripeService {
       { headers },
     );
   }
+  getStripeSubscriptions(userId: string) {
+    return this.httpClient.get<any[]>(
+      `${BASE_URL}/user-subscriptions/${userId}`,
+    );
+  }
   upgradeSubscriptionByPackage(
     payload: SubscriptionUpgradeDTO,
-  ): Observable<{ url: string }> {
+  ): Observable<any> {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
     });
 
-    return this.httpClient.post<{ url: string }>(
-      `${BASE_URL}/upgrade-by-package`,
-      payload,
-      { headers },
+    return this.httpClient
+      .post<any>(`${BASE_URL}/upgrade-by-package`, payload, { headers })
+      .pipe(
+        catchError((err) => {
+          console.error('🔥 Backend error response:', err);
+          // Re-throw so the component still sees the error
+          return throwError(() => err);
+        }),
+      );
+  }
+
+  undoCancellation(subscriptionId: string) {
+    return this.httpClient.post(
+      `${BASE_URL}/undo-cancellation/${subscriptionId}`,
+      {},
     );
   }
+
   previewUpgradeByPackage(
     payload: UpgradePreviewRequest,
   ): Observable<ProrationPreviewDto> {
