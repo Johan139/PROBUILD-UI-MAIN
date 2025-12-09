@@ -22,12 +22,7 @@ export class JobsService {
 
   updateJob(jobData: any, id: any): Observable<any> {
     const headers = { 'Content-Type': 'application/json' };
-
-    // Create a copy of the payload to avoid mutating the original object
     const payload = { ...jobData };
-
-    // Remove IFormFile fields that cannot be serialized to JSON
-    // These cause model binding errors on the backend (400 Bad Request)
     delete payload.Blueprint;
     delete payload.UserContextFile;
 

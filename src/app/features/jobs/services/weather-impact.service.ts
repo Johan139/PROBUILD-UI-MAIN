@@ -10,7 +10,7 @@ import { ForecastDay } from '../../../services/weather.service';
 })
 export class WeatherImpactService {
   // List of task categories affected by rain
-  private readonly RAIN_AFFECTED_CATEGORIES = [
+  public readonly RAIN_AFFECTED_CATEGORIES = [
     'site preparation',
     'excavation',
     'foundation',

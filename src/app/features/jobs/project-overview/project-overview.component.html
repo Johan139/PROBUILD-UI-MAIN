@@ -201,7 +201,7 @@
               <lucide-angular [img]="Hash" class="icon-muted"></lucide-angular>
               <span class="label">Total Sheets Uploaded</span>
             </div>
-            <span class="value">HARDCODED sheets</span>
+            <span class="value">{{ blueprintSheetCount }} sheets</span>
           </div>
           <div class="info-row">
             <div class="info-label-group">
@@ -209,8 +209,8 @@
               <span class="label">Rooms Detected</span>
             </div>
             <div class="info-action-group">
-              <span class="value">HARDCODED rooms</span>
-              <button class="btn-text">View List</button>
+              <span class="value">{{ blueprintRoomCount }} rooms</span>
+              <!-- <button class="btn-text">View List</button> -->
             </div>
           </div>
           <!-- <div class="info-row">
@@ -226,9 +226,9 @@
                 [img]="CheckCircle2"
                 class="icon-success"
               ></lucide-angular>
-              <span class="label">Measurement Accuracy</span>
+              <span class="label">Blueprint Confidence Score</span>
             </div>
-            <span class="value text-success">HARDCODED%</span>
+            <span class="value text-success">{{ blueprintConfidenceScore }}%</span>
           </div>
         </div>
       </div>
@@ -270,22 +270,22 @@
           Live Site Activity
         </h4>
         <div class="info-list">
-          <div class="info-row">
+          <!-- <div class="info-row">
             <div class="info-label-group">
               <lucide-angular [img]="Camera" class="icon-blue"></lucide-angular>
               <span class="label">Photos Uploaded Today</span>
             </div>
             <span class="value">HARDCODED photos</span>
-          </div>
+          </div> -->
           <div class="info-row">
             <div class="info-label-group">
               <lucide-angular
                 [img]="CheckCircle2"
                 class="icon-success"
               ></lucide-angular>
-              <span class="label">Tasks Completed Today</span>
+              <span class="label">Tasks Completed</span>
             </div>
-            <span class="value">HARDCODED tasks</span>
+            <span class="value">{{ completedTasksCount }} tasks</span>
           </div>
           <div class="info-row warning-row">
             <div class="info-label-group">
@@ -311,7 +311,7 @@
           Compliance & Risk Indicators
         </h4>
         <div class="info-list">
-          <div class="info-row success-row">
+          <!-- <div class="info-row success-row">
             <div class="info-label-group">
               <lucide-angular
                 [img]="CheckCircle2"
@@ -320,28 +320,54 @@
               <span class="label">Building Codes</span>
             </div>
             <span class="value text-success">HARDCODED</span>
-          </div>
-          <div class="info-row success-row">
+          </div> -->
+          <div
+            class="info-row clickable-row"
+            [class.success-row]="permitStatus === 'success'"
+            [class.warning-row]="permitStatus === 'warning'"
+            (click)="openPermitsDialog()"
+            style="cursor: pointer"
+          >
             <div class="info-label-group">
               <lucide-angular
                 [img]="CheckCircle2"
-                class="icon-success"
+                [class.icon-success]="permitStatus === 'success'"
+                [class.icon-warning]="permitStatus === 'warning'"
+                [class.icon-muted]="permitStatus === 'none'"
               ></lucide-angular>
               <span class="label">Permits Status</span>
             </div>
-            <span class="value text-success">HARDCODED</span>
+            <div class="info-action-group">
+              <span
+                class="value"
+                [class.text-success]="permitStatus === 'success'"
+                [class.text-warning]="permitStatus === 'warning'"
+                [class.text-muted]="permitStatus === 'none'"
+                >{{ permitStatusText }}</span
+              >
+              <span class="label">View Details →</span>
+            </div>
           </div>
-          <div class="info-row warning-row">
+          <div
+            class="info-row"
+            [class.warning-row]="weatherRiskLevel === 'warning'"
+          >
             <div class="info-label-group">
               <lucide-angular
                 [img]="CloudRain"
-                class="icon-warning"
+                [class.icon-warning]="weatherRiskLevel === 'warning'"
+                [class.icon-success]="weatherRiskLevel === 'none'"
               ></lucide-angular>
-              <span class="label">Weather Risk</span>
+              <span class="label">Weather Risk (10 Day)</span>
             </div>
-            <span class="value text-warning">HARDCODED</span>
+            <span
+              class="value"
+              [class.text-warning]="weatherRiskLevel === 'warning'"
+              [class.text-success]="weatherRiskLevel === 'none'"
+              >{{ weatherRiskMessage }}</span
+            >
           </div>
-          <div class="info-row">
+          <!-- <div class="info-row">
             <div class="info-label-group">
               <lucide-angular
                 [img]="FileWarning"
@@ -350,7 +376,7 @@
               <span class="label">Conflict Detection</span>
             </div>
             <span class="value">HARDCODED items flagged</span>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -402,7 +428,7 @@
           <div class="stats-grid">
             <div class="stat-box">
               <p class="stat-label">Trades Required</p>
-              <p class="stat-value">HARDCODED</p>
+              <p class="stat-value">{{ tradesRequiredCount }}</p>
             </div>
             <div class="stat-box">
               <p class="stat-label">Bids Received</p>
@@ -412,20 +438,22 @@
           <div class="info-list">
             <div class="info-row">
               <span class="label">Invited (Platform)</span>
-              <span class="value">HARDCODED trades</span>
+              <span class="value">{{ invitedPlatformCount }} trades</span>
             </div>
             <div class="info-row">
               <span class="label">Invited (External)</span>
-              <span class="value">HARDCODED trades</span>
+              <span class="value">{{ invitedExternalCount }} trades</span>
             </div>
             <div class="info-row warning-row">
               <span class="label">Pending Response</span>
-              <span class="value text-warning">HARDCODED trades</span>
+              <span class="value text-warning"
+                >{{ pendingResponseCount }} trades</span
+              >
             </div>
           </div>
           <div class="card-footer">
             <p class="stat-label">Bidding Round</p>
-            <p class="value">HARDCODED Round</p>
+            <p class="value">Round {{ biddingRound }}</p>
           </div>
         </div>
       </div>
@@ -439,41 +467,32 @@
           <div class="stats-grid">
             <div class="stat-box">
               <p class="stat-label">Confirmed Subs</p>
-              <p class="stat-value">HARDCODED</p>
+              <p class="stat-value">{{ confirmedSubsCount }}</p>
             </div>
             <div class="stat-box">
               <p class="stat-label">Pending Subs</p>
-              <p class="stat-value text-warning">HARDCODED</p>
+              <p class="stat-value text-warning">{{ pendingSubsCount }}</p>
             </div>
           </div>
           <div class="sub-list">
-            <div class="sub-item">
-              <span>Concrete & Foundation</span>
+            <div class="sub-item" *ngFor="let trade of projectTrades">
+              <span>{{ trade.name | titlecase }}</span>
               <lucide-angular
+                *ngIf="trade.status === 'confirmed'"
                 [img]="CheckCircle2"
                 class="icon-success"
               ></lucide-angular>
-            </div>
-            <div class="sub-item">
-              <span>Electrical</span>
               <lucide-angular
-                [img]="CheckCircle2"
-                class="icon-success"
-              ></lucide-angular>
-            </div>
-            <div class="sub-item">
-              <span>Plumbing</span>
-              <lucide-angular
-                [img]="CheckCircle2"
-                class="icon-success"
-              ></lucide-angular>
-            </div>
-            <div class="sub-item">
-              <span>HVAC</span>
-              <lucide-angular
+                *ngIf="trade.status === 'pending'"
                 [img]="Clock"
                 class="icon-warning"
               ></lucide-angular>
+              <span *ngIf="trade.status === 'none'" class="text-muted"
+                >-</span
+              >
+            </div>
+            <div *ngIf="projectTrades.length === 0" class="sub-item">
+              <span class="text-muted">No trades required</span>
             </div>
           </div>
         </div>
@@ -487,25 +506,25 @@
         <div class="button-list">
           <button class="btn-action-row">
             <lucide-angular [img]="FileStack" class="btn-icon"></lucide-angular>
-            Contracts (HARDCODED)
+            Contracts ({{ contractCount }})
           </button>
           <button class="btn-action-row">
             <lucide-angular
               [img]="FileWarning"
               class="btn-icon"
             ></lucide-angular>
-            RFIs (HARDCODED)
+            RFIs ({{ rfiCount }})
           </button>
           <button class="btn-action-row">
             <lucide-angular
               [img]="CheckCircle2"
               class="btn-icon"
             ></lucide-angular>
-            Inspections (HARDCODED)
+            Inspections ({{ inspectionCount }})
           </button>
           <button class="btn-action-row">
             <lucide-angular [img]="Camera" class="btn-icon"></lucide-angular>
-            Progress Photos (HARDCODED)
+            Progress Photos ({{ photoCount }})
           </button>
         </div>
       </div>

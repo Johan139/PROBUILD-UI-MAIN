@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { marked } from 'marked';
+import { Permit } from '../../../models/permit';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +12,69 @@ export class ReportService {
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
   ) {}
+
+  async getPermitsAndApprovalsReport(jobId: string): Promise<Permit[]> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return [];
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const startMarker = '### 4. Permits and Approvals Report';
+      const endMarker = '### 5. Blueprint Review & Error Report';
+
+      const startIndex = fullResponse.indexOf(startMarker);
+      if (startIndex === -1) return [];
+
+      let sectionContent = fullResponse.substring(startIndex);
+      const endIndex = sectionContent.indexOf(endMarker);
+      if (endIndex !== -1) {
+        sectionContent = sectionContent.substring(0, endIndex);
+      }
+
+      const lines = sectionContent.split('\n');
+      const permits: Permit[] = [];
+      let inTable = false;
+
+      for (const line of lines) {
+        if (line.trim().startsWith('|') && line.includes('---')) {
+          inTable = true;
+          continue;
+        }
+
+        if (inTable && line.trim().startsWith('|')) {
+          const parts = line
+            .split('|')
+            .map((p) => p.trim())
+            .filter((p) => p !== '');
+          if (parts.length >= 3) {
+            const name = parts[0].replace(/\*\*/g, '');
+            const agency = parts[1].replace(/\*\*/g, '');
+            const requirements = parts[2].replace(/\*\*/g, '');
+
+            if (name !== 'Permit Name') {
+              permits.push({
+                jobId: parseInt(jobId),
+                name: name,
+                issuingAgency: agency,
+                requirements: requirements,
+                status: 'Pending',
+                isAiGenerated: true,
+              });
+            }
+          }
+        }
+      }
+
+      return permits;
+    } catch (err) {
+      console.error('Failed to get permits report:', err);
+      return [];
+    }
+  }
 
   async getEnvironmentalReportContent(jobId: string): Promise<string | null> {
     try {
@@ -216,7 +280,6 @@ export class ReportService {
             ? fullResponse.substring(startIndex, endIndex).trim()
             : fullResponse.substring(startIndex).trim();
 
-        // Ensure title is present and clean
         content = content.replace(startMarker, '').trim();
         content = `### Procurement & Submittal Schedule\n\n${content}`;
 
@@ -250,7 +313,6 @@ export class ReportService {
             ? fullResponse.substring(startIndex, endIndex).trim()
             : fullResponse.substring(startIndex).trim();
 
-        // Ensure title is present and clean
         content = content.replace(startMarker, '').trim();
         content = `### Daily Construction & Logistics Plan\n\n${content}`;
 
@@ -260,6 +322,83 @@ export class ReportService {
     } catch (err) {
       console.error('Failed to get daily construction plan:', err);
       return null;
+    }
+  }
+
+  async getBlueprintIntelligence(jobId: string): Promise<{
+    confidenceScore: number;
+    sheetCount: number;
+    roomCount: number;
+  }> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return { confidenceScore: 0, sheetCount: 0, roomCount: 0 };
+      }
+      const fullResponse = results[0].fullResponse;
+
+      let confidenceScore = 0;
+      let sheetCount = 0;
+      let roomCount = 0;
+
+      const patterns = [
+        /Overall Confidence Index\*\*\|\s*\*\*(\d+)%\*\*/,
+        /Overall Confidence Index\*\*\|\s*(\d+)%/,
+        /\|\s*\*\*Overall Confidence Index\*\*\s*\|\s*\*\*(\d+)%\*\*/,
+        /Overall Confidence Index.*?(\d{1,3})%/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = fullResponse.match(pattern);
+        if (match && match[1]) {
+          confidenceScore = parseInt(match[1], 10);
+          break;
+        }
+      }
+
+      const sheetMatch = fullResponse.match(/Sheet Numbers\*\* \| (.*?)\s*\|/);
+      if (sheetMatch && sheetMatch[1]) {
+        const sheets = sheetMatch[1].split(',').map((s) => s.trim());
+        sheetCount = sheets.length;
+      }
+
+      // 3. Extract Room Count (from Room Identification Table)
+      // Look for the table under "2. Room Identification"
+      const roomSectionStart = fullResponse.indexOf(
+        '### 2. Room Identification',
+      );
+      if (roomSectionStart !== -1) {
+        const tableStart = fullResponse.indexOf(
+          '| Room Name | Area',
+          roomSectionStart,
+        );
+        if (tableStart !== -1) {
+          const tableEnd = fullResponse.indexOf(
+            '**Total (Sum):**',
+            tableStart,
+          );
+          if (tableEnd !== -1) {
+            const tableContent = fullResponse.substring(tableStart, tableEnd);
+            // Count lines that start with '|' and are not header/separator
+            const lines = tableContent.split('\n').filter((line) => {
+              const trimmed = line.trim();
+              return (
+                trimmed.startsWith('|') &&
+                !trimmed.includes('Room Name') &&
+                !trimmed.includes(':---')
+              );
+            });
+            roomCount = lines.length - 1; // TODO Check if header or total lines are counted
+          }
+        }
+      }
+
+      return { confidenceScore, sheetCount, roomCount };
+    } catch (err) {
+      console.error('Failed to get blueprint intelligence:', err);
+      return { confidenceScore: 0, sheetCount: 0, roomCount: 0 };
     }
   }
 
