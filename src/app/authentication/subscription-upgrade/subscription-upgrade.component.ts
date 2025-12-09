@@ -30,19 +30,23 @@ export interface SubscriptionDialogData {
   userId?: string;
   annualAmount: number;
 }
+
 interface ProrationPreviewLineDto {
   description: string;
   amount: number;
 }
+
 interface ProrationPreviewDto {
   prorationDateUnix: number;
   currency: string;
   prorationSubtotal: number;
   previewTotal: number;
-  nextBillingDate: string; // ISO
+  nextBillingDate: string;
   prorationLines: ProrationPreviewLineDto[];
 }
+
 export type BillingCycle = 'monthly' | 'yearly';
+
 export interface SubscriptionUpgradeResult {
   subscriptionPackage: string;
   billingCycle: BillingCycle;
@@ -86,22 +90,37 @@ export class SubscriptionUpgradeComponent implements OnInit {
       billingCycle: ['monthly'],
     });
 
-    // Auto-select the first *previewable* option (paid, not trial/basic/free, not current)
-    const firstPreviewable = (this.data.packages ?? []).find((p) =>
+    // Re-preview whenever billing cycle changes
+    this.form.get('billingCycle')?.valueChanges.subscribe(() => {
+      const selectedPackage = this.form.get('subscriptionPackage')?.value;
+      if (selectedPackage) {
+        this.onPackageChange(selectedPackage);
+      }
+    });
+
+    // Auto-select a previewable package
+    const firstPreviewable = this.data.packages.find((p) =>
       this.isPreviewable(p.value),
     );
     if (firstPreviewable) {
       this.form
         .get('subscriptionPackage')!
         .setValue(firstPreviewable.value, { emitEvent: false });
-      // Trigger an initial preview so the user immediately sees the numbers
       this.onPackageChange(firstPreviewable.value);
     }
   }
 
-  // Call from (selectionChange) in the template
+  // ALWAYS USE CURRENT billingCycle — queueMicrotask ensures correctness
   onPackageChange(selectedPackage: string) {
-    // Skip if same plan, non-previewable (trial/basic/free), or no subscription to preview against
+    // Run logic AFTER Angular updates the form control values
+    queueMicrotask(() => {
+      const billingCycle = this.form.get('billingCycle')?.value as BillingCycle;
+
+      this._runProration(selectedPackage, billingCycle);
+    });
+  }
+
+  private _runProration(selectedPackage: string, billingCycle: BillingCycle) {
     if (
       !selectedPackage ||
       selectedPackage === this.data.currentValue ||
@@ -124,6 +143,7 @@ export class SubscriptionUpgradeComponent implements OnInit {
         packageName: selectedPackage,
         prorationDate: Math.floor(Date.now() / 1000),
         userId: this.data.userId,
+        billingCycle: billingCycle,
       })
       .subscribe({
         next: (preview) => {
@@ -138,22 +158,19 @@ export class SubscriptionUpgradeComponent implements OnInit {
       });
   }
 
-  /** Only paid, non-trial/basic/free, and not the current plan should preview */
   private isPreviewable(pkgValue: string): boolean {
     if (!pkgValue) return false;
     if (pkgValue === this.data.currentValue) return false;
 
-    const pkg = (this.data.packages ?? []).find((p) => p.value === pkgValue);
+    const pkg = this.data.packages.find((p) => p.value === pkgValue);
     if (!pkg) return false;
 
-    const nameBlob = `${pkg.value ?? ''} ${pkg.display ?? ''}`.toLowerCase();
-    const isZero = (pkg.amount ?? 0) <= 0;
-    const isTrialOrBasicOrFree =
-      nameBlob.includes('trial') ||
-      nameBlob.includes('basic') ||
-      nameBlob.includes('free');
+    const blob = `${pkg.value} ${pkg.display}`.toLowerCase();
+    const isZero = pkg.amount <= 0;
+    const isTrial =
+      blob.includes('trial') || blob.includes('basic') || blob.includes('free');
 
-    return !isZero && !isTrialOrBasicOrFree;
+    return !isZero && !isTrial;
   }
 
   cancel(): void {
@@ -164,7 +181,7 @@ export class SubscriptionUpgradeComponent implements OnInit {
     if (this.form.valid) {
       const billingCycle = this.form.value.billingCycle as BillingCycle;
       const subscriptionPackage = this.form.value.subscriptionPackage as string;
-      // console.log(subscriptionPackage)
+
       this.dialogRef.close({ subscriptionPackage, billingCycle });
     }
   }

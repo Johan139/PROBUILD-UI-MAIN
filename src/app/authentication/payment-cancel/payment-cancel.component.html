@@ -1,6 +1,23 @@
-<div class="cancel-container">
-    <h1>⚠️ Payment Cancelled</h1>
-    <p>You’ve cancelled the payment or it was interrupted. You can make payments at a later stage if you like.</p>
-    <button mat-flat-button color="warn" (click)="goToDashboard()">Return to Login</button>
-  </div>
-  
+<div class="cancel-wrapper">
+  <mat-card class="cancel-card">
+    <mat-card-header>
+      <mat-icon class="cancel-icon" color="warn">cancel</mat-icon>
+      <mat-card-title>Payment Cancelled</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p class="description">
+        Your payment was cancelled or interrupted.<br />
+        You can retry anytime from your dashboard.
+      </p>
+
+      <button
+        mat-flat-button
+        class="submit-btn return-btn"
+        (click)="goToDashboard()"
+      >
+        Return to Login
+      </button>
+    </mat-card-content>
+  </mat-card>
+</div>

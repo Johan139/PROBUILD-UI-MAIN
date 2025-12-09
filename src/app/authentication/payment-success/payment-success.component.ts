@@ -1,11 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-payment-success',
   templateUrl: './payment-success.component.html',
+  standalone: true, // ✅ NOW this component supports imports
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
   styleUrls: ['./payment-success.component.scss'],
-  standalone: false,
 })
 export class PaymentSuccessComponent implements OnInit {
   source: string = 'register';

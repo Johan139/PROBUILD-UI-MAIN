@@ -919,7 +919,17 @@
                   <mat-tab label="Subscriptions">
                     <div class="section">
                       <h3>Your Subscriptions</h3>
-
+                      <div class="address-footer">
+                        <button
+                          mat-raised-button
+                          type="button"
+                          class="submit-btn"
+                          (click)="openSubscriptionCreateDialog()"
+                          *ngIf="!authService.isTeamMember()"
+                        >
+                          Add Subscription
+                        </button>
+                      </div>
                       <div *ngIf="isLoadingSubscriptions" class="form-row">
                         <mat-progress-bar
                           mode="indeterminate"
@@ -950,15 +960,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date: "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1011,7 +1046,9 @@
                                 >
                                   Upgrade
                                 </button>
+                                <!-- If NOT cancelled → show Cancel button -->
                                 <button
+                                  *ngIf="!s.cancelAtPeriodEnd"
                                   mat-raised-button
                                   color="warn"
                                   (click)="cancelSubscription(s)"
@@ -1021,9 +1058,21 @@
                                   "
                                   class="submit-btn"
                                   type="button"
-                                  *ngIf="!authService.isTeamMember()"
                                 >
                                   Cancel
+                                </button>
+
+                                <!-- If already cancelled-at-end → show Undo button -->
+                                <button
+                                  *ngIf="s.cancelAtPeriodEnd"
+                                  mat-raised-button
+                                  color="primary"
+                                  (click)="undoCancellation(s)"
+                                  [disabled]="!canManageRow(s)"
+                                  class="submit-btn"
+                                  type="button"
+                                >
+                                  Undo Cancel
                                 </button>
                               </mat-cell>
                             </ng-container>
@@ -1071,15 +1120,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date: "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1188,15 +1262,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date: "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1285,15 +1384,6 @@
                           </div>
                         </mat-tab>
                       </mat-tab-group>
-                      <button
-                        mat-raised-button
-                        type="button"
-                        class="submit-btn"
-                        (click)="openSubscriptionCreateDialog()"
-                        *ngIf="!authService.isTeamMember()"
-                      >
-                        Add Subscription
-                      </button>
                     </div>
                   </mat-tab>
                 </mat-tab-group>
