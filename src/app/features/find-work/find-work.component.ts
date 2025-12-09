@@ -38,7 +38,7 @@ import { JOB_TYPES } from '../../data/job-types';
 import { Router } from '@angular/router';
 import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
-import { BlueprintDisplayDialogComponent } from './blueprint-display-dialog/blueprint-display-dialog.component';
+import { BlueprintDisplayDialogComponent } from './information-display-dialog/information-display-dialog.component';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { QuoteService } from '../../features/quote/quote.service';
 import { Quote } from '../quote/quote.model';

@@ -7,6 +7,11 @@
     <mat-radio-button value="CONNECTIONS_ONLY" matTooltip="Your job will only be visible to your connections">Connections Only</mat-radio-button>
   </mat-radio-group>
 
+  <div *ngIf="form.get('biddingType')?.value === 'CONNECTIONS_ONLY'" class="warning-message" style="color: orange; margin-bottom: 1rem; font-size: 0.9em;">
+    <mat-icon style="vertical-align: bottom; font-size: 1.2em; height: 1.2em; width: 1.2em;">warning</mat-icon>
+    You will need to manually add your invoices if you use someone outside of the system.
+  </div>
+
   <div class="trades-selection-container">
     <div class="trade-input-section">
       <mat-form-field class="full-width" appearance="fill">
@@ -25,12 +30,20 @@
     <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
       <h4>Selected Trades:</h4>
       <div class="chips-wrapper">
-        <mat-chip-row *ngFor="let trade of selectedTrades" (removed)="remove(trade)" [removable]="true">
-          {{trade.display}}
-          <button matChipRemove>
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
+        <div class="trades-list">
+          <div *ngFor="let trade of selectedTrades" class="trade-row">
+            <div class="trade-info">
+              <span>{{trade.display}}</span>
+            </div>
+            <div class="trade-budget">
+              <span>Budget: $</span>
+              <input class="table-input" type="number" [(ngModel)]="trade.budget" [ngModelOptions]="{standalone: true}" placeholder="0.00">
+              <button mat-icon-button (click)="remove(trade)" class="remove-btn">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

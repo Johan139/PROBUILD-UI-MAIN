@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ProjectBlueprintViewerComponent } from '../../../components/project-blueprint-viewer/project-blueprint-viewer.component';
-import { DocumentService } from '../../../features/jobs/services/document.service';
+import { DocumentService } from '../../jobs/services/document.service';
 import { UploadedFileInfo, FileUploadService } from '../../../services/file-upload.service';
 import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -21,14 +21,16 @@ import { MatIconModule } from '@angular/material/icon';
     MatButtonModule,
     MatIconModule
   ],
-  templateUrl: './blueprint-display-dialog.component.html',
-  styleUrls: ['./blueprint-display-dialog.component.scss']
+  templateUrl: './information-display-dialog.component.html',
+  styleUrls: ['./information-display-dialog.component.scss']
 })
 export class BlueprintDisplayDialogComponent implements OnInit {
   blueprintFiles: UploadedFileInfo[] = [];
   selectedBlueprint: UploadedFileInfo | null = null;
   blueprintPdfSrc: string | Uint8Array | null = null;
   isLoadingBlueprints: boolean = false;
+  tradeBudgets: any[] = [];
+  activeTab: 'blueprints' | 'budget' = 'blueprints';
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: { jobId: number, projectName: string },
@@ -41,6 +43,21 @@ export class BlueprintDisplayDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBlueprints();
+    this.loadJobDetails();
+  }
+
+  loadJobDetails(): void {
+    if (!this.data.jobId) return;
+    this.jobsService.getSpecificJob(this.data.jobId).subscribe({
+      next: (job) => {
+        this.tradeBudgets = job.tradeBudgets || [];
+      },
+      error: (err) => console.error('Error fetching job details', err),
+    });
+  }
+
+  setActiveTab(tab: 'blueprints' | 'budget'): void {
+    this.activeTab = tab;
   }
 
   loadBlueprints(): void {
@@ -145,5 +162,14 @@ export class BlueprintDisplayDialogComponent implements OnInit {
 
   close(): void {
     this.dialogRef.close();
+  }
+
+  formatTradeName(name: string): string {
+    if (!name) return '';
+    return name
+      .toLowerCase()
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 }

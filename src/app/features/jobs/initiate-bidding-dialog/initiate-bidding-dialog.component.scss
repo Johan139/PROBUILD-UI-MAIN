@@ -38,6 +38,7 @@ mat-radio-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  width: 100%;
 }
 
 .trade-input-section .full-width {
@@ -45,6 +46,7 @@ mat-radio-group {
 }
 
 .selected-trades-display {
+  margin-bottom: 4px;
   h4 {
     margin-bottom: var(--space-2);
     font-weight: var(--fw-medium);
@@ -61,6 +63,7 @@ mat-radio-group {
 
 .mat-dialog-actions {
   justify-content: flex-end;
+  margin-top: 4px !important;
   padding-top: var(--space-5);
   gap: var(--space-2);
   margin: 0;
@@ -68,5 +71,88 @@ mat-radio-group {
   button {
     text-transform: uppercase;
     font-weight: var(--fw-medium);
+  }
+}
+
+.table-input {
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 20%, transparent);
+  }
+}
+
+.trades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.trade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem .75rem 0.5rem 0.5rem;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.trade-info {
+  display: flex;
+  align-items: center;
+
+  span {
+    font-weight: 500;
+  }
+
+}
+
+.trade-budget {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+
+  span {
+    color: var(--color-text-muted);
+    margin-right: 0.5rem;
+  }
+
+  .table-input {
+    width: 100px;
+    text-align: right;
+  }
+}
+
+.remove-btn {
+  margin-left: 0.5rem;
+  color: var(--color-text-muted);
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
   }
 }
