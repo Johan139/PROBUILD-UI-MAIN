@@ -46,6 +46,11 @@ export class TeamManagementService {
       `${this.apiUrl}/members/${teamMemberId}/permissions`,
     );
   }
+  acceptInvitation(token: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/accept-invitation`, {
+      token: token,
+    });
+  }
 
   updatePermissions(
     teamMemberId: string,

@@ -129,6 +129,8 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
 
   form: FormGroup;
   map?: google.maps.Map;
+  userLatitude: number | null = null;
+  userLongitude: number | null = null;
   marker?: google.maps.Marker;
   mapReady = false;
   addressTypes: { id: string; name: string; description?: string }[] = []; // ✅ added
@@ -167,7 +169,20 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadAddressTypes(); // ✅ dynamically populate dropdown
-
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.userLatitude = pos.coords.latitude;
+          this.userLongitude = pos.coords.longitude;
+          console.log(
+            '📍 Dialog user location:',
+            this.userLatitude,
+            this.userLongitude,
+          );
+        },
+        (err) => console.warn('Geolocation denied or failed:', err),
+      );
+    }
     if (!(window as any).google?.maps?.places) {
       console.error(
         '❌ Google Maps JavaScript API with Places library not loaded.',
@@ -205,17 +220,42 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
   }
 
   private initAutocomplete(): void {
+    const options: google.maps.places.AutocompleteOptions = {
+      fields: [
+        'geometry',
+        'formatted_address',
+        'place_id',
+        'address_components',
+      ],
+    };
+
+    // ✅ Add proximity bias if location available
+    if (this.userLatitude && this.userLongitude) {
+      const center = new google.maps.LatLng(
+        this.userLatitude,
+        this.userLongitude,
+      );
+
+      // Create a bounding box around the user's location
+      const radiusInDegrees = 0.5; // ~50 km bias
+      const bounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(
+          center.lat() - radiusInDegrees,
+          center.lng() - radiusInDegrees,
+        ),
+        new google.maps.LatLng(
+          center.lat() + radiusInDegrees,
+          center.lng() + radiusInDegrees,
+        ),
+      );
+
+      options.bounds = bounds;
+      options.strictBounds = false; // allows suggestions outside box but biases inside
+    }
+
     const autocomplete = new google.maps.places.Autocomplete(
       this.addressInput.nativeElement,
-      {
-        fields: [
-          'geometry',
-          'formatted_address',
-          'place_id',
-          'address_components',
-        ],
-        componentRestrictions: { country: ['za', 'na'] },
-      },
+      options,
     );
 
     autocomplete.addListener('place_changed', () => {
@@ -295,7 +335,7 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
   }
 
   onSave(): void {
-    // console.log(this.form.value)
+    console.log(this.form.value);
     if (this.form.valid) this.dialogRef.close(this.form.value);
   }
 }

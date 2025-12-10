@@ -19,7 +19,7 @@ export type BillingCycle = 'monthly' | 'yearly';
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button class="dialog-btn skip-btn" (click)="skip()">
-        Skip
+        Pay Later
       </button>
       <button
         mat-button
@@ -83,13 +83,13 @@ export class PaymentPromptDialogComponent {
       packageName: string;
       amount: number;
       billingCycle: BillingCycle;
-    },
+    }
   ) {}
   ngOnInit() {
-    // console.log(this.data.billingCycle)
+    console.log(this.data.billingCycle);
   }
   continueToPayment() {
-    //  console.log(this.data.billingCycle)
+    console.log(this.data.billingCycle);
     this.stripeService
       .createCheckoutSession({
         userId: this.data.userId,
@@ -98,10 +98,11 @@ export class PaymentPromptDialogComponent {
         source: this.data.source,
         assignedUser: '',
         billingCycle: this.data.billingCycle,
+        SubscriptionId: '',
       })
       .subscribe({
         next: (res) => {
-          // console.log(res)
+          console.log(res);
           this.dialogRef.close();
           window.location.href = res.url;
         },

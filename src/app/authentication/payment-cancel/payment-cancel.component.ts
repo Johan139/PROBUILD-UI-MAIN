@@ -1,16 +1,23 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
+// ✅ Angular Material Imports
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { CommonModule } from '@angular/common';
+
 @Component({
   selector: 'app-payment-cancel',
+  standalone: true, // ✅ NOW this component supports imports
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
   templateUrl: './payment-cancel.component.html',
   styleUrls: ['./payment-cancel.component.scss'],
-  standalone: false,
 })
 export class PaymentCancelComponent {
   constructor(private router: Router) {}
 
   goToDashboard() {
-    this.router.navigate(['/dashboard']); // or wherever your post-payment route is
+    this.router.navigate(['/dashboard']);
   }
 }

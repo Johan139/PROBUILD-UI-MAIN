@@ -42,6 +42,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { ViewChild } from '@angular/core';
 import { combineLatest } from 'rxjs';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
+import { ProfileService } from '../profile/profile.service';
 import {
   constructionTypes,
   trades,
@@ -56,8 +57,10 @@ import {
   certificationOptions,
 } from '../../data/registration-data';
 import { RegistrationService } from '../../services/registration.service';
-
+import { ElementRef, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 const BASE_URL = environment.BACKEND_URL;
+declare const google: any;
 export interface SubscriptionOption {
   id: number;
   subscription: string;
@@ -95,10 +98,22 @@ export type BillingCycle = 'monthly' | 'yearly';
 export class TrialRegistrationComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
+  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+
+  isBrowser: boolean | undefined;
+  isGoogleMapsLoaded: boolean = false;
+  autocomplete!: google.maps.places.Autocomplete;
   showAlert: boolean = false;
   alertMessage: string = '';
   routeURL: string = '';
   token: string | null = null;
+  addressTypes: { id: string; name: string; description?: string }[] = [];
+  selectedCountryCode: any = null;
+  selectedDialCode: string = '';
+  countryNumberCode: any[] = [];
+  filteredCountryCodes!: Observable<any[]>;
+  countryFilterCtrl = new FormControl('');
+
   // Options for dropdowns
   constructionTypes = constructionTypes;
   trades = trades;
@@ -134,13 +149,14 @@ export class TrialRegistrationComponent implements OnInit {
   supplierTypeCtrl = new FormControl();
   filteredSupplierTypes: Observable<{ value: string; display: string }[]>;
   selectedSupplierTypes: { value: string; display: string }[] = [];
-
+  showOnlyBasicFields = true;
   registrationForm: FormGroup;
   user: string = '';
   certified = false;
   isLoading: boolean = false;
 
   constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
     private formBuilder: FormBuilder,
     private httpClient: HttpClient,
     private router: Router,
@@ -148,8 +164,10 @@ export class TrialRegistrationComponent implements OnInit {
     private registrationService: RegistrationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
+    private profileService: ProfileService,
     private invitationService: InvitationService,
   ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
     this.registrationForm = this.formBuilder.group({});
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
@@ -181,11 +199,21 @@ export class TrialRegistrationComponent implements OnInit {
 
   ngOnInit() {
     this.loadSubscriptionPackages();
+    this.profileService.getAddressType().subscribe({
+      next: (types) => (this.addressTypes = types),
+      error: (err) => console.error('Failed to load address types', err),
+    });
     this.loadGoogleTag();
     this.registrationForm = this.formBuilder.group({
       firstName: [{ value: '', disabled: true }, Validators.required],
       lastName: [{ value: '', disabled: true }, Validators.required],
-      phoneNumber: ['', Validators.required],
+      phoneNumber: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(/^[0-9\s()+-]{6,20}$/), // allows 6–15 digits only
+        ],
+      ],
       email: [
         { value: '', disabled: true },
         [Validators.required, Validators.email],
@@ -196,7 +224,7 @@ export class TrialRegistrationComponent implements OnInit {
           Validators.required,
           Validators.minLength(10),
           Validators.pattern(
-            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{10,}$/,
+            /^(?=.*[A-Z])(?=.*[a-z])(?=.*[!\@\#\$\%\^\&\*\?\_\-])[A-Za-z\d!\@\#\$\%\^\&\*\?\_\-]{10,}$/,
           ),
         ],
       ],
@@ -205,18 +233,22 @@ export class TrialRegistrationComponent implements OnInit {
       streetNumber: [''],
       streetName: [''],
       postalCode: [''],
+      countryCode: [''],
       billingCycle: ['monthly'],
+      city: [''],
+      state: [''],
+      country: [''],
       latitude: [null],
       longitude: [null],
       formattedAddress: [''],
       googlePlaceId: [''],
       vatNo: [''],
-      userType: ['PERSONAL_USE', Validators.required],
+      addressType: [''],
+      userType: ['PERSONAL_USE'],
 
       constructionType: [],
-      country: ['', Validators.required],
-      state: ['', Validators.required],
-      city: ['', Validators.required],
+
+      countryNumberCode: [''],
 
       nrEmployees: '',
       yearsOfOperation: '',
@@ -224,11 +256,7 @@ export class TrialRegistrationComponent implements OnInit {
       certificationDocumentPath: '',
       availability: '',
 
-      subscriptionPackage: [
-        { value: 'Trial', disabled: true },
-        Validators.required,
-      ],
-
+      subscriptionPackage: ['', Validators.required],
       projectPreferences: [],
 
       productsOffered: [],
@@ -240,68 +268,55 @@ export class TrialRegistrationComponent implements OnInit {
 
     this.user = 'PERSONAL_USE';
 
-    // Fetch countries
-    this.registrationService.getCountries().subscribe((countries) => {
-      this.countries = countries;
+    this.registrationService.getAllCountryNumberCodes().subscribe((data) => {
+      this.countryNumberCode = data;
 
-      this.registrationForm
-        .get('country')
-        ?.setValidators([
-          Validators.required,
-          this.mustBeValidCountryValidator(this.countries),
-        ]);
+      // 🌍 Try to get user's real country via IP API
+      this.getUserMetadata().subscribe({
+        next: (meta) => {
+          const ipCountryCode = meta?.country_code || meta?.country || 'US'; // fallback
+          const detected = this.countryNumberCode.find(
+            (c) => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase(),
+          );
+          if (detected) {
+            this.selectedCountryCode = detected;
+          } else {
+            const fallback = this.countryNumberCode.find(
+              (c) => c.countryCode === 'US',
+            );
+            this.selectedCountryCode = fallback || this.countryNumberCode[0];
+          }
 
-      this.registrationForm.get('country')?.updateValueAndValidity();
-    });
-
-    // Fetch all states once
-    this.registrationService.getAllStates().subscribe((allStates) => {
-      this.states = allStates;
-
-      const countryCtrl = this.registrationForm.get('country')!;
-      const stateCtrl = this.registrationForm.get('state')!;
-
-      // ⭐ Attach validators RIGHT HERE
-      this.registrationForm
-        .get('state')
-        ?.setValidators([
-          Validators.required,
-          this.mustBeValidStateValidator(this.states),
-        ]);
-      this.registrationForm.get('state')?.updateValueAndValidity();
-
-      this.filteredStates = combineLatest([
-        countryCtrl.valueChanges.pipe(startWith(countryCtrl.value)),
-        stateCtrl.valueChanges.pipe(startWith('')),
-      ]).pipe(
-        map(([countryId, search]) => {
-          const term = (typeof search === 'string' ? search : '').toLowerCase();
-          if (!countryId) return [];
-
-          const normalizedCountryId = (countryId + '').toLowerCase();
-
-          const inCountry = this.states.filter(
-            (s) => (s.countryId + '').toLowerCase() === normalizedCountryId,
+          // Initialize filter stream
+          this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+            startWith(''),
+            map((value) => this._filterCountryCodes(value ?? '')),
           );
 
-          if (!term) return inCountry;
-
-          return inCountry.filter(
-            (s) =>
-              (s.stateName ?? '').toLowerCase().includes(term) ||
-              (s.stateCode ?? '').toLowerCase().includes(term),
+          console.log(
+            `🌍 Default dial code set to: ${this.selectedCountryCode.countryCode} (${this.selectedCountryCode.countryPhoneNumberCode})`,
           );
-        }),
-      );
+        },
+        error: (err) => {
+          console.warn(
+            'Could not detect country via IP API, defaulting to ZA',
+            err,
+          );
+          const fallback = this.countryNumberCode.find(
+            (c) => c.countryCode === 'ZA',
+          );
+          this.selectedCountryCode = fallback || this.countryNumberCode[0];
+        },
+      });
     });
 
     // Countries filter
-    this.filteredCountries = this.registrationForm
-      .get('country')!
-      .valueChanges.pipe(
-        startWith(''),
-        map((value) => this._filterCountries(value)),
-      );
+    // this.filteredCountries = this.registrationForm
+    //   .get('country')!
+    //   .valueChanges.pipe(
+    //     startWith(''),
+    //     map((value) => this._filterCountries(value))
+    //   );
 
     this.registrationForm.get('userType')?.valueChanges.subscribe((value) => {
       this.user = value;
@@ -327,7 +342,7 @@ export class TrialRegistrationComponent implements OnInit {
           }
         });
 
-        this.invitationService.getInvitation(this.token).subscribe({
+        this.registrationService.getInvitation(this.token).subscribe({
           next: (data: any) => {
             console.log('Invitation data:', data);
             this.registrationForm.patchValue(data);
@@ -352,6 +367,110 @@ export class TrialRegistrationComponent implements OnInit {
         this.registrationForm.get('lastName')?.enable();
         this.registrationForm.get('email')?.enable();
       }
+    });
+  }
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser) return;
+
+    try {
+      await this.loadGoogleMapsScript();
+      this.isGoogleMapsLoaded = true;
+      this.initAutocomplete();
+    } catch (err) {
+      console.error('Failed to load Google Maps API:', err);
+    }
+  }
+  private loadGoogleMapsScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof google !== 'undefined' && google.maps) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (typeof google !== 'undefined' && google.maps) resolve();
+        else reject(new Error('Google Maps API loaded but google not defined'));
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  private initAutocomplete(): void {
+    if (!this.addressInput?.nativeElement) return;
+
+    this.autocomplete = new google.maps.places.Autocomplete(
+      this.addressInput.nativeElement,
+      {
+        fields: [
+          'address_components',
+          'geometry',
+          'formatted_address',
+          'place_id',
+        ],
+        types: ['geocode'],
+      },
+    );
+
+    this.autocomplete.addListener('place_changed', () => {
+      const place = this.autocomplete.getPlace();
+      if (!place.address_components) return;
+      this.handlePlaceSelection(place);
+    });
+  }
+  private handlePlaceSelection(place: any): void {
+    let streetNumber = '';
+    let streetName = '';
+    let city = '';
+    let state = '';
+    let postalCode = '';
+    let country = '';
+    let countryCode = '';
+
+    for (const component of place.address_components) {
+      const types = component.types;
+
+      if (types.includes('street_number')) streetNumber = component.long_name;
+      if (types.includes('route')) streetName = component.long_name;
+      if (types.includes('locality') || types.includes('sublocality'))
+        city = component.long_name;
+      if (types.includes('administrative_area_level_1'))
+        state = component.long_name;
+      if (types.includes('postal_code')) postalCode = component.long_name;
+      if (types.includes('country')) {
+        country = component.long_name;
+        countryCode = component.short_name;
+      }
+    }
+
+    const lat = place.geometry?.location?.lat();
+    const lng = place.geometry?.location?.lng();
+
+    this.registrationForm.patchValue({
+      formattedAddress: place.formatted_address,
+      streetNumber,
+      streetName,
+      city,
+      state,
+      postalCode,
+      country,
+      latitude: lat,
+      longitude: lng,
+      googlePlaceId: place.place_id,
+      countryCode: countryCode,
+    });
+
+    console.log('📍 Google Maps selection', {
+      formattedAddress: place.formatted_address,
+      city,
+      state,
+      country,
+      lat,
+      lng,
+      countryCode,
     });
   }
 
@@ -583,12 +702,27 @@ export class TrialRegistrationComponent implements OnInit {
         });
         //THE USER MUST BE REGISTERED IN THE USER TABLE AS WELL.
         const selectedPackageValue =
-          this.registrationForm.value.subscriptionPackage;
+          this.registrationForm.getRawValue().subscriptionPackage;
         const selectedPackage = this.subscriptionPackages.find(
           (p) => p.value === selectedPackageValue,
         );
 
         if (!this.registrationForm.valid) {
+          console.warn('⛔ FORM INVALID — DETAILS BELOW:');
+
+          Object.keys(this.registrationForm.controls).forEach((key) => {
+            const control = this.registrationForm.get(key);
+
+            if (control && control.invalid) {
+              console.warn(
+                `❌ ${key} FAILED`,
+                control.errors,
+                ' | VALUE: ',
+                control.value,
+              );
+            }
+          });
+
           this.alertMessage =
             'Please fill in all required fields or check for all fields are correct.';
           this.showAlert = true;
@@ -631,7 +765,7 @@ export class TrialRegistrationComponent implements OnInit {
             formValue.longitudeFromIP = metadata.longitude;
             formValue.timezone = metadata.timezone;
             formValue.operatingSystem = this.getOperatingSystem();
-
+            formValue.countryNumberCode = this.selectedCountryCode?.id || null;
             // Ensure only the ID is sent
             if (typeof formValue.country === 'object') {
               formValue.country = formValue.country?.id;
@@ -671,20 +805,20 @@ export class TrialRegistrationComponent implements OnInit {
                     'Registration successful! Check your inbox for a verification email to activate your account.';
                   const userId = res.userId;
                   if (
-                    this.registrationForm.value.subscriptionPackage.includes(
-                      'Basic',
-                    )
+                    this.registrationForm
+                      .getRawValue()
+                      .subscriptionPackage.includes('Basic')
                   ) {
                     this.routeURL = 'login';
                     this.showAlert = true;
                   } else if (
-                    this.registrationForm.value.subscriptionPackage.includes(
-                      'Trial',
-                    )
+                    this.registrationForm
+                      .getRawValue()
+                      .subscriptionPackage.includes('Trial')
                   ) {
                     const userId = res.userId;
                     const packageName =
-                      this.registrationForm.value.subscriptionPackage;
+                      this.registrationForm.getRawValue().subscriptionPackage;
                     // Trigger trial subscription
                     this.httpClient
                       .post(
@@ -728,12 +862,27 @@ export class TrialRegistrationComponent implements OnInit {
     }
 
     const selectedPackageValue =
-      this.registrationForm.value.subscriptionPackage;
+      this.registrationForm.getRawValue().subscriptionPackage;
     const selectedPackage = this.subscriptionPackages.find(
       (p) => p.value === selectedPackageValue,
     );
 
     if (!this.registrationForm.valid) {
+      console.warn('⛔ FORM INVALID — DETAILS BELOW:');
+
+      Object.keys(this.registrationForm.controls).forEach((key) => {
+        const control = this.registrationForm.get(key);
+
+        if (control && control.invalid) {
+          console.warn(
+            `❌ ${key} FAILED`,
+            control.errors,
+            ' | VALUE: ',
+            control.value,
+          );
+        }
+      });
+
       this.alertMessage =
         'Please fill in all required fields or check for all fields are correct.';
       this.showAlert = true;
@@ -775,7 +924,7 @@ export class TrialRegistrationComponent implements OnInit {
         formValue.latitudeFromIP = metadata.latitude;
         formValue.longitudeFromIP = metadata.longitude;
         formValue.timezone = metadata.timezone;
-
+        formValue.countryNumberCode = this.selectedCountryCode?.id || null;
         formValue.operatingSystem = this.getOperatingSystem();
         this.httpClient
           .post(`${BASE_URL}/Account/register`, formValue, {
@@ -810,20 +959,20 @@ export class TrialRegistrationComponent implements OnInit {
                 'Registration successful! Check your inbox for a verification email to activate your account.';
               const userId = res.userId;
               if (
-                this.registrationForm.value.subscriptionPackage.includes(
-                  'Basic',
-                )
+                this.registrationForm
+                  .getRawValue()
+                  .subscriptionPackage?.includes('Basic')
               ) {
                 this.routeURL = 'login';
                 this.showAlert = true;
               } else if (
-                this.registrationForm.value.subscriptionPackage.includes(
-                  'Trial',
-                )
+                this.registrationForm
+                  .getRawValue()
+                  .subscriptionPackage?.includes('Trial')
               ) {
                 const userId = res.userId;
                 const packageName =
-                  this.registrationForm.value.subscriptionPackage;
+                  this.registrationForm.getRawValue().subscriptionPackage;
                 // Trigger trial subscription
                 this.httpClient
                   .post(
@@ -952,31 +1101,176 @@ export class TrialRegistrationComponent implements OnInit {
     };
   };
 
-  onCountrySelected(event: any) {
-    const countryId = event.option.value;
-    this.registrationForm
-      .get('country')
-      ?.setValue(countryId, { emitEvent: false });
+  onCountrySelected(event: any): void {
+    const selected = event.option.value;
+    this.selectedCountryCode = selected;
 
-    // Reset state when country changes
-    this.registrationForm.get('state')?.setValue('');
+    const countryCtrl = this.registrationForm.get('country');
+    const stateCtrl = this.registrationForm.get('state');
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+
+    countryCtrl?.setValue(selected, { emitEvent: false });
+
+    // Reset dependent state
+    stateCtrl?.reset('', { emitEvent: false });
+    stateCtrl?.markAsPristine();
+    stateCtrl?.markAsUntouched();
+
+    // 🪄 Find matching dial code based on backend mapping
+    const match = this.countryNumberCode.find(
+      (x) => x.countryId?.toLowerCase() === selected.id?.toLowerCase(),
+    );
+    this.selectedDialCode = match?.countryPhoneNumberCode || '';
+
+    // Auto-insert dial code if empty
+    if (this.selectedDialCode && !phoneCtrl?.value) {
+      phoneCtrl?.setValue(`${this.selectedDialCode} `);
+    }
   }
-  onStateSelected(event: any) {
-    this.registrationForm
-      .get('state')
-      ?.setValue(event.option.value, { emitEvent: false });
+
+  private _filterCountryCodes(value: string): any[] {
+    const search = (value || '').toLowerCase().trim();
+    if (!search) return this.countryNumberCode;
+
+    return this.countryNumberCode.filter(
+      (c) =>
+        c.countryCode?.toLowerCase().includes(search) ||
+        c.countryPhoneNumberCode?.toLowerCase().includes(search),
+    );
   }
-  validateStateSelection() {
-    setTimeout(() => {
-      const ctrl = this.registrationForm.get('state');
-      const value = ctrl?.value;
 
-      const isValid = this.states.some((s) => s.id === value);
+  onPhoneInput(event: any) {
+    const inputEl = event.target as HTMLInputElement;
+    let value = inputEl.value || '';
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
 
-      if (!isValid) {
-        ctrl?.setErrors({ invalidSelection: true });
-        ctrl?.setValue('');
+    // Clean illegal characters but allow + only at start
+    value = value
+      .replace(/[^0-9\s()+-]/g, '') // remove strange chars
+      .replace(/(?!^)\+/g, ''); // remove any '+' that isn’t at start
+
+    if (dial) {
+      // Remove duplicate dial prefixes like +27+27 or +1+1
+      const duplicatePattern = new RegExp(
+        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`,
+      );
+      value = value.replace(duplicatePattern, dial);
+
+      // Ensure single '+'
+      if (!value.startsWith('+')) {
+        value = '+' + value.replace(/^\+*/, '');
       }
-    });
+
+      // Reset if cleared
+      if (!value.trim()) {
+        value = dial;
+      }
+      // Prevent deleting dial prefix
+      else if (value.length < dial.length && dial.startsWith(value)) {
+        value = dial;
+      }
+      // Normalize weird +0 / +00 cases
+      else if (value === '+' || value === '+0') {
+        value = dial;
+      }
+      // If missing dial entirely → prepend
+      else if (!value.startsWith(dial)) {
+        let digits = value.replace(/^\+?0+/, '');
+        value = dial + digits;
+      }
+      // Fix "+270..." or "+440..."
+      else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
+        value = dial + value.substring(dial.length + 1);
+      }
+    }
+
+    // Final cleanup
+    value = value.replace(/\+\++/g, '+');
+
+    inputEl.value = value;
+    phoneCtrl?.setValue(value, { emitEvent: false });
+  }
+
+  onCountryCodeChange(selected: any) {
+    this.selectedCountryCode = selected;
+    const dial = selected?.countryPhoneNumberCode || '';
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+    const currentValue = phoneCtrl?.value || '';
+
+    if (!currentValue || !currentValue.startsWith('+')) {
+      phoneCtrl?.setValue(dial + ' ');
+    } else {
+      const cleaned = currentValue.replace(/^\+\d+/, '');
+      phoneCtrl?.setValue(dial + cleaned);
+    }
+  }
+  // Mark field as touched to trigger real-time validation
+  markFieldTouched(fieldName: string) {
+    const field = this.registrationForm.get(fieldName);
+    field?.markAsTouched();
+  }
+
+  // Get error message for any field
+  getFieldError(fieldName: string): string {
+    const field = this.registrationForm.get(fieldName);
+
+    if (!field) return '';
+
+    // Required field error
+    if (field.hasError('required')) {
+      return 'Mandatory Field: Input Required.';
+    }
+
+    // Email-specific errors
+    if (fieldName === 'email' && field.invalid && !field.hasError('required')) {
+      return 'Please enter a valid email address';
+    }
+
+    // Password-specific errors
+    if (fieldName === 'password') {
+      if (field.hasError('minlength')) {
+        return 'Password must be at least 10 characters long.';
+      }
+      if (field.hasError('pattern')) {
+        return 'Password must contain at least one uppercase letter, one lowercase letter, and one special character: - ! @ # $ % ^ & * ? _';
+      }
+    }
+
+    return '';
+  }
+  onPhonePaste(event: ClipboardEvent) {
+    event.preventDefault();
+
+    const pasted = event.clipboardData?.getData('text') || '';
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+
+    // Strip everything except digits and +
+    let clean = pasted.replace(/[^\d+]/g, '');
+
+    // Remove all + except first
+    clean = clean.replace(/(?!^)\+/g, '');
+
+    // Remove leading + entirely so we can manually rebuild the prefix
+    clean = clean.replace(/^\+/, '');
+
+    // === CASE 1: Pasted number already starts with the correct dial ===
+    // Example: +33 6 12 55 99 88
+    if (clean.startsWith(dial.replace('+', ''))) {
+      phoneCtrl?.setValue(`+${clean}`);
+      return;
+    }
+
+    // === CASE 2: Any other international number (US, UK, etc.) ===
+    // Example: pasted +18013306029 → becomes +3318013306029
+    // Remove country prefix by stripping leading digits up to 3 chars
+    clean = clean.replace(/^\d{1,3}/, '');
+
+    // Remove leading zeros after removing international code
+    clean = clean.replace(/^0+/, '');
+
+    // Build final: selected dial + cleaned number
+    phoneCtrl?.setValue(`${dial}${clean}`);
   }
 }
