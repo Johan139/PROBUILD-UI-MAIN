@@ -444,6 +444,7 @@ export class ProfileComponent implements OnInit {
       if (user && user.id) {
         this.loadProfile();
         this.loadDocuments();
+
         this.checkSubscription();
         this.manageSubscriptions();
         this.GetUserSubscription();
@@ -476,6 +477,7 @@ export class ProfileComponent implements OnInit {
 
     this.profileService.uploadComplete$.subscribe((fileCount) => {
       this.isUploading = false;
+      this.loadDocuments(); // reload automatically after upload
       this.resetFileInput();
       console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
@@ -566,48 +568,82 @@ export class ProfileComponent implements OnInit {
         next: ({ profileData, countries, states }) => {
           this.countries = countries;
           this.states = states;
+          const rawCT: any = profileData.constructionType;
+          profileData.constructionType =
+            typeof rawCT === 'string'
+              ? rawCT.split(',').map((s) => s.trim())
+              : Array.isArray(rawCT)
+                ? rawCT
+                : [];
 
-          this.profileForm.patchValue(profileData); // includes country & state IDs
+          const rawDA: any = profileData.deliveryArea;
+          profileData.deliveryArea =
+            typeof rawDA === 'string'
+              ? rawDA.split(',').map((s) => s.trim())
+              : Array.isArray(rawDA)
+                ? rawDA
+                : [];
+
+          const rawPO: any = profileData.productsOffered;
+          profileData.productsOffered =
+            typeof rawPO === 'string'
+              ? rawPO.split(',').map((s) => s.trim()) // ✅ FIXED — THIS WAS WRONG
+              : Array.isArray(rawPO)
+                ? rawPO
+                : [];
+
+          const rawJP: any = profileData.projectPreferences;
+          profileData.projectPreferences =
+            typeof rawJP === 'string'
+              ? rawJP.split(',').map((s) => s.trim())
+              : Array.isArray(rawJP)
+                ? rawJP
+                : [];
+          const rawJPr: any = profileData.jobPreferences;
+          profileData.jobPreferences =
+            typeof rawJPr === 'string'
+              ? rawJPr.split(',').map((s) => s.trim())
+              : Array.isArray(rawJPr)
+                ? rawJPr
+                : [];
+          this.profileForm.patchValue(profileData);
 
           // --- ✅ DIAL CODE PRESELECTION & SYNC ---
-          if (profileData.countryNumberCode) {
-            this.registrationService
-              .getAllCountryNumberCodes()
-              .pipe(take(1))
-              .subscribe((codes) => {
-                this.countryNumberCode = codes;
+          if (
+            profileData.countryNumberCode &&
+            this.countryNumberCode.length > 0
+          ) {
+            // Match by GUID
+            const matched = this.countryNumberCode.find(
+              (c) => c.id === profileData.countryNumberCode,
+            );
 
-                // Match by GUID
-                const matched = codes.find(
-                  (c) => c.id === profileData.countryNumberCode,
-                );
-                this.selectedCountryCode =
-                  matched ||
-                  codes.find((c) => c.countryCode === 'ZA') ||
-                  codes[0];
+            this.selectedCountryCode =
+              matched ||
+              this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
+              this.countryNumberCode[0];
 
-                // Update the form so the phoneNumber always includes the dial code
-                const currentPhone =
-                  this.profileForm.get('phoneNumber')?.value || '';
-                const dial =
-                  this.selectedCountryCode?.countryPhoneNumberCode || '';
+            // Update phoneNumber so it includes the dial code
+            const currentPhone =
+              this.profileForm.get('phoneNumber')?.value || '';
+            const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
 
-                if (currentPhone && !currentPhone.startsWith(dial)) {
-                  const cleaned = currentPhone
-                    .replace(/[^\d+]/g, '')
-                    .replace(/^0+/, '');
-                  this.profileForm.patchValue({
-                    phoneNumber: `${dial}${cleaned}`,
-                  });
-                }
+            if (currentPhone && !currentPhone.startsWith(dial)) {
+              const cleaned = currentPhone
+                .replace(/[^\d+]/g, '')
+                .replace(/^0+/, '');
 
-                // initialize filter observable for dropdown search
-                this.filteredCountryCodes =
-                  this.countryFilterCtrl.valueChanges.pipe(
-                    startWith(''),
-                    map((v) => this._filterCountryCodes(v ?? '')),
-                  );
+              this.profileForm.patchValue({
+                phoneNumber: `${dial}${cleaned}`,
               });
+            }
+
+            // Initialize search filter
+            this.filteredCountryCodes =
+              this.countryFilterCtrl.valueChanges.pipe(
+                startWith(''),
+                map((v) => this._filterCountryCodes(v ?? '')),
+              );
           }
 
           //Here we are going to set the user address that was saved on registration.
@@ -1024,7 +1060,36 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
+  deleteDocument(doc: any): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Document',
+        message:
+          'Are you sure you want to delete this document? This action cannot be undone.',
+      },
+    });
 
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) return; // user clicked NO
+
+      this.profileService.deleteUserDocument(doc.id).subscribe({
+        next: () => {
+          this.documents = this.documents.filter((d) => d.id !== doc.id);
+
+          this.snackBar.open('Document deleted.', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: (err) => {
+          console.error('Delete failed:', err);
+          this.snackBar.open('Failed to delete document.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
+    });
+  }
   viewDocument(document: any): void {
     this.profileService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
@@ -1165,6 +1230,7 @@ export class ProfileComponent implements OnInit {
       const updatedProfile: Profile = this.profileForm.value;
       console.log(updatedProfile);
       updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
+      console.log(updatedProfile);
       this.profileService.updateProfile(updatedProfile).subscribe({
         next: (response: Profile) => {
           this.profile = response;
@@ -1205,7 +1271,7 @@ export class ProfileComponent implements OnInit {
       console.error('No files selected');
       return;
     }
-
+    const userId = localStorage.getItem('userId');
     const newFileNames = Array.from(input.files).map((file) => file.name);
     this.uploadedFileNames = [...this.uploadedFileNames, ...newFileNames];
 
@@ -1223,7 +1289,7 @@ export class ProfileComponent implements OnInit {
     this.progress = 0;
     this.isUploading = true;
 
-    this.profileService.uploadImage(formData).subscribe({
+    this.profileService.uploadImage(formData, userId).subscribe({
       next: (event) => {
         if (event.type === HttpEventType.UploadProgress && event.total) {
           this.progress = Math.round((100 * event.loaded) / event.total);
@@ -1238,6 +1304,7 @@ export class ProfileComponent implements OnInit {
           }
           this.isUploading = false;
           this.resetFileInput();
+          this.loadDocuments();
         }
       },
       error: (error) => {
@@ -1270,7 +1337,22 @@ export class ProfileComponent implements OnInit {
         next: (member: TeamMember) => {
           this.teamMembers = [...this.teamMembers, member];
           this.loadTeamMembers();
-          this.teamForm.reset();
+          this.teamForm.reset({
+            firstName: null,
+            lastName: null,
+            role: null,
+            email: null,
+          });
+
+          // Reset every control state manually
+          Object.keys(this.teamForm.controls).forEach((key) => {
+            const control = this.teamForm.get(key);
+            control?.markAsPristine();
+            control?.markAsUntouched();
+            control?.setErrors(null); // <-- THIS IS THE MISSING PIECE
+          });
+
+          this.teamForm.updateValueAndValidity();
           this.snackBar.open('Team member invited successfully', 'Close', {
             duration: 3000,
           });
@@ -1713,7 +1795,7 @@ export class ProfileComponent implements OnInit {
             teamBlockedCount > 1 ? 's' : ''
           } already subscribed.`
         : selfBlocked
-          ? 'You already have an active subscription.'
+          ? 'You already have an active subscription. Please cancel your existing subscription or change your current plan.'
           : teamBlockedCount > 0
             ? `${teamBlockedCount} team member${
                 teamBlockedCount > 1 ? 's' : ''
@@ -1730,12 +1812,10 @@ export class ProfileComponent implements OnInit {
             this.profileForm.get('subscriptionPackage')?.value ?? null,
           isTeamMember: this.authService.isTeamMember(),
           userId: selfId,
-          teamMembers: registeredTeam.map((m) => ({
-            id: m.id,
-            name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
-            email: m.email,
-          })),
-          activeByUserId: selfMap,
+
+          // Only pass self's active subscription
+          activeSubscription: selfMap[selfId] ?? null,
+
           notice,
         },
       })
@@ -2049,9 +2129,9 @@ export class ProfileComponent implements OnInit {
   changeUserRole(newRole: string): void {
     this.userRole = newRole;
     this.authService.changeUserRole(newRole);
-    this.snackBar.open(`Switched to ${newRole} role`, 'Close', {
-      duration: 3000,
-    });
+    // this.snackBar.open(`Switched to ${newRole} role`, 'Close', {
+    //   duration: 3000,
+    // });
     console.log('Role switched to:', newRole);
     console.log('Visibility - Personal:', this.canViewPersonalInfo());
     console.log('Visibility - Company:', this.canViewCompanyDetails());

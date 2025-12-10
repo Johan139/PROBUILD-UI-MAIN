@@ -1,4 +1,4 @@
-@use 'styles/util/mixins' as u;
+@use "styles/util/mixins" as u;
 
 :host {
   --field-shape: var(--radius-sm);
@@ -15,6 +15,9 @@
   padding: var(--space-5) var(--space-5) var(--space-3);
   font: var(--fw-bold) var(--fs-xl)/var(--lh-tight) var(--font-sans);
   border-bottom: 1px solid var(--color-border);
+  text-align: center;
+  font-weight: 600;
+  font-size: 20px;
 }
 
 .cd-content {
@@ -37,8 +40,11 @@
   padding: var(--space-3) var(--space-5) var(--space-5);
   display: flex;
   gap: var(--space-2);
-  background:
-    linear-gradient(to bottom, color-mix(in oklab, var(--color-surface) 0%, transparent), var(--color-surface));
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--color-surface) 0%, transparent),
+    var(--color-surface)
+  );
 }
 
 /* Buttons */
@@ -55,7 +61,11 @@
   }
 
   &.btn-danger {
-    background: color-mix(in oklab, var(--color-danger) 85%, var(--color-primary) 0%);
+    background: color-mix(
+      in oklab,
+      var(--color-danger) 85%,
+      var(--color-primary) 0%
+    );
     color: #fff;
   }
 }
@@ -70,7 +80,13 @@
 
 /* Compact on small screens */
 @media (max-width: 640px) {
-  .cd-title { padding: var(--space-4) var(--space-4) var(--space-2); }
-  .cd-content { padding: var(--space-4); }
-  .cd-actions { padding: var(--space-2) var(--space-4) var(--space-4); }
+  .cd-title {
+    padding: var(--space-4) var(--space-4) var(--space-2);
+  }
+  .cd-content {
+    padding: var(--space-4);
+  }
+  .cd-actions {
+    padding: var(--space-2) var(--space-4) var(--space-4);
+  }
 }

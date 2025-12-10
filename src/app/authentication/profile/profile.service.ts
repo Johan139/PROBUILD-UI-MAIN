@@ -116,9 +116,9 @@ export class ProfileService {
     });
   }
 
-  uploadImage(formData: FormData): Observable<any> {
+  uploadImage(formData: FormData, userId: String | null): Observable<any> {
     return this.http
-      .post<any>(`${this.apiUrl}/UploadImage`, formData, {
+      .post<any>(`${this.apiUrl}/UploadImage/${userId}`, formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ Accept: 'application/json' }),
@@ -298,5 +298,8 @@ export class ProfileService {
     return this.http.delete<void>(`${this.apiUrl}/DeleteUserAddress/${id}`, {
       headers: this.getHeaders(),
     });
+  }
+  deleteUserDocument(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/DeleteDocument/${id}`);
   }
 }

@@ -10,7 +10,7 @@ export interface Profile {
   companyName: string | null;
   companyRegNo: string | null;
   vatNo: string | null;
-  constructionType: string | null;
+  constructionType: string[] | null;
   nrEmployees: string | null;
   yearsOfOperation: string | null;
   certificationStatus: string | null;
@@ -18,9 +18,9 @@ export interface Profile {
   availability: string | null;
   trade: string | null;
   supplierType: string | null;
-  productsOffered: string | null;
-  projectPreferences: string | null;
-  deliveryArea: string | null;
+  productsOffered: string[] | null;
+  projectPreferences: string[] | null;
+  deliveryArea: string[] | null;
   deliveryTime: string | null;
   country: string | null;
   state: string | null;
@@ -28,7 +28,8 @@ export interface Profile {
   subscriptionPackage: string | null;
   isVerified: boolean;
   userAddresses?: UserAddress[];
-  countryNumberCode: string ;
+  countryNumberCode: string;
+  jobPreferences?: string[] | string | null;
 }
 
 export interface TeamMember {
@@ -73,11 +74,10 @@ export interface UserAddress {
   addressType?: string;
 }
 
-export interface AddressType{
+export interface AddressType {
   id: string;
   name: string;
-  description: string; 
+  description: string;
   isdefault: number;
   displayorder: number;
 }
-

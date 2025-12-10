@@ -62,7 +62,7 @@
                             appearance="fill"
                             class="country-code-field"
                           >
-                            <mat-label>Code</mat-label>
+                            <mat-label>Prefix</mat-label>
                             <mat-select
                               [(value)]="selectedCountryCode"
                               (selectionChange)="
@@ -118,6 +118,7 @@
                           <mat-select
                             formControlName="userType"
                             panelClass="custom-select-panel"
+                            (selectionChange)="changeUserRole($event.value)"
                           >
                             <mat-option value="GENERAL_CONTRACTOR"
                               >General Contractor</mat-option
@@ -176,45 +177,6 @@
                             >
                           </mat-select>
                         </mat-form-field>
-                        <div class="upload-container">
-                          <div *ngIf="isUploading" class="upload-progress">
-                            <p>Upload Progress: {{ progress }}%</p>
-                            <mat-progress-bar
-                              mode="determinate"
-                              [value]="progress"
-                            ></mat-progress-bar>
-                          </div>
-                          <div
-                            *ngIf="!isUploading && uploadedFilesCount > 0"
-                            class="upload-complete"
-                          >
-                            <p
-                              [matTooltip]="uploadedFileNames.join(', ')"
-                              matTooltipPosition="above"
-                            >
-                              {{ uploadedFilesCount }} file(s) uploaded
-                              successfully
-                            </p>
-                          </div>
-                          <div class="custom-file-upload">
-                            <label
-                              for="file-upload"
-                              class="upload-label submit-btn"
-                            >
-                              <img
-                                src="assets/custom-svg/upload-folder-svgrepo-com.svg"
-                                alt="Upload Icon"
-                                class="upload-icon"
-                              />
-                              Upload File
-                            </label>
-                            <input
-                              id="file-upload"
-                              type="file"
-                              (change)="onFileSelected($event)"
-                            />
-                          </div>
-                        </div>
                       </div>
                     </div>
                     <!-- Submit Button -->
@@ -337,7 +299,7 @@
                             >
                           </mat-select>
                         </mat-form-field>
-                        <mat-form-field appearance="fill">
+                        <mat-form-field appearance="fill" hidden>
                           <mat-label>Project Preferences</mat-label>
                           <mat-select
                             formControlName="projectPreferences"
@@ -868,6 +830,42 @@
                   <mat-tab label="Documents">
                     <div class="section">
                       <h3>Profile Documents</h3>
+                      <div class="upload-container">
+                        <div *ngIf="isUploading" class="upload-progress">
+                          <p>Upload Progress: {{ progress }}%</p>
+                          <mat-progress-bar
+                            mode="determinate"
+                            [value]="progress"
+                          ></mat-progress-bar>
+                        </div>
+                        <div
+                          *ngIf="!isUploading && uploadedFilesCount > 0"
+                          class="upload-complete"
+                        >
+                          <p
+                            [matTooltip]="uploadedFileNames.join(', ')"
+                            matTooltipPosition="above"
+                          >
+                            {{ uploadedFilesCount }} file(s) uploaded
+                            successfully
+                          </p>
+                        </div>
+                        <div class="custom-file-upload">
+                          <label for="file-upload" class="upload-label">
+                            <img
+                              src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                              alt="Upload Icon"
+                              class="upload-icon"
+                            />
+                            Upload File
+                          </label>
+                          <input
+                            id="file-upload"
+                            type="file"
+                            (change)="onFileSelected($event)"
+                          />
+                        </div>
+                      </div>
                       <mat-table
                         [dataSource]="documents"
                         class="mat-elevation-z8"
@@ -901,8 +899,22 @@
                             >Actions</mat-header-cell
                           >
                           <mat-cell *matCellDef="let doc">
-                            <button mat-icon-button (click)="viewDocument(doc)">
+                            <button
+                              mat-icon-button
+                              type="button"
+                              (click)="viewDocument(doc)"
+                              matTooltip="View Document"
+                            >
                               <mat-icon>visibility</mat-icon>
+                            </button>
+
+                            <button
+                              mat-icon-button
+                              type="button"
+                              (click)="deleteDocument(doc)"
+                              matTooltip="Delete Document"
+                            >
+                              <mat-icon>delete</mat-icon>
                             </button>
                           </mat-cell>
                         </ng-container>
@@ -1044,7 +1056,7 @@
                                   type="button"
                                   *ngIf="!authService.isTeamMember()"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
                                 <!-- If NOT cancelled → show Cancel button -->
                                 <button
@@ -1202,7 +1214,7 @@
                                   class="submit-btn"
                                   type="button"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
                                 <button
                                   mat-raised-button
@@ -1344,7 +1356,7 @@
                                   "
                                   type="button"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
                                 <button
                                   mat-raised-button
