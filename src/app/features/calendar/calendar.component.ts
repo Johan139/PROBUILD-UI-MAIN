@@ -25,6 +25,8 @@ import { CommonModule } from '@angular/common';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TaskViewDialogComponent } from './task-view-dialog/task-view-dialog.component';
+import { ReportService } from '../jobs/services/report.service';
 
 @Component({
   selector: 'app-calendar',
@@ -70,6 +72,7 @@ export class CalendarComponent implements OnInit {
     private calendarService: CalendarService,
     private jobsService: JobsService,
     private jobDataService: JobDataService,
+    private reportService: ReportService,
     private dialog: MatDialog,
   ) {
     this.calendarOptions = {
@@ -317,9 +320,73 @@ export class CalendarComponent implements OnInit {
       this.viewMode = 'tasks';
       this.updateCalendarView(projectName);
     } else {
-      alert(
-        `Event: ${info.event.title}\nDescription: ${info.event.extendedProps.description}`,
-      );
+      const jobId = info.event.extendedProps.jobId;
+      const startDate = info.event.start;
+      const endDate = info.event.end || info.event.start; // Fallback if single day event
+
+      if (jobId) {
+        this.isLoading = true;
+        this.reportService
+          .getDailyConstructionPlan(jobId)
+          .then((reportContent: string | null) => {
+            this.isLoading = false;
+            let dailyLogistics: any[] = [];
+
+            if (reportContent) {
+              dailyLogistics =
+                this.jobDataService.parseDailyConstructionPlan(reportContent);
+            }
+
+            // Filter logistics for this task's duration
+            const relevantLogistics = dailyLogistics.filter((entry) => {
+              const entryDate = new Date(entry.date);
+              // Normalise dates for comparison (ignore time)
+              const entryTime = entryDate.setHours(0, 0, 0, 0);
+              const startTime = new Date(startDate).setHours(0, 0, 0, 0);
+              const endTime = new Date(endDate).setHours(0, 0, 0, 0);
+
+              // Check if entry date is within start and end date (inclusive)
+              return entryTime >= startTime && entryTime < endTime;
+            });
+
+            // Parse title components  Format: "[Project Name] Subtask: Task Name"
+            const titleParts = info.event.title.match(/\[(.*?)\] Subtask: (.*)/);
+            const projectName = titleParts ? titleParts[1] : 'Unknown Project';
+            const subtaskName = titleParts ? titleParts[2] : info.event.title;
+
+            // Duration in days
+            const duration = Math.ceil(
+              (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+                (1000 * 60 * 60 * 24),
+            );
+
+            this.dialog.open(TaskViewDialogComponent, {
+              width: '800px',
+              maxWidth: '90vw',
+              data: {
+                projectName: projectName,
+                phaseName: relevantLogistics[0]?.phase || 'N/A',
+                subtaskName: subtaskName,
+                startDate: startDate,
+                endDate: endDate,
+                duration: duration,
+                status: 'Pending',
+                dailyLogistics: relevantLogistics,
+              },
+            });
+          })
+          .catch((err) => {
+            this.isLoading = false;
+            console.error('Error fetching daily plan:', err);
+            alert(
+              `Event: ${info.event.title}\n(Could not load daily details)`,
+            );
+          });
+      } else {
+        alert(
+          `Event: ${info.event.title}\nDescription: ${info.event.extendedProps.description}`,
+        );
+      }
     }
   }
 

@@ -39,7 +39,7 @@
         matTooltip="Make this job available for bidding by subcontractors and vendors"
         matTooltipShowDelay="500"
       >
-        Publish Job
+        Publish Job for Bidding
       </button>
       <button
         *ngIf="isProjectOwner"
@@ -171,7 +171,7 @@
       (click)="setActiveTab('timeline')"
       [class.active]="activeTab === 'timeline'"
     >
-      Timeline
+      Timeline & Tasks
     </button>
     <button
       (click)="setActiveTab('team')"
@@ -366,7 +366,7 @@
             matTooltip="Make this job available for bidding by subcontractors and vendors"
             matTooltipShowDelay="500"
           >
-            Publish Job
+            Publish Job for Bidding
           </button>
           <button
             *ngIf="isProjectOwner"

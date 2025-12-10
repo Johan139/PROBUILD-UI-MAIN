@@ -206,6 +206,71 @@ export class JobDataService {
     });
   }
 
+  parseDailyConstructionPlan(report: string): any[] {
+    if (!report) return [];
+
+    const dailyPlan: any[] = [];
+    const startMarker = '### Phase 25: Daily Construction & Logistics Plan';
+    const tableHeaderRegex =
+      /\|\s*Project Day\s*\|\s*Date\s*\|\s*Phase\s*\|\s*Daily Tasks & Instructions\s*\|\s*Materials Required On-Site\s*\|\s*Equipment Required On-Site\s*\|\s*Personnel Required On-Site\s*\|\s*Key Milestones\/Inspections\s*\|/;
+
+    let startIndex = report.indexOf(startMarker);
+    if (startIndex === -1) return [];
+
+    const lines = report.substring(startIndex).split('\n');
+    let tableStarted = false;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith('Ready for the next prompt')) {
+        break;
+      }
+
+      if (!tableStarted && tableHeaderRegex.test(trimmedLine)) {
+        tableStarted = true;
+        continue;
+      }
+
+      if (
+        !tableStarted ||
+        !trimmedLine.startsWith('|') ||
+        trimmedLine.includes('---')
+      ) {
+        continue;
+      }
+
+      const columns = trimmedLine
+        .split('|')
+        .map((c) => c.trim())
+        .slice(1, -1);
+
+      if (columns.length < 8) continue;
+
+      const day = columns[0].replace(/\*\*/g, '');
+      const date = columns[1];
+      const phase = columns[2];
+      const tasks = columns[3];
+      const materials = columns[4];
+      const equipment = columns[5];
+      const personnel = columns[6];
+      const milestones = columns[7];
+
+      dailyPlan.push({
+        day,
+        date,
+        phase,
+        tasks,
+        materials,
+        equipment,
+        personnel,
+        milestones,
+      });
+    }
+
+    return dailyPlan;
+  }
+
   private parseTimelineToTaskGroups(
     report: string,
   ): { title: string; subtasks: any[] }[] {

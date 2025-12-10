@@ -1020,7 +1020,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   publishJob(): void {
     const dialogRef = this.dialog.open(InitiateBiddingDialogComponent, {
-      width: '400px',
+      width: '600px',
       data: {},
     });
 
@@ -1029,6 +1029,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.projectDetails.biddingType = result.biddingType;
         this.projectDetails.requiredSubcontractorTypes =
           result.requiredSubcontractorTypes;
+        this.projectDetails.tradeBudgets = result.tradeBudgets;
         this.projectDetails.status = 'BIDDING';
         this.subtaskService
           .publishJob(this.projectDetails.jobId, this.projectDetails)

@@ -40,6 +40,7 @@
     <button *ngIf="quote || (bid && bid.quoteId)" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View & Edit Quote</button>
     <button *ngIf="bid && bid.documentUrl" mat-raised-button color="primary" (click)="onViewPdfClick($event)">View PDF</button>
     <button *ngIf="quote?.status === 'Submitted' || bid?.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <button mat-raised-button color="primary" (click)="onViewMoreInfoClick($event)">More Information</button>
     <ng-content *ngIf="showBidButton" select="[slot='actions']"></ng-content>
   </div>
 </div>

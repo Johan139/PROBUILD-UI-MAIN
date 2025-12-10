@@ -220,10 +220,8 @@
                 (viewQuote)="onViewQuote($event)"
                 (withdrawBid)="onWithdrawBid($event)"
                 (editBid)="onEditBid($event)"
-                [showBidButton]="
-                  !getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)
-                "
-              >
+                (viewMoreInfo)="onViewMoreInfo($event)"
+                [showBidButton]="!getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)">
               </app-job-card>
             </li>
           </ul>
@@ -284,28 +282,9 @@
               >You have no rejected bids</span
             >
           </div>
-          <ul
-            class="job-list"
-            *ngIf="!bidsLoading && myBidsDataSource.data.length > 0"
-          >
-            <li
-              *ngFor="
-                let bid of myBidsDataSource.connect() | async;
-                trackBy: trackByBidId
-              "
-              class="job-item"
-            >
-              <app-job-card
-                *ngIf="bid.job"
-                [job]="bid.job"
-                [bid]="bid"
-                [quote]="getQuoteForBid(bid)"
-                (viewQuote)="onViewQuote($event)"
-                (withdrawBid)="onWithdrawBid($event)"
-                (editBid)="onEditBid($event)"
-                [userTrade]="userTrade"
-                [showBidButton]="false"
-              >
+          <ul class="job-list" *ngIf="!bidsLoading && myBidsDataSource.data.length > 0">
+            <li *ngFor="let bid of myBidsDataSource.connect() | async; trackBy: trackByBidId" class="job-item">
+              <app-job-card *ngIf="bid.job" [job]="bid.job" [bid]="bid" [quote]="getQuoteForBid(bid)" (viewQuote)="onViewQuote($event)" (withdrawBid)="onWithdrawBid($event)" (editBid)="onEditBid($event)" (viewMoreInfo)="onViewMoreInfo($event)" [userTrade]="userTrade" [showBidButton]="false">
               </app-job-card>
             </li>
           </ul>

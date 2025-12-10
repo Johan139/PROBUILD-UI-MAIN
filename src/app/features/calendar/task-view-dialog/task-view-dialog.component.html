@@ -1,0 +1,71 @@
+<div class="group-modal">
+  <div class="modal-header">
+    <h2>{{ data.subtaskName }}</h2>
+    <button class="close-btn" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="modal-content">
+    <div class="group-info">
+      <div class="info-item">
+        <strong>Project:</strong> {{ data.projectName }}
+      </div>
+      <div class="info-item">
+        <strong>Phase:</strong> {{ data.phaseName }}
+      </div>
+      <div class="info-item">
+        <strong>Duration:</strong> {{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}
+        <span class="duration-badge">({{ data.duration }} days)</span>
+      </div>
+      <div class="info-item">
+        <strong>Status:</strong>
+        <span class="status-badge" [class]="'status-' + (data.status | lowercase)">
+          {{ data.status }}
+        </span>
+      </div>
+    </div>
+
+    <h3>Daily Construction & Logistics Plan</h3>
+
+    <div class="daily-logistics-container" *ngIf="data.dailyLogistics && data.dailyLogistics.length > 0; else noData">
+      <div class="logistics-item" *ngFor="let entry of data.dailyLogistics">
+        <div class="logistics-header">
+          <span class="logistics-date">{{ entry.date }} ({{ entry.day }})</span>
+        </div>
+        <div class="logistics-content">
+          <div class="content-section" *ngIf="entry.tasks">
+            <span class="section-label">Tasks:</span>
+            <span class="section-value">{{ entry.tasks }}</span>
+          </div>
+          <div class="content-section" *ngIf="entry.materials">
+            <span class="section-label">Materials:</span>
+            <span class="section-value">{{ entry.materials }}</span>
+          </div>
+          <div class="content-section" *ngIf="entry.equipment">
+            <span class="section-label">Equipment:</span>
+            <span class="section-value">{{ entry.equipment }}</span>
+          </div>
+          <div class="content-section" *ngIf="entry.personnel">
+            <span class="section-label">Personnel:</span>
+            <span class="section-value">{{ entry.personnel }}</span>
+          </div>
+          <div class="content-section milestone" *ngIf="entry.milestones">
+            <span class="section-label">Milestone:</span>
+            <span class="section-value">{{ entry.milestones }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noData>
+      <div class="no-data-message">
+        No daily logistics data available for this task's timeframe.
+      </div>
+    </ng-template>
+  </div>
+
+  <div class="modal-actions">
+    <button mat-stroked-button (click)="close()">Close</button>
+  </div>
+</div>

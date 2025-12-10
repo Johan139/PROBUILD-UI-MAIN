@@ -39,6 +39,7 @@ import { JOB_TYPES } from '../../data/job-types';
 import { Router } from '@angular/router';
 import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
+import { BlueprintDisplayDialogComponent } from './information-display-dialog/information-display-dialog.component';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { QuoteService } from '../../features/quote/quote.service';
 import { Quote } from '../quote/quote.model';
@@ -1118,6 +1119,19 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         queryParams: { quoteId: quoteId, edit: true },
       });
     }
+  }
+
+  onViewMoreInfo(job: Job): void {
+    this.dialog.open(BlueprintDisplayDialogComponent, {
+      width: '90vw',
+      height: '90vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      data: {
+        jobId: job.jobId,
+        projectName: job.projectName,
+      },
+    });
   }
 
   hasBidded(jobId: number): boolean {

@@ -20,6 +20,7 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { LoaderComponent } from '../../../loader/loader.component';
 import { ProjectCardComponent } from '../../my-projects/project-card/project-card.component';
 import { ProjectsTableComponent } from '../../../components/projects-table/projects-table.component';
@@ -32,7 +33,11 @@ import { BudgetService } from '../services/budget.service';
 import { BidsService } from '../../../services/bids.service';
 import { JobsService } from '../../../services/jobs.service';
 import { ProjectService } from '../../../services/project.service';
+import { ReportService } from '../services/report.service';
 import { TimelineGroup } from '../../../components/timeline/timeline.component';
+import { WeatherImpactService } from '../services/weather-impact.service';
+import { PermitsDialogComponent } from '../permits-dialog/permits-dialog.component';
+import { PermitsService } from '../services/permits.service';
 import {
   LucideAngularModule,
   Building2,
@@ -139,13 +144,44 @@ export class ProjectOverviewComponent {
   clientName: string = '';
   activeValue: number = 0;
   costByPhase: { name: string; value: number }[] = [];
-  materialPercent: number = 62; // Default HARDCODED fallback
-  laborPercent: number = 38; // Default HARDCODED fallback
+  materialPercent: number = 0;
+  laborPercent: number = 0;
   bidsReceived: number = 0;
   totalDuration: number = 0;
   currentWeek: number = 0;
   outlookTasks: { name: string; date: string }[] = [];
   behindScheduleCount: number = 0;
+  weatherRiskMessage: string = 'None';
+  weatherRiskLevel: 'none' | 'warning' | 'critical' = 'none';
+  completedTasksCount: number = 0;
+
+  // Blueprint Intelligence
+  blueprintSheetCount: number = 0;
+  blueprintRoomCount: number = 0;
+  blueprintConfidenceScore: number = 0;
+
+  // Bidding Status
+  tradesRequiredCount: number = 0;
+  invitedPlatformCount: number = 0;
+  invitedExternalCount: number = 0;
+  pendingResponseCount: number = 0;
+  biddingRound: number = 1;
+
+  // Subcontractor Overview
+  confirmedSubsCount: number = 0;
+  pendingSubsCount: number = 0;
+  projectTrades: { name: string; status: 'confirmed' | 'pending' | 'none' }[] =
+    [];
+
+  // Permits
+  permitStatus: 'success' | 'warning' | 'none' = 'none';
+  permitStatusText: string = 'No Data';
+
+  // Document Hub
+  contractCount: number = 0;
+  rfiCount: number = 0;
+  inspectionCount: number = 0;
+  photoCount: number = 0;
 
   // Carousel State
   currentIndex = 0;
@@ -164,6 +200,10 @@ export class ProjectOverviewComponent {
     private projectService: ProjectService,
     private snackBar: MatSnackBar,
     private router: Router,
+    private reportService: ReportService,
+    private weatherImpactService: WeatherImpactService,
+    private dialog: MatDialog,
+    private permitsService: PermitsService,
   ) {}
 
   ngOnChanges(): void {
@@ -178,42 +218,52 @@ export class ProjectOverviewComponent {
 
   private loadFromCache(): void {
     const cached = localStorage.getItem(this.localStorageKey);
-    if (cached) {
-      try {
-        const data = JSON.parse(cached);
-        this.ownerName = data.ownerName || this.ownerName;
-        this.clientName = data.clientName || '';
-        this.activeValue = data.activeValue || 0;
-        this.costByPhase = data.costByPhase || [];
-        this.materialPercent = data.materialPercent || 62;
-        this.laborPercent = data.laborPercent || 38;
-        this.bidsReceived = data.bidsReceived || 0;
-      } catch (e) {
-        console.error('Failed to parse cached overview data', e);
-      }
+  if (cached) {
+    try {
+      const data = JSON.parse(cached);
+      this.ownerName = data.ownerName || this.ownerName;
+      this.clientName = data.clientName || '';
+      this.activeValue = data.activeValue || 0;
+      this.costByPhase = data.costByPhase || [];
+      this.materialPercent = data.materialPercent || 0;
+      this.laborPercent = data.laborPercent || 0;
+      this.bidsReceived = data.bidsReceived || 0;
+      this.completedTasksCount = data.completedTasksCount || 0;
+    } catch (e) {
+      console.error('Failed to parse cached overview data', e);
     }
   }
+}
 
-  private saveToCache(): void {
-    const data = {
-      ownerName: this.ownerName,
-      clientName: this.clientName,
-      activeValue: this.activeValue,
-      costByPhase: this.costByPhase,
-      materialPercent: this.materialPercent,
-      laborPercent: this.laborPercent,
-      bidsReceived: this.bidsReceived,
-    };
-    localStorage.setItem(this.localStorageKey, JSON.stringify(data));
-  }
+private saveToCache(): void {
+  const data = {
+    ownerName: this.ownerName,
+    clientName: this.clientName,
+    activeValue: this.activeValue,
+    costByPhase: this.costByPhase,
+    materialPercent: this.materialPercent,
+    laborPercent: this.laborPercent,
+    bidsReceived: this.bidsReceived,
+    completedTasksCount: this.completedTasksCount,
+  };
+  localStorage.setItem(this.localStorageKey, JSON.stringify(data));
+}
 
   loadProjectData(): void {
-    // 1. Load from cache first (Stale-While-Revalidate)
+    // Load from cache first (Stale-While-Revalidate)
     this.loadFromCache();
 
     const jobId = this.projectDetails.jobId;
 
-    // 2. Get Owner Name & Client Name
+    // 1. Blueprint Intelligence
+    this.reportService.getBlueprintIntelligence(jobId).then((data) => {
+      this.blueprintConfidenceScore = data.confidenceScore;
+      this.blueprintSheetCount = data.sheetCount;
+      this.blueprintRoomCount = data.roomCount;
+      this.saveToCache();
+    });
+
+    // Get Owner Name, Client Name & Subcontractor/Bidding Info from Job
     this.jobsService.getSpecificJob(jobId).subscribe({
       next: (job: any) => {
         if (job?.user) {
@@ -223,6 +273,74 @@ export class ProjectOverviewComponent {
           this.authService.currentUser$.subscribe((user) => {
             if (user && user.id === this.projectDetails.userId) {
               this.ownerName = `${user.firstName} ${user.lastName}`;
+            }
+          });
+        }
+
+        // Bidding Status Extraction
+        if (
+          job.tradeBudgets &&
+          Array.isArray(job.tradeBudgets) &&
+          job.tradeBudgets.length > 0
+        ) {
+          this.tradesRequiredCount = job.tradeBudgets.length;
+          this.projectTrades = job.tradeBudgets.map((tb: any) => ({
+            name: tb.tradeName.replace(/_/g, ' '),
+            status: 'none',
+          }));
+        } else if (job.requiredSubcontractorTypes) {
+          const types = Array.isArray(job.requiredSubcontractorTypes)
+            ? job.requiredSubcontractorTypes
+            : job.requiredSubcontractorTypes.split(',');
+          this.tradesRequiredCount = types.length;
+          // Fallback if no tradeBudgets
+          this.projectTrades = types.map((t: string) => ({
+            name: t,
+            status: 'none',
+          }));
+        }
+        this.biddingRound = job.biddingRound || 1;
+
+        // Subcontractor Overview Extraction
+        if (job.jobAssignments && Array.isArray(job.jobAssignments)) {
+          const subs = job.jobAssignments.filter(
+            (a: any) => a.role === 'Subcontractor',
+          );
+          this.confirmedSubsCount = subs.filter(
+            (a: any) => a.status === 'Active',
+          ).length;
+          this.pendingSubsCount = subs.filter(
+            (a: any) => a.status === 'Pending',
+          ).length;
+
+          // Update statuses in projectTrades
+          subs.forEach((sub: any) => {
+            if (sub.trade) {
+              const normalizedSubTrade = sub.trade
+                .toLowerCase()
+                .replace(/_/g, ' ');
+
+              const match = this.projectTrades.find((pt) => {
+                const normalizedPtName = pt.name
+                  .toLowerCase()
+                  .replace(/_/g, ' ');
+                return (
+                  normalizedPtName === normalizedSubTrade ||
+                  normalizedPtName.includes(normalizedSubTrade) ||
+                  normalizedSubTrade.includes(normalizedPtName)
+                );
+              });
+
+              if (match) {
+                if (sub.status === 'Active') {
+                  match.status = 'confirmed';
+                } else if (
+                  sub.status === 'Pending' &&
+                  match.status !== 'confirmed'
+                ) {
+                  match.status = 'pending';
+                }
+              }
             }
           });
         }
@@ -245,7 +363,34 @@ export class ProjectOverviewComponent {
       error: () => (this.ownerName = 'Unknown'),
     });
 
-    // 3. Get Budget Stats
+    // Check Permit Status
+    this.checkPermitStatus(jobId);
+
+    // Documents
+    this.jobsService.getJobDocuments(jobId).subscribe({
+      next: (docs) => {
+        if (docs) {
+          // TODO: Simple counting based on category or type, FIXME with actual documents
+          this.contractCount = docs.filter((d) =>
+            (d.category || d.type || '').toLowerCase().includes('contract'),
+          ).length;
+          this.rfiCount = docs.filter((d) =>
+            (d.category || d.type || '').toLowerCase().includes('rfi'),
+          ).length;
+          this.inspectionCount = docs.filter((d) =>
+            (d.category || d.type || '').toLowerCase().includes('inspection'),
+          ).length;
+          this.photoCount = docs.filter(
+            (d) =>
+              (d.category || d.type || '').toLowerCase().includes('photo') ||
+              (d.fileType || '').toLowerCase().includes('image'),
+          ).length;
+        }
+      },
+      error: (err) => console.error('Failed to load documents', err),
+    });
+
+    // Get Budget Stats
     this.budgetService.getBudget(jobId).subscribe({
       next: (items) => {
         this.calculateBudgetStats(items);
@@ -254,10 +399,18 @@ export class ProjectOverviewComponent {
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    // 4. Get Bids Count
+    // Get Bids Count & Bidding Details
     this.bidsService.getBidsForJob(jobId).subscribe({
       next: (bids) => {
         this.bidsReceived = bids ? bids.length : 0;
+        if (bids) {
+          this.pendingResponseCount = bids.filter(
+            (b) => b.status === 'Pending',
+          ).length;
+          // TODO: derive invited counts from bids or if we need another endpoint
+          this.invitedPlatformCount = bids.length;
+        }
+
         this.saveToCache();
       },
       error: (err) => console.error('Failed to load bids', err),
@@ -357,6 +510,91 @@ export class ProjectOverviewComponent {
       const end = new Date(t.endDate || t.end);
       return end < today && t.status !== 'completed' && !t.accepted;
     }).length;
+
+    // Completed Tasks
+    this.completedTasksCount = allTasks.filter(
+      (t) => t.status === 'completed',
+    ).length;
+
+    // Check Weather Impact (Next 10 Days)
+    this.checkWeatherRisk(allTasks);
+  }
+
+  checkWeatherRisk(tasks: any[]): void {
+    if (!this.forecast || this.forecast.length === 0) {
+      this.weatherRiskMessage = 'No Data';
+      this.weatherRiskLevel = 'none';
+      return;
+    }
+
+    // Filter tasks that are active in the next 10 days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tenDaysFromNow = new Date();
+    tenDaysFromNow.setDate(today.getDate() + 10);
+    tenDaysFromNow.setHours(23, 59, 59, 999);
+
+    const activeTasks = tasks.filter((t) => {
+      const start = new Date(t.startDate || t.start);
+      const end = new Date(t.endDate || t.end);
+      return (
+        (start <= tenDaysFromNow && end >= today) || // Overlaps with next 10 days
+        (start >= today && start <= tenDaysFromNow)
+      );
+    });
+
+    if (activeTasks.length === 0) {
+      this.weatherRiskMessage = 'None';
+      this.weatherRiskLevel = 'none';
+      return;
+    }
+
+    // Check against forecast
+    let maxRiskLevel: 'none' | 'warning' | 'critical' = 'none';
+    let riskDetails: string[] = [];
+
+    // Simple forecast check first (any bad weather?)
+    const adverseDays = this.forecast.filter(
+      (day) =>
+        day.condition.toLowerCase().includes('rain') ||
+        day.condition.toLowerCase().includes('storm') ||
+        day.condition.toLowerCase().includes('snow') ||
+        day.precipitationProbability > 50,
+    );
+
+    if (adverseDays.length > 0) {
+      const vulnerableTasks = activeTasks.filter((t) => {
+        const name = (t.name || t.task || '').toLowerCase();
+        return this.weatherImpactService.RAIN_AFFECTED_CATEGORIES.some((cat) =>
+          name.includes(cat),
+        );
+      });
+
+      if (vulnerableTasks.length > 0) {
+        maxRiskLevel = 'warning';
+        const taskNames = vulnerableTasks
+          .map((t) => t.name || t.task)
+          .slice(0, 2)
+          .join(', ');
+        riskDetails.push(
+          `${adverseDays.length} bad weather days affecting ${taskNames}${vulnerableTasks.length > 2 ? '...' : ''}`,
+        );
+      } else {
+        // Bad weather but maybe indoor tasks?
+        if (adverseDays.length > 2) {
+          maxRiskLevel = 'warning'; // General warning for travel/logistics
+          riskDetails.push(`${adverseDays.length} days of adverse weather`);
+        }
+      }
+    }
+
+    if (maxRiskLevel === 'warning') {
+      this.weatherRiskLevel = 'warning';
+      this.weatherRiskMessage = riskDetails[0] || 'Potential Delays';
+    } else {
+      this.weatherRiskLevel = 'none';
+      this.weatherRiskMessage = 'Low Risk';
+    }
   }
 
   onOpenBudget(): void {
@@ -424,7 +662,63 @@ export class ProjectOverviewComponent {
     });
   }
 
-  // Address Editing Logic
+  openPermitsDialog(): void {
+    const dialogRef = this.dialog.open(PermitsDialogComponent, {
+      width: '90vw',
+      maxWidth: '1600px',
+      height: '90vh',
+      maxHeight: '90vh',
+      panelClass: 'full-screen-dialog',
+      data: { jobId: this.projectDetails.jobId },
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.checkPermitStatus(this.projectDetails.jobId);
+    });
+  }
+
+  checkPermitStatus(jobId: number): void {
+    this.permitsService.getPermits(jobId).subscribe({
+      next: (permits) => {
+        if (!permits || permits.length === 0) {
+          this.permitStatus = 'none';
+          this.permitStatusText = 'No Permits';
+          return;
+        }
+
+        const expired = permits.some(
+          (p) => p.status.toLowerCase() === 'expired',
+        );
+        const pending = permits.some(
+          (p) => p.status.toLowerCase() === 'pending',
+        );
+        const allActive = permits.every(
+          (p) =>
+            p.status.toLowerCase() === 'active' ||
+            p.status.toLowerCase() === 'approved',
+        );
+
+        if (expired) {
+          this.permitStatus = 'warning';
+          this.permitStatusText = 'Expired Permit';
+        } else if (pending) {
+          this.permitStatus = 'warning';
+          this.permitStatusText = 'Pending Approval';
+        } else if (allActive) {
+          this.permitStatus = 'success';
+          this.permitStatusText = 'All Approved';
+        } else {
+          this.permitStatus = 'none';
+          this.permitStatusText = 'In Progress';
+        }
+      },
+      error: () => {
+        this.permitStatus = 'none';
+        this.permitStatusText = 'Unknown';
+      },
+    });
+  }
+
   toggleAddressEdit(isEditing: boolean): void {
     this.isEditingAddress = isEditing;
     if (isEditing) {

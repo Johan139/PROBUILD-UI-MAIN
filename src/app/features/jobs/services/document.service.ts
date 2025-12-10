@@ -15,6 +15,8 @@ export class DocumentService {
   private documents: any[] = [];
   private documentsError: string | null = null;
   private isDocumentsLoading: boolean = false;
+  private documentCache = new Map<number, Blob>();
+  private documentListCache = new Map<string, any[]>();
 
   constructor(
     private httpClient: HttpClient,
@@ -25,6 +27,13 @@ export class DocumentService {
   fetchDocuments(jobId: string): Observable<any[]> {
     this.isDocumentsLoading = true;
     this.documentsError = null;
+
+    if (this.documentListCache.has(jobId)) {
+      this.documents = this.documentListCache.get(jobId)!;
+      this.isDocumentsLoading = false;
+      return of(this.documents);
+    }
+
     return this.jobsService.getJobDocuments(jobId).pipe(
       map((docs: any[]) => {
         const mappedDocs = docs.map((doc) => ({
@@ -34,6 +43,7 @@ export class DocumentService {
           size: doc.size,
         }));
         this.documents = mappedDocs;
+        this.documentListCache.set(jobId, mappedDocs);
         this.isDocumentsLoading = false;
         return mappedDocs;
       }),
@@ -108,5 +118,13 @@ export class DocumentService {
     return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
       blobUrls,
     });
+  }
+
+  getCachedDocument(documentId: number): Blob | undefined {
+    return this.documentCache.get(documentId);
+  }
+
+  cacheDocument(documentId: number, blob: Blob): void {
+    this.documentCache.set(documentId, blob);
   }
 }

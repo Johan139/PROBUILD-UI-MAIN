@@ -32,6 +32,7 @@ export class JobCardComponent {
   @Output() viewPdf = new EventEmitter<string>();
   @Output() withdrawBid = new EventEmitter<Quote | Bid>();
   @Output() editBid = new EventEmitter<Quote | Bid>();
+  @Output() viewMoreInfo = new EventEmitter<Job>();
 
   getStarRating(rating: number): string[] {
     const stars: string[] = [];
@@ -96,6 +97,11 @@ export class JobCardComponent {
     } else if (this.bid) {
       this.editBid.emit(this.bid);
     }
+  }
+
+  onViewMoreInfoClick(event: MouseEvent): void {
+    event.stopPropagation();
+    this.viewMoreInfo.emit(this.job);
   }
 
   getStatusClass(status: string): string {

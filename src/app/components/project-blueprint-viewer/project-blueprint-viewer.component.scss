@@ -284,7 +284,7 @@
 .analysis-options {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   font-size: var(--fs-sm);
   color: var(--color-text);
 }
@@ -292,8 +292,29 @@
 .analysis-options label {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
   cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  transition: all 0.2s ease;
+
+  input[type="radio"] {
+    display: none;
+  }
+
+  &:has(input:checked) {
+    background-color: var(--brand-yellow-primary);
+    color: var(--gray-900);
+    border-color: var(--brand-yellow-primary);
+    font-weight: var(--fw-semibold);
+  }
+
+  &:hover:not(:has(input:checked)) {
+    background-color: var(--color-surface-hover);
+  }
 }
 
 .file-list-container {
