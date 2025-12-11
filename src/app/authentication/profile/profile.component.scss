@@ -78,6 +78,10 @@
   flex-direction: column;
   gap: 16px;
 }
+.upload-container {
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
 
 /* Scroll only the table content */
 .address-table-scroll {
@@ -92,7 +96,13 @@
   gap: 8px;
   flex: 1;
 }
-
+.custom-file-upload input[type="file"] {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 /* Country code dropdown width */
 .country-code-field {
   flex: 0 0 130px;
@@ -226,44 +236,60 @@
       background-color: var(--color-primary) !important;
     }
   }
+}
+.custom-file-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 
-  .custom-file-upload {
+  .upload-label {
     display: inline-flex;
     align-items: center;
     gap: 10px;
 
-    .upload-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      background: var(--color-primary);
-      color: var(--color-text-inverse);
-      font-weight: 700;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background-color 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-      &:hover {
-        background: var(--color-primary-hover);
-      }
-    }
+    padding: 12px 20px;
 
-    input[type="file"] {
-      display: none;
-      width: 0;
-      height: 0;
-      opacity: 0;
+    background: #fffaef; /* soft floating cream */
+    color: var(--color-text);
+
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+
+    border: 1px solid rgba(0, 0, 0, 0.12); /* subtle border */
+
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.06),
+      0 4px 12px rgba(0, 0, 0, 0.04); /* soft float */
+
+    transition:
+      background-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.15s ease;
+
+    &:hover {
+      background: var(--color-primary);
+      box-shadow:
+        0 3px 6px rgba(0, 0, 0, 0.1),
+        0 6px 18px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px); /* tiny float-up effect */
     }
   }
-}
 
+  input[type="file"] {
+    display: none;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+}
 .logo-container {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 12px;
-  border: 1px solid color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
+  border: 1px solid
+    color-mix(in oklab, var(--color-accent) 60%, var(--color-border));
   border-radius: 8px;
   background-color: var(--color-surface-subtle);
 

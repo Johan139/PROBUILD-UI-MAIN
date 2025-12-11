@@ -15,6 +15,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatRadioModule } from '@angular/material/radio';
+
 export interface SubscriptionPackage {
   value: string;
   display: string;
@@ -22,18 +23,16 @@ export interface SubscriptionPackage {
   annualAmount: number;
 }
 
-// dialog interfaces
 export interface SubscriptionDialogData {
   packages: SubscriptionPackage[];
   currentValue: string | null;
   isTeamMember: boolean;
   userId: string;
-  teamMembers?: { id: string; name?: string; email?: string }[];
-  activeByUserId?: Record<
-    string,
-    { subscriptionId: string; packageLabel?: string }
-  >;
-  notice?: string; // 👈
+
+  // ONLY FOR SELF (not team)
+  activeSubscription?: { subscriptionId: string; packageLabel?: string };
+
+  notice?: string;
 }
 
 export type BillingCycle = 'monthly' | 'yearly';
@@ -42,6 +41,7 @@ export interface SubscriptionSelection {
   assigneeUserId: string;
   billingCycle: BillingCycle;
 }
+
 @Component({
   selector: 'app-subscription-create',
   standalone: true,
@@ -59,10 +59,10 @@ export interface SubscriptionSelection {
 })
 export class SubscriptionCreateComponent implements OnInit {
   form!: FormGroup;
-  activeByUserId?: Record<
-    string,
-    { subscriptionId: string; packageLabel?: string }
-  >;
+  packages: SubscriptionPackage[] = [];
+  // team logic
+  // activeByUserId?: Record<string, { subscriptionId: string; packageLabel?: string }>;
+
   constructor(
     private fb: FormBuilder,
     public dialogRef: MatDialogRef<
@@ -71,36 +71,51 @@ export class SubscriptionCreateComponent implements OnInit {
     >,
     @Inject(MAT_DIALOG_DATA) public data: SubscriptionDialogData,
   ) {}
+
   hasActiveFor(userId?: string | null): boolean {
     if (!userId) return false;
-    return !!this.data.activeByUserId?.[userId];
-  }
-  activeLabel(userId?: string | null): string | undefined {
-    return this.data.activeByUserId?.[userId!]?.packageLabel;
-  }
-  ngOnInit(): void {
-    const currentPkg = this.data.currentValue
-      ? (this.data.packages.find((p) => p.value === this.data.currentValue) ??
-        null)
-      : null;
 
-    const selfBlocked = this.hasActiveFor(this.data.userId);
+    // ONLY check self
+    return userId === this.data.userId && !!this.data.activeSubscription;
+  }
+
+  activeLabel(userId?: string | null): string | undefined {
+    if (userId === this.data.userId)
+      return this.data.activeSubscription?.packageLabel;
+    return undefined;
+  }
+
+  ngOnInit(): void {
+    console.log('Received packages:', this.data.packages);
+
+    // Don't filter again - data.packages is already filtered by parent
+    this.packages = this.data.packages || [];
+
+    console.log('Using packages:', this.packages);
+
+    // Rest of the initialization code...
+    let currentPkg: SubscriptionPackage | null = null;
+
+    if (this.data.currentValue) {
+      const match = this.packages.find(
+        (p) => p.value === this.data.currentValue,
+      );
+
+      if (match) {
+        currentPkg = match;
+      } else {
+        console.warn(
+          'Invalid selected package found, resetting:',
+          this.data.currentValue,
+        );
+        currentPkg = null;
+      }
+    }
 
     this.form = this.fb.group({
       subscriptionPackage: [currentPkg, Validators.required],
-      forWhom: [selfBlocked ? 'team' : 'self', Validators.required],
-      teamMemberId: [null],
-      billingCycle: ['monthly'], // default value
-    });
-
-    this.form.get('forWhom')!.valueChanges.subscribe((val) => {
-      const tm = this.form.get('teamMemberId')!;
-      if (val === 'team') tm.setValidators([Validators.required]);
-      else {
-        tm.clearValidators();
-        tm.setValue(null);
-      }
-      tm.updateValueAndValidity({ emitEvent: false });
+      forWhom: ['self'],
+      billingCycle: ['monthly'],
     });
   }
 
@@ -109,24 +124,25 @@ export class SubscriptionCreateComponent implements OnInit {
   }
 
   save(): void {
-    const forWhom = this.form.value.forWhom;
-    const assigneeUserId =
-      forWhom === 'team' ? this.form.value.teamMemberId : this.data.userId;
+    if (this.form.invalid) return;
 
-    // 🔒 Hard guard – covers self and team
-    if (this.form.invalid || this.hasActiveFor(assigneeUserId)) return;
+    // always assign to self
+    const assigneeUserId = this.data.userId;
+
+    // still block active subscription
+    if (this.hasActiveFor(assigneeUserId)) return;
 
     const pkg = this.form.value.subscriptionPackage as SubscriptionPackage;
-    const billingCycle = this.form.value.billingCycle as 'monthly' | 'yearly';
+    const billingCycle = this.form.value.billingCycle as BillingCycle;
 
     this.dialogRef.close({ pkg, assigneeUserId, billingCycle });
   }
+
   hasActiveForAssignee(): boolean {
-    const forWhom = this.form.value.forWhom;
-    const targetId =
-      forWhom === 'self' ? this.data.userId : this.form.value.teamMemberId;
-    return !!(targetId && this.data.activeByUserId?.[targetId]);
+    // team logic removed — only check self
+    return false;
   }
+
   formatCurrency(amount: number, currency: string) {
     try {
       return new Intl.NumberFormat(undefined, {
