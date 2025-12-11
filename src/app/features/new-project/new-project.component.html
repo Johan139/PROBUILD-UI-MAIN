@@ -32,7 +32,7 @@
           New Project – Guided Walkthrough
         </h3>
         <h3 *ngIf="flowType === 'standard'">New Project – Standard Analysis</h3>
-        <span>AI Extract</span>
+        <!-- <span>AI Extract</span> -->
       </div>
       <!-- Flow Type Selector -->
       <div class="flow-type-selector">
@@ -45,7 +45,7 @@
           />
           <span>Standard Analysis</span>
         </label>
-        <label>
+        <!-- <label>
           <input
             type="radio"
             name="flowType"
@@ -53,7 +53,7 @@
             [(ngModel)]="flowType"
           />
           <span>Guided Walkthrough</span>
-        </label>
+        </label> -->
       </div>
       <div class="progress-steps" *ngIf="flowType === 'walkthrough'">
         <span
@@ -424,7 +424,7 @@
           <div class="info-block-actions">
             <button
               class="btn-primary"
-              (click)="setFlow('extracting', { pct: 5 })"
+              (click)="beginExtraction()"
             >
               Begin Extraction
             </button>
@@ -455,9 +455,10 @@
           <div class="info-block-actions">
             <button
               class="btn-primary"
-              (click)="setFlow('walkthrough', { index: 0, notes: {} })"
+              (click)="confirmAddress()"
+              [disabled]="isLoading"
             >
-              Confirm & Continue
+              <span *ngIf="!isLoading">Confirm & Continue</span>
             </button>
             <button
               class="btn-ghost"
@@ -468,7 +469,7 @@
           </div>
         </div>
 
-        <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
+        <!-- <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
           <div class="walkthrough-header">
             <div>
               <div *ngIf="isWalkthrough(flow)">
@@ -509,7 +510,7 @@
               }}</span>
             </button>
           </div>
-        </div>
+        </div> -->
 
         <div *ngSwitchCase="'finalizing'" class="info-block">
           <div class="info-block-header">

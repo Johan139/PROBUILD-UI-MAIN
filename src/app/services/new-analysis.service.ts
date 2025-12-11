@@ -33,7 +33,7 @@ export class NewAnalysisService {
       promptKeys,
     };
     return this.http.post<any>(
-      `${BASE_URL}/api/analysis/walkthrough/start`,
+      `${BASE_URL}/analysis/walkthrough/start`,
       request,
     );
   }
@@ -42,7 +42,7 @@ export class NewAnalysisService {
     sessionId: string,
     applyCostOptimisation?: boolean,
   ): Observable<any> {
-    let url = `${BASE_URL}/api/analysis/walkthrough/${sessionId}/next`;
+    let url = `${BASE_URL}/analysis/walkthrough/${sessionId}/next`;
     if (applyCostOptimisation) {
       url += `?applyCostOptimisation=true`;
     }
@@ -55,7 +55,7 @@ export class NewAnalysisService {
     payload: any,
   ): Observable<any> {
     return this.http.post<any>(
-      `${BASE_URL}/api/analysis/walkthrough/${sessionId}/rerun/${stepIndex}`,
+      `${BASE_URL}/analysis/walkthrough/${sessionId}/rerun/${stepIndex}`,
       payload,
     );
   }

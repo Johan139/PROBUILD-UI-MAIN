@@ -8,6 +8,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import Quill from 'quill';
+import { OnChanges, SimpleChanges } from '@angular/core';
 
 @Component({
   selector: 'app-rich-text-editor',
@@ -16,7 +17,7 @@ import Quill from 'quill';
   templateUrl: './rich-text-editor.component.html',
   styleUrls: ['./rich-text-editor.component.scss'],
 })
-export class RichTextEditorComponent implements AfterViewInit {
+export class RichTextEditorComponent implements AfterViewInit, OnChanges {
   @ViewChild('editor') editorElement!: ElementRef;
   @Input() initialContent!: string;
   @Output() contentChanged = new EventEmitter<string>();
@@ -44,6 +45,12 @@ export class RichTextEditorComponent implements AfterViewInit {
     this.quill.on('text-change', () => {
       this.contentChanged.emit(this.quill.root.innerHTML);
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialContent'] && this.quill) {
+      this.quill.root.innerHTML = changes['initialContent'].currentValue || '';
+    }
   }
 
   public undo(): void {
