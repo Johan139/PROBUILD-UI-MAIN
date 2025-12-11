@@ -127,7 +127,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
   darkMode = true;
   flow: FlowState = { step: 'idle' };
-  addressField = '21 Featherstone Rd & 21st St, Red Wing';
+  addressField = '';
   analysisMode: 'full' | 'selected' | 'renovation' = 'full';
   flowType: 'standard' | 'walkthrough' = 'standard';
   analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
@@ -372,6 +372,12 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   setFlow(step: FlowState['step'], data?: any): void {
     this.flow = { step, ...data };
     this.updateProgressSteps();
+
+    if (step === 'finalizing') {
+      setTimeout(() => {
+        this.setFlow('done');
+      }, 2500);
+    }
   }
 
   handleFileUploaded(event: {
@@ -394,9 +400,82 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     // but we need to keep track of selected file state in parent for analysis steps
   }
 
+  beginExtraction() {
+    this.isLoading = true;
+    this.setFlow('extracting', { pct: 5 });
+
+    // Start the AI Walkthrough session
+    if (!this.selectedFile) return;
+    this.shouldDeleteTempFiles = false;
+    const promptKeys =
+      (this.analysisType === 'Selected' ? this.selectedPrompts.value : []) ??
+      [];
+
+    this.newAnalysisService
+      .startWalkthrough(
+        this.uploadedFiles,
+        this.clientForm.value.startDate,
+        this.analysisType,
+        this.budgetLevel,
+        promptKeys,
+      )
+      .subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          // Update state with the new session
+          this.state.next({
+            ...this.state.getValue(),
+            walkthroughSessionId: response.sessionId,
+            walkthroughHistory: [response.firstStep],
+            currentWalkthroughStep: 0,
+          });
+
+          const address = this.extractAddressFromAiResponse(
+            response.firstStep.aiResponse,
+          );
+          if (address) {
+            this.addressField = address;
+          }
+
+          this.snackBar.open('Extraction completed successfully!', 'Close', {
+            duration: 5000,
+          });
+
+          this.setFlow('address', { detectedAddress: this.addressField });
+        },
+        error: (error) => {
+          this.isLoading = false;
+          // Return to uploaded state so user can try again
+          this.setFlow('uploaded', { fileName: this.selectedFile?.name || '' });
+
+          console.error('Failed to start walkthrough', error);
+          this.snackBar.open(
+            'Error: Failed to start extraction. Please try again.',
+            'Close',
+            { duration: 10000 },
+          );
+        },
+      });
+  }
+
+  extractAddressFromAiResponse(response: string): string | null {
+    // Regex to match: | **Address** | [Address Value] |
+    const addressRegex = /\|\s*\*\*Address\*\*\s*\|\s*(.*?)\s*\|/i;
+    const match = response.match(addressRegex);
+    if (match && match[1]) {
+      // Remove artifacts and trim
+      return match[1].replace(/\s*\(Source for.*?\)/i, '').trim();
+    }
+    return null;
+  }
+
+  confirmAddress() {
+    this.setFlow('walkthrough', { index: 0, notes: {} });
+  }
+
   onAddressConfirmed(address: string) {
     this.addressField = address;
-    this.setFlow('walkthrough', { index: 0, notes: {} });
+    this.confirmAddress();
   }
 
   analyze(): void {

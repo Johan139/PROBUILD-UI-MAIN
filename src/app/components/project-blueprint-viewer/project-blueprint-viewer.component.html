@@ -1,7 +1,7 @@
 <div class="card">
   <!-- Header strip inside viewer -->
   <div class="blueprint-viewer-header">
-    <div>• INTERACTIVE BLUEPRINT VIEWER •</div>
+    <div>• BLUEPRINT VIEWER •</div>
     <!-- Only show progress bar in create mode if flow matches -->
     <div
       *ngIf="
@@ -260,13 +260,13 @@
       </div>
 
       <div class="footer-actions">
-        <button
+        <!-- <button
           *ngIf="flow.step === 'uploaded'"
           class="btn-primary"
           (click)="onStartProject()"
         >
           Start Project
-        </button>
+        </button> -->
         <button
           class="btn-primary"
           (click)="onCancel()"
