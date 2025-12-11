@@ -59,7 +59,7 @@ export interface SubscriptionSelection {
 })
 export class SubscriptionCreateComponent implements OnInit {
   form!: FormGroup;
-
+  packages: SubscriptionPackage[] = [];
   // team logic
   // activeByUserId?: Record<string, { subscriptionId: string; packageLabel?: string }>;
 
@@ -86,25 +86,37 @@ export class SubscriptionCreateComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const currentPkg = this.data.currentValue
-      ? (this.data.packages.find((p) => p.value === this.data.currentValue) ??
-        null)
-      : null;
+    console.log('Received packages:', this.data.packages);
 
-    const selfBlocked = this.hasActiveFor(this.data.userId);
+    // Don't filter again - data.packages is already filtered by parent
+    this.packages = this.data.packages || [];
+
+    console.log('Using packages:', this.packages);
+
+    // Rest of the initialization code...
+    let currentPkg: SubscriptionPackage | null = null;
+
+    if (this.data.currentValue) {
+      const match = this.packages.find(
+        (p) => p.value === this.data.currentValue,
+      );
+
+      if (match) {
+        currentPkg = match;
+      } else {
+        console.warn(
+          'Invalid selected package found, resetting:',
+          this.data.currentValue,
+        );
+        currentPkg = null;
+      }
+    }
 
     this.form = this.fb.group({
       subscriptionPackage: [currentPkg, Validators.required],
-
-      // team logic removed — always "self"
-      forWhom: ['self'], // ← fixed
-      // teamMemberId: [null], // ⛔ removed
-
+      forWhom: ['self'],
       billingCycle: ['monthly'],
     });
-
-    // team logic removed
-    // this.form.get('forWhom')!.valueChanges.subscribe(...)
   }
 
   cancel(): void {

@@ -1646,7 +1646,10 @@ export class ProfileComponent implements OnInit {
       width: '600px',
       autoFocus: false,
       data: {
-        packages: this.subscriptionPackages,
+        packages: this.subscriptionPackages.filter((p) => {
+          const val = (p.value || '').toLowerCase();
+          return !val.startsWith('basic') && !val.startsWith('trial');
+        }),
         currentValue,
         isTeamMember: this.authService.isTeamMember(),
         subscriptionId, // MAY be null for trial
@@ -1801,13 +1804,18 @@ export class ProfileComponent implements OnInit {
                 teamBlockedCount > 1 ? 's' : ''
               } already subscribed.`
             : null;
-    console.log(this.subscriptionPackages);
+
+    // Updated dialog opening code with consistent filtering
     this.dialog
       .open(SubscriptionCreateComponent, {
         width: '600px',
         autoFocus: false,
         data: {
-          packages: this.subscriptionPackages,
+          // Filter packages that START WITH "basic" or "trial" (case-insensitive)
+          packages: this.subscriptionPackages.filter((p) => {
+            const val = (p.value || '').toLowerCase();
+            return !val.startsWith('basic') && !val.startsWith('trial');
+          }),
           currentValue:
             this.profileForm.get('subscriptionPackage')?.value ?? null,
           isTeamMember: this.authService.isTeamMember(),

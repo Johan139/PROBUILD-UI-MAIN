@@ -26,7 +26,7 @@
       <mat-form-field appearance="fill" class="full-width">
         <mat-label>Subscription Package</mat-label>
         <mat-select formControlName="subscriptionPackage" required>
-          <mat-option *ngFor="let s of data.packages" [value]="s">
+          <mat-option *ngFor="let s of packages" [value]="s">
             {{ s.display }}
             {{
               form.value.billingCycle === "yearly"
