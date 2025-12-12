@@ -248,15 +248,41 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
 
   sendConnectionRequest(userId: string): void {
     this.connectionService.requestConnection(userId).subscribe({
-      next: () => {
-        //console.log('Request sent');
+      next: (response: any) => {
         this.snackBar.open('Connection request sent.', 'Close', {
           duration: 3000,
         });
-        this.loadConnections();
+
+        const newConnectionId = response?.id;
+
+        if (newConnectionId) {
+          const targetUser = this.allUsers.find((u) => u.id === userId);
+
+          const newConnection: ConnectionDto = {
+            id: newConnectionId,
+            otherUserId: userId,
+            requesterId: this.currentUserId || '',
+            receiverId: userId,
+            status: 'PENDING',
+            isInSystem: true,
+            user: targetUser,
+            otherUserEmail: targetUser?.email,
+            firstName: targetUser?.firstName,
+            lastName: targetUser?.lastName,
+          };
+
+          this.allConnections.push(newConnection);
+          this.connections.push(newConnection);
+          this.connectionsDataSource.data = [
+            ...this.connections,
+            ...this.invited,
+          ];
+          this.updateDataSource();
+        } else {
+          this.loadConnections();
+        }
       },
       error: (err) => {
-        //console.error('Failed to send connection request:', err);
         this.snackBar.open(
           err.error?.message || 'Failed to send request.',
           'Close',
@@ -301,12 +327,20 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
       (c) => c.otherUserId === userId && c.status === 'PENDING',
     );
     if (connection) {
-      this.connectionService.declineConnection(connection.id).subscribe(() => {
-        //console.log('Request cancelled');
+      this.connectionService.removeConnection(connection.id).subscribe(() => {
         this.allConnections = this.allConnections.filter(
-          (c) => c.id !== connection.id,
+          (c) => c.id !== connection.id
         );
+        this.connections = this.allConnections.filter((c) => c.isInSystem);
+        this.invited = this.allConnections.filter((c) => !c.isInSystem);
+        this.connectionsDataSource.data = [
+          ...this.connections,
+          ...this.invited,
+        ];
         this.updateDataSource();
+        this.snackBar.open('Connection request cancelled.', 'Close', {
+          duration: 3000,
+        });
       });
     }
   }
@@ -327,9 +361,17 @@ export class ConnectionsComponent implements OnInit, AfterViewInit {
   }
 
   removeConnection(connectionId: string): void {
-    this.connectionService.declineConnection(connectionId).subscribe(() => {
-      // console.log('Connection removed');
-      this.loadConnections();
+    this.connectionService.removeConnection(connectionId).subscribe(() => {
+      this.allConnections = this.allConnections.filter(
+        (c) => c.id !== connectionId
+      );
+      this.connections = this.allConnections.filter((c) => c.isInSystem);
+      this.invited = this.allConnections.filter((c) => !c.isInSystem);
+      this.connectionsDataSource.data = [
+        ...this.connections,
+        ...this.invited,
+      ];
+      this.updateDataSource();
     });
   }
 }
