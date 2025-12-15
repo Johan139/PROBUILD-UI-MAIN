@@ -148,6 +148,11 @@ $probuild-dark-theme: mat.define-theme((
   background-color: var(--color-surface) !important;
 }
 
+// Disable hover effect on form fields
+.mat-mdc-form-field:hover .mat-mdc-form-field-focus-overlay {
+  opacity: 0 !important;
+}
+
 // --------------------------------------------------------------------------
 // 8. SCROLLBARS
 // --------------------------------------------------------------------------
