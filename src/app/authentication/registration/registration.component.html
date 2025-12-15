@@ -520,16 +520,34 @@
                   </mat-form-field>
                 </div>
               </div>
-              <div class="full-width" style="margin-bottom: 12px">
-                <label class="block mb-1">Billing Cycle</label>
-                <mat-radio-group formControlName="billingCycle">
+              <div class="full-width billing-inline-row">
+                <label class="billing-label">Billing Cycle</label>
+
+                <mat-radio-group
+                  formControlName="billingCycle"
+                  class="billing-radios-inline"
+                >
                   <mat-radio-button value="monthly">Monthly</mat-radio-button>
-                  <mat-radio-button value="yearly" class="ml-4"
-                    >Yearly</mat-radio-button
-                  >
+                  <mat-radio-button value="yearly">Yearly</mat-radio-button>
                 </mat-radio-group>
+
+                <span class="billing-terms-inline">
+                  By clicking <strong>Register</strong>, you agree to the
+                  <a href="/masteragreement" target="_blank" rel="noopener">
+                    Master Services Agreement </a
+                  >,
+                  <a href="/privacy" target="_blank" rel="noopener">
+                    Privacy Policy
+                  </a>
+                  and
+                  <a href="/termsofuse" target="_blank" rel="noopener">
+                    Terms of Use </a
+                  >.
+                </span>
               </div>
+
               <!-- Submit Button -->
+
               <div class="form-row-button">
                 <button mat-raised-button type="submit" class="submit-btn">
                   Register
