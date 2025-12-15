@@ -13,6 +13,7 @@
         mat-icon-button
         (click)="sidenav.toggle()"
         aria-label="Toggle navigation menu"
+        matTooltip="Toggle sidebar visibility" [matTooltipShowDelay]="500"
       >
         <mat-icon>menu</mat-icon>
       </button>
@@ -38,6 +39,7 @@
         mat-icon-button
         [matMenuTriggerFor]="userMenu"
         aria-label="Open user menu"
+        matTooltip="Open the user menu" [matTooltipShowDelay]="500"
       >
         <mat-icon>settings</mat-icon>
       </button>
@@ -121,14 +123,14 @@
 
 <!-- MENUS -->
 <mat-menu #userMenu="matMenu">
-  <button mat-menu-item routerLink="/profile">
+  <button mat-menu-item routerLink="/profile" matTooltip="View your personal and company profile and user settings" [matTooltipShowDelay]="500">
     <mat-icon>person</mat-icon>Profile
   </button>
-  <button mat-menu-item (click)="logout()">
+  <button mat-menu-item (click)="logout()" matTooltip="Logout from ProBuild" [matTooltipShowDelay]="500">
     <mat-icon>logout</mat-icon>Logout
   </button>
   <mat-divider></mat-divider>
-  <button mat-menu-item (click)="toggleTheme()">
+  <button mat-menu-item (click)="toggleTheme()" matTooltip="Toggle between light and dark mode" [matTooltipShowDelay]="500">
     <mat-icon>{{
       themeService.isDarkMode() ? "light_mode" : "dark_mode"
     }}</mat-icon>

@@ -68,28 +68,28 @@
   <mat-dialog-actions class="dialog-actions" align="end">
     <button mat-flat-button class="btn btn-primary"
             *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="startApproval(data.notes[0])">
+            (click)="startApproval(data.notes[0])" matTooltip="Approve this action point" [matTooltipShowDelay]="500">
       Approve
     </button>
 
     <button mat-flat-button class="btn btn-danger"
             *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="rejectNote(data.notes[0])">
+            (click)="rejectNote(data.notes[0])" matTooltip="Reject this action point" [matTooltipShowDelay]="500">
       Reject
     </button>
 
     <button mat-flat-button class="btn btn-neutral"
             *ngIf="(data.notes[0].approved || data.notes[0].rejected) &&
                    authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="archiveNote(data.notes[0])">
+            (click)="archiveNote(data.notes[0])" matTooltip="Archive this note - you can see all archived notes in the Archive page in the sidebar" [matTooltipShowDelay]="500">
       Archive
     </button>
 
-    <button mat-flat-button class="btn btn-ghost" (click)="openDocumentsDialog(data)">
+    <button mat-flat-button class="btn btn-ghost" (click)="openDocumentsDialog(data)" matTooltip="View the image attached this action point" [matTooltipShowDelay]="500">
       View Image
     </button>
 
-    <button mat-flat-button class="btn btn-ghost" (click)="Close()">
+    <button mat-flat-button class="btn btn-ghost" (click)="Close()" matTooltip="Close this dialog" [matTooltipShowDelay]="500">
       Close
     </button>
   </mat-dialog-actions>

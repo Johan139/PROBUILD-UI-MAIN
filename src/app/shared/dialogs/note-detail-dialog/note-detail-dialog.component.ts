@@ -15,6 +15,7 @@ import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-note-detail-dialog',
@@ -30,6 +31,7 @@ import { MatIconModule } from '@angular/material/icon';
     MatInputModule,
     FormsModule,
     MatIconModule,
+    MatTooltipModule
   ],
 })
 export class NoteDetailDialogComponent implements OnInit {

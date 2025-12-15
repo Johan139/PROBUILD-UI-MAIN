@@ -79,7 +79,7 @@
         #fileInput
         multiple
       />
-      <button class="btn-primary" (click)="openUploadDialog()">
+      <button mat-flat-button class="btn-primary" (click)="openUploadDialog()" matTooltip="Choose the blueprints you want to upload to ProBuild" [matTooltipShowDelay]="500">
         Choose File
       </button>
     </div>
@@ -230,7 +230,7 @@
     <!-- Row 2: Analysis options + actions (Create Mode Only) -->
     <div *ngIf="mode === 'create'" class="footer-row">
       <div class="analysis-options">
-        <label>
+        <label matTooltip="Conduct a comprehensive analysis across all trades. Best suited for new construction projects" [matTooltipShowDelay]="500">
           <input
             type="radio"
             name="analysis"
@@ -239,7 +239,7 @@
           />
           <span>Full Blueprint Analysis</span>
         </label>
-        <label>
+        <label matTooltip="Focus the analysis on specific trades for detailed reporting, while retaining a general overview of the project" [matTooltipShowDelay]="500">
           <input
             type="radio"
             name="analysis"
@@ -248,7 +248,7 @@
           />
           <span>Selected Blueprint Analysis</span>
         </label>
-        <label>
+        <label matTooltip="Analyze changes to an existing structure. Best suited for renovation and remodeling projects" [matTooltipShowDelay]="500">
           <input
             type="radio"
             name="analysis"
@@ -271,6 +271,7 @@
           class="btn-primary"
           (click)="onCancel()"
           [disabled]="flow.step === 'idle'"
+          matTooltip="Cancel the current analysis and start again" [matTooltipShowDelay]="500"
         >
           Cancel
         </button>

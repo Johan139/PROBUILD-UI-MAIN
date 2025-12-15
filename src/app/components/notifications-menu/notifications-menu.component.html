@@ -1,7 +1,8 @@
 <button mat-icon-button
         class="notification-button"
         (click)="toggleMenu()"
-        aria-label="Open notifications">
+        aria-label="Open notifications"
+        matTooltip="Open the notifications menu" [matTooltipShowDelay]="500">
   <mat-icon>notifications</mat-icon>
   <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
 </button>
@@ -49,10 +50,10 @@
   <div class="notif-divider"></div>
 
   <div class="notif-actions">
-    <button class="linklike" (click)="goToAllNotifications()">
+    <button class="linklike" (click)="goToAllNotifications()" matTooltip="Open the full notifications page and view all of your notifications" [matTooltipShowDelay]="500">
       Show all notifications
     </button>
-    <button class="linklike" (click)="markAllRead()">
+    <button class="linklike" (click)="markAllRead()" matTooltip="Mark all of your notifications as read" [matTooltipShowDelay]="500">
       Mark all read
     </button>
   </div>

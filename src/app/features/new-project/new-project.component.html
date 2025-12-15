@@ -36,7 +36,10 @@
       </div>
       <!-- Flow Type Selector -->
       <div class="flow-type-selector">
-        <label>
+        <label
+          matTooltip="Upload your blueprints, fill in the details, and let the system handle the complete analysis automatically without any further intervention"
+          [matTooltipShowDelay]="500"
+        >
           <input
             type="radio"
             name="flowType"
@@ -45,7 +48,10 @@
           />
           <span>Standard Analysis</span>
         </label>
-        <!-- <label>
+        <!-- <label
+          matTooltip="A phased approach where you review and intervene at each step, allowing you to refine and correct the analysis as you go"
+          [matTooltipShowDelay]="500"
+        >
           <input
             type="radio"
             name="flowType"
@@ -190,6 +196,7 @@
                   type="button"
                   (click)="userContextFileInput.click()"
                   class="submit-btn save-btn"
+                  matTooltip="Upload a document containing specifications, notes, or requirements to help the AI understand your project better"
                 >
                   <img
                     src="assets/custom-svg/upload-folder-svgrepo-com.svg"
@@ -363,8 +370,20 @@
                 [(ngModel)]="currentUserComments"
                 placeholder="Add general comments here..."
               ></textarea>
-              <button class="btn-secondary" (click)="undo()">Undo</button>
-              <button class="btn-secondary" (click)="redo()">Redo</button>
+              <button
+                class="btn-secondary"
+                (click)="undo()"
+                matTooltip="Revert your last change"
+              >
+                Undo
+              </button>
+              <button
+                class="btn-secondary"
+                (click)="redo()"
+                matTooltip="Reapply the change you undid"
+              >
+                Redo
+              </button>
               <mat-checkbox [(ngModel)]="applyCostOptimisation"
                 >Apply Cost Optimisation and Efficiency</mat-checkbox
               >
@@ -425,6 +444,7 @@
             <button
               class="btn-primary"
               (click)="beginExtraction()"
+              matTooltip="Start processing the blueprint to extract project details and requirements"
             >
               Begin Extraction
             </button>
@@ -432,6 +452,7 @@
               class="btn-primary"
               (click)="cancel()"
               [disabled]="flow.step === 'idle'"
+              matTooltip="Upload a different blueprint file instead"
             >
               Replace File
             </button>
@@ -457,12 +478,14 @@
               class="btn-primary"
               (click)="confirmAddress()"
               [disabled]="isLoading"
+              matTooltip="Confirm this location to retrieve accurate weather data and local pricing adjustments"
             >
               <span *ngIf="!isLoading">Confirm & Continue</span>
             </button>
             <button
               class="btn-ghost"
               (click)="setFlow('extracting', { pct: 85 })"
+              matTooltip="Manually correct the address if the extracted one is inaccurate"
             >
               Edit Again
             </button>
@@ -528,12 +551,31 @@
           </div>
           <p>Your edits have been applied. Download your outputs below.</p>
           <div class="info-block-actions">
-            <button class="btn-primary">View Final Bill of Materials</button>
-            <button class="btn-primary">Download Project Summary</button>
-            <button class="btn-ghost">Launch Bidding Phase</button>
+            <button
+              class="btn-primary"
+              matTooltip="Open the detailed Bill of Materials generated from the analysis"
+            >
+              View Final Bill of Materials
+            </button>
+            <button
+              class="btn-primary"
+              matTooltip="Download a comprehensive report of the project analysis"
+            >
+              Download Project Summary
+            </button>
+            <button
+              class="btn-ghost"
+              matTooltip="Start the bidding process to find contractors and suppliers"
+            >
+              Launch Bidding Phase
+            </button>
           </div>
           <div class="info-block-actions">
-            <button class="btn-ghost" (click)="setFlow('idle')">
+            <button
+              class="btn-ghost"
+              (click)="setFlow('idle')"
+              matTooltip="Clear current results and start a new project analysis"
+            >
               Start Another
             </button>
           </div>

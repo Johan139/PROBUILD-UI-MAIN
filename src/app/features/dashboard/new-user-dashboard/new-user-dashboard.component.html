@@ -20,15 +20,15 @@
   <div class="quick-actions">
     <h3>Quick Actions</h3>
     <div class="actions-container">
-      <button mat-flat-button class="btn-primary quick-action-btn" (click)="navigateToJobs()">
+      <button mat-flat-button class="btn-primary quick-action-btn" (click)="navigateToJobs()" matTooltip="This will bring you to the New Project page where you can create a new project" [matTooltipShowDelay]="500">
         <mat-icon>add</mat-icon>
         Create New Project
       </button>
-      <button class="btn-outline quick-action-btn" (click)="navigateToProjects()">
+      <button class="btn-outline quick-action-btn" (click)="navigateToProjects()" matTooltip="This will bring you to the My Projects page where you can view all of your projects" [matTooltipShowDelay]="500">
         <mat-icon>list</mat-icon>
         View All Projects
       </button>
-      <button class="btn-outline quick-action-btn" (click)="navigateToCalendar()">
+      <button class="btn-outline quick-action-btn" (click)="navigateToCalendar()" matTooltip="This will bring you to the Calendar page where you can view your schedule and events" [matTooltipShowDelay]="500">
         <mat-icon>calendar_today</mat-icon>
         View Calendar
       </button>
@@ -83,7 +83,7 @@
             <ng-container matColumnDef="action">
               <mat-header-cell *matHeaderCellDef>Action</mat-header-cell>
               <mat-cell *matCellDef="let note">
-                <button class="btn-primary" mat-button (click)="openNoteDialog(note)"
+                <button class="btn-primary" mat-button (click)="openNoteDialog(note)" matTooltip="Open the dialog for this action point to view more details and approve or reject it" [matTooltipShowDelay]="500"
                         [disabled]="openingNoteId === note.notes[0].id">
                   {{ openingNoteId === note.notes[0].id ? 'Viewing…' : 'View' }}
                 </button>

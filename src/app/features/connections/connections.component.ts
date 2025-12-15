@@ -26,6 +26,7 @@ import { InvitationService } from '../../services/invitation.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SharedModule } from '../../shared/shared.module';
 import { LoaderComponent } from '../../loader/loader.component';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface ConnectionDto {
   id: string;
@@ -62,6 +63,7 @@ export interface DisplayUser extends User {
     MatSnackBarModule,
     SharedModule,
     LoaderComponent,
+    MatTooltipModule,
   ],
   templateUrl: './connections.component.html',
   styleUrls: ['./connections.component.scss'],
