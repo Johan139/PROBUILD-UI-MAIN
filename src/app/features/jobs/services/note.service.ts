@@ -116,9 +116,6 @@ export class NoteService {
       .get<any[]>(`${BASE_URL}/GetNotesByUserId/${userId}`)
       .pipe(
         catchError((err) => {
-          this.snackBar.open('Failed to fetch notes.', 'Close', {
-            duration: 3000,
-          });
           return of([]);
         }),
       );
