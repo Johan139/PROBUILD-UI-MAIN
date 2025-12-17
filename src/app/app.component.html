@@ -5,15 +5,16 @@
     <app-loader aria-label="Loading content"></app-loader>
   </div>
 
-  <!-- AUTHENTICATED LAYOUT -->
-  <ng-container *ngIf="loggedIn; else publicLayout">
+  <!-- AUTHENTICATED LAYOUT (only show if showHeader is true) -->
+  <ng-container *ngIf="loggedIn && showHeader; else publicOrMinimalLayout">
     <!-- Header -->
     <mat-toolbar class="header" role="banner">
       <button
         mat-icon-button
         (click)="sidenav.toggle()"
         aria-label="Toggle navigation menu"
-        matTooltip="Toggle sidebar visibility" [matTooltipShowDelay]="500"
+        matTooltip="Toggle sidebar visibility"
+        [matTooltipShowDelay]="500"
       >
         <mat-icon>menu</mat-icon>
       </button>
@@ -39,7 +40,8 @@
         mat-icon-button
         [matMenuTriggerFor]="userMenu"
         aria-label="Open user menu"
-        matTooltip="Open the user menu" [matTooltipShowDelay]="500"
+        matTooltip="Open the user menu"
+        [matTooltipShowDelay]="500"
       >
         <mat-icon>settings</mat-icon>
       </button>
@@ -69,16 +71,18 @@
             *ngFor="let item of navItems"
             [routerLink]="item.route"
             (click)="item.action?.()"
-            [routerLinkActive]="'is-active'"
+            routerLinkActive="is-active"
             [matTooltip]="item.tooltip"
             matTooltipShowDelay="500"
             matTooltipPosition="right"
           >
             <span class="active-indicator"></span>
-            <mat-icon matListItemIcon class="nav-icon">{{
-              item.icon
-            }}</mat-icon>
-            <div matListItemTitle class="nav-label">{{ item.label }}</div>
+            <mat-icon matListItemIcon class="nav-icon">
+              {{ item.icon }}
+            </mat-icon>
+            <div matListItemTitle class="nav-label">
+              {{ item.label }}
+            </div>
           </a>
         </mat-nav-list>
       </mat-sidenav>
@@ -93,9 +97,10 @@
     </mat-sidenav-container>
   </ng-container>
 
-  <!-- PUBLIC (LOGGED OUT) LAYOUT -->
-  <ng-template #publicLayout>
-    <mat-toolbar class="header" role="banner">
+  <!-- PUBLIC OR MINIMAL LAYOUT -->
+  <ng-template #publicOrMinimalLayout>
+    <!-- Show header only for public pages (not logged in) -->
+    <mat-toolbar class="header" role="banner" *ngIf="!loggedIn">
       <a routerLink="/login" class="logo-link" aria-label="ProBuild AI Home">
         <img
           ngSrc="assets/logo.png"
@@ -116,6 +121,7 @@
       </button>
     </mat-toolbar>
 
+    <!-- Direct router outlet for minimal layouts and public pages -->
     <router-outlet></router-outlet>
     <app-footer *ngIf="showFooter"></app-footer>
   </ng-template>
@@ -123,14 +129,29 @@
 
 <!-- MENUS -->
 <mat-menu #userMenu="matMenu">
-  <button mat-menu-item routerLink="/profile" matTooltip="View your personal and company profile and user settings" [matTooltipShowDelay]="500">
+  <button
+    mat-menu-item
+    routerLink="/profile"
+    matTooltip="View your personal and company profile and user settings"
+    [matTooltipShowDelay]="500"
+  >
     <mat-icon>person</mat-icon>Profile
   </button>
-  <button mat-menu-item (click)="logout()" matTooltip="Logout from ProBuild" [matTooltipShowDelay]="500">
+  <button
+    mat-menu-item
+    (click)="logout()"
+    matTooltip="Logout from ProBuild"
+    [matTooltipShowDelay]="500"
+  >
     <mat-icon>logout</mat-icon>Logout
   </button>
   <mat-divider></mat-divider>
-  <button mat-menu-item (click)="toggleTheme()" matTooltip="Toggle between light and dark mode" [matTooltipShowDelay]="500">
+  <button
+    mat-menu-item
+    (click)="toggleTheme()"
+    matTooltip="Toggle between light and dark mode"
+    [matTooltipShowDelay]="500"
+  >
     <mat-icon>{{
       themeService.isDarkMode() ? "light_mode" : "dark_mode"
     }}</mat-icon>
