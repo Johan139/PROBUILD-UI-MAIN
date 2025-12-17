@@ -20,6 +20,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 declare const google: any;
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -84,6 +85,7 @@ export class LoginComponent {
     const checkGsiLoaded = setInterval(() => {
       const googleLibLoaded =
         typeof window !== 'undefined' && (window as any).google?.accounts?.id;
+
       const divExists = document.getElementById('googleSignInDiv');
 
       if (googleLibLoaded && divExists) {
@@ -93,14 +95,29 @@ export class LoginComponent {
           client_id:
             '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
           callback: (response: any) => this.handleGoogleCredential(response),
+          cancel_on_tap_outside: true,
         });
 
+        // ✅ Existing button (unchanged)
         google.accounts.id.renderButton(divExists, {
           theme: 'outline',
           size: 'large',
           text: 'signin_with',
           shape: 'rectangular',
           logo_alignment: 'center',
+        });
+
+        // ✅ NEW: Google One Tap
+        google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed()) {
+            console.debug(
+              'One Tap not displayed:',
+              notification.getNotDisplayedReason(),
+            );
+          }
+          if (notification.isSkippedMoment()) {
+            console.debug('One Tap skipped:', notification.getSkippedReason());
+          }
         });
       }
     }, 250);
