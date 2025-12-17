@@ -1,26 +1,21 @@
-html,
-body {
-  margin: 0;
-  padding: 0;
+// Remove html, body styling - Angular components don't use those tags
+:host {
+  display: block;
+  width: 100%;
+  overflow-y: auto;
+  min-height: 100vh;
 }
-
-body {
-  font-family: "Roboto", Arial, sans-serif;
-  line-height: 1.6;
-  overflow-y: scroll; /* ✅ Always show scrollbar */
-  height: 100vh; /* ✅ Full viewport height */
-}
-
 /* Component CSS */
 .terms-page {
-  background-color: #f9f9f3; /* match app background */
+  background-color: #f9f9f3;
   padding: 40px 20px;
+  // NO min-height, NO overflow
 }
 
 .terms-container {
   max-width: 900px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 20px 100px 20px;
   background-color: transparent;
   color: #333;
 }

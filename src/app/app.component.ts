@@ -44,9 +44,9 @@ import { ThemeService } from './theme.service';
 
 type NavItem = {
   label: string;
-  icon: string; // Material icon name or svgIcon id
-  route?: string | any[]; // string or routerLink array
-  action?: () => void; // optional handler
+  icon: string;
+  route?: string | any[];
+  action?: () => void;
   aria?: string;
   tooltip: string;
 };
@@ -99,6 +99,8 @@ export class AppComponent implements OnInit, OnDestroy {
   showFooter = true;
   showAiChatIcon = true;
   isRouterOutletVisible = true;
+  showHeader = true;
+  showSidenav = true;
 
   navItems: NavItem[] = [
     {
@@ -143,7 +145,6 @@ export class AppComponent implements OnInit, OnDestroy {
       route: ['/quote'],
       tooltip: 'Create a new quote',
     },
-    // { label: 'Available Jobs',  icon: 'work_outline',    route: ['/jobselection'],   tooltip: 'Browse and select from available jobs' }, // 29.10.2025 - Removed as it is very similar to My Projects
     {
       label: 'Find Work',
       icon: 'travel_explore',
@@ -187,7 +188,6 @@ export class AppComponent implements OnInit, OnDestroy {
     public themeService: ThemeService,
   ) {
     effect(() => {
-      // This effect will run whenever isDarkMode changes
       this.themeService.isDarkMode();
       if (this.isBrowser) {
         this.isRouterOutletVisible = false;
@@ -198,10 +198,20 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.showFooter = !event.urlAfterRedirects.includes('/login');
-        // console.log('Footer visibility:', this.showFooter);
-        // console.log('Current route:', event.urlAfterRedirects);
+        // Existing code
+        const currentRoute = this.router.routerState.root;
+        const minimalLayout =
+          currentRoute.firstChild?.snapshot.data['minimalLayout'];
+
+        this.showHeader = !minimalLayout;
+        this.showSidenav = !minimalLayout;
+        this.showFooter =
+          !event.urlAfterRedirects.includes('/login') && !minimalLayout;
+
+        // ADD THIS LINE - scroll to top
+        window.scrollTo(0, 0);
       });
+
     this.router.events
       .pipe(
         filter(
@@ -284,13 +294,10 @@ export class AppComponent implements OnInit, OnDestroy {
     localStorage.setItem('loggedIn', 'false');
   }
 
-  // onBrowserOpen(event: BeforeUnloadEvent ) {
-  //   this.loggedIn = true;
-  //   localStorage.setItem('loggedIn', 'true');
-  // }
   cancelalert(): void {
     this.showAlert = false;
   }
+
   closeAlert(): void {
     if (this.routeURL) {
       this.router.navigateByUrl(this.routeURL);
@@ -305,7 +312,6 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     dialogRef.afterClosed().subscribe((result) => {
-      //console.log(result)
       if (result === true) {
         localStorage.clear();
         this.loggedIn = false;
@@ -316,6 +322,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
   }
+
   toggleSidenav(): void {
     this.isSidenavOpen = !this.isSidenavOpen;
   }

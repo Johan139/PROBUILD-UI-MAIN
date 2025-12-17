@@ -1,26 +1,22 @@
-/* global styles (e.g., in styles.scss or styles.css) */
-html,
-body {
-  height: auto;
+// NO :host block
+:host {
+  display: block;
+  width: 100%;
   overflow-y: auto;
+  min-height: 100vh;
 }
-
-/* component CSS */
 .terms-page {
-  background-color: #f9f9f3; /* match app background */
+  background-color: #f9f9f3;
   padding: 40px 20px;
-  /* REMOVE these ↓↓↓ */
-  /* min-height: 100vh; */
-  /* overflow-y: auto; */
+  min-height: 100vh; // Content is at least full viewport height
 }
 
 .terms-container {
   max-width: 900px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 20px 100px 20px; // Extra bottom padding ensures scroll space
   background-color: transparent;
   color: #333;
-  font-family: "Roboto", sans-serif;
 }
 
 .terms-title {
@@ -28,4 +24,29 @@ body {
   margin-bottom: 20px;
   font-size: 2rem;
   color: #000;
+}
+
+h1,
+h2,
+h3 {
+  color: #222;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin-top: 1.5rem;
+}
+
+h3 {
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+p {
+  margin-bottom: 1rem;
 }

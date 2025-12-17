@@ -68,13 +68,25 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'calendar', component: CalendarComponent, canActivate: [AuthGuard] },
-  { path: 'termsofuse', component: TermsComponent },
-  { path: 'privacy', component: PrivacyComponent },
+  {
+    path: 'termsofuse',
+    component: TermsComponent,
+    data: { minimalLayout: true },
+  },
+  {
+    path: 'privacy',
+    component: PrivacyComponent,
+    data: { minimalLayout: true },
+  },
   {
     path: 'subscriptionconfirmation',
     component: SubscriptionConfirmationComponent,
   },
-  { path: 'masteragreement', component: MasterServicesAgreementComponent },
+  {
+    path: 'masteragreement',
+    component: MasterServicesAgreementComponent,
+    data: { minimalLayout: true },
+  },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'projects', component: ProjectsComponent, canActivate: [AuthGuard] },
   {
