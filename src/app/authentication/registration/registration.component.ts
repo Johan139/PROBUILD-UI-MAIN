@@ -8,6 +8,7 @@ import {
   Validators,
   FormArray,
   FormControl,
+  AbstractControl,
 } from '@angular/forms';
 import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
@@ -72,6 +73,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { ProfileService } from '../profile/profile.service';
 declare const google: any;
 const BASE_URL = environment.BACKEND_URL;
+
 export interface SubscriptionOption {
   id: number;
   subscription: string;
@@ -131,6 +133,8 @@ export class RegistrationComponent implements OnInit {
   operationalYears = operationalYears;
   certificationOptions = certificationOptions;
   showOnlyBasicFields = true;
+  private emailCheckCache = new Map<string, boolean>();
+  private emailCheckInFlight = false;
   subscriptionPackages: {
     value: string;
     display: string;
@@ -452,7 +456,60 @@ export class RegistrationComponent implements OnInit {
         this.registrationForm.get('email')?.enable();
       }
     });
+
+    const emailCtrl = this.registrationForm.get('email');
+
+    if (emailCtrl && !this.token) {
+      emailCtrl.valueChanges
+        .pipe(
+          debounceTime(600),
+          distinctUntilChanged(),
+          filter(() => emailCtrl.valid),
+        )
+        .subscribe((email: string) => {
+          const normalized = email.trim().toLowerCase();
+
+          // Cached result → reuse
+          if (this.emailCheckCache.has(normalized)) {
+            const exists = this.emailCheckCache.get(normalized);
+            this.setEmailTakenError(emailCtrl, exists!);
+            return;
+          }
+
+          // Prevent overlapping calls
+          if (this.emailCheckInFlight) return;
+
+          this.emailCheckInFlight = true;
+
+          this.registrationService.checkEmailExists(normalized).subscribe({
+            next: (exists) => {
+              this.emailCheckCache.set(normalized, exists);
+              this.setEmailTakenError(emailCtrl, exists);
+              this.emailCheckInFlight = false;
+            },
+            error: () => {
+              this.emailCheckInFlight = false;
+            },
+          });
+        });
+    }
   }
+  private setEmailTakenError(control: AbstractControl | null, exists: boolean) {
+    if (!control) return;
+
+    if (exists) {
+      control.setErrors({
+        ...control.errors,
+        emailTaken: true,
+      });
+    } else if (control.hasError('emailTaken')) {
+      const errors = { ...control.errors };
+      delete errors['emailTaken'];
+
+      control.setErrors(Object.keys(errors).length ? errors : null);
+    }
+  }
+
   async ngAfterViewInit(): Promise<void> {
     if (!this.isBrowser) return;
 
@@ -722,6 +779,13 @@ export class RegistrationComponent implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.registrationForm.get('email')?.hasError('emailTaken')) {
+      this.alertMessage =
+        'This email is already registered. Please log in instead.';
+      this.showAlert = true;
+      return;
+    }
+
     if (this.token) {
       if (this.registrationForm.valid) {
         this.isLoading = true;

@@ -108,7 +108,12 @@
   align-self: center; // Center align with the row
   font-size: 14px;
 }
-
+.inline-login-link {
+  margin-left: 4px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .country-code-field {
   flex: 0 0 130px;
   min-width: 135px;
