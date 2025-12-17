@@ -142,12 +142,27 @@
                       required
                       (input)="markFieldTouched('email')"
                     />
+
                     <mat-error>
-                      <span *ngIf="getFieldError('email')">{{
-                        getFieldError("email")
-                      }}</span>
+                      <!-- Existing validation errors -->
+                      <ng-container *ngIf="getFieldError('email')">
+                        {{ getFieldError("email") }}
+                      </ng-container>
+
+                      <!-- NEW: Email already exists -->
+                      <ng-container
+                        *ngIf="
+                          registrationForm.get('email')?.hasError('emailTaken')
+                        "
+                      >
+                        This email is already registered.
+                        <a routerLink="/login" class="inline-login-link">
+                          Log in instead
+                        </a>
+                      </ng-container>
                     </mat-error>
                   </mat-form-field>
+
                   <mat-form-field appearance="fill">
                     <mat-label>Password</mat-label>
                     <input
