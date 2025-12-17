@@ -18,6 +18,7 @@ import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 declare const google: any;
 @Component({
   selector: 'app-login',
@@ -33,6 +34,7 @@ declare const google: any;
     MatIconModule,
     MatDividerModule,
     RouterLink,
+    MatSnackBarModule,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
@@ -49,7 +51,7 @@ export class LoginComponent {
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
-
+    private snackBar: MatSnackBar,
     private route: ActivatedRoute,
   ) {
     this.loginForm = this.formBuilder.group({
@@ -64,6 +66,17 @@ export class LoginComponent {
           ),
         ],
       ],
+    });
+  }
+  ngOnInit() {
+    this.route.queryParams.subscribe((params) => {
+      if (params['confirmed'] === 'true') {
+        this.snackBar.open(
+          'Email successfully confirmed. Please log in.',
+          'Close',
+          { duration: 5000 },
+        );
+      }
     });
   }
 
