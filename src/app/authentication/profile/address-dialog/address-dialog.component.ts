@@ -335,7 +335,13 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
   }
 
   onSave(): void {
-    console.log(this.form.value);
-    if (this.form.valid) this.dialogRef.close(this.form.value);
+    if (!this.form.valid) return;
+
+    const result: UserAddress = {
+      ...this.form.value,
+      id: this.data?.id ?? this.form.value.id ?? null, // <-- IMPORTANT
+    };
+
+    this.dialogRef.close(result);
   }
 }

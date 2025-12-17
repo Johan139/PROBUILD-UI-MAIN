@@ -1,4 +1,4 @@
-@use 'styles/util/mixins' as u;
+@use "styles/util/mixins" as u;
 
 .container {
   width: min(95vw, 1200px) !important;
@@ -17,7 +17,63 @@
   gap: 12px;
   flex: 1;
 }
+/* Billing Section */
+.billing-inline-row {
+  display: flex;
+  align-items: center; // Use center for optical alignment
+  white-space: nowrap;
+}
 
+.billing-label {
+  font-weight: 600;
+  margin-right: 0px;
+  line-height: 1.2; // Match this with radio button text
+}
+
+.billing-label,
+.billing-radios-inline {
+  white-space: nowrap;
+}
+
+.billing-radios-inline {
+  display: flex;
+  align-items: center; // Use center
+  gap: 0px;
+  margin-right: 36px;
+  flex-wrap: wrap;
+}
+
+::ng-deep .billing-radios-inline mat-radio-button {
+  margin: 0 !important;
+}
+
+::ng-deep .billing-radios-inline .mat-radio-label {
+  align-items: center !important; // Center the label content
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+::ng-deep .billing-radios-inline .mat-radio-label-content {
+  padding-left: 4px;
+  padding-right: 6px;
+  line-height: 1.2 !important; // Match billing label
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+::ng-deep .billing-radios-inline .mat-radio-container {
+  margin: 0 !important;
+}
+
+.billing-terms-inline {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  white-space: normal;
+  min-width: 240px;
+  align-self: center; // Center align with the row
+  font-size: 14px;
+}
 .phone-field-container {
   display: flex;
   align-items: center;
@@ -26,7 +82,7 @@
 }
 /* Dial code field — slightly bigger now */
 .country-code-field {
-  flex: 0 0 130px;  /* was 100px — gives a wider, comfortable dropdown */
+  flex: 0 0 130px; /* was 100px — gives a wider, comfortable dropdown */
   min-width: 135px;
   max-width: 140px;
 }
@@ -50,10 +106,11 @@
   color: var(--color-text);
 
   mat-card-title {
-    font: var(--fw-bold, 800) var(--fs-xl, 1.5rem)/var(--lh-tight, 1.2) var(--font-sans, system-ui, Arial);
+    font: var(--fw-bold, 800) var(--fs-xl, 1.5rem)/var(--lh-tight, 1.2)
+      var(--font-sans, system-ui, Arial);
     color: var(--color-text);
     text-transform: uppercase;
-    letter-spacing: .02em;
+    letter-spacing: 0.02em;
     margin-bottom: var(--space-3, 12px);
   }
 
@@ -63,11 +120,13 @@
     border: 0;
     margin: var(--space-4, 16px) 0;
     border-radius: 999px;
-    opacity: .9;
+    opacity: 0.9;
   }
 }
 
-.profile-content { margin-top: var(--space-4, 16px); }
+.profile-content {
+  margin-top: var(--space-4, 16px);
+}
 
 /* Section headings */
 .section h3 {
@@ -75,7 +134,7 @@
   color: var(--color-text);
   text-transform: uppercase;
   margin-bottom: var(--space-3, 12px);
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
 }
 
 /* Rows */
@@ -87,7 +146,10 @@
   align-items: flex-start;
   margin-bottom: var(--space-5, 20px);
 }
-.form-row-button { flex-direction: row-reverse; justify-content: space-between; }
+.form-row-button {
+  flex-direction: row-reverse;
+  justify-content: space-between;
+}
 
 /* Fields */
 mat-form-field {
@@ -99,7 +161,8 @@ mat-form-field {
   ::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
     background: var(--color-surface) !important;
     border-radius: var(--radius-sm, 6px);
-    border: 1px solid color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
+    border: 1px solid
+      color-mix(in oklab, var(--color-accent) 40%, var(--color-border));
     box-shadow: none;
   }
 
@@ -109,9 +172,9 @@ mat-form-field {
 
   ::ng-deep .mdc-floating-label {
     position: static !important;
-    font-size: .9rem;
+    font-size: 0.9rem;
     color: var(--color-text);
-    opacity: .9;
+    opacity: 0.9;
   }
 
   ::ng-deep .mdc-text-field .mdc-floating-label {
@@ -121,7 +184,8 @@ mat-form-field {
   /* Focus ring */
   ::ng-deep .mdc-text-field--focused:not(.mdc-text-field--disabled) {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklab, var(--color-primary) 25%, transparent);
   }
 }
 .full-width {
@@ -139,22 +203,36 @@ mat-form-field {
   font-weight: var(--fw-semibold, 600);
   border-radius: var(--radius-md, 8px);
   padding: 10px 20px;
-  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.02s ease;
   margin-top: 10px;
   border: 0;
   @include u.interactive-states;
 
-  &:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-2); }
-  &:active { transform: translateY(1px); }
-  &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+  &:hover {
+    background: var(--color-primary-hover);
+    box-shadow: var(--shadow-2);
+  }
+  &:active {
+    transform: translateY(1px);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 }
 
 /* Alert */
 .alert-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
-  display: grid; place-items: center;
+  display: grid;
+  place-items: center;
   z-index: 1000;
 }
 .alert-modal {
@@ -166,22 +244,38 @@ mat-form-field {
   text-align: center;
   width: 300px;
 
-  p { margin-bottom: 20px; }
+  p {
+    margin-bottom: 20px;
+  }
 }
 
 /* Chips & trade selection */
-.chip-container { display: flex; align-items: flex-start; gap: var(--space-3, 12px); }
-.chip-input-container { flex: 1 1 auto; }
-.chip-grid { margin-left: 16px; max-width: 50%; }
+.chip-container {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+}
+.chip-input-container {
+  flex: 1 1 auto;
+}
+.chip-grid {
+  margin-left: 16px;
+  max-width: 50%;
+}
 
 .trades-selection-container,
 .supplier-types-selection-container {
-  display: flex; gap: 20px; align-items: flex-start; min-height: 80px; flex-wrap: wrap;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  min-height: 80px;
+  flex-wrap: wrap;
 }
 
 .selected-trades-display,
 .selected-supplier-types-display {
-  flex: 1; min-width: 300px;
+  flex: 1;
+  min-width: 300px;
 
   h4 {
     margin: 0 0 12px 0;
@@ -191,13 +285,16 @@ mat-form-field {
   }
 
   .chips-wrapper {
-    display: flex; flex-wrap: wrap; gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     padding: 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm, 6px);
     background: var(--color-surface);
     min-height: 60px;
-    align-items: flex-start; align-content: flex-start;
+    align-items: flex-start;
+    align-content: flex-start;
 
     mat-chip-row {
       background: var(--color-surface-subtle);
@@ -205,11 +302,15 @@ mat-form-field {
       border: 1px solid var(--color-border);
       border-radius: 999px;
 
-      &:hover { background: var(--color-surface-hover); }
+      &:hover {
+        background: var(--color-surface-hover);
+      }
 
       button[matChipRemove] {
         color: var(--color-text-muted);
-        &:hover { color: var(--color-danger); }
+        &:hover {
+          color: var(--color-danger);
+        }
       }
     }
   }
@@ -217,30 +318,51 @@ mat-form-field {
 
 .trade-input-section,
 .supplier-type-input-section {
-  flex: 1; min-width: 250px;
+  flex: 1;
+  min-width: 250px;
 }
 
 /* Hide legacy wrapper */
-.trades-form-field-wrapper { display: none; }
+.trades-form-field-wrapper {
+  display: none;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
   .form-row,
-  .form-row-button { flex-direction: column; gap: 12px; }
+  .form-row-button {
+    flex-direction: column;
+    gap: 12px;
+  }
 
-  mat-form-field { flex: none; min-width: 100%; width: 100%; }
+  mat-form-field {
+    flex: none;
+    min-width: 100%;
+    width: 100%;
+  }
 
-  .submit-btn { width: 100%; padding: 8px 16px; }
+  .submit-btn {
+    width: 100%;
+    padding: 8px 16px;
+  }
 
-  .section h3 { font-size: 1.2rem; }
+  .section h3 {
+    font-size: 1.2rem;
+  }
 
-  .chip-grid { max-width: 100%; margin-left: 0; }
-    .address-type-field {
+  .chip-grid {
+    max-width: 100%;
+    margin-left: 0;
+  }
+  .address-type-field {
     flex: 1 1 100%;
   }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

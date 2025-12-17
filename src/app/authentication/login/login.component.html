@@ -70,9 +70,6 @@
             <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
               Password must be at least 10 characters long.
             </mat-error>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('pattern')">
-              Must include uppercase, lowercase, and a special character.
-            </mat-error>
           </mat-form-field>
         </div>
 

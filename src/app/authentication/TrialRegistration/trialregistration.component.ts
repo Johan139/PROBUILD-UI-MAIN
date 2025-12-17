@@ -15,7 +15,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
 import { HttpClient } from '@angular/common/http';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { catchError, map, startWith } from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
@@ -91,6 +91,7 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatChipsModule,
     MatRadioModule,
     MatIconModule,
+    RouterLink,
   ],
   templateUrl: './trialregistration.component.html',
   styleUrl: './trialregistration.component.scss',
