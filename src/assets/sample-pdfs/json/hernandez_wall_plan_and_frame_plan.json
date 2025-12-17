@@ -534,38 +534,10 @@
         "NAILING SCHEDULE (O.C.) - FIELD"
       ],
       "rows": [
-        [
-          "500",
-          "SW6",
-          "STHD10",
-          "19/32\" PLYWOOD",
-          "6\"",
-          "12\""
-        ],
-        [
-          "750",
-          "SW8",
-          "STHD14",
-          "19/32\" PLYWOOD",
-          "4\"",
-          "12\""
-        ],
-        [
-          "900",
-          "SW10",
-          "STHD14",
-          "19/32\" PLYWOOD",
-          "3\"",
-          "12\""
-        ],
-        [
-          "1000",
-          "SW12",
-          "STHD14",
-          "19/32\" PLYWOOD",
-          "2\"",
-          "12\""
-        ]
+        ["500", "SW6", "STHD10", "19/32\" PLYWOOD", "6\"", "12\""],
+        ["750", "SW8", "STHD14", "19/32\" PLYWOOD", "4\"", "12\""],
+        ["900", "SW10", "STHD14", "19/32\" PLYWOOD", "3\"", "12\""],
+        ["1000", "SW12", "STHD14", "19/32\" PLYWOOD", "2\"", "12\""]
       ],
       "boundingBox": {
         "x": 178,
@@ -668,38 +640,10 @@
         "PLYWOOD SHEATHING"
       ],
       "rows": [
-        [
-          "SW6",
-          "500",
-          "STHD10",
-          "6\"",
-          "12\"",
-          "19/32\" PLYWOOD"
-        ],
-        [
-          "SW8",
-          "750",
-          "STHD14",
-          "4\"",
-          "12\"",
-          "19/32\" PLYWOOD"
-        ],
-        [
-          "SW10",
-          "900",
-          "STHD14",
-          "3\"",
-          "12\"",
-          "19/32\" PLYWOOD"
-        ],
-        [
-          "SW12",
-          "1000",
-          "STHD14",
-          "2\"",
-          "12\"",
-          "19/32\" PLYWOOD"
-        ]
+        ["SW6", "500", "STHD10", "6\"", "12\"", "19/32\" PLYWOOD"],
+        ["SW8", "750", "STHD14", "4\"", "12\"", "19/32\" PLYWOOD"],
+        ["SW10", "900", "STHD14", "3\"", "12\"", "19/32\" PLYWOOD"],
+        ["SW12", "1000", "STHD14", "2\"", "12\"", "19/32\" PLYWOOD"]
       ],
       "boundingBox": {
         "x": 86,
@@ -719,41 +663,11 @@
         "JOIST SPAN (FT)"
       ],
       "rows": [
-        [
-          "2X4",
-          "10",
-          "5",
-          "8",
-          "6"
-        ],
-        [
-          "2X6",
-          "12",
-          "8",
-          "12",
-          "10"
-        ],
-        [
-          "2X8",
-          "14",
-          "12",
-          "14",
-          "12"
-        ],
-        [
-          "2X10",
-          "16",
-          "16",
-          "16",
-          "14"
-        ],
-        [
-          "2X12",
-          "18",
-          "18",
-          "18",
-          "16"
-        ]
+        ["2X4", "10", "5", "8", "6"],
+        ["2X6", "12", "8", "12", "10"],
+        ["2X8", "14", "12", "14", "12"],
+        ["2X10", "16", "16", "16", "14"],
+        ["2X12", "18", "18", "18", "16"]
       ],
       "boundingBox": {
         "x": 328,
@@ -765,12 +679,7 @@
     {
       "id": "schedule_005",
       "title": "FASTENER SCHEDULE (BASED ON IRC.R602.3(1))",
-      "headers": [
-        "CONNECTION",
-        "FASTENER TYPE",
-        "SPACING (IN O.C.)",
-        "NOTES"
-      ],
+      "headers": ["CONNECTION", "FASTENER TYPE", "SPACING (IN O.C.)", "NOTES"],
       "rows": [
         [
           "RAFTER OR JOIST TO TOP PLATE",
@@ -784,84 +693,29 @@
           "N/A",
           "N/A"
         ],
-        [
-          "RIM JOIST TO TOP PLATE",
-          "8d",
-          "7\" O.C.",
-          "N/A"
-        ],
-        [
-          "JOIST TO JOIST OR JOIST TO RAFTER (TAIL)",
-          "3-10d (T)",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "STUD TO TOP PLATE (TYPICAL)",
-          "2-16d",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "STUD TO BOTTOM PLATE",
-          "2-16d",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "TOP PLATE LAP",
-          "3-10d",
-          "N/A",
-          "N/A"
-        ],
+        ["RIM JOIST TO TOP PLATE", "8d", "7\" O.C.", "N/A"],
+        ["JOIST TO JOIST OR JOIST TO RAFTER (TAIL)", "3-10d (T)", "N/A", "N/A"],
+        ["STUD TO TOP PLATE (TYPICAL)", "2-16d", "N/A", "N/A"],
+        ["STUD TO BOTTOM PLATE", "2-16d", "N/A", "N/A"],
+        ["TOP PLATE LAP", "3-10d", "N/A", "N/A"],
         [
           "TOP PLATE SPLICE (W/ STRAP)",
           "STRAP PER PLAN",
           "STRAP PER PLAN",
           "N/A"
         ],
-        [
-          "TOP PLATE TO RAFTER/JOIST (FLAT)",
-          "10d",
-          "16\" O.C.",
-          "N/A"
-        ],
+        ["TOP PLATE TO RAFTER/JOIST (FLAT)", "10d", "16\" O.C.", "N/A"],
         [
           "TOP PLATE TO RIDGE (W/STRAP)",
           "STRAP PER PLAN",
           "STRAP PER PLAN",
           "N/A"
         ],
-        [
-          "HEADER TO WALL PLATE",
-          "3-10d/PLY",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "TRIMMER TO HEADER",
-          "2-16d",
-          "24\" O.C.",
-          "N/A"
-        ],
-        [
-          "TRIMMER TO BOTTOM PLATE",
-          "4-10d",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "PURLIN TO RAFTER",
-          "2-16d",
-          "N/A",
-          "N/A"
-        ],
-        [
-          "BLOCKING TO PLATE",
-          "2-16d",
-          "N/A",
-          "N/A"
-        ],
+        ["HEADER TO WALL PLATE", "3-10d/PLY", "N/A", "N/A"],
+        ["TRIMMER TO HEADER", "2-16d", "24\" O.C.", "N/A"],
+        ["TRIMMER TO BOTTOM PLATE", "4-10d", "N/A", "N/A"],
+        ["PURLIN TO RAFTER", "2-16d", "N/A", "N/A"],
+        ["BLOCKING TO PLATE", "2-16d", "N/A", "N/A"],
         [
           "SHEATHING TO FRAMING",
           "8d",

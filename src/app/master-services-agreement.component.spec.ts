@@ -8,9 +8,8 @@ describe('MasterServicesAgreementComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MasterServicesAgreementComponent]
-    })
-    .compileComponents();
+      imports: [MasterServicesAgreementComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(MasterServicesAgreementComponent);
     component = fixture.componentInstance;

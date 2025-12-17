@@ -8,6 +8,6 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule],
   templateUrl: './logout-confirm-dialog.component.html',
-  styleUrls: ['./logout-confirm-dialog.component.scss']
+  styleUrls: ['./logout-confirm-dialog.component.scss'],
 })
 export class LogoutConfirmDialogComponent {}

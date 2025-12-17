@@ -1,10 +1,23 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap, firstValueFrom, catchError, throwError, map, of, switchMap, filter, take } from 'rxjs';
+import {
+  Observable,
+  BehaviorSubject,
+  tap,
+  firstValueFrom,
+  catchError,
+  throwError,
+  map,
+  of,
+  switchMap,
+  filter,
+  take,
+} from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
 import { TeamManagementService } from '../services/team-management.service';
 import { Router } from '@angular/router';
+import { UserAddressStoreService } from '../services/UserAddressStoreService';
 
 @Injectable({
   providedIn: 'root',
@@ -21,11 +34,14 @@ export class AuthService {
   private _userPermissions = new BehaviorSubject<string[]>([]);
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
-private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
+  private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<any>(null);
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private addressStore: UserAddressStoreService,
+  ) {}
 
   // ---- helpers: safe JWT parsing (Base64URL) ----
   private normalizeToken(token: string): string {
@@ -51,7 +67,8 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     if (!token) return null;
     const clean = this.normalizeToken(token);
     // header.payload.signature
-    if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(clean)) return null;
+    if (!/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(clean))
+      return null;
     const parts = clean.split('.');
     try {
       const json = this.base64UrlToUtf8(parts[1]);
@@ -93,7 +110,9 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     if (userRole === 'GENERAL_CONTRACTOR') {
       return new BehaviorSubject(true).asObservable();
     }
-    return this.userPermissions$.pipe(map((permissions) => permissions.includes(permissionKey)));
+    return this.userPermissions$.pipe(
+      map((permissions) => permissions.includes(permissionKey)),
+    );
   }
 
   async initialize(): Promise<void> {
@@ -114,7 +133,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      console.log('Access token expired, attempting to refresh...');
+      // console.log('Access token expired, attempting to refresh...');
       try {
         await firstValueFrom(this.refreshToken());
         const newToken = localStorage.getItem('accessToken');
@@ -125,30 +144,55 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       }
     }
   }
+  googleLogin(idToken: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/google-login`, { idToken }).pipe(
+      switchMap((response) => {
+        if (!response.requiresRegistration) {
+          return this.handleSuccessfulLogin(response);
+        }
+        return of(response);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if (
+          error.status === 401 &&
+          error.error.error ===
+            'Email address has not been verified. Please check your inbox and spam folder.'
+        ) {
+          return throwError(() => this.handleLoginError(error));
+        }
+        return throwError(() => this.handleLoginError(error));
+      }),
+    );
+  }
 
-  resendverificationemail(userid: string): Observable<any>
-  {
-        return this.http.get<any>(`${this.apiUrl}/resend-email-verification/${userid}`, { headers: { 'Content-Type': 'application/json' } });
-    
+  resendverificationemail(userid: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/resend-email-verification/${userid}`,
+      { headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   login(credentials: { email: string; password: string }): Observable<any> {
     return this.http
-      .post<any>(`${this.apiUrl}/login`, credentials, { headers: { 'Content-Type': 'application/json' } })
+      .post<any>(`${this.apiUrl}/login`, credentials, {
+        headers: { 'Content-Type': 'application/json' },
+      })
       .pipe(
         switchMap((response) => this.handleSuccessfulLogin(response)),
         catchError((error: HttpErrorResponse) => {
-          console.log(error.status)
-          console.log(error.error)
-          if (error.status === 401 && error.error.error === "Email address has not been verified. Please check your inbox and spam folder.") {
+          // console.log(error.status)
+          // console.log(error.error)
+          if (
+            error.status === 401 &&
+            error.error.error ===
+              'Email address has not been verified. Please check your inbox and spam folder.'
+          ) {
             return throwError(() => this.handleLoginError(error));
-          }
-          else if(error.status === 401)
-          {
-            return this.loginMember(credentials);
-          }
+          } //else if (error.status === 401) {
+          //return this.loginMember(credentials);
+          //}
           return throwError(() => this.handleLoginError(error));
-        })
+        }),
       );
   }
 
@@ -187,7 +231,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
           if (memberDetails && memberDetails.id) {
             this.loadUserPermissions(memberDetails.id);
           }
-        })
+        }),
       );
     }
   }
@@ -201,25 +245,35 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
         parsed = {};
       }
     }
-    console.error('Login error:', parsed?.error || error.message || 'Unknown error');
+    console.error(
+      'Login error:',
+      parsed?.error || error.message || 'Unknown error',
+    );
     return error;
   }
 
-  loginMember(credentials: { email: string; password: string }): Observable<any> {
-    return this.http
-      .post<any>(`${this.apiUrl}/login/member`, credentials, { headers: { 'Content-Type': 'application/json' } })
-      .pipe(
-        switchMap((response) => this.handleSuccessfulLogin(response)),
-        catchError((error: HttpErrorResponse) => throwError(() => this.handleLoginError(error)))
-      );
-  }
+  // loginMember(credentials: {
+  //   email: string;
+  //   password: string;
+  // }): Observable<any> {
+  //   return this.http
+  //     .post<any>(`${this.apiUrl}/login/member`, credentials, {
+  //       headers: { 'Content-Type': 'application/json' },
+  //     })
+  //     .pipe(
+  //       switchMap((response) => this.handleSuccessfulLogin(response)),
+  //       catchError((error: HttpErrorResponse) =>
+  //         throwError(() => this.handleLoginError(error)),
+  //       ),
+  //     );
+  // }
 
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);
   }
 
   logout(): void {
-      this.clearInactivityTimer();
+    this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -229,17 +283,20 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       localStorage.removeItem('userId');
       localStorage.removeItem('loggedIn');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('fw_selectedAddressId');
+      localStorage.removeItem('findWorkFilters');
+      this.addressStore.clear();
     }
     this.currentUserSubject.next(null);
 
-      this.router.navigate(['/login']);
+    this.router.navigate(['/login']);
   }
 
   refreshToken(): Observable<any> {
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
-        filter(token => token != null),
-        take(1)
+        filter((token) => token != null),
+        take(1),
       );
     }
 
@@ -252,25 +309,25 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
       return throwError(() => new Error('No refresh token available.'));
     }
 
-    return this.http.post(`${this.apiUrl}/refresh-token`, { refreshToken }).pipe(
-      tap((response: any) => {
-
-        if (response && response.token && response.refreshToken) {
-          localStorage.setItem('accessToken', response.token);
-          localStorage.setItem('refreshToken', response.refreshToken);
-          this.loadUserFromToken(response.token);
-          this.refreshTokenSubject.next(response.token);
-        } else {
+    return this.http
+      .post(`${this.apiUrl}/refresh-token`, { refreshToken })
+      .pipe(
+        tap((response: any) => {
+          if (response && response.token && response.refreshToken) {
+            localStorage.setItem('accessToken', response.token);
+            localStorage.setItem('refreshToken', response.refreshToken);
+            this.loadUserFromToken(response.token);
+            this.refreshTokenSubject.next(response.token);
+          } else {
+            this.logout();
+            throw new Error('Invalid refresh token response');
+          }
+        }),
+        catchError((err) => {
           this.logout();
-          throw new Error('Invalid refresh token response');
-        }
-      }),
-      catchError((err) => {
-        this.logout();
-        return throwError(() => err);
-      })
-    );
-
+          return throwError(() => err);
+        }),
+      );
   }
 
   async getToken(): Promise<string | null> {
@@ -300,7 +357,10 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   }
 
   isLoggedIn(): boolean {
-    return isPlatformBrowser(this.platformId) && !!localStorage.getItem('accessToken');
+    return (
+      isPlatformBrowser(this.platformId) &&
+      !!localStorage.getItem('accessToken')
+    );
   }
 
   getUserRole(): string | null {
@@ -359,7 +419,9 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
           if (user.inviterId) {
             this.currentUserSubject.next(user);
           } else {
-            console.warn('Team member data is incomplete. Waiting for inviterId.');
+            console.warn(
+              'Team member data is incomplete. Waiting for inviterId.',
+            );
           }
           this.loadUserPermissions(teamMemberId);
         },
@@ -403,7 +465,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
         localStorage.setItem('userType', user.role);
         localStorage.setItem('currentUser', JSON.stringify(user));
         this.currentUserSubject.next(user);
-      })
+      }),
     );
   }
 
@@ -411,7 +473,7 @@ private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
     this.teamManagementService.getPermissions(teamMemberId).subscribe({
       next: (permissions) => {
         this._userPermissions.next(permissions);
-        console.log('Permissions loaded:', this._userPermissions.getValue());
+        // console.log('Permissions loaded:', this._userPermissions.getValue());
       },
       error: (err) => {
         console.error('Failed to load user permissions', err);

@@ -8,7 +8,7 @@
         <app-job-card [job]="jobDetails"></app-job-card>
       </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-9">
       <mat-card class="quote-card">
         <mat-card-header>
           <mat-card-title>Job Quote</mat-card-title>
@@ -23,7 +23,6 @@
           </div>
           <mat-divider></mat-divider>
           <form [formGroup]="quoteForm" #quoteContent>
-            <!-- Header Section -->
             <div class="form-row">
               <div class="logo-container">
                 <div class="placeholder" *ngIf="!logoUrl" (click)="!readOnly && triggerFileInput()">
@@ -37,8 +36,8 @@
               </div>
               <div class="invoice-header-details">
                 <mat-form-field appearance="fill">
-                  <mat-label>Title</mat-label>
-                  <input matInput formControlName="header" placeholder="INVOICE">
+                  <mat-label>Title (e.g. Invoice)</mat-label>
+                  <input matInput formControlName="header">
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Quote #</mat-label>
@@ -47,13 +46,12 @@
                 </mat-form-field>
               </div>
             </div>
-            <!-- Contact Section -->
             <div class="contact-row">
-              <mat-form-field appearance="fill" class="full-width">
+              <mat-form-field appearance="fill">
                 <mat-label>From</mat-label>
                 <textarea matInput formControlName="from" placeholder="Who is this from?" rows="3"></textarea>
               </mat-form-field>
-              <mat-form-field appearance="fill" class="full-width">
+              <mat-form-field appearance="fill">
                 <mat-label>To</mat-label>
                 <textarea matInput formControlName="to" placeholder="Who is this to?" rows="3"></textarea>
               </mat-form-field>
@@ -80,44 +78,60 @@
                 <input matInput formControlName="poNumber">
               </mat-form-field>
             </div>
-            <!-- Items Table -->
             <div class="items-table-container">
               <div class="table-wrapper">
                 <table mat-table [dataSource]="dataSource" class="themed-table">
                   <!-- Item Column -->
                   <ng-container matColumnDef="description">
                     <th mat-header-cell *matHeaderCellDef>
-                      <input type="text" class="form-control form-control-sm" formControlName="itemHeader" placeholder="Item">
+                      Item
                     </th>
                     <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <textarea class="form-control form-control-sm" formControlName="description" placeholder="Description..." rows="2"></textarea>
+                      <mat-form-field appearance="outline">
+                        <input matInput formControlName="description" placeholder="Description...">
+                      </mat-form-field>
                     </td>
                   </ng-container>
                   <!-- Quantity Column -->
                   <ng-container matColumnDef="quantity">
                     <th mat-header-cell *matHeaderCellDef>
-                      <input type="text" class="form-control form-control-sm" formControlName="quantityHeader" placeholder="Quantity">
+                      Quantity
                     </th>
                     <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <input type="number" class="form-control form-control-sm" formControlName="quantity" min="1">
+                      <mat-form-field appearance="outline">
+                        <input matInput type="number" formControlName="quantity" min="1">
+                      </mat-form-field>
+                    </td>
+                  </ng-container>
+                  <!-- Unit Column -->
+                  <ng-container matColumnDef="unit" class="unit-column">
+                    <th mat-header-cell *matHeaderCellDef>Unit</th>
+                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+                      <mat-form-field appearance="fill">
+                        <mat-select formControlName="unit">
+                          <mat-option *ngFor="let unit of units" [value]="unit">{{ unit }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
                     </td>
                   </ng-container>
                   <!-- Rate Column -->
                   <ng-container matColumnDef="unitPrice">
                     <th mat-header-cell *matHeaderCellDef>
-                      <input type="text" class="form-control form-control-sm" formControlName="unitCostHeader" placeholder="Rate">
+                      Price per unit
                     </th>
                     <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <input type="number" class="form-control form-control-sm" formControlName="unitPrice" min="0" step="any">
+                      <mat-form-field appearance="outline">
+                        <input matInput type="number" class="right-align" formControlName="unitPrice" min="0" step="any">
+                      </mat-form-field>
                     </td>
                   </ng-container>
                   <!-- Amount Column -->
-                  <ng-container matColumnDef="total">
+                  <ng-container matColumnDef="total" class="amount-column">
                     <th mat-header-cell *matHeaderCellDef>
-                      <input type="text" class="form-control form-control-sm" formControlName="amountHeader" placeholder="Amount">
+                      Amount
                     </th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      ${{ element.get('total')?.value || '0.00' }}
+                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element" class="right-align">
+                      ${{ (element.get('total')?.value | number:'1.2-2') || '0.00' }}
                     </td>
                   </ng-container>
                   <!-- Remove Column -->
@@ -133,26 +147,25 @@
                   <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
                 </table>
               </div>
-              <button type="button" class="btn btn-outline-primary" (click)="addRow()" [disabled]="readOnly">
+              <button type="button" mat-stroked-button color="primary" (click)="addRow()" [disabled]="readOnly">
                 <mat-icon>add</mat-icon> Line Item
               </button>
             </div>
-            <!-- Footer Section -->
             <div class="form-row">
               <div class="notes-terms-section">
                 <mat-form-field appearance="fill">
                   <mat-label>Notes</mat-label>
-                  <textarea matInput formControlName="notes" placeholder="Additional notes..." rows="3"></textarea>
+                  <input matInput formControlName="notes" placeholder="Additional notes...">
                 </mat-form-field>
                 <mat-form-field appearance="fill">
                   <mat-label>Terms</mat-label>
-                  <textarea matInput formControlName="terms" placeholder="Terms and conditions..." rows="3"></textarea>
+                  <input matInput formControlName="terms" placeholder="Terms and conditions...">
                 </mat-form-field>
               </div>
               <div class="totals-section">
                 <div class="total-row">
                   <span>Subtotal</span>
-                  <span>${{ getSubtotal().toFixed(2) }}</span>
+                  <span class="right-align">${{ getSubtotal() | number:'1.2-2' }}</span>
                 </div>
                 <!-- Extra Costs -->
                 <div *ngIf="hasExtraCost" class="total-row">
@@ -192,41 +205,37 @@
                   </mat-form-field>
                 </div>
                 <div class="extra-cost-buttons">
-                  <button *ngIf="!hasExtraCost" type="button" class="btn-link" (click)="addExtraCost()" [disabled]="readOnly">+- Extra Costs</button>
-                  <button *ngIf="!hasTax" type="button" class="btn-link" (click)="addTax()" [disabled]="readOnly">% Tax</button>
-                  <button *ngIf="!hasDiscount" type="button" class="btn-link" (click)="addDiscount()" [disabled]="readOnly">% Discount</button>
-                  <button *ngIf="!hasFlatTotal" type="button" class="btn-link" (click)="addFlatTotal()" [disabled]="readOnly">Flat Total</button>
+                  <button *ngIf="!hasExtraCost" type="button" mat-button (click)="addExtraCost()" [disabled]="readOnly">+- Extra Costs</button>
+                  <button *ngIf="!hasTax" type="button" mat-button (click)="addTax()" [disabled]="readOnly">% Tax</button>
+                  <button *ngIf="!hasDiscount" type="button" mat-button (click)="addDiscount()" [disabled]="readOnly">% Discount</button>
+                  <button *ngIf="!hasFlatTotal" type="button" mat-button (click)="addFlatTotal()" [disabled]="readOnly">Flat Total</button>
                 </div>
                 <mat-divider></mat-divider>
                 <div class="total-row grand-total">
                   <span>Total </span>
-                  <span>${{ getGrandTotal().toFixed(2) }}</span>
+                  <span class="right-align">${{ getGrandTotal() | number:'1.2-2' }}</span>
                 </div>
               </div>
             </div>
-            <!-- Action Buttons -->
             <div class="action-section">
-              <!-- Approve / Reject buttons shown only if status is 'Submitted' -->
               <div *ngIf="!isOwnQuote && quoteForm.get('status')?.value === 'Submitted'">
                 <button mat-raised-button color="primary" type="button" (click)="approveQuote()" [disabled]="!jobId">Approve</button>
                 <button mat-raised-button color="warn" type="button" (click)="rejectQuote()" [disabled]="!jobId">Reject</button>
               </div>
-              <!-- Show Save as New only if Rejected -->
               <div *ngIf="quoteForm.get('status')?.value === 'Rejected'">
                 <button mat-raised-button type="button" (click)="saveToDatabase()" [disabled]="isSaving">Save as New</button>
               </div>
-              <!-- Show full controls only if not Submitted, Approved, or Rejected -->
               <div *ngIf="!(['Submitted', 'Approved', 'Rejected'].includes(quoteForm.get('status')?.value))">
-                <button mat-raised-button color="primary" type="button" (click)="saveToDatabase()" [disabled]="isSaving || readOnly">
+                <button mat-raised-button class="btn-primary" type="button" (click)="saveToDatabase()" [disabled]="isSaving || readOnly">
                   Save / Update Quote
                 </button>
-                <button mat-raised-button color="primary" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
+                <button mat-raised-button class="btn-primary" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
                   {{ isFinalBiddingRound ? 'Submit Final Offer' : 'Submit Quote' }}
                 </button>
                 <button *ngIf="isFinalBiddingRound" mat-raised-button type="button" (click)="keepOriginalBid()" [disabled]="isSaving || readOnly || !jobId">
                   Keep Original Bid
                 </button>
-                <button mat-raised-button color="primary" type="button" (click)="onSubmit()" [disabled]="isSaving || readOnly">
+                <button mat-raised-button class="btn-primary" type="button" (click)="onSubmit()" [disabled]="isSaving || readOnly">
                   Download Quote
                 </button>
               </div>

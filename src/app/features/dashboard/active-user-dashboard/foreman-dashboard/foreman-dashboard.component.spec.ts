@@ -8,9 +8,8 @@ describe('ForemanDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ForemanDashboardComponent]
-    })
-    .compileComponents();
+      imports: [ForemanDashboardComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ForemanDashboardComponent);
     component = fixture.componentInstance;

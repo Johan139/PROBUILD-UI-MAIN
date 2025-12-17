@@ -1,0 +1,53 @@
+<div class="table-wrap">
+  <mat-table [dataSource]="dataSource" matSort class="job-table">
+
+    <!-- Project Name Column -->
+    <ng-container matColumnDef="projectName">
+      <mat-header-cell *matHeaderCellDef mat-sort-header>Project</mat-header-cell>
+      <mat-cell *matCellDef="let project">{{ project.projectName }}</mat-cell>
+    </ng-container>
+
+    <!-- Created At Column -->
+    <ng-container matColumnDef="createdAt">
+      <mat-header-cell *matHeaderCellDef mat-sort-header>Created</mat-header-cell>
+      <mat-cell *matCellDef="let project">{{ project.createdAt | date: 'shortDate' }}</mat-cell>
+    </ng-container>
+
+    <!-- Progress Column -->
+    <ng-container matColumnDef="progress">
+      <mat-header-cell *matHeaderCellDef mat-sort-header>Progress</mat-header-cell>
+      <mat-cell *matCellDef="let project">
+        <div class="progress">
+          <div class="bar" [style.width.%]="project.progress || 0"></div>
+        </div>
+        <span class="pct">{{ project.progress || 0 }}%</span>
+      </mat-cell>
+    </ng-container>
+
+    <!-- Status Column -->
+    <ng-container matColumnDef="status">
+      <mat-header-cell *matHeaderCellDef mat-sort-header>Status</mat-header-cell>
+      <mat-cell *matCellDef="let project">{{ project.status | titlecase}}</mat-cell>
+    </ng-container>
+
+    <!-- Actions Column -->
+    <ng-container matColumnDef="actions">
+      <mat-header-cell *matHeaderCellDef></mat-header-cell>
+      <mat-cell *matCellDef="let project">
+        <button mat-icon-button [matMenuTriggerFor]="jobMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #jobMenu="matMenu">
+          <button mat-menu-item (click)="onView.emit(project.jobId)">View Project</button>
+          <button mat-menu-item (click)="onEdit.emit(project.jobId)">Edit Project</button>
+          <button mat-menu-item (click)="onArchive.emit(project.jobId)">
+            Archive Project
+          </button>
+        </mat-menu>
+      </mat-cell>
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+  </mat-table>
+</div>

@@ -18,7 +18,8 @@ interface Contract {
 @Component({
   selector: 'app-contract-signing',
   templateUrl: './contract-signing.component.html',
-  styleUrls: ['./contract-signing.component.scss']
+  styleUrls: ['./contract-signing.component.scss'],
+  standalone: false,
 })
 export class ContractSigningComponent implements OnInit {
   contract: Contract | null = null;
@@ -27,13 +28,13 @@ export class ContractSigningComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private http: HttpClient
-  ) { }
+    private http: HttpClient,
+  ) {}
 
   ngOnInit(): void {
     this.contractId = this.route.snapshot.paramMap.get('contractId');
     if (this.contractId) {
-      this.getContract(this.contractId).subscribe(data => {
+      this.getContract(this.contractId).subscribe((data) => {
         this.contract = data;
       });
     }

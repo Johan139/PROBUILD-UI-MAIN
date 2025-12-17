@@ -22,11 +22,11 @@ import { NgIf } from '@angular/common';
     MatButtonModule,
     MatTableModule,
     MatDividerModule,
-    NgIf
+    NgIf,
   ],
   templateUrl: './bid.component.html', // Fixed to point to the correct HTML file
   styleUrls: ['./bid.component.scss'],
-  providers: [BidService]
+  providers: [BidService],
 })
 export class BidComponent implements OnInit {
   bidForm: FormGroup;
@@ -37,11 +37,11 @@ export class BidComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private bidService: BidService
+    private bidService: BidService,
   ) {
     this.bidForm = this.fb.group({
       amount: ['', [Validators.required, Validators.min(0)]],
-      notes: ['']
+      notes: [''],
     });
   }
 
@@ -65,7 +65,7 @@ export class BidComponent implements OnInit {
     const bidData = {
       amount: this.bidForm.get('amount')?.value,
       notes: this.bidForm.get('notes')?.value,
-      submittedAt: new Date().toISOString()
+      submittedAt: new Date().toISOString(),
     };
 
     // Simulate submitting the bid

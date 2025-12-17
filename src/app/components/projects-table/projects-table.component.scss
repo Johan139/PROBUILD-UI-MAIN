@@ -1,0 +1,55 @@
+@use 'styles/util/mixins' as u;
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.job-table {
+  width: 100%;
+  background: var(--color-surface);
+
+  .mat-mdc-header-row {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    font-weight: var(--fw-bold);
+  }
+
+  .mat-mdc-row:hover {
+    background: var(--color-surface-hover);
+  }
+
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    padding: 10px 12px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--fs-sm);
+  }
+}
+
+.progress {
+  width: 100%;
+  height: 8px;
+  background: var(--neutral-200);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-right: var(--space-2);
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100px;
+}
+
+.bar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width .25s ease;
+}
+
+.pct {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}

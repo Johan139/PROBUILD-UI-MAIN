@@ -1,11 +1,17 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FormBuilder, FormGroup, Validators, FormControl, FormArray } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  FormControl,
+  FormArray,
+} from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonModule } from '@angular/material/button';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatChipsModule } from '@angular/material/chips';
@@ -23,6 +29,7 @@ import { trades } from '../../../data/registration-data';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatRadioModule,
@@ -30,58 +37,66 @@ import { trades } from '../../../data/registration-data';
     MatAutocompleteModule,
     MatChipsModule,
     MatIconModule,
-    MatTooltipModule
-  ]
+    MatTooltipModule,
+  ],
 })
 export class InitiateBiddingDialogComponent implements OnInit {
   form: FormGroup;
   tradeCtrl = new FormControl();
-  filteredTrades: Observable<{ value: string; display: string; }[]>;
-  selectedTrades: { value: string; display: string; }[] = [];
+  filteredTrades: Observable<{ value: string; display: string }[]>;
+  selectedTrades: { value: string; display: string; budget: number }[] = [];
   allTrades = trades;
 
   constructor(
     public dialogRef: MatDialogRef<InitiateBiddingDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) {
     this.form = this.fb.group({
       biddingType: ['PUBLIC', Validators.required],
-      requiredSubcontractorTypes: this.fb.array([], Validators.required)
+      requiredSubcontractorTypes: this.fb.array([], Validators.required),
     });
 
     this.filteredTrades = this.tradeCtrl.valueChanges.pipe(
       startWith(null),
-      map((trade: string | null) => trade ? this._filter(trade) : this.allTrades.slice())
+      map((trade: string | null) =>
+        trade ? this._filter(trade) : this.allTrades.slice(),
+      ),
     );
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
-  private _filter(value: string): { value: string; display: string; }[] {
+  private _filter(value: string): { value: string; display: string }[] {
     const filterValue = value.toLowerCase();
-    return this.allTrades.filter(trade => trade.display.toLowerCase().includes(filterValue));
+    return this.allTrades.filter((trade) =>
+      trade.display.toLowerCase().includes(filterValue),
+    );
   }
 
-  remove(trade: { value: string; display: string; }): void {
+  remove(trade: { value: string; display: string; budget: number }): void {
     const index = this.selectedTrades.indexOf(trade);
     if (index >= 0) {
       this.selectedTrades.splice(index, 1);
-      const formArray = this.form.get('requiredSubcontractorTypes') as FormArray;
-      formArray.clear();
-      this.selectedTrades.forEach(t => formArray.push(new FormControl(t.value)));
+      this.updateFormArray();
     }
   }
 
   selected(event: any): void {
     const selectedTrade = event.option.value;
-    if (!this.selectedTrades.some(t => t.value === selectedTrade.value)) {
-      this.selectedTrades.push(selectedTrade);
-      const formArray = this.form.get('requiredSubcontractorTypes') as FormArray;
-      formArray.push(new FormControl(selectedTrade.value));
+    if (!this.selectedTrades.some((t) => t.value === selectedTrade.value)) {
+      this.selectedTrades.push({ ...selectedTrade, budget: 0 });
+      this.updateFormArray();
     }
     this.tradeCtrl.setValue(null);
+  }
+
+  private updateFormArray(): void {
+    const formArray = this.form.get('requiredSubcontractorTypes') as FormArray;
+    formArray.clear();
+    this.selectedTrades.forEach((t) =>
+      formArray.push(new FormControl(t.value)),
+    );
   }
 
   onCancel(): void {
@@ -90,7 +105,14 @@ export class InitiateBiddingDialogComponent implements OnInit {
 
   onConfirm(): void {
     if (this.form.valid) {
-      this.dialogRef.close(this.form.value);
+      const result = {
+        ...this.form.value,
+        tradeBudgets: this.selectedTrades.map((t) => ({
+          tradeName: t.value,
+          budget: t.budget,
+        })),
+      };
+      this.dialogRef.close(result);
     }
   }
 }

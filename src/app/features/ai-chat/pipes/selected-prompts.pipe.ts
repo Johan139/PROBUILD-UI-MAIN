@@ -3,13 +3,16 @@ import { Prompt } from '../models/ai-chat.models';
 
 @Pipe({
   name: 'selectedPrompts',
-  standalone: true
+  standalone: true,
 })
 export class SelectedPromptsPipe implements PipeTransform {
-  transform(prompts: Prompt[] | null, selectedPromptIds: number[] | null): Prompt[] {
+  transform(
+    prompts: Prompt[] | null,
+    selectedPromptIds: number[] | null,
+  ): Prompt[] {
     if (!prompts || !selectedPromptIds) {
       return [];
     }
-    return prompts.filter(p => selectedPromptIds.includes(p.id));
+    return prompts.filter((p) => selectedPromptIds.includes(p.id));
   }
 }

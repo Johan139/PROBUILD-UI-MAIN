@@ -1,5 +1,9 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import {
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+} from '@angular/material/dialog';
 import { FileUploadService } from '../../../services/file-upload.service';
 import { BiddingService } from '../../../services/bidding.service';
 import { CommonModule } from '@angular/common';
@@ -26,10 +30,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatButtonModule,
     MatProgressBarModule,
     PdfViewerComponent,
-    MatDialogModule
-  ]
+    MatDialogModule,
+  ],
 })
-
 export class SubmitBidDialogComponent implements OnInit {
   @ViewChild('stepper')
   stepper!: MatStepper;
@@ -46,11 +49,10 @@ export class SubmitBidDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: { jobId: number },
     private fileUploadService: FileUploadService,
     private biddingService: BiddingService,
-    private snackBar: MatSnackBar
-  ) { }
+    private snackBar: MatSnackBar,
+  ) {}
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   selectOption(selection: 'create' | 'upload'): void {
     this.selection = selection;
@@ -72,25 +74,27 @@ export class SubmitBidDialogComponent implements OnInit {
     }
 
     this.isUploading = true;
-    this.fileUploadService.uploadQuotePdf(this.selectedFile, this.data.jobId).subscribe({
-      next: (event) => {
-        if (typeof event === 'number') {
-          this.uploadProgress = event;
-        } else if (event.url) {
-          this.uploadedFileUrl = event.url;
+    this.fileUploadService
+      .uploadQuotePdf(this.selectedFile, this.data.jobId)
+      .subscribe({
+        next: (event) => {
+          if (typeof event === 'number') {
+            this.uploadProgress = event;
+          } else if (event.url) {
+            this.uploadedFileUrl = event.url;
+            this.isUploading = false;
+            this.uploadComplete = true;
+            this.stepper.next();
+            this.snackBar.open('File uploaded successfully', 'Close', {
+              duration: 3000,
+            });
+          }
+        },
+        error: () => {
           this.isUploading = false;
-          this.uploadComplete = true;
-          this.stepper.next();
-          this.snackBar.open('File uploaded successfully', 'Close', {
-            duration: 3000
-          });
-        }
-      },
-      error: () => {
-        this.isUploading = false;
-        // Handle error
-      }
-    });
+          // Handle error
+        },
+      });
   }
 
   submitBid(): void {
@@ -98,17 +102,19 @@ export class SubmitBidDialogComponent implements OnInit {
       return;
     }
 
-    this.biddingService.submitPdfBid(this.data.jobId, this.uploadedFileUrl).subscribe({
-      next: () => {
-        this.dialogRef.close(true);
-        this.snackBar.open('Bid submitted successfully', 'Close', {
-          duration: 3000
-        });
-      },
-      error: () => {
-        // Handle error
-      }
-    });
+    this.biddingService
+      .submitPdfBid(this.data.jobId, this.uploadedFileUrl)
+      .subscribe({
+        next: () => {
+          this.dialogRef.close(true);
+          this.snackBar.open('Bid submitted successfully', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: () => {
+          // Handle error
+        },
+      });
   }
 
   onNoClick(): void {

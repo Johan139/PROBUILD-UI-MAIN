@@ -15,47 +15,58 @@ export class DocumentService {
   private documents: any[] = [];
   private documentsError: string | null = null;
   private isDocumentsLoading: boolean = false;
+  private documentCache = new Map<number, Blob>();
+  private documentListCache = new Map<string, any[]>();
 
   constructor(
     private httpClient: HttpClient,
     private jobsService: JobsService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
   ) {}
 
   fetchDocuments(jobId: string): Observable<any[]> {
     this.isDocumentsLoading = true;
     this.documentsError = null;
+
+    if (this.documentListCache.has(jobId)) {
+      this.documents = this.documentListCache.get(jobId)!;
+      this.isDocumentsLoading = false;
+      return of(this.documents);
+    }
+
     return this.jobsService.getJobDocuments(jobId).pipe(
-      tap((docs: any[]) => {
-        this.documents = docs.map((doc) => ({
+      map((docs: any[]) => {
+        const mappedDocs = docs.map((doc) => ({
           id: doc.id,
-          name: doc.fileName,
-          type: this.getFileType(doc.fileName),
+          name: doc.fileName || doc.name,
+          type: this.getFileType(doc.fileName || doc.name || ''),
           size: doc.size,
         }));
+        this.documents = mappedDocs;
+        this.documentListCache.set(jobId, mappedDocs);
         this.isDocumentsLoading = false;
+        return mappedDocs;
       }),
       catchError((err) => {
         console.error('Error fetching documents:', err);
         this.documentsError = 'Failed to load documents.';
         this.isDocumentsLoading = false;
         return of([]);
-      })
+      }),
     );
   }
 
   viewDocument(document: any): void {
     this.jobsService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
-
-         const blob = new Blob([response], { type: 'application/pdf' }); // Force PDF MIME type
+        const blob = new Blob([response], { type: 'application/pdf' }); // Force PDF MIME type
         const url = window.URL.createObjectURL(blob);
         const newTab = window.open(url, '_blank');
         if (!newTab) {
           this.snackBar.open(
             'Failed to open document. Please allow pop-ups for this site.',
             'Close',
-            { duration: 3000 }
+            { duration: 3000 },
           );
         }
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
@@ -84,11 +95,7 @@ export class DocumentService {
     }
   }
 
-  uploadFile(
-    file: File,
-    jobId: string,
-    sessionId: string
-  ): Observable<any> {
+  uploadFile(file: File, jobId: string, sessionId: string): Observable<any> {
     const formData = new FormData();
     formData.append('Blueprint', file);
     formData.append('Title', 'test');
@@ -111,5 +118,13 @@ export class DocumentService {
     return this.httpClient.post(`${BASE_URL}/Jobs/DeleteTemporaryFiles`, {
       blobUrls,
     });
+  }
+
+  getCachedDocument(documentId: number): Blob | undefined {
+    return this.documentCache.get(documentId);
+  }
+
+  cacheDocument(documentId: number, blob: Blob): void {
+    this.documentCache.set(documentId, blob);
   }
 }

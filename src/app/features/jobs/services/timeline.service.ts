@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Store } from '../../../store/store.service';
 import { SubtasksState } from '../../../state/subtasks.state';
-import { TimelineTask, TimelineGroup } from '../../../components/timeline/timeline.component';
+import {
+  TimelineTask,
+  TimelineGroup,
+} from '../../../components/timeline/timeline.component';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
@@ -18,101 +21,109 @@ export class TimelineService {
   constructor(
     private store: Store<SubtasksState>,
     private dialog: MatDialog,
-    private http: HttpClient
+    private http: HttpClient,
   ) {
-    this.timelineGroups$ = this.store.select(state => state.subtaskGroups).pipe(
-      map(subtaskGroups => {
-        return (subtaskGroups || []).map(
-          (group: { title: string; subtasks: any[] }) => {
-            const tasks = group.subtasks.filter((task: any) => !task.deleted);
+    this.timelineGroups$ = this.store
+      .select((state) => state.subtaskGroups)
+      .pipe(
+        map((subtaskGroups) => {
+          return (subtaskGroups || []).map(
+            (group: { title: string; subtasks: any[] }) => {
+              const tasks = group.subtasks.filter((task: any) => !task.deleted);
 
-            if (tasks.length === 0) {
+              if (tasks.length === 0) {
+                return {
+                  title: group.title,
+                  subtasks: [],
+                  startDate: new Date(),
+                  endDate: new Date(),
+                  progress: 0,
+                  scheduleStatus: 'on-track' as const,
+                };
+              }
+
+              const startDates = tasks
+                .map((task: any) => new Date(task.startDate || task.start))
+                .filter((date: Date) => !isNaN(date.getTime()));
+
+              const endDates = tasks
+                .map((task: any) => new Date(task.endDate || task.end))
+                .filter((date: Date) => !isNaN(date.getTime()));
+
+              const groupStartDate =
+                startDates.length > 0
+                  ? new Date(
+                      Math.min(...startDates.map((d: Date) => d.getTime())),
+                    )
+                  : new Date();
+
+              const groupEndDate =
+                endDates.length > 0
+                  ? new Date(
+                      Math.max(...endDates.map((d: Date) => d.getTime())),
+                    )
+                  : new Date();
+
+              const completedTasks = tasks.filter(
+                (task: any) => task.status === 'completed' || task.accepted,
+              ).length;
+              const progress =
+                tasks.length > 0
+                  ? Math.round((completedTasks / tasks.length) * 100)
+                  : 0;
+
+              const today = new Date();
+              const isOverdue = tasks.some((task: any) => {
+                const taskEnd = new Date(task.endDate || task.end);
+                return (
+                  taskEnd < today &&
+                  task.status !== 'completed' &&
+                  !task.accepted
+                );
+              });
+
+              const scheduleStatus = isOverdue
+                ? 'behind'
+                : progress === 100
+                  ? 'ahead'
+                  : 'on-track';
+
               return {
                 title: group.title,
-                subtasks: [],
-                startDate: new Date(),
-                endDate: new Date(),
-                progress: 0,
-                scheduleStatus: 'on-track' as const,
+                subtasks: tasks.map((task: any) => ({
+                  id: task.id || Math.random().toString(),
+                  name: task.task,
+                  task: task.task,
+                  start: new Date(task.startDate || task.start),
+                  end: new Date(task.endDate || task.end),
+                  startDate: task.startDate,
+                  endDate: task.endDate,
+                  days: task.days,
+                  progress: task.accepted
+                    ? 100
+                    : task.status === 'completed'
+                      ? 100
+                      : 0,
+                  status: task.status || 'pending',
+                  isCritical: this.isTaskCritical(task),
+                  cost: task.cost,
+                  deleted: task.deleted,
+                  accepted: task.accepted,
+                })),
+                startDate: groupStartDate,
+                endDate: groupEndDate,
+                progress,
+                scheduleStatus,
               };
-            }
-
-            const startDates = tasks
-              .map((task: any) => new Date(task.startDate || task.start))
-              .filter((date: Date) => !isNaN(date.getTime()));
-
-            const endDates = tasks
-              .map((task: any) => new Date(task.endDate || task.end))
-              .filter((date: Date) => !isNaN(date.getTime()));
-
-            const groupStartDate =
-              startDates.length > 0
-                ? new Date(Math.min(...startDates.map((d: Date) => d.getTime())))
-                : new Date();
-
-            const groupEndDate =
-              endDates.length > 0
-                ? new Date(Math.max(...endDates.map((d: Date) => d.getTime())))
-                : new Date();
-
-            const completedTasks = tasks.filter(
-              (task: any) => task.status === 'completed' || task.accepted
-            ).length;
-            const progress =
-              tasks.length > 0
-                ? Math.round((completedTasks / tasks.length) * 100)
-                : 0;
-
-            const today = new Date();
-            const isOverdue = tasks.some((task: any) => {
-              const taskEnd = new Date(task.endDate || task.end);
-              return (
-                taskEnd < today && task.status !== 'completed' && !task.accepted
-              );
-            });
-
-            const scheduleStatus = isOverdue
-              ? 'behind'
-              : progress === 100
-              ? 'ahead'
-              : 'on-track';
-
-            return {
-              title: group.title,
-              subtasks: tasks.map((task: any) => ({
-                id: task.id || Math.random().toString(),
-                name: task.task,
-                task: task.task,
-                start: new Date(task.startDate || task.start),
-                end: new Date(task.endDate || task.end),
-                startDate: task.startDate,
-                endDate: task.endDate,
-                days: task.days,
-                progress: task.accepted
-                  ? 100
-                  : task.status === 'completed'
-                  ? 100
-                  : 0,
-                status: task.status || 'pending',
-                isCritical: this.isTaskCritical(task),
-                cost: task.cost,
-                deleted: task.deleted,
-                accepted: task.accepted,
-              })),
-              startDate: groupStartDate,
-              endDate: groupEndDate,
-              progress,
-              scheduleStatus,
-            };
-          }
-        );
-      })
-    );
+            },
+          );
+        }),
+      );
   }
 
   get timelineTaskData(): TimelineTask[] {
     const taskData = this.extractMainTasksFromGroups(
-      this.store.getState().subtaskGroups
+      this.store.getState().subtaskGroups,
     );
     if (!taskData) return [];
 
@@ -160,7 +171,7 @@ export class TimelineService {
     const subtaskGroups = this.store.getState().subtaskGroups || [];
     for (const group of subtaskGroups) {
       const taskIndex = group.subtasks.findIndex(
-        (t: any) => t.id === event.taskId
+        (t: any) => t.id === event.taskId,
       );
       if (taskIndex !== -1) {
         group.subtasks[taskIndex].startDate = event.newStartDate
@@ -177,17 +188,21 @@ export class TimelineService {
     }
   }
 
-  handleGroupMove(event: {
-    groupId: string;
-    newStartDate: Date;
-    newEndDate: Date;
-  }, jobId: number, senderId: string) {
+  handleGroupMove(
+    event: {
+      groupId: string;
+      newStartDate: Date;
+      newEndDate: Date;
+    },
+    jobId: number,
+    senderId: string,
+  ) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirm Move',
         message: `Please confirm you want to move this task to ${format(
           event.newStartDate,
-          'MMM d, yyyy'
+          'MMM d, yyyy',
         )}. This will notify all users assigned to this task.`,
       },
     });
@@ -196,7 +211,7 @@ export class TimelineService {
       if (result) {
         const subtaskGroups = this.store.getState().subtaskGroups || [];
         const groupIndex = subtaskGroups.findIndex(
-          (g: any) => g.title === event.groupId
+          (g: any) => g.title === event.groupId,
         );
 
         if (groupIndex !== -1) {
@@ -204,14 +219,14 @@ export class TimelineService {
           const oldStartDate = new Date(
             Math.min(
               ...group.subtasks.map((t: any) =>
-                new Date(t.startDate || t.start).getTime()
-              )
-            )
+                new Date(t.startDate || t.start).getTime(),
+              ),
+            ),
           );
 
           const daysDelta = differenceInCalendarDays(
             event.newStartDate,
-            oldStartDate
+            oldStartDate,
           );
 
           group.subtasks.forEach((task: any) => {
@@ -234,20 +249,27 @@ export class TimelineService {
     });
   }
 
-  notifyTimelineUpdate(jobId: number, subtaskId: number, senderId: string): Observable<any> {
-    return this.http.post(`${environment.BACKEND_URL}/Jobs/NotifyTimelineUpdate`, { jobId, subtaskId, senderId });
+  notifyTimelineUpdate(
+    jobId: number,
+    subtaskId: number,
+    senderId: string,
+  ): Observable<any> {
+    return this.http.post(
+      `${environment.BACKEND_URL}/Jobs/NotifyTimelineUpdate`,
+      { jobId, subtaskId, senderId },
+    );
   }
 
   handleGroupClick(group: TimelineGroup) {
-    console.log('Group clicked:', group);
+    // console.log('Group clicked:', group);
   }
 
   handleEditGroup(group: TimelineGroup) {
-    console.log('Edit group:', group);
+    // console.log('Edit group:', group);
   }
 
   private extractMainTasksFromGroups(
-    groups: { title: string; subtasks: any[] }[]
+    groups: { title: string; subtasks: any[] }[],
   ): any[] {
     return groups
       .map((group, index) => {
@@ -256,7 +278,7 @@ export class TimelineService {
         const start = new Date(subtasks[0].startDate);
         const end = new Date(subtasks[subtasks.length - 1].endDate);
         const completed = subtasks.filter(
-          (st) => st.status?.toLowerCase() === 'completed'
+          (st) => st.status?.toLowerCase() === 'completed',
         ).length;
         const percentDone = Math.round((completed / subtasks.length) * 100);
         return {

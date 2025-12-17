@@ -1,0 +1,62 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Blueprints for {{ data.projectName }}</h2>
+    <button mat-icon-button (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <mat-dialog-content class="dialog-content">
+    <div class="nav-tabs">
+      <button (click)="setActiveTab('blueprints')" [class.active]="activeTab === 'blueprints'">
+        Blueprints
+      </button>
+      <button (click)="setActiveTab('budget')" [class.active]="activeTab === 'budget'">
+        Budget Info
+      </button>
+    </div>
+
+    <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
+      <div *ngIf="isLoadingBlueprints" class="loading-overlay">
+        <app-loader></app-loader>
+        <p>Loading blueprints...</p>
+      </div>
+
+      <div *ngIf="!isLoadingBlueprints && blueprintFiles.length === 0" class="no-docs">
+        <p>No blueprints found for this project.</p>
+      </div>
+
+      <app-project-blueprint-viewer
+        *ngIf="blueprintFiles.length > 0"
+        [mode]="'view'"
+        [uploadedFiles]="blueprintFiles"
+        [selectedFile]="selectedBlueprint"
+        [pdfSrc]="blueprintPdfSrc"
+        (fileSelected)="handleBlueprintSelected($event)"
+      >
+      </app-project-blueprint-viewer>
+    </div>
+
+    <div *ngIf="activeTab === 'budget'" class="tab-content fade-in budget-tab">
+      <div *ngIf="!tradeBudgets || tradeBudgets.length === 0" class="no-docs">
+        <p>No budget information available for this project</p>
+      </div>
+      <table *ngIf="tradeBudgets.length > 0" class="themed-table">
+        <thead>
+          <tr>
+            <th>Trade</th>
+            <th>Allocated Budget</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of tradeBudgets">
+            <td>{{ formatTradeName(item.tradeName) }}</td>
+            <td>{{ item.budget | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Close</button>
+  </mat-dialog-actions>
+</div>

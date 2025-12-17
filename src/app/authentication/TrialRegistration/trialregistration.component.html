@@ -56,7 +56,7 @@
                       appearance="fill"
                       class="country-code-field"
                     >
-                      <mat-label>Code</mat-label>
+                      <mat-label>Prefix</mat-label>
                       <mat-select
                         [(value)]="selectedCountryCode"
                         (selectionChange)="onCountryCodeChange($event.value)"
@@ -93,6 +93,7 @@
                         (input)="onPhoneInput($event)"
                         (paste)="onPhonePaste($event)"
                       />
+
                       <mat-error>
                         <span *ngIf="getFieldError('phoneNumber')">{{
                           getFieldError("phoneNumber")

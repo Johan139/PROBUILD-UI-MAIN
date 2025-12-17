@@ -1,4 +1,5 @@
-<div class="connections-container">
+<app-loader *ngIf="isLoading"></app-loader>
+<div class="connections-container" *ngIf="!isLoading">
   <h1>User Directory</h1>
 
   <mat-card>
@@ -12,7 +13,7 @@
   </mat-card>
 
   <mat-tab-group>
-    <mat-tab label="Search Results">
+    <mat-tab label="All">
       <ng-template matTabContent>
         <div class="mat-elevation-z8">
           <table mat-table [dataSource]="dataSource">
@@ -26,7 +27,7 @@
             <!-- User Type Column -->
             <ng-container matColumnDef="type">
               <th mat-header-cell *matHeaderCellDef> Type </th>
-              <td mat-cell *matCellDef="let user"> {{user.userType}} </td>
+              <td mat-cell *matCellDef="let user"> {{user.userType | roleDisplay}} </td>
             </ng-container>
 
             <!-- Company Name Column -->
@@ -50,13 +51,13 @@
             <!-- Construction Type Column -->
             <ng-container matColumnDef="constructionType">
               <th mat-header-cell *matHeaderCellDef> Construction Type </th>
-              <td mat-cell *matCellDef="let user"> {{user.constructionType}} </td>
+              <td mat-cell *matCellDef="let user"> {{user.constructionType | titlecase}} </td>
             </ng-container>
 
             <!-- Trade Column -->
             <ng-container matColumnDef="trade">
               <th mat-header-cell *matHeaderCellDef> Trade </th>
-              <td mat-cell *matCellDef="let user"> {{user.trade}} </td>
+              <td mat-cell *matCellDef="let user"> {{user.trade | titlecase}} </td>
             </ng-container>
 
             <!-- Supplier Type Column -->
@@ -88,38 +89,35 @@
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let user">
                 <div class="action-container" *ngIf="user.id !== currentUserId">
-                  <ng-container *ngIf="isRequestReceived(user.id); else notReceived">
-                    <button mat-flat-button color="accent" class="action-button"
-                            (mouseover)="hoveredUserId = user.id"
-                            (mouseout)="hoveredUserId = null"
-                            (click)="acceptConnectionRequest(user.id)">
-                      <mat-icon>{{ hoveredUserId === user.id ? 'check' : 'person_add' }}</mat-icon>
-                      {{ hoveredUserId === user.id ? 'Accept Request' : 'Request Received' }}
+                  <ng-container [ngSwitch]="getConnectionStatus(user.id)">
+                    <button *ngSwitchCase="'Connect'" mat-stroked-button color="primary" class="action-button" (click)="sendConnectionRequest(user.id)" matTooltip="Send a connection request to this user to view their full profile and contact details" [matTooltipShowDelay]="500">
+                      <mat-icon>person_add</mat-icon>
+                      Connect
                     </button>
-                  </ng-container>
-                  <ng-template #notReceived>
-                    <ng-container *ngIf="!isRequestSent(user.id); else requestSentButton">
-                      <button *ngIf="user.isInSystem" mat-stroked-button color="primary" class="action-button" (click)="sendConnectionRequest(user.id)">
-                        <mat-icon>person_add</mat-icon>
-                        Connect
-                      </button>
-                    </ng-container>
-                  </ng-template>
-                  <ng-template #requestSentButton>
-                    <button mat-flat-button color="primary" class="action-button"
+                    <button *ngSwitchCase="'Request Sent'" mat-flat-button color="primary" class="action-button"
                             (mouseover)="hoveredUserId = user.id"
                             (mouseout)="hoveredUserId = null"
                             (click)="cancelConnectionRequest(user.id)"
-                            [class.cancel-button]="hoveredUserId === user.id">
+                            [class.cancel-button]="hoveredUserId === user.id"
+                            matTooltip="Click to cancel the pending connection request"
+                            [matTooltipShowDelay]="500">
                       <mat-icon>{{ hoveredUserId === user.id ? 'close' : 'check' }}</mat-icon>
                       {{ hoveredUserId === user.id ? 'Cancel Request' : 'Request Sent' }}
                     </button>
-                  </ng-template>
+                    <button *ngSwitchCase="'Request Received'" mat-flat-button color="accent" class="action-button" (click)="acceptConnectionRequest(user.id)" matTooltip="Accept this user's request to connect" [matTooltipShowDelay]="500">
+                      <mat-icon>person_add</mat-icon>
+                      Accept Request
+                    </button>
+                    <button *ngSwitchCase="'ACCEPTED'" mat-flat-button color="primary" class="action-button" disabled matTooltip="You are already connected with this user" [matTooltipShowDelay]="500">
+                      <mat-icon>check_circle</mat-icon>
+                      Connected
+                    </button>
+                  </ng-container>
                   <ng-container *ngIf="user.isInSystem; else greyLogo">
-                    <img src="assets/roundedlogo.png" alt="Probuild Logo" class="probuild-logo">
+                    <img src="assets/roundedlogo.png" alt="Probuild Logo" class="probuild-logo" matTooltip="This user is a registered ProBuild member" [matTooltipShowDelay]="500">
                   </ng-container>
                   <ng-template #greyLogo>
-                    <img src="assets/roundedlogogrey.png" alt="Probuild Logo Grayscale" class="probuild-logo">
+                    <img src="assets/roundedlogogrey.png" alt="Probuild Logo Grayscale" class="probuild-logo" matTooltip="This user has been invited but hasn't joined yet" [matTooltipShowDelay]="500">
                   </ng-template>
                 </div>
               </td>
@@ -130,7 +128,7 @@
           </table>
           <div *ngIf="showInviteMessage" class="invite-message">
             <p>We couldn't find the person you're looking for, do you want to invite them to join ProBuild?</p>
-            <button mat-icon-button (click)="openInvitationDialog()">
+            <button mat-icon-button (click)="openInvitationDialog()" matTooltip="Invite a new user to join ProBuild" [matTooltipShowDelay]="500">
               <mat-icon>check_circle</mat-icon>
             </button>
           </div>
@@ -149,7 +147,21 @@
             </ng-container>
             <ng-container matColumnDef="email">
               <th mat-header-cell *matHeaderCellDef> Email </th>
-              <td mat-cell *matCellDef="let conn"> {{ conn.user?.email || conn.otherUserEmail }} </td>
+              <td mat-cell *matCellDef="let conn">
+                <ng-container *ngIf="conn.status === 'ACCEPTED'; else masked">
+                  {{ conn.user?.email || conn.otherUserEmail }}
+                </ng-container>
+                <ng-template #masked>***</ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="phoneNumber">
+              <th mat-header-cell *matHeaderCellDef> Phone </th>
+              <td mat-cell *matCellDef="let conn">
+                <ng-container *ngIf="conn.status === 'ACCEPTED'; else masked">
+                  {{ conn.user?.phoneNumber }}
+                </ng-container>
+                <ng-template #masked>***</ng-template>
+              </td>
             </ng-container>
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef> Status </th>
@@ -171,12 +183,12 @@
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let conn">
                 <ng-container *ngIf="conn.status === 'PENDING'">
-                  <button *ngIf="conn.requesterId === currentUserId" mat-stroked-button color="warn" (click)="cancelConnectionRequest(conn.otherUserId)">Cancel</button>
-                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="primary" (click)="acceptConnectionRequest(conn.id)">Accept</button>
-                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="warn" (click)="declineConnectionRequest(conn.id)">Decline</button>
+                  <button *ngIf="conn.requesterId === currentUserId" mat-stroked-button color="warn" (click)="cancelConnectionRequest(conn.otherUserId)" matTooltip="Withdraw your connection request" [matTooltipShowDelay]="500">Cancel</button>
+                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="primary" (click)="acceptConnectionRequest(conn.id)" matTooltip="Accept connection request" [matTooltipShowDelay]="500">Accept</button>
+                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="warn" (click)="declineConnectionRequest(conn.id)" matTooltip="Decline connection request" [matTooltipShowDelay]="500">Decline</button>
                 </ng-container>
-                <button *ngIf="conn.status === 'ACCEPTED'" mat-stroked-button color="warn" (click)="removeConnection(conn.id)">Remove</button>
-                <img [src]="conn.isInSystem ? 'assets/roundedlogo.png' : 'assets/roundedlogogrey.png'" alt="Probuild Logo" class="probuild-logo">
+                <button *ngIf="conn.status === 'ACCEPTED'" mat-stroked-button color="warn" (click)="removeConnection(conn.id)" matTooltip="Remove this user from your connections" [matTooltipShowDelay]="500">Remove</button>
+                <img [src]="conn.isInSystem ? 'assets/roundedlogo.png' : 'assets/roundedlogogrey.png'" alt="Probuild Logo" class="probuild-logo" [matTooltip]="conn.isInSystem ? 'This user is a registered ProBuild member' : 'This user has been invited but hasn\'t joined yet'" [matTooltipShowDelay]="500">
               </td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="connectionsColumns"></tr>
@@ -188,4 +200,5 @@
 
   </mat-tab-group>
 </div>
+
 

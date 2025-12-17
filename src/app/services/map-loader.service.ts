@@ -4,7 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Loader } from '@googlemaps/js-api-loader';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MapLoaderService {
   private isApiLoaded = new BehaviorSubject<boolean>(false);
@@ -15,7 +15,7 @@ export class MapLoaderService {
     this.loader = new Loader({
       apiKey: environment.Google_API,
       version: 'weekly',
-      libraries: ['places']
+      libraries: ['places'],
     });
 
     this.loadGoogleMapsApi();
@@ -32,11 +32,14 @@ export class MapLoaderService {
       return;
     }
 
-    this.loader.importLibrary('maps').then(() => {
-      this.isApiLoaded.next(true);
-    }).catch(e => {
-      console.error('Error loading Google Maps API:', e);
-      this.isApiLoaded.next(false);
-    });
+    this.loader
+      .importLibrary('maps')
+      .then(() => {
+        this.isApiLoaded.next(true);
+      })
+      .catch((e) => {
+        console.error('Error loading Google Maps API:', e);
+        this.isApiLoaded.next(false);
+      });
   }
 }

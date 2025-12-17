@@ -1,4 +1,12 @@
-import { Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 import * as d3 from 'd3';
 
 @Component({
@@ -56,7 +64,10 @@ export class SortedBarChartComponent implements OnInit, OnChanges {
       .select(this.chartContainer.nativeElement)
       .append('svg')
       .attr('viewBox', `0 0 ${width} ${height}`)
-      .attr('style', `max-width: ${width}px; height: auto; font: 10px sans-serif; overflow: visible;`);
+      .attr(
+        'style',
+        `max-width: ${width}px; height: auto; font: 10px sans-serif; overflow: visible;`,
+      );
 
     // Create bars
     this.bar = this.svg
@@ -81,11 +92,7 @@ export class SortedBarChartComponent implements OnInit, OnChanges {
     this.gy = this.svg
       .append('g')
       .attr('transform', `translate(${margin.left},0)`)
-      .call(
-        d3
-          .axisLeft(this.y)
-          .tickFormat((y) => (Number(y) * 100).toFixed())
-      )
+      .call(d3.axisLeft(this.y).tickFormat((y) => (Number(y) * 100).toFixed()))
       .call((g) => g.select('.domain').remove());
   }
 
@@ -104,6 +111,10 @@ export class SortedBarChartComponent implements OnInit, OnChanges {
       .attr('x', (d: any) => this.x(d.activity));
 
     // Update X-axis
-    this.gx.transition(t).call(this.xAxis).selectAll('.tick').delay((d, i) => i * 20);
+    this.gx
+      .transition(t)
+      .call(this.xAxis)
+      .selectAll('.tick')
+      .delay((d, i) => i * 20);
   }
 }

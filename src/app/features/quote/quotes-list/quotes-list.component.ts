@@ -23,22 +23,31 @@ import { MatIconModule } from '@angular/material/icon';
   providers: [QuoteService],
 })
 export class QuotesListComponent implements OnInit {
-  displayedColumns: string[] = ['number', 'createdBy', 'createdDate', 'total', 'actions'];
+  displayedColumns: string[] = [
+    'number',
+    'createdBy',
+    'createdDate',
+    'total',
+    'actions',
+  ];
   dataSource = new MatTableDataSource<Quote>([]);
 
-  constructor(private quoteService: QuoteService, private router: Router) {}
+  constructor(
+    private quoteService: QuoteService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loadQuotes();
   }
 
   loadQuotes(): void {
-    console.log('Fetching quotes...');
+    // console.log('Fetching quotes...');
     this.quoteService.getAllQuotes().subscribe({
       next: (quotes) => {
-        console.log('Quotes received:', quotes);
+        // console.log('Quotes received:', quotes);
         this.dataSource.data = quotes || [];
-        console.log('DataSource after update:', this.dataSource.data);
+        // console.log('DataSource after update:', this.dataSource.data);
       },
       error: (err) => {
         console.error('Error loading quotes:', err);
@@ -47,9 +56,9 @@ export class QuotesListComponent implements OnInit {
   }
 
   openQuote(quoteId: string | null): void {
-    console.log('Attempting to open quote with ID:', quoteId);
+    // console.log('Attempting to open quote with ID:', quoteId);
     this.router.navigate(['/quote'], {
-      queryParams: { quoteId: quoteId }
+      queryParams: { quoteId: quoteId },
     });
   }
 }

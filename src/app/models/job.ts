@@ -11,6 +11,11 @@ export interface Address {
   googlePlaceId?: string;
 }
 
+export interface TradeBudget {
+  tradeName: string;
+  budget: number;
+}
+
 export interface Job {
   jobId: number;
   projectName: string;
@@ -31,6 +36,7 @@ export interface Job {
   biddingType: string;
   jobPreferences: string;
   trades: string[];
+  tradeBudgets?: TradeBudget[];
   distance?: number;
   potentialStartDate?: Date;
   potentialEndDate?: Date;
@@ -41,4 +47,5 @@ export interface Job {
   numberOfBids?: number;
   createdAt?: Date;
   biddingStartDate?: Date;
+  archivedAt?: Date;
 }

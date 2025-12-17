@@ -8,12 +8,12 @@
       <span>({{ job.clientRating.toFixed(1) }})</span>
     </ng-container>
     <ng-template #newClient>
-      <span class="new-tag" matTooltip="This user is new to the system and does not have a rating yet">New</span>
+      <span *ngIf="showNewTag" class="new-tag" matTooltip="This user is new to the system and does not have a rating yet">New</span>
     </ng-template>
   </div>
 </div>
 <div class="job-location">
-  <span>📍 {{ job.address || job.city + ', ' + job.state }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} mi away</span></span>
+  <span>📍 {{ job.address || ((job.city && job.state) ? (job.city + ', ' + job.state) : 'Address not found') }} <span class="job-distance" *ngIf="job.distance">- {{ job.distance.toFixed(2) }} mi away</span></span>
 </div>
 <div class="job-meta">
   <div class="job-dates">
@@ -40,6 +40,7 @@
     <button *ngIf="quote || (bid && bid.quoteId)" mat-raised-button color="primary" (click)="onViewQuoteClick($event)">View & Edit Quote</button>
     <button *ngIf="bid && bid.documentUrl" mat-raised-button color="primary" (click)="onViewPdfClick($event)">View PDF</button>
     <button *ngIf="quote?.status === 'Submitted' || bid?.status === 'Submitted'" mat-raised-button color="warn" (click)="onWithdrawBidClick($event)">Withdraw</button>
+    <button mat-raised-button color="primary" (click)="onViewMoreInfoClick($event)">More Information</button>
     <ng-content *ngIf="showBidButton" select="[slot='actions']"></ng-content>
   </div>
 </div>

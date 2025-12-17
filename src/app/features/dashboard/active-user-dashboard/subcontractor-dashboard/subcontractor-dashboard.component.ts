@@ -5,8 +5,6 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './subcontractor-dashboard.component.html',
-  styleUrl: './subcontractor-dashboard.component.scss'
+  styleUrl: './subcontractor-dashboard.component.scss',
 })
-export class SubcontractorDashboardComponent {
-
-}
+export class SubcontractorDashboardComponent {}

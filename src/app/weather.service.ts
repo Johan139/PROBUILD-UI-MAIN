@@ -10,14 +10,28 @@ interface GoogleForecastResponse {
     interval: { startTime: string; endTime: string };
     displayDate: { year: number; month: number; day: number };
     daytimeForecast: {
-      weatherCondition: { description: { text: string }; type: string; iconBaseUri: string };
+      weatherCondition: {
+        description: { text: string };
+        type: string;
+        iconBaseUri: string;
+      };
       temperature: { degrees: number; unit: string };
-      precipitation: { probability: { percent: number; type: string }; qpf: { quantity: number; unit: string } };
+      precipitation: {
+        probability: { percent: number; type: string };
+        qpf: { quantity: number; unit: string };
+      };
     };
     nighttimeForecast: {
-      weatherCondition: { description: { text: string }; type: string; iconBaseUri: string };
+      weatherCondition: {
+        description: { text: string };
+        type: string;
+        iconBaseUri: string;
+      };
       temperature: { degrees: number; unit: string };
-      precipitation: { probability: { percent: number; type: string }; qpf: { quantity: number; unit: string } };
+      precipitation: {
+        probability: { percent: number; type: string };
+        qpf: { quantity: number; unit: string };
+      };
     };
     maxTemperature: { degrees: number; unit: string };
     minTemperature: { degrees: number; unit: string };
@@ -51,22 +65,31 @@ export class WeatherService {
           throw new Error('No forecast data available');
         }
         return data.forecastDays.map((day) => ({
-          date: new Date(day.displayDate.year, day.displayDate.month - 1, day.displayDate.day).toLocaleDateString('en-US', {
+          date: new Date(
+            day.displayDate.year,
+            day.displayDate.month - 1,
+            day.displayDate.day,
+          ).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
           }),
-          iconUrl: day.daytimeForecast.weatherCondition.iconBaseUri || 'https://via.placeholder.com/50',
-          condition: this.capitalize(day.daytimeForecast.weatherCondition.description.text),
+          iconUrl:
+            day.daytimeForecast.weatherCondition.iconBaseUri ||
+            'https://via.placeholder.com/50',
+          condition: this.capitalize(
+            day.daytimeForecast.weatherCondition.description.text,
+          ),
           highTemp: Math.round(day.maxTemperature.degrees),
           lowTemp: Math.round(day.minTemperature.degrees),
-          precipitationProbability: day.daytimeForecast.precipitation.probability.percent,
+          precipitationProbability:
+            day.daytimeForecast.precipitation.probability.percent,
         }));
       }),
       catchError((err) => {
         console.error('Failed to fetch forecast:', err);
         return throwError(() => new Error('Unable to fetch weather forecast'));
-      })
+      }),
     );
   }
 
@@ -78,6 +101,8 @@ export class WeatherService {
   // Preserve existing getFutureWeather method for compatibility
   getFutureWeather(location: string, date: string): Observable<any> {
     // Replace with actual implementation if different
-    return this.httpClient.get<any>(`https://some-other-api?location=${location}&date=${date}`);
+    return this.httpClient.get<any>(
+      `https://some-other-api?location=${location}&date=${date}`,
+    );
   }
 }

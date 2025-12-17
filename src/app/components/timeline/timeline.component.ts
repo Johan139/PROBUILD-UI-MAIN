@@ -1,7 +1,29 @@
-import { Component, Input, Output, EventEmitter, OnInit, ViewChild, ElementRef, OnDestroy, TemplateRef, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  OnDestroy,
+  TemplateRef,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialog, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { format, addDays, differenceInCalendarDays, isValid, parse } from 'date-fns';
+import {
+  MatDialog,
+  MatDialogRef,
+  MatDialogModule,
+} from '@angular/material/dialog';
+import {
+  format,
+  addDays,
+  differenceInCalendarDays,
+  isValid,
+  parse,
+} from 'date-fns';
 
 export interface TimelineTask {
   id: string;
@@ -42,24 +64,31 @@ export interface TimelineGroup {
   standalone: true,
   imports: [CommonModule, MatDialogModule],
   templateUrl: './timeline.component.html',
-  styleUrls: ['./timeline.component.scss']
+  styleUrls: ['./timeline.component.scss'],
 })
 export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   @Input() taskGroups: TimelineGroup[] = [];
   @Input() isProjectOwner: boolean = false;
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
-  @Output() onGroupMove = new EventEmitter<{groupId: string, newStartDate: Date, newEndDate: Date}>();
+  @Output() onGroupMove = new EventEmitter<{
+    groupId: string;
+    newStartDate: Date;
+    newEndDate: Date;
+  }>();
   @Output() onEditGroup = new EventEmitter<TimelineGroup>();
 
-  @ViewChild('timelineRef', { static: false }) timelineRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('headerRef', { static: false }) headerRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('groupDetailModal', { static: true }) groupDetailModal!: TemplateRef<any>;
+  @ViewChild('timelineRef', { static: false })
+  timelineRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('headerRef', { static: false })
+  headerRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('groupDetailModal', { static: true })
+  groupDetailModal!: TemplateRef<any>;
 
   viewStartDate: Date = new Date();
   draggingGroup: string | null = null;
   dragStartDate: Date | null = null;
   isDragging: boolean = false;
-  dragStartPos: { x: number, y: number } | null = null;
+  dragStartPos: { x: number; y: number } | null = null;
   weeklyDates: { start: Date; days: Date[] }[] = [];
   timelineHeight: number = 400;
   selectedGroup: TimelineGroup | null = null;
@@ -90,77 +119,81 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-   ngOnChanges(changes: SimpleChanges) {
-     if (changes['taskGroups']) {
-       this.processTaskGroups();
-       this.initializeViewStartDate();
-       this.generateWeeklyDates();
-       this.calculateTimelineHeight();
-     }
-   }
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['taskGroups']) {
+      this.processTaskGroups();
+      this.initializeViewStartDate();
+      this.generateWeeklyDates();
+      this.calculateTimelineHeight();
+    }
+  }
 
-   private processTaskGroups(): void {
+  private processTaskGroups(): void {
     if (!this.taskGroups) {
       return;
     }
-    this.taskGroups.forEach(group => {
+    this.taskGroups.forEach((group) => {
       if (group.subtasks && group.subtasks.length > 0) {
         const completedCount = group.subtasks.filter(
-          s => s.status && s.status.toLowerCase() === 'completed'
+          (s) => s.status && s.status.toLowerCase() === 'completed',
         ).length;
-        group.progress = Math.round((completedCount / group.subtasks.length) * 100);
+        group.progress = Math.round(
+          (completedCount / group.subtasks.length) * 100,
+        );
       } else {
         group.progress = 0;
       }
     });
   }
 
-   private initializeViewStartDate() {
-     if (!this.taskGroups || this.taskGroups.length === 0) {
-       this.viewStartDate = new Date();
-       this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-       return;
-     }
+  private initializeViewStartDate() {
+    if (!this.taskGroups || this.taskGroups.length === 0) {
+      this.viewStartDate = new Date();
+      this.viewStartDate.setDate(
+        this.viewStartDate.getDate() - this.viewStartDate.getDay(),
+      );
+      return;
+    }
 
-     let allTimestamps: number[] = this.taskGroups
-       .flatMap(g => g.subtasks)
-       .map(t => {
-         if (t.start) {
-           return t.start.getTime();
-         }
-         if (t.startDate) {
-           const d = new Date(t.startDate);
-           return isNaN(d.getTime()) ? undefined : d.getTime();
-         }
-         return undefined;
-       })
-       .filter((t): t is number => t !== undefined);
+    let allTimestamps: number[] = this.taskGroups
+      .flatMap((g) => g.subtasks)
+      .map((t) => {
+        if (t.start) {
+          return t.start.getTime();
+        }
+        if (t.startDate) {
+          const d = new Date(t.startDate);
+          return isNaN(d.getTime()) ? undefined : d.getTime();
+        }
+        return undefined;
+      })
+      .filter((t): t is number => t !== undefined);
 
-     if (allTimestamps.length === 0) {
-       // Fallback to group start dates
-       allTimestamps = this.taskGroups
-         .map(g => {
-           return g.startDate?.getTime();
-         })
-         .filter((t): t is number => t !== undefined && !isNaN(t));
-     }
+    if (allTimestamps.length === 0) {
+      // Fallback to group start dates
+      allTimestamps = this.taskGroups
+        .map((g) => {
+          return g.startDate?.getTime();
+        })
+        .filter((t): t is number => t !== undefined && !isNaN(t));
+    }
 
-     if (allTimestamps.length === 0) {
-       this.viewStartDate = new Date();
-       this.viewStartDate.setDate(this.viewStartDate.getDate() - this.viewStartDate.getDay());
-       return;
-     }
+    if (allTimestamps.length === 0) {
+      this.viewStartDate = new Date();
+      this.viewStartDate.setDate(
+        this.viewStartDate.getDate() - this.viewStartDate.getDay(),
+      );
+      return;
+    }
 
-     const earliestTimestamp = Math.min(...allTimestamps);
-     const earliestDate = new Date(earliestTimestamp);
+    const earliestTimestamp = Math.min(...allTimestamps);
+    const earliestDate = new Date(earliestTimestamp);
 
-     // Set view start date to beginning of the week of the earliest task
-     const newStartDate = new Date(earliestDate);
-     newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
-     this.viewStartDate = newStartDate;
-   }
-
-
+    // Set view start date to beginning of the week of the earliest task
+    const newStartDate = new Date(earliestDate);
+    newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
+    this.viewStartDate = newStartDate;
+  }
 
   private calculateTimelineHeight() {
     this.timelineHeight = Math.max(200, this.taskGroups.length * 60 + 40);
@@ -188,7 +221,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
     for (let week = 0; week < this.weeksToShow; week++) {
       const weekStart = new Date(this.viewStartDate);
-      weekStart.setDate(weekStart.getDate() + (week * 7));
+      weekStart.setDate(weekStart.getDate() + week * 7);
 
       const days: Date[] = [];
       for (let day = 0; day < 7; day++) {
@@ -199,7 +232,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
       this.weeklyDates.push({
         start: weekStart,
-        days: days
+        days: days,
       });
     }
   }
@@ -225,11 +258,14 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
   public onGridScroll(): void {
     if (this.headerRef?.nativeElement && this.timelineRef?.nativeElement) {
-      this.headerRef.nativeElement.scrollLeft = this.timelineRef.nativeElement.scrollLeft;
+      this.headerRef.nativeElement.scrollLeft =
+        this.timelineRef.nativeElement.scrollLeft;
     }
   }
 
-  public getScheduleStatus(group: TimelineGroup): 'on-track' | 'behind' | 'ahead' {
+  public getScheduleStatus(
+    group: TimelineGroup,
+  ): 'on-track' | 'behind' | 'ahead' {
     if (!group.startDate || !group.endDate) {
       return 'on-track';
     }
@@ -257,14 +293,20 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
       return 'on-track';
     }
 
-    const totalDuration = differenceInCalendarDays(groupEndDate, groupStartDate);
+    const totalDuration = differenceInCalendarDays(
+      groupEndDate,
+      groupStartDate,
+    );
     const elapsedDuration = differenceInCalendarDays(today, groupStartDate);
 
     if (totalDuration <= 0) {
       return today > groupEndDate ? 'behind' : 'on-track';
     }
 
-    const expectedProgress = Math.min(100, (elapsedDuration / totalDuration) * 100);
+    const expectedProgress = Math.min(
+      100,
+      (elapsedDuration / totalDuration) * 100,
+    );
 
     if (progress < expectedProgress) {
       return 'behind';
@@ -276,13 +318,13 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   openGroupModal(group: TimelineGroup) {
     this.selectedGroup = {
       ...group,
-      scheduleStatus: this.getScheduleStatus(group)
+      scheduleStatus: this.getScheduleStatus(group),
     };
     this.modalRef = this.dialog.open(this.groupDetailModal, {
       width: '600px',
       maxHeight: '80vh',
       disableClose: false,
-      data: { group: this.selectedGroup }
+      data: { group: this.selectedGroup },
     });
   }
 
@@ -339,10 +381,15 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   handleDragEnd(e: MouseEvent) {
-    const group = this.taskGroups.find(g => g.title === this.draggingGroup);
+    const group = this.taskGroups.find((g) => g.title === this.draggingGroup);
 
     if (this.isDragging) {
-      if (!this.draggingGroup || !this.dragStartDate || !this.timelineRef?.nativeElement || !this.dragStartPos) {
+      if (
+        !this.draggingGroup ||
+        !this.dragStartDate ||
+        !this.timelineRef?.nativeElement ||
+        !this.dragStartPos
+      ) {
         this.resetDrag();
         return;
       }
@@ -355,7 +402,10 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
       const daysDelta = Math.round(dragDelta / dayWidth);
 
       if (group && group.startDate && group.endDate && daysDelta !== 0) {
-        const groupDuration = differenceInCalendarDays(group.endDate, group.startDate);
+        const groupDuration = differenceInCalendarDays(
+          group.endDate,
+          group.startDate,
+        );
 
         const newStartDate = addDays(this.dragStartDate, daysDelta);
         const newEndDate = addDays(newStartDate, groupDuration);
@@ -363,7 +413,7 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
         this.onGroupMove.emit({
           groupId: group.title,
           newStartDate,
-          newEndDate
+          newEndDate,
         });
       }
     } else if (group) {
@@ -377,7 +427,9 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   private createGhostElement() {
     if (!this.draggingGroup || !this.timelineRef) return;
 
-    const originalEl = this.timelineRef.nativeElement.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
+    const originalEl = this.timelineRef.nativeElement.querySelector(
+      `[data-group="${this.draggingGroup}"]`,
+    ) as HTMLElement;
     if (!originalEl) return;
 
     this.ghostElement = originalEl.cloneNode(true) as HTMLElement;
@@ -407,7 +459,9 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     if (this.draggingGroup) {
-      const originalEl = document.querySelector(`[data-group="${this.draggingGroup}"]`) as HTMLElement;
+      const originalEl = document.querySelector(
+        `[data-group="${this.draggingGroup}"]`,
+      ) as HTMLElement;
       if (originalEl) {
         originalEl.classList.remove('dragging-source');
         originalEl.style.transform = '';
@@ -424,122 +478,139 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     if (!group.startDate || !group.endDate) return {};
 
     const totalDays = this.weeksToShow * 7;
-    const startDiff = differenceInCalendarDays(group.startDate, this.viewStartDate);
-    const duration = differenceInCalendarDays(group.endDate, group.startDate) + 1;
+    const startDiff = differenceInCalendarDays(
+      group.startDate,
+      this.viewStartDate,
+    );
+    const duration =
+      differenceInCalendarDays(group.endDate, group.startDate) + 1;
 
     const left = `${(startDiff / totalDays) * 100}%`;
     const width = `${Math.min((duration / totalDays) * 100, 95)}%`;
-   const top = `${index * 60 + 10}px`;
+    const top = `${index * 60 + 10}px`;
 
-   return {
-     left,
-     width,
-     top
-   };
- }
-
- getGroupTooltip(group: TimelineGroup): string {
-   const duration = group.startDate && group.endDate ?
-     differenceInCalendarDays(group.endDate, group.startDate) + 1 : 0;
-   return `${group.title}\n${group.subtasks.length} subtasks\n${duration} days\nProgress: ${group.progress || 0}%`;
- }
-
- isGroupCritical(group: TimelineGroup): boolean {
-   return group.subtasks.some(task => task.isCritical);
- }
-
- getTodayPosition(): string {
-   const totalDays = this.weeksToShow * 7;
-   const daysSinceStart = differenceInCalendarDays(new Date(), this.viewStartDate);
-   const position = (daysSinceStart / totalDays) * 100;
-   return `${Math.max(0, Math.min(position, 100))}%`;
- }
-
- getEndDate(): Date {
-   const endDate = new Date(this.viewStartDate);
-   endDate.setDate(endDate.getDate() + (this.weeksToShow * 7) - 1);
-   return endDate;
- }
-
- isCurrentWeek(weekStart: Date): boolean {
-   const today = new Date();
-   const weekEnd = new Date(weekStart);
-   weekEnd.setDate(weekEnd.getDate() + 6);
-   return today >= weekStart && today <= weekEnd;
- }
-
- isWeekend(date: Date): boolean {
-   return date.getDay() === 0 || date.getDay() === 6;
- }
-
- isToday(date: Date): boolean {
-   const today = new Date();
-   return date.toDateString() === today.toDateString();
- }
-
-formatDate(date: Date | string | null | undefined, formatStr: string): string {
-  if (!date) return '';
-
-  const parsedDate = this.parseMultipleFormats(date);
-  return parsedDate ? format(parsedDate, formatStr) : '';
-}
-
-private parseMultipleFormats(dateInput: Date | string | null | undefined): Date | null {
-  if (!dateInput) return null;
-
-  if (dateInput instanceof Date) {
-    return isValid(dateInput) ? dateInput : null;
+    return {
+      left,
+      width,
+      top,
+    };
   }
 
-  if (typeof dateInput !== 'string') return null;
+  getGroupTooltip(group: TimelineGroup): string {
+    const duration =
+      group.startDate && group.endDate
+        ? differenceInCalendarDays(group.endDate, group.startDate) + 1
+        : 0;
+    return `${group.title}\n${group.subtasks.length} subtasks\n${duration} days\nProgress: ${group.progress || 0}%`;
+  }
 
-  const dateStr = dateInput.trim();
-  if (!dateStr) return null;
+  isGroupCritical(group: TimelineGroup): boolean {
+    return group.subtasks.some((task) => task.isCritical);
+  }
 
-  // Define the formats to try in order of preference
-  const formats = [
-    'dd/MM/yyyy',    // 20/12/2025
-    'dd-MM-yyyy',    // 20-12-2025
-    'MM/dd/yyyy',    // 12/20/2025
-    'MM-dd-yyyy',    // 12-20-2025
-    'yyyy-MM-dd',    // 2025-12-20
-    'yyyy/MM/dd',    // 2025/12/20
-    'dd/MM/yy',      // 20/12/25
-    'dd-MM-yy',      // 20-12-25
-    'MM/dd/yy',      // 12/20/25
-    'MM-dd-yy'       // 12-20-25
-  ];
+  getTodayPosition(): string {
+    const totalDays = this.weeksToShow * 7;
+    const daysSinceStart = differenceInCalendarDays(
+      new Date(),
+      this.viewStartDate,
+    );
+    const position = (daysSinceStart / totalDays) * 100;
+    return `${Math.max(0, Math.min(position, 100))}%`;
+  }
 
-  for (const formatPattern of formats) {
+  getEndDate(): Date {
+    const endDate = new Date(this.viewStartDate);
+    endDate.setDate(endDate.getDate() + this.weeksToShow * 7 - 1);
+    return endDate;
+  }
+
+  isCurrentWeek(weekStart: Date): boolean {
+    const today = new Date();
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return today >= weekStart && today <= weekEnd;
+  }
+
+  isWeekend(date: Date): boolean {
+    return date.getDay() === 0 || date.getDay() === 6;
+  }
+
+  isToday(date: Date): boolean {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  }
+
+  formatDate(
+    date: Date | string | null | undefined,
+    formatStr: string,
+  ): string {
+    if (!date) return '';
+
+    const parsedDate = this.parseMultipleFormats(date);
+    return parsedDate ? format(parsedDate, formatStr) : '';
+  }
+
+  private parseMultipleFormats(
+    dateInput: Date | string | null | undefined,
+  ): Date | null {
+    if (!dateInput) return null;
+
+    if (dateInput instanceof Date) {
+      return isValid(dateInput) ? dateInput : null;
+    }
+
+    if (typeof dateInput !== 'string') return null;
+
+    const dateStr = dateInput.trim();
+    if (!dateStr) return null;
+
+    // Define the formats to try in order of preference
+    const formats = [
+      'dd/MM/yyyy', // 20/12/2025
+      'dd-MM-yyyy', // 20-12-2025
+      'MM/dd/yyyy', // 12/20/2025
+      'MM-dd-yyyy', // 12-20-2025
+      'yyyy-MM-dd', // 2025-12-20
+      'yyyy/MM/dd', // 2025/12/20
+      'dd/MM/yy', // 20/12/25
+      'dd-MM-yy', // 20-12-25
+      'MM/dd/yy', // 12/20/25
+      'MM-dd-yy', // 12-20-25
+    ];
+
+    for (const formatPattern of formats) {
+      try {
+        const parsedDate = parse(dateStr, formatPattern, new Date());
+        if (isValid(parsedDate)) {
+          return parsedDate;
+        }
+      } catch (e) {
+        // Continue to next format
+      }
+    }
+
+    // Fallback to native Date parsing
     try {
-      const parsedDate = parse(dateStr, formatPattern, new Date());
-      if (isValid(parsedDate)) {
-        return parsedDate;
+      const nativeDate = new Date(dateStr);
+      if (isValid(nativeDate)) {
+        return nativeDate;
       }
     } catch (e) {
-      // Continue to next format
+      // Ignore
     }
+
+    return null;
   }
 
-  // Fallback to native Date parsing
-  try {
-    const nativeDate = new Date(dateStr);
-    if (isValid(nativeDate)) {
-      return nativeDate;
-    }
-  } catch (e) {
-    // Ignore
+  getDuration(task: TimelineTask): number {
+    if (!task.start || !task.end) return 0;
+    return differenceInCalendarDays(task.end, task.start) + 1;
   }
 
-  return null;
-}
-
- getDuration(task: TimelineTask): number {
-   if (!task.start || !task.end) return 0;
-   return differenceInCalendarDays(task.end, task.start) + 1;
- }
-
- public getSafeDate(date: Date | undefined, dateString: string | undefined): Date {
+  public getSafeDate(
+    date: Date | undefined,
+    dateString: string | undefined,
+  ): Date {
     if (date) {
       return date;
     }
@@ -557,7 +628,7 @@ private parseMultipleFormats(dateInput: Date | string | null | undefined): Date 
       return 'pending';
     }
 
-    if (group.subtasks.some(t => t.status === 'delayed')) {
+    if (group.subtasks.some((t) => t.status === 'delayed')) {
       return 'delayed';
     }
 

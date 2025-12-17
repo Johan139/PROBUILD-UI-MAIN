@@ -1,0 +1,57 @@
+@use 'styles/util/mixins' as u;
+
+h2 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+p {
+  font-size: var(--fs-base);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+
+mat-dialog-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.dialog-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: var(--fw-semibold);
+  transition: background-color 0.3s ease;
+  border: 0;
+  cursor: pointer;
+  @include u.interactive-states;
+}
+
+.return-btn, .confirm-btn {
+  background-color: var(--brand-yellow-primary);
+  color: var(--gray-900);
+
+  &:hover:not(:disabled) {
+    background-color: var(--brand-yellow-accent);
+  }
+
+  &:disabled {
+    background-color: var(--color-surface-subtle) !important;
+    color: var(--color-text-muted) !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.warning-message {
+  color: var(--color-danger);
+  font-weight: var(--fw-bold);
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  background-color: color-mix(in oklab, var(--color-danger) 8%, var(--color-surface));
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--color-danger) 40%, var(--color-border)) !important; 
+}

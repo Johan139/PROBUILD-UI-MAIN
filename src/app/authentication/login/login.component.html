@@ -64,9 +64,6 @@
                 hidePassword ? "visibility_off" : "visibility"
               }}</mat-icon>
             </button>
-            <mat-hint id="passwordHint"
-              >At least 10 chars, mixed case & symbol</mat-hint
-            >
             <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
               Password is required.
             </mat-error>
@@ -94,6 +91,12 @@
         >
           {{ isLoading ? "Signing in…" : "Login" }}
         </button>
+
+        <!-- Divider -->
+        <mat-divider class="my-4"></mat-divider>
+
+        <!-- Google Sign-In Button -->
+        <div id="googleSignInDiv" class="google-btn-container"></div>
       </form>
     </mat-card-content>
   </mat-card>

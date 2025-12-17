@@ -3,5 +3,5 @@ export interface Subtask {
   days: number;
   startDate?: string;
   endDate?: string;
-  cost: number
+  cost: number;
 }

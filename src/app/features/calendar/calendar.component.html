@@ -1,28 +1,117 @@
-<div class="container">
-    <div class="row">
-      <div class="fullcolumn">
-        <mat-card class="calendar-card">
-          <mat-card-header>
-            <mat-card-title>Event Calendar</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <mat-divider></mat-divider>
-            <div class="calendar-content">
-              <div *ngIf="successMessage" class="success-message">
-                {{ successMessage }}
-              </div>
-              <div *ngIf="errorMessage" class="error-message">
-                {{ errorMessage }}
-              </div>
-              <div class="calendar-controls">
-                <button mat-raised-button class="add-event-btn" (click)="openAddEventDialog()">
-                  Add Event
-                </button>
-              </div>
-              <full-calendar [options]="calendarOptions"></full-calendar>
-            </div>
-          </mat-card-content>
-        </mat-card>
+<div class="calendar-container">
+  <div class="header-container">
+    <h1>Jobs Calendar</h1>
+    <p>Manage your projects and tasks timeline</p>
+  </div>
+
+  <div class="unified-view">
+    <!-- Sidebar: Job List -->
+    <div class="list-panel">
+      <div class="list-container">
+        <div class="sidebar-header">
+          <h2>Projects ({{ filteredJobs.length }})</h2>
+          <button
+            mat-icon-button
+            (click)="toggleEmptyProjects()"
+            [matTooltip]="
+              hideEmptyProjects
+                ? 'Show projects without events'
+                : 'Hide projects without events'
+            "
+            [class.active-toggle]="hideEmptyProjects"
+          >
+            <mat-icon>{{
+              hideEmptyProjects ? "visibility_off" : "visibility"
+            }}</mat-icon>
+          </button>
+        </div>
+
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-icon matPrefix>search</mat-icon>
+          <input
+            matInput
+            placeholder="Search projects..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="filterJobs()"
+          />
+        </mat-form-field>
+
+        <div class="job-list-scroll">
+          <div
+            *ngFor="let job of filteredJobs"
+            class="job-item-wrapper"
+            [class.selected]="isJobSelected(job.jobId)"
+            [style.border-color]="
+              isJobSelected(job.jobId) ? jobColors[job.jobId] : ''
+            "
+            (click)="toggleJobSelection(job.jobId)"
+          >
+            <div
+              class="selection-indicator"
+              [style.background-color]="jobColors[job.jobId]"
+            ></div>
+
+            <app-job-card
+              [job]="job"
+              [showNewTag]="false"
+              [showBidButton]="false"
+            >
+            </app-job-card>
+
+            <!-- <div class="selected-overlay" *ngIf="isJobSelected(job.jobId)">
+               <mat-icon>check_circle</mat-icon>
+             </div> -->
+          </div>
+
+          <div *ngIf="filteredJobs.length === 0 && !isLoading" class="no-jobs">
+            No projects found
+          </div>
+          <div *ngIf="isLoading" class="loading">Loading projects...</div>
+        </div>
       </div>
     </div>
+
+    <!-- Main Content: Calendar -->
+    <div class="calendar-panel">
+      <mat-card class="calendar-card">
+        <mat-card-content>
+          <div class="calendar-content">
+            <div class="calendar-controls">
+              <button
+                mat-raised-button
+                class="add-event-btn"
+                (click)="openAddEventDialog()"
+              >
+                Add Event
+              </button>
+              <mat-button-toggle-group
+                #group="matButtonToggleGroup"
+                [(ngModel)]="viewMode"
+                (change)="updateCalendarView()"
+              >
+                <mat-button-toggle value="projects">
+                  Projects
+                </mat-button-toggle>
+                <mat-button-toggle value="tasks"> Tasks </mat-button-toggle>
+              </mat-button-toggle-group>
+              <mat-form-field appearance="outline" class="status-filter">
+                <mat-label>Status</mat-label>
+                <mat-select
+                  [(ngModel)]="statusFilter"
+                  (selectionChange)="updateCalendarView()"
+                >
+                  <mat-option value="all">All</mat-option>
+                  <mat-option value="LIVE">Live</mat-option>
+                  <mat-option value="BIDDING">Bidding</mat-option>
+                  <mat-option value="DRAFT">Preliminary</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <full-calendar [options]="calendarOptions"></full-calendar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
   </div>
+</div>

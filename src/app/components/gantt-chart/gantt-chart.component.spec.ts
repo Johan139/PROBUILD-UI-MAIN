@@ -8,9 +8,8 @@ describe('GanttChartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GanttChartComponent]
-    })
-    .compileComponents();
+      imports: [GanttChartComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(GanttChartComponent);
     component = fixture.componentInstance;

@@ -14,7 +14,7 @@
                 (ngSubmit)="onSubmit()"
                 *ngIf="profileForm.controls"
               >
-                <mat-tab-group>
+                <mat-tab-group #profileTabs>
                   <!-- Profile Tab -->
                   <mat-tab label="Profile">
                     <!-- Role Switcher Dropdown (For Dev Testing) -->
@@ -62,7 +62,7 @@
                             appearance="fill"
                             class="country-code-field"
                           >
-                            <mat-label>Code</mat-label>
+                            <mat-label>Prefix</mat-label>
                             <mat-select
                               [(value)]="selectedCountryCode"
                               (selectionChange)="
@@ -118,6 +118,7 @@
                           <mat-select
                             formControlName="userType"
                             panelClass="custom-select-panel"
+                            (selectionChange)="changeUserRole($event.value)"
                           >
                             <mat-option value="GENERAL_CONTRACTOR"
                               >General Contractor</mat-option
@@ -176,45 +177,6 @@
                             >
                           </mat-select>
                         </mat-form-field>
-                        <div class="upload-container">
-                          <div *ngIf="isUploading" class="upload-progress">
-                            <p>Upload Progress: {{ progress }}%</p>
-                            <mat-progress-bar
-                              mode="determinate"
-                              [value]="progress"
-                            ></mat-progress-bar>
-                          </div>
-                          <div
-                            *ngIf="!isUploading && uploadedFilesCount > 0"
-                            class="upload-complete"
-                          >
-                            <p
-                              [matTooltip]="uploadedFileNames.join(', ')"
-                              matTooltipPosition="above"
-                            >
-                              {{ uploadedFilesCount }} file(s) uploaded
-                              successfully
-                            </p>
-                          </div>
-                          <div class="custom-file-upload">
-                            <label
-                              for="file-upload"
-                              class="upload-label submit-btn"
-                            >
-                              <img
-                                src="assets/custom-svg/upload-folder-svgrepo-com.svg"
-                                alt="Upload Icon"
-                                class="upload-icon"
-                              />
-                              Upload File
-                            </label>
-                            <input
-                              id="file-upload"
-                              type="file"
-                              (change)="onFileSelected($event)"
-                            />
-                          </div>
-                        </div>
                       </div>
                     </div>
                     <!-- Submit Button -->
@@ -337,7 +299,7 @@
                             >
                           </mat-select>
                         </mat-form-field>
-                        <mat-form-field appearance="fill">
+                        <mat-form-field appearance="fill" hidden>
                           <mat-label>Project Preferences</mat-label>
                           <mat-select
                             formControlName="projectPreferences"
@@ -535,7 +497,7 @@
                               'city',
                               'state',
                               'country',
-                              'actions'
+                              'actions',
                             ]"
                           ></mat-header-row>
                           <mat-row
@@ -546,7 +508,7 @@
                                 'city',
                                 'state',
                                 'country',
-                                'actions'
+                                'actions',
                               ]
                             "
                           ></mat-row>
@@ -868,6 +830,42 @@
                   <mat-tab label="Documents">
                     <div class="section">
                       <h3>Profile Documents</h3>
+                      <div class="upload-container">
+                        <div *ngIf="isUploading" class="upload-progress">
+                          <p>Upload Progress: {{ progress }}%</p>
+                          <mat-progress-bar
+                            mode="determinate"
+                            [value]="progress"
+                          ></mat-progress-bar>
+                        </div>
+                        <div
+                          *ngIf="!isUploading && uploadedFilesCount > 0"
+                          class="upload-complete"
+                        >
+                          <p
+                            [matTooltip]="uploadedFileNames.join(', ')"
+                            matTooltipPosition="above"
+                          >
+                            {{ uploadedFilesCount }} file(s) uploaded
+                            successfully
+                          </p>
+                        </div>
+                        <div class="custom-file-upload">
+                          <label for="file-upload" class="upload-label">
+                            <img
+                              src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                              alt="Upload Icon"
+                              class="upload-icon"
+                            />
+                            Upload File
+                          </label>
+                          <input
+                            id="file-upload"
+                            type="file"
+                            (change)="onFileSelected($event)"
+                          />
+                        </div>
+                      </div>
                       <mat-table
                         [dataSource]="documents"
                         class="mat-elevation-z8"
@@ -901,8 +899,22 @@
                             >Actions</mat-header-cell
                           >
                           <mat-cell *matCellDef="let doc">
-                            <button mat-icon-button (click)="viewDocument(doc)">
+                            <button
+                              mat-icon-button
+                              type="button"
+                              (click)="viewDocument(doc)"
+                              matTooltip="View Document"
+                            >
                               <mat-icon>visibility</mat-icon>
+                            </button>
+
+                            <button
+                              mat-icon-button
+                              type="button"
+                              (click)="deleteDocument(doc)"
+                              matTooltip="Delete Document"
+                            >
+                              <mat-icon>delete</mat-icon>
                             </button>
                           </mat-cell>
                         </ng-container>
@@ -919,7 +931,17 @@
                   <mat-tab label="Subscriptions">
                     <div class="section">
                       <h3>Your Subscriptions</h3>
-
+                      <div class="address-footer">
+                        <button
+                          mat-raised-button
+                          type="button"
+                          class="submit-btn"
+                          (click)="openSubscriptionCreateDialog()"
+                          *ngIf="!authService.isTeamMember()"
+                        >
+                          Add Subscription
+                        </button>
+                      </div>
                       <div *ngIf="isLoadingSubscriptions" class="form-row">
                         <mat-progress-bar
                           mode="indeterminate"
@@ -950,15 +972,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date : "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1009,9 +1056,11 @@
                                   type="button"
                                   *ngIf="!authService.isTeamMember()"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
+                                <!-- If NOT cancelled → show Cancel button -->
                                 <button
+                                  *ngIf="!s.cancelAtPeriodEnd"
                                   mat-raised-button
                                   color="warn"
                                   (click)="cancelSubscription(s)"
@@ -1021,9 +1070,21 @@
                                   "
                                   class="submit-btn"
                                   type="button"
-                                  *ngIf="!authService.isTeamMember()"
                                 >
                                   Cancel
+                                </button>
+
+                                <!-- If already cancelled-at-end → show Undo button -->
+                                <button
+                                  *ngIf="s.cancelAtPeriodEnd"
+                                  mat-raised-button
+                                  color="primary"
+                                  (click)="undoCancellation(s)"
+                                  [disabled]="!canManageRow(s)"
+                                  class="submit-btn"
+                                  type="button"
+                                >
+                                  Undo Cancel
                                 </button>
                               </mat-cell>
                             </ng-container>
@@ -1071,15 +1132,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date : "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1128,7 +1214,7 @@
                                   class="submit-btn"
                                   type="button"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
                                 <button
                                   mat-raised-button
@@ -1188,15 +1274,40 @@
                             </ng-container>
 
                             <ng-container matColumnDef="validUntil">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Valid Until</mat-header-cell
+                              <mat-header-cell
+                                *matHeaderCellDef
+                                mat-sort-header
                               >
+                                Valid Until
+                              </mat-header-cell>
+
                               <mat-cell *matCellDef="let s">
-                                {{
-                                  s.validUntil
-                                    ? (s.validUntil | date : "mediumDate")
-                                    : "—"
-                                }}
+                                <!-- ✅ Simplified logic with clear debug output -->
+                                <span *ngIf="s.validUntil">
+                                  <span *ngIf="s.cancelAtPeriodEnd">
+                                    Cancels on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      !s.cancelAtPeriodEnd &&
+                                      s.status === 'active'
+                                    "
+                                  >
+                                    Renews on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                  <span
+                                    *ngIf="
+                                      s.validUntil < today &&
+                                      s.status !== 'active'
+                                    "
+                                  >
+                                    Expired on
+                                    {{ s.validUntil | date: "mediumDate" }}
+                                  </span>
+                                </span>
+                                <span *ngIf="!s.validUntil">—</span>
                               </mat-cell>
                             </ng-container>
 
@@ -1245,7 +1356,7 @@
                                   "
                                   type="button"
                                 >
-                                  Upgrade
+                                  Change
                                 </button>
                                 <button
                                   mat-raised-button
@@ -1285,15 +1396,6 @@
                           </div>
                         </mat-tab>
                       </mat-tab-group>
-                      <button
-                        mat-raised-button
-                        type="button"
-                        class="submit-btn"
-                        (click)="openSubscriptionCreateDialog()"
-                        *ngIf="!authService.isTeamMember()"
-                      >
-                        Add Subscription
-                      </button>
                     </div>
                   </mat-tab>
                 </mat-tab-group>

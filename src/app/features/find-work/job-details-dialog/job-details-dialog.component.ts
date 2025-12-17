@@ -1,5 +1,9 @@
 import { Component, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogRef,
+  MatDialogModule,
+} from '@angular/material/dialog';
 import { Job } from '../../../models/job';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,7 +16,7 @@ import { Subscription } from 'rxjs';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatCardModule],
   templateUrl: './job-details-dialog.component.html',
-  styleUrl: './job-details-dialog.component.scss'
+  styleUrl: './job-details-dialog.component.scss',
 })
 export class JobDetailsDialogComponent {
   userTrade: string | undefined;
@@ -22,9 +26,9 @@ export class JobDetailsDialogComponent {
   constructor(
     public dialogRef: MatDialogRef<JobDetailsDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { job: Job },
-    private authService: AuthService
+    private authService: AuthService,
   ) {
-    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+    this.userSubscription = this.authService.currentUser$.subscribe((user) => {
       this.userTrade = user?.trade;
       this.checkTradeMatch();
     });

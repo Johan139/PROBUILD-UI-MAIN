@@ -8,9 +8,8 @@ describe('BlueprintTestPageComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BlueprintTestPageComponent]
-    })
-    .compileComponents();
+      imports: [BlueprintTestPageComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(BlueprintTestPageComponent);
     component = fixture.componentInstance;

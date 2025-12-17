@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>Edit Client Details</h2>
+<mat-dialog-content>
+  <form [formGroup]="clientForm" class="edit-client-form">
+    <div class="form-row">
+      <mat-form-field appearance="fill">
+        <mat-label>First Name</mat-label>
+        <input matInput formControlName="firstName" />
+        <mat-error *ngIf="clientForm.get('firstName')?.hasError('required')">
+          First Name is required
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Last Name</mat-label>
+        <input matInput formControlName="lastName" />
+        <mat-error *ngIf="clientForm.get('lastName')?.hasError('required')">
+          Last Name is required
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="fill">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="email" />
+        <mat-error *ngIf="clientForm.get('email')?.hasError('required')">
+          Email is required
+        </mat-error>
+        <mat-error *ngIf="clientForm.get('email')?.hasError('email')">
+          Invalid email address
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Phone</mat-label>
+        <input matInput formControlName="phone" />
+      </mat-form-field>
+    </div>
+
+    <div class="form-row">
+      <mat-form-field appearance="fill">
+        <mat-label>Company Name</mat-label>
+        <input matInput formControlName="companyName" />
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Position</mat-label>
+        <input matInput formControlName="position" />
+      </mat-form-field>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="onSubmit()"
+    [disabled]="clientForm.invalid || isLoading"
+  >
+    {{ isLoading ? 'Saving...' : 'Save' }}
+  </button>
+</mat-dialog-actions>

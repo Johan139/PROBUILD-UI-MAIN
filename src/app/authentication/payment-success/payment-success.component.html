@@ -1,7 +1,20 @@
-<div class="success-container">
-    <h1>🎉 Payment Successful!</h1>
-    <p>Your subscription is now active.</p>
-    <button mat-flat-button color="primary" class="submit-btn delete-btn" (click)="goToDashboard()">
-      {{ source === 'register' ? 'Return to Login' : 'Return to Dashboard' }}
-    </button>
-  </div>
+<div class="success-wrapper">
+  <mat-card class="success-card">
+    <mat-card-header>
+      <mat-icon class="success-icon" color="primary">check_circle</mat-icon>
+      <mat-card-title>Payment Successful!</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p class="description">Your subscription is now active.</p>
+
+      <button
+        mat-flat-button
+        class="submit-btn success-btn"
+        (click)="goToDashboard()"
+      >
+        {{ source === "register" ? "Return to Login" : "Return to Dashboard" }}
+      </button>
+    </mat-card-content>
+  </mat-card>
+</div>

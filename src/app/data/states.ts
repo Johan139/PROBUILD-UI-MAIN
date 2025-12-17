@@ -1,5 +1,5 @@
-export const STATES: { [key: string]: { value: string, display: string }[] } = {
-  'USA': [
+export const STATES: { [key: string]: { value: string; display: string }[] } = {
+  USA: [
     { value: 'AL', display: 'Alabama' },
     { value: 'AK', display: 'Alaska' },
     { value: 'AZ', display: 'Arizona' },
@@ -14,7 +14,7 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'ID', display: 'Idaho' },
     { value: 'IL', display: 'Illinois' },
     { value: 'IN', display: 'Indiana' },
-    { value: 'IA', display: 'Iowa' }, 
+    { value: 'IA', display: 'Iowa' },
     { value: 'KS', display: 'Kansas' },
     { value: 'KY', display: 'Kentucky' },
     { value: 'LA', display: 'Louisiana' },
@@ -49,9 +49,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'WA', display: 'Washington' },
     { value: 'WV', display: 'West Virginia' },
     { value: 'WI', display: 'Wisconsin' },
-    { value: 'WY', display: 'Wyoming' }
+    { value: 'WY', display: 'Wyoming' },
   ],
-  'CAN': [
+  CAN: [
     { value: 'AB', display: 'Alberta' },
     { value: 'BC', display: 'British Columbia' },
     { value: 'MB', display: 'Manitoba' },
@@ -64,9 +64,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'SK', display: 'Saskatchewan' },
     { value: 'NT', display: 'Northwest Territories' },
     { value: 'NU', display: 'Nunavut' },
-    { value: 'YT', display: 'Yukon' }
+    { value: 'YT', display: 'Yukon' },
   ],
-  'GBR': [
+  GBR: [
     { value: 'AVN', display: 'Avon' },
     { value: 'BDF', display: 'Bedfordshire' },
     { value: 'BRK', display: 'Berkshire' },
@@ -195,9 +195,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'NTA', display: 'Newtownabbey' },
     { value: 'NDN', display: 'North Down' },
     { value: 'OMH', display: 'Omagh' },
-    { value: 'STB', display: 'Strabane' }
+    { value: 'STB', display: 'Strabane' },
   ],
-  'DEU': [
+  DEU: [
     { value: 'BW', display: 'Baden-Württemberg' },
     { value: 'BY', display: 'Bavaria' },
     { value: 'BE', display: 'Berlin' },
@@ -213,9 +213,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'SN', display: 'Saxony' },
     { value: 'ST', display: 'Saxony-Anhalt' },
     { value: 'SH', display: 'Schleswig-Holstein' },
-    { value: 'TH', display: 'Thuringia' }
+    { value: 'TH', display: 'Thuringia' },
   ],
-  'AUS': [
+  AUS: [
     { value: 'ACT', display: 'Australian Capital Territory' },
     { value: 'NSW', display: 'New South Wales' },
     { value: 'NT', display: 'Northern Territory' },
@@ -223,9 +223,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'SA', display: 'South Australia' },
     { value: 'TAS', display: 'Tasmania' },
     { value: 'VIC', display: 'Victoria' },
-    { value: 'WA', display: 'Western Australia' }
+    { value: 'WA', display: 'Western Australia' },
   ],
-  'FRA': [
+  FRA: [
     { value: 'ARA', display: 'Auvergne-Rhône-Alpes' },
     { value: 'BFC', display: 'Bourgogne-Franche-Comté' },
     { value: 'BRE', display: 'Brittany' },
@@ -238,9 +238,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'NAQ', display: 'Nouvelle-Aquitaine' },
     { value: 'OCC', display: 'Occitanie' },
     { value: 'PDL', display: 'Pays de la Loire' },
-    { value: 'PAC', display: 'Provence-Alpes-Côte d\'Azur' }
+    { value: 'PAC', display: "Provence-Alpes-Côte d'Azur" },
   ],
-  'JPN': [
+  JPN: [
     { value: '01', display: 'Hokkaido' },
     { value: '02', display: 'Aomori' },
     { value: '03', display: 'Iwate' },
@@ -287,9 +287,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '44', display: 'Oita' },
     { value: '45', display: 'Miyazaki' },
     { value: '46', display: 'Kagoshima' },
-    { value: '47', display: 'Okinawa' }
+    { value: '47', display: 'Okinawa' },
   ],
-  'CHE': [
+  CHE: [
     { value: 'AG', display: 'Aargau' },
     { value: 'AR', display: 'Appenzell Ausserrhoden' },
     { value: 'AI', display: 'Appenzell Innerrhoden' },
@@ -315,9 +315,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'VS', display: 'Valais' },
     { value: 'VD', display: 'Vaud' },
     { value: 'ZG', display: 'Zug' },
-    { value: 'ZH', display: 'Zürich' }
+    { value: 'ZH', display: 'Zürich' },
   ],
-  'SWE': [
+  SWE: [
     { value: 'K', display: 'Blekinge' },
     { value: 'W', display: 'Dalarna' },
     { value: 'I', display: 'Gotland' },
@@ -338,9 +338,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'U', display: 'Västmanland' },
     { value: 'O', display: 'Västra Götaland' },
     { value: 'T', display: 'Örebro' },
-    { value: 'E', display: 'Östergötland' }
+    { value: 'E', display: 'Östergötland' },
   ],
-  'NLD': [
+  NLD: [
     { value: 'DR', display: 'Drenthe' },
     { value: 'FL', display: 'Flevoland' },
     { value: 'FR', display: 'Friesland' },
@@ -352,9 +352,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'OV', display: 'Overijssel' },
     { value: 'UT', display: 'Utrecht' },
     { value: 'ZE', display: 'Zeeland' },
-    { value: 'ZH', display: 'South Holland' }
+    { value: 'ZH', display: 'South Holland' },
   ],
-  'NOR': [
+  NOR: [
     { value: '03', display: 'Oslo' },
     { value: '11', display: 'Rogaland' },
     { value: '15', display: 'Møre og Romsdal' },
@@ -365,16 +365,16 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '42', display: 'Agder' },
     { value: '46', display: 'Vestland' },
     { value: '50', display: 'Trøndelag' },
-    { value: '54', display: 'Troms og Finnmark' }
+    { value: '54', display: 'Troms og Finnmark' },
   ],
-  'DNK': [
+  DNK: [
     { value: '84', display: 'Capital Region of Denmark' },
     { value: '82', display: 'Central Denmark Region' },
     { value: '81', display: 'North Denmark Region' },
     { value: '85', display: 'Region of Southern Denmark' },
-    { value: '83', display: 'Region Zealand' }
+    { value: '83', display: 'Region Zealand' },
   ],
-  'FIN': [
+  FIN: [
     { value: '01', display: 'Åland Islands' },
     { value: '02', display: 'South Karelia' },
     { value: '03', display: 'Southern Ostrobothnia' },
@@ -393,21 +393,21 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '16', display: 'Päijänne Tavastia' },
     { value: '17', display: 'Satakunta' },
     { value: '18', display: 'Uusimaa' },
-    { value: '19', display: 'Finland Proper' }
+    { value: '19', display: 'Finland Proper' },
   ],
-  'SGP': [
+  SGP: [
     { value: '01', display: 'Central Singapore' },
     { value: '02', display: 'North East' },
     { value: '03', display: 'North West' },
     { value: '04', display: 'South East' },
-    { value: '05', display: 'South West' }
+    { value: '05', display: 'South West' },
   ],
-  'NZL': [
+  NZL: [
     { value: 'AUK', display: 'Auckland' },
     { value: 'BOP', display: 'Bay of Plenty' },
     { value: 'CAN', display: 'Canterbury' },
     { value: 'GIS', display: 'Gisborne' },
-    { value: 'HKB', display: 'Hawke\'s Bay' },
+    { value: 'HKB', display: "Hawke's Bay" },
     { value: 'MWT', display: 'Manawatu-Wanganui' },
     { value: 'MBH', display: 'Marlborough' },
     { value: 'NSN', display: 'Nelson' },
@@ -418,15 +418,15 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'TAS', display: 'Tasman' },
     { value: 'WKO', display: 'Waikato' },
     { value: 'WGN', display: 'Wellington' },
-    { value: 'WTC', display: 'West Coast' }
+    { value: 'WTC', display: 'West Coast' },
   ],
-  'IRL': [
+  IRL: [
     { value: 'C', display: 'Connacht' },
     { value: 'L', display: 'Leinster' },
     { value: 'M', display: 'Munster' },
-    { value: 'U', display: 'Ulster' }
+    { value: 'U', display: 'Ulster' },
   ],
-  'AUT': [
+  AUT: [
     { value: '1', display: 'Burgenland' },
     { value: '2', display: 'Carinthia' },
     { value: '3', display: 'Lower Austria' },
@@ -435,14 +435,14 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '6', display: 'Styria' },
     { value: '7', display: 'Tyrol' },
     { value: '8', display: 'Vorarlberg' },
-    { value: '9', display: 'Vienna' }
+    { value: '9', display: 'Vienna' },
   ],
-  'BEL': [
+  BEL: [
     { value: 'BRU', display: 'Brussels-Capital Region' },
     { value: 'VLG', display: 'Flemish Region' },
-    { value: 'WAL', display: 'Walloon Region' }
+    { value: 'WAL', display: 'Walloon Region' },
   ],
-  'KOR': [
+  KOR: [
     { value: '26', display: 'Busan' },
     { value: '27', display: 'Daegu' },
     { value: '28', display: 'Incheon' },
@@ -458,9 +458,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '47', display: 'Gyeongsangbuk-do' },
     { value: '48', display: 'Gyeongsangnam-do' },
     { value: '49', display: 'Jeju-do' },
-    { value: '50', display: 'Sejong' }
+    { value: '50', display: 'Sejong' },
   ],
-  'ESP': [
+  ESP: [
     { value: 'AN', display: 'Andalusia' },
     { value: 'AR', display: 'Aragon' },
     { value: 'AS', display: 'Asturias' },
@@ -477,9 +477,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'MD', display: 'Madrid' },
     { value: 'MC', display: 'Murcia' },
     { value: 'NC', display: 'Navarre' },
-    { value: 'VC', display: 'Valencian Community' }
+    { value: 'VC', display: 'Valencian Community' },
   ],
-  'ITA': [
+  ITA: [
     { value: '65', display: 'Abruzzo' },
     { value: '77', display: 'Basilicata' },
     { value: '78', display: 'Calabria' },
@@ -499,27 +499,27 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '32', display: 'Trentino-Alto Adige/Südtirol' },
     { value: '55', display: 'Umbria' },
     { value: '23', display: 'Aosta Valley' },
-    { value: '34', display: 'Veneto' }
+    { value: '34', display: 'Veneto' },
   ],
-  'HKG': [
+  HKG: [
     { value: 'HK', display: 'Hong Kong Island' },
     { value: 'KLN', display: 'Kowloon' },
-    { value: 'NT', display: 'New Territories' }
+    { value: 'NT', display: 'New Territories' },
   ],
-  'ISR': [
+  ISR: [
     { value: 'D', display: 'Southern District' },
     { value: 'M', display: 'Central District' },
     { value: 'Z', display: 'Northern District' },
     { value: 'HA', display: 'Haifa District' },
     { value: 'TA', display: 'Tel Aviv District' },
-    { value: 'JM', display: 'Jerusalem District' }
+    { value: 'JM', display: 'Jerusalem District' },
   ],
-  'LUX': [
+  LUX: [
     { value: 'D', display: 'Diekirch' },
     { value: 'G', display: 'Grevenmacher' },
-    { value: 'L', display: 'Luxembourg' }
+    { value: 'L', display: 'Luxembourg' },
   ],
-  'ISL': [
+  ISL: [
     { value: '1', display: 'Capital Region' },
     { value: '2', display: 'Southern Peninsula' },
     { value: '3', display: 'Western Region' },
@@ -527,9 +527,9 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: '5', display: 'Northwestern Region' },
     { value: '6', display: 'Northeastern Region' },
     { value: '7', display: 'Eastern Region' },
-    { value: '8', display: 'Southern Region' }
+    { value: '8', display: 'Southern Region' },
   ],
-  'ZAF': [
+  ZAF: [
     { value: 'EC', display: 'Eastern Cape' },
     { value: 'FS', display: 'Free State' },
     { value: 'GP', display: 'Gauteng' },
@@ -538,6 +538,6 @@ export const STATES: { [key: string]: { value: string, display: string }[] } = {
     { value: 'MP', display: 'Mpumalanga' },
     { value: 'NC', display: 'Northern Cape' },
     { value: 'NW', display: 'North West' },
-    { value: 'WC', display: 'Western Cape' }
-  ]
+    { value: 'WC', display: 'Western Cape' },
+  ],
 };

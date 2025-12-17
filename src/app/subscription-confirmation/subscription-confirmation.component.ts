@@ -1,6 +1,10 @@
-// subscription-confirmation.component.ts
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { SubscriptionService } from '../../app/services/subscription.service';
 import { CommonModule } from '@angular/common';
 
@@ -8,14 +12,17 @@ import { CommonModule } from '@angular/common';
   selector: 'app-subscription-confirmation',
   templateUrl: './subscription-confirmation.component.html',
   styleUrls: ['./subscription-confirmation.component.scss'],
-  standalone: true, // <== ✅ make sure this is here
-  imports: [CommonModule, ReactiveFormsModule], // <== ✅ add ReactiveFormsModule here
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
 })
 export class SubscriptionConfirmationComponent {
   form: FormGroup;
   submitted = false;
 
-  constructor(private fb: FormBuilder, private subscriptionService: SubscriptionService) {
+  constructor(
+    private fb: FormBuilder,
+    private subscriptionService: SubscriptionService,
+  ) {
     this.form = this.fb.group({
       legalName: ['', Validators.required],
       contactName: ['', Validators.required],
@@ -26,7 +33,7 @@ export class SubscriptionConfirmationComponent {
       customTerms: [''],
       acceptMSA: [false, Validators.requiredTrue],
       acceptPrivacy: [false, Validators.requiredTrue],
-      confirmAuthority: [false, Validators.requiredTrue]
+      confirmAuthority: [false, Validators.requiredTrue],
     });
   }
 
@@ -35,7 +42,7 @@ export class SubscriptionConfirmationComponent {
     if (this.form.valid) {
       this.subscriptionService.submitSubscription(this.form.value).subscribe({
         next: () => alert('Subscription confirmed and emailed.'),
-        error: (err) => alert('Error sending form: ' + err.message)
+        error: (err) => alert('Error sending form: ' + err.message),
       });
     }
   }

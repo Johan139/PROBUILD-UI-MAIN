@@ -1,0 +1,165 @@
+<div class="dialog-header">
+  <h2>Permits & Approvals</h2>
+  <div class="header-actions">
+    <button class="close-btn" (click)="onClose()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+</div>
+
+<div mat-dialog-content>
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading permits...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="permits-container">
+    <div class="table-actions">
+      <button class="btn-add" (click)="addNewPermit()" *ngIf="!newPermit">
+        <mat-icon>add</mat-icon> Add Permit
+      </button>
+    </div>
+
+    <table mat-table [dataSource]="permits" class="permits-table">
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef> Permit Name </th>
+        <td mat-cell *matCellDef="let permit">
+          <div *ngIf="editingPermitId !== permit.id">{{ permit.name }}</div>
+          <input *ngIf="editingPermitId === permit.id" class="table-input" [(ngModel)]="permit.name" placeholder="Permit Name">
+        </td>
+      </ng-container>
+
+      <!-- Agency Column -->
+      <ng-container matColumnDef="issuingAgency">
+        <th mat-header-cell *matHeaderCellDef> Issuing Agency </th>
+        <td mat-cell *matCellDef="let permit">
+          <div *ngIf="editingPermitId !== permit.id">{{ permit.issuingAgency }}</div>
+          <input *ngIf="editingPermitId === permit.id" class="table-input" [(ngModel)]="permit.issuingAgency" placeholder="Agency">
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let permit">
+          <div *ngIf="editingPermitId !== permit.id" class="status-badge" [ngClass]="permit.status.toLowerCase()">
+            {{ permit.status }}
+          </div>
+          <select *ngIf="editingPermitId === permit.id" class="table-input" [(ngModel)]="permit.status">
+            <option value="Pending">Pending</option>
+            <option value="Active">Active</option>
+            <option value="Expired">Expired</option>
+            <option value="Approved">Approved</option>
+          </select>
+        </td>
+      </ng-container>
+
+      <!-- Start Date Column -->
+      <ng-container matColumnDef="startDate">
+        <th mat-header-cell *matHeaderCellDef> Start Date </th>
+        <td mat-cell *matCellDef="let permit">
+          <div *ngIf="editingPermitId !== permit.id">{{ permit.startDate | date }}</div>
+          <div *ngIf="editingPermitId === permit.id" class="date-input-wrapper">
+            <input class="table-input" [matDatepicker]="startPicker" [(ngModel)]="permit.startDate">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Expiration Date Column -->
+      <ng-container matColumnDef="expirationDate">
+        <th mat-header-cell *matHeaderCellDef> Expiration Date </th>
+        <td mat-cell *matCellDef="let permit">
+          <div *ngIf="editingPermitId !== permit.id">{{ permit.expirationDate | date }}</div>
+          <div *ngIf="editingPermitId === permit.id" class="date-input-wrapper">
+            <input class="table-input" [matDatepicker]="endPicker" [(ngModel)]="permit.expirationDate">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Document Column -->
+      <ng-container matColumnDef="document">
+        <th mat-header-cell *matHeaderCellDef> Document </th>
+        <td mat-cell *matCellDef="let permit">
+          <div class="document-cell">
+            <button class="icon-btn btn-primary-action" *ngIf="permit.documentId" (click)="viewDocument(permit)" matTooltip="View Document">
+              <mat-icon>description</mat-icon>
+            </button>
+            <button class="icon-btn" (click)="fileInput.click()" matTooltip="Upload Document">
+              <mat-icon>upload_file</mat-icon>
+            </button>
+            <input #fileInput type="file" style="display: none" (change)="uploadDocument(permit, $event)">
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef> Actions </th>
+        <td mat-cell *matCellDef="let permit">
+          <div class="actions-cell" *ngIf="editingPermitId !== permit.id">
+            <button class="icon-btn btn-primary-action" (click)="editPermit(permit)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button class="icon-btn text-red" (click)="deletePermit(permit)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <div class="actions-cell" *ngIf="editingPermitId === permit.id">
+            <button class="icon-btn text-green" (click)="saveEdit(permit)">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button class="icon-btn text-red" (click)="cancelEdit()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.ai-generated]="row.isAiGenerated"></tr>
+    </table>
+
+    <!-- New Permit Row (Form) -->
+    <div class="new-permit-form" *ngIf="newPermit">
+      <h3>Add New Permit</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Permit Name</label>
+          <input class="table-input" [(ngModel)]="newPermit.name" placeholder="Enter name">
+        </div>
+        <div class="form-group">
+          <label>Issuing Agency</label>
+          <input class="table-input" [(ngModel)]="newPermit.issuingAgency" placeholder="Enter agency">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="table-input" [(ngModel)]="newPermit.status">
+            <option value="Pending">Pending</option>
+            <option value="Active">Active</option>
+            <option value="Approved">Approved</option>
+          </select>
+        </div>
+        <div class="file-upload-action">
+          <button class="upload-btn" (click)="newPermitFileInput.click()">
+            <mat-icon>upload_file</mat-icon> Upload Document
+          </button>
+          <span *ngIf="newPermitFile">{{ newPermitFile.name }}</span>
+          <input #newPermitFileInput type="file" style="display: none" (change)="onNewPermitFileSelected($event)">
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" (click)="saveNewPermit()">Save</button>
+          <button class="btn-ghost" (click)="cancelNewPermit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="permits.length === 0 && !newPermit" class="no-data">
+      <p>No permits found. Add one manually or wait for AI suggestions.</p>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,18 @@
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef, AfterViewInit, HostListener, Renderer2, HostBinding, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+  HostListener,
+  Renderer2,
+  HostBinding,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { PdfViewerStateService } from '../../services/pdf-viewer-state.service';
 import { CommonModule } from '@angular/common';
@@ -18,18 +32,33 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BlueprintDocument {
-  name: string; pdfUrl: string; pageImageUrls: string[]; analysisData: { [page: number]: BlueprintAnalysisData }; totalPages: number;
+  name: string;
+  pdfUrl: string;
+  pageImageUrls: string[];
+  analysisData: { [page: number]: BlueprintAnalysisData };
+  totalPages: number;
 }
 
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
-  imports: [ CommonModule, MatCardModule, MatButtonModule, MatIconModule, PdfJsViewerModule, BlueprintOverlayComponent, MatButtonToggleModule, MatProgressSpinnerModule, MatTooltipModule, FormsModule ],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    PdfJsViewerModule,
+    BlueprintOverlayComponent,
+    MatButtonToggleModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    FormsModule,
+  ],
   templateUrl: './pdf-viewer.component.html',
-  styleUrls: ['./pdf-viewer.component.scss']
+  styleUrls: ['./pdf-viewer.component.scss'],
 })
 export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
-  @Input() document: { url: string, name: string } | null = null;
+  @Input() document: { url: string; name: string } | null = null;
   @Input() blueprints: BlueprintDocument[] = [];
   @ViewChild('viewerContainer') viewerContainer!: ElementRef;
   @ViewChild('panzoomContent') panzoomContent!: ElementRef;
@@ -45,7 +74,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   totalPages = 1;
   currentImageUrl: string | null = null;
   displayedImageUrl: string | null = null;
-  imageDimensions: { width: number, height: number } | null = null;
+  imageDimensions: { width: number; height: number } | null = null;
   public panzoomInstance: PanzoomObject | null = null;
   private isResizing = false;
   private lastDownX = 0;
@@ -65,17 +94,17 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     public overlayState: OverlayStateService,
     private renderer: Renderer2,
     private router: Router,
-    private pdfViewerState: PdfViewerStateService
+    private pdfViewerState: PdfViewerStateService,
   ) {
-    this.pdfViewerState.isPoppedOut$.subscribe(isPoppedOut => {
+    this.pdfViewerState.isPoppedOut$.subscribe((isPoppedOut) => {
       this.isPoppedOut = isPoppedOut;
     });
 
-    this.pdfViewerState.visibility$.subscribe(isVisible => {
+    this.pdfViewerState.visibility$.subscribe((isVisible) => {
       this.isVisible = isVisible;
     });
 
-    this.pdfViewerState.selectedBlueprint$.subscribe(blueprint => {
+    this.pdfViewerState.selectedBlueprint$.subscribe((blueprint) => {
       if (blueprint) {
         this.selectBlueprint(blueprint);
       }
@@ -87,21 +116,27 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('PdfViewerComponent: ngOnChanges triggered', changes);
-    if (changes['blueprints'] && this.blueprints && this.blueprints.length > 0) {
-      console.log('PdfViewerComponent: Blueprints input changed', this.blueprints);
+    // console.log('PdfViewerComponent: ngOnChanges triggered', changes);
+    if (
+      changes['blueprints'] &&
+      this.blueprints &&
+      this.blueprints.length > 0
+    ) {
+      // console.log('PdfViewerComponent: Blueprints input changed', this.blueprints);
       this.isBlueprintLoaded = true;
       if (this.selectedBlueprint) {
-        const currentSelection = this.blueprints.find(b => b.pdfUrl === this.selectedBlueprint?.pdfUrl);
+        const currentSelection = this.blueprints.find(
+          (b) => b.pdfUrl === this.selectedBlueprint?.pdfUrl,
+        );
         this.selectBlueprint(currentSelection || this.blueprints[0]);
       } else {
         this.selectBlueprint(this.blueprints[0]);
       }
     } else if (changes['selectedBlueprint'] && this.selectedBlueprint) {
-      console.log('PdfViewerComponent: selectedBlueprint input changed', this.selectedBlueprint);
+      // console.log('PdfViewerComponent: selectedBlueprint input changed', this.selectedBlueprint);
       this.selectBlueprint(this.selectedBlueprint);
     } else if (changes['document'] && this.document) {
-      console.log('PdfViewerComponent: Document input changed', this.document);
+      // console.log('PdfViewerComponent: Document input changed', this.document);
       this.isBlueprintLoaded = false;
       this.selectedBlueprint = null;
       this.viewMode = 'pdf';
@@ -115,9 +150,11 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     this.page = 1;
     this.currentImageUrl = this.selectedBlueprint.pageImageUrls[0];
     this.displayedImageUrl = this.currentImageUrl;
-    console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
+    // console.log('PdfViewerComponent: Setting blueprint data in overlay state', this.selectedBlueprint.analysisData);
     if (this.selectedBlueprint.analysisData[1]) {
-      this.overlayState.setBlueprintData(this.selectedBlueprint.analysisData[1]);
+      this.overlayState.setBlueprintData(
+        this.selectedBlueprint.analysisData[1],
+      );
     } else {
       this.overlayState.setBlueprintData(null);
     }
@@ -126,26 +163,37 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   onPdfSelectionChange(event: Event): void {
     const selectElement = event.target as HTMLSelectElement;
     const selectedPdfUrl = selectElement.value;
-    const newSelection = this.blueprints.find(b => b.pdfUrl === selectedPdfUrl);
+    const newSelection = this.blueprints.find(
+      (b) => b.pdfUrl === selectedPdfUrl,
+    );
     if (newSelection) {
       this.selectBlueprint(newSelection);
     }
   }
   ngAfterViewInit(): void {
     if (this.viewMode === 'interactive') {
-        this.initializePanzoom();
+      this.initializePanzoom();
     }
 
     this.hidePageInput();
   }
 
-  ngOnDestroy(): void { this.panzoomInstance?.destroy(); }
+  ngOnDestroy(): void {
+    this.panzoomInstance?.destroy();
+  }
 
   initializePanzoom(): void {
     if (this.panzoomContent?.nativeElement) {
       const elem = this.panzoomContent.nativeElement;
-      this.panzoomInstance = Panzoom(elem, { maxScale: 10, minScale: 0.3, canvas: true });
-      this.viewerContainer.nativeElement.addEventListener('wheel', this.panzoomInstance.zoomWithWheel);
+      this.panzoomInstance = Panzoom(elem, {
+        maxScale: 10,
+        minScale: 0.3,
+        canvas: true,
+      });
+      this.viewerContainer.nativeElement.addEventListener(
+        'wheel',
+        this.panzoomInstance.zoomWithWheel,
+      );
       this.panzoomInstanceCreated.emit(this.panzoomInstance);
     }
   }
@@ -156,7 +204,8 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
       if (this.viewMode === 'interactive' && this.selectedBlueprint) {
         this.isImageLoading = true;
         this.imageDimensions = null;
-        this.currentImageUrl = this.selectedBlueprint.pageImageUrls[this.page - 1];
+        this.currentImageUrl =
+          this.selectedBlueprint.pageImageUrls[this.page - 1];
         this.panzoomInstance?.reset();
         const newPageData = this.selectedBlueprint.analysisData[pageNumber];
         this.overlayState.setBlueprintData(newPageData || null);
@@ -170,11 +219,16 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     const imgElement = event.target as HTMLImageElement;
     this.isImageLoading = false;
     this.displayedImageUrl = this.currentImageUrl;
-    this.imageDimensions = { width: imgElement.naturalWidth, height: imgElement.naturalHeight };
-    console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
+    this.imageDimensions = {
+      width: imgElement.naturalWidth,
+      height: imgElement.naturalHeight,
+    };
+    // console.log('PdfViewerComponent: Image loaded with dimensions', this.imageDimensions);
   }
 
-  onPdfTotalPages(pagesInfo: PagesInfo): void { this.totalPages = pagesInfo.pagesCount; }
+  onPdfTotalPages(pagesInfo: PagesInfo): void {
+    this.totalPages = pagesInfo.pagesCount;
+  }
 
   onViewModeChange(newMode: 'pdf' | 'interactive'): void {
     this.viewMode = newMode;
@@ -209,7 +263,11 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     const offset = this.lastDownX - event.clientX;
     const newWidth = this.pdfViewerCard.nativeElement.offsetWidth + offset;
 
-    this.renderer.setStyle(this.pdfViewerCard.nativeElement, 'width', `${newWidth}px`);
+    this.renderer.setStyle(
+      this.pdfViewerCard.nativeElement,
+      'width',
+      `${newWidth}px`,
+    );
 
     this.lastDownX = event.clientX;
   }
@@ -220,9 +278,9 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
   }
 
   openPopout(): void {
-    console.log('PdfViewerComponent: Opening popout...');
-    console.log('PdfViewerComponent: Dispatching blueprints to state', this.blueprints);
-    console.log('PdfViewerComponent: Dispatching selected blueprint to state', this.selectedBlueprint);
+    // console.log('PdfViewerComponent: Opening popout...');
+    // console.log('PdfViewerComponent: Dispatching blueprints to state', this.blueprints);
+    // console.log('PdfViewerComponent: Dispatching selected blueprint to state', this.selectedBlueprint);
     this.pdfViewerState.setBlueprints(this.blueprints);
     this.pdfViewerState.setSelectedBlueprint(this.selectedBlueprint);
     this.pdfViewerState.setIsPoppedOut(true);
@@ -230,11 +288,20 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
     const tree = this.router.createUrlTree(['/pdf-viewer-popout']);
     const url = `${window.location.origin}${this.router.serializeUrl(tree)}`;
     const features = [
-      'noopener', 'noreferrer',
-      'width=1200', 'height=900',
-      'menubar=no', 'toolbar=no', 'location=no', 'status=no'
+      'noopener',
+      'noreferrer',
+      'width=1200',
+      'height=900',
+      'menubar=no',
+      'toolbar=no',
+      'location=no',
+      'status=no',
     ].join(',');
-    const popoutWindow = window.open(url, 'probuild-blueprint-popout', features);
+    const popoutWindow = window.open(
+      url,
+      'probuild-blueprint-popout',
+      features,
+    );
 
     const checkPopoutClosed = setInterval(() => {
       if (popoutWindow?.closed) {
@@ -265,7 +332,7 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
       return;
     }
 
-    console.log('Opening PDF in new tab with ng2-pdfjs-viewer');
+    // console.log('Opening PDF in new tab with ng2-pdfjs-viewer');
 
     this.externalViewerId = `external-pdf-viewer-${uuidv4()}`;
     this.externalPdfViewer.pdfSrc = pdfUrl;
@@ -277,12 +344,17 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
 
   private hidePageInput(): void {
     const attemptHide = (retries = 0, maxRetries = 10) => {
-      const iframe = document.querySelector('ng2-pdfjs-viewer iframe') as HTMLIFrameElement;
+      const iframe = document.querySelector(
+        'ng2-pdfjs-viewer iframe',
+      ) as HTMLIFrameElement;
       if (iframe) {
         try {
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          const iframeDoc =
+            iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
-            const pageInput = iframeDoc.querySelector('#toolbarViewerLeft .loadingInput.start.toolbarHorizontalGroup');
+            const pageInput = iframeDoc.querySelector(
+              '#toolbarViewerLeft .loadingInput.start.toolbarHorizontalGroup',
+            );
             if (pageInput) {
               const style = iframeDoc.createElement('style');
               style.textContent = `
@@ -295,7 +367,10 @@ export class PdfViewerComponent implements OnChanges, OnDestroy, AfterViewInit {
             }
           }
         } catch (e) {
-          console.warn('Cannot access PDF viewer iframe (likely CORS issue):', e);
+          console.warn(
+            'Cannot access PDF viewer iframe (likely CORS issue):',
+            e,
+          );
         }
       }
 

@@ -5,8 +5,6 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './foreman-dashboard.component.html',
-  styleUrl: './foreman-dashboard.component.scss'
+  styleUrl: './foreman-dashboard.component.scss',
 })
-export class ForemanDashboardComponent {
-
-}
+export class ForemanDashboardComponent {}

@@ -129,6 +129,8 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
 
   form: FormGroup;
   map?: google.maps.Map;
+  userLatitude: number | null = null;
+  userLongitude: number | null = null;
   marker?: google.maps.Marker;
   mapReady = false;
   addressTypes: { id: string; name: string; description?: string }[] = []; // ✅ added
@@ -140,7 +142,7 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
     private zone: NgZone,
     private themeService: ThemeService,
     private profileService: ProfileService, // ✅ added
-    @Inject(MAT_DIALOG_DATA) public data: UserAddress | null
+    @Inject(MAT_DIALOG_DATA) public data: UserAddress | null,
   ) {
     this.form = this.fb.group({
       id: [data?.id || null],
@@ -167,10 +169,23 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadAddressTypes(); // ✅ dynamically populate dropdown
-
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.userLatitude = pos.coords.latitude;
+          this.userLongitude = pos.coords.longitude;
+          console.log(
+            '📍 Dialog user location:',
+            this.userLatitude,
+            this.userLongitude,
+          );
+        },
+        (err) => console.warn('Geolocation denied or failed:', err),
+      );
+    }
     if (!(window as any).google?.maps?.places) {
       console.error(
-        '❌ Google Maps JavaScript API with Places library not loaded.'
+        '❌ Google Maps JavaScript API with Places library not loaded.',
       );
       return;
     }
@@ -199,23 +214,48 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
     if (this.data?.latitude && this.data?.longitude) {
       setTimeout(
         () => this.showMap(this.data!.latitude!, this.data!.longitude!),
-        500
+        500,
       );
     }
   }
 
   private initAutocomplete(): void {
+    const options: google.maps.places.AutocompleteOptions = {
+      fields: [
+        'geometry',
+        'formatted_address',
+        'place_id',
+        'address_components',
+      ],
+    };
+
+    // ✅ Add proximity bias if location available
+    if (this.userLatitude && this.userLongitude) {
+      const center = new google.maps.LatLng(
+        this.userLatitude,
+        this.userLongitude,
+      );
+
+      // Create a bounding box around the user's location
+      const radiusInDegrees = 0.5; // ~50 km bias
+      const bounds = new google.maps.LatLngBounds(
+        new google.maps.LatLng(
+          center.lat() - radiusInDegrees,
+          center.lng() - radiusInDegrees,
+        ),
+        new google.maps.LatLng(
+          center.lat() + radiusInDegrees,
+          center.lng() + radiusInDegrees,
+        ),
+      );
+
+      options.bounds = bounds;
+      options.strictBounds = false; // allows suggestions outside box but biases inside
+    }
+
     const autocomplete = new google.maps.places.Autocomplete(
       this.addressInput.nativeElement,
-      {
-        fields: [
-          'geometry',
-          'formatted_address',
-          'place_id',
-          'address_components',
-        ],
-        componentRestrictions: { country: ['za', 'na'] },
-      }
+      options,
     );
 
     autocomplete.addListener('place_changed', () => {
@@ -226,7 +266,7 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
         const lat = place.geometry.location?.lat() || 0;
         const lng = place.geometry.location?.lng() || 0;
         const components = this.parseAddressComponents(
-          place.address_components || []
+          place.address_components || [],
         );
 
         this.form.patchValue({
@@ -243,7 +283,7 @@ export class AddressDialogComponent implements OnInit, AfterViewInit {
   }
 
   private parseAddressComponents(
-    components: google.maps.GeocoderAddressComponent[]
+    components: google.maps.GeocoderAddressComponent[],
   ) {
     const get = (type: string) =>
       components.find((c) => c.types.includes(type))?.long_name || '';

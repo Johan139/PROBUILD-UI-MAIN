@@ -1,0 +1,134 @@
+@use 'styles/util/mixins' as u;
+
+.event-dialog {
+  width: min(560px, 95vw);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-pop);
+  color: var(--color-text);
+  overflow: hidden; // clean rounded corners
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+
+  .title-wrap {
+    .title {
+      margin: 0;
+      font: var(--fw-bold) var(--fs-xl)/var(--lh-tight) var(--font-sans);
+      letter-spacing: .2px;
+    }
+    .subtitle {
+      margin: .25rem 0 0;
+      color: var(--color-text-subtle);
+      font-size: var(--fs-sm);
+    }
+  }
+
+  [mat-icon-button] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.dialog-body {
+  padding: var(--space-5);
+
+  .event-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+
+    .col-span-2 { grid-column: 1 / -1; }
+  }
+
+  .mat-mdc-form-field {
+    width: 100%;
+  }
+
+
+  // Outlined field upgrades (no ::ng-deep hacks for structure)
+  .mdc-text-field--outlined {
+    border-radius: var(--radius-md);
+  }
+
+  // Hover/focus border color lift using color-mix, keeps themeable
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: var(--color-border) !important;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  .mdc-text-field--outlined.mdc-text-field--focused .mdc-notched-outline__leading,
+  .mdc-text-field--outlined.mdc-text-field--focused .mdc-notched-outline__notch,
+  .mdc-text-field--outlined.mdc-text-field--focused .mdc-notched-outline__trailing {
+    border-color: color-mix(in oklab, var(--color-primary) 75%, var(--color-border)) !important;
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
+  }
+
+  // Input & label tone
+  .mdc-floating-label { color: var(--color-text-subtle); }
+  input.mdc-text-field__input,
+  textarea.mdc-text-field__input {
+    color: var(--color-text);
+  }
+}
+
+mat-divider {
+  border-color: var(--color-border);
+  opacity: .7;
+}
+
+.dialog-actions {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--color-surface) 100%, transparent),
+    color-mix(in oklab, var(--color-surface) 90%, transparent)
+  );
+  backdrop-filter: saturate(1.2) blur(4px);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+
+  .btn {
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-weight: var(--fw-semibold);
+    letter-spacing: .2px;
+    @include u.interactive-states;
+
+    &[disabled] {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .btn-icon { margin-right: .35rem; }
+  }
+
+  .btn-primary {
+    // keep Material color but add a subtle sheen
+    // box-shadow: 0 8px 18px -8px color-mix(in oklab, var(--color-primary) 60%, black);
+  }
+
+  .btn-ghost {
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    background: color-mix(in oklab, var(--color-surface) 92%, transparent);
+  }
+}
+
+// Responsive: collapse to single column under 520px
+@media (max-width: 520px) {
+  .dialog-body .event-form {
+    grid-template-columns: 1fr;
+  }
+}

@@ -14,6 +14,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+      function initApollo() {
+        var n = Math.random().toString(36).substring(7),
+          o = document.createElement("script");
+        o.src =
+          "https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=" + n;
+        o.async = true;
+        o.defer = true;
+        o.onload = function () {
+          window.trackingFunctions.onLoad({
+            appId: "67ebbde5c86ddc001533fc09",
+          });
+        };
+        document.head.appendChild(o);
+      }
+      initApollo();
+    </script>
 </head>
 <body class="mat-typography">
   <app-root></app-root>

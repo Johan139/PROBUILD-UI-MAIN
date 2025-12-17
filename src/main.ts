@@ -10,5 +10,6 @@ if (environment.production) {
 }
 
 // Bootstrap the app with the standalone API
-bootstrapApplication(AppComponent, appConfig)
-  .catch(err => console.error(err));
+bootstrapApplication(AppComponent, appConfig).catch((err) =>
+  console.error(err),
+);

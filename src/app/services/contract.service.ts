@@ -6,11 +6,10 @@ import { environment } from '../../environments/environment';
 const BASE_URL = environment.BACKEND_URL;
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ContractService {
-
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   generateContract(jobId: number): Observable<any> {
     return this.http.post(`${BASE_URL}/api/contracts/${jobId}/generate`, {});
@@ -21,6 +20,8 @@ export class ContractService {
   }
 
   signContract(contractId: string, signature: string): Observable<any> {
-    return this.http.post(`${BASE_URL}/api/contracts/${contractId}/sign`, { signature });
+    return this.http.post(`${BASE_URL}/api/contracts/${contractId}/sign`, {
+      signature,
+    });
   }
 }

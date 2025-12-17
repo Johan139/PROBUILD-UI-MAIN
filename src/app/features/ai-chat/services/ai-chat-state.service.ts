@@ -1,11 +1,16 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
-import { AiChatState, ChatMessage, Conversation, Prompt } from '../models/ai-chat.models';
+import {
+  AiChatState,
+  ChatMessage,
+  Conversation,
+  Prompt,
+} from '../models/ai-chat.models';
 import { JobDocument } from '../../../models/JobDocument';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AiChatStateService {
   private readonly initialState: AiChatState = {
@@ -22,35 +27,70 @@ export class AiChatStateService {
     selectedPrompts: [],
   };
 
-  private readonly stateSubject = new BehaviorSubject<AiChatState>(this.initialState);
+  private readonly stateSubject = new BehaviorSubject<AiChatState>(
+    this.initialState,
+  );
   private readonly state$ = this.stateSubject.asObservable();
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
-private _messages = new BehaviorSubject<ChatMessage[]>([]);
+  private _messages = new BehaviorSubject<ChatMessage[]>([]);
 
-  currentConversation$ = this.state$.pipe(map(state => state.currentConversation), distinctUntilChanged());
-  selectedPrompts$ = this.state$.pipe(map(state => state.selectedPrompts || []), distinctUntilChanged());
+  currentConversation$ = this.state$.pipe(
+    map((state) => state.currentConversation),
+    distinctUntilChanged(),
+  );
+  selectedPrompts$ = this.state$.pipe(
+    map((state) => state.selectedPrompts || []),
+    distinctUntilChanged(),
+  );
 
   // Selectors
-  isChatOpen$ = this.state$.pipe(map(state => state.isChatOpen), distinctUntilChanged());
-  isFullScreen$ = this.state$.pipe(map(state => state.isFullScreen), distinctUntilChanged());
-  isLoading$ = this.state$.pipe(map(state => state.isLoading), distinctUntilChanged());
-  error$ = this.state$.pipe(map(state => state.error), distinctUntilChanged());
-  prompts$ = this.state$.pipe(map(state => state.prompts), distinctUntilChanged());
-  conversations$ = this.state$.pipe(map(state => state.conversations), distinctUntilChanged());
-  activeConversationId$ = this.state$.pipe(map(state => state.activeConversationId), distinctUntilChanged());
-  messages$ = this.state$.pipe(map(state => state.messages), distinctUntilChanged());
-  documents$ = this.state$.pipe(map(state => state.documents), distinctUntilChanged());
+  isChatOpen$ = this.state$.pipe(
+    map((state) => state.isChatOpen),
+    distinctUntilChanged(),
+  );
+  isFullScreen$ = this.state$.pipe(
+    map((state) => state.isFullScreen),
+    distinctUntilChanged(),
+  );
+  isLoading$ = this.state$.pipe(
+    map((state) => state.isLoading),
+    distinctUntilChanged(),
+  );
+  error$ = this.state$.pipe(
+    map((state) => state.error),
+    distinctUntilChanged(),
+  );
+  prompts$ = this.state$.pipe(
+    map((state) => state.prompts),
+    distinctUntilChanged(),
+  );
+  conversations$ = this.state$.pipe(
+    map((state) => state.conversations),
+    distinctUntilChanged(),
+  );
+  activeConversationId$ = this.state$.pipe(
+    map((state) => state.activeConversationId),
+    distinctUntilChanged(),
+  );
+  messages$ = this.state$.pipe(
+    map((state) => state.messages),
+    distinctUntilChanged(),
+  );
+  documents$ = this.state$.pipe(
+    map((state) => state.documents),
+    distinctUntilChanged(),
+  );
 
- getCurrentConversationId(): string | null {
-   return this.stateSubject.getValue().activeConversationId;
- }
-
-  getConversationById(id: string): Conversation | undefined {
-    return this.stateSubject.getValue().conversations.find(c => c.Id === id);
+  getCurrentConversationId(): string | null {
+    return this.stateSubject.getValue().activeConversationId;
   }
 
- // State Updaters
- setIsChatOpen(isOpen: boolean): void {
+  getConversationById(id: string): Conversation | undefined {
+    return this.stateSubject.getValue().conversations.find((c) => c.Id === id);
+  }
+
+  // State Updaters
+  setIsChatOpen(isOpen: boolean): void {
     this.updateState({ isChatOpen: isOpen });
   }
 
@@ -93,19 +133,24 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
       message = { ...message, Id: tempId, status: 'sent' };
     }
 
-    const existingMessage = currentState.messages.find(m => {
-    // If both have valid IDs, check by ID
-    if (m.Id && message.Id && m.Id === message.Id) {
-      return true;
-    }
-    // If no ID or ID is 0, check by content and approximate timestamp
-    if (m.Content === message.Content &&
+    const existingMessage = currentState.messages.find((m) => {
+      // If both have valid IDs, check by ID
+      if (m.Id && message.Id && m.Id === message.Id) {
+        return true;
+      }
+      // If no ID or ID is 0, check by content and approximate timestamp
+      if (
+        m.Content === message.Content &&
         m.Role === message.Role &&
-        m.ConversationId === message.ConversationId) {
-      const timeDiff = Math.abs(new Date(m.Timestamp).getTime() - new Date(message.Timestamp).getTime());
-      return timeDiff < 5000; // Within 5 seconds
-    }
-    return false;
+        m.ConversationId === message.ConversationId
+      ) {
+        const timeDiff = Math.abs(
+          new Date(m.Timestamp).getTime() -
+            new Date(message.Timestamp).getTime(),
+        );
+        return timeDiff < 5000; // Within 5 seconds
+      }
+      return false;
     });
 
     if (existingMessage) {
@@ -118,23 +163,25 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
 
   updateMessage(updatedMessage: ChatMessage): void {
     const currentState = this.stateSubject.getValue();
-    const messages = currentState.messages.map(message =>
-      message.Id === updatedMessage.Id ? updatedMessage : message
+    const messages = currentState.messages.map((message) =>
+      message.Id === updatedMessage.Id ? updatedMessage : message,
     );
     this.updateState({ messages });
   }
 
   updateMessageStatus(messageId: number, status: 'sent' | 'failed'): void {
     const currentState = this.stateSubject.getValue();
-    const messages = currentState.messages.map(message =>
-      message.Id === messageId ? { ...message, status } : message
+    const messages = currentState.messages.map((message) =>
+      message.Id === messageId ? { ...message, status } : message,
     );
     this.updateState({ messages });
   }
 
   deleteMessage(messageId: number): void {
     const currentState = this.stateSubject.getValue();
-    const messages = currentState.messages.filter(message => message.Id !== messageId);
+    const messages = currentState.messages.filter(
+      (message) => message.Id !== messageId,
+    );
     this.updateState({ messages });
   }
 
@@ -144,7 +191,9 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
 
   addConversation(conversation: Conversation): void {
     const currentState = this.stateSubject.getValue();
-    this.updateState({ conversations: [...currentState.conversations, conversation] });
+    this.updateState({
+      conversations: [...currentState.conversations, conversation],
+    });
   }
 
   setMessages(messages: ChatMessage[]): void {
@@ -152,7 +201,7 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
   }
 
   setSelectedPrompts(selectedPrompts: number[]): void {
-   this.updateState({ selectedPrompts });
+    this.updateState({ selectedPrompts });
   }
 
   setCurrentConversation(conversation: Conversation | null): void {
@@ -160,8 +209,8 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
   }
 
   addDocuments(documents: JobDocument[]): void {
-      const currentState = this.stateSubject.getValue();
-      this.updateState({ documents: [...currentState.documents, ...documents] });
+    const currentState = this.stateSubject.getValue();
+    this.updateState({ documents: [...currentState.documents, ...documents] });
   }
 
   setDocuments(documents: JobDocument[]): void {
@@ -170,14 +219,17 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
 
   updateConversationTitle(conversationId: string, newTitle: string): void {
     const currentState = this.stateSubject.getValue();
-    const updatedConversations = currentState.conversations.map(c =>
-      c.Id === conversationId ? { ...c, Title: newTitle } : c
+    const updatedConversations = currentState.conversations.map((c) =>
+      c.Id === conversationId ? { ...c, Title: newTitle } : c,
     );
     this.updateState({ conversations: updatedConversations });
 
     if (currentState.currentConversation?.Id === conversationId) {
       this.updateState({
-        currentConversation: { ...currentState.currentConversation, Title: newTitle }
+        currentConversation: {
+          ...currentState.currentConversation,
+          Title: newTitle,
+        },
       });
     }
   }
@@ -191,24 +243,24 @@ private _messages = new BehaviorSubject<ChatMessage[]>([]);
     });
     this.updateState({ conversations: sortedConversations });
   }
-pushFinalStreamedMessage(content: string): void {
-  const conversationId = this.getCurrentConversationId();
-  if (!conversationId) return;
+  pushFinalStreamedMessage(content: string): void {
+    const conversationId = this.getCurrentConversationId();
+    if (!conversationId) return;
 
-  const currentMessages = this.stateSubject.getValue().messages;
+    const currentMessages = this.stateSubject.getValue().messages;
 
-  const newMessage: ChatMessage = {
-    Id: Date.now(), // temporary ID
-    ConversationId: conversationId,
-    Role: 'model',
-    Content: content,
-    IsSummarized: false,
-    Timestamp: new Date(),
-    status: 'sent'
-  };
+    const newMessage: ChatMessage = {
+      Id: Date.now(), // temporary ID
+      ConversationId: conversationId,
+      Role: 'model',
+      Content: content,
+      IsSummarized: false,
+      Timestamp: new Date(),
+      status: 'sent',
+    };
 
-  this.setMessages([...currentMessages, newMessage]);
-}
+    this.setMessages([...currentMessages, newMessage]);
+  }
   private updateState(partialState: Partial<AiChatState>): void {
     const currentState = this.stateSubject.getValue();
     const nextState = { ...currentState, ...partialState };
