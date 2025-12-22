@@ -86,12 +86,16 @@
                       <mat-label>Mobile Number</mat-label>
                       <input
                         matInput
-                        type="tel"
+                        type="text"
                         formControlName="phoneNumber"
                         placeholder="Enter mobile number"
                         required
-                        (input)="onPhoneInput($event)"
+                        (focus)="onPhoneFocus($event)"
+                        (keydown)="onPhoneKeyDown($event)"
+                        (blur)="onPhoneBlur($event)"
+                        (click)="onPhoneClick($event)"
                         (paste)="onPhonePaste($event)"
+                        autocomplete="tel"
                       />
 
                       <mat-error>

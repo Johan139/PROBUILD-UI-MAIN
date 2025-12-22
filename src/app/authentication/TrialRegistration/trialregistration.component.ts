@@ -1141,58 +1141,122 @@ export class TrialRegistrationComponent implements OnInit {
     );
   }
 
-  onPhoneInput(event: any) {
-    const inputEl = event.target as HTMLInputElement;
-    let value = inputEl.value || '';
-    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+  // REPLACE your existing phone-related methods with these:
+
+  onPhoneFocus(event: FocusEvent) {
     const phoneCtrl = this.registrationForm.get('phoneNumber');
+    if (!phoneCtrl) return;
 
-    // Clean illegal characters but allow + only at start
-    value = value
-      .replace(/[^0-9\s()+-]/g, '') // remove strange chars
-      .replace(/(?!^)\+/g, ''); // remove any '+' that isn’t at start
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+    const input = event.target as HTMLInputElement;
+    let value = phoneCtrl.value?.toString() || '';
 
-    if (dial) {
-      // Remove duplicate dial prefixes like +27+27 or +1+1
-      const duplicatePattern = new RegExp(
-        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`,
-      );
-      value = value.replace(duplicatePattern, dial);
+    // If empty or doesn't have dial code, set it
+    if (!value || !value.startsWith(dial)) {
+      phoneCtrl.setValue(dial, { emitEvent: false });
+      setTimeout(() => input.setSelectionRange(dial.length, dial.length), 0);
+    } else {
+      // Move cursor after dial code if it's before
+      const cursorPos = input.selectionStart || 0;
+      if (cursorPos < dial.length) {
+        setTimeout(() => input.setSelectionRange(dial.length, dial.length), 0);
+      }
+    }
+  }
 
-      // Ensure single '+'
-      if (!value.startsWith('+')) {
-        value = '+' + value.replace(/^\+*/, '');
-      }
+  onPhoneKeyDown(event: KeyboardEvent) {
+    const input = event.target as HTMLInputElement;
+    const cursorPos = input.selectionStart || 0;
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
 
-      // Reset if cleared
-      if (!value.trim()) {
-        value = dial;
-      }
-      // Prevent deleting dial prefix
-      else if (value.length < dial.length && dial.startsWith(value)) {
-        value = dial;
-      }
-      // Normalize weird +0 / +00 cases
-      else if (value === '+' || value === '+0') {
-        value = dial;
-      }
-      // If missing dial entirely → prepend
-      else if (!value.startsWith(dial)) {
-        let digits = value.replace(/^\+?0+/, '');
-        value = dial + digits;
-      }
-      // Fix "+270..." or "+440..."
-      else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
-        value = dial + value.substring(dial.length + 1);
+    // Prevent backspace/delete from removing the dial code
+    if (event.key === 'Backspace') {
+      if (cursorPos <= dial.length) {
+        event.preventDefault();
+        return;
       }
     }
 
-    // Final cleanup
-    value = value.replace(/\+\++/g, '+');
+    if (event.key === 'Delete') {
+      if (cursorPos < dial.length) {
+        event.preventDefault();
+        return;
+      }
+    }
 
-    inputEl.value = value;
-    phoneCtrl?.setValue(value, { emitEvent: false });
+    // Prevent arrow left from going into dial code
+    if (event.key === 'ArrowLeft' && cursorPos <= dial.length) {
+      event.preventDefault();
+      return;
+    }
+
+    // Prevent Home key from going before dial code
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setTimeout(() => input.setSelectionRange(dial.length, dial.length), 0);
+      return;
+    }
+
+    // Only allow digits and some special keys
+    if (event.key.length === 1) {
+      if (!/[0-9]/.test(event.key)) {
+        event.preventDefault();
+        return;
+      }
+    }
+
+    // Prevent selecting/cutting the dial code
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      (event.key === 'x' || event.key === 'a')
+    ) {
+      const selectionStart = input.selectionStart || 0;
+      if (selectionStart < dial.length) {
+        event.preventDefault();
+      }
+    }
   }
+
+  onPhoneBlur(event: FocusEvent) {
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+    if (!phoneCtrl) return;
+
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+    let value = phoneCtrl.value?.toString() || '';
+
+    // If only dial code, clear the field
+    if (value === dial || value.trim() === '') {
+      phoneCtrl.setValue('', { emitEvent: false });
+      return;
+    }
+
+    // Extract everything after dial code
+    const afterDial = value.startsWith(dial) ? value.slice(dial.length) : value;
+
+    // Clean: only digits, remove leading zeros
+    let digits = afterDial.replace(/\D/g, '').replace(/^0+/, '');
+
+    // Set clean value
+    const cleanValue = digits ? dial + digits : '';
+    phoneCtrl.setValue(cleanValue, { emitEvent: false });
+  }
+
+  onPhoneClick(event: MouseEvent) {
+    const input = event.target as HTMLInputElement;
+    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
+
+    setTimeout(() => {
+      const cursorPos = input.selectionStart || 0;
+      // If user clicks before dial code, move cursor after it
+      if (cursorPos < dial.length) {
+        input.setSelectionRange(dial.length, dial.length);
+      }
+    }, 0);
+  }
+
+  // Keep your existing onPhonePaste method - it's already correct
+
+  // REMOVE the onPhoneInput method completely - it's causing the issue
 
   onCountryCodeChange(selected: any) {
     this.selectedCountryCode = selected;
