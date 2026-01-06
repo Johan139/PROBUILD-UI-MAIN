@@ -1034,7 +1034,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.subtaskService
           .publishJob(this.projectDetails.jobId, this.projectDetails)
           .subscribe(() => {
-            this.snackBar.open('Job published successfully!', 'Close', {
+            this.snackBar.open('Project published successfully', 'Close', {
               duration: 3000,
             });
           });

@@ -41,6 +41,9 @@ import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.se
 import { MatTooltip } from '@angular/material/tooltip';
 import { NotificationsMenuComponent } from './components/notifications-menu/notifications-menu.component';
 import { ThemeService } from './theme.service';
+import { OnboardingService } from './features/onboarding/onboarding.service';
+import { OnboardingPromptComponent } from './features/onboarding/onboarding-prompt.component';
+import { OnboardingOverlayComponent } from './features/onboarding/onboarding-overlay.component';
 
 type NavItem = {
   label: string;
@@ -79,6 +82,8 @@ type NavItem = {
     MatListModule,
     MatIconModule,
     NotificationsMenuComponent,
+    OnboardingPromptComponent,
+    OnboardingOverlayComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
@@ -185,6 +190,7 @@ export class AppComponent implements OnInit, OnDestroy {
     domSanitizer: DomSanitizer,
     private aiChatStateService: AiChatStateService,
     public themeService: ThemeService,
+    public onboardingService: OnboardingService
   ) {
     effect(() => {
       // This effect will run whenever isDarkMode changes
@@ -242,6 +248,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.isBrowser) {
+      setTimeout(() => this.onboardingService.checkOnboardingStatus(), 2000);
+
       const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
       for (const event of events) {
         window.addEventListener(event, () => {
