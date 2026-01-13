@@ -49,7 +49,18 @@ import { ProjectService } from '../../../services/project.service';
 import { Project } from '../../../models/project';
 import { ProjectCardComponent } from '../../my-projects/project-card/project-card.component';
 import { ProjectsTableComponent } from '../../../components/projects-table/projects-table.component';
+import { ActionPointsWidgetComponent } from '../widgets/action-points-widget/action-points-widget.component';
+import { RecentProjectsWidgetComponent } from '../widgets/recent-projects-widget/recent-projects-widget.component';
+import {
+  DashboardWidget,
+  DashboardWidgetsService,
+} from '../widgets/dashboard-widgets.service';
+import { WeatherWidgetComponent } from '../widgets/weather-widget/weather-widget.component';
+import { CdkDragStart, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, moveItemInArray, CdkDrag } from '@angular/cdk/drag-drop';
+import { ViewChildren, QueryList, AfterViewInit } from '@angular/core';
 
+import { ViewEncapsulation } from '@angular/core';
 const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-new-user-dashboard',
@@ -71,18 +82,23 @@ const BASE_URL = environment.BACKEND_URL;
     MatMenuModule,
     MatIconModule,
     MatTableModule,
+    DragDropModule,
     ProjectCardComponent,
     ProjectsTableComponent,
     MatTooltipModule,
+    ActionPointsWidgetComponent,
+    RecentProjectsWidgetComponent,
+    WeatherWidgetComponent,
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
+  encapsulation: ViewEncapsulation.None,
   providers: [provideNativeDateAdapter(), DatePipe],
 })
 export class NewUserDashboardComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('approvalReasonDialog') approvalReasonDialog!: TemplateRef<any>;
-
+  @ViewChildren(CdkDrag) draggableItems!: QueryList<CdkDrag>;
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {
@@ -110,11 +126,13 @@ export class NewUserDashboardComponent implements OnInit {
   isBrowser: boolean;
   showApprovalInput: boolean = false;
   noteBeingApproved: any = null;
+  isDragging = false;
   alertMessage: string = '';
   showAlert: boolean = false;
   documents: any[] = [];
   isDocumentsLoading: boolean = false;
   documentsError: string | null = null;
+  dragIndex: number | null = null;
   notes: any[] = [];
   openingNoteId: string | null = null;
   taskData: any[] = [
@@ -148,7 +166,7 @@ export class NewUserDashboardComponent implements OnInit {
   projects: Project[] = [];
   currentIndex = 0;
   projectView: 'grid' | 'list' = 'grid';
-
+  widgets: any[] = [];
   constructor(
     private loginService: LoginService,
     private datePipe: DatePipe,
@@ -163,6 +181,7 @@ export class NewUserDashboardComponent implements OnInit {
     private noteService: NoteService,
     private userService: UserService,
     private projectService: ProjectService,
+    private dashboardWidgets: DashboardWidgetsService,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -187,11 +206,20 @@ export class NewUserDashboardComponent implements OnInit {
     }
     return 'Pending';
   }
-
+  resetDrag(event: any) {
+    event.source._dragRef.reset();
+  }
+  ngAfterViewInit() {
+    // Configure all drag items to follow cursor
+    this.draggableItems.forEach((dragItem) => {
+      dragItem._dragRef.beforeStarted.subscribe(() => {});
+    });
+  }
   ngOnInit() {
     this.isLoading = true;
     this.userType = this.loginService.getUserType();
-
+    const saved = localStorage.getItem('dashboardWidgets');
+    this.widgets = this.dashboardWidgets.getWidgets();
     if (this.authService.isTeamMember()) {
       this.teamManagementService.getMyTeams().subscribe((teams) => {
         this.teams = teams;
@@ -493,13 +521,6 @@ export class NewUserDashboardComponent implements OnInit {
       });
   }
 
-  archiveJob(jobId: number): void {
-    this.projectService.archiveProject(jobId);
-    this.snackBar.open('Job archived successfully!', 'Close', {
-      duration: 3000,
-    });
-  }
-
   startApproval(note: any) {
     this.noteBeingApproved = note;
     this.approvalReason = ''; // Clear previous reason if any
@@ -643,4 +664,152 @@ export class NewUserDashboardComponent implements OnInit {
   toggleProjectView(view: 'grid' | 'list') {
     this.projectView = view;
   }
+  isCustomizeMode = false;
+
+  toggleCustomizeMode() {
+    this.isCustomizeMode = !this.isCustomizeMode;
+
+    if (this.isCustomizeMode) {
+      // Set to custom layout when entering customize mode
+      this.currentLayout = {
+        id: 'custom',
+        label: 'Custom',
+        description: 'Your custom layout',
+      };
+    } else {
+      // Return to default layout when exiting customize mode
+      this.currentLayout = this.layouts[0]; // Default layout
+    }
+  }
+
+  isWidgetEnabled(id: string): boolean {
+    return this.dashboardWidgets.isEnabled(id);
+  }
+
+  toggleWidget(widgetId: string) {
+    this.dashboardWidgets.toggle(widgetId);
+  }
+
+  layouts: DashboardLayout[] = [
+    {
+      id: 'default',
+      label: 'Default',
+      description: 'Balanced 3-column layout',
+    },
+    {
+      id: 'compact',
+      label: 'Compact',
+      description: 'All widgets in small tiles',
+    },
+    {
+      id: 'focus',
+      label: 'Focus',
+      description: 'Large action view with sidebar',
+    },
+    {
+      id: 'monitoring',
+      label: 'Monitoring',
+      description: 'Full-width overview with all trackers',
+    },
+  ];
+
+  currentLayout: DashboardLayout = this.layouts[0];
+
+  selectLayout(layout: DashboardLayout) {
+    this.currentLayout = layout;
+
+    // Exit customize mode when selecting preset layouts
+    if (layout.id !== 'custom') {
+      this.isCustomizeMode = false;
+
+      // Apply the preset configuration from the service
+      this.dashboardWidgets.applyPreset(layout.id);
+
+      // Refresh widgets to reflect the new layout
+      this.widgets = this.dashboardWidgets.getWidgets();
+    }
+  }
+  onDragStarted() {
+    this.isDragging = true;
+  }
+  onDragEnded() {
+    this.isDragging = false;
+  }
+  onWidgetDrop(event: CdkDragDrop<any[]>) {
+    if (!this.isCustomizeMode) return;
+
+    const container = event.container.element.nativeElement as HTMLElement;
+    const items = Array.from(
+      container.querySelectorAll('.card'),
+    ) as HTMLElement[];
+
+    const pointerX = event.dropPoint?.x ?? (event.event as MouseEvent).clientX;
+    const pointerY = event.dropPoint?.y ?? (event.event as MouseEvent).clientY;
+
+    let targetIndex = event.previousIndex;
+
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect();
+
+      if (
+        pointerX >= rect.left &&
+        pointerX <= rect.right &&
+        pointerY >= rect.top &&
+        pointerY <= rect.bottom
+      ) {
+        targetIndex = i;
+        break;
+      }
+    }
+
+    if (targetIndex === event.previousIndex) return;
+
+    moveItemInArray(this.widgets, event.previousIndex, targetIndex);
+    this.dashboardWidgets.setWidgets(this.widgets);
+  }
+  onDragStart(index: number) {
+    this.dragIndex = index;
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault(); // REQUIRED
+  }
+
+  onDrop(targetIndex: number) {
+    if (this.dragIndex === null || this.dragIndex === targetIndex) return;
+
+    const moved = this.widgets.splice(this.dragIndex, 1)[0];
+    this.widgets.splice(targetIndex, 0, moved);
+
+    this.dragIndex = null;
+  }
+
+  trackByWidgetId(_: number, widget: any) {
+    return widget.id;
+  }
+  selectedWidgetForResize: string = '';
+
+  openSizePicker(event: Event, widgetId: string): void {
+    event.stopPropagation(); // Prevent toggle when clicking size badge
+    this.selectedWidgetForResize = widgetId;
+  }
+
+  changeWidgetSize(widgetId: string, size: 'small' | 'medium' | 'large'): void {
+    const widget = this.widgets.find((w) => w.id === widgetId);
+    if (widget) {
+      widget.size = size;
+      // If using service:
+      // this.widgetsService.setSize(widgetId, size);
+    }
+  }
+
+  getWidgetSize(widgetId: string): string {
+    const widget = this.widgets.find((w) => w.id === widgetId);
+    return widget?.size || 'medium';
+  }
+}
+interface DashboardLayout {
+  id: 'default' | 'compact' | 'focus' | 'monitoring' | 'custom';
+  label: string;
+  description: string;
 }

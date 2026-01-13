@@ -1,0 +1,43 @@
+<section class="card action-points-card">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="title-icon">error_outline</mat-icon>
+        <strong>Action Required</strong>
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p *ngIf="notes.length === 0" class="muted">
+        No action points assigned to you.
+      </p>
+
+      <div class="action-list-scroll" *ngIf="notes.length > 0">
+        <ul class="action-list">
+          <li
+            class="action-item"
+            *ngFor="let note of notes"
+            (click)="openNoteDialog(note)"
+          >
+            <span
+              class="status-dot"
+              [ngClass]="note.status?.toLowerCase()"
+            ></span>
+
+            <div class="action-text">
+              <div class="title">
+                {{ note.title || note.subtaskName }}
+              </div>
+              <div class="subtitle">{{ note.projectName }}</div>
+              <div class="date">
+                {{ note.createdAt | date: "yyyy-MM-dd" }}
+              </div>
+            </div>
+
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </li>
+        </ul>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</section>

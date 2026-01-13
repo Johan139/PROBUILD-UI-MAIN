@@ -1,0 +1,80 @@
+<section class="card weather-card">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="title-icon">wb_sunny</mat-icon>
+        <strong>Weather Forecast</strong>
+      </mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- CURRENT WEATHER -->
+      <div *ngIf="forecast?.length" class="current-weather">
+        <div class="left">
+          <div class="location">{{ locationLabel }}</div>
+          <div class="date">{{ forecast[0]?.date }}</div>
+
+          <div class="icon-condition">
+            <img
+              class="current-icon"
+              [src]="forecast[0]?.iconUrl"
+              alt="Weather icon"
+            />
+            <span class="condition">
+              {{ forecast[0]?.condition }}
+            </span>
+          </div>
+        </div>
+
+        <div class="right">
+          <div class="temp-big">
+            {{
+              measurementService.convertTemperature(forecast[0]?.highTemp)
+                | number: "1.0-0"
+            }}°
+          </div>
+
+          <div class="meta">
+            <div>Humidity: {{ forecast[0]?.humidity ?? 45 }}%</div>
+            <div>Wind: {{ forecast[0]?.windSpeed ?? 12 }} mph</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORECAST -->
+      <div *ngIf="forecast?.length" class="forecast-scroll">
+        <div *ngFor="let day of forecast | slice: 0 : 5" class="forecast-tile">
+          <div class="date">{{ day.date }}</div>
+          <img class="icon" [src]="day.iconUrl" alt="Weather icon" />
+          <div class="condition">{{ day.condition }}</div>
+
+          <div class="temps">
+            <span class="high">
+              {{
+                measurementService.convertTemperature(day.highTemp)
+                  | number: "1.0-0"
+              }}°
+            </span>
+            <span class="low">
+              {{
+                measurementService.convertTemperature(day.lowTemp)
+                  | number: "1.0-0"
+              }}°
+            </span>
+          </div>
+
+          <div
+            class="precip"
+            [class.warning]="day.precipitationProbability >= 60"
+          >
+            {{ day.precipitationProbability }}%
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="weatherError" class="weather-error">
+        {{ weatherError }}
+      </div>
+    </mat-card-content>
+  </mat-card>
+</section>

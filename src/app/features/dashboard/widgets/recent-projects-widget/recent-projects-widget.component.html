@@ -1,0 +1,69 @@
+<section class="card recent-projects-card">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="title-icon">folder</mat-icon>
+        <strong>Recent Projects</strong>
+      </mat-card-title>
+
+      <div class="view-toggle">
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('grid')"
+          [class.active]="projectView === 'grid'"
+        >
+          <mat-icon>grid_view</mat-icon>
+        </button>
+
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('list')"
+          [class.active]="projectView === 'list'"
+        >
+          <mat-icon>list</mat-icon>
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- GRID VIEW -->
+      <ng-container *ngIf="projectView === 'grid'">
+        <div class="carousel-controls">
+          <button
+            mat-icon-button
+            (click)="prevProject()"
+            [disabled]="currentIndex === 0"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <button
+            mat-icon-button
+            (click)="nextProject()"
+            [disabled]="currentIndex >= projects.length - 5"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+
+        <div class="projects-carousel">
+          <app-project-card
+            *ngFor="let project of visibleProjects"
+            [project]="project"
+            (onView)="loadJob($event)"
+            (onArchive)="archiveJob($event)"
+          ></app-project-card>
+        </div>
+      </ng-container>
+
+      <!-- LIST VIEW -->
+      <ng-container *ngIf="projectView === 'list'">
+        <app-projects-table
+          [projects]="projects"
+          (onView)="loadJob($event)"
+          (onArchive)="archiveJob($event)"
+        ></app-projects-table>
+      </ng-container>
+    </mat-card-content>
+  </mat-card>
+</section>
