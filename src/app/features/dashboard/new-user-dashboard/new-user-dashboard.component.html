@@ -221,10 +221,6 @@
       (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop(i)"
     >
       <ng-container [ngSwitch]="widget.id">
-        <app-recent-projects-widget
-          *ngSwitchCase="'recentProjects'"
-        ></app-recent-projects-widget>
-
         <app-action-points-widget
           *ngSwitchCase="'actionPoints'"
           [notes]="notes"
@@ -234,7 +230,9 @@
       </ng-container>
     </section>
   </div>
-
+  <div class="recent-projects-section">
+    <app-recent-projects-widget></app-recent-projects-widget>
+  </div>
   <!-- Documents Dialog -->
   <ng-template #documentsDialog>
     <div class="documents-dialog">

@@ -36,6 +36,7 @@ import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.compo
 import { BidsService } from '../../services/bids.service';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+type DocumentType = 'QUOTE' | 'INVOICE';
 
 @Component({
   selector: 'app-quote',
@@ -88,6 +89,26 @@ export class QuoteComponent implements OnInit {
   showFeeReminder = false;
   quoteDocuments: { url: string; name: string }[] = [];
   units: string[] = [];
+
+  documentType: DocumentType = 'QUOTE';
+
+  get isQuote(): boolean {
+    return this.documentType === 'QUOTE';
+  }
+
+  get isInvoice(): boolean {
+    return this.documentType === 'INVOICE';
+  }
+
+  switchToQuote(): void {
+    this.documentType = 'QUOTE';
+    this.quoteForm.patchValue({ header: 'QUOTE' });
+  }
+
+  switchToInvoice(): void {
+    this.documentType = 'INVOICE';
+    this.quoteForm.patchValue({ header: 'INVOICE' });
+  }
 
   @ViewChild('quoteContent', { static: false }) quoteContent!: ElementRef;
   @ViewChild('fileInput', { static: false }) fileInput!: ElementRef;
