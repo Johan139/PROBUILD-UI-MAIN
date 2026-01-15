@@ -64,6 +64,12 @@ mat-card-content {
     }
   }
 }
+.view-toggle button,
+.carousel-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 // CAROUSEL CONTROLS
 .carousel-controls {

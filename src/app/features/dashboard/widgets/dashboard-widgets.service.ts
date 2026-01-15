@@ -31,13 +31,6 @@ export class DashboardWidgetsService {
       size: 'small', // 6 columns (1/2 width)
       enabled: true,
     },
-    {
-      id: 'recentProjects',
-      title: 'Recent Projects',
-      icon: 'folder',
-      size: 'large', // 12 columns (full width, own row)
-      enabled: true,
-    },
   ];
 
   constructor() {
@@ -99,22 +92,18 @@ export class DashboardWidgetsService {
       default: [
         { id: 'weather', size: 'small' as WidgetSize },
         { id: 'actionPoints', size: 'medium' as WidgetSize },
-        { id: 'recentProjects', size: 'large' as WidgetSize },
       ],
       compact: [
         { id: 'weather', size: 'small' as WidgetSize },
         { id: 'actionPoints', size: 'small' as WidgetSize },
-        { id: 'recentProjects', size: 'large' as WidgetSize },
       ],
       focus: [
         { id: 'actionPoints', size: 'large' as WidgetSize },
         { id: 'weather', size: 'small' as WidgetSize },
-        { id: 'recentProjects', size: 'medium' as WidgetSize },
       ],
       monitoring: [
         { id: 'weather', size: 'large' as WidgetSize },
         { id: 'actionPoints', size: 'large' as WidgetSize },
-        { id: 'recentProjects', size: 'large' as WidgetSize },
       ],
     };
 

@@ -1,253 +1,395 @@
-<div class="container-fluid">
-  <div *ngIf="jobDetailsLoading" class="centered-spinner-container">
-    <mat-spinner></mat-spinner>
-  </div>
-  <div class="row" *ngIf="!jobDetailsLoading">
-    <div class="col-md-3">
-      <div class="job-card-container" *ngIf="jobDetails">
-        <app-job-card [job]="jobDetails"></app-job-card>
+<div *ngIf="jobDetailsLoading" class="centered-spinner-container">
+  <mat-spinner></mat-spinner>
+</div>
+
+<div class="quote-page" *ngIf="!jobDetailsLoading">
+  <!-- ================= TOP BAR (now inside grid) ================= -->
+  <div class="quote-editor-header full-width">
+    <!-- LEFT -->
+    <div class="header-left">
+      <div class="title-group">
+        <h1>{{ isQuote ? "Quote Editor" : "Invoice Editor" }}</h1>
+        <p>Generate professional documents for your clients</p>
+      </div>
+
+      <div class="header-actions">
+        <button mat-raised-button class="btn-primary">
+          <mat-icon>add</mat-icon>
+          {{ isQuote ? "New Quote" : "New Invoice" }}
+        </button>
+
+        <button mat-button class="drafts-btn">
+          <mat-icon>description</mat-icon>
+          Drafts
+          <span class="draft-count">2</span>
+        </button>
       </div>
     </div>
-    <div class="col-md-9">
-      <mat-card class="quote-card">
-        <mat-card-header>
-          <mat-card-title>Job Quote</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div *ngIf="showFeeReminder" class="alert alert-warning alert-dismissible fade show" role="alert">
-            <strong>Reminder:</strong> A fee (5% for Subcontractors, 2.5% for Vendors) will be applied if you win this bid
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" (click)="showFeeReminder = false"></button>
-          </div>
-          <div *ngIf="isFinalBiddingRound" class="alert alert-info" role="alert">
-            This is the final bidding round. You can either submit a revised offer or keep your original bid.
-          </div>
-          <mat-divider></mat-divider>
-          <form [formGroup]="quoteForm" #quoteContent>
-            <div class="form-row">
-              <div class="logo-container">
-                <div class="placeholder" *ngIf="!logoUrl" (click)="!readOnly && triggerFileInput()">
-                  <span class="material-icons">add</span> Add Your Logo
-                </div>
-                <img *ngIf="logoUrl" [src]="logoUrl" alt="Your Logo" class="logo-image">
-                <input #fileInput type="file" accept="image/*" class="file-input" (change)="onLogoChange($event)" [disabled]="readOnly">
-                <button *ngIf="logoUrl" mat-icon-button class="remove-logo" (click)="removeLogo()" [disabled]="readOnly">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-              <div class="invoice-header-details">
-                <mat-form-field appearance="fill">
-                  <mat-label>Title (e.g. Invoice)</mat-label>
-                  <input matInput formControlName="header">
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Quote #</mat-label>
-                  <span matPrefix>#&nbsp;</span>
-                  <input matInput formControlName="number">
-                </mat-form-field>
-              </div>
-            </div>
-            <div class="contact-row">
-              <mat-form-field appearance="fill">
-                <mat-label>From</mat-label>
-                <textarea matInput formControlName="from" placeholder="Who is this from?" rows="3"></textarea>
-              </mat-form-field>
-              <mat-form-field appearance="fill">
-                <mat-label>To</mat-label>
-                <textarea matInput formControlName="to" placeholder="Who is this to?" rows="3"></textarea>
-              </mat-form-field>
-            </div>
-            <div class="form-row">
-              <mat-form-field appearance="fill">
-                <mat-label>Date</mat-label>
-                <input matInput [matDatepicker]="pickerDate" formControlName="date">
-                <mat-datepicker-toggle matSuffix [for]="pickerDate"></mat-datepicker-toggle>
-                <mat-datepicker #pickerDate></mat-datepicker>
-              </mat-form-field>
-              <mat-form-field appearance="fill">
-                <mat-label>Payment Terms</mat-label>
-                <input matInput formControlName="paymentTerms">
-              </mat-form-field>
-              <mat-form-field appearance="fill">
-                <mat-label>Due Date</mat-label>
-                <input matInput [matDatepicker]="pickerDueDate" formControlName="dueDate">
-                <mat-datepicker-toggle matSuffix [for]="pickerDueDate"></mat-datepicker-toggle>
-                <mat-datepicker #pickerDueDate></mat-datepicker>
-              </mat-form-field>
-              <mat-form-field appearance="fill">
-                <mat-label>PO Number</mat-label>
-                <input matInput formControlName="poNumber">
-              </mat-form-field>
-            </div>
-            <div class="items-table-container">
-              <div class="table-wrapper">
-                <table mat-table [dataSource]="dataSource" class="themed-table">
-                  <!-- Item Column -->
-                  <ng-container matColumnDef="description">
-                    <th mat-header-cell *matHeaderCellDef>
-                      Item
-                    </th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <mat-form-field appearance="outline">
-                        <input matInput formControlName="description" placeholder="Description...">
-                      </mat-form-field>
-                    </td>
-                  </ng-container>
-                  <!-- Quantity Column -->
-                  <ng-container matColumnDef="quantity">
-                    <th mat-header-cell *matHeaderCellDef>
-                      Quantity
-                    </th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <mat-form-field appearance="outline">
-                        <input matInput type="number" formControlName="quantity" min="1">
-                      </mat-form-field>
-                    </td>
-                  </ng-container>
-                  <!-- Unit Column -->
-                  <ng-container matColumnDef="unit" class="unit-column">
-                    <th mat-header-cell *matHeaderCellDef>Unit</th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <mat-form-field appearance="fill">
-                        <mat-select formControlName="unit">
-                          <mat-option *ngFor="let unit of units" [value]="unit">{{ unit }}</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </td>
-                  </ng-container>
-                  <!-- Rate Column -->
-                  <ng-container matColumnDef="unitPrice">
-                    <th mat-header-cell *matHeaderCellDef>
-                      Price per unit
-                    </th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
-                      <mat-form-field appearance="outline">
-                        <input matInput type="number" class="right-align" formControlName="unitPrice" min="0" step="any">
-                      </mat-form-field>
-                    </td>
-                  </ng-container>
-                  <!-- Amount Column -->
-                  <ng-container matColumnDef="total" class="amount-column">
-                    <th mat-header-cell *matHeaderCellDef>
-                      Amount
-                    </th>
-                    <td mat-cell *matCellDef="let element; let i = index" [formGroup]="element" class="right-align">
-                      ${{ (element.get('total')?.value | number:'1.2-2') || '0.00' }}
-                    </td>
-                  </ng-container>
-                  <!-- Remove Column -->
-                  <ng-container matColumnDef="remove">
-                    <th mat-header-cell *matHeaderCellDef></th>
-                    <td mat-cell *matCellDef="let element; let i = index">
-                      <button *ngIf="quoteRows.length > 1" type="button" class="icon-btn" (click)="removeRow(i)" [disabled]="readOnly">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </td>
-                  </ng-container>
-                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                </table>
-              </div>
-              <button type="button" mat-stroked-button color="primary" (click)="addRow()" [disabled]="readOnly">
-                <mat-icon>add</mat-icon> Line Item
-              </button>
-            </div>
-            <div class="form-row">
-              <div class="notes-terms-section">
-                <mat-form-field appearance="fill">
-                  <mat-label>Notes</mat-label>
-                  <input matInput formControlName="notes" placeholder="Additional notes...">
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Terms</mat-label>
-                  <input matInput formControlName="terms" placeholder="Terms and conditions...">
-                </mat-form-field>
-              </div>
-              <div class="totals-section">
-                <div class="total-row">
-                  <span>Subtotal</span>
-                  <span class="right-align">${{ getSubtotal() | number:'1.2-2' }}</span>
-                </div>
-                <!-- Extra Costs -->
-                <div *ngIf="hasExtraCost" class="total-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Extra Costs</mat-label>
-                    <input matInput formControlName="extraCostValue" type="number" step="any">
-                    <button mat-icon-button matSuffix (click)="removeExtraCost()" [disabled]="readOnly">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </mat-form-field>
-                </div>
-                <div *ngIf="hasTax" class="total-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Tax %</mat-label>
-                    <input matInput formControlName="taxValue" type="number" step="any">
-                    <button mat-icon-button matSuffix (click)="removeTax()" [disabled]="readOnly">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </mat-form-field>
-                </div>
-                <div *ngIf="hasDiscount" class="total-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Discount %</mat-label>
-                    <input matInput formControlName="discountValue" type="number" step="any">
-                    <button mat-icon-button matSuffix (click)="removeDiscount()" [disabled]="readOnly">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </mat-form-field>
-                </div>
-                <div *ngIf="hasFlatTotal" class="total-row">
-                  <mat-form-field appearance="fill">
-                    <mat-label>Flat Total</mat-label>
-                    <input matInput formControlName="flatTotalValue" type="number" step="any">
-                    <button mat-icon-button matSuffix (click)="removeFlatTotal()" [disabled]="readOnly">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </mat-form-field>
-                </div>
-                <div class="extra-cost-buttons">
-                  <button *ngIf="!hasExtraCost" type="button" mat-button (click)="addExtraCost()" [disabled]="readOnly">+- Extra Costs</button>
-                  <button *ngIf="!hasTax" type="button" mat-button (click)="addTax()" [disabled]="readOnly">% Tax</button>
-                  <button *ngIf="!hasDiscount" type="button" mat-button (click)="addDiscount()" [disabled]="readOnly">% Discount</button>
-                  <button *ngIf="!hasFlatTotal" type="button" mat-button (click)="addFlatTotal()" [disabled]="readOnly">Flat Total</button>
-                </div>
-                <mat-divider></mat-divider>
-                <div class="total-row grand-total">
-                  <span>Total </span>
-                  <span class="right-align">${{ getGrandTotal() | number:'1.2-2' }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="action-section">
-              <div *ngIf="!isOwnQuote && quoteForm.get('status')?.value === 'Submitted'">
-                <button mat-raised-button color="primary" type="button" (click)="approveQuote()" [disabled]="!jobId">Approve</button>
-                <button mat-raised-button color="warn" type="button" (click)="rejectQuote()" [disabled]="!jobId">Reject</button>
-              </div>
-              <div *ngIf="quoteForm.get('status')?.value === 'Rejected'">
-                <button mat-raised-button type="button" (click)="saveToDatabase()" [disabled]="isSaving">Save as New</button>
-              </div>
-              <div *ngIf="!(['Submitted', 'Approved', 'Rejected'].includes(quoteForm.get('status')?.value))">
-                <button mat-raised-button class="btn-primary" type="button" (click)="saveToDatabase()" [disabled]="isSaving || readOnly">
-                  Save / Update Quote
-                </button>
-                <button mat-raised-button class="btn-primary" type="button" (click)="submitQuote()" [disabled]="isSaving || readOnly || !jobId">
-                  {{ isFinalBiddingRound ? 'Submit Final Offer' : 'Submit Quote' }}
-                </button>
-                <button *ngIf="isFinalBiddingRound" mat-raised-button type="button" (click)="keepOriginalBid()" [disabled]="isSaving || readOnly || !jobId">
-                  Keep Original Bid
-                </button>
-                <button mat-raised-button class="btn-primary" type="button" (click)="onSubmit()" [disabled]="isSaving || readOnly">
-                  Download Quote
-                </button>
-              </div>
-            </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
-    </div>
-    <div class="col-md-3" *ngIf="quoteDocuments && quoteDocuments.length > 0">
-      <div *ngFor="let doc of quoteDocuments">
-        <!-- <app-pdf-viewer [document]="doc"></app-pdf-viewer>  TODO: Reenable once complete -->
+
+    <!-- RIGHT -->
+    <div class="header-right">
+      <div class="doc-toggle">
+        <button
+          class="toggle-btn"
+          [class.active]="isQuote"
+          (click)="switchToQuote()"
+        >
+          <mat-icon>request_quote</mat-icon>
+          Quote
+        </button>
+
+        <button
+          class="toggle-btn"
+          [class.active]="isInvoice"
+          (click)="switchToInvoice()"
+        >
+          <mat-icon>receipt_long</mat-icon>
+          Invoice
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- ================= LEFT SIDEBAR ================= -->
+  <aside class="quote-sidebar">
+    <!-- Company Logo -->
+    <section class="sidebar-card">
+      <h4>Company Logo</h4>
+
+      <div class="logo-container" (click)="!readOnly && triggerFileInput()">
+        <div class="placeholder" *ngIf="!logoUrl">
+          <mat-icon>cloud_upload</mat-icon>
+          <span>Upload Logo</span>
+        </div>
+
+        <img
+          *ngIf="logoUrl"
+          [src]="logoUrl"
+          class="logo-image"
+          alt="Company Logo"
+        />
+
+        <input
+          #fileInput
+          type="file"
+          accept="image/*"
+          class="file-input"
+          (change)="onLogoChange($event)"
+          [disabled]="readOnly"
+        />
+
+        <button
+          *ngIf="logoUrl"
+          mat-icon-button
+          class="remove-logo"
+          (click)="removeLogo()"
+          [disabled]="readOnly"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </section>
+
+    <!-- Company Details -->
+    <section class="sidebar-card">
+      <div class="sidebar-header">
+        <h4>Company Details</h4>
+        <button mat-icon-button class="edit-button">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </div>
+
+      <div class="sidebar-text">
+        {{ quoteForm.get("from")?.value }}
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="sidebar-card">
+      <h4>Quick Actions</h4>
+      <button mat-button>View All Documents</button>
+      <button mat-button>Client Directory</button>
+      <button mat-button>Template Settings</button>
+    </section>
+  </aside>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="quote-main">
+    <form [formGroup]="quoteForm">
+      <!-- ================= QUOTE HEADER ================= -->
+      <header class="quote-top-header">
+        <!-- LEFT -->
+        <div class="company-block">
+          <div class="company-name">tester</div>
+
+          <div class="company-details">
+            123 Business Street, City, State 12345<br />
+            (555) 123-4567 | info&#64;yourcompany.com
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="quote-block">
+          <div class="quote-title">
+            {{ isQuote ? "QUOTE" : "INVOICE" }}
+          </div>
+
+          <div class="quote-meta-row">
+            <span>{{ isQuote ? "Quote #" : "Invoice #" }}:</span>
+            <input
+              class="meta-input"
+              type="text"
+              formControlName="number"
+              readonly
+            />
+          </div>
+
+          <div class="quote-meta-row">
+            <span>Date:</span>
+            <input class="meta-input" type="date" formControlName="date" />
+          </div>
+          <div class="quote-meta-row">
+            <span>{{ isQuote ? "Valid Until:" : "Due Date:" }}</span>
+            <input class="meta-input" type="date" formControlName="dueDate" />
+          </div>
+        </div>
+      </header>
+
+      <div class="section-divider"></div>
+      <!-- ================= ALERTS ================= -->
+      <div *ngIf="showFeeReminder" class="alert alert-warning">
+        <strong>Reminder:</strong>
+        A fee (5% Subcontractors, 2.5% Vendors) applies if you win this bid.
+      </div>
+
+      <div *ngIf="isFinalBiddingRound" class="alert alert-info">
+        This is the final bidding round.
+      </div>
+
+      <!-- ================= BILL TO / PROJECT ================= -->
+      <section class="details-section">
+        <!-- Bill To -->
+        <div class="details-card">
+          <h4 class="section-title">Bill To:</h4>
+
+          <div class="field-stack">
+            <input
+              type="text"
+              class="dark-input"
+              placeholder="Client Name"
+              formControlName="to"
+            />
+
+            <input
+              type="text"
+              class="dark-input"
+              placeholder="Client Address"
+            />
+
+            <div class="field-row">
+              <input type="text" class="dark-input" placeholder="Phone" />
+              <input type="email" class="dark-input" placeholder="Email" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Project -->
+        <div class="details-card">
+          <h4 class="section-title">Project Details:</h4>
+
+          <div class="field-stack">
+            <input type="text" class="dark-input" placeholder="Project Name" />
+            <input
+              type="text"
+              class="dark-input"
+              placeholder="Project Address"
+            />
+          </div>
+        </div>
+      </section>
+      <div class="section-divider"></div>
+      <!-- ================= LINE ITEMS ================= -->
+      <section class="line-items-section" formArrayName="quoteRows">
+        <h4 class="section-title">Line Items</h4>
+
+        <!-- Header -->
+        <div class="line-items-header">
+          <span>Description</span>
+          <span>Qty</span>
+          <span>Unit</span>
+          <span>Unit Price</span>
+          <span class="amount-col">Amount</span>
+          <span></span>
+        </div>
+
+        <!-- Rows -->
+        <div
+          class="line-item-row"
+          *ngFor="let _ of quoteRows.controls; let i = index"
+          [formGroupName]="i"
+        >
+          <input
+            type="text"
+            class="dark-input"
+            formControlName="description"
+            placeholder="Item description"
+          />
+
+          <input
+            type="number"
+            class="dark-input qty-input"
+            formControlName="quantity"
+            min="1"
+          />
+
+          <select class="dark-input" formControlName="unit">
+            <option *ngFor="let unit of units" [value]="unit">
+              {{ unit }}
+            </option>
+          </select>
+
+          <input
+            type="number"
+            class="dark-input price-input"
+            formControlName="unitPrice"
+            min="0"
+            step="any"
+          />
+
+          <div class="amount-cell">
+            ${{ quoteRows.at(i).get("total")?.value | number: "1.2-2" }}
+          </div>
+
+          <button
+            mat-icon-button
+            class="delete-btn"
+            *ngIf="quoteRows.length > 1"
+            (click)="removeRow(i)"
+            [disabled]="readOnly"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+
+        <!-- Add -->
+        <button
+          mat-stroked-button
+          class="add-line-btn"
+          (click)="addRow()"
+          [disabled]="readOnly"
+        >
+          <mat-icon>add</mat-icon>
+          Add Line Item
+        </button>
+      </section>
+      <div class="section-divider"></div>
+      <!-- ================= TOTALS ================= -->
+      <section class="totals-section">
+        <!-- Subtotal -->
+        <div class="totals-row">
+          <span class="label">Subtotal:</span>
+          <div></div>
+          <span class="value"> ${{ getSubtotal() | number: "1.2-2" }} </span>
+        </div>
+
+        <!-- Discount -->
+        <div class="totals-row">
+          <span class="label">Discount:</span>
+
+          <div class="inline-input">
+            <select class="dark-input small">
+              <option>%</option>
+            </select>
+            <input
+              type="number"
+              class="dark-input small"
+              formControlName="discountValue"
+            />
+          </div>
+
+          <span class="value negative">
+            -{{
+              (hasDiscount
+                ? (getSubtotal() *
+                    (quoteForm.get("discountValue")?.value || 0)) /
+                  100
+                : 0
+              ) | number: "1.2-2"
+            }}
+          </span>
+        </div>
+
+        <!-- Tax -->
+        <div class="totals-row">
+          <span class="label">Tax Rate:</span>
+
+          <div class="inline-input">
+            <input
+              type="number"
+              class="dark-input small"
+              formControlName="taxValue"
+            />
+            <span class="suffix">%</span>
+          </div>
+
+          <span class="value">
+            {{
+              (hasTax
+                ? (getSubtotal() * (quoteForm.get("taxValue")?.value || 0)) /
+                  100
+                : 0
+              ) | number: "1.2-2"
+            }}
+          </span>
+        </div>
+
+        <div class="totals-divider"></div>
+
+        <!-- Total -->
+        <div class="totals-row total">
+          <span class="label">Total:</span>
+          <div></div>
+          <span class="value total-amount">
+            ${{ getGrandTotal() | number: "1.2-2" }}
+          </span>
+        </div>
+      </section>
+
+      <!-- ================= NOTES / TERMS ================= -->
+      <section class="notes-terms">
+        <mat-form-field appearance="outline">
+          <mat-label>Notes</mat-label>
+          <textarea matInput rows="4" formControlName="notes"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Terms & Conditions</mat-label>
+          <textarea matInput rows="4" formControlName="terms"></textarea>
+        </mat-form-field>
+      </section>
+
+      <!-- ================= ACTION BAR ================= -->
+      <footer class="quote-actions">
+        <button mat-button>Preview</button>
+        <button mat-button>Duplicate</button>
+        <button mat-button color="warn">Delete</button>
+
+        <span class="spacer"></span>
+
+        <button mat-stroked-button (click)="saveToDatabase()">
+          Save Draft
+        </button>
+        <button mat-stroked-button (click)="onSubmit()">Export PDF</button>
+
+        <button
+          mat-raised-button
+          class="btn-primary"
+          (click)="submitQuote()"
+          [disabled]="readOnly || !jobId"
+        >
+          Send to Client
+        </button>
+      </footer>
+    </form>
+  </main>
 </div>
