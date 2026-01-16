@@ -329,19 +329,27 @@ export class ReportService {
     confidenceScore: number;
     sheetCount: number;
     roomCount: number;
+    rooms: { name: string; area: string }[];
+    dimensionalAccuracy?: number;
+    completeness?: number;
+    readability?: number;
   }> {
     try {
       const results = await this.jobsService
         .GetBillOfMaterials(jobId)
         .toPromise();
       if (!results || results.length === 0 || !results[0].fullResponse) {
-        return { confidenceScore: 0, sheetCount: 0, roomCount: 0 };
+        return { confidenceScore: 0, sheetCount: 0, roomCount: 0, rooms: [] };
       }
       const fullResponse = results[0].fullResponse;
 
       let confidenceScore = 0;
       let sheetCount = 0;
       let roomCount = 0;
+      let rooms: { name: string; area: string }[] = [];
+      let dimensionalAccuracy = 0;
+      let completeness = 0;
+      let readability = 0;
 
       const patterns = [
         /Overall Confidence Index\*\*\|\s*\*\*(\d+)%\*\*/,
@@ -356,6 +364,28 @@ export class ReportService {
           confidenceScore = parseInt(match[1], 10);
           break;
         }
+      }
+
+      // Extract detailed breakdown
+      const dimMatch = fullResponse.match(/Dimensional Accuracy\s*\|\s*(\d+)%/i);
+      if (dimMatch && dimMatch[1])
+        dimensionalAccuracy = parseInt(dimMatch[1], 10);
+
+      const compMatch = fullResponse.match(
+        /Completeness of Sheets\s*\|\s*(\d+)%/i,
+      );
+      if (compMatch && compMatch[1]) completeness = parseInt(compMatch[1], 10);
+
+      const readMatch = fullResponse.match(
+        /Readability & Clarity\s*\|\s*(\d+)%/i,
+      );
+      if (readMatch && readMatch[1]) readability = parseInt(readMatch[1], 10);
+
+      // Recalculate Overall Score based on components if available to ensure consistency
+      if (dimensionalAccuracy > 0 || completeness > 0 || readability > 0) {
+        confidenceScore = Math.round(
+          (dimensionalAccuracy + completeness + readability) / 3,
+        );
       }
 
       const sheetMatch = fullResponse.match(/Sheet Numbers\*\* \| (.*?)\s*\|/);
@@ -390,15 +420,44 @@ export class ReportService {
                 !trimmed.includes(':---')
               );
             });
-            roomCount = lines.length - 1; // TODO Check if header or total lines are counted
+            roomCount = lines.length;
+
+            rooms = lines
+              .map((line) => {
+                const parts = line
+                  .split('|')
+                  .map((p) => p.trim())
+                  .filter((p) => p !== '');
+                if (parts.length >= 2) {
+                  return { name: parts[0], area: parts[1] };
+                }
+                return null;
+              })
+              .filter((r): r is { name: string; area: string } => r !== null);
           }
         }
       }
 
-      return { confidenceScore, sheetCount, roomCount };
+      return {
+        confidenceScore,
+        sheetCount,
+        roomCount,
+        rooms,
+        dimensionalAccuracy,
+        completeness,
+        readability,
+      };
     } catch (err) {
       console.error('Failed to get blueprint intelligence:', err);
-      return { confidenceScore: 0, sheetCount: 0, roomCount: 0 };
+      return {
+        confidenceScore: 0,
+        sheetCount: 0,
+        roomCount: 0,
+        rooms: [],
+        dimensionalAccuracy: 0,
+        completeness: 0,
+        readability: 0,
+      };
     }
   }
 
@@ -523,5 +582,103 @@ export class ReportService {
     });
 
     return json;
+  }
+
+  async getCostSummary(jobId: string): Promise<{
+    bidPrice: number;
+    directCosts: number;
+    overheadAndProfit: number;
+    contingency: number;
+    escalation: number;
+    taxes: number;
+  }> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return {
+          bidPrice: 0,
+          directCosts: 0,
+          overheadAndProfit: 0,
+          contingency: 0,
+          escalation: 0,
+          taxes: 0,
+        };
+      }
+      const fullResponse = results[0].fullResponse;
+
+      let bidPrice = 0;
+      let directCosts = 0;
+      let overheadAndProfit = 0;
+      let contingency = 0;
+      let escalation = 0;
+      let taxes = 0;
+
+      // Extract Bid Price
+      const bidMatch = fullResponse.match(
+        /Calculated GC Bid Price.*?\$([\d,]+\.?\d*)/,
+      );
+      if (bidMatch && bidMatch[1]) {
+        bidPrice = parseFloat(bidMatch[1].replace(/,/g, ''));
+      }
+
+      // Extract Direct Costs
+      const directMatch = fullResponse.match(
+        /Subtotal \(Direct.*?\).*?\$([\d,]+\.?\d*)/,
+      );
+      if (directMatch && directMatch[1]) {
+        directCosts = parseFloat(directMatch[1].replace(/,/g, ''));
+      }
+
+      // Extract GC Overhead & Profit
+      const profitMatch = fullResponse.match(
+        /GC Overhead & Profit.*?\$([\d,]+\.?\d*)/,
+      );
+      if (profitMatch && profitMatch[1]) {
+        overheadAndProfit = parseFloat(profitMatch[1].replace(/,/g, ''));
+      }
+
+      // Extract Contingency
+      const contingencyMatch = fullResponse.match(
+        /Contingency Reserve.*?\$([\d,]+\.?\d*)/,
+      );
+      if (contingencyMatch && contingencyMatch[1]) {
+        contingency = parseFloat(contingencyMatch[1].replace(/,/g, ''));
+      }
+
+      // Extract Escalation
+      const escalationMatch = fullResponse.match(
+        /Cost Escalation Allowance.*?\$([\d,]+\.?\d*)/,
+      );
+      if (escalationMatch && escalationMatch[1]) {
+        escalation = parseFloat(escalationMatch[1].replace(/,/g, ''));
+      }
+
+      // Extract Taxes
+      const taxesMatch = fullResponse.match(/Sales Tax.*?\$([\d,]+\.?\d*)/);
+      if (taxesMatch && taxesMatch[1]) {
+        taxes = parseFloat(taxesMatch[1].replace(/,/g, ''));
+      }
+
+      return {
+        bidPrice,
+        directCosts,
+        overheadAndProfit,
+        contingency,
+        escalation,
+        taxes,
+      };
+    } catch (err) {
+      console.error('Failed to get cost summary:', err);
+      return {
+        bidPrice: 0,
+        directCosts: 0,
+        overheadAndProfit: 0,
+        contingency: 0,
+        escalation: 0,
+        taxes: 0,
+      };
+    }
   }
 }

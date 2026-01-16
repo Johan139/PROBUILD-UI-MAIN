@@ -19,6 +19,10 @@ export class ContractService {
     return this.http.get(`${BASE_URL}/api/contracts/${contractId}`);
   }
 
+  getContractsByJobId(jobId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${BASE_URL}/api/contracts/job/${jobId}`);
+  }
+
   signContract(contractId: string, signature: string): Observable<any> {
     return this.http.post(`${BASE_URL}/api/contracts/${contractId}/sign`, {
       signature,

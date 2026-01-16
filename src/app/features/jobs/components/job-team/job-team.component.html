@@ -1,0 +1,124 @@
+<div class="team-tab-container">
+  <div class="team-grid">
+    <!-- Internal Team Section -->
+    <mat-card class="team-card">
+      <div class="card-header">
+        <div class="header-content">
+          <div class="icon-container yellow-bg">
+            <mat-icon class="yellow-text">people</mat-icon>
+          </div>
+          <div>
+            <h3>Internal Team</h3>
+            <p class="subtitle">{{ internalTeam.length }} members assigned</p>
+          </div>
+        </div>
+        <button
+          mat-flat-button
+          class="action-btn yellow-btn"
+          (click)="openAddTeamMemberDialog()"
+        >
+          <mat-icon>person_add</mat-icon>
+          Add Team Member
+        </button>
+      </div>
+
+      <div class="member-list">
+        <div *ngFor="let member of internalTeam" class="member-item">
+          <button class="member-btn" (click)="openMemberDetail(member)">
+            <div class="avatar yellow-bg yellow-text">
+              {{ getInitials(member.firstName + " " + member.lastName) }}
+            </div>
+            <div class="member-info">
+              <p class="name">{{ member.firstName }} {{ member.lastName }}</p>
+              <p class="role">
+                {{ (member.jobRole || "" | roleDisplay) || "Team Member" }}
+              </p>
+            </div>
+            <div class="member-meta desktop-only">
+              <p class="department">
+                {{ member.userType || "" | roleDisplay }}
+              </p>
+              <!-- <p class="start-date">Since {{ member.startDate }}</p> -->
+            </div>
+          </button>
+          <button
+            mat-icon-button
+            class="remove-btn"
+            (click)="confirmRemove(member, 'team')"
+            matTooltip="Remove member"
+          >
+            <mat-icon>person_remove</mat-icon>
+          </button>
+        </div>
+
+        <div *ngIf="internalTeam.length === 0" class="empty-state">
+          <p>No internal team members assigned.</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Subcontractors Section -->
+    <mat-card class="team-card">
+      <div class="card-header">
+        <div class="header-content">
+          <div class="icon-container yellow-bg">
+            <mat-icon class="yellow-text">engineering</mat-icon>
+          </div>
+          <div>
+            <h3>Subcontractors</h3>
+            <p class="subtitle">{{ subcontractors.length }} trades assigned</p>
+          </div>
+        </div>
+        <button
+          mat-flat-button
+          class="action-btn yellow-btn"
+          (click)="openAddSubcontractorDialog()"
+        >
+          <mat-icon>add</mat-icon>
+          Add Subcontractor
+        </button>
+      </div>
+
+      <div class="member-list">
+        <div *ngFor="let sub of subcontractors" class="member-item">
+          <button class="member-btn" (click)="openSubcontractorDetail(sub)">
+            <div class="avatar gray-bg">
+              <mat-icon class="yellow-text">build</mat-icon>
+            </div>
+            <div class="member-info">
+              <div class="trade-row">
+                <p class="name">
+                  {{ (sub.jobRole || "" | roleDisplay) || "Subcontractor" }}
+                </p>
+                <!-- TODO: Status pill mocked, need real data -->
+                <span class="status-pill confirmed">Confirmed</span>
+              </div>
+              <p class="company">{{ sub.firstName }} {{ sub.lastName }}</p>
+            </div>
+            <div class="member-meta desktop-only">
+              <!-- TODO: Mock contract value -->
+              <!-- <p class="contract-value">$0.00</p> -->
+              <!-- TODO: Rating mock -->
+              <div class="rating">
+                <mat-icon class="star-icon">star</mat-icon>
+                <span>{{ ratings[sub.id] || 0 }}</span>
+              </div>
+            </div>
+          </button>
+          <button
+            mat-icon-button
+            class="remove-btn"
+            (click)="confirmRemove(sub, 'sub')"
+            matTooltip="Remove subcontractor"
+          >
+            <mat-icon>person_remove</mat-icon>
+          </button>
+        </div>
+
+        <div *ngIf="subcontractors.length === 0" class="empty-state">
+          <p>No subcontractors assigned.</p>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</div>

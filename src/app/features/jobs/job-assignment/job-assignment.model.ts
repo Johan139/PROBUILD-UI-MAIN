@@ -20,6 +20,7 @@ export interface JobUser {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  email?: string;
   userType?: string;
   jobRole?: string;
 }

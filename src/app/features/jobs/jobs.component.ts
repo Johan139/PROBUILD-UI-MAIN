@@ -15,15 +15,11 @@ import {
   NgForOf,
   NgIf,
   isPlatformBrowser,
-  DecimalPipe,
-  CurrencyPipe,
   CommonModule,
 } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import {
   MatCard,
-  MatCardHeader,
-  MatCardTitle,
   MatCardContent,
 } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
@@ -91,7 +87,6 @@ import { SpreadsheetService } from './services/spreadsheet.service';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { TeamManagementService } from '../../services/team-management.service';
 import {
-  JobAssignment,
   JobUser,
   JobAssignmentLink,
 } from './job-assignment/job-assignment.model';
@@ -99,7 +94,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { SharedModule } from '../../shared/shared.module';
 import { userTypes } from '../../data/user-types';
 import { BudgetService } from './services/budget.service';
-import { BudgetLineItem } from '../../models/budget-line-item.model';
 import { ProjectBlueprintViewerComponent } from '../../components/project-blueprint-viewer/project-blueprint-viewer.component';
 import { ProjectOverviewComponent } from './project-overview/project-overview.component';
 import { Project } from '../../models/project';
@@ -111,6 +105,8 @@ import { JobsService } from '../../services/jobs.service';
 import { ProjectService } from '../../services/project.service';
 import { ProjectBudgetTrackingComponent } from './project-budget-tracking/project-budget-tracking.component';
 import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dialog.component';
+import { ConstructionPhasesComponent } from './components/construction-phases/construction-phases.component';
+import { JobTeamComponent } from './components/job-team/job-team.component';
 
 @Component({
   selector: 'app-jobs',
@@ -121,12 +117,8 @@ import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dial
     ReactiveFormsModule,
     NgIf,
     NgForOf,
-    DecimalPipe,
-    CurrencyPipe,
     MatButton,
     MatCard,
-    MatCardHeader,
-    MatCardTitle,
     MatCardContent,
     MatDivider,
     MatIconModule,
@@ -149,6 +141,8 @@ import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dial
     ProjectBlueprintViewerComponent,
     ProjectOverviewComponent,
     ProjectBudgetTrackingComponent,
+    ConstructionPhasesComponent,
+    JobTeamComponent,
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
@@ -218,6 +212,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Project Overview Data
   overviewProjects: Project[] = [];
+  liveProjectsCount: number = 0;
+  biddingProjectsCount: number = 0;
 
   // Team Data
   assignedTeamMembers: JobUser[] = [];
@@ -526,9 +522,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
-    this.projectService.projects$.subscribe(
-      (projects) => (this.overviewProjects = projects),
-    );
+    this.projectService.projects$.subscribe((projects) => {
+      this.overviewProjects = projects;
+      this.calculateProjectCounts();
+    });
     this.projectService.loadProjects();
 
     this.sessionId = uuidv4();
@@ -1044,6 +1041,24 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   closeAlert(): void {
     this.showAlert = false;
+  }
+
+  private calculateProjectCounts(): void {
+    if (!this.overviewProjects) {
+      this.liveProjectsCount = 0;
+      this.biddingProjectsCount = 0;
+      return;
+    }
+
+    this.liveProjectsCount = this.overviewProjects.filter(
+      (p) =>
+        (p.status || '').toUpperCase() === 'LIVE' ||
+        (p.status || '').toUpperCase() === 'ACTIVE',
+    ).length;
+
+    this.biddingProjectsCount = this.overviewProjects.filter(
+      (p) => (p.status || '').toUpperCase() === 'BIDDING',
+    ).length;
   }
 
   private checkProjectOwnerStatus(jobId: string, userId: string): void {

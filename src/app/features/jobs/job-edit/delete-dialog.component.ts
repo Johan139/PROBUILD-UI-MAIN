@@ -6,76 +6,100 @@ import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
   standalone: true,
   imports: [MatDialogModule],
   template: `
-    <h2 mat-dialog-title>Are you sure you want to delete?</h2>
+    <h2 mat-dialog-title>Delete Task</h2>
     <mat-dialog-content>
-      <p>Are you sure you want to delete a subtask line?</p>
+      <p>Are you sure you want to delete this task? This action cannot be undone.</p>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button class="dialog-btn return-btn" (click)="onReturn()">
-        No
+      <button mat-button class="dialog-btn cancel-btn" (click)="onReturn()">
+        Cancel
       </button>
-      <button mat-button class="dialog-btn confirm-btn" (click)="onConfirm()">
-        Yes
+      <button mat-button class="dialog-btn delete-btn" (click)="onConfirm()">
+        Delete
       </button>
     </mat-dialog-actions>
   `,
   styles: [
     `
+      :host {
+        display: block;
+        background-color: #18181b;
+        color: white;
+        border: 1px solid #3f3f46;
+        border-radius: 8px;
+        padding: 16px;
+      }
+
       h2 {
-        font-size: 1.5rem;
+        font-size: 1.125rem;
         font-weight: 600;
-        color: #333;
-        margin-bottom: 16px;
+        color: white;
+        margin: 0 0 8px 0;
       }
 
       p {
-        font-size: 1rem;
-        color: #555;
+        font-size: 0.875rem;
+        color: #a1a1aa;
         line-height: 1.5;
-        margin-bottom: 16px;
+        margin: 0;
+      }
+
+      mat-dialog-content {
+        margin: 0 0 24px 0;
+        padding: 0 !important;
+        max-height: none;
       }
 
       mat-dialog-actions {
         display: flex;
-        gap: 12px;
-        padding-top: 16px;
+        gap: 8px;
+        padding: 0;
+        margin: 0;
+        justify-content: flex-end;
       }
 
       .dialog-btn {
         padding: 8px 16px;
         border-radius: 6px;
         font-weight: 500;
-        transition: background-color 0.3s ease;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
       }
 
-      .return-btn {
-        background-color: #fbd008; /* Yellow */
-        color: #333;
+      .cancel-btn {
+        background-color: transparent;
+        color: white;
+        border-color: #52525b;
       }
 
-      .return-btn:hover {
-        background-color: #e6bf00; /* Darker yellow */
+      .cancel-btn:hover {
+        background-color: #27272a;
       }
 
-      .confirm-btn {
-        background-color: #fbd008; /* Red */
-        color: 333;
+      .delete-btn {
+        background-color: #dc2626;
+        color: white;
       }
 
-      .confirm-btn:hover {
-        background-color: #fbd008; /* Darker red */
+      .delete-btn:hover {
+        background-color: #b91c1c;
       }
     `,
   ],
 })
 export class DeleteDialogComponent {
-  constructor(public dialogRef: MatDialogRef<DeleteDialogComponent>) {}
+  constructor(public dialogRef: MatDialogRef<DeleteDialogComponent>) {
+    dialogRef.addPanelClass('dark-theme-dialog');
+  }
 
   onReturn(): void {
-    this.dialogRef.close(false); // Return false to indicate cancellation was not confirmed
+    this.dialogRef.close(false);
   }
 
   onConfirm(): void {
-    this.dialogRef.close(true); // Return true to indicate cancellation was confirmed
+    this.dialogRef.close(true);
   }
 }

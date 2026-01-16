@@ -1,0 +1,100 @@
+<div class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <lucide-angular [img]="AlertCircle" class="modal-title-icon"></lucide-angular>
+        <h3>Weather Impact Alert</h3>
+      </div>
+      <button class="btn-icon" (click)="onClose()">
+        <lucide-angular [img]="X" class="icon-md"></lucide-angular>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="weather-summary-box">
+        <p class="summary-title">Forecasted Impact</p>
+        <div class="impact-stats">
+          <div class="impact-stat">
+            <p class="stat-large-danger">+{{ totalDelayDays }}</p>
+            <p class="stat-label">Days Delay</p>
+          </div>
+          <div class="impact-stat">
+            <p class="stat-large-danger">{{ affectedTasks.length }}</p>
+            <p class="stat-label">Tasks Affected</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <p class="section-title-sm">Affected Tasks</p>
+        <div class="task-list-simple">
+          <div *ngFor="let task of affectedTasks" class="task-row-simple">
+            <span class="task-name-sm">{{ task }}</span>
+            <span class="task-status-sm">Will be rescheduled</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="section-header">
+            <p class="section-title-sm">Team Members to Notify</p>
+            <button class="btn-text btn-add" (click)="toggleAddMember()">
+                {{ isAddingMember ? 'Done' : '+ Add' }}
+            </button>
+        </div>
+
+        <div class="task-list-simple">
+          <div *ngFor="let member of membersToNotify" class="task-row-simple">
+            <div class="member-info-group">
+                <button class="btn-icon btn-remove" (click)="removeMember(member)">
+                    <lucide-angular [img]="X" class="icon-xs"></lucide-angular>
+                </button>
+                <div class="member-details">
+                    <p class="member-name">{{ member.firstName }} {{ member.lastName }}</p>
+                    <p class="member-role">{{ member.jobRole || member.role }}</p>
+                </div>
+            </div>
+            <span class="notification-badge">
+              <lucide-angular [img]="Bell" class="icon-xs"></lucide-angular>
+              Will be notified
+            </span>
+          </div>
+          <div *ngIf="membersToNotify.length === 0" class="empty-state-text">
+            No team members selected.
+          </div>
+        </div>
+
+        <!-- Add Member Selection -->
+        <div *ngIf="isAddingMember" class="add-member-panel">
+            <input type="text" placeholder="Search team..." class="search-input" [formControl]="searchControl">
+            <div class="member-list-scroll">
+                <div *ngFor="let member of filteredAvailableMembers"
+                     class="member-option"
+                     (click)="addMember(member)">
+                    <span>{{ member.firstName }} {{ member.lastName }} ({{ member.jobRole || member.role }})</span>
+                    <lucide-angular [img]="Plus" class="icon-add"></lucide-angular>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="timeline-adjustment-preview">
+        <div class="date-group">
+          <p class="date-label">Current Completion</p>
+          <p class="date-val">{{ currentCompletionDate | date }}</p>
+        </div>
+        <lucide-angular [img]="ChevronRight" class="arrow-icon"></lucide-angular>
+        <div class="date-group">
+          <p class="date-label">New Completion</p>
+          <p class="date-val val-warning">{{ estimatedCompletionDate | date }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline modal-btn" (click)="onClose()">Dismiss</button>
+      <button class="btn-primary modal-btn" (click)="onAdjust()">
+        <lucide-angular [img]="Send" class="btn-icon-left"></lucide-angular>
+        Adjust & Notify Team
+      </button>
+    </div>
+  </div>
+</div>

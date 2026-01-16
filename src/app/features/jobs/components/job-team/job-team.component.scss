@@ -1,0 +1,226 @@
+.team-tab-container {
+  padding: var(--space-4);
+
+  .team-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+}
+
+.team-card {
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: none;
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+
+      .icon-container {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.yellow-bg {
+          background-color: color-mix(in oklab, var(--color-primary) 20%, transparent);
+        }
+
+        .yellow-text {
+          color: var(--color-primary);
+        }
+      }
+
+      h3 {
+        margin: 0;
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-bold);
+        color: var(--color-text);
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: var(--fs-sm);
+        color: var(--color-text-muted);
+      }
+    }
+
+    .action-btn {
+      border-radius: 8px !important;
+      &.yellow-btn {
+        background-color: var(--color-primary);
+        color: var(--color-text-inverse);
+        font-weight: var(--fw-semibold);
+
+        &:hover {
+          background-color: var(--color-primary-hover);
+        }
+      }
+    }
+  }
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-subtle);
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .member-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: 1;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--fw-bold);
+      font-size: var(--fs-sm);
+      color: var(--color-text-inverse);
+
+      &.yellow-bg {
+        background-color: color-mix(in oklab, var(--color-primary) 20%, transparent);
+        color: var(--color-primary);
+      }
+
+      &.gray-bg {
+        background-color: var(--color-surface-hover);
+        border-radius: var(--radius-lg);
+        color: var(--color-primary);
+      }
+
+      .yellow-text {
+        color: var(--color-primary);
+      }
+    }
+
+    .member-info {
+      flex: 1;
+
+      .name {
+        margin: 0;
+        font-weight: var(--fw-medium);
+        font-size: var(--fs-base);
+        color: var(--color-text);
+      }
+
+      .role, .company {
+        margin: 0;
+        font-size: var(--fs-sm);
+        color: var(--color-text-muted);
+      }
+
+      .trade-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+
+        .status-pill {
+          font-size: var(--fs-xs);
+          padding: 2px 8px;
+          border-radius: 9999px;
+
+          &.confirmed {
+            background-color: color-mix(in oklab, var(--color-success) 20%, transparent);
+            color: var(--color-success);
+          }
+
+          &.pending {
+            background-color: color-mix(in oklab, var(--color-warning) 20%, transparent);
+            color: var(--color-warning);
+          }
+        }
+      }
+    }
+
+    .member-meta {
+      text-align: right;
+
+      .department, .contract-value {
+        margin: 0;
+        font-size: var(--fs-sm);
+        color: var(--color-text);
+      }
+
+      .start-date, .rating {
+        margin: 0;
+        font-size: var(--fs-xs);
+        color: var(--color-text-muted);
+      }
+
+      .rating {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px;
+
+        .star-icon {
+          font-size: 12px;
+          width: 12px;
+          height: 12px;
+          color: var(--color-primary);
+        }
+      }
+    }
+  }
+
+  .remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: var(--space-4);
+    color: var(--color-danger);
+
+    &:hover {
+      background-color: color-mix(in oklab, var(--color-danger) 10%, transparent);
+    }
+  }
+}
+
+.empty-state {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+}

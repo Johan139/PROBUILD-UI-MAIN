@@ -33,6 +33,14 @@
     <div class="action-buttons">
       <button
         *ngIf="isProjectOwner"
+        class="submit-btn save-btn"
+        (click)="subtaskService.acceptAllSubtasks()"
+        matTooltip="Mark all subtasks as approved"
+      >
+        Accept All Subtasks
+      </button>
+      <button
+        *ngIf="isProjectOwner"
         class="submit-btn publish-btn"
         mat-raised-button
         (click)="publishJob()"
@@ -165,7 +173,7 @@
       (click)="setActiveTab('budget')"
       [class.active]="activeTab === 'budget'"
     >
-      Budget Tracking
+      Budget
     </button>
     <button
       (click)="setActiveTab('timeline')"
@@ -192,8 +200,8 @@
     <div class="fullcolumn">
       <app-project-overview
         [projects]="overviewProjects"
-        [liveProjectsCount]="12"
-        [biddingProjectsCount]="5"
+        [liveProjectsCount]="liveProjectsCount"
+        [biddingProjectsCount]="biddingProjectsCount"
         [projectDetails]="projectDetails"
         [isLoading]="isLoading"
         [startDateDisplay]="startDateDisplay"
@@ -201,6 +209,7 @@
         [weatherError]="store.getState().weatherError"
         [temperatureUnit]="temperatureUnit"
         [teamMemberCount]="assignedTeamMembers.length"
+        [assignedTeamMembers]="assignedTeamMembers"
         [timelineData]="timelineGroups"
         (navigateToTab)="handleTabNavigation($event)"
       ></app-project-overview>
@@ -242,330 +251,22 @@
           <mat-panel-title>Tasks and Subtasks</mat-panel-title>
         </mat-expansion-panel-header>
         <mat-divider></mat-divider>
-        <div class="subtask-section">
-          <div
-            class="subtask-table"
-            *ngFor="let table of store.getState().subtaskGroups"
-          >
-            <div class="table-header">
-              <h3>{{ table.title }}</h3>
-              <button
-                *ngIf="authService.hasPermission('createJobs')"
-                class="submit-btn"
-                (click)="subtaskService.addSubtask(table)"
-              >
-                Add Subtask
-              </button>
-            </div>
-            <table class="themed-table">
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Days</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Task Status</th>
-                  <th>Actions</th>
-                  <th>Notes</th>
-                  <th>Approve</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  *ngFor="
-                    let subtask of subtaskService.getVisibleSubtasks(table);
-                    let i = index
-                  "
-                >
-                  <td>
-                    <input
-                      type="text"
-                      [(ngModel)]="subtask.task"
-                      class="no-border"
-                      [readonly]="!isProjectOwner"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      [(ngModel)]="subtask.days"
-                      class="no-border"
-                      [readonly]="!isProjectOwner"
-                      (change)="
-                        isProjectOwner &&
-                          subtaskService.updateSubtaskDates(table, i)
-                      "
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date"
-                      [(ngModel)]="subtask.startDate"
-                      class="no-border"
-                      [readonly]="!isProjectOwner"
-                      (change)="
-                        isProjectOwner &&
-                          subtaskService.updateSubtaskDates(table, i)
-                      "
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date"
-                      [(ngModel)]="subtask.endDate"
-                      class="no-border"
-                      [readonly]="!isProjectOwner"
-                    />
-                  </td>
-                  <td>
-                    {{ subtask.status || "Pending" }}
-                    <!-- ✅ Non-editable status display -->
-                  </td>
-                  <td>
-                    <button
-                      *ngIf="authService.hasPermission('deleteJobs')"
-                      class="submit-btn delete-btn"
-                      (click)="subtaskService.deleteSubtask(table, i)"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      class="submit-btn"
-                      (click)="openNoteDialog(subtask)"
-                    >
-                      Update
-                    </button>
-                  </td>
-                  <td>
-                    <mat-checkbox
-                      [(ngModel)]="subtask.accepted"
-                      [disabled]="!isProjectOwner"
-                    ></mat-checkbox>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="action-buttons">
-          <button
-            *ngIf="isProjectOwner"
-            class="submit-btn save-btn"
-            (click)="subtaskService.acceptAllSubtasks()"
-            matTooltip="Mark all subtasks as approved"
-          >
-            Accept All Subtasks
-          </button>
-          <button
-            *ngIf="isProjectOwner"
-            class="submit-btn publish-btn"
-            mat-raised-button
-            (click)="publishJob()"
-            matTooltip="Make this job available for bidding by subcontractors and vendors"
-            matTooltipShowDelay="500"
-          >
-            Publish Job for Bidding
-          </button>
-          <button
-            *ngIf="isProjectOwner"
-            class="submit-btn save-btn"
-            mat-raised-button
-            (click)="subtaskService.saveOnly()"
-            matTooltip="Save the current state of the job and subtasks without publishing"
-            matTooltipShowDelay="500"
-          >
-            Save Job
-          </button>
-          <button
-            *ngIf="isProjectOwner"
-            class="submit-btn delete-btn"
-            mat-raised-button
-            (click)="subtaskService.discard()"
-            matTooltip="Discard all changes and revert the job to its last saved state"
-            matTooltipShowDelay="500"
-          >
-            Discard Job
-          </button>
-          <!-- Reports Dropdown -->
-          <button
-            class="submit-btn save-btn"
-            mat-raised-button
-            [matMenuTriggerFor]="reportsMenu"
-            matTooltip="View project reports and documents"
-            matTooltipShowDelay="500"
-          >
-            <mat-icon>download</mat-icon>
-            Export Report
-          </button>
-          <mat-menu #reportsMenu="matMenu">
-            <button mat-menu-item (click)="openDocumentsDialog()">
-              <mat-icon>description</mat-icon>
-              <span>View Documents</span>
-            </button>
-            <button
-              mat-menu-item
-              (click)="openReportDialog()"
-              [disabled]="isReportLoading"
-            >
-              <mat-icon>assessment</mat-icon>
-              <span *ngIf="!isReportLoading">View Full Report</span>
-              <span *ngIf="isReportLoading">Loading...</span>
-            </button>
-            <button mat-menu-item (click)="openBillOfMaterialsDialog()">
-              <mat-icon>list_alt</mat-icon>
-              <span>View Bill of Materials</span>
-            </button>
-            <button
-              mat-menu-item
-              (click)="openExecutiveSummaryDialog()"
-              [disabled]="isReportLoading"
-            >
-              <mat-icon>summarize</mat-icon>
-              <span *ngIf="!isReportLoading">View Executive Summary</span>
-              <span *ngIf="isReportLoading">Loading...</span>
-            </button>
-            <button
-              mat-menu-item
-              *ngIf="!projectDetails?.isSelected"
-              (click)="openEnvironmentalReportDialog()"
-              [disabled]="isReportLoading"
-            >
-              <mat-icon>eco</mat-icon>
-              <span *ngIf="!isReportLoading">View Environmental Report</span>
-              <span *ngIf="isReportLoading">Loading...</span>
-            </button>
-          </mat-menu>
-        </div>
+        <app-construction-phases
+          [groups]="store.getState().subtaskGroups"
+          [isProjectOwner]="isProjectOwner"
+        >
+        </app-construction-phases>
       </mat-expansion-panel>
     </mat-accordion>
   </div>
 
   <!-- TEAM TAB -->
   <div *ngIf="activeTab === 'team'" class="tab-content fade-in">
-    <div class="two-column-grid">
-      <!-- Invite Form -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Invite New Member</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <form [formGroup]="teamForm" (ngSubmit)="inviteTeamMember()">
-            <div class="form-row" style="flex-direction: column">
-              <mat-form-field appearance="fill" style="width: 100%">
-                <mat-label>First Name</mat-label>
-                <input matInput formControlName="firstName" placeholder=" " />
-                <mat-error
-                  *ngIf="teamForm.get('firstName')?.hasError('required')"
-                >
-                  Mandatory Field
-                </mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%">
-                <mat-label>Last Name</mat-label>
-                <input matInput formControlName="lastName" placeholder=" " />
-                <mat-error
-                  *ngIf="teamForm.get('lastName')?.hasError('required')"
-                >
-                  Mandatory Field
-                </mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%">
-                <mat-label>Role</mat-label>
-                <mat-select formControlName="role">
-                  <mat-option
-                    *ngFor="let role of availableRoles"
-                    [value]="role.value"
-                  >
-                    {{ role.display }}
-                  </mat-option>
-                </mat-select>
-                <mat-error *ngIf="teamForm.get('role')?.hasError('required')">
-                  Mandatory Field
-                </mat-error>
-              </mat-form-field>
-              <mat-form-field appearance="fill" style="width: 100%">
-                <mat-label>Email</mat-label>
-                <input matInput formControlName="email" placeholder=" " />
-                <mat-error *ngIf="teamForm.get('email')?.hasError('required')">
-                  Mandatory Field
-                </mat-error>
-                <mat-error *ngIf="teamForm.get('email')?.hasError('email')">
-                  Invalid email format
-                </mat-error>
-              </mat-form-field>
-
-              <button
-                mat-raised-button
-                color="primary"
-                type="submit"
-                [disabled]="teamForm.invalid || isSendingInvite"
-                matTooltip="Send invite and assign to this job"
-                matTooltipShowDelay="500"
-              >
-                {{ isSendingInvite ? "Sending..." : "Invite & Assign" }}
-              </button>
-            </div>
-          </form>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Member List -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Assigned Team Members</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div *ngIf="isLoadingTeam">
-            <app-loader></app-loader>
-          </div>
-
-          <div class="sub-list" *ngIf="!isLoadingTeam">
-            <div
-              *ngIf="assignedTeamMembers.length === 0"
-              style="
-                padding: 1rem;
-                text-align: center;
-                color: var(--color-text-muted);
-              "
-            >
-              No team members assigned to this project yet.
-            </div>
-            <div class="sub-item" *ngFor="let user of assignedTeamMembers">
-              <div>
-                <p class="name">{{ user.firstName }} {{ user.lastName }}</p>
-                <p class="draws">{{ user.jobRole || "" | roleDisplay }}</p>
-              </div>
-              <div>
-                <button
-                  class="btn-icon-danger"
-                  (click)="removeTeamMember(user)"
-                  matTooltip="Remove from project"
-                  matTooltipShowDelay="500"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="22" x2="16" y1="11" y2="11" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+    <app-job-team
+      [projectDetails]="projectDetails"
+      [assignedTeamMembers]="assignedTeamMembers"
+      (refreshTeam)="loadAssignedTeam()"
+    ></app-job-team>
   </div>
 
   <!-- BLUEPRINTS TAB -->

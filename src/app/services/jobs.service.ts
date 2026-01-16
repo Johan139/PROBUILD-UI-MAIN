@@ -26,7 +26,7 @@ export class JobsService {
     delete payload.Blueprint;
     delete payload.UserContextFile;
 
-    console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
+    // console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
     return this.httpClient.post<any>(`${BASE_URL}/${id}`, payload, { headers });
   }
 

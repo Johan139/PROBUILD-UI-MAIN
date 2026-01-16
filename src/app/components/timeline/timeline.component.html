@@ -26,8 +26,27 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
             <span>
-              {{formatDate(viewStartDate, 'MMM d, yyyy')}} - {{formatDate(getEndDate(), 'MMM d, yyyy')}}
+              {{formatDate(visibleStartDate, 'MMM d, yyyy')}} - {{formatDate(visibleEndDate, 'MMM d, yyyy')}}
             </span>
+          </div>
+
+          <!-- Zoom Controls -->
+          <div class="zoom-controls" style="margin-left: 1rem; display: flex; gap: 0.5rem;">
+            <button class="nav-btn" (click)="zoomIn()" title="Zoom In">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"></path>
+              </svg>
+            </button>
+            <button class="nav-btn" (click)="zoomOut()" title="Zoom Out">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6"></path>
+              </svg>
+            </button>
+            <button class="nav-btn" (click)="resetZoom()" title="Reset Zoom">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -58,18 +77,20 @@
 
       <!-- Timeline Header - Weekly Dates -->
       <div #headerRef class="timeline-header">
-        <div
-          *ngFor="let week of weeklyDates; let i = index"
-          class="week-cell"
-          [class.current-week]="isCurrentWeek(week.start)">
-          <div class="week-label">{{formatDate(week.start, 'MMM d')}}</div>
-          <div class="week-days">
-            <div
-              *ngFor="let day of week.days"
-              class="day-cell"
-              [class.weekend]="isWeekend(day)"
-              [class.today]="isToday(day)">
-              {{formatDate(day, 'd')}}
+        <div #headerContent class="header-content" [style.width.px]="contentWidth">
+          <div
+            *ngFor="let week of weeklyDates; let i = index"
+            class="week-cell"
+            [class.current-week]="isCurrentWeek(week.start)">
+            <div class="week-label">{{formatDate(week.start, 'MMM d')}}</div>
+            <div class="week-days">
+              <div
+                *ngFor="let day of week.days"
+                class="day-cell"
+                [class.weekend]="isWeekend(day)"
+                [class.today]="isToday(day)">
+                {{formatDate(day, 'd')}}
+              </div>
             </div>
           </div>
         </div>
@@ -80,65 +101,65 @@
         #timelineRef
         class="timeline-grid"
         [style.height.px]="timelineHeight"
-        (scroll)="onGridScroll()"
         >
+        <div #panzoomContainer class="panzoom-content" [style.width.px]="contentWidth">
+          <!-- Grid Background -->
+          <div class="grid-background">
+            <div
+              *ngFor="let week of weeklyDates"
+              class="week-grid"
+              [class.current-week-bg]="isCurrentWeek(week.start)">
+              <div
+                *ngFor="let day of week.days"
+                class="day-grid"
+                [class.weekend-bg]="isWeekend(day)"
+                [class.today-bg]="isToday(day)">
+              </div>
+            </div>
+          </div>
 
-        <!-- Grid Background -->
-        <div class="grid-background">
+          <!-- Task Groups (Main Tasks) -->
           <div
-            *ngFor="let week of weeklyDates"
-            class="week-grid"
-            [class.current-week-bg]="isCurrentWeek(week.start)">
-            <div
-              *ngFor="let day of week.days"
-              class="day-grid"
-              [class.weekend-bg]="isWeekend(day)"
-              [class.today-bg]="isToday(day)">
+            *ngFor="let group of taskGroups; let groupIndex = index"
+            class="task-group-bar"
+            [ngClass]="['status-' + getGroupStatus(group), 'schedule-status-' + getScheduleStatus(group)]"
+            [class.critical]="isGroupCritical(group)"
+            [class.dragging]="draggingGroup === group.title"
+            [class.read-only]="!isProjectOwner"
+            [style]="getGroupStyle(group, groupIndex)"
+            [attr.data-group]="group.title"
+            [title]="getGroupTooltip(group)"
+            (mousedown)="handleDragStart($event, group)">
+
+            <div class="task-content">
+              <div class="task-name">{{group.title}}</div>
+              <div class="task-duration">
+                {{formatDate(group.startDate!, 'MMM d')}} - {{formatDate(group.endDate!, 'MMM d')}}
+              </div>
+              <div class="task-count">{{group.subtasks.length}} tasks</div>
             </div>
+
+            <div class="task-meta">
+              <div *ngIf="group.hasWeatherWarning" class="weather-warning-icon" [title]="group.weatherWarningMessage">
+                ⚠️
+              </div>
+              <div class="progress-pill">
+                {{ group.progress || 0 }}%
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <!-- <div class="progress-bar">
+              <div
+                class="progress-fill"
+                [style.width.%]="group.progress || 0">
+              </div>
+            </div> -->
           </div>
+
+          <!-- Today Line -->
+          <div class="today-line" [style.left]="getTodayPosition()"></div>
         </div>
-
-        <!-- Task Groups (Main Tasks) -->
-        <div
-          *ngFor="let group of taskGroups; let groupIndex = index"
-          class="task-group-bar"
-          [ngClass]="['status-' + getGroupStatus(group), 'schedule-status-' + getScheduleStatus(group)]"
-          [class.critical]="isGroupCritical(group)"
-          [class.dragging]="draggingGroup === group.title"
-          [class.read-only]="!isProjectOwner"
-          [style]="getGroupStyle(group, groupIndex)"
-          [attr.data-group]="group.title"
-          [title]="getGroupTooltip(group)"
-          (mousedown)="handleDragStart($event, group)">
-
-          <div class="task-content">
-            <div class="task-name">{{group.title}}</div>
-            <div class="task-duration">
-              {{formatDate(group.startDate!, 'MMM d')}} - {{formatDate(group.endDate!, 'MMM d')}}
-            </div>
-            <div class="task-count">{{group.subtasks.length}} tasks</div>
-          </div>
-
-          <div class="task-meta">
-            <div *ngIf="group.hasWeatherWarning" class="weather-warning-icon" [title]="group.weatherWarningMessage">
-              ⚠️
-            </div>
-            <div class="progress-pill">
-              {{ group.progress || 0 }}%
-            </div>
-          </div>
-
-          <!-- Progress Bar -->
-          <!-- <div class="progress-bar">
-            <div
-              class="progress-fill"
-              [style.width.%]="group.progress || 0">
-            </div>
-          </div> -->
-        </div>
-
-        <!-- Today Line -->
-        <div class="today-line" [style.left]="getTodayPosition()"></div>
       </div>
     </div>
 

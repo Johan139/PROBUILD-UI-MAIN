@@ -10,6 +10,13 @@ export interface Subtask {
   status: string;
   deleted: boolean;
   accepted?: boolean;
+  description?: string;
+  location?: string;
+  notes?: string;
+  detailsJson?: string;
+  materials?: string[];
+  checklist?: { item: string; done: boolean }[];
+  photos?: { url: string; caption: string; date: string }[];
 }
 
 export interface SubtaskGroup {
