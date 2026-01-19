@@ -10,8 +10,11 @@ import {
   TemplateRef,
   OnChanges,
   SimpleChanges,
+  AfterViewInit,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import Panzoom, { PanzoomObject, PanzoomOptions } from '@panzoom/panzoom';
 import {
   MatDialog,
   MatDialogRef,
@@ -66,7 +69,9 @@ export interface TimelineGroup {
   templateUrl: './timeline.component.html',
   styleUrls: ['./timeline.component.scss'],
 })
-export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
+export class TimelineComponent
+  implements OnInit, OnDestroy, OnChanges, AfterViewInit
+{
   @Input() taskGroups: TimelineGroup[] = [];
   @Input() isProjectOwner: boolean = false;
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
@@ -79,12 +84,22 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
 
   @ViewChild('timelineRef', { static: false })
   timelineRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('panzoomContainer', { static: false })
+  panzoomContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('headerRef', { static: false })
   headerRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('headerContent', { static: false })
+  headerContent!: ElementRef<HTMLDivElement>;
   @ViewChild('groupDetailModal', { static: true })
   groupDetailModal!: TemplateRef<any>;
 
+  panzoom: PanzoomObject | null = null;
   viewStartDate: Date = new Date();
+  visibleStartDate: Date = new Date();
+  visibleEndDate: Date = new Date();
+  contentWidth: number = 0;
+  private readonly PIXELS_PER_WEEK = 300;
+
   draggingGroup: string | null = null;
   dragStartDate: Date | null = null;
   isDragging: boolean = false;
@@ -101,15 +116,22 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
   private mouseMoveListener?: (e: MouseEvent) => void;
   private mouseUpListener?: (e: MouseEvent) => void;
 
-  constructor(private dialog: MatDialog) {}
+  constructor(
+    private dialog: MatDialog,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     this.processTaskGroups();
-    this.initializeViewStartDate();
+    this.initializeTimelineRange();
     this.generateWeeklyDates();
     this.calculateTimelineHeight();
     this.setupGlobalListeners();
     this.getEndDate();
+  }
+
+  ngAfterViewInit() {
+    this.initPanzoom();
   }
 
   ngOnDestroy() {
@@ -117,12 +139,15 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     if (this.modalRef) {
       this.modalRef.close();
     }
+    if (this.panzoom) {
+      this.panzoom.destroy();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['taskGroups']) {
       this.processTaskGroups();
-      this.initializeViewStartDate();
+      this.initializeTimelineRange();
       this.generateWeeklyDates();
       this.calculateTimelineHeight();
     }
@@ -146,53 +171,74 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  private initializeViewStartDate() {
+  private initializeTimelineRange() {
     if (!this.taskGroups || this.taskGroups.length === 0) {
       this.viewStartDate = new Date();
       this.viewStartDate.setDate(
         this.viewStartDate.getDate() - this.viewStartDate.getDay(),
       );
+      this.weeksToShow = 12;
       return;
     }
 
-    let allTimestamps: number[] = this.taskGroups
-      .flatMap((g) => g.subtasks)
-      .map((t) => {
-        if (t.start) {
-          return t.start.getTime();
-        }
-        if (t.startDate) {
-          const d = new Date(t.startDate);
-          return isNaN(d.getTime()) ? undefined : d.getTime();
-        }
-        return undefined;
-      })
-      .filter((t): t is number => t !== undefined);
+    // Collect all relevant dates
+    let dates: number[] = [];
+    this.taskGroups.forEach((g) => {
+      if (g.startDate) dates.push(new Date(g.startDate).getTime());
+      if (g.endDate) dates.push(new Date(g.endDate).getTime());
 
-    if (allTimestamps.length === 0) {
-      // Fallback to group start dates
-      allTimestamps = this.taskGroups
-        .map((g) => {
-          return g.startDate?.getTime();
-        })
-        .filter((t): t is number => t !== undefined && !isNaN(t));
-    }
+      g.subtasks.forEach((t) => {
+        const start = this.getSafeDate(t.start, t.startDate);
+        const end = this.getSafeDate(t.end, t.endDate);
+        if (start) dates.push(start.getTime());
+        if (end) dates.push(end.getTime());
+      });
+    });
 
-    if (allTimestamps.length === 0) {
+    dates = dates.filter((d) => !isNaN(d));
+
+    if (dates.length === 0) {
       this.viewStartDate = new Date();
       this.viewStartDate.setDate(
         this.viewStartDate.getDate() - this.viewStartDate.getDay(),
       );
+      this.weeksToShow = 12;
       return;
     }
 
-    const earliestTimestamp = Math.min(...allTimestamps);
-    const earliestDate = new Date(earliestTimestamp);
+    const minTimestamp = Math.min(...dates);
+    const maxTimestamp = Math.max(...dates);
 
-    // Set view start date to beginning of the week of the earliest task
-    const newStartDate = new Date(earliestDate);
-    newStartDate.setDate(newStartDate.getDate() - newStartDate.getDay()); // Start of week (Sunday)
-    this.viewStartDate = newStartDate;
+    // Start 2 weeks before the earliest date
+    const minDate = new Date(minTimestamp);
+    // Align to Sunday
+    minDate.setDate(minDate.getDate() - minDate.getDay());
+    // Go back 2 weeks buffer
+    minDate.setDate(minDate.getDate() - 14);
+
+    this.viewStartDate = minDate;
+
+    // End 2 weeks after the latest date
+    const maxDate = new Date(maxTimestamp);
+
+    // Calculate total duration in days
+    const diffTime = maxDate.getTime() - minDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Convert to weeks, adding a buffer at the end
+    // + 14 days buffer at the end
+    const weeksNeeded = Math.ceil((diffDays + 14) / 7);
+
+    // Ensure at least 12 weeks are shown, or the calculated amount
+    this.weeksToShow = Math.max(12, weeksNeeded);
+
+    // Calculate content width
+    this.contentWidth = this.weeksToShow * this.PIXELS_PER_WEEK;
+
+    // Initialise visible dates
+    this.visibleStartDate = new Date(this.viewStartDate);
+    this.visibleEndDate = new Date(this.viewStartDate);
+    this.visibleEndDate.setDate(this.visibleEndDate.getDate() + 14); // Initial view assumption
   }
 
   private calculateTimelineHeight() {
@@ -256,11 +302,62 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     clearInterval(this.navigationInterval);
   }
 
-  public onGridScroll(): void {
-    if (this.headerRef?.nativeElement && this.timelineRef?.nativeElement) {
-      this.headerRef.nativeElement.scrollLeft =
-        this.timelineRef.nativeElement.scrollLeft;
-    }
+  private initPanzoom() {
+    if (!this.panzoomContainer?.nativeElement) return;
+
+    const options: PanzoomOptions = {
+      maxScale: 2,
+      minScale: 0.1, // Allow zooming out significantly to see everything
+      startScale: 1,
+      // contain: 'outside',
+      cursor: 'move',
+      excludeClass: 'task-group-bar', // Prevent dragging tasks from panning the grid
+    };
+
+    this.panzoom = Panzoom(this.panzoomContainer.nativeElement, options);
+
+    // Initial date update
+    this.updateVisibleDates(0, 1, this.timelineRef.nativeElement.clientWidth);
+
+    // Sync header with grid pan/zoom
+    this.panzoomContainer.nativeElement.addEventListener(
+      'panzoomchange',
+      (event: any) => {
+        const { x, scale } = event.detail;
+        if (this.headerContent?.nativeElement) {
+          // FIXME: Apply X translation and X scale (uniform scale) to header. Zooming too much makes dates disappear
+          this.headerContent.nativeElement.style.transform = `translateX(${x}px) scale(${scale})`;
+          this.headerContent.nativeElement.style.transformOrigin = '0 0';
+        }
+
+        // Update visible date range
+        if (this.timelineRef?.nativeElement) {
+            this.updateVisibleDates(x, scale, this.timelineRef.nativeElement.clientWidth);
+        }
+      },
+    );
+
+    // Enable mouse wheel zoom
+    this.panzoomContainer.nativeElement.parentElement?.addEventListener(
+      'wheel',
+      (event: WheelEvent) => {
+        if (!this.panzoom) return;
+        this.panzoom.zoomWithWheel(event);
+      },
+      { passive: false } // Required to prevent default scrolling
+    );
+  }
+
+  zoomIn() {
+    this.panzoom?.zoomIn();
+  }
+
+  zoomOut() {
+    this.panzoom?.zoomOut();
+  }
+
+  resetZoom() {
+    this.panzoom?.reset();
   }
 
   public getScheduleStatus(
@@ -394,10 +491,17 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
         return;
       }
 
-      const rect = this.timelineRef.nativeElement.getBoundingClientRect();
-      const timelineWidth = rect.width;
+      // const rect = this.timelineRef.nativeElement.getBoundingClientRect();
+      // const timelineWidth = rect.width; // Viewport width
+      // We need content width now
       const totalDays = this.weeksToShow * 7;
-      const dayWidth = timelineWidth / totalDays;
+
+      // Get current scale to adjust drag calculations
+      const scale = this.panzoom ? this.panzoom.getScale() : 1;
+
+      // Calculate day width based on the CONTENT width (fixed pixels per week)
+      const dayWidth = (this.contentWidth / totalDays) * scale;
+
       const dragDelta = e.clientX - this.dragStartPos.x;
       const daysDelta = Math.round(dragDelta / dayWidth);
 
@@ -641,5 +745,26 @@ export class TimelineComponent implements OnInit, OnDestroy, OnChanges {
     }
 
     return 'in_progress';
+  }
+
+  private updateVisibleDates(x: number, scale: number, viewportWidth: number) {
+    const totalDays = this.weeksToShow * 7;
+    const dayWidth = (this.contentWidth / totalDays) * scale;
+
+    // x is negative as we pan right
+    const startOffsetPixels = -x;
+    const daysStartOffset = startOffsetPixels / dayWidth;
+
+    const visibleDays = viewportWidth / dayWidth;
+
+    const newStartDate = new Date(this.viewStartDate);
+    newStartDate.setDate(newStartDate.getDate() + Math.floor(daysStartOffset));
+
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newStartDate.getDate() + Math.ceil(visibleDays));
+
+    this.visibleStartDate = newStartDate;
+    this.visibleEndDate = newEndDate;
+    this.cdr.detectChanges();
   }
 }

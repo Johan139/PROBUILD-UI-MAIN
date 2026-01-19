@@ -7,9 +7,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,7 +20,7 @@ import {
 } from '@angular/material/autocomplete';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { LoaderComponent } from '../../../loader/loader.component';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { ProjectCardComponent } from '../../my-projects/project-card/project-card.component';
 import { ProjectsTableComponent } from '../../../components/projects-table/projects-table.component';
 import { Project } from '../../../models/project';
@@ -37,33 +36,13 @@ import { ReportService } from '../services/report.service';
 import { TimelineGroup } from '../../../components/timeline/timeline.component';
 import { WeatherImpactService } from '../services/weather-impact.service';
 import { PermitsDialogComponent } from '../permits-dialog/permits-dialog.component';
+import { TaskDetailDialogComponent } from './task-detail-dialog/task-detail-dialog.component';
 import { PermitsService } from '../services/permits.service';
-import {
-  LucideAngularModule,
-  Building2,
-  User,
-  Users,
-  MapPin,
-  FileStack,
-  Hash,
-  Home,
-  Ruler,
-  CheckCircle2,
-  Clock,
-  PieChart,
-  Hammer,
-  ShieldAlert,
-  CloudRain,
-  FileWarning,
-  Folder,
-  Camera,
-  Activity,
-  AlertCircle,
-  DollarSign,
-  Eye,
-  Edit,
-  Trash2,
-} from 'lucide-angular';
+import { ContractService } from '../../../services/contract.service';
+import { WeatherImpactModalComponent } from './weather-impact-modal/weather-impact-modal.component';
+import { SubtaskService } from '../services/subtask.service';
+import { TimelineService } from '../services/timeline.service';
+import { LucideIconsModule } from '../../../shared/lucide-icons.module';
 
 @Component({
   selector: 'app-project-overview',
@@ -71,6 +50,7 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -78,10 +58,11 @@ import {
     MatInputModule,
     MatAutocompleteModule,
     MatTooltipModule,
-    LoaderComponent,
-    LucideAngularModule,
+    MatExpansionModule,
+    LucideIconsModule,
     ProjectCardComponent,
     ProjectsTableComponent,
+    WeatherImpactModalComponent,
   ],
 
   templateUrl: './project-overview.component.html',
@@ -93,6 +74,7 @@ export class ProjectOverviewComponent {
   @Input() biddingProjectsCount: number = 0;
   @Input() teamMemberCount: number = 0;
   @Input() timelineData: TimelineGroup[] = [];
+  @Input() assignedTeamMembers: any[] = [];
 
   // Job Details & Weather Inputs
   @Input() projectDetails: any;
@@ -107,31 +89,6 @@ export class ProjectOverviewComponent {
 
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
 
-  // Lucide Icons
-  Building2 = Building2;
-  User = User;
-  Users = Users;
-  MapPin = MapPin;
-  FileStack = FileStack;
-  Hash = Hash;
-  Home = Home;
-  Ruler = Ruler;
-  CheckCircle2 = CheckCircle2;
-  Clock = Clock;
-  PieChart = PieChart;
-  Hammer = Hammer;
-  ShieldAlert = ShieldAlert;
-  CloudRain = CloudRain;
-  FileWarning = FileWarning;
-  Folder = Folder;
-  Camera = Camera;
-  Activity = Activity;
-  AlertCircle = AlertCircle;
-  DollarSign = DollarSign;
-  Eye = Eye;
-  Edit = Edit;
-  Trash2 = Trash2;
-
   // Address Editing State
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
@@ -139,10 +96,42 @@ export class ProjectOverviewComponent {
   selectedPlace: google.maps.places.PlaceResult | null = null;
   private selectedAddress: any;
 
+  // Inline Editing State
+  isEditingProject: boolean = false;
+  isEditingClient: boolean = false;
+  tempProjectDetails: any = {};
+  tempClientDetails: any = {};
+
+  // Weather Modal State
+  weatherModalOpen: boolean = false;
+  weatherAdjusted: boolean = false;
+  totalDelayDays: number = 0;
+  affectedTasks: string[] = [];
+  adjustedCompletionDate: Date | null = null;
+  estimatedCompletionDate: Date | null = null;
+
   // Dynamic Data Properties
-  ownerName: string = 'HARDCODED';
+  ownerName: string = '';
   clientName: string = '';
+  clientEmail: string = '';
+  clientPhone: string = '';
+  contractStatus: string = 'Pending';
+
   activeValue: number = 0;
+  spentToDate: number = 0;
+  remainingBudget: number = 0;
+  bidPrice: number = 0;
+  grossProfit: number = 0;
+  profitMargin: number = 0;
+  profitAtRisk: number = 0;
+  baselineCost: number = 0;
+  overheadAndProfit: number = 0;
+  contingency: number = 0;
+  escalation: number = 0;
+  taxes: number = 0;
+
+  budgetItems: any[] = [];
+  selectedDivision: string | null = 'all';
   costByPhase: { name: string; value: number }[] = [];
   materialPercent: number = 0;
   laborPercent: number = 0;
@@ -159,6 +148,11 @@ export class ProjectOverviewComponent {
   blueprintSheetCount: number = 0;
   blueprintRoomCount: number = 0;
   blueprintConfidenceScore: number = 0;
+  dimensionalAccuracy: number = 0;
+  completeness: number = 0;
+  readability: number = 0;
+  totalArea: number = 0;
+  blueprintRooms: { name: string; area: string }[] = [];
 
   // Bidding Status
   tradesRequiredCount: number = 0;
@@ -177,6 +171,15 @@ export class ProjectOverviewComponent {
   permitStatus: 'success' | 'warning' | 'none' = 'none';
   permitStatusText: string = 'No Data';
 
+  // Task Summary
+  taskSummaryStats = {
+    total: 0,
+    complete: 0,
+    inProgress: 0,
+    pending: 0,
+  };
+  recentTasks: any[] = [];
+
   // Document Hub
   contractCount: number = 0;
   rfiCount: number = 0;
@@ -187,7 +190,11 @@ export class ProjectOverviewComponent {
   currentIndex = 0;
   projectView: 'grid' | 'list' = 'grid';
 
+  // Weekly Schedule State
+  displayWeek: number = 1;
+
   private localStorageKey = '';
+  private projectStartDate: Date | null = null;
 
   constructor(
     public measurementService: MeasurementService,
@@ -199,17 +206,22 @@ export class ProjectOverviewComponent {
     private jobsService: JobsService,
     private projectService: ProjectService,
     private snackBar: MatSnackBar,
-    private router: Router,
     private reportService: ReportService,
     private weatherImpactService: WeatherImpactService,
     private dialog: MatDialog,
     private permitsService: PermitsService,
+    private contractService: ContractService,
+    private subtaskService: SubtaskService,
+    private timelineService: TimelineService,
   ) {}
 
   ngOnChanges(): void {
     if (this.projectDetails?.jobId) {
       this.localStorageKey = `project_overview_${this.projectDetails.jobId}`;
       this.loadProjectData();
+
+      // Initialize temp objects for editing
+      this.tempProjectDetails = { ...this.projectDetails };
     }
     if (this.timelineData) {
       this.processTimelineData();
@@ -260,7 +272,37 @@ private saveToCache(): void {
       this.blueprintConfidenceScore = data.confidenceScore;
       this.blueprintSheetCount = data.sheetCount;
       this.blueprintRoomCount = data.roomCount;
+      this.blueprintRooms = data.rooms;
+
+      this.dimensionalAccuracy = data.dimensionalAccuracy || 0;
+      this.completeness = data.completeness || 0;
+      this.readability = data.readability || 0;
+      this.totalArea = this.blueprintRooms.reduce((sum, room) => {
+        const areaNum = parseFloat(room.area.replace(/[^0-9.]/g, ''));
+        return sum + (isNaN(areaNum) ? 0 : areaNum);
+      }, 0);
+
       this.saveToCache();
+    });
+
+    // TODO: Get Contracts Status (Client Contract is assumed to be the earliest one), need something more robust
+    this.contractService.getContractsByJobId(jobId).subscribe({
+      next: (contracts) => {
+        if (contracts && contracts.length > 0) {
+          // Sort by CreatedAt to find the first contract (Client Contract)
+          const sortedContracts = contracts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const clientContract = sortedContracts[0];
+
+          if (clientContract) {
+             // Map status: 'SIGNED' -> 'Signed', 'PENDING' -> 'Drafting' or keep as is
+             const status = clientContract.status;
+             this.contractStatus = (status === 'SIGNED' || status === 'Signed') ? 'Signed' : 'Drafting';
+          }
+        } else {
+          this.contractStatus = 'Pending';
+        }
+      },
+      error: () => this.contractStatus = 'Unknown'
     });
 
     // Get Owner Name, Client Name & Subcontractor/Bidding Info from Job
@@ -350,9 +392,18 @@ private saveToCache(): void {
           next: (client) => {
             if (client) {
               this.clientName = `${client.firstName} ${client.lastName}`;
+              this.clientEmail = client.email || this.clientEmail;
+              this.clientPhone = client.phone || this.clientPhone;
+
               if (client.companyName) {
                 this.clientName += ` (${client.companyName})`;
               }
+              this.tempClientDetails = {
+                firstName: client.firstName,
+                lastName: client.lastName,
+                email: client.email,
+                phone: client.phone
+              };
               this.saveToCache();
             }
           },
@@ -390,16 +441,27 @@ private saveToCache(): void {
       error: (err) => console.error('Failed to load documents', err),
     });
 
-    // Get Budget Stats
     this.budgetService.getBudget(jobId).subscribe({
       next: (items) => {
+        this.budgetItems = items;
         this.calculateBudgetStats(items);
         this.saveToCache();
       },
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    // Get Bids Count & Bidding Details
+    this.reportService.getCostSummary(jobId).then((summary) => {
+      if (summary.bidPrice > 0) {
+        this.bidPrice = summary.bidPrice;
+        this.baselineCost = summary.directCosts;
+        this.overheadAndProfit = summary.overheadAndProfit;
+        this.contingency = summary.contingency;
+        this.escalation = summary.escalation;
+        this.taxes = summary.taxes;
+        this.calculateProfitMetrics();
+      }
+    });
+
     this.bidsService.getBidsForJob(jobId).subscribe({
       next: (bids) => {
         this.bidsReceived = bids ? bids.length : 0;
@@ -420,11 +482,20 @@ private saveToCache(): void {
   calculateBudgetStats(items: any[]): void {
     if (!items || items.length === 0) return;
 
-    // Active Value
+    // Active Value (Cost)
     this.activeValue = items.reduce(
       (sum, item) => sum + (item.estimatedCost || 0),
       0,
     );
+
+    this.spentToDate = items.reduce(
+      (sum, item) => sum + (item.actualCost || 0),
+      0,
+    );
+
+    this.remainingBudget = this.activeValue - this.spentToDate;
+
+    this.calculateProfitMetrics();
 
     // Cost by Division (Phase)
     const phaseMap = new Map<string, number>();
@@ -458,6 +529,60 @@ private saveToCache(): void {
     }
   }
 
+  calculateProfitMetrics(): void {
+    // Baseline Cost should include Taxes as it's a hard cost
+    const costBaseline = this.baselineCost + this.taxes;
+
+    // If we have a baseline cost from the report, and the current tracked items (activeValue)
+    // are significantly lower (e.g. data not fully imported), default to the baseline to show a realistic budget.
+    if (costBaseline > 0 && this.activeValue < costBaseline) {
+      this.activeValue = costBaseline;
+      this.remainingBudget = this.activeValue - this.spentToDate;
+    }
+
+    if (this.bidPrice > 0) {
+      this.grossProfit = this.bidPrice - this.activeValue;
+      this.profitMargin = (this.grossProfit / this.bidPrice) * 100;
+
+      // Profit at Risk: If current estimated cost (activeValue) exceeds baseline
+      if (costBaseline > 0) {
+        this.profitAtRisk = Math.max(0, this.activeValue - costBaseline);
+      } else {
+        // Fallback if no baseline: Assume 20% margin was target
+        const targetCost = this.bidPrice / 1.2;
+        this.profitAtRisk = Math.max(0, this.activeValue - targetCost);
+      }
+    }
+  }
+
+  get profitBreakdownTooltip(): string {
+    const parts: string[] = [];
+    if (this.overheadAndProfit > 0) {
+      parts.push(
+        `Net Profit: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.overheadAndProfit)}`,
+      );
+    }
+    if (this.taxes > 0) {
+      parts.push(
+        `Tax: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.taxes)}`,
+      );
+    }
+    if (this.contingency > 0) {
+      parts.push(
+        `Contingency: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.contingency)}`,
+      );
+    }
+    if (this.escalation > 0) {
+      parts.push(
+        `Escalation: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.escalation)}`,
+      );
+    }
+    if (parts.length > 0) {
+      return parts.join(' | ');
+    }
+    return 'Gross Profit';
+  }
+
   processTimelineData(): void {
     if (!this.timelineData || this.timelineData.length === 0) return;
 
@@ -473,6 +598,7 @@ private saveToCache(): void {
 
     if (startDates.length > 0 && endDates.length > 0) {
       const minStart = Math.min(...startDates);
+      this.projectStartDate = new Date(minStart);
       const maxEnd = Math.max(...endDates);
 
       // Total Duration in weeks
@@ -487,6 +613,7 @@ private saveToCache(): void {
       const elapsedMs = now - minStart;
       this.currentWeek =
         elapsedMs > 0 ? Math.ceil(elapsedMs / (1000 * 60 * 60 * 24 * 7)) : 0;
+      this.displayWeek = this.currentWeek || 1;
     }
 
     // Outlook (Next 7 Days)
@@ -516,11 +643,66 @@ private saveToCache(): void {
       (t) => t.status === 'completed',
     ).length;
 
-    // Check Weather Impact (Next 10 Days)
-    this.checkWeatherRisk(allTasks);
-  }
+    // Calculate Task Summary Stats
+    this.taskSummaryStats = {
+      total: allTasks.length,
+      complete: allTasks.filter(
+        (t: any) => (t.status || '').toLowerCase() === 'completed',
+      ).length,
+      inProgress: allTasks.filter(
+        (t: any) =>
+          (t.status || '').toLowerCase() === 'in-progress' ||
+          (t.status || '').toLowerCase() === 'active',
+      ).length,
+      pending: allTasks.filter(
+        (t: any) => !t.status || (t.status || '').toLowerCase() === 'pending',
+      ).length,
+    };
 
-  checkWeatherRisk(tasks: any[]): void {
+    // Get Recent Tasks (Mocking logic for demo). TODO: Replace with real "recently updated" data
+    this.recentTasks = allTasks
+      .filter((t: any) => {
+        const status = (t.status || '').toLowerCase();
+        return (
+          status === 'completed' ||
+          status === 'in-progress' ||
+          status === 'active' ||
+          status === 'pending'
+        );
+      })
+      .sort((a, b) => {
+        // Sort by most recent start or end date
+        const dateA = new Date(
+          a.endDate || a.end || a.startDate || a.start,
+        ).getTime();
+        const dateB = new Date(
+          b.endDate || b.end || b.startDate || b.start,
+        ).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 3)
+      .map((t: any) => ({
+        id: t.id ? `TSK-${t.id}` : `TSK-${Math.floor(Math.random() * 10000)}`,
+        name: t.name || t.task,
+        trade: t.category || t.trade || 'General',
+        status: (t.status || 'pending').toLowerCase(),
+        timestamp:
+          (t.status || '').toLowerCase() === 'completed'
+            ? 'Completed'
+            : 'Ongoing',
+      }));
+
+    // Calculate Estimated Completion Date (Latest End Date)
+if (endDates.length > 0) {
+  const maxEnd = Math.max(...endDates);
+  this.estimatedCompletionDate = new Date(maxEnd);
+}
+
+// Check Weather Impact (Next 10 Days)
+this.checkWeatherRisk(allTasks);
+}
+
+checkWeatherRisk(tasks: any[]): void {
     if (!this.forecast || this.forecast.length === 0) {
       this.weatherRiskMessage = 'No Data';
       this.weatherRiskLevel = 'none';
@@ -591,10 +773,121 @@ private saveToCache(): void {
     if (maxRiskLevel === 'warning') {
       this.weatherRiskLevel = 'warning';
       this.weatherRiskMessage = riskDetails[0] || 'Potential Delays';
+
+      // Populate Modal Data
+      this.totalDelayDays = adverseDays.length; // Approximate delay
+      const taskNames = [...new Set(activeTasks.map(t => t.name || t.task))];
+      this.affectedTasks = taskNames;
+
+      // Estimated New Completion Date
+      if (this.estimatedCompletionDate) {
+          const newEndDate = new Date(this.estimatedCompletionDate);
+          newEndDate.setDate(newEndDate.getDate() + this.totalDelayDays);
+          this.adjustedCompletionDate = newEndDate;
+      }
+
     } else {
       this.weatherRiskLevel = 'none';
       this.weatherRiskMessage = 'Low Risk';
     }
+  }
+
+  // --- Inline Editing Logic ---
+
+  toggleEditProject(): void {
+    if (this.isEditingProject) {
+        // Reset if cancelling (optional, or just toggle off)
+        this.tempProjectDetails = { ...this.projectDetails };
+    }
+    this.isEditingProject = !this.isEditingProject;
+  }
+
+  saveProject(): void {
+    this.isLoading = true;
+    this.jobsService.updateJob(this.tempProjectDetails, this.projectDetails.jobId).subscribe({
+        next: (res) => {
+            this.isLoading = false;
+            this.isEditingProject = false;
+            // Update local state or reload
+            this.projectDetails = { ...this.projectDetails, ...this.tempProjectDetails };
+            this.snackBar.open('Project details updated', 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+            this.isLoading = false;
+            this.snackBar.open('Failed to update project', 'Close', { duration: 3000 });
+        }
+    });
+  }
+
+  toggleEditClient(): void {
+    this.isEditingClient = !this.isEditingClient;
+  }
+
+  saveClient(): void {
+    this.isLoading = true;
+    this.jobsService.updateClientDetails(this.projectDetails.jobId, this.tempClientDetails).subscribe({
+        next: (res) => {
+            this.isLoading = false;
+            this.isEditingClient = false;
+            this.clientName = `${this.tempClientDetails.firstName} ${this.tempClientDetails.lastName}`;
+            this.clientEmail = this.tempClientDetails.email;
+            this.clientPhone = this.tempClientDetails.phone;
+            this.snackBar.open('Client details updated', 'Close', { duration: 3000 });
+        },
+        error: (err) => {
+            this.isLoading = false;
+            this.snackBar.open('Failed to update client', 'Close', { duration: 3000 });
+        }
+    });
+  }
+
+  // --- Weather Modal Logic ---
+
+  openWeatherModal(): void {
+    if (this.weatherRiskLevel === 'warning') {
+        this.weatherModalOpen = true;
+    }
+  }
+
+  closeWeatherModal(): void {
+    this.weatherModalOpen = false;
+  }
+
+  adjustTimeline(): void {
+    this.isLoading = true;
+    const affectedGroups = new Set<string>();
+
+    this.timelineData.forEach((group) => {
+      group.subtasks.forEach((task) => {
+        if (this.affectedTasks.includes(task.name || task.task || '')) {
+          affectedGroups.add(group.title);
+        }
+      });
+    });
+
+    const senderId = this.authService.getUserId() || '';
+
+    affectedGroups.forEach((groupTitle) => {
+      const group = this.timelineData.find((g) => g.title === groupTitle);
+      if (group) {
+        const currentStart = new Date(group.startDate || new Date());
+        const newStart = new Date(currentStart);
+        newStart.setDate(newStart.getDate() + this.totalDelayDays);
+
+        this.timelineService.moveGroup(
+          groupTitle,
+          newStart,
+          this.projectDetails.jobId,
+          senderId,
+        );
+      }
+    });
+
+    this.isLoading = false;
+    this.weatherAdjusted = true;
+    this.snackBar.open('Timeline adjusted and team notified.', 'Close', {
+      duration: 3000,
+    });
   }
 
   onOpenBudget(): void {
@@ -719,6 +1012,140 @@ private saveToCache(): void {
     });
   }
 
+  get weeklyTasks() {
+    if (
+      !this.timelineData ||
+      this.timelineData.length === 0 ||
+      !this.projectStartDate
+    )
+      return [];
+
+    const weekStartMs =
+      this.projectStartDate.getTime() +
+      (this.displayWeek - 1) * 7 * 24 * 60 * 60 * 1000;
+    const weekEndMs = weekStartMs + 7 * 24 * 60 * 60 * 1000;
+
+    const allTasks = this.timelineData.flatMap((g) => g.subtasks);
+
+    return allTasks
+      .filter((t: any) => {
+        const start = new Date(t.startDate || t.start).getTime();
+        const end = new Date(t.endDate || t.end).getTime();
+        // Check for overlap
+        return start < weekEndMs && end >= weekStartMs;
+      })
+      .map((t: any) => ({
+        ...t,
+        status: t.status === 'in_progress' ? 'in-progress' : t.status, // Normalize
+        trade: t.category || 'General',
+        assignee:
+          t.assignees && t.assignees.length
+            ? t.assignees[0].name
+            : 'Unassigned',
+        hours: this.calculateHours(t.startDate || t.start, t.endDate || t.end),
+      }));
+  }
+
+  get weeklyStats() {
+    const tasks = this.weeklyTasks;
+    const total = tasks.length;
+    const complete = tasks.filter(
+      (t) => (t.status || '').toLowerCase() === 'completed',
+    ).length;
+    const inProgress = tasks.filter(
+      (t) =>
+        (t.status || '').toLowerCase() === 'in-progress' ||
+        (t.status || '').toLowerCase() === 'active',
+    ).length;
+    const pending = total - complete - inProgress;
+    const hours = tasks.reduce((sum, t) => sum + t.hours, 0);
+
+    return { total, complete, inProgress, pending, hours };
+  }
+
+  nextWeek() {
+    if (this.displayWeek < this.totalDuration) {
+      this.displayWeek++;
+    }
+  }
+
+  prevWeek() {
+    if (this.displayWeek > 1) {
+      this.displayWeek--;
+    }
+  }
+
+  openTaskDetail(task: any) {
+    const dialogRef = this.dialog.open(TaskDetailDialogComponent, {
+      width: '600px',
+      panelClass: 'custom-modal',
+      data: {
+        task: task,
+        isOwner: true, // HARDCODED: setting viewer as owner for now, check authService
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        // Update local task data with result
+        Object.assign(task, result);
+        this.subtaskService.updateSubtask(task);
+      }
+    });
+  }
+
+  private calculateHours(start: string | Date, end: string | Date): number {
+    if (!start || !end) return 0;
+    const s = new Date(start).getTime();
+    const e = new Date(end).getTime();
+    const hours = (e - s) / (1000 * 60 * 60);
+    return Math.max(0, Math.round(hours));
+  }
+
+  get currentDivisionStats() {
+    let items = this.budgetItems;
+    let name = 'All Divisions';
+    let total = this.activeValue;
+
+    if (this.selectedDivision !== 'all' && this.selectedDivision) {
+      items = this.budgetItems.filter(
+        (i) => i.phase === this.selectedDivision,
+      );
+      name = this.selectedDivision;
+      total = items.reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    }
+
+    if (total === 0) {
+      return {
+        name,
+        amount: 0,
+        pct: '0%',
+        materials: 0,
+        labor: 0,
+      };
+    }
+
+    const materials = items
+      .filter((i) => i.category === 'Materials')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    const labor = items
+      .filter((i) => i.category === 'Subcontractor')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+
+    return {
+      name,
+      amount: total,
+      pct:
+        this.activeValue > 0
+          ? Math.round((total / this.activeValue) * 100) + '%'
+          : '0%',
+      materials: Math.round((materials / total) * 100),
+      labor: Math.round((labor / total) * 100),
+      materialAmount: materials,
+      laborAmount: labor,
+    };
+  }
+
   toggleAddressEdit(isEditing: boolean): void {
     this.isEditingAddress = isEditing;
     if (isEditing) {
@@ -773,5 +1200,13 @@ private saveToCache(): void {
           });
         },
       });
+  }
+
+  getAreaInSqM(areaStr: any): string {
+    if (areaStr === null || areaStr === undefined) return '0';
+    const str = String(areaStr);
+    const areaNum = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (isNaN(areaNum)) return '0';
+    return (areaNum * 0.092903).toFixed(1);
   }
 }

@@ -8,6 +8,7 @@ import { DeleteDialogComponent } from '../job-edit/delete-dialog.component';
 import { ConfirmAIAcceptanceDialogComponent } from '../../../confirm-aiacceptance-dialog/confirm-aiacceptance-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { JobsService } from '../../../services/jobs.service';
+import { AuthService } from '../../../authentication/auth.service';
 
 @Injectable({
   providedIn: 'root',
@@ -19,18 +20,20 @@ export class SubtaskService {
     private snackBar: MatSnackBar,
     private jobsService: JobsService,
     private http: HttpClient,
+    private authService: AuthService,
   ) {}
 
-  addSubtask(table: any): void {
+  addSubtask(table: any, taskData?: Partial<Subtask>): void {
     const newSubtask: Subtask = {
-      id: 0, 
-      task: '',
-      days: 0,
-      startDate: '',
-      endDate: '',
-      status: 'Pending',
-      cost: 0,
+      id: taskData?.id ?? 0,
+      task: taskData?.task ?? '',
+      days: taskData?.days ?? 0,
+      startDate: taskData?.startDate ?? '',
+      endDate: taskData?.endDate ?? '',
+      status: taskData?.status ?? 'Pending',
+      cost: taskData?.cost ?? 0,
       deleted: false,
+      accepted: false,
     };
     table.subtasks.push(newSubtask);
     const updatedState = this.store.getState().subtaskGroups.map((group) => {
@@ -308,5 +311,46 @@ export class SubtaskService {
 
   publishJob(jobId: number, job: any): Observable<any> {
     return this.jobsService.updateJob(job, jobId);
+  }
+
+  updateSubtask(task: any): void {
+    // 1. Update Store
+    const updatedState = this.store.getState().subtaskGroups.map((group) => {
+      const taskIndex = group.subtasks.findIndex((t) => t.id === task.id);
+      if (taskIndex > -1) {
+        const updatedSubtasks = [...group.subtasks];
+        updatedSubtasks[taskIndex] = { ...updatedSubtasks[taskIndex], ...task };
+        return { ...group, subtasks: updatedSubtasks };
+      }
+      return group;
+    });
+    this.store.setState({ subtaskGroups: updatedState });
+
+    // 2. Persist to Backend
+    const group = updatedState.find((g) =>
+      g.subtasks.some((t) => t.id === task.id),
+    );
+    const groupTitle = group ? group.title : '';
+
+    const subtaskToSave = {
+      ...task,
+      groupTitle: groupTitle,
+      jobId: this.store.getState().projectDetails.jobId,
+      deleted: task.deleted ?? false,
+    };
+
+    const userId = this.authService.getUserId();
+
+    this.jobsService.saveSubtasks([subtaskToSave], userId).subscribe({
+      next: () => {
+        this.snackBar.open('Task updated successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        console.error('Failed to save subtask', err);
+        this.snackBar.open('Failed to save task', 'Close', { duration: 3000 });
+      },
+    });
   }
 }

@@ -34,6 +34,15 @@
 
       <span class="spacer"></span>
 
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="helpMenu"
+        aria-label="Help"
+        matTooltip="Help & Onboarding" [matTooltipShowDelay]="500"
+      >
+        <mat-icon>help_outline</mat-icon>
+      </button>
+
       <app-notifications-menu></app-notifications-menu>
 
       <button
@@ -168,5 +177,20 @@
   </button>
 </mat-menu>
 
+<mat-menu #helpMenu="matMenu">
+  <button mat-menu-item (click)="onboardingService.startTour('new-project')">
+    <mat-icon>school</mat-icon>
+    <span>New Project Tour</span>
+  </button>
+  <button mat-menu-item (click)="onboardingService.showPrompt.set(true)">
+    <mat-icon>refresh</mat-icon>
+    <span>Reset Onboarding</span>
+  </button>
+</mat-menu>
+
 <app-ai-chat-icon *ngIf="showAiChatIcon"></app-ai-chat-icon>
 <app-ai-chat-window></app-ai-chat-window>
+
+<!-- Onboarding Components -->
+<app-onboarding-prompt></app-onboarding-prompt>
+<app-onboarding-overlay></app-onboarding-overlay>

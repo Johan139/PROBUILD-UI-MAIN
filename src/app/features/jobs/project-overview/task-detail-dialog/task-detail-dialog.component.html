@@ -1,0 +1,144 @@
+<div class="dialog-container">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-left">
+      <div class="status-icon">
+        <lucide-angular
+          [img]="CheckCircle2"
+          class="icon-success"
+          *ngIf="task.status?.toLowerCase() === 'completed'">
+        </lucide-angular>
+        <lucide-angular
+          [img]="PlayCircle"
+          class="icon-warning"
+          *ngIf="task.status?.toLowerCase() === 'in-progress' || task.status?.toLowerCase() === 'active'">
+        </lucide-angular>
+        <div class="pending-circle" *ngIf="task.status?.toLowerCase() === 'pending' || !task.status"></div>
+      </div>
+      <div>
+        <h2 class="task-title" *ngIf="!editMode">{{ task.task }}</h2>
+        <input *ngIf="editMode" [(ngModel)]="task.task" class="edit-input-lg" placeholder="Task Name">
+
+        <div class="task-meta">
+          <span class="badge">{{ task.status || 'Pending' }}</span>
+          <span class="hours">{{ (task.days || 0) * 8 }} hours</span>
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="close()">
+      <lucide-angular [img]="X" class="icon-close"></lucide-angular>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+
+    <!-- Location -->
+    <div class="location-row">
+      <lucide-angular [img]="MapPin" class="icon-location"></lucide-angular>
+      <span class="label">Location:</span>
+      <span *ngIf="!editMode">{{ task.location }}</span>
+      <input *ngIf="editMode" [(ngModel)]="task.location" class="edit-input-sm" placeholder="Location">
+    </div>
+
+    <mat-tab-group>
+      <!-- Details Tab -->
+      <mat-tab label="Details">
+        <div class="tab-body">
+          <!-- Description -->
+          <div class="section">
+            <h4 class="section-title">Work Description</h4>
+            <div class="info-box" *ngIf="!editMode">
+              {{ task.description }}
+            </div>
+            <textarea *ngIf="editMode" [(ngModel)]="task.description" class="edit-textarea" rows="4"></textarea>
+          </div>
+
+          <!-- Materials -->
+          <div class="section">
+            <h4 class="section-title">Materials Required</h4>
+            <div class="materials-grid" *ngIf="!editMode">
+              <div class="material-item" *ngFor="let mat of task.materials">
+                <div class="dot"></div>
+                <span>{{ mat }}</span>
+              </div>
+            </div>
+            <div class="materials-edit" *ngIf="editMode">
+              <div class="material-input-row" *ngFor="let mat of task.materials; let i = index; trackBy: trackByIndex">
+                <input [(ngModel)]="task.materials![i]" class="edit-input-sm">
+                <button mat-icon-button color="warn" (click)="removeMaterial(i)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              <button mat-button color="primary" (click)="addMaterial()">+ Add Material</button>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="section">
+            <h4 class="section-title">Notes</h4>
+            <div class="info-box italic" *ngIf="!editMode">
+              {{ task.notes || 'No notes added.' }}
+            </div>
+            <textarea *ngIf="editMode" [(ngModel)]="task.notes" class="edit-textarea" rows="3" placeholder="Add notes..."></textarea>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Checklist Tab -->
+      <mat-tab label="Checklist">
+        <div class="tab-body">
+          <div class="checklist-container">
+            <div class="checklist-item" *ngFor="let item of task.checklist">
+              <mat-checkbox [(ngModel)]="item.done" [disabled]="!editMode && !data.isOwner">
+                <span [class.done]="item.done">{{ item.item }}</span>
+              </mat-checkbox>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Photos Tab -->
+      <mat-tab label="Photos">
+        <div class="tab-body">
+          <div class="photos-grid">
+            <div class="photo-card" *ngFor="let photo of task.photos">
+              <div class="photo-placeholder">
+                <lucide-angular [img]="Camera" class="icon-camera-lg"></lucide-angular>
+              </div>
+              <div class="photo-caption">
+                <span class="caption">{{ photo.caption }}</span>
+                <span class="date">{{ photo.date }}</span>
+              </div>
+            </div>
+            <div class="no-photos" *ngIf="!task.photos?.length">
+              <lucide-angular [img]="Camera" class="icon-camera-xl"></lucide-angular>
+              <p>No photos uploaded yet.</p>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <div class="footer-left">
+      <span class="status-badge" [ngClass]="getStatusColor(task.status || '')">
+        {{ task.status | titlecase }}
+      </span>
+    </div>
+    <div class="footer-right">
+      <button mat-stroked-button (click)="toggleEdit()" *ngIf="data.isOwner">
+        {{ editMode ? 'Cancel' : 'Edit' }}
+      </button>
+      <button mat-flat-button color="primary" class="save-btn" (click)="save()" *ngIf="editMode">
+        Save Changes
+      </button>
+      <button mat-stroked-button (click)="close()" *ngIf="!editMode">
+        Close
+      </button>
+    </div>
+  </div>
+</div>

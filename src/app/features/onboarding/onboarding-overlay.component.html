@@ -1,0 +1,36 @@
+<div class="onboarding-overlay-container" *ngIf="onboardingService.isActive()">
+
+  <!-- Backdrop with cutout using box-shadow trick -->
+  <!-- The highlight-box sits exactly on the element, and has a huge shadow to dim the rest -->
+  <div class="highlight-box" [ngStyle]="spotlightStyle()"></div>
+
+  <!-- Tooltip -->
+  <div class="onboarding-tooltip" [ngStyle]="tooltipStyle()">
+    <div class="tooltip-header">
+      <h4>{{ onboardingService.getCurrentStep().title }}</h4>
+      <span class="step-count">
+        {{ onboardingService.currentStepIndex() + 1 }} / {{ onboardingService.currentTour().length }}
+      </span>
+    </div>
+
+    <div class="tooltip-content">
+      <p>{{ onboardingService.getCurrentStep().content }}</p>
+    </div>
+
+    <div class="tooltip-actions">
+      <button mat-button (click)="onboardingService.stopTour()">Skip</button>
+      <div class="nav-buttons">
+        <button mat-stroked-button
+                [disabled]="onboardingService.currentStepIndex() === 0"
+                (click)="onboardingService.prevStep()">
+          Prev
+        </button>
+        <button mat-raised-button color="primary"
+                (click)="onboardingService.nextStep()">
+          {{ onboardingService.currentStepIndex() === onboardingService.currentTour().length - 1 ? 'Finish' : 'Next' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

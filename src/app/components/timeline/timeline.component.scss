@@ -77,10 +77,17 @@
 
 /* Header (weeks + days) */
 .timeline-header {
-  display: flex;
+  display: block; /* Acts as viewport */
   background: var(--color-primary);
   border-bottom: 2px solid var(--color-border);
   color: var(--color-text-inverse);
+  overflow: hidden;
+}
+.header-content {
+  display: flex;
+  width: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 .week-cell {
   flex: 1; min-width: 140px;
@@ -116,6 +123,19 @@
   overflow: hidden;
   background: var(--color-surface);
   color: var(--color-text);
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+.panzoom-content {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
+  background-color: var(--color-surface); 
 }
 .grid-background {
   display: flex;

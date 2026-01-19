@@ -11,6 +11,7 @@ import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmatio
 import { Observable, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { JobsService } from '../../../services/jobs.service';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +23,7 @@ export class TimelineService {
     private store: Store<SubtasksState>,
     private dialog: MatDialog,
     private http: HttpClient,
+    private jobsService: JobsService,
   ) {
     this.timelineGroups$ = this.store
       .select((state) => state.subtaskGroups)
@@ -209,44 +211,63 @@ export class TimelineService {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        const subtaskGroups = this.store.getState().subtaskGroups || [];
-        const groupIndex = subtaskGroups.findIndex(
-          (g: any) => g.title === event.groupId,
-        );
-
-        if (groupIndex !== -1) {
-          const group = subtaskGroups[groupIndex];
-          const oldStartDate = new Date(
-            Math.min(
-              ...group.subtasks.map((t: any) =>
-                new Date(t.startDate || t.start).getTime(),
-              ),
-            ),
-          );
-
-          const daysDelta = differenceInCalendarDays(
-            event.newStartDate,
-            oldStartDate,
-          );
-
-          group.subtasks.forEach((task: any) => {
-            const taskStart = new Date(task.startDate || task.start);
-            const taskEnd = new Date(task.endDate || task.end);
-
-            taskStart.setDate(taskStart.getDate() + daysDelta);
-            taskEnd.setDate(taskEnd.getDate() + daysDelta);
-
-            task.startDate = taskStart.toISOString().split('T')[0];
-            task.endDate = taskEnd.toISOString().split('T')[0];
-            this.notifyTimelineUpdate(jobId, task.id, senderId).subscribe();
-          });
-
-          this.store.setState({
-            subtaskGroups: [...subtaskGroups],
-          });
-        }
+        this.moveGroup(event.groupId, event.newStartDate, jobId, senderId);
       }
     });
+  }
+
+  moveGroup(
+    groupId: string,
+    newStartDate: Date,
+    jobId: number,
+    senderId: string,
+  ): void {
+    const subtaskGroups = this.store.getState().subtaskGroups || [];
+    const groupIndex = subtaskGroups.findIndex((g: any) => g.title === groupId);
+
+    if (groupIndex !== -1) {
+      const group = subtaskGroups[groupIndex];
+      const oldStartDate = new Date(
+        Math.min(
+          ...group.subtasks.map((t: any) =>
+            new Date(t.startDate || t.start).getTime(),
+          ),
+        ),
+      );
+
+      const daysDelta = differenceInCalendarDays(newStartDate, oldStartDate);
+
+      const tasksToSave: any[] = [];
+
+      group.subtasks.forEach((task: any) => {
+        const taskStart = new Date(task.startDate || task.start);
+        const taskEnd = new Date(task.endDate || task.end);
+
+        taskStart.setDate(taskStart.getDate() + daysDelta);
+        taskEnd.setDate(taskEnd.getDate() + daysDelta);
+
+        task.startDate = taskStart.toISOString().split('T')[0];
+        task.endDate = taskEnd.toISOString().split('T')[0];
+
+        tasksToSave.push({
+          ...task,
+          groupTitle: group.title,
+          jobId: jobId,
+          deleted: task.deleted ?? false,
+        });
+
+        this.notifyTimelineUpdate(jobId, task.id, senderId).subscribe();
+      });
+
+      this.store.setState({
+        subtaskGroups: [...subtaskGroups],
+      });
+
+      this.jobsService.saveSubtasks(tasksToSave, senderId).subscribe({
+        next: () => console.log('Timeline move saved'),
+        error: (err) => console.error('Failed to save timeline move', err),
+      });
+    }
   }
 
   notifyTimelineUpdate(
