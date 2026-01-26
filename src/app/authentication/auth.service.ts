@@ -210,17 +210,26 @@ export class AuthService {
     localStorage.setItem('loggedIn', 'true');
 
     if (response.userId) {
-      const { userId, firstName, lastName, userType } = response;
+      const { userId, firstName, lastName, userType, email } = response;
+
       const payload = this.parseJwt<any>(token) ?? {};
       const companyName = payload.CompanyName || '';
 
-      const user = { id: userId, firstName, lastName, userType, companyName };
+      const user = {
+        id: userId,
+        firstName,
+        lastName,
+        userType,
+        companyName,
+        email,
+      };
 
       localStorage.setItem('userId', userId);
       localStorage.setItem('firstName', firstName);
       localStorage.setItem('lastName', lastName);
       localStorage.setItem('userType', userType);
       localStorage.setItem('companyName', companyName);
+      localStorage.setItem('email', email);
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
       this.startInactivityTimer();
@@ -267,6 +276,22 @@ export class AuthService {
   //       ),
   //     );
   // }
+
+  updateCompanyName(companyName: string) {
+    const user = this.currentUserSubject.value;
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      companyName,
+    };
+
+    // Update observable
+    this.currentUserSubject.next(updatedUser);
+
+    // Keep localStorage in sync (important for refresh)
+    localStorage.setItem('companyName', companyName);
+  }
 
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);
@@ -437,6 +462,11 @@ export class AuthService {
         firstName: payload.FirstName || localStorage.getItem('firstName'),
         lastName: payload.LastName || localStorage.getItem('lastName'),
         companyName: payload.CompanyName || localStorage.getItem('companyName'),
+        email:
+          payload.Email ||
+          payload.email ||
+          payload.unique_name ||
+          localStorage.getItem('email'),
       };
       this.currentUserSubject.next(user);
     }

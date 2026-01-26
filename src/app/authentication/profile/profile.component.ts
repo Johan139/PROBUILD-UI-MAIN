@@ -6,7 +6,7 @@ import {
   PLATFORM_ID,
   ViewChild,
 } from '@angular/core';
-import { catchError, take, throwError } from 'rxjs';
+import { catchError, forkJoin, take, throwError } from 'rxjs';
 import {
   FormBuilder,
   FormControl,
@@ -72,6 +72,8 @@ import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 import { UserAddressStoreService } from '../../services/UserAddressStoreService';
+import { CompanyService } from '../../services/company.service';
+import { GooglePlacesService } from '../../services/google-places.service';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -137,13 +139,14 @@ export type ActiveMap = Record<
 export class ProfileComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
-  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+
   @ViewChild('profileTabs') profileTabs!: MatTabGroup;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
-  selectedPlace: { description: string; place_id: string } | null = null;
-  autocompleteService: google.maps.places.AutocompleteService | undefined;
-  isGoogleMapsLoaded: boolean = false;
+
+  billingAddressOptions: google.maps.places.AutocompletePrediction[] = [];
+  physicalAddressOptions: google.maps.places.AutocompletePrediction[] = [];
+
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
@@ -177,6 +180,11 @@ export class ProfileComponent implements OnInit {
   jobCardForm: FormGroup;
   userRole: string | null = null;
   today: Date = new Date();
+
+  selectedCompanyCountryCode: any = null;
+
+  billingAddressPayload: any | null = null;
+  physicalAddressPayload: any | null = null;
 
   isVerified = false;
   countries: any[] = [];
@@ -258,6 +266,7 @@ export class ProfileComponent implements OnInit {
     private matIconRegistry: MatIconRegistry,
     private addressStore: UserAddressStoreService,
     private route: ActivatedRoute,
+    private googlePlaces: GooglePlacesService,
     private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
@@ -265,6 +274,7 @@ export class ProfileComponent implements OnInit {
     @Inject(PLATFORM_ID) private platformId: Object,
     private snackBar: MatSnackBar,
     private teamManagementService: TeamManagementService,
+    private companyService: CompanyService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -275,8 +285,11 @@ export class ProfileComponent implements OnInit {
       lastName: [null, Validators.required],
       phoneNumber: [null, Validators.required],
       userType: [null],
+      companyEmail: [null],
+      companyPhone: [null],
       companyName: [null],
       companyRegNo: [null],
+      companyCountryNumberCode: [''],
       vatNo: [null],
       constructionType: [[]],
       nrEmployees: [null],
@@ -308,6 +321,10 @@ export class ProfileComponent implements OnInit {
       googlePlaceId: [''],
       notificationRadius: [100],
       jobPreferences: [[]],
+      billingAddress: [null],
+      physicalAddress: [null],
+      billingAddressInput: [''],
+      physicalAddressInput: [''],
     });
 
     this.teamForm = this.fb.group({
@@ -343,45 +360,44 @@ export class ProfileComponent implements OnInit {
     this.teamSubscriptionsData.sort = this.teamSort;
     this.inactiveSubscriptionsData.sort = this.inactiveSort;
 
-    this.addressControl.valueChanges.subscribe((value) => {
-      if (typeof value === 'string' && value.trim()) {
-        const request: google.maps.places.AutocompletionRequest = {
-          input: value,
-        };
-
-        if (this.userLatitude && this.userLongitude) {
-          request.location = new google.maps.LatLng(
-            this.userLatitude,
-            this.userLongitude,
-          );
-          request.radius = 50000; // 50 km radius — adjust as needed
-        }
-
-        this.autocompleteService?.getPlacePredictions(
-          request,
-          (predictions, status) => {
-            if (
-              status === google.maps.places.PlacesServiceStatus.OK &&
-              predictions
-            ) {
-              this.options = predictions.map((pred) => ({
-                description: pred.description,
-                place_id: pred.place_id,
-              }));
-            } else {
-              this.options = [];
-            }
-          },
-        );
-      } else {
+    this.addressControl.valueChanges.subscribe(async (value) => {
+      if (!value || typeof value !== 'string') {
         this.options = [];
+        return;
       }
+
+      this.options = (
+        await this.googlePlaces.getPredictions(
+          value,
+          this.userLatitude && this.userLongitude
+            ? { lat: this.userLatitude, lng: this.userLongitude }
+            : undefined,
+        )
+      ).map((p) => ({
+        description: p.description,
+        place_id: p.place_id,
+      }));
     });
   }
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
+    this.googlePlaces.load();
+    this.profileForm
+      .get('billingAddressInput')
+      ?.valueChanges.subscribe(async (value) => {
+        this.billingAddressOptions = value
+          ? await this.googlePlaces.getPredictions(value)
+          : [];
+      });
 
+    this.profileForm
+      .get('physicalAddressInput')
+      ?.valueChanges.subscribe(async (value) => {
+        this.physicalAddressOptions = value
+          ? await this.googlePlaces.getPredictions(value)
+          : [];
+      });
     this.registrationService.getCountries().subscribe((countries) => {
       this.countries = countries;
     });
@@ -444,7 +460,12 @@ export class ProfileComponent implements OnInit {
       if (user && user.id) {
         this.loadProfile();
         this.loadDocuments();
-
+        combineLatest([
+          this.registrationService.getAllCountryNumberCodes().pipe(take(1)),
+        ]).subscribe(([codes]) => {
+          this.countryNumberCode = codes;
+          this.loadCompanyProfile(user.id);
+        });
         this.checkSubscription();
         this.manageSubscriptions();
         this.GetUserSubscription();
@@ -481,19 +502,6 @@ export class ProfileComponent implements OnInit {
       this.resetFileInput();
       console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
-
-    if (this.isBrowser) {
-      this.profileService
-        .loadGoogleMapsScript()
-        .then(() => {
-          this.isGoogleMapsLoaded = true;
-          this.autocompleteService =
-            new google.maps.places.AutocompleteService();
-        })
-        .catch((err) =>
-          console.error('Google Maps script loading error:', err),
-        );
-    }
   }
   private _filterCountries(value: string | null): any[] {
     const filterValue = (value ?? '').toLowerCase();
@@ -701,52 +709,111 @@ export class ProfileComponent implements OnInit {
       });
   }
 
-  onAddressSelected(event: MatAutocompleteSelectedEvent): void {
-    const selectedAddress = event.option.value;
-    this.selectedPlace = selectedAddress;
+  async onAddressSelected(
+    event: MatAutocompleteSelectedEvent,
+    type: 'billing' | 'physical',
+  ): Promise<void> {
+    const selected = event.option.value;
+    if (!selected?.place_id) return;
 
-    const placesService = new google.maps.places.PlacesService(
-      this.addressInput.nativeElement,
-    );
-    placesService.getDetails(
-      {
-        placeId: selectedAddress.place_id,
-        fields: [
-          'place_id',
-          'geometry',
-          'formatted_address',
-          'address_components',
-        ],
-      },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          const components = place.address_components || [];
-          const getComponent = (type: string) =>
-            components.find((c) => c.types.includes(type))?.long_name || '';
-          const getShort = (type: string) =>
-            components.find((c) => c.types.includes(type))?.short_name || '';
-          const patchObj = {
-            address: selectedAddress.description,
-            formattedAddress:
-              place.formatted_address || selectedAddress.description,
-            streetNumber: getComponent('street_number'),
-            streetName: getComponent('route'),
-            city: getComponent('locality'),
-            state: getComponent('administrative_area_level_1'),
-            postalCode: getComponent('postal_code'),
-            country: getComponent('country'),
-            countryCode: getShort('country'),
-            latitude: place.geometry?.location?.lat() ?? null,
-            longitude: place.geometry?.location?.lng() ?? null,
-            googlePlaceId: place.place_id || selectedAddress.place_id, // fallback if needed
+    const place = await this.googlePlaces.getPlaceDetails(selected.place_id);
+    if (!place) return;
+
+    const components = place.address_components || [];
+    const get = (t: string) =>
+      components.find((c) => c.types.includes(t))?.long_name || '';
+
+    const payload = {
+      streetNumber: get('street_number'),
+      streetName: get('route'),
+      city: get('locality'),
+      state: get('administrative_area_level_1'),
+      postalCode: get('postal_code'),
+      country: get('country'),
+      latitude: place.geometry?.location?.lat() ?? null,
+      longitude: place.geometry?.location?.lng() ?? null,
+      formattedAddress: place.formatted_address,
+      googlePlaceId: place.place_id,
+    };
+
+    if (type === 'billing') {
+      this.profileForm.patchValue({
+        billingAddress: payload,
+        billingAddressInput: payload.formattedAddress || '',
+      });
+    }
+
+    if (type === 'physical') {
+      this.profileForm.patchValue({
+        physicalAddress: payload,
+        physicalAddressInput: payload.formattedAddress || '',
+      });
+    }
+  }
+
+  private loadCompanyProfile(userId: string): void {
+    this.companyService
+      .getCompanyProfile(userId)
+      .pipe(take(1))
+      .subscribe({
+        next: (company) => {
+          if (!company) return;
+
+          const normalizeArray = (v: any) =>
+            typeof v === 'string'
+              ? v.split(',').map((x) => x.trim())
+              : Array.isArray(v)
+                ? v
+                : [];
+
+          const patch = {
+            companyName: company.name ?? null,
+            companyRegNo: company.companyRegNo ?? null,
+            vatNo: company.vatNo ?? null,
+            constructionType: normalizeArray(company.constructionType),
+            nrEmployees: company.nrEmployees ?? null,
+            yearsOfOperation: company.yearsOfOperation ?? null,
+            certificationStatus: company.certificationStatus ?? null,
+            certificationDocumentPath:
+              company.certificationDocumentPath ?? null,
+            trade: company.trade ?? null,
+            supplierType: company.supplierType ?? null,
+            productsOffered: normalizeArray(company.productsOffered),
+            jobPreferences: normalizeArray(company.jobPreferences),
+            deliveryArea: normalizeArray(company.deliveryArea),
+            deliveryTime: company.deliveryTime ?? null,
+            companyPhone: company.phoneNumber ?? null,
+            companyEmail: company.email ?? null,
+            billingAddress: company.billingAddress ?? null,
+            physicalAddress: company.physicalAddress ?? null,
+
+            billingAddressInput: company.billingAddress?.formattedAddress ?? '',
+            physicalAddressInput:
+              company.physicalAddress?.formattedAddress ?? '',
           };
 
-          this.profileForm.patchValue(patchObj);
-          this.addressControl.setValue(patchObj.address);
-          console.log('🔄 Google Place data patched:', patchObj);
-        }
-      },
-    );
+          this.profileForm.patchValue(patch);
+
+          if (company.countryNumberCode && this.countryNumberCode.length > 0) {
+            const matched = this.countryNumberCode.find(
+              (c) => c.id === company.countryNumberCode,
+            );
+
+            this.selectedCompanyCountryCode =
+              matched ||
+              this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
+              this.countryNumberCode[0];
+
+            this.profileForm.patchValue({
+              companyPhone: company.phoneNumber ?? null,
+              companyCountryNumberCode: this.selectedCompanyCountryCode.id,
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load company profile', err);
+        },
+      });
   }
 
   private loadSubscriptionPackages(): void {
@@ -1127,132 +1194,172 @@ export class ProfileComponent implements OnInit {
   }
 
   // ---------- ADDRESS MANAGEMENT ----------
-  // ---------- ADDRESS MANAGEMENT ----------
 
-  openAddressDialog(address?: UserAddress): void {
-    const dialogRef = this.dialog.open(AddressDialogComponent, {
-      width: '600px',
-      data: address ?? null,
-    });
+  // openAddressDialog(address?: UserAddress): void {
+  //   const dialogRef = this.dialog.open(AddressDialogComponent, {
+  //     width: '600px',
+  //     data: address ?? null,
+  //   });
 
-    dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
-      if (!result) return;
+  //   dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
+  //     if (!result) return;
 
-      // -----------------------------------
-      // 🔥 CRITICAL FIX:
-      // When editing, force the ID to remain
-      // -----------------------------------
-      if (address) {
-        result.id = address.id; // ensure update always has correct ID
-        this.updateAddress(result);
-      } else {
-        this.saveNewAddress(result);
-      }
-    });
-  }
+  //     // -----------------------------------
+  //     // 🔥 CRITICAL FIX:
+  //     // When editing, force the ID to remain
+  //     // -----------------------------------
+  //     if (address) {
+  //       result.id = address.id; // ensure update always has correct ID
+  //       this.updateAddress(result);
+  //     } else {
+  //       this.saveNewAddress(result);
+  //     }
+  //   });
+  // }
 
-  editAddress(address: UserAddress): void {
-    this.openAddressDialog(address);
-  }
+  // editAddress(address: UserAddress): void {
+  //   this.openAddressDialog(address);
+  // }
 
-  deleteAddress(address: UserAddress): void {
-    if (!address?.id) return;
+  // deleteAddress(address: UserAddress): void {
+  //   if (!address?.id) return;
 
-    const confirmed = confirm('Are you sure you want to delete this address?');
-    if (!confirmed) return;
+  //   const confirmed = confirm('Are you sure you want to delete this address?');
+  //   if (!confirmed) return;
 
-    this.profileService.deleteUserAddress(address.id).subscribe({
-      next: () => {
-        this.snackBar.open('Address deleted successfully.', 'Close', {
-          duration: 3000,
-        });
-        // ✅ use the actual array name
-        this.addresses = this.addresses.filter((a) => a.id !== address.id);
-        this.addressDataSource.data = this.addresses;
-      },
-      error: (err) => {
-        console.error('Error deleting address', err);
-        this.snackBar.open('Failed to delete address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
+  //   this.profileService.deleteUserAddress(address.id).subscribe({
+  //     next: () => {
+  //       this.snackBar.open('Address deleted successfully.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //       // ✅ use the actual array name
+  //       this.addresses = this.addresses.filter((a) => a.id !== address.id);
+  //       this.addressDataSource.data = this.addresses;
+  //     },
+  //     error: (err) => {
+  //       console.error('Error deleting address', err);
+  //       this.snackBar.open('Failed to delete address.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //     },
+  //   });
+  // }
 
-  saveNewAddress(address: UserAddress): void {
-    const payload = {
-      ...address,
-      userId: String(localStorage.getItem('userId') ?? ''), // <-- make sure this is set!
-    };
+  // saveNewAddress(address: UserAddress): void {
+  //   const payload = {
+  //     ...address,
+  //     userId: String(localStorage.getItem('userId') ?? ''), // <-- make sure this is set!
+  //   };
 
-    this.profileService.addUserAddress(payload).subscribe({
-      next: (saved) => {
-        this.snackBar.open('Address added successfully.', 'Close', {
-          duration: 3000,
-        });
-        this.addresses.push(saved);
-        this.addressDataSource.data = [...this.addresses];
-      },
-      error: (err) => {
-        console.error('Error saving address', err);
-        this.snackBar.open('Failed to save address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
+  //   this.profileService.addUserAddress(payload).subscribe({
+  //     next: (saved) => {
+  //       this.snackBar.open('Address added successfully.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //       this.addresses.push(saved);
+  //       this.addressDataSource.data = [...this.addresses];
+  //     },
+  //     error: (err) => {
+  //       console.error('Error saving address', err);
+  //       this.snackBar.open('Failed to save address.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //     },
+  //   });
+  // }
 
-  updateAddress(address: UserAddress): void {
-    this.profileService.updateUserAddress(address.id!, address).subscribe({
-      next: (updated) => {
-        this.snackBar.open('Address updated successfully.', 'Close', {
-          duration: 3000,
-        });
-        const idx = this.addresses.findIndex((a) => a.id === updated.id);
-        if (idx !== -1) this.addresses[idx] = updated;
-        this.addressDataSource.data = [...this.addresses];
-      },
-      error: (err) => {
-        console.error('Error updating address', err);
-        this.snackBar.open('Failed to update address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
+  // updateAddress(address: UserAddress): void {
+  //   this.profileService.updateUserAddress(address.id!, address).subscribe({
+  //     next: (updated) => {
+  //       this.snackBar.open('Address updated successfully.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //       const idx = this.addresses.findIndex((a) => a.id === updated.id);
+  //       if (idx !== -1) this.addresses[idx] = updated;
+  //       this.addressDataSource.data = [...this.addresses];
+  //     },
+  //     error: (err) => {
+  //       console.error('Error updating address', err);
+  //       this.snackBar.open('Failed to update address.', 'Close', {
+  //         duration: 3000,
+  //       });
+  //     },
+  //   });
+  // }
 
   onSubmit(): void {
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
+
       this.profileForm.patchValue({
         SessionId: this.sessionId,
       });
+
       const updatedProfile: Profile = this.profileForm.value;
-      console.log(updatedProfile);
       updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
-      console.log(updatedProfile);
-      this.profileService.updateProfile(updatedProfile).subscribe({
-        next: (response: Profile) => {
-          this.profile = response;
-          this.profileForm.patchValue(response);
-          this.snackBar.open('Profile updated successfully', 'Close', {
-            duration: 3000,
-          });
+
+      const companyPayload = {
+        name: this.profileForm.value.companyName,
+        companyRegNo: this.profileForm.value.companyRegNo,
+        vatNo: this.profileForm.value.vatNo,
+        email: this.profileForm.value.companyEmail,
+        phoneNumber: this.profileForm.value.companyPhone,
+        countryNumberCode: this.profileForm.value.companyCountryNumberCode,
+        constructionType: this.profileForm.value.constructionType,
+        nrEmployees: this.profileForm.value.nrEmployees,
+        yearsOfOperation: this.profileForm.value.yearsOfOperation,
+        certificationStatus: this.profileForm.value.certificationStatus,
+
+        certificationDocumentPath:
+          this.profileForm.value.certificationDocumentPath,
+        trade: this.profileForm.value.trade,
+        supplierType: this.profileForm.value.supplierType,
+        productsOffered: this.profileForm.value.productsOffered,
+        jobPreferences: this.profileForm.value.jobPreferences,
+        deliveryArea: this.profileForm.value.deliveryArea,
+        deliveryTime: this.profileForm.value.deliveryTime,
+
+        billingAddress: this.profileForm.value.billingAddress,
+        physicalAddress: this.profileForm.value.physicalAddress,
+      };
+
+      console.log('Company payload', companyPayload);
+      forkJoin({
+        profile: this.profileService.updateProfile(updatedProfile),
+        company: this.companyService.updateCompanyProfile(
+          companyPayload,
+          updatedProfile.id,
+        ),
+      }).subscribe({
+        next: ({ profile }) => {
+          this.profile = profile;
+          this.profileForm.patchValue(profile);
+          this.authService.updateCompanyName(
+            this.profileForm.value.companyName,
+          );
+
           const selectedPackageValue =
             this.profileForm.value.subscriptionPackage;
+
           const selectedPackage = this.subscriptionPackages.find(
             (p) => p.value === selectedPackageValue,
           );
 
+          this.snackBar.open('Profile updated successfully', 'Close', {
+            duration: 3000,
+          });
+
           this.isSaving = false;
         },
         error: (error) => {
-          console.error('Error updating profile:', error);
+          console.error('Error updating profile/company:', error);
+
           this.snackBar.open(
             'Failed to update profile. Please try again.',
             'Close',
             { duration: 3000 },
           );
+
           this.isSaving = false;
         },
       });
@@ -2009,6 +2116,125 @@ export class ProfileComponent implements OnInit {
       complete: () => this.rowBusy.delete(id),
     });
   }
+  private getDial(isCompany = false): string {
+    return isCompany
+      ? this.selectedCompanyCountryCode?.countryPhoneNumberCode || ''
+      : this.selectedCountryCode?.countryPhoneNumberCode || '';
+  }
+
+  private getPhoneCtrl(isCompany = false) {
+    return isCompany
+      ? this.profileForm.get('companyPhone')
+      : this.profileForm.get('phoneNumber');
+  }
+  onPhoneFocus(event: FocusEvent, isCompany = false) {
+    const dial = this.getDial(isCompany);
+    const ctrl = this.getPhoneCtrl(isCompany);
+    if (!dial || !ctrl) return;
+
+    const input = event.target as HTMLInputElement;
+    const value = ctrl.value || '';
+
+    if (!value || !value.startsWith(dial)) {
+      ctrl.setValue(dial, { emitEvent: false });
+      setTimeout(() => input.setSelectionRange(dial.length, dial.length));
+    } else {
+      const pos = input.selectionStart ?? 0;
+      if (pos < dial.length) {
+        setTimeout(() => input.setSelectionRange(dial.length, dial.length));
+      }
+    }
+  }
+  onPhoneKeyDown(event: KeyboardEvent, isCompany = false) {
+    const dial = this.getDial(isCompany);
+    const input = event.target as HTMLInputElement;
+    const pos = input.selectionStart ?? 0;
+
+    if (!dial) return;
+
+    if (
+      (event.key === 'Backspace' && pos <= dial.length) ||
+      (event.key === 'Delete' && pos < dial.length) ||
+      (event.key === 'ArrowLeft' && pos <= dial.length)
+    ) {
+      event.preventDefault();
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setTimeout(() => input.setSelectionRange(dial.length, dial.length));
+    }
+
+    if (event.key.length === 1 && !/[0-9]/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+  onPhoneClick(event: MouseEvent, isCompany = false) {
+    const dial = this.getDial(isCompany);
+    const input = event.target as HTMLInputElement;
+
+    setTimeout(() => {
+      const pos = input.selectionStart ?? 0;
+      if (pos < dial.length) {
+        input.setSelectionRange(dial.length, dial.length);
+      }
+    });
+  }
+  onPhoneBlur(isCompany = false) {
+    const dial = this.getDial(isCompany);
+    const ctrl = this.getPhoneCtrl(isCompany);
+    if (!dial || !ctrl) return;
+
+    let value = ctrl.value || '';
+
+    if (value === dial || !value.trim()) {
+      ctrl.setValue('', { emitEvent: false });
+      return;
+    }
+
+    let digits = value.replace(dial, '').replace(/\D/g, '').replace(/^0+/, '');
+
+    ctrl.setValue(digits ? dial + digits : '', { emitEvent: false });
+  }
+  onCountryChanged(isCompany = false) {
+    const ctrl = this.getPhoneCtrl(isCompany);
+    const dial = this.getDial(isCompany);
+
+    if (!ctrl || !dial) return;
+
+    // 🔥 CRITICAL: sync selected country → form control
+    if (isCompany && this.selectedCompanyCountryCode?.id) {
+      this.profileForm.patchValue({
+        companyCountryNumberCode: this.selectedCompanyCountryCode.id,
+      });
+    }
+
+    const value = String(ctrl.value || '');
+    if (!value) return;
+
+    // If already correct → do nothing
+    if (value.startsWith(dial)) return;
+
+    const digits = value
+      .replace(/^\+\d{1,4}/, '')
+      .replace(/\D/g, '')
+      .replace(/^0+/, '');
+
+    ctrl.setValue(digits ? dial + digits : '', { emitEvent: false });
+  }
+
+  onPhonePaste(event: ClipboardEvent, isCompany = false) {
+    event.preventDefault();
+
+    const dial = this.getDial(isCompany);
+    const ctrl = this.getPhoneCtrl(isCompany);
+    if (!dial || !ctrl) return;
+
+    let pasted = event.clipboardData?.getData('text') || '';
+    let clean = pasted.replace(/[^\d]/g, '').replace(/^0+/, '');
+
+    ctrl.setValue(dial + clean, { emitEvent: false });
+  }
 
   reactivateTeamMember(id: string): void {
     this.teamManagementService.reactivateTeamMember(id).subscribe({
@@ -2047,91 +2273,9 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
-  onCountryCodeChange(selected: any): void {
-    this.selectedCountryCode = selected;
-
-    const phoneCtrl = this.profileForm.get('phoneNumber');
-    if (!phoneCtrl) return;
-
-    let phone = phoneCtrl.value || '';
-    const newDial = selected.countryPhoneNumberCode || '';
-
-    // Remove old dial code if present
-    for (const c of this.countryNumberCode) {
-      const old = c.countryPhoneNumberCode;
-      if (old && phone.startsWith(old)) {
-        phone = phone.slice(old.length);
-        break;
-      }
-    }
-
-    // Clean remaining digits
-    phone = phone.replace(/[^\d+]/g, '').replace(/^0+/, '');
-
-    // Reapply new dial code
-    const newPhone = `${newDial}${phone}`;
-    phoneCtrl.setValue(newPhone);
-
-    // Update GUID reference
-    this.profileForm.patchValue({ countryNumberCode: selected.id });
-
-    console.log(`☎ Updated number: ${newPhone}`);
-  }
 
   ngOnDestroy(): void {
     this.profileService.stopSignalR();
-  }
-  onPhoneInput(event: any) {
-    const inputEl = event.target as HTMLInputElement;
-    let value = inputEl.value || '';
-    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
-    const phoneCtrl = this.profileForm.get('phoneNumber');
-
-    // Clean illegal characters but allow + only at start
-    value = value
-      .replace(/[^0-9\s()+-]/g, '') // remove strange chars
-      .replace(/(?!^)\+/g, ''); // remove any '+' that isn’t at the start
-
-    if (dial) {
-      // Remove duplicate dial prefixes like +27+27 or +1+1
-      const duplicatePattern = new RegExp(
-        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`,
-      );
-      value = value.replace(duplicatePattern, dial);
-
-      // Ensure value starts with single '+'
-      if (!value.startsWith('+')) {
-        value = '+' + value.replace(/^\+*/, '');
-      }
-
-      // If cleared → reset to dial
-      if (!value.trim()) {
-        value = dial;
-      }
-      // Backspacing inside dial code → lock it
-      else if (value.length < dial.length && dial.startsWith(value)) {
-        value = dial;
-      }
-      // If just "+" or "+0" → normalize
-      else if (value === '+' || value === '+0') {
-        value = dial;
-      }
-      // If missing dial → prepend it
-      else if (!value.startsWith(dial)) {
-        let digits = value.replace(/^\+?0+/, '');
-        value = dial + digits;
-      }
-      // ✅ Fix “+270...” or “+440...” etc. (leading 0 after dial)
-      else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
-        value = dial + value.substring(dial.length + 1);
-      }
-    }
-
-    // Final cleanup: remove double '+' anywhere just in case
-    value = value.replace(/\+\++/g, '+');
-
-    inputEl.value = value;
-    phoneCtrl?.setValue(value, { emitEvent: false });
   }
 
   changeUserRole(newRole: string): void {

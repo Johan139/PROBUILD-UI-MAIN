@@ -5,101 +5,88 @@ import {
   HttpHeaders,
 } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
-import { Quote } from './quote.model';
+import { QuoteDto, QuoteViewDto } from './quote.model';
 import { AuthService } from '../../authentication/auth.service';
 import { environment } from '../../../environments/environment';
+export interface SendToClientRequest {
+  quoteId: string;
+  clientEmail: string;
+  clientName?: string;
+  personalMessage?: string;
+  attachPdf?: boolean;
+}
 
-@Injectable({
-  providedIn: 'root',
-})
+export interface SendToClientResponse {
+  success: boolean;
+  message: string;
+  quoteId: string;
+  status: string;
+}
+@Injectable({ providedIn: 'root' })
 export class QuoteService {
   private apiUrl = `${environment.BACKEND_URL}/quotes`;
 
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService,
-  ) {}
+  constructor(private http: HttpClient) {}
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  saveDraft(dto: QuoteDto) {
+    console.log(dto);
+    return this.http.post<{ quoteId: string; version: number }>(
+      `${this.apiUrl}/draft`,
+      dto,
+    );
+  }
+
+  submitQuote(quoteId: string) {
+    return this.http.post<void>(`${this.apiUrl}/${quoteId}/submit`, {});
+  }
+
+  getQuote(quoteId: string) {
+    return this.http.get<QuoteViewDto>(`${this.apiUrl}/${quoteId}`);
+  }
+
+  changeStatus(quoteId: string, status: string) {
+    return this.http.post<void>(
+      `${this.apiUrl}/${quoteId}/status`,
+      JSON.stringify(status),
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  getUserQuotes(userId: string) {
+    return this.http.get<any[]>(`${this.apiUrl}/user/${userId}`);
+  }
+
+  sendToClient(request: SendToClientRequest): Observable<SendToClientResponse> {
+    return this.http
+      .post<SendToClientResponse>(
+        `${this.apiUrl}/${request.quoteId}/send-to-client`,
+        request,
+      )
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          console.error('Error sending quote to client:', error);
+          return throwError(
+            () =>
+              new Error(
+                error.error?.message || 'Failed to send quote to client',
+              ),
+          );
+        }),
+      );
+  }
+
+  /**
+   * Resend a quote that was already sent
+   */
+  resendToClient(
+    quoteId: string,
+    clientEmail: string,
+    personalMessage?: string,
+  ): Observable<SendToClientResponse> {
+    return this.sendToClient({
+      quoteId,
+      clientEmail,
+      personalMessage,
     });
-  }
-
-  saveQuote(quote: Quote): Observable<Quote> {
-    // console.log('Saving quote to:', this.apiUrl, 'with data:', quote);
-    return this.http
-      .post<Quote>(this.apiUrl, quote, { headers: this.getHeaders() })
-      .pipe(
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error saving quote:', error);
-          return throwError(() => new Error('Failed to save quote data.'));
-        }),
-      );
-  }
-
-  getQuote(id: string): Observable<any> {
-    return this.http
-      .get<any>(`${this.apiUrl}/GetQuote/${id}`, { headers: this.getHeaders() })
-      .pipe(
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error loading quote:', error);
-          return throwError(() => new Error('Failed to load quote data.'));
-        }),
-      );
-  }
-
-  getAllQuotes(): Observable<Quote[]> {
-    const userId = this.authService.currentUserSubject.value?.id;
-    return this.http
-      .get<
-        Quote[]
-      >(`${this.apiUrl}/GetQuotes/${userId}`, { headers: this.getHeaders() })
-      .pipe(
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error fetching quotes:', error);
-          return throwError(() => new Error('Failed to fetch quotes.'));
-        }),
-      );
-  }
-
-  updateQuote(quote: Quote): Observable<Quote> {
-    // console.log('Updating quote at:', `${this.apiUrl}/${quote.id}`, 'with data:', quote);
-    return this.http
-      .post<Quote>(`${this.apiUrl}/UpdateQuote/${quote.id}`, quote, {
-        headers: this.getHeaders(),
-      })
-      .pipe(
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error updating quote:', error);
-          return throwError(() => new Error('Failed to update quote data.'));
-        }),
-      );
-  }
-
-  getJobQuotes(jobId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/GetJobQuotes/${jobId}`);
-  }
-
-  getQuotesByUser(userId: string): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.apiUrl}/GetJobQuotesByUserId/${userId}`,
-    );
-  }
-
-  saveQuoteWithVersion(quote: Quote): Observable<Quote> {
-    return this.http.post<Quote>(`${this.apiUrl}/SaveQuoteWithVersion`, quote);
-  }
-
-  changeStatus(quoteId: string, newStatus: string): Observable<Quote> {
-    return this.http.post<Quote>(
-      `${this.apiUrl}/ChangeStatus/${quoteId}`,
-      JSON.stringify(newStatus), // Important: serialize the string
-      {
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
   }
 }

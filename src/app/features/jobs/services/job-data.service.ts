@@ -7,6 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { formatDate } from '@angular/common';
+import { PhaseMaterials } from '../../quote/quote.model';
 
 @Injectable({
   providedIn: 'root',
@@ -80,16 +81,36 @@ export class JobDataService {
       },
     });
 
-    // Stale-While-Revalidate: Load from Local Storage first
-    const storageKey = `subtasks_${projectDetails.jobId}`;
+    // Cache keys
+    const subtasksStorageKey = `subtasks_${projectDetails.jobId}`;
+    const materialsStorageKey = `materials_${projectDetails.jobId}`;
+
     if (typeof localStorage !== 'undefined') {
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
+      // Load cached subtasks
+      const cachedSubtasks = localStorage.getItem(subtasksStorageKey);
+      if (cachedSubtasks) {
         try {
-          const parsed = JSON.parse(cached);
+          const parsed = JSON.parse(cachedSubtasks);
           this.store.setState({ subtaskGroups: parsed });
+          console.log('📦 Loaded subtasks from cache');
         } catch (e) {
-          // console.error('Error parsing cached subtasks', e);
+          console.error('Error parsing cached subtasks', e);
+        }
+      }
+
+      // 👇 Load cached materials
+      const cachedMaterials = localStorage.getItem(materialsStorageKey);
+      if (cachedMaterials) {
+        try {
+          const parsed = JSON.parse(cachedMaterials);
+          this.store.setState({ materialGroups: parsed });
+          console.log(
+            '📦 Loaded materials from cache:',
+            parsed.length,
+            'phases',
+          );
+        } catch (e) {
+          console.error('Error parsing cached materials', e);
         }
       }
     }
@@ -130,18 +151,44 @@ export class JobDataService {
             const grouped = this.groupSubtasksByTitle(result.data);
             this.store.setState({ subtaskGroups: grouped });
             if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(storageKey, JSON.stringify(grouped));
+              localStorage.setItem(subtasksStorageKey, JSON.stringify(grouped));
             }
           } else if (result.source === 'bom' && result.markdown) {
+            // Parse timeline for subtasks
             const parsedGroups = this.parseTimelineToTaskGroups(
               result.markdown,
             );
             this.store.setState({ subtaskGroups: parsedGroups });
             if (typeof localStorage !== 'undefined') {
-              localStorage.setItem(storageKey, JSON.stringify(parsedGroups));
+              localStorage.setItem(
+                subtasksStorageKey,
+                JSON.stringify(parsedGroups),
+              );
             }
 
-            // Also extract isSelected flag and update projectDetails
+            // 👇 CRITICAL: Extract and cache materials from quotation section
+            const materialGroups = this.extractMaterialGroups(result.markdown);
+
+            console.log(
+              '📦 Extracted materials:',
+              materialGroups.length,
+              'phases',
+            );
+
+            this.store.setState({ materialGroups });
+
+            if (
+              typeof localStorage !== 'undefined' &&
+              materialGroups.length > 0
+            ) {
+              localStorage.setItem(
+                materialsStorageKey,
+                JSON.stringify(materialGroups),
+              );
+              console.log('📦 Cached materials to localStorage');
+            }
+
+            // Extract isSelected flag
             try {
               const jsonMatch = result.markdown.match(/```json([\s\S]*?)```/);
               if (jsonMatch && jsonMatch[1]) {
@@ -162,8 +209,8 @@ export class JobDataService {
           }
         },
         error: (err: any) => {
-          console.error(err);
-          this.store.setState({ subtaskGroups: [] });
+          console.error('📦 Error fetching job data:', err);
+          this.store.setState({ subtaskGroups: [], materialGroups: [] });
         },
       });
   }
@@ -172,12 +219,16 @@ export class JobDataService {
     subtasks: any[],
   ): { title: string; subtasks: any[]; progress: number }[] {
     const groupedMap = new Map<string, any[]>();
+    console.log('🔥 groupSubtasksByTitle INPUT', subtasks);
     for (const st of subtasks) {
+      console.log('➡️ RAW SUBTASK OBJECT', st);
+      console.log('➡️ st.cost =', st.cost);
       const group = groupedMap.get(st.groupTitle) || [];
       const formatDate = (date: string) => {
         if (!date) return '';
         return new Date(date).toISOString().split('T')[0];
       };
+
       group.push({
         id: st.id,
         task: this.cleanTaskName(st.task ?? st.taskName),
@@ -280,6 +331,10 @@ export class JobDataService {
     let isSelected = false;
     let isRenovation = false;
     try {
+      console.log('🔥 RAW BOM REPORT START');
+      console.log(report);
+      console.log('🔥 RAW BOM REPORT END');
+
       const jsonMatch = report.match(/```json([\s\S]*?)```/);
       if (jsonMatch && jsonMatch[1]) {
         const parsedJson = JSON.parse(jsonMatch[1]);
@@ -335,7 +390,9 @@ export class JobDataService {
         const durationStr = columns[3];
         let startDateStr = columns[4];
         const endDateStr = columns[5];
+        const costStr = columns[8];
 
+        const cost = this.parseCost(costStr);
         // Filter out the "Total Project Duration" line by checking the task name column
         if (
           phaseRaw
@@ -367,7 +424,7 @@ export class JobDataService {
           startDate: startDate ? this.formatDateToYYYYMMDD(startDate) : '',
           endDate: endDate ? this.formatDateToYYYYMMDD(endDate) : '',
           status: 'Pending',
-          cost: 0,
+          cost: cost,
           deleted: false,
           accepted: false,
         });
@@ -516,7 +573,9 @@ export class JobDataService {
         const duration = columns[2];
         const startDate = columns[4];
         const endDate = columns[5];
+        const costStr = columns[8];
 
+        const cost = this.parseCost(costStr);
         if (
           phaseRaw.includes('Financial Milestone') ||
           taskName.includes('Financial Milestone')
@@ -547,9 +606,13 @@ export class JobDataService {
           startDate: formatDateString(startDate),
           endDate: formatDateString(endDate),
           status: 'Pending',
-          cost: 0,
+          cost: cost,
           deleted: false,
           accepted: false,
+        });
+        console.log('➡️ BOM TASK CREATED', {
+          task: taskName,
+          cost: cost,
         });
       }
     }
@@ -663,5 +726,118 @@ export class JobDataService {
       };
       this.router.navigate(['/view-quote'], { queryParams: params });
     });
+  }
+  private extractMaterialGroups(markdown: string): PhaseMaterials[] {
+    console.log('🟡 extractMaterialGroups CALLED');
+    console.log('🟡 Markdown length:', markdown?.length);
+
+    if (!markdown) {
+      console.warn('🔴 No markdown provided');
+      return [];
+    }
+
+    // 🔥 CRITICAL FIX: Look for the section that contains "Output 1: Quotation Data"
+    // The materials JSON is AFTER this heading, not the first JSON block
+
+    const quotationSection = markdown.match(
+      /###\s*\*\*Output 1: Quotation Data[\s\S]*?```json\s*([\s\S]*?)\s*```/,
+    );
+
+    if (!quotationSection || !quotationSection[1]) {
+      console.warn('🔴 No Quotation Data section found');
+      console.log('🔴 Searching for alternative pattern...');
+
+      // Alternative: Look for JSON that contains "Categorized_Materials"
+      const allJsonBlocks = markdown.matchAll(/```json\s*([\s\S]*?)\s*```/g);
+
+      for (const match of allJsonBlocks) {
+        const jsonContent = match[1];
+
+        // Check if this JSON block contains material data
+        if (jsonContent.includes('Categorized_Materials')) {
+          console.log('🟢 Found JSON block with Categorized_Materials');
+          return this.parseMaterialsFromJson(jsonContent);
+        }
+      }
+
+      console.warn('🔴 No JSON block with materials found');
+      return [];
+    }
+
+    console.log('🟢 Found Quotation Data section');
+    return this.parseMaterialsFromJson(quotationSection[1]);
+  }
+  private parseMaterialsFromJson(jsonString: string): PhaseMaterials[] {
+    console.log('🟡 Parsing materials from JSON, length:', jsonString.length);
+
+    try {
+      const raw = JSON.parse(jsonString);
+      console.log('🟢 PARSED JSON successfully');
+      console.log('🟢 Type:', Array.isArray(raw) ? 'Array' : typeof raw);
+
+      if (!Array.isArray(raw)) {
+        console.warn('🔴 Parsed JSON is not an array');
+        return [];
+      }
+
+      console.log('🟢 Items count:', raw.length);
+
+      // Filter items that have Categorized_Materials
+      const filtered = raw.filter((x) => {
+        const hasMaterials =
+          x['Categorized_Materials'] &&
+          Array.isArray(x['Categorized_Materials']) &&
+          x['Categorized_Materials'].length > 0;
+
+        if (!hasMaterials && x['Phase / Item']) {
+          console.log('⚪ Skipping (no materials):', x['Phase / Item']);
+        }
+
+        return hasMaterials;
+      });
+
+      console.log('🟢 Filtered items with materials:', filtered.length);
+
+      const result = filtered.map((x) => ({
+        phase: x['Phase / Item'],
+        csiCode: x['CSI_Code'],
+        description: x['Description'],
+        materials: x['Categorized_Materials'].map((m: any) => ({
+          item: m.Item,
+          cost: Number(m.Cost) || 0,
+        })),
+        labor: Number(x.Labor) || 0,
+        totalAmount: Number(x.Amount) || 0,
+      }));
+
+      console.log('🟢 MATERIAL GROUPS RESULT:', result.length, 'phases');
+
+      if (result.length > 0) {
+        console.log('🟢 First phase sample:', result[0]);
+      }
+
+      return result;
+    } catch (e) {
+      console.error('🔴 Failed to parse material groups', e);
+      return [];
+    }
+  }
+  private parseCost(costStr: string | undefined): number {
+    if (!costStr) return 0;
+
+    // Handle N/A, -, empty
+    if (
+      costStr.toLowerCase() === 'n/a' ||
+      costStr.trim() === '-' ||
+      costStr.trim() === ''
+    ) {
+      return 0;
+    }
+
+    // Remove currency symbols and commas: "$10,450" → "10450"
+    const numeric = costStr.replace(/[^0-9.]/g, '');
+    const value = parseFloat(numeric);
+
+    return isNaN(value) ? 0 : value;
   }
 }

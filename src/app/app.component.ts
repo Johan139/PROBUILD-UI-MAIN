@@ -134,19 +134,19 @@ export class AppComponent implements OnInit, OnDestroy {
       tooltip: 'Access your schedule and calendar events',
     },
     {
-      label: 'My Quotes',
+      label: 'Quotes & Invoices',
       icon: 'description',
       route: ['/quotes'],
-      tooltip: 'Review your existing quotes',
+      tooltip: 'Review your existing quotes & invoices',
     },
+    // {
+    //   label: 'New Quote',
+    //   icon: 'note_add',
+    //   route: ['/quote'],
+    //   tooltip: 'Create a new quote',
+    // },
     {
-      label: 'New Quote',
-      icon: 'note_add',
-      route: ['/quote'],
-      tooltip: 'Create a new quote',
-    },
-    {
-      label: 'Find Work',
+      label: 'Marketplace',
       icon: 'travel_explore',
       route: ['/find-work'],
       tooltip: 'Search for new work opportunities',

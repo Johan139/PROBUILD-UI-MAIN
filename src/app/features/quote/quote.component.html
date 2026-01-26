@@ -17,12 +17,6 @@
           <mat-icon>add</mat-icon>
           {{ isQuote ? "New Quote" : "New Invoice" }}
         </button>
-
-        <button mat-button class="drafts-btn">
-          <mat-icon>description</mat-icon>
-          Drafts
-          <span class="draft-count">2</span>
-        </button>
       </div>
     </div>
 
@@ -52,79 +46,168 @@
 
   <!-- ================= LEFT SIDEBAR ================= -->
   <aside class="quote-sidebar">
-    <!-- Company Logo -->
-    <section class="sidebar-card">
-      <h4>Company Logo</h4>
+    <!-- TAB NAVIGATION -->
+    <div class="sidebar-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'company'"
+        (click)="switchTab('company')"
+      >
+        <mat-icon>business</mat-icon>
+        Company
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'jobs'"
+        (click)="switchTab('jobs')"
+      >
+        <mat-icon>work</mat-icon>
+        Jobs ({{ successJobs.length }})
+      </button>
+    </div>
 
-      <div class="logo-container" (click)="!readOnly && triggerFileInput()">
-        <div class="placeholder" *ngIf="!logoUrl">
-          <mat-icon>cloud_upload</mat-icon>
-          <span>Upload Logo</span>
+    <!-- COMPANY TAB CONTENT -->
+    <div class="sidebar-content" *ngIf="activeTab === 'company'">
+      <!-- Company Logo -->
+      <section class="sidebar-card">
+        <h4>Company Logo</h4>
+
+        <div class="logo-container" (click)="!readOnly && triggerFileInput()">
+          <div class="placeholder" *ngIf="!logoId && !logoUrl">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Upload Logo</span>
+          </div>
+
+          <img
+            *ngIf="logoId"
+            class="logo-image"
+            [src]="logoImageSrc"
+            (error)="onLogoLoadError($event)"
+            alt="Company logo"
+          />
+
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            class="file-input"
+            (change)="onLogoChange($event)"
+            [disabled]="readOnly"
+          />
+
+          <button
+            *ngIf="logoUrl"
+            mat-icon-button
+            class="remove-logo"
+            (click)="removeLogo()"
+            [disabled]="readOnly"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </section>
+
+      <!-- Company Details -->
+      <section class="sidebar-card">
+        <div class="sidebar-header">
+          <h4>Company Details</h4>
+          <button mat-icon-button class="edit-button">
+            <mat-icon>edit</mat-icon>
+          </button>
         </div>
 
-        <img
-          *ngIf="logoUrl"
-          [src]="logoUrl"
-          class="logo-image"
-          alt="Company Logo"
-        />
+        <div class="sidebar-text" *ngIf="companyDetails as c">
+          <div class="company-name">{{ c.name }}</div>
+          <div class="company-address" *ngIf="c.address">{{ c.address }}</div>
+          <div class="company-email" *ngIf="c.email">{{ c.email }}</div>
+          <div class="company-phone" *ngIf="c.phoneNumber">
+            {{ c.phoneNumber }}
+          </div>
+        </div>
+      </section>
 
-        <input
-          #fileInput
-          type="file"
-          accept="image/*"
-          class="file-input"
-          (change)="onLogoChange($event)"
-          [disabled]="readOnly"
-        />
+      <!-- Quick Actions -->
+      <section class="sidebar-card">
+        <h4>Quick Actions</h4>
+        <button mat-button>View All Documents</button>
+        <button mat-button>Client Directory</button>
+        <button mat-button>Template Settings</button>
+      </section>
+    </div>
 
-        <button
-          *ngIf="logoUrl"
-          mat-icon-button
-          class="remove-logo"
-          (click)="removeLogo()"
-          [disabled]="readOnly"
+    <!-- JOBS TAB CONTENT - SIMPLIFIED -->
+    <div class="sidebar-content" *ngIf="activeTab === 'jobs'">
+      <!-- Loading -->
+      <div *ngIf="jobsLoading" class="jobs-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading jobs...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!jobsLoading && successJobs.length === 0" class="jobs-empty">
+        <mat-icon>work_off</mat-icon>
+        <p>No jobs found</p>
+        <button mat-stroked-button routerLink="/jobs">Browse Jobs</button>
+      </div>
+
+      <!-- Jobs List - Simple -->
+      <div *ngIf="!jobsLoading && successJobs.length > 0" class="jobs-list">
+        <div class="jobs-header">
+          <h4>Select a Job</h4>
+          <span class="jobs-count">{{ successJobs.length }} jobs</span>
+        </div>
+
+        <div
+          class="job-item"
+          *ngFor="let job of successJobs"
+          [class.selected]="selectedJobId === job.id?.toString()"
         >
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-    </section>
+          <div
+            class="job-name"
+            [title]="job.projectName || job.jobType || 'Job #' + job.id"
+          >
+            {{ job.projectName || job.jobType || "Job #" + job.jobId }}
+          </div>
 
-    <!-- Company Details -->
-    <section class="sidebar-card">
-      <div class="sidebar-header">
-        <h4>Company Details</h4>
-        <button mat-icon-button class="edit-button">
-          <mat-icon>edit</mat-icon>
-        </button>
+          <button
+            mat-raised-button
+            class="generate-btn"
+            (click)="openGenerateQuoteDialog(job)"
+          >
+            Generate Quote
+          </button>
+        </div>
       </div>
-
-      <div class="sidebar-text">
-        {{ quoteForm.get("from")?.value }}
-      </div>
-    </section>
-
-    <!-- Quick Actions -->
-    <section class="sidebar-card">
-      <h4>Quick Actions</h4>
-      <button mat-button>View All Documents</button>
-      <button mat-button>Client Directory</button>
-      <button mat-button>Template Settings</button>
-    </section>
+    </div>
   </aside>
-
   <!-- ================= MAIN CONTENT ================= -->
   <main class="quote-main">
     <form [formGroup]="quoteForm">
       <!-- ================= QUOTE HEADER ================= -->
       <header class="quote-top-header">
         <!-- LEFT -->
-        <div class="company-block">
-          <div class="company-name">tester</div>
+        <div class="company-header">
+          <!-- LOGO AT TOP -->
+          <img
+            *ngIf="logoId"
+            class="quote-logo"
+            [src]="logoImageSrc"
+            alt="Company logo"
+          />
 
-          <div class="company-details">
-            123 Business Street, City, State 12345<br />
-            (555) 123-4567 | info&#64;yourcompany.com
+          <!-- TEXT MOVES DOWN -->
+          <div class="company-block" *ngIf="companyDetails as c">
+            <div class="company-name">{{ c.name }}</div>
+
+            <div class="company-details" *ngIf="c.address">
+              {{ c.address }}
+            </div>
+            <div class="company-details" *ngIf="c.email">
+              {{ c.email }}
+            </div>
+            <div class="company-details" *ngIf="c.phoneNumber">
+              {{ c.phoneNumber }}
+            </div>
           </div>
         </div>
 
@@ -140,7 +223,8 @@
               class="meta-input"
               type="text"
               formControlName="number"
-              readonly
+              [readonly]="true"
+              placeholder="Auto-generated"
             />
           </div>
 
@@ -183,12 +267,23 @@
             <input
               type="text"
               class="dark-input"
+              formControlName="clientAddress"
               placeholder="Client Address"
             />
 
             <div class="field-row">
-              <input type="text" class="dark-input" placeholder="Phone" />
-              <input type="email" class="dark-input" placeholder="Email" />
+              <input
+                type="text"
+                class="dark-input"
+                placeholder="Phone"
+                formControlName="clientPhone"
+              />
+              <input
+                type="email"
+                class="dark-input"
+                placeholder="Email"
+                formControlName="clientEmail"
+              />
             </div>
           </div>
         </div>
@@ -198,11 +293,17 @@
           <h4 class="section-title">Project Details:</h4>
 
           <div class="field-stack">
-            <input type="text" class="dark-input" placeholder="Project Name" />
+            <input
+              type="text"
+              class="dark-input"
+              placeholder="Project Name"
+              formControlName="projectName"
+            />
             <input
               type="text"
               class="dark-input"
               placeholder="Project Address"
+              formControlName="projectAddress"
             />
           </div>
         </div>
@@ -223,9 +324,15 @@
         </div>
 
         <!-- Rows -->
+
+        <!-- In template -->
         <div
           class="line-item-row"
-          *ngFor="let _ of quoteRows.controls; let i = index"
+          *ngFor="
+            let row of quoteRows.controls;
+            let i = index;
+            trackBy: trackByIndex
+          "
           [formGroupName]="i"
         >
           <input
@@ -256,8 +363,9 @@
             step="any"
           />
 
+          <!-- FIXED: Use the 'total' form control value -->
           <div class="amount-cell">
-            ${{ quoteRows.at(i).get("total")?.value | number: "1.2-2" }}
+            ${{ row.get("total")?.value | number: "1.2-2" }}
           </div>
 
           <button
@@ -291,7 +399,18 @@
           <div></div>
           <span class="value"> ${{ getSubtotal() | number: "1.2-2" }} </span>
         </div>
-
+        <!-- After Subtotal, add Extra Cost line -->
+        <div class="totals-row" *ngIf="hasExtraCost">
+          <span class="label">Extra Cost:</span>
+          <input
+            type="number"
+            class="dark-input small"
+            formControlName="extraCostValue"
+          />
+          <span class="value">
+            {{ quoteForm.get("extraCostValue")?.value | number: "1.2-2" }}
+          </span>
+        </div>
         <!-- Discount -->
         <div class="totals-row">
           <span class="label">Discount:</span>
@@ -385,7 +504,7 @@
           mat-raised-button
           class="btn-primary"
           (click)="submitQuote()"
-          [disabled]="readOnly || !jobId"
+          [disabled]="readOnly"
         >
           Send to Client
         </button>

@@ -111,11 +111,26 @@
       font-size: 32px;
     }
   }
+  .company-header {
+    display: flex;
+    flex-direction: column; /* 👈 STACK */
+    align-items: flex-start;
+    gap: 12px;
+  }
 
+  .quote-logo {
+    max-height: 80px;
+    max-width: 220px;
+    object-fit: contain;
+    display: block;
+  }
   .logo-image {
+    width: 100%;
     max-width: 100%;
     max-height: 100px;
+    height: auto;
     object-fit: contain;
+    display: block;
   }
 
   .file-input {
@@ -127,6 +142,22 @@
     top: 6px;
     right: 6px;
   }
+}
+/* QUOTE HEADER LOGO */
+.company-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px; /* a bit more breathing room */
+}
+
+.quote-logo {
+  height: 68px; /* 👈 THIS is the key change */
+  max-height: 68px;
+  width: auto;
+  max-width: 260px; /* allow wider logos */
+  object-fit: contain;
+  display: block;
 }
 
 /* ======================================================
@@ -206,7 +237,7 @@
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: #aab1b8;
+  color: var(--color-text-muted);
 }
 
 .quote-meta-row span {
@@ -372,14 +403,22 @@
 .line-item-row {
   display: grid;
   grid-template-columns:
-    1.8fr /* Description */
-    0.5fr /* Qty */
-    0.6fr /* Unit */
-    0.7fr /* Unit Price */
-    0.7fr /* Amount */
+    3fr /* Description */
+    0.8fr /* Qty */
+    1fr /* Unit */
+    1.2fr /* Unit Price */
+    1.2fr /* Amount */
     40px; /* Delete */
-  gap: 12px;
   align-items: center;
+  gap: 12px;
+}
+
+/* FORCE amount visibility */
+.amount-cell {
+  text-align: right;
+  font-weight: 600;
+  color: var(--color-text, #000); /* 🔥 critical */
+  min-width: 80px; /* 🔥 prevents collapse */
 }
 
 /* ---------- HEADER ---------- */
@@ -445,7 +484,7 @@
 .amount-cell {
   text-align: right;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text);
   align-self: center;
 }
 
@@ -566,7 +605,194 @@ mat-form-field {
 /* ======================================================
    QUOTE EDITOR HEADER
    ====================================================== */
+.sidebar-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+}
 
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+
+  mat-icon {
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  &:hover {
+    color: var(--color-text-muted);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &.active {
+    color: var(--color-text-muted);
+    border-bottom-color: #4a90e2;
+  }
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px); // 👈 ADD THIS for scrolling
+  padding-right: 0.5rem;
+}
+
+// Jobs Tab Styles
+.jobs-loading,
+.jobs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+
+  mat-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0.5rem 0 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  position: sticky; // 👈 ADD THIS
+  top: 0; // 👈 ADD THIS
+  background: inherit; // 👈 ADD THIS
+  z-index: 1; // 👈 ADD THIS
+  padding: 0.5rem 0;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .jobs-count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+  }
+}
+
+.job-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(74, 144, 226, 0.3);
+  }
+
+  &.selected {
+    background: rgba(74, 144, 226, 0.1);
+    border-color: rgba(74, 144, 226, 0.5);
+
+    .job-name {
+      color: #4a90e2;
+    }
+  }
+}
+
+.job-name {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; // 👈 ADD THIS - important for text-overflow to work
+}
+
+// 👇 UPDATED: Fix the button styling completely
+.generate-btn {
+  flex-shrink: 0;
+  display: inline-flex !important; // 👈 CRITICAL FIX
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem !important;
+  min-width: auto !important; // 👈 CRITICAL FIX
+  background: #4a90e2 !important;
+  color: var(--color-text-muted);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.5;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+  }
+
+  &:hover {
+    background: #357abd !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  // 👇 Override Material button padding
+  .mat-button-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
 .quote-editor-header {
   display: flex;
   justify-content: space-between;

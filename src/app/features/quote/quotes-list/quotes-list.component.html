@@ -1,47 +1,213 @@
-<div class="container">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>My Quotes</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-          <!-- Quote Number Column -->
-          <ng-container matColumnDef="number">
-            <th mat-header-cell *matHeaderCellDef>Quote Number</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.number || 'N/A' }}</td>
-          </ng-container>
-  
-          <!-- Created By Column -->
-          <ng-container matColumnDef="createdBy">
-            <th mat-header-cell *matHeaderCellDef>Created By</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.createdBy || 'Unknown' }}</td>
-          </ng-container>
-  
-          <!-- Created Date Column -->
-          <ng-container matColumnDef="createdDate">
-            <th mat-header-cell *matHeaderCellDef>Date Created</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.createdDate }}</td>
-          </ng-container>
-  
-          <!-- Total Column -->
-          <ng-container matColumnDef="total">
-            <th mat-header-cell *matHeaderCellDef>Total</th>
-            <td mat-cell *matCellDef="let quote">${{ quote.total.toFixed(2) }}</td>
-          </ng-container>
-  
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let quote">
-              <button mat-icon-button color="primary" (click)="openQuote(quote.id)">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-  
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
+<mat-tab-group (selectedIndexChange)="onTabChange($event)">
+  <!-- OUTBOUND -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      Outbound
+      <span class="tab-count">{{ outboundQuotes.length }}</span>
+    </ng-template>
+
+    <ng-template matTabContent>
+      <ng-container *ngTemplateOutlet="quotesContent"></ng-container>
+    </ng-template>
+  </mat-tab>
+
+  <!-- INBOUND -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      Inbound
+      <span class="tab-count">{{ inboundQuotes.length }}</span>
+    </ng-template>
+
+    <ng-template matTabContent>
+      <ng-container *ngTemplateOutlet="quotesContent"></ng-container>
+    </ng-template>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- ================================================= -->
+<!-- =============== SHARED CONTENT ================= -->
+<!-- ================================================= -->
+
+<ng-template #quotesContent>
+  <div class="page">
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>My Quotes & Invoices</h1>
+        <p>Manage all your quotes and invoices in one place</p>
+      </div>
+
+      <button mat-raised-button color="primary" (click)="redirectToQuote()">
+        <mat-icon>add</mat-icon>
+        Create New
+      </button>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h4>Total Quotes</h4>
+        <strong>{{ totals.count }}</strong>
+        <span>{{ totals.value | number }}</span>
+      </div>
+
+      <div class="stat-card success">
+        <h4>Accepted</h4>
+        <strong>{{ totals.accepted }}</strong>
+      </div>
+
+      <div class="stat-card warning">
+        <h4>Pending</h4>
+        <strong>{{ totals.pending }}</strong>
+      </div>
+
+      <div class="stat-card danger">
+        <h4>Declined</h4>
+        <strong>{{ totals.declined }}</strong>
+      </div>
+    </div>
+
+    <!-- ACCEPTED QUOTES -->
+    <section *ngIf="accepted.length">
+      <h3 class="section-title success">
+        Accepted Quotes ({{ accepted.length }})
+      </h3>
+
+      <div
+        *ngFor="let q of accepted"
+        class="quote-row accepted"
+        (click)="openQuote(q.id)"
+      >
+        <div class="row-left">
+          <div class="icon">
+            <mat-icon>request_quote</mat-icon>
+          </div>
+
+          <div class="meta">
+            <div class="number">{{ q.number }}</div>
+            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+          </div>
+        </div>
+
+        <div class="row-right">
+          <div class="amount">
+            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+          </div>
+
+          <div class="date">
+            {{ q.createdDate | date: "yyyy-MM-dd" }}
+          </div>
+
+          <span class="status ok">accepted</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </div>
+    </section>
+
+    <!-- PENDING QUOTES -->
+    <section *ngIf="pending.length">
+      <h3 class="section-title warning">
+        Pending Quotes ({{ pending.length }})
+      </h3>
+
+      <div
+        *ngFor="let q of pending"
+        class="quote-row pending"
+        (click)="openQuote(q.id)"
+      >
+        <div class="row-left">
+          <div class="icon">
+            <mat-icon>request_quote</mat-icon>
+          </div>
+
+          <div class="meta">
+            <div class="number">{{ q.number }}</div>
+            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+          </div>
+        </div>
+
+        <div class="row-right">
+          <div class="amount">
+            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+          </div>
+
+          <div class="date">
+            {{ q.createdDate | date: "yyyy-MM-dd" }}
+          </div>
+
+          <span class="status warn">pending</span>
+
+          <button
+            mat-stroked-button
+            class="reminder"
+            (click)="sendReminder(q.id); $event.stopPropagation()"
+          >
+            Send Reminder
+          </button>
+
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECLINED QUOTES -->
+    <section *ngIf="declined.length">
+      <h3 class="section-title danger">
+        Declined Quotes ({{ declined.length }})
+      </h3>
+
+      <div
+        *ngFor="let q of declined"
+        class="quote-row declined"
+        (click)="openQuote(q.id)"
+      >
+        <div class="row-left">
+          <div class="icon">
+            <mat-icon>request_quote</mat-icon>
+          </div>
+
+          <div class="meta">
+            <div class="number">{{ q.number }}</div>
+            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+          </div>
+        </div>
+
+        <div class="row-right">
+          <div class="amount">
+            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+          </div>
+
+          <div class="date">
+            {{ q.createdDate | date: "yyyy-MM-dd" }}
+          </div>
+
+          <span class="status err">declined</span>
+          <mat-icon class="chevron">chevron_right</mat-icon>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <!-- DRAFTS -->
+  <section *ngIf="draft.length">
+    <h3 class="section-title">Draft Quotes ({{ draft.length }})</h3>
+
+    <div *ngFor="let q of draft" class="quote-row" (click)="openQuote(q.id)">
+      <div class="row-left">
+        <div class="icon">
+          <mat-icon>edit</mat-icon>
+        </div>
+
+        <div class="meta">
+          <div class="number">{{ q.number }}</div>
+          <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+        </div>
+      </div>
+
+      <div class="row-right">
+        <span class="status">draft</span>
+        <mat-icon class="chevron">chevron_right</mat-icon>
+      </div>
+    </div>
+  </section>
+</ng-template>

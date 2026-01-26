@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { Job } from '../../models/job';
 import { Bid } from '../../models/bid';
-import { Quote } from '../../features/quote/quote.model';
+import { QuoteListItemDto } from '../../features/quote/quote.model';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -26,12 +26,13 @@ export class JobCardComponent {
   @Input() userTrade: string | undefined;
   @Input() showBidButton: boolean = true;
   @Input() showNewTag: boolean = true;
-  @Input() bid: Bid | null = null;
-  @Input() quote: Quote | null = null;
-  @Output() viewQuote = new EventEmitter<Quote | Bid>();
+  @Input() quote: QuoteListItemDto | null = null;
+  @Output() viewQuote = new EventEmitter<QuoteListItemDto>();
+  @Output() withdrawQuote = new EventEmitter<QuoteListItemDto>();
+  @Output() editQuote = new EventEmitter<QuoteListItemDto>();
+
   @Output() viewPdf = new EventEmitter<string>();
-  @Output() withdrawBid = new EventEmitter<Quote | Bid>();
-  @Output() editBid = new EventEmitter<Quote | Bid>();
+
   @Output() viewMoreInfo = new EventEmitter<Job>();
 
   getStarRating(rating: number): string[] {
@@ -67,36 +68,26 @@ export class JobCardComponent {
 
   onViewQuoteClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.quote) {
-      this.viewQuote.emit(this.quote);
-    } else if (this.bid) {
-      this.viewQuote.emit(this.bid);
-    }
+    if (!this.quote) return;
+    this.viewQuote.emit(this.quote);
   }
 
   onViewPdfClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.bid && this.bid.documentUrl) {
-      this.viewPdf.emit(this.bid.documentUrl);
-    }
+    if (!this.quote?.documentUrl) return;
+    this.viewPdf.emit(this.quote.documentUrl);
   }
 
-  onWithdrawBidClick(event: MouseEvent): void {
+  onWithdrawQuoteClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.quote) {
-      this.withdrawBid.emit(this.quote);
-    } else if (this.bid) {
-      this.withdrawBid.emit(this.bid);
-    }
+    if (!this.quote) return;
+    this.withdrawQuote.emit(this.quote);
   }
 
-  onEditBidClick(event: MouseEvent): void {
+  onEditQuoteClick(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.quote) {
-      this.editBid.emit(this.quote);
-    } else if (this.bid) {
-      this.editBid.emit(this.bid);
-    }
+    if (!this.quote) return;
+    this.editQuote.emit(this.quote);
   }
 
   onViewMoreInfoClick(event: MouseEvent): void {

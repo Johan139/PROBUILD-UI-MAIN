@@ -1,45 +1,41 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { LogoDto } from '../features/quote/quote.model';
 import { environment } from '../../environments/environment';
 
-export interface Logo {
-  id: string;
-  url: string;
-  fileName: string;
-  uploadedBy: string;
-  uploadedAt: string;
-  type: string;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class LogoService {
-  private apiUrl = `${environment.BACKEND_URL}/logos`;
+  private apiUrl = `${environment.BACKEND_URL}/quotes`;
 
   constructor(private http: HttpClient) {}
 
-  uploadLogo(file: File, type: 'quote' | 'profile', uploadedBy: string) {
+  /**
+   * Upload a logo for the current user
+   */
+  setUserLogo(file: File, userId: string): Observable<LogoDto> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('type', type);
-    formData.append('uploadedBy', uploadedBy);
-    return this.http.post<Logo>(this.apiUrl, formData);
+
+    return this.http.post<LogoDto>(`${this.apiUrl}/logo/` + userId, formData);
   }
 
-  getLogo(id: string) {
-    return this.http.get<Logo>(`${this.apiUrl}/${id}`);
+  /**
+   * Get the most recent logo for a specific user
+   */
+  getUserLogo(userId?: string): Observable<LogoDto> {
+    // If no userId provided, the backend should use the authenticated user
+    // Or you can pass it from the component
+    const id = userId || 'current'; // Backend should handle 'current' or use auth token
+    return this.http.get<LogoDto>(`${this.apiUrl}/logo/user/${id}`);
   }
 
-  setUserLogo(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<any>(`${this.apiUrl}/user-logo`, formData);
-  }
-
-  getUserLogo() {
-    return this.http.get<Logo>(`${this.apiUrl}/user-logo`);
-  }
-
-  deleteUserLogo() {
-    return this.http.delete(`${this.apiUrl}/user-logo`);
+  /**
+   * Get a specific logo by ID
+   */
+  getLogoById(logoId: string): Observable<LogoDto> {
+    return this.http.get<LogoDto>(`${this.apiUrl}/logo/${logoId}`);
   }
 }
