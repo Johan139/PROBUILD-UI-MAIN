@@ -42,7 +42,7 @@ import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { BlueprintDisplayDialogComponent } from './information-display-dialog/information-display-dialog.component';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { QuoteService } from '../../features/quote/quote.service';
-import { Quote } from '../quote/quote.model';
+import { QuoteListItemDto } from '../quote/quote.model';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../theme.service';
@@ -101,7 +101,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
   myBids: Bid[] = [];
-  myQuotes: Quote[] = [];
+  myQuotes: QuoteListItemDto[] = [];
+  draftQuotes = new Map<number, string>(); // jobId → quoteId
+
   quoteStatusFilter: 'All' | 'Draft' | 'Submitted' | 'Rejected' = 'All';
   selectedJob: Job | null = null;
   selectedPreferences: { [key: string]: boolean } = {
@@ -132,7 +134,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   activeTab: 'allJobs' | 'myBids' = 'allJobs';
   distanceUnit: 'km' | 'mi' = 'km';
   biddedJobIds = new Set<number>();
-  draftQuotes = new Map<string, string>();
 
   // Loading states
   jobsLoading = false;
@@ -460,122 +461,42 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   loadJobs(): void {
-    this.jobsLoading = true;
     const userId = this.authService.getUserId();
-    if (!userId) {
-      this.jobsLoading = false;
-      return;
-    }
+    if (!userId) return;
 
-    const jobs$ = this.jobsService.getAllJobs();
-    const quotes$ = this.quoteService.getAllQuotes();
-    const bids$ = this.jobsService.getBiddedJobs(userId);
-    forkJoin([jobs$, quotes$, bids$])
+    this.jobsLoading = true;
+
+    forkJoin({
+      jobs: this.jobsService.getAllJobs(),
+      quotes: this.quoteService.getUserQuotes(userId),
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ([jobs, quotes, bids]) => {
-          if (!jobs || jobs.length === 0) {
-            this.jobs = [];
-            this.filteredJobs = [];
-          } else {
-            this.jobs = jobs.map((job) => {
-              const lat = parseFloat(job.latitude as any);
-              const lng = parseFloat(job.longitude as any);
-              if (isNaN(lat) || isNaN(lng)) {
-              }
-              return {
-                ...job,
-                latitude: lat,
-                longitude: lng,
-              };
-            });
-          }
+        next: ({ jobs, quotes }) => {
+          this.jobs = jobs.map((job) => ({
+            ...job,
+            latitude: Number(job.latitude),
+            longitude: Number(job.longitude),
+          }));
 
           this.myQuotes = quotes;
           this.draftQuotes.clear();
-          quotes.forEach((quote) => {
-            if (quote.status === 'Draft' && quote.jobID) {
-              this.draftQuotes.set(quote.jobID, quote.id!);
+
+          quotes.forEach((q) => {
+            if (q.status === 'Draft' && q.jobId) {
+              this.draftQuotes.set(q.jobId, q.id);
             }
           });
 
-          this.myBids = bids;
-          this.biddedJobIds = new Set(bids.map((b) => b.jobId));
-
-          this.allTrades = [
-            ...new Set(this.jobs.flatMap((job) => job.trades)),
-          ].sort();
-          this.selectedTrades = [...this.allTrades];
-          this.loadFiltersFromLocalStorage();
           this.getUserLocationAndCalculateDistances();
-          this.applyQuoteFilter();
+          this.applyFilters();
 
-          this.dataSource.data = this.filteredJobs;
-          this.filtersLoading = false;
-          if (this.paginators.toArray()[0]) {
-            this.dataSource.paginator = this.paginators.toArray()[0];
-          }
           this.jobsLoading = false;
-
-          if (this.selectedAddressId) {
-            this.applySelectedAddress();
-          }
-          if (this.map) {
-            setTimeout(() => this.updateMapMarkers(), 100);
-          }
         },
-        error: (error) => {
+        error: () => {
           this.jobsLoading = false;
         },
       });
-  }
-
-  applyQuoteFilter(): void {
-    const combined: Bid[] = [];
-    const processedJobIds = new Set<string>();
-
-    this.myQuotes.forEach((quote) => {
-      if (quote.jobID) {
-        const job = this.jobs.find((j) => j.jobId === parseInt(quote.jobID!));
-        if (job) {
-          combined.push({
-            id: 0, // Placeholder
-            jobId: quote.jobID.toString(),
-            subcontractorId: this.authService.getUserId()!,
-            subcontractorName:
-              this.authService.currentUserSubject.value?.firstName +
-              ' ' +
-              this.authService.currentUserSubject.value?.lastName,
-            amount: quote.total,
-            status: quote.status!,
-            isFinalist: false,
-            quoteId: quote.id ?? undefined,
-            documentUrl: '',
-            job: job,
-          });
-          processedJobIds.add(quote.jobID);
-        }
-      }
-    });
-
-    this.myBids.forEach((bid) => {
-      if (!processedJobIds.has(bid.jobId.toString())) {
-        combined.push(bid);
-      }
-    });
-
-    let filtered = combined;
-    if (this.quoteStatusFilter !== 'All') {
-      filtered = combined.filter(
-        (item) => item.status === this.quoteStatusFilter,
-      );
-    }
-
-    this.myBidsDataSource.data = filtered;
-    const paginator = this.paginators.toArray()[1];
-    if (paginator) {
-      this.myBidsDataSource.paginator = paginator;
-    }
   }
 
   setActiveTab(tab: 'allJobs' | 'myBids'): void {
@@ -1050,18 +971,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   getDraftQuoteId(jobId: number): string | undefined {
-    return this.draftQuotes.get(jobId.toString());
+    return this.draftQuotes.get(jobId);
   }
 
-  getQuoteForBid(bid: Bid): Quote | null {
-    return this.myQuotes.find((q) => q.id === bid.quoteId) ?? null;
-  }
-
-  getQuoteForJob(jobId: number): Quote | null {
-    const quote =
-      this.myQuotes.find((q) => q.jobID?.toString() === jobId.toString()) ||
-      null;
-    return quote;
+  getQuoteForJob(jobId: number): QuoteListItemDto | null {
+    return this.myQuotes.find((q) => q.jobId === jobId) ?? null;
   }
 
   getBidForJob(jobId: number): Bid | null {
@@ -1069,59 +983,31 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.myBids.find((b) => b.jobId?.toString() === jobId.toString()) || null;
     return bid;
   }
-
-  onViewQuote(item: Bid | Quote): void {
-    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-    if (quoteId) {
-      this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId } });
-    }
+  onViewQuote(quote: QuoteListItemDto | null): void {
+    if (!quote) return;
+    this.router.navigate(['/quote'], {
+      queryParams: { quoteId: quote.id },
+    });
   }
 
   onViewPdf(url: string): void {
     window.open(url, '_blank');
   }
 
-  onWithdrawBid(item: Bid | Quote): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Confirm Withdrawal',
-        message:
-          'Are you sure you want to withdraw this bid? This action cannot be undone.',
-      },
-    });
+  onWithdrawQuote(quote: QuoteListItemDto): void {
+    this.quoteService
+      .changeStatus(quote.id, 'Withdrawn')
+      .subscribe(() => this.loadJobs());
+  }
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        if ('quoteId' in item) {
-          // It's a Bid
-          this.biddingService.withdrawBid(item.id).subscribe({
-            next: () => this.loadJobs(),
-            error: (err) => console.error('Failed to withdraw bid:', err),
-          });
-        } else {
-          // It's a Quote
-          this.quoteService
-            .changeStatus(item.id?.toString()!, 'Withdrawn')
-            .subscribe({
-              next: () => this.loadJobs(),
-              error: (err) => console.error('Failed to withdraw quote:', err),
-            });
-        }
-      }
+  onEditQuote(quote: QuoteListItemDto): void {
+    this.router.navigate(['/quote'], {
+      queryParams: { quoteId: quote.id, edit: true },
     });
   }
 
-  onEditBid(item: Bid | Quote): void {
-    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-    if (quoteId) {
-      this.router.navigate(['/quote'], {
-        queryParams: { quoteId: quoteId, edit: true },
-      });
-    }
-  }
-
-  onViewMoreInfo(job: Job): void {
+  onViewMoreInfo(job: Job | null): void {
+    if (!job) return;
     this.dialog.open(BlueprintDisplayDialogComponent, {
       width: '90vw',
       height: '90vh',
@@ -1135,7 +1021,51 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   hasBidded(jobId: number): boolean {
-    return this.biddedJobIds.has(jobId);
+    return this.myQuotes.some(
+      (q) => q.jobId === jobId && q.status === 'Submitted',
+    );
+  }
+  // 🔁 Template adapter methods (DO NOT put logic here)
+
+  onWithdrawBid(bid: Bid | null): void {
+    if (!bid?.quoteId) return;
+
+    const quote = this.myQuotes.find((q) => q.id === bid.quoteId);
+    if (!quote) return;
+
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Withdraw Bid',
+        message:
+          'Are you sure you want to withdraw this bid? This action cannot be undone.',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed && quote) {
+        this.quoteService
+          .changeStatus(quote.id, 'Withdrawn')
+          .subscribe(() => this.loadJobs());
+      }
+    });
+  }
+
+  onEditBid(bid: Bid | null): void {
+    if (!bid?.quoteId) return;
+
+    this.router.navigate(['/quote'], {
+      queryParams: { quoteId: bid.quoteId, edit: true },
+    });
+  }
+
+  applyQuoteFilter(): void {
+    this.applyFilters();
+  }
+
+  getQuoteForBid(bid: Bid): QuoteListItemDto | null {
+    if (!bid?.quoteId) return null;
+    return this.myQuotes.find((q) => q.id === bid.quoteId) ?? null;
   }
 
   updateRadiusCircle(): void {

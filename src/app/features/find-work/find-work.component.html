@@ -7,14 +7,16 @@
     <button
       (click)="setActiveTab('allJobs')"
       [class.active]="activeTab === 'allJobs'"
-      matTooltip="View all jobs that are available for bidding" [matTooltipShowDelay]="500"
+      matTooltip="View all jobs that are available for bidding"
+      [matTooltipShowDelay]="500"
     >
       All Jobs
     </button>
     <button
       (click)="setActiveTab('myBids')"
       [class.active]="activeTab === 'myBids'"
-      matTooltip="View all jobs that you have placed a bid on" [matTooltipShowDelay]="500"
+      matTooltip="View all jobs that you have placed a bid on"
+      [matTooltipShowDelay]="500"
     >
       My Bids
     </button>
@@ -40,7 +42,8 @@
             class="toggle-btn"
             [class.active]="locationMode === 'saved'"
             (click)="setLocationMode('saved')"
-            matTooltip="Use the address saved in your user profile as the starting point for finding work" [matTooltipShowDelay]="500"
+            matTooltip="Use the address saved in your user profile as the starting point for finding work"
+            [matTooltipShowDelay]="500"
           >
             Saved Address
           </button>
@@ -49,7 +52,8 @@
             class="toggle-btn"
             [class.active]="locationMode === 'custom'"
             (click)="setLocationMode('custom')"
-            matTooltip="Use a custom address as the starting point for finding work" [matTooltipShowDelay]="500"
+            matTooltip="Use a custom address as the starting point for finding work"
+            [matTooltipShowDelay]="500"
           >
             Custom Address
           </button>
@@ -188,7 +192,8 @@
               mat-button
               class="clear-filters-btn"
               (click)="clearFilters()"
-              matTooltip="Reset your filters" [matTooltipShowDelay]="500"
+              matTooltip="Reset your filters"
+              [matTooltipShowDelay]="500"
             >
               Reset
             </button>
@@ -222,10 +227,10 @@
                 [userTrade]="userTrade"
                 [quote]="getQuoteForJob(job.jobId)"
                 [bid]="getBidForJob(job.jobId)"
-                (viewQuote)="onViewQuote($event)"
-                (withdrawBid)="onWithdrawBid($event)"
-                (editBid)="onEditBid($event)"
-                (viewMoreInfo)="onViewMoreInfo($event)"
+                (viewQuote)="onViewQuote(getQuoteForJob(job.jobId)!)"
+                (withdrawBid)="onWithdrawBid(getBidForJob(job.jobId)!)"
+                (editBid)="onEditBid(getBidForJob(job.jobId)!)"
+                (viewMoreInfo)="onViewMoreInfo(job)"
                 [showBidButton]="
                   !getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)
                 "
@@ -306,10 +311,10 @@
                 [job]="bid.job"
                 [bid]="bid"
                 [quote]="getQuoteForBid(bid)"
-                (viewQuote)="onViewQuote($event)"
-                (withdrawBid)="onWithdrawBid($event)"
-                (editBid)="onEditBid($event)"
-                (viewMoreInfo)="onViewMoreInfo($event)"
+                (viewQuote)="onViewQuote(getQuoteForBid(bid)!)"
+                (withdrawBid)="onWithdrawBid(bid)"
+                (editBid)="onEditBid(bid)"
+                (viewMoreInfo)="onViewMoreInfo(bid.job)"
                 [userTrade]="userTrade"
                 [showBidButton]="false"
               >

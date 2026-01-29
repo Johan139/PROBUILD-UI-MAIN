@@ -106,7 +106,8 @@ export class MeasurementService {
       't',
       'L',
       'mL',
-
+      'LS',
+      'lot',
       // Other
       'Each',
       'Box',

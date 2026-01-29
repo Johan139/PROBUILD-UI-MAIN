@@ -22,7 +22,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { FileSizePipe } from '../../Documents/filesize.pipe';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Quote } from '../../quote/quote.model';
+import { QuoteListItemDto } from '../../quote/quote.model';
 import { QuoteDataService } from '../../quote/quote-data.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -341,45 +341,44 @@ export class JobSelectionComponent implements OnInit {
   }
 
   private createQuote(quoteItems: any[]): void {
-    const newQuote: Quote = {
-      id: uuidv4(),
-      header: 'Quote',
-      number: `QUO-${Math.floor(Math.random() * 10000)}`,
-      from: 'Your Company Name',
-      toTitle: 'To',
-      to: this.selectedJob.ProjectName || 'Client Name',
-      shipToTitle: 'Ship To',
-      shipTo: this.selectedJob.address || 'Client Address',
-      date: new Date().toISOString().split('T')[0],
-      paymentTerms: 'Due on receipt',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-      poNumber: '',
-      itemHeader: 'Item',
-      quantityHeader: 'Quantity',
-      unitCostHeader: 'Rate',
-      amountHeader: 'Amount',
-      amountPaid: 0,
-      extraCostValue: 0,
-      taxValue: 0,
-      discountValue: 0,
-      flatTotalValue: 0,
-      notesTitle: 'Notes',
-      notes: '',
-      termsTitle: 'Terms',
-      terms: '',
-      rows: quoteItems,
-      total: 0,
-      createdDate: new Date(),
-      createdBy: localStorage.getItem('userId') || 'unknown',
-      createdID: uuidv4(),
-      extraCosts: [],
-      jobID: this.selectedJob.Id,
-    };
-
-    this.quoteDataService.setQuote(newQuote);
-    this.router.navigate(['/quote']);
+    // const newQuote: QuoteListItemDto = {
+    //   id: uuidv4(),
+    //   header: 'Quote',
+    //   number: `QUO-${Math.floor(Math.random() * 10000)}`,
+    //   from: 'Your Company Name',
+    //   toTitle: 'To',
+    //   to: this.selectedJob.ProjectName || 'Client Name',
+    //   shipToTitle: 'Ship To',
+    //   shipTo: this.selectedJob.address || 'Client Address',
+    //   date: new Date().toISOString().split('T')[0],
+    //   paymentTerms: 'Due on receipt',
+    //   dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    //     .toISOString()
+    //     .split('T')[0],
+    //   poNumber: '',
+    //   itemHeader: 'Item',
+    //   quantityHeader: 'Quantity',
+    //   unitCostHeader: 'Rate',
+    //   amountHeader: 'Amount',
+    //   amountPaid: 0,
+    //   extraCostValue: 0,
+    //   taxValue: 0,
+    //   discountValue: 0,
+    //   flatTotalValue: 0,
+    //   notesTitle: 'Notes',
+    //   notes: '',
+    //   termsTitle: 'Terms',
+    //   terms: '',
+    //   rows: quoteItems,
+    //   total: 0,
+    //   createdDate: new Date(),
+    //   createdBy: localStorage.getItem('userId') || 'unknown',
+    //   createdID: uuidv4(),
+    //   extraCosts: [],
+    //   jobID: this.selectedJob.Id,
+    // };
+    // this.quoteDataService.setQuote(newQuote);
+    // this.router.navigate(['/quote']);
   }
 
   fetchDocuments(): void {
