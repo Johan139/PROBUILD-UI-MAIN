@@ -30,7 +30,7 @@ import { MatButtonModule } from '@angular/material/button';
     <mat-dialog-content style="min-height: 200px; padding: 20px;">
       <mat-radio-group [(ngModel)]="mode">
         <mat-radio-button value="PROJECT"> Whole Project </mat-radio-button>
-        <mat-radio-button value="PHASE"> Specific Phase </mat-radio-button>
+        <mat-radio-button value="PHASE"> Specific Phase(s) </mat-radio-button>
       </mat-radio-group>
 
       <mat-form-field
@@ -39,7 +39,7 @@ import { MatButtonModule } from '@angular/material/button';
         style="width: 100%; margin-top: 16px;"
       >
         <mat-label>Select Phase</mat-label>
-        <mat-select [(ngModel)]="selectedPhase">
+        <mat-select [(ngModel)]="selectedPhases" multiple>
           <mat-option
             *ngFor="let phase of safePhaseList ?? []"
             [value]="phase.phase"
@@ -56,7 +56,7 @@ import { MatButtonModule } from '@angular/material/button';
         mat-raised-button
         color="primary"
         (click)="confirm()"
-        [disabled]="mode === 'PHASE' && !selectedPhase"
+        [disabled]="mode === 'PHASE' && selectedPhases.length === 0"
       >
         Generate
       </button>
@@ -65,7 +65,7 @@ import { MatButtonModule } from '@angular/material/button';
 })
 export class CategoryPickerDialogComponent {
   mode: 'PROJECT' | 'PHASE' = 'PROJECT';
-  selectedPhase: string | null = null;
+  selectedPhases: string[] = [];
 
   // ✅ MUST be initialized immediately
   safePhaseList: any[] = [];
@@ -92,7 +92,7 @@ export class CategoryPickerDialogComponent {
   confirm(): void {
     this.dialogRef.close({
       mode: this.mode,
-      selectedPhase: this.selectedPhase,
+      selectedPhases: this.selectedPhases,
     });
   }
 }

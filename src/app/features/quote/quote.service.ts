@@ -35,7 +35,11 @@ export class QuoteService {
       dto,
     );
   }
-
+  downloadPdf(quoteId: string) {
+    return this.http.get(`${this.apiUrl}/${quoteId}/pdf`, {
+      responseType: 'blob',
+    });
+  }
   submitQuote(quoteId: string) {
     return this.http.post<void>(`${this.apiUrl}/${quoteId}/submit`, {});
   }
@@ -51,28 +55,32 @@ export class QuoteService {
       { headers: { 'Content-Type': 'application/json' } },
     );
   }
-
+  deleteQuote(quoteId: string) {
+    return this.http.delete(`${this.apiUrl}/${quoteId}`);
+  }
   getUserQuotes(userId: string) {
     return this.http.get<any[]>(`${this.apiUrl}/user/${userId}`);
   }
+  duplicateQuote(quoteId: string) {
+    return this.http.post<{ quoteId: string; number: string }>(
+      `${this.apiUrl}/${quoteId}/duplicate`,
+      {},
+    );
+  }
 
-  sendToClient(request: SendToClientRequest): Observable<SendToClientResponse> {
-    return this.http
-      .post<SendToClientResponse>(
-        `${this.apiUrl}/${request.quoteId}/send-to-client`,
-        request,
-      )
-      .pipe(
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error sending quote to client:', error);
-          return throwError(
-            () =>
-              new Error(
-                error.error?.message || 'Failed to send quote to client',
-              ),
-          );
-        }),
-      );
+  saveAndSend(payload: {
+    quote: QuoteDto;
+    send: {
+      clientEmail: string;
+      clientName?: string;
+      personalMessage?: string;
+      attachPdf?: boolean;
+    };
+  }): Observable<SendToClientResponse> {
+    return this.http.post<SendToClientResponse>(
+      `${this.apiUrl}/save-and-send`,
+      payload,
+    );
   }
 
   /**
@@ -83,10 +91,12 @@ export class QuoteService {
     clientEmail: string,
     personalMessage?: string,
   ): Observable<SendToClientResponse> {
-    return this.sendToClient({
-      quoteId,
-      clientEmail,
-      personalMessage,
-    });
+    return this.http.post<SendToClientResponse>(
+      `${this.apiUrl}/${quoteId}/resend`,
+      {
+        clientEmail,
+        personalMessage,
+      },
+    );
   }
 }

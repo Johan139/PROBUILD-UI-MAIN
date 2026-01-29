@@ -58,12 +58,14 @@
   padding: var(--space-4);
   box-shadow: var(--shadow-1);
 
-  h4 {
+  // Direct h4 children (not inside sidebar-header)
+  > h4 {
     font-weight: var(--fw-semibold);
-    margin-bottom: var(--space-3);
+    margin: 0 0 var(--space-3) 0;
   }
 
-  button {
+  // Buttons in quick actions etc.
+  > button {
     justify-content: flex-start;
     width: 100%;
   }
@@ -73,6 +75,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--space-3);
+
+  h4 {
+    margin: 0;
+    font-weight: var(--fw-semibold);
+    line-height: 1;
+  }
+}
+
+.edit-button {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 50% !important;
+  background: var(--color-surface-subtle) !important;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 1;
+    margin: 0;
+  }
 }
 
 .sidebar-text {
@@ -95,6 +126,7 @@
   cursor: pointer;
   position: relative;
   background: var(--color-surface-subtle);
+  overflow: hidden;
 
   &:hover {
     background: var(--color-surface-hover);
@@ -109,11 +141,13 @@
 
     mat-icon {
       font-size: 32px;
+      width: 32px;
+      height: 32px;
     }
   }
   .company-header {
     display: flex;
-    flex-direction: column; /* 👈 STACK */
+    flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
@@ -125,12 +159,13 @@
     display: block;
   }
   .logo-image {
-    width: 100%;
-    max-width: 100%;
-    max-height: 100px;
+    max-width: 80%;
+    max-height: 90px;
+    width: auto;
     height: auto;
     object-fit: contain;
     display: block;
+    margin: 0 auto;
   }
 
   .file-input {
@@ -141,6 +176,7 @@
     position: absolute;
     top: 6px;
     right: 6px;
+    z-index: 2;
   }
 }
 /* QUOTE HEADER LOGO */
@@ -148,14 +184,14 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px; /* a bit more breathing room */
+  gap: 14px;
 }
 
 .quote-logo {
-  height: 68px; /* 👈 THIS is the key change */
+  height: 68px;
   max-height: 68px;
   width: auto;
-  max-width: 260px; /* allow wider logos */
+  max-width: 260px;
   object-fit: contain;
   display: block;
 }
@@ -417,8 +453,8 @@
 .amount-cell {
   text-align: right;
   font-weight: 600;
-  color: var(--color-text, #000); /* 🔥 critical */
-  min-width: 80px; /* 🔥 prevents collapse */
+  color: var(--color-text, #000);
+  min-width: 80px;
 }
 
 /* ---------- HEADER ---------- */
@@ -654,6 +690,9 @@ mat-form-field {
   max-height: calc(100vh - 200px); // 👈 ADD THIS for scrolling
   padding-right: 0.5rem;
 }
+button mat-spinner {
+  margin-right: 8px;
+}
 
 // Jobs Tab Styles
 .jobs-loading,
@@ -662,10 +701,13 @@ mat-form-field {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1rem;
+
   text-align: center;
   color: var(--color-text-muted);
-
+  background: var(--color-surface-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
   mat-icon {
     font-size: 3rem;
     width: 3rem;
@@ -712,7 +754,31 @@ mat-form-field {
     border-radius: 12px;
   }
 }
+.prefix {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.toast-anchor {
+  grid-column: 2;
+  position: sticky;
+  top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 20;
+  pointer-events: none;
+}
 
+.balance-due {
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.balance-amount {
+  color: #dc3545;
+  font-weight: 700;
+}
 .job-item {
   display: flex;
   align-items: center;
@@ -747,23 +813,68 @@ mat-form-field {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0; // 👈 ADD THIS - important for text-overflow to work
+  min-width: 0;
+}
+.quote-progress-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 3px;
+
+  --mdc-linear-progress-active-indicator-color: var(--brand-yellow-primary);
+  --mdc-linear-progress-track-color: transparent;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 12px;
+  border-radius: 999px; // pill
+
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+
+  transition: all 0.15s ease;
+  align-self: flex-start;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--brand-yellow-primary);
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    border-color: var(--brand-yellow-primary);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
 }
 
 // 👇 UPDATED: Fix the button styling completely
 .generate-btn {
   flex-shrink: 0;
-  display: inline-flex !important; // 👈 CRITICAL FIX
+  display: inline-flex !important;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem !important;
-  min-width: auto !important; // 👈 CRITICAL FIX
-  background: #4a90e2 !important;
-  color: var(--color-text-muted);
+  min-width: auto !important;
+  background: var(--brand-yellow-primary) !important;
+  color: black !important;
   border: none;
   border-radius: 6px;
   font-size: 0.8125rem;
-  font-weight: 600;
+  //font-weight: 400;
   cursor: pointer;
   transition: all 0.2s;
   line-height: 1.5;
@@ -813,6 +924,7 @@ mat-form-field {
   flex-direction: column;
   gap: 16px;
   flex: 1;
+  align-items: flex-start;
 }
 
 .title-group h1 {
@@ -891,6 +1003,91 @@ mat-form-field {
 
 .toggle-btn mat-icon {
   font-size: 18px;
+}
+// Inbound quote styles
+.inbound-sidebar {
+  .status-badge {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-align: center;
+
+    &.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    &.actioned {
+      background: #d4edda;
+      color: #155724;
+    }
+  }
+}
+
+.quote-main.inbound-view {
+  // Optional: add a subtle indicator that this is read-only
+  .dark-input[readonly] {
+    background: #f5f5f5;
+    cursor: not-allowed;
+  }
+
+  select:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+  }
+}
+
+.doc-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #e3f2fd;
+  border-radius: 4px;
+  color: #1565c0;
+  font-weight: 500;
+}
+.quote-skeleton {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-subtle) 25%,
+    var(--color-surface-hover) 37%,
+    var(--color-surface-subtle) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton.header {
+  height: 60px;
+}
+.skeleton.block {
+  height: 90px;
+}
+.skeleton.table {
+  height: 220px;
+}
+.skeleton.totals {
+  height: 120px;
+  width: 360px;
+  margin-left: auto;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 /* ======================================================

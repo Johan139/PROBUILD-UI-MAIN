@@ -92,7 +92,6 @@ export class JobDataService {
         try {
           const parsed = JSON.parse(cachedSubtasks);
           this.store.setState({ subtaskGroups: parsed });
-          console.log('📦 Loaded subtasks from cache');
         } catch (e) {
           console.error('Error parsing cached subtasks', e);
         }
@@ -104,11 +103,6 @@ export class JobDataService {
         try {
           const parsed = JSON.parse(cachedMaterials);
           this.store.setState({ materialGroups: parsed });
-          console.log(
-            '📦 Loaded materials from cache:',
-            parsed.length,
-            'phases',
-          );
         } catch (e) {
           console.error('Error parsing cached materials', e);
         }
@@ -169,12 +163,6 @@ export class JobDataService {
             // 👇 CRITICAL: Extract and cache materials from quotation section
             const materialGroups = this.extractMaterialGroups(result.markdown);
 
-            console.log(
-              '📦 Extracted materials:',
-              materialGroups.length,
-              'phases',
-            );
-
             this.store.setState({ materialGroups });
 
             if (
@@ -185,7 +173,6 @@ export class JobDataService {
                 materialsStorageKey,
                 JSON.stringify(materialGroups),
               );
-              console.log('📦 Cached materials to localStorage');
             }
 
             // Extract isSelected flag
@@ -219,10 +206,8 @@ export class JobDataService {
     subtasks: any[],
   ): { title: string; subtasks: any[]; progress: number }[] {
     const groupedMap = new Map<string, any[]>();
-    console.log('🔥 groupSubtasksByTitle INPUT', subtasks);
+
     for (const st of subtasks) {
-      console.log('➡️ RAW SUBTASK OBJECT', st);
-      console.log('➡️ st.cost =', st.cost);
       const group = groupedMap.get(st.groupTitle) || [];
       const formatDate = (date: string) => {
         if (!date) return '';
@@ -331,10 +316,6 @@ export class JobDataService {
     let isSelected = false;
     let isRenovation = false;
     try {
-      console.log('🔥 RAW BOM REPORT START');
-      console.log(report);
-      console.log('🔥 RAW BOM REPORT END');
-
       const jsonMatch = report.match(/```json([\s\S]*?)```/);
       if (jsonMatch && jsonMatch[1]) {
         const parsedJson = JSON.parse(jsonMatch[1]);
@@ -610,10 +591,6 @@ export class JobDataService {
           deleted: false,
           accepted: false,
         });
-        console.log('➡️ BOM TASK CREATED', {
-          task: taskName,
-          cost: cost,
-        });
       }
     }
 
@@ -728,11 +705,7 @@ export class JobDataService {
     });
   }
   private extractMaterialGroups(markdown: string): PhaseMaterials[] {
-    console.log('🟡 extractMaterialGroups CALLED');
-    console.log('🟡 Markdown length:', markdown?.length);
-
     if (!markdown) {
-      console.warn('🔴 No markdown provided');
       return [];
     }
 
@@ -744,9 +717,6 @@ export class JobDataService {
     );
 
     if (!quotationSection || !quotationSection[1]) {
-      console.warn('🔴 No Quotation Data section found');
-      console.log('🔴 Searching for alternative pattern...');
-
       // Alternative: Look for JSON that contains "Categorized_Materials"
       const allJsonBlocks = markdown.matchAll(/```json\s*([\s\S]*?)\s*```/g);
 
@@ -755,32 +725,22 @@ export class JobDataService {
 
         // Check if this JSON block contains material data
         if (jsonContent.includes('Categorized_Materials')) {
-          console.log('🟢 Found JSON block with Categorized_Materials');
           return this.parseMaterialsFromJson(jsonContent);
         }
       }
 
-      console.warn('🔴 No JSON block with materials found');
       return [];
     }
 
-    console.log('🟢 Found Quotation Data section');
     return this.parseMaterialsFromJson(quotationSection[1]);
   }
   private parseMaterialsFromJson(jsonString: string): PhaseMaterials[] {
-    console.log('🟡 Parsing materials from JSON, length:', jsonString.length);
-
     try {
       const raw = JSON.parse(jsonString);
-      console.log('🟢 PARSED JSON successfully');
-      console.log('🟢 Type:', Array.isArray(raw) ? 'Array' : typeof raw);
 
       if (!Array.isArray(raw)) {
-        console.warn('🔴 Parsed JSON is not an array');
         return [];
       }
-
-      console.log('🟢 Items count:', raw.length);
 
       // Filter items that have Categorized_Materials
       const filtered = raw.filter((x) => {
@@ -790,13 +750,10 @@ export class JobDataService {
           x['Categorized_Materials'].length > 0;
 
         if (!hasMaterials && x['Phase / Item']) {
-          console.log('⚪ Skipping (no materials):', x['Phase / Item']);
         }
 
         return hasMaterials;
       });
-
-      console.log('🟢 Filtered items with materials:', filtered.length);
 
       const result = filtered.map((x) => ({
         phase: x['Phase / Item'],
@@ -810,10 +767,7 @@ export class JobDataService {
         totalAmount: Number(x.Amount) || 0,
       }));
 
-      console.log('🟢 MATERIAL GROUPS RESULT:', result.length, 'phases');
-
       if (result.length > 0) {
-        console.log('🟢 First phase sample:', result[0]);
       }
 
       return result;

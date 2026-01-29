@@ -27,7 +27,7 @@ export interface QuoteDto {
 
   notes?: string;
   terms?: string;
-
+  paymentTerms?: string;
   total: number;
 
   createdID: string;
@@ -53,6 +53,8 @@ export interface QuoteViewDto {
   version: QuoteVersionDto;
   rows: QuoteRowDto[];
   extraCosts: QuoteExtraCostDto[];
+  createdID: string;
+  sentTo: string;
 }
 export interface QuoteVersionDto {
   version: number;
@@ -67,6 +69,7 @@ export interface QuoteVersionDto {
   clientAddress: string;
   clientPhone: string;
   clientEmail: string;
+  paymentTerms?: string;
   logoId?: string | null;
   projectName: string;
   projectAddress: string;
@@ -79,8 +82,10 @@ export interface QuoteListItemDto {
   number: string;
   createdBy: string;
   createdDate: string;
-
+  direction: 'Outbound' | 'Inbound';
+  sentTo?: string;
   status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
+  documentType?: 'QUOTE' | 'INVOICE';
   jobName?: string;
   clientName?: string;
   total?: number;

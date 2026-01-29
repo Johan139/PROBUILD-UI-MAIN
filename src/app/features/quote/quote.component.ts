@@ -42,24 +42,33 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { CompanyService } from '../../services/company.service';
 import { QuoteDto, QuoteExtraCostDto } from './quote.model';
 import { environment } from '../../../environments/environment';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { JobDataService } from '../jobs/services/job-data.service';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import {
   mapMaterialsToQuoteRows,
   mapMaterialsToQuoteRowsByPhase,
 } from './quote-materials.mapper';
 import { CategoryPickerDialogComponent } from '../../quote-documents-dialog/category-picker-dialog.component';
 import {
+  catchError,
   debounceTime,
   distinctUntilChanged,
+  EMPTY,
   filter,
   Subject,
   take,
   takeUntil,
+  timeout,
 } from 'rxjs';
 import {
   SendToClientDialogComponent,
   SendToClientDialogResult,
 } from './sendtoclientdialog.component';
+import {
+  QuotePreviewData,
+  QuotePreviewDialogComponent,
+} from './quote-preview-dialog.component';
 
 type DocumentType = 'QUOTE' | 'INVOICE';
 interface CompanyDetails {
@@ -96,6 +105,8 @@ interface CompanyDetails {
     MatDatepickerModule,
     MatNativeDateModule,
     MatRadioModule,
+    MatTooltipModule,
+    MatProgressBarModule,
   ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
@@ -124,6 +135,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
   jobId?: string;
   readOnly: boolean = false;
   isOwnQuote: boolean = false;
+  isAlreadyActioned = false;
+
   isFinalBiddingRound = false;
   showFeeReminder = false;
   quoteDocuments: { url: string; name: string }[] = [];
@@ -138,10 +151,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
     selected: boolean;
     subtasks: any[];
   }[] = [];
-  // 🔹 Quote generation scope
+  //Quote generation scope
   generationMode: 'PROJECT' | 'PHASE' = 'PROJECT';
-  selectedPhase: string | null = null;
-
+  selectedPhases: string[] = [];
+  isInboundQuote = false;
   get isQuote(): boolean {
     return this.documentType === 'QUOTE';
   }
@@ -151,8 +164,11 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
 
   switchToQuote(): void {
-    if (this.documentType === 'QUOTE') return; // Already quote
-
+    if (this.documentType === 'QUOTE') return;
+    if (this.quoteId) {
+      this.showSuccessToast('Document type cannot be changed after saving.');
+      return;
+    }
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -165,17 +181,22 @@ export class QuoteComponent implements OnInit, OnDestroy {
       if (result) {
         this.documentType = 'QUOTE';
         this.quoteForm.patchValue({ header: 'QUOTE' });
-        // Clear number to generate new one if this is a new document
+
         if (!this.quoteId) {
           this.quoteForm.patchValue({ number: '' });
         }
+
+        this.cdr.markForCheck();
       }
     });
   }
 
   switchToInvoice(): void {
-    if (this.documentType === 'INVOICE') return; // Already invoice
-
+    if (this.documentType === 'INVOICE') return;
+    if (this.quoteId) {
+      this.showSuccessToast('Document type cannot be changed after saving.');
+      return;
+    }
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -188,10 +209,12 @@ export class QuoteComponent implements OnInit, OnDestroy {
       if (result) {
         this.documentType = 'INVOICE';
         this.quoteForm.patchValue({ header: 'INVOICE' });
-        // Clear number to generate new one if this is a new document
+
         if (!this.quoteId) {
           this.quoteForm.patchValue({ number: '' });
         }
+
+        this.cdr.markForCheck();
       }
     });
   }
@@ -252,21 +275,39 @@ export class QuoteComponent implements OnInit, OnDestroy {
     });
 
     // Listen to individual controls for live updates
-    this.quoteForm.get('taxValue')?.valueChanges.subscribe((v) => {
-      this.hasTax = +v > 0;
-    });
+    this.quoteForm
+      .get('taxValue')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((v) => {
+        this.hasTax = +v > 0;
+      });
 
-    this.quoteForm.get('discountValue')?.valueChanges.subscribe((v) => {
-      this.hasDiscount = +v > 0;
-    });
+    this.quoteForm
+      .get('discountValue')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((v) => {
+        this.hasDiscount = +v > 0;
+      });
 
-    this.quoteForm.get('extraCostValue')?.valueChanges.subscribe((v) => {
-      this.hasExtraCost = +v > 0;
-    });
+    this.quoteForm
+      .get('extraCostValue')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((v) => {
+        this.hasExtraCost = +v > 0;
+      });
 
-    this.quoteForm.get('flatTotalValue')?.valueChanges.subscribe((v) => {
-      this.hasFlatTotal = +v > 0;
-    });
+    this.quoteForm
+      .get('flatTotalValue')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((v) => {
+        this.hasFlatTotal = +v > 0;
+      });
+    this.quoteForm
+      .get('amountPaid')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((v) => {
+        this.hasAmountPaid = +v > 0;
+      });
   }
   ngOnInit(): void {
     this.units = this.measurementService.getUnits();
@@ -325,6 +366,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
   ngAfterViewInit(): void {
     // Handle subtaskGroups (existing)
+    console.log('inbound', this.isInboundQuote);
     this.store
       .select((state) => state.subtaskGroups)
       .pipe(takeUntil(this.destroy$))
@@ -365,7 +407,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
         }
       }
 
-      // 👇 Load materials from cache
+      // Load materials from cache
       const cachedMaterials = localStorage.getItem(materialsStorageKey);
       if (cachedMaterials) {
         try {
@@ -397,11 +439,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
     this.logoService.getUserLogo(userId).subscribe({
       next: (logo) => {
         if (logo && logo.url) {
-          // ✅ Use the Azure URL directly, don't convert to blob URL
-          this.logoId = logo.id;
-          this.quoteForm.patchValue({ logoId: logo.id });
-          this.cdr.detectChanges();
+          // Use the Azure URL directly, don't convert to blob URL
 
+          this.logoId = logo.id;
           this.quoteForm.patchValue({ logoId: logo.id });
           this.cdr.detectChanges();
         }
@@ -413,6 +453,14 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
   private initializeNewQuote(): void {
     this.quoteForm.get('number')?.disable();
+    const today = new Date();
+    const due = new Date();
+    due.setDate(today.getDate() + 7);
+
+    this.quoteForm.patchValue({
+      date: today,
+      dueDate: due,
+    });
 
     const row = this.createQuoteRow();
     this.quoteRows.push(row);
@@ -428,13 +476,38 @@ export class QuoteComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.documentType = data.documentType;
         this.quoteId = data.quoteId;
+        const currentUserId = this.authService.currentUserSubject.value?.id;
+        console.log('RAW API RESPONSE:', data);
+        console.log('ALL KEYS:', Object.keys(data));
+        const createdById = data.createdID ? String(data.createdID) : null;
+        const sentToId = data.sentTo ? String(data.sentTo) : null;
+        const currentId = currentUserId ? String(currentUserId) : null;
 
-        // ✅ Load logo from quote - use Azure URL directly
+        // I created it = OUTBOUND (my quote)
+        // I didn't create it BUT it was sent to me = INBOUND (received quote)
+        this.isOwnQuote = createdById === currentId;
+        this.isInboundQuote = !this.isOwnQuote && sentToId === currentId;
+
+        this.isAlreadyActioned =
+          data.status === 'Approved' || data.status === 'Rejected';
+
+        // Inbound = always read-only, cannot edit anything
+        if (this.isInboundQuote) {
+          this.readOnly = true;
+          this.quoteForm.disable();
+        }
+
+        // Outbound non-draft = read-only
+        if (this.isOwnQuote && data.status !== 'Draft') {
+          this.readOnly = true;
+          this.quoteForm.disable();
+        }
+
+        this.cdr.markForCheck();
+
+        // Rest of existing code...
         if (data.version.logoId) {
           this.logoId = data.version.logoId;
-          this.quoteForm.patchValue({ logoId: data.version.logoId });
-        }
-        if (data.version.logoId) {
           this.quoteForm.patchValue({ logoId: data.version.logoId });
         }
 
@@ -448,8 +521,14 @@ export class QuoteComponent implements OnInit, OnDestroy {
           clientEmail: data.version.clientEmail,
           projectName: data.version.projectName,
           projectAddress: data.version.projectAddress,
-          date: data.version.date,
-          dueDate: data.version.dueDate,
+
+          date: data.version.date ? data.version.date.split('T')[0] : null,
+
+          dueDate: data.version.dueDate
+            ? data.version.dueDate.split('T')[0]
+            : null,
+
+          paymentTerms: data.version.paymentTerms,
           notes: data.version.notes,
           terms: data.version.terms,
         });
@@ -474,13 +553,12 @@ export class QuoteComponent implements OnInit, OnDestroy {
               this.hasFlatTotal = true;
               this.quoteForm.patchValue({ flatTotalValue: cost.value });
               break;
+            case 'AmountPaid':
+              this.hasAmountPaid = true;
+              this.quoteForm.patchValue({ amountPaid: cost.value });
+              break;
           }
         });
-
-        if (data.status !== 'Draft') {
-          this.readOnly = true;
-          this.quoteForm.disable();
-        }
 
         this.isSaving = false;
         this.cdr.detectChanges();
@@ -493,7 +571,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
     });
   }
-
   private loadCompanyDetails(): void {
     const userId = this.authService.currentUserSubject.value?.id;
     if (!userId) return;
@@ -571,7 +648,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
           .get('unitPrice')
           ?.valueChanges.subscribe(() => this.updateTotal(row));
 
-        // 🔥 force recalculation
+        // force recalculation
         this.updateTotal(row);
 
         this.quoteRows.push(row);
@@ -606,7 +683,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
     row.get('quantity')?.valueChanges.subscribe(recalc);
     row.get('unitPrice')?.valueChanges.subscribe(recalc);
 
-    // 🔥 CRITICAL: calculate once immediately
+    // CRITICAL: calculate once immediately
     this.updateTotal(row);
 
     return row;
@@ -704,11 +781,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
   approveQuote(): void {
     if (!this.quoteId) return;
 
-    if (!this.jobId) {
-      console.warn('Cannot approve quote: Job ID is missing.');
-      return;
-    }
-
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {
@@ -720,15 +792,18 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        // original approve logic here
-        if (!this.quoteId || !this.jobId) return;
+        if (!this.quoteId) return;
         this.quoteService.changeStatus(this.quoteId, 'Approved').subscribe({
           next: () => {
-            this.quoteForm.patchValue({ status: 'Approved' }); // or Rejected
-            this.readOnly = true;
-            this.quoteForm.disable();
+            this.isAlreadyActioned = true; // Disable buttons after action
+            this.showSuccessToast('Quote approved successfully!');
+            this.cdr.detectChanges();
           },
-          error: (err) => console.error('Failed to approve quote:', err),
+          error: (err) => {
+            console.error('Failed to approve quote:', err);
+            alert('Failed to approve quote. Please try again.');
+            this.cdr.detectChanges();
+          },
         });
       }
     });
@@ -737,32 +812,34 @@ export class QuoteComponent implements OnInit, OnDestroy {
   rejectQuote(): void {
     if (!this.quoteId) return;
 
-    if (!this.jobId) {
-      console.warn('Cannot reject quote: Job ID is missing.');
-      return;
-    }
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Confirm Rejection',
+        message: 'Are you sure you want to reject this quote?',
+      },
+    });
 
-    this.quoteService.changeStatus(this.quoteId, 'Rejected').subscribe({
-      next: (updatedQuote) => {
-        this.quoteForm.patchValue({ status: 'Rejected' }); // or Rejected
-        this.readOnly = true;
-        this.quoteForm.disable();
-        // console.log('Quote rejected');
-      },
-      error: (err) => {
-        console.error('Failed to reject quote:', err);
-      },
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        if (!this.quoteId) return;
+        this.quoteService.changeStatus(this.quoteId, 'Rejected').subscribe({
+          next: () => {
+            this.isAlreadyActioned = true; // Disable buttons after action
+            this.showSuccessToast('Quote rejected.');
+            this.cdr.detectChanges();
+          },
+          error: (err) => console.error('Failed to reject quote:', err),
+        });
+      }
     });
   }
 
   getSubtotal(): number {
-    // Pure subtotal of line items only
     return this.quoteRows.controls.reduce((acc, row) => {
       const quantity = row.get('quantity')?.value || 0;
       const unitPrice = row.get('unitPrice')?.value || 0;
-      const total = quantity * unitPrice;
-      row.get('total')?.setValue(total, { emitEvent: false });
-      return acc + total;
+      return acc + quantity * unitPrice;
     }, 0);
   }
 
@@ -796,7 +873,11 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     return total;
   }
-
+  getBalanceDue(): number {
+    const total = this.getGrandTotal();
+    const paid = parseFloat(this.quoteForm.get('amountPaid')?.value) || 0;
+    return total - paid;
+  }
   triggerFileInput(): void {
     this.fileInput.nativeElement.click();
   }
@@ -804,6 +885,16 @@ export class QuoteComponent implements OnInit, OnDestroy {
     if (!this.logoId) return null;
     return `${this.apiBase}/quotes/logo/file/${this.logoId}`;
   }
+  private getTodayISO(): string {
+    return new Date().toISOString().split('T')[0]; // yyyy-MM-dd
+  }
+
+  private getDueDateISO(days = 7): string {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+
   onLogoChange(event: Event): void {
     const file = (event.target as HTMLInputElement)?.files?.[0];
     if (!file) return;
@@ -814,7 +905,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Show preview using FileReader (temporary, local preview only)
+    // Show preview using FileReader (temporary, local preview only)
     const reader = new FileReader();
     reader.onload = () => {
       this.logoUrl = reader.result as string; // This creates a blob: URL for preview
@@ -823,13 +914,13 @@ export class QuoteComponent implements OnInit, OnDestroy {
     };
     reader.readAsDataURL(file);
 
-    // ✅ Upload to server immediately
+    // Upload to server immediately
     this.isSaving = true;
     const userId = this.authService.currentUserSubject.value?.id;
     // Upload to server
     this.logoService.setUserLogo(file, userId).subscribe({
       next: (response) => {
-        // ✅ CRITICAL: Replace the blob: URL with the actual Azure URL
+        // CRITICAL: Replace the blob: URL with the actual Azure URL
         this.logoId = response.id;
         this.quoteForm.patchValue({ logoId: response.id });
         this.logoUrl = null;
@@ -851,23 +942,39 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
   removeLogo(): void {
     if (this.readOnly) return;
-
-    if (confirm('Are you sure you want to remove the logo from this quote?')) {
+    if (confirm('Are you sure...')) {
       this.logoUrl = null;
+      this.logoId = null;
       this.quoteForm.patchValue({ logoId: null });
       this.cdr.detectChanges();
     }
   }
 
-  async onSubmit(): Promise<void> {
-    this.isSaving = true;
-    await this.downloadPDF();
-    this.isSaving = false;
+  onSubmit(): void {
+    this.exportPdf();
+    this.submitManuallyAfterExport();
   }
   private getValidUntilDate(days = 7): string {
     const d = new Date();
     d.setDate(d.getDate() + days);
     return d.toISOString().split('T')[0]; // yyyy-MM-dd for mat-datepicker
+  }
+  submitManuallyAfterExport(): void {
+    if (!this.quoteId) {
+      console.warn('No quoteId available, cannot submit');
+      return;
+    }
+
+    // Only submit if still draft
+
+    this.quoteService.submitQuote(this.quoteId).subscribe({
+      next: () => {
+        this.readOnly = true;
+      },
+      error: (err) => {
+        console.error('Failed to submit quote after export', err);
+      },
+    });
   }
 
   saveToDatabase(): void {
@@ -883,7 +990,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
       companyId: this.companyId,
       number: form.number ?? 'DRAFT',
       documentType: this.documentType,
-      logoId: form.logoId, // ✅ Include logo ID (Guid as string)
+      logoId: this.quoteForm.get('logoId')?.value,
 
       from: form.from,
       to: form.to,
@@ -894,9 +1001,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       projectAddress: form.projectAddress,
       projectName: form.projectName,
 
-      date: form.date || null,
-      dueDate: this.getValidUntilDate(7),
-
+      dueDate: form.dueDate,
+      date: form.date,
+      paymentTerms: this.isInvoice ? form.paymentTerms : undefined,
       notes: form.notes,
       terms: form.terms,
 
@@ -922,12 +1029,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
         console.log('Quote saved successfully');
 
         // Show success message briefly
-        const message = document.createElement('div');
-        message.textContent = 'Quote saved successfully!';
-        message.style.cssText =
-          'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 12px 24px; border-radius: 4px; z-index: 9999;';
-        document.body.appendChild(message);
-        setTimeout(() => message.remove(), 3000);
+        this.showSuccessToast(
+          `${this.documentType === 'INVOICE' ? 'Invoice' : 'Quote'} saved successfully!`,
+        );
 
         this.isSaving = false;
         this.cdr.detectChanges();
@@ -940,6 +1044,43 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
     });
   }
+  private showSuccessToast(text: string): void {
+    const toast = document.createElement('div');
+    toast.textContent = text;
+
+    toast.style.cssText = `
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4caf50;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  `;
+
+    document.body.appendChild(toast);
+
+    // Fade + slight drop-in
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(6px)';
+    });
+
+    // Fade out
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-6px)';
+      setTimeout(() => toast.remove(), 200);
+    }, 3000);
+  }
+
   private buildExtraCosts(): QuoteExtraCostDto[] {
     const costs: QuoteExtraCostDto[] = [];
 
@@ -970,6 +1111,17 @@ export class QuoteComponent implements OnInit, OnDestroy {
         value: +this.quoteForm.value.flatTotalValue,
         title: 'Flat Total',
       });
+
+    if (this.isInvoice && this.hasAmountPaid) {
+      const amountPaid = +this.quoteForm.value.amountPaid;
+      if (amountPaid > 0) {
+        costs.push({
+          type: 'AmountPaid',
+          value: amountPaid,
+          title: 'Amount Paid',
+        });
+      }
+    }
 
     return costs;
   }
@@ -1027,63 +1179,70 @@ export class QuoteComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
 
         // Call the API to send to client
+        const form = this.quoteForm.getRawValue();
+
+        const quoteDto: QuoteDto = {
+          quoteId: this.quoteId ?? null,
+          jobID: this.jobId ? Number(this.jobId) : null,
+          companyId: this.companyId,
+          number: form.number ?? 'DRAFT',
+          documentType: this.documentType,
+          logoId: form.logoId,
+
+          from: form.from,
+          to: form.to,
+          clientAddress: form.clientAddress,
+          clientEmail: form.clientEmail,
+          clientPhone: form.clientPhone,
+          projectName: form.projectName,
+          projectAddress: form.projectAddress,
+
+          date: form.date,
+          dueDate: form.dueDate,
+          notes: form.notes,
+          terms: form.terms,
+          total: this.getGrandTotal(),
+
+          createdID: this.authService.currentUserSubject.value!.id,
+          createdBy: this.authService.currentUserSubject.value!.firstName,
+
+          rows: this.quoteRows.controls.map((row) => ({
+            description: row.get('description')!.value,
+            quantity: Number(row.get('quantity')!.value),
+            unit: row.get('unit')!.value,
+            unitPrice: Number(row.get('unitPrice')!.value),
+            total: Number(row.get('total')!.value),
+          })),
+
+          extraCosts: this.buildExtraCosts(),
+        };
+
         this.quoteService
-          .sendToClient({
-            quoteId: this.quoteId!,
-            clientEmail: result.clientEmail,
-            clientName: result.clientName,
-            personalMessage: result.personalMessage,
-            attachPdf: result.attachPdf,
+          .saveAndSend({
+            quote: quoteDto,
+            send: {
+              clientEmail: result.clientEmail,
+              clientName: result.clientName,
+              personalMessage: result.personalMessage,
+              attachPdf: result.attachPdf,
+            },
           })
           .subscribe({
-            next: (response) => {
-              console.log('Quote sent successfully:', response);
-
-              // Update local state
-              this.quoteForm.patchValue({ status: 'Submitted' });
+            next: () => {
               this.readOnly = true;
-              this.quoteForm.disable();
-
-              // Show success message
-              this.showSuccessMessage(
-                `${this.documentType === 'INVOICE' ? 'Invoice' : 'Quote'} sent successfully to ${result.clientEmail}!`,
-              );
-
               this.isSaving = false;
-              this.cdr.detectChanges();
+              this.quoteForm.disable();
+              this.showSuccessToast(`Quote sent to ${result.clientEmail}`);
             },
             error: (err) => {
-              console.error('Failed to send quote:', err);
-              alert(
-                `Failed to send ${this.documentType === 'INVOICE' ? 'invoice' : 'quote'}. ${err.message || 'Please try again.'}`,
-              );
               this.isSaving = false;
-              this.cdr.detectChanges();
+              console.error(err);
+              alert('Failed to send quote');
             },
           });
       });
   }
-  private showSuccessMessage(message: string): void {
-    const el = document.createElement('div');
-    el.textContent = message;
-    el.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #4caf50;
-    color: white;
-    padding: 16px 24px;
-    border-radius: 8px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  `;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 4000);
-  }
+
   resendQuote(): void {
     if (!this.quoteId) {
       alert('Cannot resend: Quote not found');
@@ -1120,7 +1279,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
           )
           .subscribe({
             next: (response) => {
-              this.showSuccessMessage(
+              this.showSuccessToast(
                 `${this.documentType === 'INVOICE' ? 'Invoice' : 'Quote'} resent to ${result.clientEmail}!`,
               );
               this.isSaving = false;
@@ -1198,7 +1357,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
         const imgData = canvas.toDataURL('image/png');
 
-        const imgWidth = 45; // matches UI nicely
+        const imgWidth = 45;
         const imgHeight = (img.naturalHeight * imgWidth) / img.naturalWidth;
 
         pdf.addImage(imgData, 'PNG', margin, currentY, imgWidth, imgHeight);
@@ -1509,33 +1668,73 @@ export class QuoteComponent implements OnInit, OnDestroy {
       });
     }
   }
-  populateQuoteFromJob(): void {
-    const materialGroups = this.store.getState().materialGroups;
+  exportPdf(): void {
+    if (!this.quoteId) return;
 
-    console.log('📦 populateQuoteFromJob called');
-    console.log('📦 Material groups:', materialGroups);
+    this.isSaving = true;
+    this.cdr.detectChanges();
 
-    if (!materialGroups || materialGroups.length === 0) {
+    this.quoteService.downloadPdf(this.quoteId).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+
+        const filename = `${this.quoteForm.get('number')?.value || 'Quote'}.pdf`;
+
+        a.download = filename;
+        a.click();
+
+        window.URL.revokeObjectURL(url);
+
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('PDF download failed', err);
+        alert('Failed to download PDF');
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  populateQuoteFromJob(selectedPhases: string[] | null = null) {
+    const allMaterialGroups = this.store.getState().materialGroups;
+
+    if (!allMaterialGroups || allMaterialGroups.length === 0) {
       console.warn('📦 No materials found for job');
+      this.jobDetailsLoading = false;
       return;
     }
 
     let rows: any[] = [];
 
+    // --------------------------------------------------
+    // PROJECT MODE → summary by phase
+    // --------------------------------------------------
     if (this.generationMode === 'PROJECT') {
-      // ✅ Whole project → phase summary
-      rows = mapMaterialsToQuoteRowsByPhase(materialGroups);
-    } else {
-      // ✅ Specific phase → material detail
-      const filtered = materialGroups.filter(
-        (p) => p.phase === this.selectedPhase,
-      );
+      rows = mapMaterialsToQuoteRowsByPhase(allMaterialGroups);
+    }
+    // --------------------------------------------------
+    // PHASE MODE → detailed rows, possibly filtered
+    // --------------------------------------------------
+    else {
+      let filteredGroups = allMaterialGroups;
 
-      rows = mapMaterialsToQuoteRows(filtered);
+      if (selectedPhases && selectedPhases.length > 0) {
+        filteredGroups = allMaterialGroups.filter((group) =>
+          selectedPhases.includes(group.phase),
+        );
+      }
+
+      rows = mapMaterialsToQuoteRows(filteredGroups);
     }
 
-    console.log('📦 Generated rows:', rows);
-
+    // --------------------------------------------------
+    // Apply rows to form
+    // --------------------------------------------------
     this.quoteRows.clear();
 
     rows.forEach((r) => {
@@ -1550,16 +1749,102 @@ export class QuoteComponent implements OnInit, OnDestroy {
       row.get('quantity')?.valueChanges.subscribe(() => this.updateTotal(row));
       row.get('unitPrice')?.valueChanges.subscribe(() => this.updateTotal(row));
 
-      // 🔥 CRITICAL: Calculate initial total
       this.updateTotal(row);
-
       this.quoteRows.push(row);
     });
 
     this.dataSource.data = this.quoteRows.controls as FormGroup[];
     this.cdr.detectChanges();
 
-    console.log('📦 Quote populated with', rows.length, 'rows');
+    this.jobDetailsLoading = false;
+  }
+  openPreview(): void {
+    const form = this.quoteForm.getRawValue();
+
+    // Calculate amounts
+    const subtotal = this.getSubtotal();
+    const extraCost = this.hasExtraCost
+      ? parseFloat(form.extraCostValue) || 0
+      : 0;
+    const discountRate = this.hasDiscount
+      ? parseFloat(form.discountValue) || 0
+      : 0;
+    const discountAmount = (subtotal * discountRate) / 100;
+    const taxRate = this.hasTax ? parseFloat(form.taxValue) || 0 : 0;
+    const taxAmount = ((subtotal + extraCost - discountAmount) * taxRate) / 100;
+    const grandTotal = this.getGrandTotal();
+
+    // Invoice-specific calculations
+    const amountPaid = this.isInvoice ? parseFloat(form.amountPaid) || 0 : 0;
+    const balanceDue = grandTotal - amountPaid;
+
+    // Build preview data
+    const previewData: QuotePreviewData = {
+      // Document info
+      documentType: this.documentType,
+      number: form.number || 'DRAFT',
+      date: form.date,
+      dueDate: form.dueDate,
+
+      // Company info
+      companyName: this.companyDetails?.name || form.from || '',
+      companyAddress: this.companyDetails?.address,
+      companyEmail: this.companyDetails?.email,
+      companyPhone: this.companyDetails?.phoneNumber,
+      logoUrl: this.logoId ? this.logoImageSrc : null,
+
+      // Client info
+      clientName: form.to || '',
+      clientAddress: form.clientAddress,
+      clientEmail: form.clientEmail,
+      clientPhone: form.clientPhone,
+
+      // Project info
+      projectName: form.projectName,
+      projectAddress: form.projectAddress,
+
+      // Line items
+      rows: this.quoteRows.controls.map((row) => ({
+        description: row.get('description')?.value || '',
+        quantity: Number(row.get('quantity')?.value) || 0,
+        unit: row.get('unit')?.value || '',
+        unitPrice: Number(row.get('unitPrice')?.value) || 0,
+        total: Number(row.get('total')?.value) || 0,
+      })),
+
+      // Totals
+      subtotal,
+      extraCost: this.hasExtraCost ? extraCost : undefined,
+      taxRate: this.hasTax ? taxRate : undefined,
+      taxAmount: this.hasTax ? taxAmount : undefined,
+      discountRate: this.hasDiscount ? discountRate : undefined,
+      discountAmount: this.hasDiscount ? discountAmount : undefined,
+      grandTotal,
+
+      // Invoice-specific fields
+      paymentTerms: this.isInvoice ? form.paymentTerms : undefined,
+      amountPaid: this.isInvoice && amountPaid > 0 ? amountPaid : undefined,
+      balanceDue: this.isInvoice && amountPaid > 0 ? balanceDue : undefined,
+
+      // Notes
+      notes: form.notes,
+      terms: form.terms,
+    };
+
+    // Open dialog
+    const dialogRef = this.dialog.open(QuotePreviewDialogComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '95vh',
+      panelClass: 'quote-preview-dialog',
+      data: previewData,
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        console.log('Preview confirmed');
+      }
+    });
   }
   selectJob(job: Job): void {
     if (this.selectedJobId === job.jobId.toString()) {
@@ -1622,6 +1907,12 @@ export class QuoteComponent implements OnInit, OnDestroy {
       .pipe(
         filter((m) => Array.isArray(m) && m.length > 0),
         take(1),
+        timeout(10000), // 10 second timeout
+        catchError((err) => {
+          this.jobsLoading = false;
+          alert('Failed to load job materials');
+          return EMPTY;
+        }),
       )
       .subscribe((materials) => {
         this.jobsLoading = false;
@@ -1636,7 +1927,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
             if (!result) return;
 
             this.generationMode = result.mode;
-            this.selectedPhase = result.selectedPhase;
+            this.selectedPhases = result.selectedPhases ?? [];
+
             this.generateQuoteForJob(job);
           });
       });
@@ -1650,8 +1942,11 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
   // Update the generateQuoteForJob method to use already loaded data
   generateQuoteForJob(job: any): void {
-    if (this.generationMode === 'PHASE' && !this.selectedPhase) {
-      alert('Please select a phase first.');
+    if (
+      this.generationMode === 'PHASE' &&
+      (!this.selectedPhases || this.selectedPhases.length === 0)
+    ) {
+      alert('Please select at least one phase.');
       return;
     }
 
@@ -1672,9 +1967,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
       if (!confirmed) return;
     }
 
-    console.log('📋 Generating quote for job:', jobId);
-    console.log('📋 Generation mode:', this.generationMode);
-    console.log('📋 Selected phase:', this.selectedPhase);
+    const existingLogoId = this.quoteForm.get('logoId')?.value;
 
     this.selectedJobId = jobId;
     this.jobId = jobId;
@@ -1692,19 +1985,23 @@ export class QuoteComponent implements OnInit, OnDestroy {
     // Load full job details to populate form
     this.jobsService.getSpecificJob(this.jobId).subscribe({
       next: (jobDetails) => {
-        console.log('📋 Job details loaded:', jobDetails);
-
         // Pre-fill quote form with job details
         this.quoteForm.patchValue({
           to: jobDetails.projectName || '',
           clientAddress: jobDetails.address || '',
           projectName: jobDetails.projectName || '',
           projectAddress: jobDetails.address || '',
-          date: new Date().toISOString().split('T')[0],
+          date: this.getTodayISO(),
+          dueDate: this.getDueDateISO(7),
+          logoId: existingLogoId,
         });
 
-        // NOW populate the quote rows from materials
-        this.populateQuoteFromJob();
+        let phaseFilter: string[] | null = null;
+
+        if (this.generationMode === 'PHASE') {
+          phaseFilter = [...this.selectedPhases];
+        }
+        this.populateQuoteFromJob(phaseFilter);
 
         this.cdr.detectChanges();
       },
@@ -1717,6 +2014,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
     this.activeTab = 'company';
     this.cdr.detectChanges();
   }
+  goBackToQuotes(): void {
+    this.router.navigate(['/quotes']);
+  }
+
   switchTab(tab: 'company' | 'jobs'): void {
     this.activeTab = tab;
     this.cdr.detectChanges();
@@ -1732,5 +2033,84 @@ export class QuoteComponent implements OnInit, OnDestroy {
       clientEmail: this.companyDetails.email ?? '',
       clientPhone: this.companyDetails.phoneNumber ?? '',
     });
+  }
+  duplicateQuote() {
+    if (!this.quoteId) return;
+
+    const quoteId = this.quoteId;
+
+    this.quoteService.duplicateQuote(quoteId).subscribe({
+      next: (res) => {
+        // Navigate to the new quote
+        this.router.navigate(['/quote'], {
+          queryParams: { quoteId: res.quoteId },
+        });
+      },
+      error: (err) => {
+        console.error('Failed to duplicate quote', err);
+        alert(err?.error ?? 'Failed to duplicate quote');
+      },
+    });
+  }
+
+  deleteQuote() {
+    if (!this.quoteId) return;
+
+    const quoteId = this.quoteId;
+
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Delete Quote',
+          message: 'This will permanently delete the draft quote.',
+          confirmText: 'Delete',
+          confirmColor: 'warn',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.quoteService.deleteQuote(quoteId).subscribe({
+            next: () => {
+              this.router.navigate(['/quotes']);
+            },
+            error: (err) => {
+              console.error('Failed to delete quote', err);
+              alert(err?.error ?? 'Failed to delete quote');
+            },
+          });
+        }
+      });
+  }
+  canEdit(): boolean {
+    return !this.isInboundQuote && !this.readOnly;
+  }
+
+  canSend(): boolean {
+    return !this.isInboundQuote && !this.readOnly;
+  }
+
+  canSaveDraft(): boolean {
+    return !this.isInboundQuote && !this.readOnly;
+  }
+
+  canDuplicate(): boolean {
+    return !this.isInboundQuote;
+  }
+
+  canDelete(): boolean {
+    return !this.isInboundQuote && !this.readOnly;
+  }
+
+  canPreview(): boolean {
+    return true;
+  }
+
+  canApprove(): boolean {
+    return this.isInboundQuote;
+  }
+
+  canReject(): boolean {
+    return this.isInboundQuote;
   }
 }
