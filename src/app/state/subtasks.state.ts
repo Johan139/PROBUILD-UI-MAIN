@@ -1,3 +1,4 @@
+import { PhaseMaterials } from '../features/quote/quote.model';
 import { ForecastDay } from '../services/weather.service';
 
 export interface Subtask {
@@ -25,9 +26,10 @@ export interface SubtaskGroup {
 }
 
 export interface SubtasksState {
-  subtaskGroups: SubtaskGroup[];
-  projectDetails?: any;
-  forecast?: ForecastDay[];
-  weatherDescription?: string;
-  weatherError?: string | null;
+  projectDetails: any;
+  subtaskGroups: any[];
+  materialGroups: PhaseMaterials[];
+  forecast: any[];
+  weatherDescription: string;
+  weatherError: string | null;
 }

@@ -533,16 +533,16 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadActiveBids(): void {
-    const userId: string | null = localStorage.getItem('userId');
-    this.quoteService.getQuotesByUser(userId ?? '').subscribe({
-      next: (quotes) => {
-        this.activeBidsDataSource.data = quotes;
-      },
-      error: (err) => {
-        console.error('Failed to load active bids', err);
-        this.activeBidsDataSource.data = [];
-      },
-    });
+    // const userId: string | null = localStorage.getItem('userId');
+    // this.quoteService.getQuotesByUser(userId ?? '').subscribe({
+    //   next: (quotes) => {
+    //     this.activeBidsDataSource.data = quotes;
+    //   },
+    //   error: (err) => {
+    //     console.error('Failed to load active bids', err);
+    //     this.activeBidsDataSource.data = [];
+    //   },
+    // });
   }
 
   displayFn(option: any): string {
@@ -860,7 +860,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.jobService.getSpecificJob(id).subscribe((res) => {
       const parsedDate = new Date(res.desiredStartDate);
       const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-      
+
       const responseParams = {
         jobId: res.jobId,
         operatingArea: res.operatingArea,

@@ -1,34 +1,57 @@
-<div *ngIf="jobDetailsLoading" class="centered-spinner-container">
-  <mat-spinner></mat-spinner>
+<div *ngIf="jobDetailsLoading" class="quote-skeleton">
+  <div class="skeleton header"></div>
+  <div class="skeleton block"></div>
+  <div class="skeleton block"></div>
+  <div class="skeleton table"></div>
+  <div class="skeleton totals"></div>
 </div>
 
 <div class="quote-page" *ngIf="!jobDetailsLoading">
+  <div class="toast-anchor" id="toast-anchor"></div>
+
   <!-- ================= TOP BAR (now inside grid) ================= -->
   <div class="quote-editor-header full-width">
     <!-- LEFT -->
     <div class="header-left">
+      <button mat-button class="back-btn" (click)="goBackToQuotes()">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Quotes & Invoices
+      </button>
+
       <div class="title-group">
-        <h1>{{ isQuote ? "Quote Editor" : "Invoice Editor" }}</h1>
-        <p>Generate professional documents for your clients</p>
+        <h1>
+          {{
+            isInboundQuote
+              ? isQuote
+                ? "Quote Received"
+                : "Invoice Received"
+              : isQuote
+                ? "Quote Editor"
+                : "Invoice Editor"
+          }}
+        </h1>
+        <p>
+          {{
+            isInboundQuote
+              ? "Review and respond to this document"
+              : "Generate professional documents for your clients"
+          }}
+        </p>
       </div>
 
       <div class="header-actions">
-        <button mat-raised-button class="btn-primary">
+        <!-- <button *ngIf="!isInboundQuote" mat-raised-button class="btn-primary">
           <mat-icon>add</mat-icon>
           {{ isQuote ? "New Quote" : "New Invoice" }}
-        </button>
-
-        <button mat-button class="drafts-btn">
-          <mat-icon>description</mat-icon>
-          Drafts
-          <span class="draft-count">2</span>
-        </button>
+        </button> -->
       </div>
     </div>
 
     <!-- RIGHT -->
+    <!-- RIGHT -->
     <div class="header-right">
-      <div class="doc-toggle">
+      <!-- Only show toggle for outbound drafts -->
+      <div class="doc-toggle" *ngIf="!isInboundQuote && !readOnly">
         <button
           class="toggle-btn"
           [class.active]="isQuote"
@@ -47,84 +70,213 @@
           Invoice
         </button>
       </div>
+
+      <!-- Show document type badge for inbound OR submitted outbound -->
+      <div class="doc-type-badge" *ngIf="isInboundQuote || readOnly">
+        <mat-icon>{{ isQuote ? "request_quote" : "receipt_long" }}</mat-icon>
+        <span>{{ isQuote ? "Quote" : "Invoice" }}</span>
+      </div>
     </div>
   </div>
 
   <!-- ================= LEFT SIDEBAR ================= -->
-  <aside class="quote-sidebar">
-    <!-- Company Logo -->
-    <section class="sidebar-card">
-      <h4>Company Logo</h4>
+  <aside class="quote-sidebar" *ngIf="!isInboundQuote">
+    <!-- TAB NAVIGATION -->
+    <div class="sidebar-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'company'"
+        (click)="switchTab('company')"
+      >
+        <mat-icon>business</mat-icon>
+        Company
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'jobs'"
+        *ngIf="!isInboundQuote"
+        (click)="switchTab('jobs')"
+        [disabled]="readOnly"
+      >
+        <mat-icon>work</mat-icon>
+        Jobs ({{ successJobs.length }})
+      </button>
+    </div>
 
-      <div class="logo-container" (click)="!readOnly && triggerFileInput()">
-        <div class="placeholder" *ngIf="!logoUrl">
-          <mat-icon>cloud_upload</mat-icon>
-          <span>Upload Logo</span>
+    <!-- COMPANY TAB CONTENT -->
+    <div class="sidebar-content" *ngIf="activeTab === 'company'">
+      <!-- Company Logo -->
+      <!-- Company Logo - hide upload functionality when readOnly -->
+      <section class="sidebar-card" *ngIf="!isInboundQuote">
+        <h4>Company Logo</h4>
+
+        <div
+          class="logo-container"
+          [class.readonly]="readOnly"
+          (click)="!readOnly && triggerFileInput()"
+          [matTooltip]="readOnly ? '' : 'Upload or replace your company logo'"
+        >
+          <div class="placeholder" *ngIf="!logoId && !logoUrl && !readOnly">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Upload Logo</span>
+          </div>
+
+          <img
+            *ngIf="logoId"
+            class="logo-image"
+            [src]="logoImageSrc"
+            (error)="onLogoLoadError($event)"
+            alt="Company logo"
+          />
+
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            class="file-input"
+            (change)="onLogoChange($event)"
+            [disabled]="readOnly"
+          />
+
+          <button
+            *ngIf="logoUrl && !readOnly"
+            mat-icon-button
+            class="remove-logo"
+            (click)="removeLogo(); $event.stopPropagation()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </section>
+
+      <!-- Company Details - hide edit button when readOnly -->
+      <section class="sidebar-card" *ngIf="!isInboundQuote">
+        <div class="sidebar-header">
+          <h4>Company Details</h4>
+          <button mat-icon-button class="edit-button" *ngIf="!readOnly">
+            <mat-icon>edit</mat-icon>
+          </button>
         </div>
 
-        <img
-          *ngIf="logoUrl"
-          [src]="logoUrl"
-          class="logo-image"
-          alt="Company Logo"
-        />
+        <div class="sidebar-text" *ngIf="companyDetails as c">
+          <div class="company-name">{{ c.name }}</div>
+          <div class="company-address" *ngIf="c.address">{{ c.address }}</div>
+          <div class="company-email" *ngIf="c.email">{{ c.email }}</div>
+          <div class="company-phone" *ngIf="c.phoneNumber">
+            {{ c.phoneNumber }}
+          </div>
+        </div>
+      </section>
+      <!-- Quick Actions -->
+      <!-- <section class="sidebar-card">
+        <h4>Quick Actions</h4>
+        <button mat-button>View All Documents</button>
+        <button mat-button>Client Directory</button>
+        <button mat-button>Template Settings</button>
+      </section> -->
+    </div>
 
-        <input
-          #fileInput
-          type="file"
-          accept="image/*"
-          class="file-input"
-          (change)="onLogoChange($event)"
-          [disabled]="readOnly"
-        />
+    <!-- JOBS TAB CONTENT - SIMPLIFIED -->
+    <div class="sidebar-content" *ngIf="activeTab === 'jobs'">
+      <!-- Loading -->
+      <div *ngIf="jobsLoading" class="jobs-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading jobs...</p>
+      </div>
 
-        <button
-          *ngIf="logoUrl"
-          mat-icon-button
-          class="remove-logo"
-          (click)="removeLogo()"
-          [disabled]="readOnly"
+      <!-- Empty State -->
+      <div *ngIf="!jobsLoading && successJobs.length === 0" class="jobs-empty">
+        <mat-icon>work_off</mat-icon>
+        <p>No jobs found</p>
+        <button mat-stroked-button routerLink="/jobs">Browse Jobs</button>
+      </div>
+
+      <!-- Jobs List - Simple -->
+      <div *ngIf="!jobsLoading && successJobs.length > 0" class="jobs-list">
+        <div class="jobs-header">
+          <h4>Select a Job</h4>
+          <span class="jobs-count">{{ successJobs.length }} jobs</span>
+        </div>
+
+        <div
+          class="job-item"
+          *ngFor="let job of successJobs"
+          [class.selected]="selectedJobId === job.id?.toString()"
         >
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-    </section>
+          <div
+            class="job-name"
+            [title]="job.projectName || job.jobType || 'Job #' + job.id"
+          >
+            {{ job.projectName || job.jobType || "Job #" + job.jobId }}
+          </div>
 
-    <!-- Company Details -->
+          <button
+            mat-raised-button
+            class="generate-btn"
+            (click)="openGenerateQuoteDialog(job)"
+            matTooltip="Generate a quote from this job"
+          >
+            Generate Quote
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= INBOUND QUOTE SIDEBAR (Sender Info) ================= -->
+  <aside class="quote-sidebar inbound-sidebar" *ngIf="isInboundQuote">
     <section class="sidebar-card">
-      <div class="sidebar-header">
-        <h4>Company Details</h4>
-        <button mat-icon-button class="edit-button">
-          <mat-icon>edit</mat-icon>
-        </button>
-      </div>
-
+      <h4>Received From</h4>
       <div class="sidebar-text">
-        {{ quoteForm.get("from")?.value }}
+        <div class="company-name">{{ quoteForm.get("from")?.value }}</div>
       </div>
     </section>
 
-    <!-- Quick Actions -->
     <section class="sidebar-card">
-      <h4>Quick Actions</h4>
-      <button mat-button>View All Documents</button>
-      <button mat-button>Client Directory</button>
-      <button mat-button>Template Settings</button>
+      <h4>Document Status</h4>
+      <div
+        class="status-badge"
+        [ngClass]="isAlreadyActioned ? 'actioned' : 'pending'"
+      >
+        {{ isAlreadyActioned ? "Responded" : "Pending Review" }}
+      </div>
     </section>
   </aside>
 
   <!-- ================= MAIN CONTENT ================= -->
-  <main class="quote-main">
+  <main class="quote-main" [class.inbound-view]="isInboundQuote">
+    <mat-progress-bar
+      *ngIf="isSaving"
+      mode="indeterminate"
+      class="quote-progress-bar"
+    ></mat-progress-bar>
+
     <form [formGroup]="quoteForm">
       <!-- ================= QUOTE HEADER ================= -->
       <header class="quote-top-header">
         <!-- LEFT -->
-        <div class="company-block">
-          <div class="company-name">tester</div>
+        <div class="company-header">
+          <!-- LOGO AT TOP -->
+          <img
+            *ngIf="logoId"
+            class="quote-logo"
+            [src]="logoImageSrc"
+            alt="Company logo"
+          />
 
-          <div class="company-details">
-            123 Business Street, City, State 12345<br />
-            (555) 123-4567 | info&#64;yourcompany.com
+          <!-- TEXT MOVES DOWN -->
+          <div class="company-block" *ngIf="companyDetails as c">
+            <div class="company-name">{{ c.name }}</div>
+
+            <div class="company-details" *ngIf="c.address">
+              {{ c.address }}
+            </div>
+            <div class="company-details" *ngIf="c.email">
+              {{ c.email }}
+            </div>
+            <div class="company-details" *ngIf="c.phoneNumber">
+              {{ c.phoneNumber }}
+            </div>
           </div>
         </div>
 
@@ -140,22 +292,48 @@
               class="meta-input"
               type="text"
               formControlName="number"
-              readonly
+              [readonly]="true"
+              placeholder="Auto-generated"
             />
           </div>
 
           <div class="quote-meta-row">
             <span>Date:</span>
-            <input class="meta-input" type="date" formControlName="date" />
+            <input
+              class="meta-input"
+              type="date"
+              formControlName="date"
+              [readonly]="readOnly"
+            />
           </div>
           <div class="quote-meta-row">
             <span>{{ isQuote ? "Valid Until:" : "Due Date:" }}</span>
-            <input class="meta-input" type="date" formControlName="dueDate" />
+            <input
+              class="meta-input"
+              type="date"
+              formControlName="dueDate"
+              [readonly]="isInboundQuote"
+            />
+          </div>
+          <div class="quote-meta-row" *ngIf="isInvoice">
+            <span>Payment Terms:</span>
+            <select
+              class="meta-input"
+              formControlName="paymentTerms"
+              [disabled]="readOnly || isInboundQuote"
+            >
+              <option value="">Select...</option>
+              <option value="Due on Receipt">Due on Receipt</option>
+              <option value="Net 15">Net 15</option>
+              <option value="Net 30">Net 30</option>
+              <option value="Net 60">Net 60</option>
+            </select>
           </div>
         </div>
       </header>
 
       <div class="section-divider"></div>
+
       <!-- ================= ALERTS ================= -->
       <div *ngIf="showFeeReminder" class="alert alert-warning">
         <strong>Reminder:</strong>
@@ -178,17 +356,32 @@
               class="dark-input"
               placeholder="Client Name"
               formControlName="to"
+              [readonly]="isInboundQuote"
             />
 
             <input
               type="text"
               class="dark-input"
+              formControlName="clientAddress"
               placeholder="Client Address"
+              [readonly]="isInboundQuote"
             />
 
             <div class="field-row">
-              <input type="text" class="dark-input" placeholder="Phone" />
-              <input type="email" class="dark-input" placeholder="Email" />
+              <input
+                type="text"
+                class="dark-input"
+                placeholder="Phone"
+                formControlName="clientPhone"
+                [readonly]="isInboundQuote"
+              />
+              <input
+                type="email"
+                class="dark-input"
+                placeholder="Email"
+                formControlName="clientEmail"
+                [readonly]="isInboundQuote"
+              />
             </div>
           </div>
         </div>
@@ -198,15 +391,24 @@
           <h4 class="section-title">Project Details:</h4>
 
           <div class="field-stack">
-            <input type="text" class="dark-input" placeholder="Project Name" />
+            <input
+              type="text"
+              class="dark-input"
+              placeholder="Project Name"
+              formControlName="projectName"
+              [readonly]="isInboundQuote"
+            />
             <input
               type="text"
               class="dark-input"
               placeholder="Project Address"
+              formControlName="projectAddress"
+              [readonly]="isInboundQuote"
             />
           </div>
         </div>
       </section>
+
       <div class="section-divider"></div>
       <!-- ================= LINE ITEMS ================= -->
       <section class="line-items-section" formArrayName="quoteRows">
@@ -219,13 +421,17 @@
           <span>Unit</span>
           <span>Unit Price</span>
           <span class="amount-col">Amount</span>
-          <span></span>
+          <span *ngIf="!readOnly"></span>
         </div>
 
         <!-- Rows -->
         <div
           class="line-item-row"
-          *ngFor="let _ of quoteRows.controls; let i = index"
+          *ngFor="
+            let row of quoteRows.controls;
+            let i = index;
+            trackBy: trackByIndex
+          "
           [formGroupName]="i"
         >
           <input
@@ -233,6 +439,7 @@
             class="dark-input"
             formControlName="description"
             placeholder="Item description"
+            [readonly]="readOnly"
           />
 
           <input
@@ -240,9 +447,16 @@
             class="dark-input qty-input"
             formControlName="quantity"
             min="1"
+            [readonly]="readOnly"
           />
 
-          <select class="dark-input" formControlName="unit">
+          <select
+            class="dark-input"
+            formControlName="unit"
+            [class.disabled]="readOnly"
+            (mousedown)="readOnly && $event.preventDefault()"
+            (keydown)="readOnly && $event.preventDefault()"
+          >
             <option *ngFor="let unit of units" [value]="unit">
               {{ unit }}
             </option>
@@ -254,35 +468,40 @@
             formControlName="unitPrice"
             min="0"
             step="any"
+            [readonly]="readOnly"
           />
 
           <div class="amount-cell">
-            ${{ quoteRows.at(i).get("total")?.value | number: "1.2-2" }}
+            ${{ row.get("total")?.value | number: "1.2-2" }}
           </div>
 
+          <!-- Hide delete button when read-only -->
           <button
             mat-icon-button
             class="delete-btn"
-            *ngIf="quoteRows.length > 1"
+            *ngIf="quoteRows.length > 1 && !readOnly"
             (click)="removeRow(i)"
-            [disabled]="readOnly"
+            matTooltip="Remove this line item"
           >
             <mat-icon>delete</mat-icon>
           </button>
         </div>
 
-        <!-- Add -->
+        <!-- Hide Add button when read-only -->
         <button
           mat-stroked-button
           class="add-line-btn"
           (click)="addRow()"
-          [disabled]="readOnly"
+          matTooltip="Add a new line item to the quote"
+          *ngIf="!readOnly"
         >
           <mat-icon>add</mat-icon>
           Add Line Item
         </button>
       </section>
+
       <div class="section-divider"></div>
+
       <!-- ================= TOTALS ================= -->
       <section class="totals-section">
         <!-- Subtotal -->
@@ -292,11 +511,26 @@
           <span class="value"> ${{ getSubtotal() | number: "1.2-2" }} </span>
         </div>
 
+        <!-- Extra Cost -->
+        <div class="totals-row" *ngIf="hasExtraCost">
+          <span class="label">Extra Cost:</span>
+          <input
+            type="number"
+            class="dark-input small"
+            formControlName="extraCostValue"
+            [readonly]="isInboundQuote"
+            *ngIf="!isInboundQuote"
+          />
+          <span class="value">
+            ${{ quoteForm.get("extraCostValue")?.value | number: "1.2-2" }}
+          </span>
+        </div>
+
         <!-- Discount -->
         <div class="totals-row">
           <span class="label">Discount:</span>
 
-          <div class="inline-input">
+          <div class="inline-input" *ngIf="!isInboundQuote">
             <select class="dark-input small">
               <option>%</option>
             </select>
@@ -305,6 +539,9 @@
               class="dark-input small"
               formControlName="discountValue"
             />
+          </div>
+          <div *ngIf="isInboundQuote">
+            {{ quoteForm.get("discountValue")?.value || 0 }}%
           </div>
 
           <span class="value negative">
@@ -323,7 +560,7 @@
         <div class="totals-row">
           <span class="label">Tax Rate:</span>
 
-          <div class="inline-input">
+          <div class="inline-input" *ngIf="!isInboundQuote">
             <input
               type="number"
               class="dark-input small"
@@ -331,9 +568,12 @@
             />
             <span class="suffix">%</span>
           </div>
+          <div *ngIf="isInboundQuote">
+            {{ quoteForm.get("taxValue")?.value || 0 }}%
+          </div>
 
           <span class="value">
-            {{
+            ${{
               (hasTax
                 ? (getSubtotal() * (quoteForm.get("taxValue")?.value || 0)) /
                   100
@@ -342,7 +582,39 @@
             }}
           </span>
         </div>
+        <div class="totals-row" *ngIf="isInvoice">
+          <span class="label">Amount Paid:</span>
 
+          <div class="inline-input" *ngIf="!isInboundQuote && !readOnly">
+            <span class="prefix">$</span>
+            <input
+              type="number"
+              class="dark-input small"
+              formControlName="amountPaid"
+              min="0"
+              step="any"
+            />
+          </div>
+          <span *ngIf="isInboundQuote || readOnly">
+            ${{ quoteForm.get("amountPaid")?.value | number: "1.2-2" }}
+          </span>
+
+          <span class="value negative">
+            -${{ quoteForm.get("amountPaid")?.value || 0 | number: "1.2-2" }}
+          </span>
+        </div>
+
+        <!-- Balance Due - Invoice only, when payment exists -->
+        <div
+          class="totals-row balance-due"
+          *ngIf="isInvoice && quoteForm.get('amountPaid')?.value > 0"
+        >
+          <span class="label">Balance Due:</span>
+          <div></div>
+          <span class="value balance-amount">
+            ${{ getBalanceDue() | number: "1.2-2" }}
+          </span>
+        </div>
         <div class="totals-divider"></div>
 
         <!-- Total -->
@@ -359,36 +631,133 @@
       <section class="notes-terms">
         <mat-form-field appearance="outline">
           <mat-label>Notes</mat-label>
-          <textarea matInput rows="4" formControlName="notes"></textarea>
+          <textarea
+            matInput
+            rows="4"
+            formControlName="notes"
+            [readonly]="isInboundQuote"
+          ></textarea>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Terms & Conditions</mat-label>
-          <textarea matInput rows="4" formControlName="terms"></textarea>
+          <textarea
+            matInput
+            rows="4"
+            formControlName="terms"
+            [readonly]="isInboundQuote"
+          ></textarea>
         </mat-form-field>
       </section>
 
       <!-- ================= ACTION BAR ================= -->
       <footer class="quote-actions">
-        <button mat-button>Preview</button>
-        <button mat-button>Duplicate</button>
-        <button mat-button color="warn">Delete</button>
+        <!-- INBOUND QUOTES: Only show these buttons -->
+        <ng-container *ngIf="isInboundQuote">
+          <span class="spacer"></span>
 
-        <span class="spacer"></span>
+          <button
+            mat-stroked-button
+            matTooltip="Download a PDF copy for your records"
+            (click)="exportPdf()"
+            *ngIf="quoteId"
+          >
+            Download PDF
+          </button>
 
-        <button mat-stroked-button (click)="saveToDatabase()">
-          Save Draft
-        </button>
-        <button mat-stroked-button (click)="onSubmit()">Export PDF</button>
+          <button
+            mat-stroked-button
+            color="warn"
+            (click)="rejectQuote()"
+            [disabled]="isAlreadyActioned"
+          >
+            Reject Quote
+          </button>
 
-        <button
-          mat-raised-button
-          class="btn-primary"
-          (click)="submitQuote()"
-          [disabled]="readOnly || !jobId"
-        >
-          Send to Client
-        </button>
+          <button
+            mat-raised-button
+            class="btn-primary"
+            (click)="approveQuote()"
+            [disabled]="isAlreadyActioned"
+          >
+            Approve Quote
+          </button>
+        </ng-container>
+
+        <!-- OUTBOUND SUBMITTED: Read-only, only download -->
+        <ng-container *ngIf="!isInboundQuote && readOnly">
+          <span class="spacer"></span>
+
+          <button
+            mat-stroked-button
+            matTooltip="Download a PDF copy for your records"
+            (click)="exportPdf()"
+            *ngIf="quoteId"
+          >
+            Download PDF
+          </button>
+        </ng-container>
+
+        <!-- OUTBOUND DRAFT: Full editing buttons -->
+        <ng-container *ngIf="!isInboundQuote && !readOnly">
+          <button
+            mat-button
+            matTooltip="Preview the document"
+            (click)="openPreview()"
+          >
+            Preview
+          </button>
+
+          <button
+            mat-button
+            matTooltip="Create a copy of this quote"
+            (click)="duplicateQuote()"
+            *ngIf="quoteId"
+          >
+            Duplicate
+          </button>
+
+          <button
+            mat-button
+            color="warn"
+            matTooltip="Permanently delete this draft"
+            (click)="deleteQuote()"
+            *ngIf="quoteId"
+          >
+            Delete
+          </button>
+
+          <span class="spacer"></span>
+
+          <button
+            mat-stroked-button
+            matTooltip="Save without sending to the client"
+            (click)="saveToDatabase()"
+          >
+            Save Draft
+          </button>
+
+          <button
+            mat-stroked-button
+            matTooltip="Download a PDF copy and submit manually"
+            (click)="onSubmit()"
+            *ngIf="quoteId"
+          >
+            Export PDF
+          </button>
+
+          <button
+            mat-raised-button
+            class="btn-primary"
+            [disabled]="isSaving"
+            matTooltip="Submit and email this quote to the client"
+            (click)="submitQuote()"
+          >
+            <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+
+            <span *ngIf="!isSaving">Send to Client</span>
+          </button>
+        </ng-container>
       </footer>
     </form>
   </main>

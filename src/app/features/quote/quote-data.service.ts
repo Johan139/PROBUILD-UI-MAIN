@@ -1,17 +1,17 @@
 import { Injectable } from '@angular/core';
-import { Quote } from '../quote/quote.model';
+import { QuoteDto } from '../quote/quote.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class QuoteDataService {
-  private quote: Quote | null = null;
+  private quote: QuoteDto | null = null;
 
-  setQuote(quote: Quote): void {
+  setQuote(quote: QuoteDto): void {
     this.quote = quote;
   }
 
-  getQuote(): Quote | null {
+  getQuote(): QuoteDto | null {
     return this.quote;
   }
 

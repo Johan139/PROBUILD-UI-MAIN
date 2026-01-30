@@ -65,9 +65,7 @@
                             <mat-label>Prefix</mat-label>
                             <mat-select
                               [(value)]="selectedCountryCode"
-                              (selectionChange)="
-                                onCountryCodeChange($event.value)
-                              "
+                              (selectionChange)="onCountryChanged()"
                             >
                               <mat-option>
                                 <input
@@ -100,8 +98,13 @@
                               formControlName="phoneNumber"
                               placeholder="Enter mobile number"
                               required
-                              (input)="onPhoneInput($event)"
+                              (focus)="onPhoneFocus($event)"
+                              (keydown)="onPhoneKeyDown($event)"
+                              (click)="onPhoneClick($event)"
+                              (blur)="onPhoneBlur()"
+                              (paste)="onPhonePaste($event)"
                             />
+
                             <mat-error
                               *ngIf="
                                 profileForm
@@ -216,6 +219,75 @@
                             Mandatory Field: Input Required.
                           </mat-error>
                         </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Company Email</mat-label>
+                          <input
+                            matInput
+                            formControlName="companyEmail"
+                            placeholder=" "
+                          />
+                          <mat-error
+                            *ngIf="
+                              profileForm
+                                .get('companyEmail')
+                                ?.hasError('required')
+                            "
+                          >
+                            Mandatory Field: Input Required.
+                          </mat-error>
+                        </mat-form-field>
+                        <div class="phone-field-container">
+                          <!-- Country Code Select -->
+                          <mat-form-field
+                            appearance="fill"
+                            class="country-code-field"
+                          >
+                            <mat-label>Prefix</mat-label>
+                            <mat-select
+                              [(value)]="selectedCompanyCountryCode"
+                              (selectionChange)="onCountryChanged(true)"
+                            >
+                              <mat-option
+                                *ngFor="let c of countryNumberCode"
+                                [value]="c"
+                              >
+                                {{ c.countryCode }} ({{
+                                  c.countryPhoneNumberCode
+                                }})
+                              </mat-option>
+                            </mat-select>
+                          </mat-form-field>
+
+                          <!-- Actual Mobile Input -->
+                          <mat-form-field
+                            appearance="fill"
+                            class="mobile-number-field"
+                          >
+                            <mat-label>Mobile Number</mat-label>
+                            <input
+                              matInput
+                              type="tel"
+                              formControlName="companyPhone"
+                              placeholder="Enter mobile number"
+                              required
+                              (focus)="onPhoneFocus($event, true)"
+                              (keydown)="onPhoneKeyDown($event, true)"
+                              (click)="onPhoneClick($event, true)"
+                              (blur)="onPhoneBlur(true)"
+                              (paste)="onPhonePaste($event, true)"
+                            />
+
+                            <mat-error
+                              *ngIf="
+                                profileForm
+                                  .get('companyPhone')
+                                  ?.hasError('required')
+                              "
+                            >
+                              Mandatory Field: Input Required.
+                            </mat-error>
+                          </mat-form-field>
+                        </div>
                         <mat-form-field appearance="fill">
                           <mat-label>No. of Employees</mat-label>
                           <input
@@ -341,6 +413,56 @@
                           </mat-select>
                         </mat-form-field>
                       </div>
+                      <div class="form-row">
+                        <!-- Billing Address -->
+                        <mat-form-field>
+                          <mat-label>Billing Address</mat-label>
+                          <input
+                            matInput
+                            formControlName="billingAddressInput"
+                            [matAutocomplete]="billingAuto"
+                            placeholder="Search address..."
+                          />
+                          <mat-autocomplete
+                            #billingAuto="matAutocomplete"
+                            (optionSelected)="
+                              onAddressSelected($event, 'billing')
+                            "
+                          >
+                            <mat-option
+                              *ngFor="let option of billingAddressOptions"
+                              [value]="option"
+                            >
+                              {{ option.description }}
+                            </mat-option>
+                          </mat-autocomplete>
+                        </mat-form-field>
+
+                        <!-- Physical Address -->
+                        <mat-form-field>
+                          <mat-label>Physical Address</mat-label>
+                          <input
+                            matInput
+                            formControlName="physicalAddressInput"
+                            [matAutocomplete]="physicalAuto"
+                            placeholder="Search address..."
+                          />
+                          <mat-autocomplete
+                            #physicalAuto="matAutocomplete"
+                            (optionSelected)="
+                              onAddressSelected($event, 'physical')
+                            "
+                          >
+                            <mat-option
+                              *ngFor="let option of physicalAddressOptions"
+                              [value]="option"
+                            >
+                              {{ option.description }}
+                            </mat-option>
+                          </mat-autocomplete>
+                        </mat-form-field>
+                      </div>
+
                       <!-- REMOVED THIS SECTION AS WE ARE MAKING USE OF THE GOOGLE MAPS API ADDRESS 
                       <div class="form-row">
 <mat-form-field appearance="fill">
@@ -411,7 +533,7 @@
                     </div>
                   </mat-tab>
                   <!-- Addresses Tab -->
-                  <mat-tab label="Addresses">
+                  <!-- <mat-tab label="Addresses">
                     <div class="section addresses-section">
                       <h3>Address Details</h3>
                       <div class="address-footer">
@@ -425,7 +547,7 @@
                           Add New Address
                         </button>
                       </div>
-                      <!-- This scrolls ONLY the table -->
+    
                       <div class="address-table-scroll">
                         <mat-table
                           [dataSource]="addressDataSource"
@@ -515,7 +637,7 @@
                         </mat-table>
                       </div>
                     </div>
-                  </mat-tab>
+                  </mat-tab> -->
 
                   <!-- Team Management Tab -->
                   <mat-tab
