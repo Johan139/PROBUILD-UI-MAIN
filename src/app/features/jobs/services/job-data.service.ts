@@ -749,19 +749,21 @@ export class JobDataService {
           Array.isArray(x['Categorized_Materials']) &&
           x['Categorized_Materials'].length > 0;
 
-        if (!hasMaterials && x['Phase / Item']) {
+        if (!hasMaterials && x['Phase_Item']) {
         }
 
         return hasMaterials;
       });
 
       const result = filtered.map((x) => ({
-        phase: x['Phase / Item'],
+        phase: x['Phase_Item'],
         csiCode: x['CSI_Code'],
         description: x['Description'],
         materials: x['Categorized_Materials'].map((m: any) => ({
           item: m.Item,
-          cost: Number(m.Cost) || 0,
+          quantity: m.Quantity,
+          unit: m.Unit,
+          cost: Number(m.Rate) || 0,
         })),
         labor: Number(x.Labor) || 0,
         totalAmount: Number(x.Amount) || 0,
