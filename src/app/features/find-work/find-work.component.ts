@@ -1,7 +1,3 @@
-// TODO: think about what to do if no geolocation available
-// TODO: think about filtering - client/server side - might be a pain to update down the line, server side preferable
-// TODO: could implement a search like Airbnb - "Search Here" and refresh the markers or something
-// TODO: hide this entire thing from general contractors (maybe?)
 import {
   Component,
   OnInit,
@@ -102,7 +98,44 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   filteredJobs: Job[] = [];
   myBids: Bid[] = [];
   myQuotes: QuoteListItemDto[] = [];
-  draftQuotes = new Map<number, string>(); // jobId → quoteId
+  draftQuotes = new Map<number, string>();
+  savedJobIds = new Set<number>();
+
+  // New UI properties
+  userRole: 'contractor' | 'subcontractor' = 'subcontractor';
+  activeTab:
+    | 'myPostings'
+    | 'browseJobs'
+    | 'myBids'
+    | 'savedJobs'
+    | 'jobAlerts' = 'browseJobs';
+
+  // Tab counts
+  myPostingsCount = 0;
+  browseJobsCount = 0;
+  myBidsCount = 0;
+  hasNewAlerts = true;
+
+  // Stats
+  availableJobsCount = 0;
+  newThisWeekCount = 0;
+  matchingTradesCount = 0;
+
+  // Job Alerts properties
+  alertsEnabled = true;
+  alertRadius = 25;
+  alertLocation = '';
+  selectedAlertTrades: string[] = [];
+  emailAlertsEnabled = true;
+  pushAlertsEnabled = true;
+  smsAlertsEnabled = false;
+  quickDistances = [10, 25, 50, 75, 100];
+  matchingPreviewJobs: Job[] = [];
+
+  // Filters
+  selectedTradesFilter: string[] = [];
+  selectedJobTypesFilter: string[] = [];
+  distanceFilter: number | null = 25;
 
   quoteStatusFilter: 'All' | 'Draft' | 'Submitted' | 'Rejected' = 'All';
   selectedJob: Job | null = null;
@@ -131,8 +164,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   selectedAddress: UserAddress | null = null;
 
   // UI state
-  activeTab: 'allJobs' | 'myBids' = 'allJobs';
-  distanceUnit: 'km' | 'mi' = 'km';
+  distanceUnit: 'km' | 'mi' = 'mi';
   biddedJobIds = new Set<number>();
 
   // Loading states
@@ -145,44 +177,22 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   // Map properties
   isApiLoaded$: Observable<boolean>;
-  center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
+  center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 };
   zoom = 4;
   radiusCircle: google.maps.Circle | null = null;
   private userMarker: google.maps.marker.AdvancedMarkerElement | null = null;
 
-  applyMapTheme(theme: 'light' | 'dark') {
-    const newMapId = theme === 'dark' ? darkMapId : lightMapId;
-
-    // console.log(`Applying mapId: ${newMapId}`);
-    this.mapOptions = { ...this.mapOptions, mapId: newMapId };
-
-    if (this.map) {
-      // Force map to re-render with new theme
-      const currentCenter = this.map.getCenter();
-      const currentZoom = this.map.getZoom();
-
-      this.map.setOptions({ mapId: newMapId });
-
-      // Sometimes needed to force refresh
-      google.maps.event.trigger(this.map, 'resize');
-      if (currentCenter) {
-        this.map.setCenter(currentCenter);
-        this.map.setZoom(currentZoom || this.zoom);
-      }
-    }
-  }
-
   mapOptions: google.maps.MapOptions = {
-    zoomControl: true,
+    zoomControl: false,
     scrollwheel: true,
     disableDoubleClickZoom: false,
     maxZoom: 20,
     minZoom: 3,
     streetViewControl: false,
-    fullscreenControl: true,
+    fullscreenControl: false,
     mapTypeControl: false,
     mapId: lightMapId,
-    disableDefaultUI: false,
+    disableDefaultUI: true,
     gestureHandling: 'greedy',
     styles: [],
   };
@@ -219,13 +229,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // 🔥 Restore selected saved address
     const savedId = localStorage.getItem('fw_selectedAddressId');
     if (savedId) {
       this.selectedAddressId = parseInt(savedId, 10);
     }
     this.loadUserAddresses();
     this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
+    this.selectedJobTypesFilter = [...this.selectedJobTypes];
     this.loadJobs();
     if (this.userAddresses.length === 0) {
       this.centerOnBrowserLocation();
@@ -234,13 +244,282 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((user) => {
         this.userTrade = user?.trade;
+        this.updateMatchingTradesCount();
       });
     this.determineDistanceUnit();
+
+    // Load saved jobs from localStorage
+    const savedJobs = localStorage.getItem('savedJobIds');
+    if (savedJobs) {
+      this.savedJobIds = new Set(JSON.parse(savedJobs));
+    }
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEW UI METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  setUserRole(role: 'contractor' | 'subcontractor'): void {
+    this.userRole = role;
+    // Optionally reload data based on role
+  }
+
+  setActiveTab(
+    tab: 'myPostings' | 'browseJobs' | 'myBids' | 'savedJobs' | 'jobAlerts',
+  ): void {
+    this.activeTab = tab;
+    this.selectedJob = null;
+
+    if (tab === 'browseJobs' && this.jobs.length === 0) {
+      this.loadJobs();
+    } else if (
+      tab === 'myBids' &&
+      this.myBids.length === 0 &&
+      this.myQuotes.length === 0
+    ) {
+      this.loadJobs();
+    } else if (tab === 'savedJobs') {
+      this.filterSavedJobs();
+    } else if (tab === 'jobAlerts') {
+      this.loadAlertPreferences();
+      this.updateMatchingPreviewJobs();
+    }
+  }
+
+  onPostNewJob(): void {
+    this.router.navigate(['/post-job']);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JOB ALERTS METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  onAlertsToggle(): void {
+    this.saveAlertPreferences();
+  }
+
+  onAlertLocationChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.alertLocation = input.value;
+  }
+
+  useCurrentLocation(): void {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Reverse geocode to get address (simplified - just show coords for now)
+          this.alertLocation = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        },
+      );
+    }
+  }
+
+  selectAllTrades(): void {
+    this.selectedAlertTrades = [...this.allTrades];
+    this.updateMatchingPreviewJobs();
+  }
+
+  clearAllTrades(): void {
+    this.selectedAlertTrades = [];
+    this.updateMatchingPreviewJobs();
+  }
+
+  isTradeSelected(trade: string): boolean {
+    return this.selectedAlertTrades.includes(trade);
+  }
+
+  toggleAlertTrade(trade: string): void {
+    const index = this.selectedAlertTrades.indexOf(trade);
+    if (index > -1) {
+      this.selectedAlertTrades.splice(index, 1);
+    } else {
+      this.selectedAlertTrades.push(trade);
+    }
+    this.updateMatchingPreviewJobs();
+  }
+
+  saveAlertPreferences(): void {
+    const preferences = {
+      alertsEnabled: this.alertsEnabled,
+      alertRadius: this.alertRadius,
+      alertLocation: this.alertLocation,
+      selectedAlertTrades: this.selectedAlertTrades,
+      emailAlertsEnabled: this.emailAlertsEnabled,
+      pushAlertsEnabled: this.pushAlertsEnabled,
+      smsAlertsEnabled: this.smsAlertsEnabled,
+    };
+    localStorage.setItem('jobAlertPreferences', JSON.stringify(preferences));
+    // TODO: Save to backend API
+    console.log('Alert preferences saved:', preferences);
+  }
+
+  loadAlertPreferences(): void {
+    const saved = localStorage.getItem('jobAlertPreferences');
+    if (saved) {
+      const preferences = JSON.parse(saved);
+      this.alertsEnabled = preferences.alertsEnabled ?? true;
+      this.alertRadius = preferences.alertRadius ?? 25;
+      this.alertLocation = preferences.alertLocation ?? '';
+      this.selectedAlertTrades = preferences.selectedAlertTrades ?? [];
+      this.emailAlertsEnabled = preferences.emailAlertsEnabled ?? true;
+      this.pushAlertsEnabled = preferences.pushAlertsEnabled ?? true;
+      this.smsAlertsEnabled = preferences.smsAlertsEnabled ?? false;
+    } else {
+      // Default: select user's trade if available
+      if (this.userTrade && this.allTrades.includes(this.userTrade)) {
+        this.selectedAlertTrades = [this.userTrade];
+      }
+      // Default location from selected address
+      if (this.selectedAddress) {
+        this.alertLocation = this.selectedAddress.formattedAddress || '';
+      }
+    }
+  }
+
+  updateMatchingPreviewJobs(): void {
+    // Filter jobs based on current alert criteria
+    this.matchingPreviewJobs = this.jobs
+      .filter((job) => {
+        // Check if job matches selected trades
+        if (this.selectedAlertTrades.length > 0) {
+          const jobMatchesTrade = job.trades?.some((trade) =>
+            this.selectedAlertTrades.includes(trade),
+          );
+          if (!jobMatchesTrade) return false;
+        }
+
+        // Check distance (if we have distance calculated)
+        if (job.distance !== undefined && job.distance > this.alertRadius) {
+          return false;
+        }
+
+        return true;
+      })
+      .slice(0, 5); // Show max 5 preview jobs
+  }
+
+  isNewJob(job: Job): boolean {
+    if (!job.biddingStartDate) return false;
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    return new Date(job.biddingStartDate) >= oneWeekAgo;
+  }
+
+  zoomIn(): void {
+    if (this.map && this.zoom < 20) {
+      this.zoom++;
+      this.map.setZoom(this.zoom);
+    }
+  }
+
+  zoomOut(): void {
+    if (this.map && this.zoom > 3) {
+      this.zoom--;
+      this.map.setZoom(this.zoom);
+    }
+  }
+
+  centerOnUser(): void {
+    if (this.selectedAddress) {
+      this.center = {
+        lat: this.selectedAddress.latitude,
+        lng: this.selectedAddress.longitude,
+      };
+    } else {
+      this.centerOnBrowserLocation();
+    }
+    if (this.map) {
+      this.map.panTo(this.center);
+      this.map.setZoom(12);
+    }
+  }
+
+  toggleSaveJob(job: Job, event: MouseEvent): void {
+    event.stopPropagation();
+
+    if (this.savedJobIds.has(job.jobId)) {
+      this.savedJobIds.delete(job.jobId);
+    } else {
+      this.savedJobIds.add(job.jobId);
+    }
+
+    // Persist to localStorage
+    localStorage.setItem('savedJobIds', JSON.stringify([...this.savedJobIds]));
+  }
+
+  isJobSaved(jobId: number): boolean {
+    return this.savedJobIds.has(jobId);
+  }
+
+  getJobTypeLabel(jobType: string | undefined): string {
+    if (!jobType) return 'Unknown';
+    const type = this.allJobTypes.find((t) => t.value === jobType);
+    return type?.viewValue || jobType;
+  }
+
+  filterSavedJobs(): void {
+    if (this.activeTab === 'savedJobs') {
+      this.filteredJobs = this.jobs.filter((job) =>
+        this.savedJobIds.has(job.jobId),
+      );
+      this.dataSource.data = this.filteredJobs;
+    }
+  }
+
+  updateStats(): void {
+    this.availableJobsCount = this.filteredJobs.length;
+    this.browseJobsCount = this.jobs.length;
+    this.myBidsCount = this.myQuotes.length;
+
+    // Calculate new this week
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    this.newThisWeekCount = this.jobs.filter((job) => {
+      if (!job.biddingStartDate) return false;
+      return new Date(job.biddingStartDate) >= oneWeekAgo;
+    }).length;
+
+    this.updateMatchingTradesCount();
+  }
+
+  updateMatchingTradesCount(): void {
+    if (!this.userTrade) {
+      this.matchingTradesCount = 0;
+      return;
+    }
+    this.matchingTradesCount = this.jobs.filter((job) =>
+      job.trades?.includes(this.userTrade!),
+    ).length;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MAP METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  applyMapTheme(theme: 'light' | 'dark'): void {
+    const newMapId = theme === 'dark' ? darkMapId : lightMapId;
+    this.mapOptions = { ...this.mapOptions, mapId: newMapId };
+
+    if (this.map) {
+      const currentCenter = this.map.getCenter();
+      const currentZoom = this.map.getZoom();
+
+      this.map.setOptions({ mapId: newMapId });
+
+      google.maps.event.trigger(this.map, 'resize');
+      if (currentCenter) {
+        this.map.setCenter(currentCenter);
+        this.map.setZoom(currentZoom || this.zoom);
+      }
+    }
   }
 
   onMapInitialized(map: google.maps.Map): void {
@@ -251,11 +530,235 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     }
     this.updateRadiusCircle();
   }
+
+  private setupMapLoadingSubscription(): void {
+    this.isApiLoaded$.pipe(takeUntil(this.destroy$)).subscribe((loaded) => {
+      this.isMapLoading = !loaded;
+      if (loaded && this.customAddressInput) {
+        this.setupAutocomplete();
+      }
+      if (!loaded) {
+        setTimeout(() => {
+          if (!this.isMapLoading) return;
+          this.mapLoadError = true;
+          this.isMapLoading = false;
+        }, 10000);
+      } else {
+        this.mapLoadError = false;
+      }
+    });
+  }
+
+  retryMapLoad(): void {
+    this.mapLoadError = false;
+    this.isMapLoading = true;
+    window.location.reload();
+  }
+
+  updateMapMarkers(): void {
+    if (!this.map) return;
+
+    if (this.markerClusterer) {
+      this.markerClusterer.clearMarkers();
+    }
+
+    this.markerPositions.forEach((marker) => {
+      if (marker.marker) {
+        marker.marker.map = null;
+      }
+    });
+    this.markerPositions = [];
+
+    google.maps
+      .importLibrary('marker')
+      .then((markerLibrary) => {
+        const { AdvancedMarkerElement, PinElement } =
+          markerLibrary as google.maps.MarkerLibrary;
+
+        const jobsToMark = this.jobs.filter((job) => {
+          const lat = job.latitude;
+          const lng = job.longitude;
+          return !isNaN(lat) && !isNaN(lng);
+        });
+
+        const markers = jobsToMark.map((job) => {
+          const position = { lat: job.latitude, lng: job.longitude };
+
+          // Determine marker color based on job status
+          let background = '#4ade80'; // Green for open jobs
+          if (this.savedJobIds.has(job.jobId)) {
+            background = '#c084fc'; // Purple for saved
+          } else if (this.getQuoteForJob(job.jobId)) {
+            background = '#60a5fa'; // Blue for bid placed
+          }
+
+          const pinElement = new PinElement({
+            background,
+            borderColor: '#FFFFFF',
+            glyphColor: '#FFFFFF',
+            scale: 1.0,
+          });
+
+          const marker = new AdvancedMarkerElement({
+            position,
+            title: job.projectName,
+            content: pinElement.element,
+          });
+
+          marker.addListener('click', () => {
+            this.onMarkerClick({
+              jobId: job.jobId,
+              position,
+              title: job.projectName,
+            });
+          });
+
+          this.markerPositions.push({
+            position,
+            title: job.projectName,
+            jobId: job.jobId,
+            marker: marker,
+          });
+
+          return marker;
+        });
+
+        if (!this.markerClusterer) {
+          this.markerClusterer = new MarkerClusterer({
+            map: this.map,
+            markers: [],
+          });
+        }
+
+        this.markerClusterer.addMarkers(markers);
+      })
+      .catch((error) => {
+        console.error('Error loading marker library');
+      });
+  }
+
+  private centerOnBrowserLocation(): void {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        this.center = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        this.zoom = 10;
+        if (this.map) {
+          this.map.panTo(this.center);
+          this.map.setZoom(this.zoom);
+        }
+      });
+    }
+    setTimeout(() => {
+      this.updateRadiusCircle();
+      this.updateUserPin();
+    }, 50);
+  }
+
+  updateRadiusCircle(): void {
+    if (!this.map) return;
+
+    const radiusInMeters =
+      this.distanceUnit === 'mi'
+        ? this.distance * 1609.34
+        : this.distance * 1000;
+
+    if (this.radiusCircle) {
+      this.radiusCircle.setCenter(this.center);
+      this.radiusCircle.setRadius(radiusInMeters);
+    } else {
+      this.radiusCircle = new google.maps.Circle({
+        strokeColor: '#60a5fa',
+        strokeOpacity: 0.6,
+        strokeWeight: 2,
+        fillColor: '#60a5fa',
+        fillOpacity: 0.1,
+        map: this.map,
+        center: this.center,
+        radius: radiusInMeters,
+      });
+    }
+  }
+
+  private updateUserPin(): void {
+    if (!this.map) return;
+
+    google.maps.importLibrary('marker').then((markerLib) => {
+      const { AdvancedMarkerElement, PinElement } = markerLib as any;
+
+      const pin = new PinElement({
+        background: '#f5c518',
+        borderColor: '#FFFFFF',
+        glyphColor: '#FFFFFF',
+        scale: 1.2,
+      });
+
+      if (this.userMarker) {
+        this.userMarker.position = this.center;
+        return;
+      }
+
+      this.userMarker = new AdvancedMarkerElement({
+        map: this.map,
+        position: this.center,
+        content: pin.element,
+      });
+    });
+  }
+
+  onMarkerClick(marker: JobMarker): void {
+    this.selectedJob = this.jobs.find((j) => j.jobId === marker.jobId) || null;
+  }
+
+  highlightMarker(jobId: number): void {
+    const marker = this.markerPositions.find((m) => m.jobId === jobId);
+    if (marker && marker.marker) {
+      google.maps.importLibrary('marker').then((markerLib) => {
+        const { PinElement } = markerLib as any;
+        const pinElement = new PinElement({
+          background: '#f5c518',
+          borderColor: '#000',
+          glyphColor: '#000',
+          scale: 1.3,
+        });
+        marker.marker!.content = pinElement.element;
+      });
+    }
+  }
+
+  unhighlightMarker(jobId: number): void {
+    const marker = this.markerPositions.find((m) => m.jobId === jobId);
+    if (marker && marker.marker) {
+      google.maps.importLibrary('marker').then((markerLib) => {
+        const { PinElement } = markerLib as any;
+
+        let background = '#4ade80';
+        if (this.savedJobIds.has(jobId)) {
+          background = '#c084fc';
+        } else if (this.getQuoteForJob(jobId)) {
+          background = '#60a5fa';
+        }
+
+        const pinElement = new PinElement({
+          background,
+          borderColor: '#FFFFFF',
+          glyphColor: '#FFFFFF',
+          scale: 1.0,
+        });
+        marker.marker!.content = pinElement.element;
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ADDRESS METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
+
   private loadUserAddresses(): void {
-    // Load from global store first
     this.userAddresses = this.addressStore.getAddresses() ?? [];
 
-    // 🔥 If store is empty → fetch directly from API
     if (this.userAddresses.length === 0) {
       const userId = this.authService.getUserId();
       if (userId) {
@@ -266,7 +769,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
             this.afterAddressesLoaded();
           },
           error: () => {
-            this.afterAddressesLoaded(); // continue anyway
+            this.afterAddressesLoaded();
           },
         });
         return;
@@ -278,6 +781,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   private afterAddressesLoaded(): void {
     this.addressListLoaded = true;
+    this.filtersLoading = false;
 
     if (this.selectedAddressId) {
       this.applySelectedAddress();
@@ -320,15 +824,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     if (!userLat || !userLng) return;
 
-    // Update map center
     this.center = { lat: userLat, lng: userLng };
     this.zoom = 10;
-    this.updateRadiusCircle();
+    this.selectedAddress = address;
+
     setTimeout(() => {
       this.updateRadiusCircle();
       this.updateUserPin();
     }, 50);
-    // Recalculate distances
+
     this.jobs.forEach((job) => {
       job.distance = this.calculateDistance(
         userLat,
@@ -339,40 +843,20 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     });
 
     this.sortJobsByDistance();
-
     this.applyFilters();
+
     if (this.map) {
       this.updateMapMarkers();
     }
   }
 
-  private setupMapLoadingSubscription(): void {
-    this.isApiLoaded$.pipe(takeUntil(this.destroy$)).subscribe((loaded) => {
-      this.isMapLoading = !loaded;
-      if (loaded && this.customAddressInput) {
-        this.setupAutocomplete();
-      }
-      if (!loaded) {
-        // Add a delay to distinguish between loading and error
-        setTimeout(() => {
-          if (!this.isMapLoading) return;
-          this.mapLoadError = true;
-          this.isMapLoading = false;
-        }, 10000); // 10 second timeout
-      } else {
-        this.mapLoadError = false;
-        // Update marker options with animation once Google Maps is loaded
-      }
-    });
-  }
-  setupAutocomplete() {
+  setupAutocomplete(): void {
     if (!this.customAddressInput) return;
 
     this.autocomplete = new google.maps.places.Autocomplete(
       this.customAddressInput.nativeElement,
       {
         fields: ['formatted_address', 'geometry'],
-        // componentRestrictions: { country: 'za' }, // optional: remove to allow global
       },
     );
 
@@ -387,10 +871,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.customAddressLat = place.geometry.location.lat();
       this.customAddressLng = place.geometry.location.lng();
 
-      // 🔥 Immediately apply new center + filtering + markers
       this.applyCustomAddress();
 
-      // 🔥 Smooth pan animation
       if (this.map) {
         this.map.panTo({
           lat: this.customAddressLat,
@@ -400,7 +882,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       }
     });
   }
-  setLocationMode(mode: 'saved' | 'custom') {
+
+  setLocationMode(mode: 'saved' | 'custom'): void {
     this.locationMode = mode;
 
     if (mode === 'saved') {
@@ -408,31 +891,19 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.customAddressLng = null;
       this.applySelectedAddress();
     } else {
-      // 🔥 Wait a tick so Angular renders the input, then attach autocomplete
       setTimeout(() => {
         if (this.customAddressInput) {
           this.setupAutocomplete();
         }
       }, 50);
 
-      // If user already selected before
       if (this.customAddressLat && this.customAddressLng) {
         this.applyCustomAddress();
       }
     }
   }
 
-  onLocationModeChange() {
-    if (this.locationMode === 'saved') {
-      this.applySelectedAddress();
-    } else {
-      // Use custom mode => recenter map only if user typed something
-      if (this.customAddressLat && this.customAddressLng) {
-        this.applyCustomAddress();
-      }
-    }
-  }
-  applyCustomAddress() {
+  applyCustomAddress(): void {
     if (!this.customAddressLat || !this.customAddressLng) return;
 
     this.center = {
@@ -445,7 +916,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.updateRadiusCircle();
     this.updateUserPin();
 
-    // Recalculate distances for every job
     this.jobs.forEach((job) => {
       job.distance = this.calculateDistance(
         this.customAddressLat!,
@@ -459,6 +929,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.applyFilters();
     this.updateMapMarkers();
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JOBS & DATA METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   loadJobs(): void {
     const userId = this.authService.getUserId();
@@ -488,171 +962,30 @@ export class FindWorkComponent implements OnInit, OnDestroy {
             }
           });
 
+          // Extract all trades from jobs
+          const tradesSet = new Set<string>();
+          this.jobs.forEach((job) => {
+            job.trades?.forEach((trade) => tradesSet.add(trade));
+          });
+          this.allTrades = [...tradesSet].sort();
+          this.selectedTrades = [...this.allTrades];
+          this.selectedTradesFilter = [];
+
           this.getUserLocationAndCalculateDistances();
           this.applyFilters();
+          this.updateStats();
 
           this.jobsLoading = false;
+          this.filtersLoading = false;
         },
         error: () => {
           this.jobsLoading = false;
+          this.filtersLoading = false;
         },
       });
   }
 
-  setActiveTab(tab: 'allJobs' | 'myBids'): void {
-    this.activeTab = tab;
-    this.selectedJob = null;
-
-    if (tab === 'allJobs' && this.jobs.length === 0) {
-      this.loadJobs();
-    } else if (
-      tab === 'myBids' &&
-      this.myBids.length === 0 &&
-      this.myQuotes.length === 0
-    ) {
-      this.loadJobs();
-    }
-  }
-
-  updateMapMarkers(): void {
-    if (!this.map) {
-      return;
-    }
-
-    // Clear existing markers from the clusterer
-    if (this.markerClusterer) {
-      this.markerClusterer.clearMarkers();
-    }
-
-    this.markerPositions.forEach((marker) => {
-      if (marker.marker) {
-        marker.marker.map = null;
-      }
-    });
-    this.markerPositions = [];
-
-    google.maps
-      .importLibrary('marker')
-      .then((markerLibrary) => {
-        const { AdvancedMarkerElement, PinElement } =
-          markerLibrary as google.maps.MarkerLibrary;
-
-        const jobsToMark = this.jobs.filter((job) => {
-          // Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
-          const lat = job.latitude;
-          const lng = job.longitude;
-          return !isNaN(lat) && !isNaN(lng);
-        });
-
-        const markers = jobsToMark.map((job) => {
-          const position = { lat: job.latitude, lng: job.longitude };
-          const pinElement = new PinElement({
-            background: '#e6bf00',
-            borderColor: '#FFFFFF',
-            glyphColor: '#FFFFFF',
-            scale: 1.2,
-          });
-
-          const marker = new AdvancedMarkerElement({
-            position,
-            title: job.projectName,
-            content: pinElement.element,
-          });
-
-          marker.addListener('click', () => {
-            this.onMarkerClick({
-              jobId: job.jobId,
-              position,
-              title: job.projectName,
-            });
-          });
-
-          this.markerPositions.push({
-            position,
-            title: job.projectName,
-            jobId: job.jobId,
-            marker: marker,
-          });
-
-          return marker;
-        });
-
-        if (!this.markerClusterer) {
-          this.markerClusterer = new MarkerClusterer({
-            map: this.map,
-            markers: [],
-          });
-        }
-
-        this.markerClusterer.addMarkers(markers);
-      })
-      .catch((error) => {
-        console.error('Error loading marker library');
-      });
-  }
-
-  // private centerMapOnJobs(): void {
-  //   if (this.jobs.length === 0) return;
-  //   const validJobs = this.jobs.filter(job =>
-  //     job.latitude && job.longitude
-  //   );
-  //   if (validJobs.length === 0) return;
-  //   if (validJobs.length === 1) {
-  //     // Single job - center on it
-  //     this.center = {
-  //       lat: parseFloat(validJobs[0].latitude),
-  //       lng: parseFloat(validJobs[0].longitude)
-  //     };
-  //     this.zoom = 12;
-  //   } else {
-  //     // Multiple jobs - calculate center
-  //     const avgLat = validJobs.reduce((sum, job) => sum + parseFloat(job.latitude), 0) / validJobs.length;
-  //     const avgLng = validJobs.reduce((sum, job) => sum + parseFloat(job.longitude), 0) / validJobs.length;
-  //     this.center = { lat: avgLat, lng: avgLng };
-  //     this.zoom = 8;
-  //   }
-  // }
-
-  // private centerMapOnUserLocation(): void {
-  //   this.userService.getUserAddress()
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe({
-  //       next: (address) => {
-  //         if (address && address.latitude && address.longitude) {
-  //           this.center = {
-  //             lat: address.latitude,
-  //             lng: address.longitude
-  //           };
-  //           this.zoom = 10;
-  //         } else {
-  //           this.centerOnBrowserLocation();
-  //         }
-  //       },
-  //       error: (error) => {
-  //         console.error('Error fetching user address:', error);
-  //         this.centerOnBrowserLocation();
-  //       }
-  //     });
-  // }
-
-  private centerOnBrowserLocation(): void {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        this.center = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        this.zoom = 10;
-      });
-    }
-    setTimeout(() => {
-      this.updateRadiusCircle();
-      this.updateUserPin();
-    }, 50);
-  }
-
   private getUserLocationAndCalculateDistances(): void {
-    // If user selected an address → calculate based on that, not GPS
     if (this.selectedAddress) {
       const userLat = this.selectedAddress.latitude;
       const userLng = this.selectedAddress.longitude;
@@ -691,12 +1024,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         },
         (error) => {
           console.error('Error getting user location:', error);
-          // If location fails, apply filters without distance
           this.applyFilters();
         },
       );
     } else {
-      // If geolocation is not supported, apply filters without distance
       this.applyFilters();
     }
   }
@@ -716,7 +1047,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     lat2: number,
     lon2: number,
   ): number {
-    const R = this.distanceUnit === 'mi' ? 3959 : 6371; // Radius of the Earth in miles or km
+    const R = this.distanceUnit === 'mi' ? 3959 : 6371;
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =
@@ -737,83 +1068,17 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.jobs.sort(
       (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity),
     );
-    this.applyFilters(); // Apply filters AFTER sorting is complete
+    this.applyFilters();
   }
 
-  onMarkerClick(marker: JobMarker): void {
-    this.selectedJob = this.jobs.find((j) => j.jobId === marker.jobId) || null;
-  }
-
-  closeJobInfo(): void {
-    this.selectedJob = null;
-  }
-
-  retryMapLoad(): void {
-    this.mapLoadError = false;
-    this.isMapLoading = true;
-    window.location.reload();
-  }
-
-  trackByJobId(index: number, job: Job): number {
-    return job.jobId;
-  }
-
-  trackByMarkerId(index: number, marker: JobMarker): string {
-    return marker.jobId.toString();
-  }
-
-  trackByBidId(index: number, bid: Bid): number {
-    return bid.id;
-  }
-
-  highlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find((m) => m.jobId === jobId);
-    if (marker && marker.marker) {
-      google.maps.importLibrary('marker').then((markerLib) => {
-        const { PinElement } = markerLib as any;
-        const pinElement = new PinElement({
-          background: '#fbd008',
-          borderColor: '#000',
-          glyphColor: '#000',
-          scale: 1.3,
-        });
-        marker.marker!.content = pinElement.element;
-      });
-    }
-  }
-
-  unhighlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find((m) => m.jobId === jobId);
-    if (marker && marker.marker) {
-      google.maps.importLibrary('marker').then((markerLib) => {
-        const { PinElement } = markerLib as any;
-        const pinElement = new PinElement({
-          background: '#e6bf00',
-          borderColor: '#FFFFFF',
-          glyphColor: '#FFFFFF',
-          scale: 1.2,
-        });
-        marker.marker!.content = pinElement.element;
-      });
-    }
-  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FILTER METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   applyFilters(): void {
-    const selectedPrefs = Object.keys(this.selectedPreferences).filter(
-      (key) => this.selectedPreferences[key],
-    );
-
     let filtered = [...this.jobs];
 
-    if (selectedPrefs.length > 0) {
-      filtered = filtered.filter((job) => {
-        if (!job.jobPreferences) {
-          return true;
-        }
-        return selectedPrefs.some((pref) => job.jobPreferences.includes(pref));
-      });
-    }
-
+    // Search term filter
     if (this.searchTerm) {
       const lowercasedTerm = this.searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -822,15 +1087,24 @@ export class FindWorkComponent implements OnInit, OnDestroy {
             job.projectName.toLowerCase().includes(lowercasedTerm)) ||
           (job.jobType && job.jobType.toLowerCase().includes(lowercasedTerm)) ||
           (job.description &&
-            job.description.toLowerCase().includes(lowercasedTerm)),
+            job.description.toLowerCase().includes(lowercasedTerm)) ||
+          job.trades?.some((trade) =>
+            trade.toLowerCase().includes(lowercasedTerm),
+          ),
       );
     }
 
+    // Distance filter
+    const effectiveDistance = this.distanceFilter ?? this.distance;
     filtered = filtered.filter(
-      (job) => job.distance === undefined || job.distance <= this.distance,
+      (job) => job.distance === undefined || job.distance <= effectiveDistance,
     );
 
-    // Calculate trade counts based on currently filtered jobs (before applying trade filter itself)
+    // Update distance for radius circle
+    this.distance = effectiveDistance;
+    this.updateRadiusCircle();
+
+    // Trade counts calculation
     this.tradeCounts = this.allTrades.reduce(
       (acc, trade) => {
         acc[trade] = filtered.filter((job) =>
@@ -841,40 +1115,47 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       {} as { [trade: string]: number },
     );
 
-    if (
-      this.selectedTrades &&
-      this.selectedTrades.length > 0 &&
-      this.selectedTrades.length < this.allTrades.length
-    ) {
+    // Trades filter
+    if (this.selectedTradesFilter && this.selectedTradesFilter.length > 0) {
       filtered = filtered.filter((job) =>
-        job.trades?.some((trade) => this.selectedTrades.includes(trade)),
+        job.trades?.some((trade) => this.selectedTradesFilter.includes(trade)),
       );
     }
 
+    // Job types filter
     if (
-      this.selectedJobTypes &&
-      this.selectedJobTypes.length > 0 &&
-      this.selectedJobTypes.length < this.allJobTypes.length
+      this.selectedJobTypesFilter &&
+      this.selectedJobTypesFilter.length > 0 &&
+      this.selectedJobTypesFilter.length < this.allJobTypes.length
     ) {
       filtered = filtered.filter(
-        (job) => job.jobType && this.selectedJobTypes.includes(job.jobType),
+        (job) =>
+          job.jobType && this.selectedJobTypesFilter.includes(job.jobType),
       );
+    }
+
+    // Handle saved jobs tab
+    if (this.activeTab === 'savedJobs') {
+      filtered = filtered.filter((job) => this.savedJobIds.has(job.jobId));
     }
 
     this.filteredJobs = filtered;
     this.dataSource.data = this.filteredJobs;
+
     if (this.map) {
       this.updateMapMarkers();
     }
+
+    this.updateStats();
     this.saveFiltersToLocalStorage();
-    this.updateRadiusCircle();
   }
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.distance = 100;
-    this.selectedTrades = [...this.allTrades];
-    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
+    this.distanceFilter = 25;
+    this.distance = 25;
+    this.selectedTradesFilter = [];
+    this.selectedJobTypesFilter = [];
     this.sortBy = 'distance';
     this.sortDirection = 'asc';
     this.applyFilters();
@@ -913,12 +1194,28 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         });
         break;
     }
+
+    this.dataSource.data = this.filteredJobs;
   }
 
   toggleSortDirection(): void {
     this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     this.sortJobs();
   }
+
+  private saveFiltersToLocalStorage(): void {
+    const filters = {
+      distance: this.distanceFilter,
+      selectedTrades: this.selectedTradesFilter,
+      selectedJobTypes: this.selectedJobTypesFilter,
+      sortBy: this.sortBy,
+    };
+    localStorage.setItem('findWorkFilters', JSON.stringify(filters));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JOB INTERACTION METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   onJobClick(job: Job): void {
     this.selectedJob = job;
@@ -927,31 +1224,32 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         lat: job.latitude,
         lng: job.longitude,
       };
-      this.zoom = 12;
+      if (this.map) {
+        this.map.panTo(this.center);
+        this.map.setZoom(14);
+      }
     }
   }
 
-  private saveFiltersToLocalStorage(): void {
-    const filters = {
-      distance: this.distance,
-      selectedTrades: this.selectedTrades,
-      selectedJobTypes: this.selectedJobTypes,
-      sortBy: this.sortBy,
-    };
-    localStorage.setItem('findWorkFilters', JSON.stringify(filters));
+  closeJobInfo(): void {
+    this.selectedJob = null;
   }
 
-  private loadFiltersFromLocalStorage(): void {
-    const savedFilters = localStorage.getItem('findWorkFilters');
-    if (savedFilters) {
-      const filters = JSON.parse(savedFilters);
-      this.distance = filters.distance ?? this.distance;
-      this.selectedTrades = filters.selectedTrades ?? [...this.allTrades];
-      this.selectedJobTypes =
-        filters.selectedJobTypes ?? this.allJobTypes.map((t) => t.value);
-      this.sortBy = filters.sortBy ?? this.sortBy;
-    }
+  trackByJobId(index: number, job: Job): number {
+    return job.jobId;
   }
+
+  trackByMarkerId(index: number, marker: JobMarker): string {
+    return marker.jobId.toString();
+  }
+
+  trackByBidId(index: number, bid: Bid): number {
+    return bid.id;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BIDDING & QUOTES METHODS
+  // ═══════════════════════════════════════════════════════════════════════════
 
   openBidDialog(jobId: number, event: MouseEvent): void {
     event.stopPropagation();
@@ -983,6 +1281,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.myBids.find((b) => b.jobId?.toString() === jobId.toString()) || null;
     return bid;
   }
+
   onViewQuote(quote: QuoteListItemDto | null): void {
     if (!quote) return;
     this.router.navigate(['/quote'], {
@@ -1025,7 +1324,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       (q) => q.jobId === jobId && q.status === 'Submitted',
     );
   }
-  // 🔁 Template adapter methods (DO NOT put logic here)
 
   onWithdrawBid(bid: Bid | null): void {
     if (!bid?.quoteId) return;
@@ -1066,57 +1364,5 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   getQuoteForBid(bid: Bid): QuoteListItemDto | null {
     if (!bid?.quoteId) return null;
     return this.myQuotes.find((q) => q.id === bid.quoteId) ?? null;
-  }
-
-  updateRadiusCircle(): void {
-    if (!this.map) return;
-
-    const radiusInMeters =
-      this.distanceUnit === 'mi'
-        ? this.distance * 1609.34
-        : this.distance * 1000;
-
-    if (this.radiusCircle) {
-      this.radiusCircle.setCenter(this.center);
-      this.radiusCircle.setRadius(radiusInMeters);
-    } else {
-      this.radiusCircle = new google.maps.Circle({
-        strokeColor: '#61A0AF',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#61A0AF',
-        fillOpacity: 0.15,
-        map: this.map,
-        center: this.center,
-        radius: radiusInMeters,
-      });
-    }
-  }
-  private updateUserPin(): void {
-    if (!this.map) return;
-
-    google.maps.importLibrary('marker').then((markerLib) => {
-      const { AdvancedMarkerElement, PinElement } = markerLib as any;
-
-      const pin = new PinElement({
-        background: '#4285F4', // Google blue
-        borderColor: '#FFFFFF',
-        glyphColor: '#FFFFFF',
-        scale: 1.4,
-      });
-
-      // Update existing pin
-      if (this.userMarker) {
-        this.userMarker.position = this.center;
-        return;
-      }
-
-      // Create new pin
-      this.userMarker = new AdvancedMarkerElement({
-        map: this.map,
-        position: this.center,
-        content: pin.element,
-      });
-    });
   }
 }

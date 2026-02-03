@@ -1,5 +1,6 @@
 @use "styles/util/mixins" as u;
 
+$line-item-columns: 1.8fr 0.5fr 0.6fr 0.7fr 0.7fr 40px;
 :host {
   display: block;
   background: var(--color-canvas);
@@ -26,15 +27,6 @@
 
 .full-width {
   grid-column: 1 / -1;
-}
-
-.edit-button {
-  width: 9% !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  min-width: unset;
 }
 
 .edit-button mat-icon {
@@ -434,19 +426,12 @@
   margin-top: 24px;
 }
 
-/* Header + rows MUST SHARE THIS GRID */
 .line-items-header,
 .line-item-row {
   display: grid;
-  grid-template-columns:
-    3fr /* Description */
-    0.8fr /* Qty */
-    1fr /* Unit */
-    1.2fr /* Unit Price */
-    1.2fr /* Amount */
-    40px; /* Delete */
-  align-items: center;
+  grid-template-columns: $line-item-columns;
   gap: 12px;
+  align-items: center;
 }
 
 /* FORCE amount visibility */

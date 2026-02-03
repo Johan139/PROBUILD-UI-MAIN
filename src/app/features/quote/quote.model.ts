@@ -103,6 +103,8 @@ export interface PhaseMaterials {
   description?: string;
   materials: {
     item: string;
+    quantity: number;
+    unit: string;
     cost: number;
   }[];
   labor: number;
