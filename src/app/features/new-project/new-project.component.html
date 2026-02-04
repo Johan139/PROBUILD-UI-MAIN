@@ -1,6 +1,11 @@
 <div class="new-project-grid">
   <!-- Left: Interactive Blueprint Viewer -->
+
   <div class="blueprint-viewer-card">
+    <app-subscription-warning
+      [subscriptionActive]="subscriptionActive"
+      [isLoading]="isLoading"
+    ></app-subscription-warning>
     <app-project-blueprint-viewer
       [mode]="'create'"
       [flow]="flow"
@@ -181,7 +186,11 @@
             </mat-expansion-panel-header>
             <div [formGroup]="clientForm">
               <div class="form-row">
-                <mat-form-field appearance="fill" class="full-width" floatLabel="always">
+                <mat-form-field
+                  appearance="fill"
+                  class="full-width"
+                  floatLabel="always"
+                >
                   <mat-label>User Context</mat-label>
                   <textarea
                     matInput
@@ -250,7 +259,7 @@
           <button
             class="btn-primary"
             (click)="startStandardAnalysis()"
-            [disabled]="!selectedFile || isLoading"
+            [disabled]="!subscriptionActive || !selectedFile || isLoading"
           >
             <lucide-icon
               [img]="HardHat"
