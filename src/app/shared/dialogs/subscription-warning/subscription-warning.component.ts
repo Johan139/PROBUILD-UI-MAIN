@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -9,6 +9,11 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
 })
 export class SubscriptionWarningComponent {
+  @Output() upgradeClicked = new EventEmitter<void>();
   @Input() subscriptionActive: boolean = false;
   @Input() isLoading: boolean = true;
+
+  onUpgradeClick(): void {
+    this.upgradeClicked.emit();
+  }
 }

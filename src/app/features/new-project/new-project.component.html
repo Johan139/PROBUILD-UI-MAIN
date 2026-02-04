@@ -5,6 +5,7 @@
     <app-subscription-warning
       [subscriptionActive]="subscriptionActive"
       [isLoading]="isLoading"
+      (upgradeClicked)="onUpgradeClicked()"
     ></app-subscription-warning>
     <app-project-blueprint-viewer
       [mode]="'create'"

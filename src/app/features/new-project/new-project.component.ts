@@ -924,7 +924,11 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     }
     return null;
   }
-
+  onUpgradeClicked(): void {
+    this.router.navigate(['/profile'], {
+      queryParams: { tab: 'subscriptions' },
+    });
+  }
   removeFile(fileToRemove: UploadedFileInfo): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
