@@ -406,7 +406,12 @@ export class ProfileComponent implements OnInit {
           map((value) => this._filterCountryCodes(value ?? '')),
         );
       });
-
+      this.route.queryParamMap.subscribe((params) => {
+        const tab = params.get('tab');
+        if (tab) {
+          setTimeout(() => this.selectTabByName(tab), 100);
+        }
+      });
       const countryCtrl = this.profileForm.get('country')!;
       const stateCtrl = this.profileForm.get('state')!;
 
@@ -493,6 +498,19 @@ export class ProfileComponent implements OnInit {
         .catch((err) =>
           console.error('Google Maps script loading error:', err),
         );
+    }
+  }
+  private selectTabByName(tabName: string): void {
+    if (!this.profileTabs) return;
+
+    // Find tab by label
+    const tabs = this.profileTabs._tabs.toArray();
+    const targetIndex = tabs.findIndex(
+      (t) => t.textLabel.toLowerCase() === tabName.toLowerCase(),
+    );
+
+    if (targetIndex !== -1) {
+      this.profileTabs.selectedIndex = targetIndex;
     }
   }
   private _filterCountries(value: string | null): any[] {
