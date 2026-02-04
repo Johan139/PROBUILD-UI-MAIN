@@ -116,10 +116,6 @@ export class JobsService {
     return this.httpClient.put<void>(`${BASE_URL}/${jobId}/archive`, {});
   }
 
-  unarchiveJob(jobId: number): Observable<void> {
-    return this.httpClient.put<void>(`${BASE_URL}/${jobId}/unarchive`, {});
-  }
-
   deleteJob(jobId: number): Observable<void> {
     return this.httpClient.delete<void>(`${BASE_URL}/${jobId}`);
   }
@@ -127,7 +123,9 @@ export class JobsService {
   getArchivedJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/archived`);
   }
-
+  getArchivedJobsByUserId(userId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/archivedbyuserid/${userId}`);
+  }
   getDashboardJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
   }

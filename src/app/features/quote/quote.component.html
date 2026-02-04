@@ -719,6 +719,14 @@
           >
             Duplicate
           </button>
+          <button
+            mat-button
+            matTooltip="Archive this quote"
+            (click)="archiveItem()"
+            *ngIf="quoteId"
+          >
+            Archive
+          </button>
 
           <button
             mat-button

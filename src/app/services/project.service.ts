@@ -5,6 +5,7 @@ import { JobsService } from './jobs.service';
 import { AuthService } from '../authentication/auth.service';
 import { TeamManagementService } from './team-management.service';
 import { Project } from '../models/project';
+import { ArchiveService } from '../features/archive/archive-service';
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +28,7 @@ export class ProjectService {
     private jobsService: JobsService,
     private authService: AuthService,
     private teamManagementService: TeamManagementService,
+    private archiveService: ArchiveService,
   ) {}
 
   loadProjects(): void {
@@ -85,7 +87,7 @@ export class ProjectService {
   }
 
   archiveProject(jobId: number): void {
-    this.jobsService.archiveJob(jobId).subscribe(() => {
+    this.archiveService.archiveJob(jobId).subscribe(() => {
       const currentProjects = this.projects.getValue();
       const updatedProjects = currentProjects.filter((p) => p.jobId !== jobId);
       this.projects.next(updatedProjects);

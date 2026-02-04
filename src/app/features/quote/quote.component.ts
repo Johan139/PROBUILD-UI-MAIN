@@ -72,6 +72,7 @@ import {
   QuotePreviewData,
   QuotePreviewDialogComponent,
 } from './quote-preview-dialog.component';
+import { ArchiveService } from '../archive/archive-service';
 
 type DocumentType = 'QUOTE' | 'INVOICE';
 interface CompanyDetails {
@@ -241,6 +242,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
     private jobsService: JobsService,
     private bidsService: BidsService,
     private measurementService: MeasurementService,
+    private archiveService: ArchiveService,
   ) {
     this.quoteForm = this.fb.group({
       header: [''],
@@ -2105,6 +2107,36 @@ export class QuoteComponent implements OnInit, OnDestroy {
             error: (err) => {
               console.error('Failed to delete quote', err);
               alert(err?.error ?? 'Failed to delete quote');
+            },
+          });
+        }
+      });
+  }
+  archiveItem() {
+    if (!this.quoteId) return;
+
+    const quoteId = this.quoteId;
+
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Archive item',
+          message: 'Are you sure you want to archive this item?',
+          confirmText: 'Archive',
+          confirmColor: 'warn',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          console.log(quoteId);
+          this.archiveService.archiveQuoteInvoice(quoteId).subscribe({
+            next: () => {
+              this.router.navigate(['/quotes']);
+            },
+            error: (err) => {
+              console.error('Failed to archive quote', err);
+              alert(err?.error ?? 'Failed to archive quote');
             },
           });
         }

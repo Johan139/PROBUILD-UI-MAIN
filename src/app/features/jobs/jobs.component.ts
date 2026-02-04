@@ -18,10 +18,7 @@ import {
   CommonModule,
 } from '@angular/common';
 import { MatButton } from '@angular/material/button';
-import {
-  MatCard,
-  MatCardContent,
-} from '@angular/material/card';
+import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
@@ -1059,6 +1056,23 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.biddingProjectsCount = this.overviewProjects.filter(
       (p) => (p.status || '').toUpperCase() === 'BIDDING',
     ).length;
+  }
+  onJobArchived(jobId: number): void {
+    // Reload project list
+    this.projectService.loadProjects();
+
+    // Optional: if user is currently viewing the archived job
+    if (this.projectDetails?.jobId === jobId) {
+      this.snackBar.open('This project has been archived.', 'Close', {
+        duration: 3000,
+      });
+
+      // Navigate back to project list or dashboard
+      this.router.navigateByUrl('/projects', { replaceUrl: true }).then(() => {
+        this.projectDetails = null;
+        this.activeTab = 'overview';
+      });
+    }
   }
 
   private checkProjectOwnerStatus(jobId: string, userId: string): void {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ProjectCardComponent } from '../../../my-projects/project-card/project-card.component';
@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
+import { ArchiveService } from '../../../archive/archive-service';
 
 @Component({
   selector: 'app-recent-projects-widget',
@@ -34,11 +35,12 @@ export class RecentProjectsWidgetComponent {
   projects: Project[] = [];
   currentIndex = 0;
   projectView: 'grid' | 'list' = 'grid';
-
+  @Output() jobArchived = new EventEmitter<number>();
   constructor(
     private projectService: ProjectService,
     private jobDataService: JobDataService,
     private snackBar: MatSnackBar,
+    private archiveService: ArchiveService,
   ) {
     this.projectService.projects$.subscribe(
       (projects) => (this.projects = projects),
@@ -70,9 +72,38 @@ export class RecentProjectsWidgetComponent {
   }
 
   archiveJob(jobId: number): void {
-    this.projectService.archiveProject(jobId);
-    this.snackBar.open('Job archived successfully!', 'Close', {
-      duration: 3000,
+    this.archiveService.archiveJob(jobId).subscribe({
+      next: () => {
+        // Immediately remove from local array for instant UI update
+        const beforeLength = this.projects.length;
+
+        this.projects = this.projects.filter((p) => {
+          const projectJobId = Number(p.jobId);
+          const matches = projectJobId !== jobId;
+          console.log(`Comparing ${projectJobId} !== ${jobId} = ${matches}`);
+          return matches;
+        });
+
+        console.log(
+          `Projects filtered: ${beforeLength} -> ${this.projects.length}`,
+        );
+
+        // Reset carousel index if needed to prevent empty view
+        if (this.currentIndex >= this.projects.length - 2) {
+          this.currentIndex = Math.max(0, this.projects.length - 3);
+        }
+
+        // Emit to parent so it can refresh from server (ensures consistency)
+        this.jobArchived.emit(jobId);
+
+        this.snackBar.open('Job archived successfully!', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        console.error('Failed to archive Job', err);
+        alert(err?.error ?? 'Failed to archive Job');
+      },
     });
   }
 }
