@@ -46,6 +46,7 @@ export class ProjectCardComponent {
     FAILED: 'bg-red-500',
     DISCARD: 'bg-purple-500',
     NEW: 'bg-yellow-500',
+    ANALYZING: 'bg-orange-500',
   };
 
   statusLabels = {
@@ -55,6 +56,7 @@ export class ProjectCardComponent {
     FAILED: 'Failed',
     DISCARD: 'Discarded',
     NEW: 'New',
+    ANALYZING: 'Analyzing',
   };
 
   onFileSelected(event: Event): void {

@@ -13,6 +13,10 @@ import { JobDataService } from '../jobs/services/job-data.service';
 import { LoaderComponent } from '../../loader/loader.component';
 import { ProjectService } from '../../services/project.service';
 import { ProjectsTableComponent } from '../../components/projects-table/projects-table.component';
+import {
+  SignalrService,
+  AnalysisProgressUpdate,
+} from '../jobs/services/signalr.service';
 
 @Component({
   selector: 'app-my-projects',
@@ -56,6 +60,7 @@ export class MyProjectsComponent implements OnInit {
     private jobDataService: JobDataService,
     private snackBar: MatSnackBar,
     private projectService: ProjectService,
+    private signalrService: SignalrService,
   ) {}
 
   ngOnInit(): void {
@@ -68,6 +73,45 @@ export class MyProjectsComponent implements OnInit {
       (isLoading) => (this.isLoading = isLoading),
     );
     this.projectService.loadProjects();
+
+    // SignalR Integration for Auto-Updates
+    this.signalrService.startConnection();
+    this.signalrService.analysisProgress.subscribe(
+      (update: AnalysisProgressUpdate) => {
+        const projectIndex = this.projects.findIndex(
+          (p) => p.jobId === update.jobId,
+        );
+        if (projectIndex !== -1) {
+          const project = this.projects[projectIndex];
+
+          // Update Progress
+          if (update.totalSteps > 0) {
+            project.progress = Math.round(
+              (update.currentStep / update.totalSteps) * 100,
+            );
+          }
+
+          // Handle Completion
+          if (update.isComplete) {
+            project.status = 'PRELIMINARY';
+            project.progress = 100;
+            this.snackBar.open(
+              `Analysis complete for ${project.projectName}`,
+              'View',
+              {
+                duration: 5000,
+              },
+            ).onAction().subscribe(() => {
+                this.viewProject(project.jobId);
+            });
+          }
+
+          // Force refresh of filtered list and counts
+          this.updateCounts();
+          this.setProjectFilter(this.projectFilter);
+        }
+      },
+    );
   }
 
   updateCounts(): void {
@@ -78,7 +122,11 @@ export class MyProjectsComponent implements OnInit {
       (p) => p.status === 'LIVE',
     ).length;
     this.draftProjectsCount = this.projects.filter(
-      (p) => p.status === 'DRAFT',
+      (p) =>
+        p.status === 'DRAFT' ||
+        p.status === 'PRELIMINARY' ||
+        p.status === 'NEW' ||
+        p.status === 'ANALYZING',
     ).length;
     this.failedProjectsCount = this.projects.filter(
       (p) => p.status === 'FAILED',
@@ -91,6 +139,14 @@ export class MyProjectsComponent implements OnInit {
     this.projectFilter = filter;
     if (filter === 'all') {
       this.filteredProjects = this.projects;
+    } else if (filter === 'DRAFT') {
+      this.filteredProjects = this.projects.filter(
+        (p) =>
+          p.status === 'DRAFT' ||
+          p.status === 'PRELIMINARY' ||
+          p.status === 'NEW' ||
+          p.status === 'ANALYZING',
+      );
     } else {
       this.filteredProjects = this.projects.filter((p) => p.status === filter);
     }

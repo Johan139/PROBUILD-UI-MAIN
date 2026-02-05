@@ -259,6 +259,95 @@ export class ReportService {
     }
   }
 
+  async getExecutiveSummaryData(jobId: string): Promise<any> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+      const fullResponse = results[0].fullResponse;
+      //console.log('Full Response for Executive Summary Data:', fullResponse);
+
+      // Extract Key Highlights
+      const totalCostMatch = fullResponse.match(
+        /\*\*\s*Total Estimated Cost:?\s*\*\*\s*(\$[0-9,.]+)/i
+      );
+      const durationMatch = fullResponse.match(
+        /\*\*\s*Project Duration:?\s*\*\*\s*(.*?)(?=\n|$)/i
+      );
+      const veMatch = fullResponse.match(
+        /\*\*\s*Value Engineering Potential:?\s*\*\*\s*(\$[0-9,.]+)/i
+      );
+      const riskMatch = fullResponse.match(
+        /\*\*\s*Critical Blueprint Deficiency:?\s*\*\*\s*(.*?)(?=\n|$)/i
+      );
+      const complianceMatch = fullResponse.match(
+        /\*\*\s*Compliance Risk:?\s*\*\*\s*(.*?)(?=\n|$)/i
+      );
+
+      // Extract Overall Confidence
+      const confidenceMatch = fullResponse.match(
+        /\|\s*\*\*Overall Confidence Index\*\*\s*\|\s*\*\*(\d+)%\*\*/
+      );
+
+      // Extract Risk Factors from Table
+      const risks: any[] = [];
+      const riskTableRegex = /\| Risk Category \| Severity \| Probability \| Notes \|\s*\n\| :--- \| :--- \| :--- \| :--- \|\s*\n([\s\S]*?)(?=\n\n)/;
+      const riskTableMatch = fullResponse.match(riskTableRegex);
+
+      if (riskTableMatch && riskTableMatch[1]) {
+        const lines = riskTableMatch[1].trim().split('\n');
+        lines.forEach((line) => {
+          const parts = line.split('|').map((p) => p.trim());
+          if (parts.length >= 5) {
+            risks.push({
+              risk: parts[1].replace(/\*\*/g, ''), // Category
+              severity: parts[2].toLowerCase(),
+              probability: parts[3],
+              description: parts[4].replace(/\*\*/g, ''),
+            });
+          }
+        });
+      }
+
+      return {
+        overview:
+          'This document presents a comprehensive construction analysis based on the provided blueprints.', // Default text or extract from "1. Overview"
+        keyHighlights: [
+          {
+            label: 'Total Project Cost',
+            value: totalCostMatch ? totalCostMatch[1] : 'N/A',
+            note: 'Estimated',
+          },
+          {
+            label: 'Project Duration',
+            value: durationMatch ? durationMatch[1] : 'N/A',
+            note: 'Estimated',
+          },
+          {
+            label: 'Value Engineering',
+            value: veMatch ? veMatch[1] : 'N/A',
+            note: 'Potential Savings',
+          },
+          {
+            label: 'Critical Risk',
+            value: riskMatch ? 'Deficiencies Found' : 'None Identified',
+            note: riskMatch ? riskMatch[1].substring(0, 50) + '...' : '',
+          },
+        ],
+        riskFactors: risks.length > 0 ? risks : [],
+        blueprintConfidence: {
+          overallConfidence: confidenceMatch ? parseInt(confidenceMatch[1]) : 0,
+        },
+      };
+    } catch (err) {
+      console.error('Failed to get executive summary data:', err);
+      return null;
+    }
+  }
+
   async getProcurementSchedule(jobId: string): Promise<string | null> {
     try {
       const results = await this.jobsService
@@ -584,6 +673,247 @@ export class ReportService {
     return json;
   }
 
+  async getDetailedCostSummary(jobId: string): Promise<any> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const extractValue = (regex: RegExp) => {
+        const match = fullResponse.match(regex);
+        return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+      };
+
+      const materialCost = extractValue(
+        /\|\s*Total Material Cost.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const laborCost = extractValue(
+        /\|\s*Total Labor Cost.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const directSubtotal = extractValue(
+        /\|\s*Subtotal\s*\(Direct.*?\).*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const overhead = extractValue(
+        /\|\s*GC Overhead & Profit.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const overheadPct = extractValue(
+        /\|\s*GC Overhead & Profit.*?\|\s*([\d.]+)%/,
+      );
+
+      const contingency = extractValue(
+        /\|\s*Contingency Reserve.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const contingencyPct = extractValue(
+        /\|\s*Contingency Reserve.*?\|\s*([\d.]+)%/,
+      );
+
+      const taxes =
+        extractValue(/\|\s*Sales Tax.*?\$\s*([\d,]+\.?\d*)/) ||
+        extractValue(/\|\s*Taxes.*?\$\s*([\d,]+\.?\d*)/);
+
+      // Handle potential markdown bold markers (**Calculated GC Bid Price**)
+      const suggestedBid = extractValue(
+        /Calculated GC Bid Price.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const suggestedMarketBid = extractValue(
+        /Suggested Market Bid Price.*?\$\s*([\d,]+\.?\d*)/,
+      );
+      const costPerSqFt = extractValue(
+        /Calculated Cost per Conditioned Area.*?\$\s*([\d,]+\.?\d*)/,
+      );
+
+      // Cost Range
+      let marketLow = 0;
+      let marketHigh = 0;
+      const rangeMatch = fullResponse.match(
+        /\|\s*Cost Range\s*\|\s*\**\$?([\d,]+\.?\d*)\s*[–-]\s*\$?([\d,]+\.?\d*)\**/,
+      );
+      if (rangeMatch) {
+        marketLow = parseFloat(rangeMatch[1].replace(/,/g, ''));
+        marketHigh = parseFloat(rangeMatch[2].replace(/,/g, ''));
+      }
+
+      return {
+        materialCost,
+        laborCost,
+        directSubtotal, // Cost to Build
+        overhead,
+        overheadPct,
+        contingency,
+        contingencyPct,
+        taxes,
+        suggestedBid,
+        suggestedMarketBid,
+        costPerSqFt,
+        marketLow,
+        marketHigh,
+      };
+    } catch (err) {
+      console.error('Failed to get detailed cost summary:', err);
+      return null;
+    }
+  }
+
+  async getValueEngineeringReport(jobId: string): Promise<any[]> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return [];
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const startMarkerRegex = /### Phase 27: Value Engineering/;
+      const endMarkerRegex = /#### \*\*Part 3:/;
+
+      const match = fullResponse.match(startMarkerRegex);
+      if (!match || match.index === undefined) return [];
+
+      let sectionContent = fullResponse.substring(match.index);
+      const endMatch = sectionContent.match(endMarkerRegex);
+      if (endMatch && endMatch.index !== undefined) {
+        sectionContent = sectionContent.substring(0, endMatch.index);
+      }
+
+      // Find the table
+      const tableStartRegex = /\| VE ID \|/;
+      const tableMatch = sectionContent.match(tableStartRegex);
+      if (!tableMatch || tableMatch.index === undefined) return [];
+
+      const tableContent = sectionContent.substring(tableMatch.index);
+      const lines = tableContent.split('\n');
+      const veItems: any[] = [];
+
+      for (const line of lines) {
+        if (!line.trim().startsWith('|') || line.includes(':---')) continue;
+
+        const parts = line
+          .split('|')
+          .map((p) => p.trim())
+          .filter((p) => p !== '');
+
+        if (parts.length > 0 && parts[0].toLowerCase() === 've id') {
+          continue;
+        }
+
+        // Expected columns: VE ID, Category/Phase, Original Spec, Proposed Alt, Original Cost, Alt Cost, Savings, Analysis
+        if (parts.length >= 8) {
+          const originalCostStr = parts[4].replace(/\*\*/g, '').replace(/[$,]/g, '');
+          const originalCost = parseFloat(originalCostStr) || 0;
+
+          const altCostStr = parts[5].replace(/\*\*/g, '').replace(/[$,]/g, '');
+          const alternativeCost = parseFloat(altCostStr) || 0;
+
+          const savingsStr = parts[6].replace(/\*\*/g, '').replace(/[$,]/g, '');
+          const savings = parseFloat(savingsStr) || 0;
+
+          const analysisText = parts[7];
+          let scheduleImpact = '';
+          let performanceImpact = '';
+
+          // Extract Schedule Impact
+          const scheduleMatch = analysisText.match(/\*\*Schedule Impact:\*\*(.*?)(?=\*\*|$)/);
+          if (scheduleMatch) {
+            scheduleImpact = scheduleMatch[1].trim();
+          }
+
+          // Extract Performance Impact
+          const performanceMatch = analysisText.match(/\*\*Performance Impact:\*\*(.*?)(?=\*\*|$)/);
+          if (performanceMatch) {
+            performanceImpact = performanceMatch[1].trim();
+          }
+
+          // Cleanup analysis text if needed or just use the full text as fallback
+          // For now, we keep analysis as the full text but provide the parsed fields
+
+          veItems.push({
+            id: parts[0].replace(/\*\*/g, ''),
+            category: parts[1],
+            original: parts[2].replace(/\*\*/g, ''),
+            proposed: parts[3].replace(/\*\*/g, ''),
+            originalCost: originalCost,
+            alternativeCost: alternativeCost,
+            savings: savings,
+            analysis: analysisText,
+            scheduleImpact: scheduleImpact,
+            performanceImpact: performanceImpact
+          });
+        }
+      }
+      return veItems;
+    } catch (err) {
+      console.error('Failed to get VE report:', err);
+      return [];
+    }
+  }
+
+  async getProcurementSchedulePreliminary(jobId: string): Promise<any[]> {
+    try {
+      const results = await this.jobsService
+        .GetBillOfMaterials(jobId)
+        .toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return [];
+      }
+      const fullResponse = results[0].fullResponse;
+
+      const startMarkerRegex = /### Phase 24: Procurement/;
+      const endMarkerRegex = /Ready for the next prompt/;
+
+      const match = fullResponse.match(startMarkerRegex);
+      if (!match || match.index === undefined) return [];
+
+      let sectionContent = fullResponse.substring(match.index);
+      const endMatch = sectionContent.match(endMarkerRegex);
+      if (endMatch && endMatch.index !== undefined) {
+        sectionContent = sectionContent.substring(0, endMatch.index);
+      }
+
+      // Find the table
+      const tableStartRegex = /\| Item \|/; // Simplified check
+      const tableMatch = sectionContent.match(tableStartRegex);
+      if (!tableMatch || tableMatch.index === undefined) return [];
+
+      const tableContent = sectionContent.substring(tableMatch.index);
+      const lines = tableContent.split('\n');
+      const items: any[] = [];
+
+      for (const line of lines) {
+        if (!line.trim().startsWith('|') || line.includes(':---')) continue;
+
+        const parts = line
+          .split('|')
+          .map((p) => p.trim())
+          .filter((p) => p !== '');
+
+        if (parts.length > 0 && parts[0].toLowerCase() === 'item') {
+          continue;
+        }
+
+        // Expected columns often: Item, CSI, Vendor, Lead Time, Need-By, Delivery, etc.
+        // | Item | CSI | Vendor | Lead Time | Need-By | ...
+        if (parts.length >= 5) {
+          items.push({
+            item: parts[0],
+            leadTime: parts[3] + ' weeks', // usually just a number in column
+            vendor: parts[2],
+            estimatedCost: 0, // Not typically in this table
+            status: parts[4] // Using "Need-By Date" as status/date info
+          });
+        }
+      }
+      return items;
+    } catch (err) {
+      console.error('Failed to get procurement schedule:', err);
+      return [];
+    }
+  }
+
   async getCostSummary(jobId: string): Promise<{
     bidPrice: number;
     directCosts: number;
@@ -682,3 +1012,4 @@ export class ReportService {
     }
   }
 }
+
