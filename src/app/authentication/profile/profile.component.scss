@@ -62,7 +62,7 @@
 
 /* Sections */
 .section {
-  margin-top: 20px;
+  margin-top: 28px;
   h3 {
     margin: 0 0 12px;
     font-size: 1.25rem;
@@ -72,6 +72,7 @@
     letter-spacing: 0.02em;
   }
 }
+
 /* Keep button OUTSIDE scroll */
 .addresses-section {
   display: flex;
@@ -160,7 +161,7 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 
   > * {
     grid-column: span 6;

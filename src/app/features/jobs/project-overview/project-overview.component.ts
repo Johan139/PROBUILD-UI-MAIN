@@ -43,6 +43,7 @@ import { WeatherImpactModalComponent } from './weather-impact-modal/weather-impa
 import { SubtaskService } from '../services/subtask.service';
 import { TimelineService } from '../services/timeline.service';
 import { LucideIconsModule } from '../../../shared/lucide-icons.module';
+import { ArchiveService } from '../../archive/archive-service';
 
 @Component({
   selector: 'app-project-overview',
@@ -83,6 +84,8 @@ export class ProjectOverviewComponent {
   @Input() forecast: any[] | undefined = [];
   @Input() weatherError: string | null | undefined = null;
   @Input() temperatureUnit: string = 'C';
+
+  @Output() jobArchived = new EventEmitter<number>();
 
   @Output() selectProject = new EventEmitter<string>();
   @Output() navigateToTab = new EventEmitter<string>();
@@ -213,6 +216,7 @@ export class ProjectOverviewComponent {
     private contractService: ContractService,
     private subtaskService: SubtaskService,
     private timelineService: TimelineService,
+    private archiveService: ArchiveService,
   ) {}
 
   ngOnChanges(): void {
@@ -230,36 +234,36 @@ export class ProjectOverviewComponent {
 
   private loadFromCache(): void {
     const cached = localStorage.getItem(this.localStorageKey);
-  if (cached) {
-    try {
-      const data = JSON.parse(cached);
-      this.ownerName = data.ownerName || this.ownerName;
-      this.clientName = data.clientName || '';
-      this.activeValue = data.activeValue || 0;
-      this.costByPhase = data.costByPhase || [];
-      this.materialPercent = data.materialPercent || 0;
-      this.laborPercent = data.laborPercent || 0;
-      this.bidsReceived = data.bidsReceived || 0;
-      this.completedTasksCount = data.completedTasksCount || 0;
-    } catch (e) {
-      console.error('Failed to parse cached overview data', e);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        this.ownerName = data.ownerName || this.ownerName;
+        this.clientName = data.clientName || '';
+        this.activeValue = data.activeValue || 0;
+        this.costByPhase = data.costByPhase || [];
+        this.materialPercent = data.materialPercent || 0;
+        this.laborPercent = data.laborPercent || 0;
+        this.bidsReceived = data.bidsReceived || 0;
+        this.completedTasksCount = data.completedTasksCount || 0;
+      } catch (e) {
+        console.error('Failed to parse cached overview data', e);
+      }
     }
   }
-}
 
-private saveToCache(): void {
-  const data = {
-    ownerName: this.ownerName,
-    clientName: this.clientName,
-    activeValue: this.activeValue,
-    costByPhase: this.costByPhase,
-    materialPercent: this.materialPercent,
-    laborPercent: this.laborPercent,
-    bidsReceived: this.bidsReceived,
-    completedTasksCount: this.completedTasksCount,
-  };
-  localStorage.setItem(this.localStorageKey, JSON.stringify(data));
-}
+  private saveToCache(): void {
+    const data = {
+      ownerName: this.ownerName,
+      clientName: this.clientName,
+      activeValue: this.activeValue,
+      costByPhase: this.costByPhase,
+      materialPercent: this.materialPercent,
+      laborPercent: this.laborPercent,
+      bidsReceived: this.bidsReceived,
+      completedTasksCount: this.completedTasksCount,
+    };
+    localStorage.setItem(this.localStorageKey, JSON.stringify(data));
+  }
 
   loadProjectData(): void {
     // Load from cache first (Stale-While-Revalidate)
@@ -290,19 +294,25 @@ private saveToCache(): void {
       next: (contracts) => {
         if (contracts && contracts.length > 0) {
           // Sort by CreatedAt to find the first contract (Client Contract)
-          const sortedContracts = contracts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const sortedContracts = contracts.sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
           const clientContract = sortedContracts[0];
 
           if (clientContract) {
-             // Map status: 'SIGNED' -> 'Signed', 'PENDING' -> 'Drafting' or keep as is
-             const status = clientContract.status;
-             this.contractStatus = (status === 'SIGNED' || status === 'Signed') ? 'Signed' : 'Drafting';
+            // Map status: 'SIGNED' -> 'Signed', 'PENDING' -> 'Drafting' or keep as is
+            const status = clientContract.status;
+            this.contractStatus =
+              status === 'SIGNED' || status === 'Signed'
+                ? 'Signed'
+                : 'Drafting';
           }
         } else {
           this.contractStatus = 'Pending';
         }
       },
-      error: () => this.contractStatus = 'Unknown'
+      error: () => (this.contractStatus = 'Unknown'),
     });
 
     // Get Owner Name, Client Name & Subcontractor/Bidding Info from Job
@@ -402,7 +412,7 @@ private saveToCache(): void {
                 firstName: client.firstName,
                 lastName: client.lastName,
                 email: client.email,
-                phone: client.phone
+                phone: client.phone,
               };
               this.saveToCache();
             }
@@ -693,16 +703,16 @@ private saveToCache(): void {
       }));
 
     // Calculate Estimated Completion Date (Latest End Date)
-if (endDates.length > 0) {
-  const maxEnd = Math.max(...endDates);
-  this.estimatedCompletionDate = new Date(maxEnd);
-}
+    if (endDates.length > 0) {
+      const maxEnd = Math.max(...endDates);
+      this.estimatedCompletionDate = new Date(maxEnd);
+    }
 
-// Check Weather Impact (Next 10 Days)
-this.checkWeatherRisk(allTasks);
-}
+    // Check Weather Impact (Next 10 Days)
+    this.checkWeatherRisk(allTasks);
+  }
 
-checkWeatherRisk(tasks: any[]): void {
+  checkWeatherRisk(tasks: any[]): void {
     if (!this.forecast || this.forecast.length === 0) {
       this.weatherRiskMessage = 'No Data';
       this.weatherRiskLevel = 'none';
@@ -776,16 +786,15 @@ checkWeatherRisk(tasks: any[]): void {
 
       // Populate Modal Data
       this.totalDelayDays = adverseDays.length; // Approximate delay
-      const taskNames = [...new Set(activeTasks.map(t => t.name || t.task))];
+      const taskNames = [...new Set(activeTasks.map((t) => t.name || t.task))];
       this.affectedTasks = taskNames;
 
       // Estimated New Completion Date
       if (this.estimatedCompletionDate) {
-          const newEndDate = new Date(this.estimatedCompletionDate);
-          newEndDate.setDate(newEndDate.getDate() + this.totalDelayDays);
-          this.adjustedCompletionDate = newEndDate;
+        const newEndDate = new Date(this.estimatedCompletionDate);
+        newEndDate.setDate(newEndDate.getDate() + this.totalDelayDays);
+        this.adjustedCompletionDate = newEndDate;
       }
-
     } else {
       this.weatherRiskLevel = 'none';
       this.weatherRiskMessage = 'Low Risk';
@@ -796,27 +805,36 @@ checkWeatherRisk(tasks: any[]): void {
 
   toggleEditProject(): void {
     if (this.isEditingProject) {
-        // Reset if cancelling (optional, or just toggle off)
-        this.tempProjectDetails = { ...this.projectDetails };
+      // Reset if cancelling (optional, or just toggle off)
+      this.tempProjectDetails = { ...this.projectDetails };
     }
     this.isEditingProject = !this.isEditingProject;
   }
 
   saveProject(): void {
     this.isLoading = true;
-    this.jobsService.updateJob(this.tempProjectDetails, this.projectDetails.jobId).subscribe({
+    this.jobsService
+      .updateJob(this.tempProjectDetails, this.projectDetails.jobId)
+      .subscribe({
         next: (res) => {
-            this.isLoading = false;
-            this.isEditingProject = false;
-            // Update local state or reload
-            this.projectDetails = { ...this.projectDetails, ...this.tempProjectDetails };
-            this.snackBar.open('Project details updated', 'Close', { duration: 3000 });
+          this.isLoading = false;
+          this.isEditingProject = false;
+          // Update local state or reload
+          this.projectDetails = {
+            ...this.projectDetails,
+            ...this.tempProjectDetails,
+          };
+          this.snackBar.open('Project details updated', 'Close', {
+            duration: 3000,
+          });
         },
         error: (err) => {
-            this.isLoading = false;
-            this.snackBar.open('Failed to update project', 'Close', { duration: 3000 });
-        }
-    });
+          this.isLoading = false;
+          this.snackBar.open('Failed to update project', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
   }
 
   toggleEditClient(): void {
@@ -825,27 +843,33 @@ checkWeatherRisk(tasks: any[]): void {
 
   saveClient(): void {
     this.isLoading = true;
-    this.jobsService.updateClientDetails(this.projectDetails.jobId, this.tempClientDetails).subscribe({
+    this.jobsService
+      .updateClientDetails(this.projectDetails.jobId, this.tempClientDetails)
+      .subscribe({
         next: (res) => {
-            this.isLoading = false;
-            this.isEditingClient = false;
-            this.clientName = `${this.tempClientDetails.firstName} ${this.tempClientDetails.lastName}`;
-            this.clientEmail = this.tempClientDetails.email;
-            this.clientPhone = this.tempClientDetails.phone;
-            this.snackBar.open('Client details updated', 'Close', { duration: 3000 });
+          this.isLoading = false;
+          this.isEditingClient = false;
+          this.clientName = `${this.tempClientDetails.firstName} ${this.tempClientDetails.lastName}`;
+          this.clientEmail = this.tempClientDetails.email;
+          this.clientPhone = this.tempClientDetails.phone;
+          this.snackBar.open('Client details updated', 'Close', {
+            duration: 3000,
+          });
         },
         error: (err) => {
-            this.isLoading = false;
-            this.snackBar.open('Failed to update client', 'Close', { duration: 3000 });
-        }
-    });
+          this.isLoading = false;
+          this.snackBar.open('Failed to update client', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
   }
 
   // --- Weather Modal Logic ---
 
   openWeatherModal(): void {
     if (this.weatherRiskLevel === 'warning') {
-        this.weatherModalOpen = true;
+      this.weatherModalOpen = true;
     }
   }
 
@@ -949,9 +973,45 @@ checkWeatherRisk(tasks: any[]): void {
   }
 
   archiveJob(jobId: number): void {
-    this.projectService.archiveProject(jobId);
-    this.snackBar.open('Job archived successfully!', 'Close', {
-      duration: 3000,
+    console.log('=== ARCHIVE DEBUG ===');
+    console.log('Received jobId:', jobId, 'Type:', typeof jobId);
+    console.log(
+      'Projects before filter:',
+      this.projects.map((p) => ({ jobId: p.jobId, type: typeof p.jobId })),
+    );
+
+    this.archiveService.archiveJob(jobId).subscribe({
+      next: () => {
+        // Immediately remove from local array for instant UI update
+        const beforeLength = this.projects.length;
+
+        this.projects = this.projects.filter((p) => {
+          const projectJobId = Number(p.jobId);
+          const matches = projectJobId !== jobId;
+          console.log(`Comparing ${projectJobId} !== ${jobId} = ${matches}`);
+          return matches;
+        });
+
+        console.log(
+          `Projects filtered: ${beforeLength} -> ${this.projects.length}`,
+        );
+
+        // Reset carousel index if needed to prevent empty view
+        if (this.currentIndex >= this.projects.length - 2) {
+          this.currentIndex = Math.max(0, this.projects.length - 3);
+        }
+
+        // Emit to parent so it can refresh from server (ensures consistency)
+        this.jobArchived.emit(jobId);
+
+        this.snackBar.open('Job archived successfully!', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        console.error('Failed to archive Job', err);
+        alert(err?.error ?? 'Failed to archive Job');
+      },
     });
   }
 
@@ -1108,9 +1168,7 @@ checkWeatherRisk(tasks: any[]): void {
     let total = this.activeValue;
 
     if (this.selectedDivision !== 'all' && this.selectedDivision) {
-      items = this.budgetItems.filter(
-        (i) => i.phase === this.selectedDivision,
-      );
+      items = this.budgetItems.filter((i) => i.phase === this.selectedDivision);
       name = this.selectedDivision;
       total = items.reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
     }

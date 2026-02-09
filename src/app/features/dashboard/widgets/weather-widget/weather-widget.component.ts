@@ -28,6 +28,8 @@ export class WeatherWidgetComponent implements OnInit {
   ngOnInit(): void {
     if (!navigator.geolocation) {
       this.weatherError = 'Location not supported by browser';
+      const savedUnit = localStorage.getItem('tempUnit') as 'C' | 'F';
+      this.temperatureUnit = savedUnit ?? 'C';
       this.isLoading = false;
       return;
     }
@@ -54,6 +56,10 @@ export class WeatherWidgetComponent implements OnInit {
         this.isLoading = false;
       },
     );
+  }
+  setUnit(unit: 'C' | 'F'): void {
+    this.temperatureUnit = unit;
+    localStorage.setItem('tempUnit', unit);
   }
 
   private resolveLocation(lat: number, lon: number): void {

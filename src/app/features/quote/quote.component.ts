@@ -72,16 +72,29 @@ import {
   QuotePreviewData,
   QuotePreviewDialogComponent,
 } from './quote-preview-dialog.component';
+import { ArchiveService } from '../archive/archive-service';
+import { CompanyEditDialogComponent } from '../companies-dialog/company-edit-dialog.component';
 
 type DocumentType = 'QUOTE' | 'INVOICE';
 interface CompanyDetails {
   name?: string;
-  address?: string;
+  address?: CompanyAddressDTO | string; // 👈 Allow both object and string
   email?: string;
   phoneNumber?: string;
   vatNo?: string;
 }
-
+interface CompanyAddressDTO {
+  streetNumber?: string;
+  streetName?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  formattedAddress?: string;
+  googlePlaceId?: string;
+}
 @Component({
   selector: 'app-quote',
   standalone: true,
@@ -241,6 +254,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
     private jobsService: JobsService,
     private bidsService: BidsService,
     private measurementService: MeasurementService,
+    private archiveService: ArchiveService,
   ) {
     this.quoteForm = this.fb.group({
       header: [''],
@@ -580,19 +594,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
           email: company.email ?? '',
           phoneNumber: company.phoneNumber ?? '',
           vatNo: company.vatNo ?? '',
-          address: addr
-            ? (addr.formattedAddress ??
-              [
-                addr.streetNumber,
-                addr.streetName,
-                addr.city,
-                addr.state,
-                addr.postalCode,
-                addr.country,
-              ]
-                .filter(Boolean)
-                .join(', '))
-            : undefined,
+          address: company.billingAddress || null, // 👈 Keep the FULL OBJECT
         };
 
         // Keep quote + PDF consistent
@@ -1816,7 +1818,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
       // Company info
       companyName: this.companyDetails?.name || form.from || '',
-      companyAddress: this.companyDetails?.address,
+      companyAddress:
+        typeof this.companyDetails?.address === 'string'
+          ? this.companyDetails.address
+          : this.companyDetails?.address?.formattedAddress,
       companyEmail: this.companyDetails?.email,
       companyPhone: this.companyDetails?.phoneNumber,
       logoUrl: this.logoId ? this.logoImageSrc : null,
@@ -1916,7 +1921,12 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     this.cdr.markForCheck();
   }
-
+  getCompanyAddress(): string {
+    if (!this.companyDetails?.address) return '';
+    return typeof this.companyDetails.address === 'string'
+      ? this.companyDetails.address
+      : this.companyDetails.address?.formattedAddress || '';
+  }
   openGenerateQuoteDialog(job: any): void {
     const jobId = job.jobId?.toString() || job.id?.toString();
     if (!jobId) {
@@ -2110,6 +2120,87 @@ export class QuoteComponent implements OnInit, OnDestroy {
         }
       });
   }
+  archiveItem() {
+    if (!this.quoteId) return;
+
+    const quoteId = this.quoteId;
+
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Archive item',
+          message: 'Are you sure you want to archive this item?',
+          confirmText: 'Archive',
+          confirmColor: 'warn',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          console.log(quoteId);
+          this.archiveService.archiveQuoteInvoice(quoteId).subscribe({
+            next: () => {
+              this.router.navigate(['/quotes']);
+            },
+            error: (err) => {
+              console.error('Failed to archive quote', err);
+              alert(err?.error ?? 'Failed to archive quote');
+            },
+          });
+        }
+      });
+  }
+  openEditCompanyDialog(): void {
+    if (this.readOnly || this.isInboundQuote || !this.companyDetails) return;
+
+    const dialogRef = this.dialog.open(CompanyEditDialogComponent, {
+      width: '650px', // 👈 Change from 520px to 650px
+      panelClass: 'company-edit-dialog',
+      data: {
+        name: this.companyDetails.name,
+        email: this.companyDetails.email,
+        phoneNumber: this.companyDetails.phoneNumber,
+        vatNo: this.companyDetails.vatNo,
+        address: this.companyDetails.address,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result) return;
+
+      const userId = this.authService.currentUserSubject.value?.id;
+      if (!userId) {
+        alert('User not authenticated');
+        return;
+      }
+
+      const companyPayload = {
+        name: result.name,
+        email: result.email,
+        phoneNumber: result.phoneNumber,
+        countryNumberCode: result.countryNumberCode,
+        vatNo: result.vatNo,
+        billingAddress: result.address, // 👈 Map to billingAddress
+        physicalAddress: null, // 👈 Or result.address if you want both
+      };
+
+      this.companyService
+        .updateCompanyProfile(companyPayload, userId)
+        .subscribe({
+          next: () => {
+            this.companyDetails = result;
+            this.quoteForm.patchValue({ from: result.name });
+            this.showSuccessToast('Company details updated');
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            console.error('Company update failed', err);
+            alert('Failed to update company details');
+          },
+        });
+    });
+  }
+
   get quoteRowsAsFormGroups(): FormGroup[] {
     return this.quoteRows.controls as FormGroup[];
   }

@@ -1,32 +1,42 @@
 import { Component, OnInit, isDevMode } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+
 import { NotificationsService } from '../../services/notifications.service';
 import { AuthService } from '../../authentication/auth.service';
-import { Notification } from '../../models/notification';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { UserService } from '../../services/user.service';
-import { FormsModule } from '@angular/forms';
+import { Notification } from '../../models/notification';
+
+type NotificationTab = 'ALL' | 'UNREAD';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   templateUrl: './notifications.component.html',
   styleUrls: ['./notifications.component.scss'],
   providers: [DatePipe],
 })
 export class NotificationsComponent implements OnInit {
   isDevMode = isDevMode();
-  currentPage: number = 1;
-  pageSize: number = 50;
-  public paginatedNotifications: any[] = [];
+
+  /* ================= PAGINATION ================= */
+  currentPage = 1;
+  pageSize = 50;
+  totalPages = 1;
   totalNotifications = 0;
-  totalPages: number = Number.MAX_SAFE_INTEGER;
+
+  /* ================= DATA ================= */
+  paginatedNotifications: Notification[] = [];
+
+  /* ================= TABS ================= */
+  activeTab: NotificationTab = 'ALL';
 
   constructor(
     private notificationsService: NotificationsService,
     public authService: AuthService,
-    private datePipe: DatePipe,
     private jobDataService: JobDataService,
     private userService: UserService,
   ) {}
@@ -35,21 +45,49 @@ export class NotificationsComponent implements OnInit {
     this.loadNotifications();
   }
 
+  /* ================= LOAD (SAME AS OLD VERSION) ================= */
   loadNotifications(): void {
     this.notificationsService
       .getAllNotifications(this.currentPage, this.pageSize)
       .subscribe((response) => {
         this.paginatedNotifications = response?.notifications || [];
-        this.totalPages = response?.totalCount
-          ? Math.ceil(response.totalCount / this.pageSize)
+
+        this.totalNotifications = response?.totalCount ?? 0;
+        this.totalPages = this.totalNotifications
+          ? Math.ceil(this.totalNotifications / this.pageSize)
           : 1;
       });
   }
 
-  navigateToJob(notification: Notification): void {
+  /* ================= TAB FILTER (VIEW-ONLY) ================= */
+  get visibleNotifications(): Notification[] {
+    if (this.activeTab === 'UNREAD') {
+      return this.paginatedNotifications.filter((n: any) => n.unread === true);
+    }
+    return this.paginatedNotifications;
+  }
+
+  setTab(tab: NotificationTab): void {
+    this.activeTab = tab;
+  }
+
+  get unreadCount(): number {
+    return this.paginatedNotifications.filter((n: any) => n.unread === true)
+      .length;
+  }
+
+  /* ================= OPEN + NAVIGATE ================= */
+  onOpen(notification: Notification): void {
+    if ((notification as any).unread && this.notificationsService.markRead) {
+      this.notificationsService.markRead(notification.id).subscribe(() => {
+        (notification as any).unread = false;
+      });
+    }
+
     this.jobDataService.navigateToJob(notification);
   }
 
+  /* ================= PAGINATION ================= */
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
@@ -64,33 +102,25 @@ export class NotificationsComponent implements OnInit {
     }
   }
 
-  trackByNotif = (_: number, n: any) => n.id ?? n.timestamp ?? _;
-
-  getInitials(name?: string | null): string {
-    return this.userService.getInitials(name);
-  }
-
-  // open + mark read + navigate
-  onOpen(n: Notification) {
-    if ((n as any).unread && this.notificationsService.markRead) {
-      this.notificationsService
-        .markRead(n.id)
-        .subscribe({ next: () => ((n as any).unread = false) });
-    }
-    this.navigateToJob(n);
-  }
-
-  // top “Show” selector snaps to page 1
   goToFirstPage(): void {
     this.currentPage = 1;
     this.loadNotifications();
   }
 
-  // mark all read button
+  /* ================= ACTIONS ================= */
   markAllRead(): void {
     if (!this.notificationsService.markAllRead) return;
+
     this.notificationsService.markAllRead().subscribe(() => {
-      this.paginatedNotifications.forEach((n) => ((n as any).unread = false));
+      this.paginatedNotifications.forEach((n: any) => (n.unread = false));
     });
+  }
+
+  /* ================= HELPERS ================= */
+  trackByNotif = (_: number, n: Notification) =>
+    n.id ?? (n as any).timestamp ?? _;
+
+  getInitials(name?: string | null): string {
+    return this.userService.getInitials(name);
   }
 }
