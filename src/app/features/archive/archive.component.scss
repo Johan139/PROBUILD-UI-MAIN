@@ -11,10 +11,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-
+  .parag {
+    color: var(--mat-sidenav-content-text-color, var(--mat-sys-on-background));
+  }
   h1 {
     margin: 0;
     font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--page-title-color);
+
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
   }
 
   p {
@@ -25,23 +31,57 @@
 
 .archive-count {
   margin-right: 16px;
-  font-weight: 600;
-  color: var(--color-warning);
+  color: var(--color-text);
+  opacity: 0.85;
+  font-weight: 500;
 }
 
 .btn-danger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
+  gap: 8px;
+
+  padding: 8px 14px;
+  border-radius: 10px;
+
+  background: var(--color-surface);
   border: 1px solid var(--color-danger);
   color: var(--color-danger);
-  padding: 6px 12px;
-  border-radius: 8px;
+
+  font-weight: 600;
   cursor: pointer;
 
+  transition: all 0.15s ease;
+
+  mat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+    line-height: 1;
+    height: 18px;
+    width: 18px;
+
+    position: relative;
+    top: -1px;
+  }
+
   &:hover {
-    background: color-mix(in oklab, var(--color-danger) 20%, transparent);
+    background: color-mix(
+      in oklab,
+      var(--color-danger) 8%,
+      var(--color-surface)
+    );
+    border-color: var(--color-danger);
+  }
+
+  &:active {
+    background: color-mix(
+      in oklab,
+      var(--color-danger) 12%,
+      var(--color-surface)
+    );
   }
 }
 
@@ -83,8 +123,12 @@
     cursor: pointer;
 
     &.active {
-      background: var(--color-primary);
-      color: var(--color-text-inverse);
+      background: var(--action-primary);
+      color: var(--gray-900);
+      border-color: var(--action-primary);
+    }
+    &.hover {
+      background: var(--color-surface-hover);
     }
 
     .count {
@@ -112,8 +156,11 @@
 }
 
 .table-header {
-  background: var(--color-surface-subtle);
+  font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
 }
 
 .table-row {
@@ -148,7 +195,12 @@
     grid-template-columns: 1.2fr 2fr 1.5fr 1.2fr 1.2fr 1.2fr 1.5fr;
   }
 }
-
+.archive-table.documents {
+  .table-header,
+  .table-row {
+    grid-template-columns: 3fr 2fr 1.2fr 1fr 1.5fr 1.5fr;
+  }
+}
 /* ================= CELLS ================= */
 .cell.main small {
   display: block;
@@ -200,11 +252,13 @@
   }
 
   &.success {
-    color: var(--color-success);
+    background: color-mix(in oklab, var(--color-success) 15%, transparent);
+    border-color: var(--color-success);
   }
 
   &.danger {
-    color: var(--color-danger);
+    background: color-mix(in oklab, var(--color-danger) 15%, transparent);
+    border-color: var(--color-danger);
   }
 
   &:hover {
@@ -215,9 +269,9 @@
 
 /* ================= EMPTY ================= */
 .empty {
-  padding: 30px;
-  text-align: center;
-  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
 }
 
 /* ================= FOOTER ================= */

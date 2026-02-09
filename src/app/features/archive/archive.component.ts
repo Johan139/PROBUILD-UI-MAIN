@@ -78,9 +78,11 @@ export class ArchiveComponent implements OnInit {
 
     this.filters.find((f) => f.key === 'invoices')!.count =
       this.archivedInvoices.length;
+    this.filters.find((f) => f.key === 'documents')!.count =
+      this.archivedDocuments.length;
 
     // These are placeholders for future expansion
-    this.filters.find((f) => f.key === 'documents')!.count = 0;
+
     this.filters.find((f) => f.key === 'jobs')!.count = 0;
     this.filters.find((f) => f.key === 'tasks')!.count = 0;
   }
@@ -140,6 +142,9 @@ export class ArchiveComponent implements OnInit {
   get archivedInvoices(): ArchivedItem[] {
     return this.archivedItems.filter((i) => i.type === 'INVOICE');
   }
+  get archivedDocuments(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'DOCUMENT');
+  }
 
   get filteredItems(): ArchivedItem[] {
     switch (this.activeFilter) {
@@ -149,6 +154,8 @@ export class ArchiveComponent implements OnInit {
         return this.archivedQuotes;
       case 'invoices':
         return this.archivedInvoices;
+      case 'documents':
+        return this.archivedDocuments;
       default:
         return [];
     }

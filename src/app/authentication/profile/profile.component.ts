@@ -1104,6 +1104,25 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
+  archiveDocument(doc: ProfileDocument): void {
+    this.profileService.archiveDocument(doc.id).subscribe({
+      next: () => {
+        this.snackBar.open('Document archived successfully.', 'Close', {
+          duration: 3000,
+        });
+
+        // 🔄 Refresh the grid
+        this.loadDocuments();
+      },
+      error: (err) => {
+        console.error('Failed to archive document:', err);
+        this.snackBar.open('Failed to archive document.', 'Close', {
+          duration: 3000,
+          panelClass: ['error-snackbar'],
+        });
+      },
+    });
+  }
 
   loadDocuments(): void {
     const userId = this.authService.currentUserSubject.value?.id;

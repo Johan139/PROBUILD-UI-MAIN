@@ -46,6 +46,27 @@
   margin: 0;
   padding: 0;
 }
+/* styles.scss (or global theme file) */
+
+:root {
+  --brand-yellow-primary: #fcd109;
+
+  --action-primary: var(--brand-yellow-primary);
+  --action-primary-hover: color-mix(
+    in oklab,
+    var(--brand-yellow-primary) 85%,
+    black
+  );
+
+  --action-secondary: var(--color-text-muted);
+  --action-secondary-hover: var(--color-text);
+
+  --action-danger: #dc3545;
+  --action-danger-hover: #b52a37;
+
+  --action-disabled-bg: var(--color-border);
+  --action-disabled-text: var(--color-text-muted);
+}
 
 html {
   font-size: 100%;
@@ -65,35 +86,39 @@ body {
 // 5. THEME DEFINITIONS
 // --------------------------------------------------------------------------
 
-$probuild-light-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: mat.$yellow-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  typography: (
-    brand-family: var(--font-sans),
-    plain-family: var(--font-sans),
-  ),
-  density: (
-    scale: 0,
+$probuild-light-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$yellow-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: (
+      brand-family: var(--font-sans),
+      plain-family: var(--font-sans),
+    ),
+    density: (
+      scale: 0,
+    ),
   )
-));
+);
 
-$probuild-dark-theme: mat.define-theme((
-  color: (
-    theme-type: dark,
-    primary: mat.$yellow-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  typography: (
-    brand-family: var(--font-sans),
-    plain-family: var(--font-sans),
-  ),
-  density: (
-    scale: 0,
+$probuild-dark-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: dark,
+      primary: mat.$yellow-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: (
+      brand-family: var(--font-sans),
+      plain-family: var(--font-sans),
+    ),
+    density: (
+      scale: 0,
+    ),
   )
-));
+);
 
 // --------------------------------------------------------------------------
 // 6. APPLY THEMES
@@ -101,6 +126,8 @@ $probuild-dark-theme: mat.define-theme((
 
 :root {
   @include mat.all-component-themes($probuild-light-theme);
+
+  --page-title-color: var(--color-text);
 
   .mat-mdc-card {
     --mdc-elevated-card-container-color: var(--color-surface);
@@ -114,6 +141,7 @@ $probuild-dark-theme: mat.define-theme((
 
 .theme-dark {
   color-scheme: dark;
+  --page-title-color: var(--action-primary);
   @include mat.all-component-colors($probuild-dark-theme);
 }
 

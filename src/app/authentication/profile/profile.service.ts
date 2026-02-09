@@ -267,7 +267,18 @@ export class ProfileService {
       { headers: this.getHeaders() },
     );
   }
-
+  archiveDocument(docID: number): Observable<void> {
+    return this.http
+      .post<void>(`${this.apiUrl}/ArchiveDocument/` + docID, null, {
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Error updating profile:', error);
+          return throwError(() => new Error('Failed to update profile'));
+        }),
+      );
+  }
   getAddressType(): Observable<AddressType[]> {
     return this.http.get<AddressType[]>(`${this.apiUrl}/AddressTypes/`, {
       headers: this.getHeaders(),

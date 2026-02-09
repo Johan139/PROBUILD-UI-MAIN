@@ -3,7 +3,7 @@
   <div class="archive-header">
     <div class="header-left">
       <h1>Archive</h1>
-      <p>View and restore deleted or archived items</p>
+      <p class="parag">View and restore deleted or archived items</p>
     </div>
 
     <div class="header-right">
@@ -190,6 +190,58 @@
             <button
               class="icon-btn success"
               matTooltip="Restore project"
+              (click)="unarchive(item)"
+            >
+              <mat-icon>restore</mat-icon>
+            </button>
+
+            <button
+              class="icon-btn danger"
+              matTooltip="Delete permanently"
+              (click)="delete(item)"
+            >
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+    <!-- ================= DOCUMENTS ================= -->
+    <ng-container *ngSwitchCase="'documents'">
+      <div class="table-header">
+        <span>Document Name</span>
+        <span>Project</span>
+        <span>Type</span>
+        <span>Size</span>
+        <span>Archived</span>
+        <span>Actions</span>
+      </div>
+
+      <div
+        class="table-row"
+        *ngFor="let item of archivedDocuments | archiveSearch: searchTerm"
+      >
+        <div class="cell main">
+          <strong>{{ item.title }}</strong>
+        </div>
+
+        <div class="cell">{{ item.project }}</div>
+
+        <div class="cell">
+          <span>{{ item.documentType }}</span>
+        </div>
+
+        <div class="cell">{{ item.size | number }} KB</div>
+
+        <div class="cell">
+          {{ item.archivedAt | date: "yyyy-MM-dd" }}
+        </div>
+
+        <div class="cell actions">
+          <div class="action-pill">
+            <button
+              class="icon-btn success"
+              matTooltip="Restore document"
               (click)="unarchive(item)"
             >
               <mat-icon>restore</mat-icon>
