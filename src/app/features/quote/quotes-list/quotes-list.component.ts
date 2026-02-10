@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { QuoteService } from '../quote.service';
-import { QuoteListItemDto } from './../quote.model';
+import {
+  DocumentType,
+  QuoteDirection,
+  QuoteListItemDto,
+} from './../quote.model';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,8 +14,8 @@ import { AuthService } from '../../../authentication/auth.service';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 
-type DirectionFilter = 'Outbound' | 'Inbound';
-type DocTypeFilter = 'ALL' | 'QUOTE' | 'INVOICE';
+type DirectionFilter = QuoteDirection;
+type DocTypeFilter = 'ALL' | DocumentType;
 
 @Component({
   selector: 'app-quotes-list',

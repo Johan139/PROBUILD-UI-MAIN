@@ -9,6 +9,8 @@ import {
   ElementRef,
   AfterViewInit,
   ChangeDetectorRef,
+  inject,
+  DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -104,7 +106,7 @@ import { ProjectBudgetTrackingComponent } from './project-budget-tracking/projec
 import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dialog.component';
 import { ConstructionPhasesComponent } from './components/construction-phases/construction-phases.component';
 import { JobTeamComponent } from './components/job-team/job-team.component';
-
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-jobs',
   standalone: true,
@@ -194,6 +196,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
+  private destroyRef = inject(DestroyRef);
+
   timelineGroups: TimelineGroup[] = [];
   temperatureUnit: TemperatureUnit = 'C';
 
@@ -542,7 +546,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(
         take(1),
         switchMap((params) => {
-          this.jobDataService.fetchJobData(params);
+          this.jobDataService
+            .fetchJobData(params)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
           return this.store.select((state) => state.projectDetails);
         }),
         filter((projectDetails) => !!projectDetails),
@@ -928,7 +935,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.jobDataService.fetchJobData(this.projectDetails);
+        this.jobDataService
+          .fetchJobData(this.projectDetails)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe();
       }
     });
   }
@@ -975,7 +985,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         next: () => {
           this.isLoading = false;
           this.isEditingAddress = false;
-          this.jobDataService.fetchJobData(this.projectDetails);
+          this.jobDataService
+            .fetchJobData(this.projectDetails)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
           this.snackBar.open('Address updated successfully!', 'Close', {
             duration: 3000,
           });

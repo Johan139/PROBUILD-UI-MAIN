@@ -125,7 +125,26 @@ export class ArchiveComponent implements OnInit {
   }
 
   emptyArchive(): void {
-    console.warn('Empty archive not implemented yet');
+    if (!this.archivedItems.length) {
+      return;
+    }
+
+    const ref = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Empty archive',
+        message:
+          'This will permanently delete all archived items. This cannot be undone. Continue?',
+      },
+    });
+
+    ref.afterClosed().subscribe((ok) => {
+      if (!ok) return;
+
+      this.archiveService.emptyArchive().subscribe(() => {
+        this.archivedItems = [];
+        this.updateCounts();
+      });
+    });
   }
 
   // =====================================================

@@ -54,10 +54,27 @@ export class NotificationsMenuComponent implements OnInit {
     this.closeMenu();
   }
 
-  navigateToJob(notification: any): void {
-    this.notificationsService.markRead(notification.id).subscribe();
-    this.jobDataService.navigateToJob(notification);
-    this.closeMenu();
+  navigateFromNotification(notification: Notification): void {
+    switch (notification.type) {
+      case 'Quote':
+        this.router.navigate(['/quote'], {
+          queryParams: { quoteId: notification.quoteId },
+        });
+        break;
+
+      case 'Invoice':
+        this.router.navigate(['/quote'], {
+          queryParams: { quoteId: notification.quoteId },
+        });
+        break;
+
+      case 'Job':
+        this.jobDataService.navigateToJob(notification.jobId);
+        break;
+
+      default:
+        console.warn('Unknown notification type:', notification);
+    }
   }
 
   getInitials(name: string | null | undefined): string {

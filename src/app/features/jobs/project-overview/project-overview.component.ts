@@ -5,6 +5,8 @@ import {
   EventEmitter,
   ElementRef,
   ViewChild,
+  DestroyRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -44,7 +46,7 @@ import { SubtaskService } from '../services/subtask.service';
 import { TimelineService } from '../services/timeline.service';
 import { LucideIconsModule } from '../../../shared/lucide-icons.module';
 import { ArchiveService } from '../../archive/archive-service';
-
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-project-overview',
   standalone: true,
@@ -98,7 +100,7 @@ export class ProjectOverviewComponent {
   addressSuggestions: { description: string; place_id: string }[] = [];
   selectedPlace: google.maps.places.PlaceResult | null = null;
   private selectedAddress: any;
-
+  private destroyRef = inject(DestroyRef);
   // Inline Editing State
   isEditingProject: boolean = false;
   isEditingClient: boolean = false;
@@ -1246,7 +1248,10 @@ export class ProjectOverviewComponent {
         next: () => {
           this.isLoading = false;
           this.isEditingAddress = false;
-          this.jobDataService.fetchJobData(this.projectDetails);
+          this.jobDataService
+            .fetchJobData(this.projectDetails)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
           this.snackBar.open('Address updated successfully!', 'Close', {
             duration: 3000,
           });
