@@ -1,17 +1,194 @@
-.trade-pill {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  margin-right: 8px;
-  margin-bottom: 8px;
-  text-transform: capitalize;
-  background-color: #e0e0e0;
-  color: #333;
+@use 'styles/util/mixins' as u;
+
+$color-yellow: var(--color-primary);
+$color-text-muted: var(--color-text-muted);
+
+.dialog-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 85vh;
 }
 
-.trade-pill.match {
-  background-color: #4caf50;
-  color: #fff;
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+
+  .header-main {
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .status-badge {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+        font-weight: 600;
+
+        &.open {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+      }
+    }
+
+    .subtitle {
+      margin: 0;
+      color: $color-text-muted;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+
+    .saved {
+        color: #a855f7;
+    }
+  }
+}
+
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.section {
+  margin-bottom: 24px;
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-text-muted;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.location-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+
+  .icon-yellow {
+    color: $color-yellow;
+  }
+}
+
+.description-text {
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .detail-item {
+    background: var(--color-surface-subtle);
+    padding: 12px;
+    border-radius: 8px;
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: $color-text-muted;
+      margin-bottom: 4px;
+    }
+
+    .value {
+      font-weight: 600;
+      font-size: 15px;
+
+      &.yellow-text {
+        color: darken(#FCD109, 15%);
+      }
+    }
+  }
+}
+
+.notes-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-family: inherit;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $color-yellow;
+  }
+}
+
+.dialog-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  background: var(--color-surface);
+
+  .right-actions {
+    display: flex;
+    gap: 8px;
+
+    button[color="primary"] {
+        background-color: $color-yellow;
+        color: #000;
+    }
+  }
+}
+
+// Blueprint Viewer Specifics
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.8);
+
+  p { margin-top: 1rem; color: var(--color-text-muted); }
+}
+
+.no-docs {
+  padding: 2rem;
+  text-align: center;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  border-radius: 8px;
+}
+
+.blueprints-viewer-container {
+  height: 500px; 
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+
+  ::ng-deep app-project-blueprint-viewer {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
 }

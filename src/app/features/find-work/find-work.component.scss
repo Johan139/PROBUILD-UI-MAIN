@@ -5,866 +5,1010 @@
   background: var(--color-canvas);
   color: var(--color-text);
 }
-.no-address-warning .warning-text {
-  color: #ff3b30; /* iOS-style warning red */
-  font-weight: 500;
-}
-/* Center the placeholder (when not floating) */
-::ng-deep .address-select-field .mdc-floating-label {
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  left: 14px !important;
-  margin: 0 !important;
-  transition: all 0.2s ease !important;
-}
 
-/* When it floats (focus / has value) — move up like normal */
-::ng-deep .address-select-field .mdc-floating-label--float-above {
-  top: 0px !important;
-  transform: scale(0.75) translateY(-50%) !important;
-  background: #fff;
-  padding: 0 4px;
-}
+$color-yellow: #FCD109;
+$color-green: #22c55e;
+$color-blue: #3b82f6;
+$color-purple: #a855f7;
+$color-red: #ef4444;
 
-.no-address-warning .addAddressButton {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-text-inverse);
-
-  padding: 10px 16px;
-
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: var(--fw-semibold);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
-}
-.location-toggle {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.toggle-btn {
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-.custom-address-wrapper {
-  margin-top: 12px;
-  margin-bottom: 12px;
-  width: 100%;
-}
-
-.custom-address-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  font-size: 14px;
-  background: #fff;
-  outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-
-  /* Make it match your search bar */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.custom-address-input:focus {
-  border-color: var(--color-primary, #e6bf00);
-  box-shadow: 0 0 0 2px rgba(230, 191, 0, 0.25);
-}
-
-.toggle-btn.active {
-  background: var(--color-primary);
-  color: black;
-  border-color: var(--color-primary);
-}
-
-/* Shell */
 .find-work-container {
-  padding: var(--space-5);
+  padding: var(--space-6);
+  max-width: 100%;
+  margin: 0 auto;
+}
 
-  .unified-view {
-    display: flex;
-    gap: var(--space-4);
-  }
+// Header
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-6);
 
-  .list-panel {
-    width: 40%;
-    min-width: 360px;
-  }
-  .map-panel {
-    width: 60%;
-    min-width: 0;
-  }
-  /* ─────── PERFECTLY CENTERED ADDRESS DROPDOWN – FINAL COPY-PASTE ─────── */
-  .address-section .address-select-field {
-    width: 100% !important;
-    margin-bottom: 12px;
-    margin-top: 12px;
-    ::ng-deep {
-      /* Wrapper */
-      .mat-mdc-text-field-wrapper {
-        height: 48px !important;
-        padding: 0 !important;
-        background: #fff !important;
-        border: 1px solid rgba(0, 0, 0, 0.15) !important;
-        border-radius: 10px !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-      }
-
-      /* Kill white bottom bar forever */
-      .mat-mdc-form-field-subscript-wrapper,
-      .mat-mdc-form-field-bottom-align {
-        display: none !important;
-        height: 0 !important;
-      }
-
-      /* Core layout fixes */
-      .mat-mdc-form-field-infix {
-        padding: 0 !important;
-        min-height: unset !important;
-        height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-        border: none !important;
-      }
-
-      .mat-mdc-select-trigger {
-        height: 100% !important;
-        padding: 0 14px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-      }
-
-      /* THIS IS THE MAGIC PART – forces perfect vertical centering */
-      .mat-mdc-select-value,
-      .mat-mdc-select-placeholder {
-        display: flex !important;
-        align-items: center !important;
-        height: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
-      .mat-mdc-select-value-text,
-      .mat-mdc-select-placeholder {
-        line-height: 1 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        transform: translateY(0) !important; /* kills any hidden offset */
-      }
-
-      /* Arrow perfectly centered */
-      .mat-mdc-select-arrow-wrapper {
-        height: 48px !important;
-        display: flex !important;
-        align-items: center !important;
-      }
-
-      /* Focus & hover */
-      .mat-focused .mat-mdc-text-field-wrapper {
-        border-color: var(--color-primary, #e6bf00) !important;
-        box-shadow: 0 0 0 2px rgba(230, 191, 0, 0.25) !important;
-      }
+  .title-section {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+    }
+    p {
+      color: var(--color-text-muted);
+      margin: 0;
     }
   }
-  .filter-form-fields {
+
+  .post-job-btn {
+    background-color: $color-yellow;
+    color: #000;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    padding: 8px 16px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+// Role Labels
+.role-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+
+  .role-label {
     display: flex;
-    gap: 12px;
     align-items: center;
-    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
 
-    mat-form-field {
-      flex: 1;
-      min-width: 180px;
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
     }
 
-    /* ─────── FINAL BULLETPROOF FIX ─────── */
-    ::ng-deep {
-      /* Base field */
-      .mat-mdc-form-field {
-        margin: 0 !important;
-      }
-      .mat-mdc-text-field-wrapper {
-        border-radius: 8px !important;
-        box-shadow: none !important;
-      }
-      .mat-mdc-form-field-infix {
-        padding: 6px 0 !important;
-        min-height: 40px !important;
-        border-top: none !important;
-      }
-
-      /* Always float the label */
-      .mat-mdc-form-field-has-label .mdc-floating-label {
-        transform: translateY(-22px) scale(0.75) !important;
-        top: 22px !important;
-      }
-
-      /* Hide placeholder text (we already have floating label) */
-      .mat-mdc-select-placeholder {
-        opacity: 0 !important;
-      }
-
-      /* ─────── PERFECT 40px HEIGHT & CENTERING ─────── */
-      .mat-mdc-select-trigger {
-        height: 40px !important;
-        min-height: 40px !important;
-        max-height: 40px !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-
-      .mat-mdc-select-value {
-        display: flex;
-        align-items: center;
-        max-height: 40px !important;
-      }
-
-      /* Kill the default line-height that creates whitespace */
-      .mat-mdc-select-min-line-height,
-      .mat-mdc-select-value-text,
-      .mat-mdc-select-placeholder {
-        line-height: 1 !important;
-        min-height: auto !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-
-      /* Remove any sneaky bottom spacing */
-      .mat-mdc-chip-row {
-        margin-bottom: 0 !important;
-        height: auto !important;
-      }
-
-      /* Clean chips (when selections exist) */
-      .mat-mdc-chip {
-        margin: 2px 4px 2px 0 !important;
-        height: 24px !important;
-        font-size: 12px !important;
-      }
-      .mat-mdc-chip-set {
-        padding: 0 8px !important;
-      }
-
-      /* Compact dropdown options */
-      .mat-mdc-option {
-        min-height: 36px !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-      }
-
-      /* Hide subscript (error/hint line) */
-      .mat-mdc-form-field-subscript-wrapper {
-        display: none !important;
-      }
-    }
-  }
-
-  /* Tabs (All Jobs / My Bids) */
-  .tabs {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    margin-bottom: var(--space-4);
-
-    .filter-container {
+    &.right {
       margin-left: auto;
     }
+  }
+}
 
-    button {
-      padding: 10px 16px;
-      cursor: pointer;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
+// Tabs Navigation
+.tabs-navigation {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+
+    &:hover {
       color: var(--color-text);
-      font-weight: var(--fw-semibold);
-      @include u.interactive-states;
+    }
 
-      &:hover {
-        background: var(--color-surface-subtle);
-      }
-      &.active {
-        background: var(--color-primary);
-        border-color: var(--color-primary);
-        color: var(--color-text-inverse);
-      }
+    &.active {
+      color: $color-yellow;
+      border-bottom-color: $color-yellow;
+      color: var(--color-text);
+      border-bottom-color: $color-yellow;
+    }
+
+    .tab-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 99px;
+      font-weight: 600;
+
+      &.yellow { background: rgba($color-yellow, 0.2); color: darken($color-yellow, 20%); }
+      &.green { background: rgba($color-green, 0.2); color: $color-green; }
+      &.blue { background: rgba($color-blue, 0.2); color: $color-blue; }
+      &.purple { background: rgba($color-purple, 0.2); color: $color-purple; }
     }
   }
+}
 
-  /* View switcher */
-  .view-switcher {
+// Map Section
+.map-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+
+  .map-header {
     display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-subtle);
 
-    button {
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      color: var(--color-text);
-      font-weight: var(--fw-semibold);
-      @include u.interactive-states;
+    .location-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 14px;
 
-      &:hover {
-        background: var(--color-surface-subtle);
-      }
-      &.active {
-        background: var(--color-accent);
-        color: var(--color-text-inverse);
-        border-color: color-mix(
-          in oklab,
-          var(--color-accent) 75%,
-          var(--color-border)
-        );
+      mat-icon {
+        color: $color-yellow;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
       }
     }
-  }
 
-  /* Map + panel */
-  .map-view-wrapper {
-    display: flex;
-    gap: var(--space-4);
+    .legend {
+      display: flex;
+      gap: 16px;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text-muted);
+
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+
+          &.green { background: $color-green; }
+          &.yellow { background: $color-yellow; }
+          &.blue { background: $color-blue; }
+          &.purple { background: $color-purple; }
+        }
+      }
+    }
   }
 
   .map-container {
-    flex: 1 1 auto;
+    height: 400px;
     position: relative;
-    height: calc(100vh - 200px);
-    margin-bottom: var(--space-4);
-    transition: width 0.2s ease;
+    background: #e5e7eb;
 
-    &.with-panel {
-      width: 60%;
-    }
-
-    /* Neutral cards for loading/error */
-    .map-loading,
-    .map-error {
-      height: 420px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      color: var(--color-text);
-      display: grid;
-      place-content: center;
-      gap: var(--space-3);
-      text-align: center;
-      box-shadow: var(--shadow-1);
-
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid var(--color-border);
-        border-top: 4px solid var(--color-accent);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto;
-      }
-      p {
-        margin: 0;
-        font-size: 1rem;
-      }
-    }
-
-    .map-error {
-      background: color-mix(
-        in oklab,
-        var(--color-danger) 8%,
-        var(--color-surface)
-      );
-      border-color: color-mix(
-        in oklab,
-        var(--color-danger) 40%,
-        var(--color-border)
-      );
-      .retry-btn {
-        padding: 8px 14px;
-        border-radius: var(--radius-sm);
-        border: 1px solid transparent;
-        background: var(--color-danger);
-        color: var(--color-text-inverse);
-        font-weight: var(--fw-semibold);
-        @include u.interactive-states;
-        &:hover {
-          filter: brightness(0.96);
-        }
-      }
-    }
-
-    /* Floating job info card */
-    .job-info-panel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 10;
-      max-width: 320px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-2);
-      overflow: hidden;
-
-      .job-info-header {
+    .map-loading, .map-error {
+        height: 100%;
         display: flex;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
-        justify-content: space-between;
-        padding: var(--space-3);
-        background: var(--color-surface-subtle);
-        border-bottom: 1px solid var(--color-border);
-
-        h3 {
-          margin: 0;
-          font-size: 1rem;
-          color: var(--color-text);
-        }
-
-        .close-btn {
-          width: 32px;
-          height: 32px;
-          display: grid;
-          place-items: center;
-          background: transparent;
-          border: 0;
-          border-radius: 50%;
-          color: var(--color-text);
-          @include u.interactive-states;
-          &:hover {
-            background: var(--color-surface-hover);
-          }
-        }
-      }
-
-      .job-info-content {
-        padding: var(--space-3);
-        p {
-          margin: 8px 0;
-          color: var(--color-text);
-        }
-        strong {
-          color: var(--color-text);
-        }
-      }
+        gap: 1rem;
     }
   }
+}
 
-  /* Right side detail panel */
-  .job-details-panel {
-    width: 40%;
-    padding: var(--space-4);
+// 4. Tab Content & Layout
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Card Style (Base for Lists)
+.card-style {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-subtle); // Slight hover effect
+    border-color: rgba($color-yellow, 0.5);
+  }
+
+  &.saved-border {
+    border-left: 4px solid $color-purple;
+  }
+}
+
+// 5. Job Lists (Common Grid/List Layout)
+.job-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  .job-item {
+    position: relative;
+
+    // Save button overlay
+    .save-btn-overlay {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 2;
+        padding: 4px;
+        border-radius: 4px;
+
+        mat-icon {
+            color: var(--color-text-muted);
+            transition: color 0.2s;
+
+            &.saved {
+                color: $color-purple;
+            }
+        }
+
+        &:hover mat-icon {
+            color: var(--color-text);
+        }
+    }
+  }
+}
+
+// Specific Styles for My Postings Tab
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+
+  .stat-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-1);
-    height: calc(100vh - 200px);
-    overflow: auto;
-    animation: slideIn 0.35s ease;
-
-    .job-item {
-      padding: var(--space-3);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-    }
-
-    .close-btn {
-      margin-top: var(--space-4);
-      padding: 10px 16px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      color: var(--color-text);
-      font-weight: var(--fw-semibold);
-      @include u.interactive-states;
-      &:hover {
-        background: var(--color-surface-subtle);
-      }
-    }
-  }
-
-  /* List/filters */
-  .list-container {
-    .search-container {
-      margin-bottom: var(--space-4);
-    }
-
-    .search-container input {
-      width: 100%;
-      padding: 10px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      color: var(--color-text);
-      transition:
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
-
-      &:focus {
-        outline: 0;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px
-          color-mix(in oklab, var(--color-primary) 22%, transparent);
-      }
-    }
-
-    .advanced-filters {
-      margin-bottom: var(--space-4);
-
-      .filter-row {
-        display: flex;
-        gap: var(--space-2);
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 10px;
-        font-weight: var(--fw-semibold);
-      }
-
-      input[type="range"] {
-        width: 100%;
-      }
-
-      .clear-filters-btn {
-        height: 36px;
-        padding: 0 14px;
-        border-radius: 999px;
-        border: 1px solid var(--color-border);
-        background: var(--color-surface);
-        color: var(--color-text);
-        @include u.interactive-states;
-        &:hover {
-          background: var(--color-surface-subtle);
-        }
-      }
-    }
-
-    h2 {
-      color: var(--color-text);
-      margin-bottom: var(--space-3);
-      font: var(--fw-bold) var(--fs-lg)/var(--lh-tight) var(--font-sans);
-    }
-
-    .loading,
-    .no-jobs {
-      text-align: center;
-      padding: var(--space-8);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      color: var(--color-text);
-      box-shadow: var(--shadow-1);
-    }
-
-    .client-info {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-
-      .gold-star {
-        color: var(--color-primary);
-      }
-      .new-tag {
-        background: var(--color-primary);
-        color: var(--color-text-inverse);
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: var(--fw-semibold);
-      }
-    }
-
-    .job-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .job-list .job-item {
-      position: relative;
-      padding: var(--space-4);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      margin-bottom: var(--space-3);
-      background: var(--color-surface);
-      box-shadow: var(--shadow-1);
-      transition:
-        box-shadow 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.05s ease;
-
-      &:hover {
-        box-shadow: var(--shadow-2);
-        border-color: color-mix(
-          in oklab,
-          var(--color-accent) 55%,
-          var(--color-border)
-        );
-      }
-
-      .job-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 12px;
-        h3 {
-          margin: 0;
-          color: var(--color-text);
-          font-size: 18px;
-          font-weight: var(--fw-bold);
-        }
-      }
-
-      .job-description {
-        line-height: 1.6;
-        margin-bottom: 10px;
-        font-size: 14px;
-        color: var(--color-text);
-      }
-      .job-location {
-        display: flex;
-        align-items: center;
-        color: var(--color-text-muted);
-        font-size: 16px;
-        margin-bottom: 10px;
-      }
-
-      .bid-status .status-badge {
-        background: var(--color-accent);
-        color: var(--color-text-inverse);
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: var(--fw-semibold);
-      }
-    }
-  }
-
-  /* Filter chip buttons */
-  .filter-buttons {
+    padding: 16px;
     display: flex;
-    gap: var(--space-2);
-    margin-bottom: var(--space-4);
-  }
+    align-items: center;
+    gap: 16px;
 
-  .filter-pill {
-    padding: 8px 16px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: var(--fw-semibold);
-    text-transform: capitalize;
-    color: var(--color-text);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    cursor: pointer;
-    @include u.interactive-states;
+    .icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-    &:hover {
-      background: var(--color-surface-subtle);
-    }
-    &.active {
-      background: var(--color-primary);
-      color: var(--color-text-inverse);
-      border-color: var(--color-primary);
-    }
-  }
+      &.green-bg { background: rgba($color-green, 0.1); }
+      &.yellow-bg { background: rgba($color-yellow, 0.1); }
+      &.blue-bg { background: rgba($color-blue, 0.1); }
+      &.purple-bg { background: rgba($color-purple, 0.1); }
 
-  /* Utility animations */
-  @keyframes spin {
-    from {
-      transform: rotate(0);
+      mat-icon {
+        &.green-text { color: $color-green; }
+        &.yellow-text { color: darken($color-yellow, 10%); }
+        &.blue-text { color: $color-blue; }
+        &.purple-text { color: $color-purple; }
+      }
     }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @keyframes slideIn {
-    from {
-      transform: translateX(12px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
 
-  /* Responsive */
-  @media (max-width: 1024px) {
-    .unified-view {
-      flex-direction: column;
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
     }
-    .list-panel,
-    .map-panel,
-    .map-container.with-panel {
-      width: 100%;
-    }
-    .list-panel {
-      min-width: 0;
-    }
-  }
-
-  @media (max-width: 768px) {
-    padding: var(--space-4);
-
-    .tabs,
-    .view-switcher {
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--space-2);
-    }
-    .map-container .job-info-panel {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 92vw;
-      max-height: 78vh;
-      overflow: auto;
-    }
-    .map-loading,
-    .map-error {
-      height: 320px;
-    }
-    .job-list .job-item .job-header {
-      flex-direction: column;
-      gap: 8px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    padding: var(--space-3);
-    .tabs button,
-    .view-switcher button {
-      padding: 8px 14px;
+    .stat-label {
+      color: var(--color-text-muted);
       font-size: 14px;
     }
-    .map-loading,
-    .map-error {
-      height: 260px;
+  }
+}
+
+.job-card-content {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .job-main {
+        display: flex;
+        gap: 16px;
+
+        .job-icon-box {
+            width: 48px;
+            height: 48px;
+            background: var(--color-surface-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            mat-icon { color: $color-yellow; }
+        }
+
+        .job-details {
+            .job-header-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 4px;
+
+                h4 { margin: 0; font-weight: 700; font-size: 16px; }
+
+                .status-pill {
+                    font-size: 10px;
+                    padding: 2px 8px;
+                    border-radius: 99px;
+                    font-weight: 600;
+                    &.yellow { background: rgba($color-yellow, 0.2); color: darken($color-yellow, 20%); }
+                }
+            }
+
+            .project-name {
+                color: var(--color-text-muted);
+                font-size: 14px;
+                margin: 0 0 8px 0;
+            }
+
+            .meta-row {
+                display: flex;
+                gap: 16px;
+                font-size: 13px;
+                color: var(--color-text-muted);
+
+                span {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    mat-icon { font-size: 14px; width: 14px; height: 14px; }
+                }
+            }
+        }
     }
-  }
+
+    .job-actions {
+        text-align: right;
+
+        .bids-count {
+            margin-bottom: 8px;
+            .count { font-size: 20px; font-weight: 700; color: $color-yellow; display: block; }
+            .label { font-size: 11px; color: var(--color-text-muted); }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+    }
 }
 
-/* Footer bits reused by cards */
-.job-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-}
-.job-trades {
-  flex: 1;
+// Custom Buttons
+.custom-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    gap: 6px;
+
+    &.primary-btn {
+        background-color: $color-yellow;
+        color: #000;
+        &:hover { background-color: darken($color-yellow, 5%); }
+    }
+
+    &.outline-btn {
+        background-color: transparent;
+        border-color: var(--color-border);
+        color: var(--color-text);
+        &:hover { background-color: var(--color-surface-subtle); }
+    }
+
+    &.small {
+        padding: 4px 12px;
+        font-size: 12px;
+        height: 32px;
+    }
+
+    mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
 }
 
-.bid-button {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border: 0;
-  border-radius: 20px;
-  padding: 6px 18px;
-  font-weight: var(--fw-bold);
-  @include u.interactive-states;
-  &:hover {
-    background: var(--color-primary-hover);
-  }
+// Invite Section Styles
+.card-footer-actions {
+    border-top: 1px solid var(--color-border);
+
+    .toggle-invite-btn {
+        width: 100%;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        color: var(--color-text-muted);
+        font-weight: 500;
+        font-size: 13px;
+
+        &:hover {
+            color: var(--color-text);
+            background: var(--color-surface-subtle);
+        }
+
+        span { display: flex; align-items: center; gap: 8px; }
+
+        mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            transition: transform 0.2s ease;
+            &.rotated { transform: rotate(180deg); }
+        }
+    }
 }
 
-.trade-pill {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: var(--fw-semibold);
-  margin: 0 8px 8px 0;
-  text-transform: capitalize;
-  background: var(--color-surface-subtle);
-  color: var(--color-text);
-}
-.trade-pill.match {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
-}
-
-.trade-warning {
-  color: var(--color-danger);
-  font-weight: var(--fw-semibold);
-  margin-top: 10px;
-}
-
-::ng-deep .custom-marker {
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: scale(1.12);
-  }
-}
-
-.job-posted-date {
-  margin-bottom: 4px;
-}
-.job-expected-dates {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 2px;
-  font-size: 16px;
-  color: var(--color-text);
-}
-.provisional-label {
-  font-style: italic;
-  color: var(--color-text-muted);
-  font-weight: var(--fw-semibold);
-}
-
-.sort-direction-button {
-  background: transparent;
-  border: 0;
-  color: var(--color-text);
-  border-radius: var(--radius-sm);
-  @include u.interactive-states;
-  &:hover {
+.invite-section {
+    border-top: 1px solid var(--color-border);
     background: var(--color-surface-subtle);
-  }
+    padding: 16px;
+
+    .invite-config {
+        margin-bottom: 16px;
+
+        .config-row {
+            margin-bottom: 12px;
+            label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+            .yellow-text { color: darken($color-yellow, 10%); }
+
+            .slider-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                input[type=range] { flex: 1; accent-color: $color-yellow; }
+                .radius-val { font-size: 13px; font-weight: 600; color: $color-yellow; width: 60px; text-align: right; }
+            }
+        }
+
+        .search-input {
+            position: relative;
+            mat-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--color-text-muted); }
+            input {
+                width: 100%;
+                padding: 8px 12px 8px 36px;
+                border-radius: 6px;
+                border: 1px solid var(--color-border);
+                background: var(--color-surface);
+            }
+        }
+    }
+
+    .subcontractors-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+
+        .sub-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .sub-info {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+
+                .sub-icon {
+                    width: 36px;
+                    height: 36px;
+                    background: var(--color-surface-subtle);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $color-yellow; }
+                }
+
+                .sub-name { font-weight: 600; font-size: 13px; }
+                .sub-meta {
+                    font-size: 11px; color: var(--color-text-muted);
+                    display: flex; gap: 8px;
+                    .rating { display: flex; align-items: center; gap: 2px; mat-icon { font-size: 12px; width: 12px; height: 12px; color: $color-yellow; } }
+                }
+            }
+        }
+    }
+
+    .invite-by-email {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--color-border);
+
+        .invite-label {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin-bottom: 8px;
+        }
+
+        .email-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+
+            .input-wrapper {
+                flex: 1;
+                input {
+                    width: 100%;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    border: 1px solid var(--color-border);
+                    background: var(--color-surface);
+                    color: var(--color-text);
+                }
+            }
+
+            .custom-btn.outline-btn {
+                height: 35px;
+                color: $color-yellow;
+                border-color: $color-yellow;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+
+                &:hover {
+                    background: rgba($color-yellow, 0.1);
+                }
+            }
+        }
+    }
+}
+
+// 6. Browse Jobs Filters
+.filters-container {
+    padding: 16px;
+    margin-bottom: var(--space-4);
+
+    .search-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 250px;
+
+            mat-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--color-text-muted);
+            }
+
+            input {
+                width: 100%;
+                padding: 10px 12px 10px 40px;
+                border-radius: var(--radius-sm);
+                border: 1px solid var(--color-border);
+                background: var(--color-surface);
+                color: var(--color-text);
+
+                &:focus {
+                    outline: none;
+                    border-color: $color-yellow;
+                }
+            }
+        }
+
+        .location-controls {
+            display: flex;
+            gap: 8px;
+
+            .toggle-btn {
+                padding: 8px 16px;
+                border: 1px solid var(--color-border);
+                background: transparent;
+                border-radius: var(--radius-sm);
+                cursor: pointer;
+                font-size: 13px;
+
+                &.active {
+                    background: $color-yellow;
+                    color: #000;
+                    border-color: $color-yellow;
+                    font-weight: 600;
+                }
+            }
+        }
+    }
+
+    .advanced-filters-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+
+        .range-filter {
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+
+            label { font-size: 12px; margin-bottom: 4px; font-weight: 500; }
+
+            input[type="range"] {
+                accent-color: $color-yellow;
+            }
+        }
+
+        .compact-field {
+            width: 180px;
+             ::ng-deep .mat-mdc-form-field-wrapper { padding: 0; }
+        }
+    }
+
+    .custom-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: 8px 32px 8px 12px;
+        font-size: 13px;
+        color: var(--color-text);
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 16px;
+        min-width: 200px;
+        height: 37px;
+
+        &:focus {
+            outline: none;
+            border-color: $color-yellow;
+        }
+    }
+}
+
+// 7. My Bids Tab
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .filter-pill {
+        padding: 6px 16px;
+        border-radius: 99px;
+        border: 1px solid var(--color-border);
+        background: transparent;
+        cursor: pointer;
+        font-size: 13px;
+
+        &.active {
+            border-color: $color-yellow;
+            color: $color-yellow;
+            background: rgba($color-yellow, 0.05);
+        }
+    }
+}
+
+// 8. Alerts Tab
+.alerts-pane {
+    max-width: 90%;
+    margin: 0 auto;
+
+    .alerts-header-card {
+        @extend .card-style;
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: linear-gradient(to right, rgba($color-yellow, 0.1), transparent);
+        border-color: rgba($color-yellow, 0.3);
+
+        .header-content {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+
+            .icon-box {
+                width: 56px;
+                height: 56px;
+                background: rgba($color-yellow, 0.2);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                mat-icon { color: darken($color-yellow, 10%); font-size: 28px; width: 28px; height: 28px; }
+            }
+
+            h3 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; }
+            p { margin: 0; color: var(--color-text-muted); }
+        }
+    }
+
+    .alerts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+
+        @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+        }
+
+        .config-card {
+            @extend .card-style;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+
+            &.notifications-card {
+                grid-column: 1 / -1;
+            }
+
+            .card-header {
+                padding: 16px;
+                border-bottom: 1px solid var(--color-border);
+
+                &.with-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                }
+
+                .header-actions {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                    font-size: 12px;
+
+                    .link-btn {
+                        background: none;
+                        border: none;
+                        color: $color-blue;
+                        cursor: pointer;
+                        padding: 0;
+                        font-size: 12px;
+                        &:hover { text-decoration: underline; }
+                    }
+                    .divider { color: var(--color-border); }
+                }
+
+                h4 {
+                    margin: 0 0 4px 0;
+                    font-size: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    mat-icon { color: $color-yellow; }
+                }
+                p { margin: 0; font-size: 12px; color: var(--color-text-muted); }
+            }
+
+            .card-content {
+                padding: 24px;
+                flex: 1;
+
+                &.centered { text-align: center; }
+
+                // Location Input in Radius Card
+                .location-input-wrapper {
+                    position: relative;
+                    margin-bottom: 20px;
+
+                    mat-icon {
+                        position: absolute;
+                        left: 12px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        color: var(--color-text-muted);
+                        cursor: pointer;
+                        z-index: 10;
+
+                        &:hover {
+                            color: $color-yellow;
+                        }
+                    }
+
+                    input {
+                        width: 100%;
+                        padding: 10px 12px 10px 40px;
+                        border-radius: var(--radius-sm);
+                        border: 1px solid var(--color-border);
+                        background: var(--color-surface);
+                        color: var(--color-text);
+
+                        &:focus {
+                            outline: none;
+                            border-color: $color-yellow;
+                        }
+                    }
+                }
+
+                // Preset Chips in Radius Card
+                .distance-presets {
+                    display: flex;
+                    justify-content: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    margin-bottom: 24px;
+
+                    .preset-chip {
+                        padding: 6px 12px;
+                        border-radius: 99px;
+                        border: 1px solid var(--color-border);
+                        background: transparent;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: all 0.2s;
+
+                        &:hover {
+                            background: var(--color-surface-subtle);
+                        }
+
+                        &.active {
+                            background: rgba($color-yellow, 0.2);
+                            color: darken($color-yellow, 20%);
+                            border-color: $color-yellow;
+                            font-weight: 600;
+                        }
+                    }
+                }
+
+                .big-value {
+                    font-size: 48px;
+                    font-weight: 700;
+                    color: $color-yellow;
+                    margin-bottom: 16px;
+
+                    .unit { font-size: 18px; color: var(--color-text-muted); font-weight: 400; }
+                }
+
+                .full-width-range { width: 100%; accent-color: $color-yellow; }
+
+                .range-labels {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                    color: var(--color-text-muted);
+                    margin-top: 8px;
+                }
+
+                .trade-checkbox-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 12px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    padding-right: 8px;
+
+                    // Ensure text wraps properly 
+                    mat-checkbox {
+                        font-size: 13px;
+                    }
+                }
+
+                .notification-options-cards {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    gap: 16px;
+
+                    .notification-card {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        padding: 16px;
+                        border: 1px solid var(--color-border);
+                        border-radius: var(--radius-md);
+                        background: var(--color-surface);
+                        transition: all 0.2s ease;
+
+                        &.active {
+                            border-color: rgba($color-yellow, 0.5);
+                            background: linear-gradient(to right, rgba($color-yellow, 0.05), transparent);
+                        }
+
+                        .notif-icon-box {
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            background: var(--color-surface-subtle);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+
+                            mat-icon {
+                                color: var(--color-text-muted);
+                                font-size: 20px;
+                                width: 20px;
+                                height: 20px;
+                            }
+                        }
+
+                        .notif-details {
+                            flex: 1;
+                            .notif-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+                            .notif-desc { font-size: 12px; color: var(--color-text-muted); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .save-actions {
+        display: flex;
+        justify-content: flex-end;
+        button {
+            background-color: $color-yellow;
+            color: #000;
+            padding: 8px 24px;
+        }
+    }
+}
+
+// Utility
+.empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+
+    mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: var(--color-text-muted);
+        margin-bottom: 16px;
+    }
+
+    h3 { margin: 0 0 8px 0; font-size: 18px; font-weight: 600; }
+    p { color: var(--color-text-muted); margin-bottom: 24px; }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h3 { margin: 0; font-size: 18px; font-weight: 700; }
 }
 
 .centered-spinner-container {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+    display: flex;
+    justify-content: center;
+    padding: 48px;
 }
-
-// These two are for stopping the mat-select label from hiding
-::ng-deep .mat-mdc-select-placeholder {
-  position: absolute;
-  top: 20px;
-}
-
-::ng-deep .mat-mdc-form-field-infix {
-  margin-top: -8px;
-}
-
-// mat-option {
-//     background-color: var(--color-primary) !important;
-//     color: var(--color-text-inverse) !important;
-// }

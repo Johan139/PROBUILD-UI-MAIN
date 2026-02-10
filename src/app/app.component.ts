@@ -151,7 +151,7 @@ export class AppComponent implements OnInit, OnDestroy {
     //   tooltip: 'Create a new quote',
     // },
     {
-      label: 'Marketplace(UC)',
+      label: 'Marketplace',
       icon: 'travel_explore',
       route: ['/find-work'],
       tooltip: 'Search for new work opportunities(Under Construction)',

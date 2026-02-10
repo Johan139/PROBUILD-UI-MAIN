@@ -89,7 +89,10 @@ export class JobInboundBiddingComponent implements OnInit {
     this.isLoading = true;
     this.bomService.getTradePackages(jobId).subscribe({
       next: (packages) => {
-        this.tradePackages = packages;
+        this.tradePackages = packages.map(pkg => ({
+          ...pkg,
+          trade: pkg.trade.replace(/\*\*/g, '')
+        }));
         this.loadBids(jobId);
       },
       error: (err) => {

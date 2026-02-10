@@ -1,24 +1,63 @@
 <div class="find-work-container">
+  <!-- Header -->
   <div class="header-container">
-    <h1>Find Work</h1>
-    <p>Search for projects in your area</p>
+    <div class="title-section">
+      <h1>Marketplace</h1>
+      <p>Find subcontractors and manage bids</p>
+    </div>
+    <button mat-flat-button color="primary" class="post-job-btn" (click)="openPostJobDialog()">
+      <mat-icon>add</mat-icon>
+      Post New Job
+    </button>
   </div>
-  <div class="tabs">
+
+  <!-- Role Labels (Optional/Static for now) -->
+  <div class="role-labels">
+    <span class="role-label"><mat-icon>domain</mat-icon> General Contractor</span>
+    <span class="role-label right"><mat-icon>engineering</mat-icon> Subcontractor</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs-navigation">
     <button
-      (click)="setActiveTab('allJobs')"
-      [class.active]="activeTab === 'allJobs'"
-      matTooltip="View all jobs that are available for bidding"
-      [matTooltipShowDelay]="500"
+      (click)="setActiveTab('postings')"
+      [class.active]="activeTab === 'postings'"
+      class="tab-btn"
     >
-      All Jobs
+      My Job Postings
+      <span class="badge yellow" *ngIf="myPostings.length > 0">{{ myPostings.length }}</span>
     </button>
     <button
-      (click)="setActiveTab('myBids')"
-      [class.active]="activeTab === 'myBids'"
-      matTooltip="View all jobs that you have placed a bid on"
-      [matTooltipShowDelay]="500"
+      (click)="setActiveTab('browse')"
+      [class.active]="activeTab === 'browse'"
+      class="tab-btn"
+    >
+      Browse Jobs
+      <span class="badge green">{{ filteredJobs.length }}</span>
+    </button>
+    <button
+      (click)="setActiveTab('bids')"
+      [class.active]="activeTab === 'bids'"
+      class="tab-btn"
     >
       My Bids
+      <span class="badge blue">{{ myBidsDataSource.data.length }}</span>
+    </button>
+    <button
+      (click)="setActiveTab('saved')"
+      [class.active]="activeTab === 'saved'"
+      class="tab-btn"
+    >
+      Saved Jobs
+      <span class="badge purple" *ngIf="savedJobs.length > 0">{{ savedJobs.length }}</span>
+    </button>
+    <button
+      (click)="setActiveTab('alerts')"
+      [class.active]="activeTab === 'alerts'"
+      class="tab-btn"
+    >
+      <mat-icon class="tab-icon">notifications</mat-icon>
+      Job Alerts
     </button>
   </div>
 
@@ -26,345 +65,466 @@
     <mat-spinner></mat-spinner>
   </div>
 
-  <div *ngIf="!filtersLoading" class="unified-view">
-    <div class="list-panel">
-      <div class="list-container">
-        <div class="search-container">
-          <input
-            type="text"
-            placeholder="Search by keyword..."
-            [(ngModel)]="searchTerm"
-            (ngModelChange)="applyFilters()"
-          />
+  <!-- Content Area -->
+  <div *ngIf="!filtersLoading" class="content-area">
+
+    <!-- MAP SECTION (Visible for tabs that need it) -->
+    <div class="map-section" *ngIf="['postings', 'browse', 'bids', 'saved'].includes(activeTab)">
+      <div class="map-header">
+        <div class="location-label">
+            <mat-icon>place</mat-icon>
+            <span>Job Locations</span>
         </div>
-        <div class="location-toggle">
-          <button
-            class="toggle-btn"
-            [class.active]="locationMode === 'saved'"
-            (click)="setLocationMode('saved')"
-            matTooltip="Use the address saved in your user profile as the starting point for finding work"
-            [matTooltipShowDelay]="500"
-          >
-            Saved Address
-          </button>
-
-          <button
-            class="toggle-btn"
-            [class.active]="locationMode === 'custom'"
-            (click)="setLocationMode('custom')"
-            matTooltip="Use a custom address as the starting point for finding work"
-            [matTooltipShowDelay]="500"
-          >
-            Custom Address
-          </button>
-        </div>
-
-        <div *ngIf="locationMode === 'custom'" class="custom-address-wrapper">
-          <input
-            #customAddressInput
-            type="text"
-            class="custom-address-input"
-            placeholder="Type address..."
-          />
-        </div>
-
-        <div *ngIf="locationMode === 'saved' && addressListLoaded">
-          <!-- No addresses -->
-          <div *ngIf="userAddresses.length === 0" class="no-address-warning">
-            <p class="warning-text">
-              To make full use of Find Work near you, please add an address in
-              your profile.
-            </p>
-            <button
-              mat-button
-              class="addAddressButton"
-              color="primary"
-              (click)="
-                router.navigate(['/profile'], {
-                  queryParams: { tab: 'addresses' },
-                })
-              "
-            >
-              Add Address
-            </button>
-          </div>
-
-          <!-- Single address -->
-          <div *ngIf="userAddresses.length === 1" class="address-info">
-            <p>
-              Using your address:
-              {{ userAddresses[0].formattedAddress }}
-            </p>
-          </div>
-
-          <!-- Multiple addresses -->
-          <div *ngIf="userAddresses.length > 1" class="address-section">
-            <mat-form-field appearance="outline" class="address-select-field">
-              <mat-label>Select address for distance filtering</mat-label>
-              <mat-select
-                [(ngModel)]="selectedAddressId"
-                (selectionChange)="onAddressSelected()"
-              >
-                <mat-option
-                  *ngFor="let addr of userAddresses"
-                  [value]="addr.id"
-                >
-                  {{ addr.formattedAddress }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-        </div>
-
-        <div class="advanced-filters">
-          <div>
-            <label for="distance"
-              >Distance from your current location: {{ distance }}
-              {{ distanceUnit }}</label
-            >
-            <input
-              type="range"
-              id="distance"
-              min="0"
-              max="1000"
-              step="20"
-              [(ngModel)]="distance"
-              (ngModelChange)="applyFilters()"
-            />
-          </div>
-          <div class="filter-row filter-form-fields">
-            <button
-              mat-icon-button
-              (click)="toggleSortDirection()"
-              class="sort-direction-button"
-            >
-              <mat-icon>{{
-                sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
-              }}</mat-icon>
-            </button>
-            <mat-form-field
-              appearance="outline"
-              matTooltip="Sort jobs by distance, start date, or recently added"
-              [matTooltipShowDelay]="500"
-            >
-              <mat-label>Sort by</mat-label>
-              <mat-select [(ngModel)]="sortBy" (ngModelChange)="sortJobs()">
-                <mat-option value="distance">Distance</mat-option>
-                <mat-option value="startDate">Start Date</mat-option>
-                <mat-option value="postedDate">Recently Added</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field
-              appearance="outline"
-              matTooltip="Filter jobs by specific trades"
-              [matTooltipShowDelay]="500"
-            >
-              <mat-label>Trades</mat-label>
-              <mat-select
-                multiple
-                [(ngModel)]="selectedTrades"
-                (ngModelChange)="applyFilters()"
-              >
-                <mat-option *ngFor="let trade of allTrades" [value]="trade">
-                  {{ trade | titlecase }} ({{ tradeCounts[trade] || 0 }})
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field
-              appearance="outline"
-              matTooltip="Filter jobs by type"
-              [matTooltipShowDelay]="500"
-            >
-              <mat-label>Job Type</mat-label>
-              <mat-select
-                multiple
-                [(ngModel)]="selectedJobTypes"
-                (ngModelChange)="applyFilters()"
-              >
-                <mat-option
-                  *ngFor="let type of allJobTypes"
-                  [value]="type.value"
-                  >{{ type.viewValue }}</mat-option
-                >
-              </mat-select>
-            </mat-form-field>
-            <button
-              mat-button
-              class="clear-filters-btn"
-              (click)="clearFilters()"
-              matTooltip="Reset your filters"
-              [matTooltipShowDelay]="500"
-            >
-              Reset
-            </button>
-          </div>
-        </div>
-        <div *ngIf="activeTab === 'allJobs'">
-          <h2>All Jobs ({{ filteredJobs.length }})</h2>
-          <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
-          <div *ngIf="!jobsLoading && jobs.length === 0" class="no-jobs">
-            No jobs available
-          </div>
-          <div
-            *ngIf="!jobsLoading && filteredJobs.length === 0 && jobs.length > 0"
-            class="no-jobs"
-          >
-            No jobs found with your current filters
-          </div>
-          <ul class="job-list" *ngIf="!jobsLoading && filteredJobs.length > 0">
-            <li
-              *ngFor="
-                let job of dataSource.connect() | async;
-                trackBy: trackByJobId
-              "
-              class="job-item"
-              (mouseenter)="highlightMarker(job.jobId)"
-              (mouseleave)="unhighlightMarker(job.jobId)"
-              (click)="onJobClick(job)"
-            >
-              <app-job-card
-                [job]="job"
-                [userTrade]="userTrade"
-                [quote]="getQuoteForJob(job.jobId)"
-                [bid]="getBidForJob(job.jobId)"
-                (viewQuote)="onViewQuote(getQuoteForJob(job.jobId)!)"
-                (withdrawBid)="onWithdrawBid(getBidForJob(job.jobId)!)"
-                (editBid)="onEditBid(getBidForJob(job.jobId)!)"
-                (viewMoreInfo)="onViewMoreInfo(job)"
-                [showBidButton]="
-                  !getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)
-                "
-              >
-              </app-job-card>
-            </li>
-          </ul>
-          <mat-paginator
-            [length]="filteredJobs.length"
-            [pageSizeOptions]="[5, 10, 20]"
-            showFirstLastButtons
-          ></mat-paginator>
-        </div>
-
-        <div *ngIf="activeTab === 'myBids'">
-          <h2>My Bids ({{ myBidsDataSource.data.length }})</h2>
-          <div class="filter-buttons">
-            <button
-              class="filter-pill"
-              [class.active]="quoteStatusFilter === 'All'"
-              (click)="quoteStatusFilter = 'All'; applyQuoteFilter()"
-            >
-              All
-            </button>
-            <button
-              class="filter-pill"
-              [class.active]="quoteStatusFilter === 'Draft'"
-              (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()"
-            >
-              Draft
-            </button>
-            <button
-              class="filter-pill"
-              [class.active]="quoteStatusFilter === 'Submitted'"
-              (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()"
-            >
-              Submitted
-            </button>
-            <button
-              class="filter-pill"
-              [class.active]="quoteStatusFilter === 'Rejected'"
-              (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()"
-            >
-              Rejected
-            </button>
-          </div>
-          <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
-          <div
-            *ngIf="!bidsLoading && myBidsDataSource.data.length === 0"
-            class="no-jobs"
-          >
-            <span *ngIf="quoteStatusFilter === 'All'"
-              >You haven't placed any bids yet</span
-            >
-            <span *ngIf="quoteStatusFilter === 'Draft'"
-              >You have no draft bids</span
-            >
-            <span *ngIf="quoteStatusFilter === 'Submitted'"
-              >You have no submitted bids</span
-            >
-            <span *ngIf="quoteStatusFilter === 'Rejected'"
-              >You have no rejected bids</span
-            >
-          </div>
-          <ul
-            class="job-list"
-            *ngIf="!bidsLoading && myBidsDataSource.data.length > 0"
-          >
-            <li
-              *ngFor="
-                let bid of myBidsDataSource.connect() | async;
-                trackBy: trackByBidId
-              "
-              class="job-item"
-            >
-              <app-job-card
-                *ngIf="bid.job"
-                [job]="bid.job"
-                [bid]="bid"
-                [quote]="getQuoteForBid(bid)"
-                (viewQuote)="onViewQuote(getQuoteForBid(bid)!)"
-                (withdrawBid)="onWithdrawBid(bid)"
-                (editBid)="onEditBid(bid)"
-                (viewMoreInfo)="onViewMoreInfo(bid.job)"
-                [userTrade]="userTrade"
-                [showBidButton]="false"
-              >
-              </app-job-card>
-            </li>
-          </ul>
-          <mat-paginator
-            [length]="myBidsDataSource.data.length"
-            [pageSizeOptions]="[5, 10, 20]"
-            showFirstLastButtons
-          ></mat-paginator>
+        <div class="legend">
+            <span class="legend-item"><span class="dot green"></span> Open Jobs</span>
+            <span class="legend-item"><span class="dot yellow"></span> Your Postings</span>
+            <span class="legend-item"><span class="dot blue"></span> Your Bids</span>
+            <span class="legend-item"><span class="dot purple"></span> Saved</span>
         </div>
       </div>
-    </div>
-    <div class="map-panel">
-      <div class="map-view-wrapper">
-        <div class="map-container" [class.with-panel]="selectedJob">
-          <!-- Loading state -->
-          <div *ngIf="isMapLoading && !mapLoadError" class="map-loading">
+
+      <div class="map-container">
+        <!-- Loading state -->
+        <div *ngIf="isMapLoading && !mapLoadError" class="map-loading">
             <div class="loading-spinner"></div>
             <p>Loading map...</p>
-          </div>
+        </div>
 
-          <!-- Error state -->
-          <div *ngIf="mapLoadError" class="map-error">
-            <p>
-              Failed to load Google Maps. Please check your API key and internet
-              connection.
-            </p>
+        <!-- Error state -->
+        <div *ngIf="mapLoadError" class="map-error">
+            <p>Failed to load Google Maps. Please check your API key and internet connection.</p>
             <button (click)="retryMapLoad()" class="retry-btn">Retry</button>
-          </div>
+        </div>
 
-          <!-- Map component -->
-          <google-map
-            *ngIf="
-              (isApiLoaded$ | async) &&
-              !isMapLoading &&
-              !mapLoadError &&
-              isMapVisible
-            "
-            height="80%"
+        <!-- Map component -->
+        <google-map
+            *ngIf="(isApiLoaded$ | async) && !isMapLoading && !mapLoadError && isMapVisible"
+            height="100%"
             width="100%"
             [center]="center"
             [zoom]="zoom"
             [options]="mapOptions"
             (mapInitialized)="onMapInitialized($event)"
-          >
-          </google-map>
+        >
+        </google-map>
+      </div>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content-wrapper">
+
+      <!-- 1. MY JOB POSTINGS -->
+      <div *ngIf="activeTab === 'postings'" class="tab-pane">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon-box green-bg"><mat-icon class="green-text">check_circle</mat-icon></div>
+                <div>
+                    <div class="stat-value">{{ myPostings.length }}</div>
+                    <div class="stat-label">Open Postings</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-box yellow-bg"><mat-icon class="yellow-text">visibility</mat-icon></div>
+                <div>
+                    <div class="stat-value">1</div> <!-- TODO Mocked -->
+                    <div class="stat-label">Reviewing Bids</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-box blue-bg"><mat-icon class="blue-text">send</mat-icon></div>
+                <div>
+                    <div class="stat-value">{{ getTotalBidsReceived() }}</div>
+                    <div class="stat-label">Total Bids Received</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-box purple-bg"><mat-icon class="purple-text">attach_money</mat-icon></div>
+                <div>
+                    <div class="stat-value">{{ getTotalPostingsValue() }}</div>
+                    <div class="stat-label">Total Value</div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="myPostings.length === 0" class="empty-state">
+            <mat-icon>post_add</mat-icon>
+            <h3>No Job Postings Yet</h3>
+            <p>Post a job to find subcontractors.</p>
+            <button mat-stroked-button color="primary" (click)="openPostJobDialog()">Post First Job</button>
+        </div>
+
+        <ul class="job-list">
+            <li *ngFor="let job of myPostings" class="job-item card-style" (click)="onJobClick(job)">
+                <div class="job-card-content">
+                    <div class="job-main">
+                        <div class="job-icon-box"><mat-icon>construction</mat-icon></div>
+                        <div class="job-details">
+                            <div class="job-header-row">
+                                <h4>{{ job.trades?.[0] || 'General' }}</h4>
+                                <span class="status-pill yellow">Reviewing</span>
+                            </div>
+                            <p class="project-name">{{ job.projectName }}</p>
+                            <div class="meta-row">
+                                <span><mat-icon>place</mat-icon> {{ job.city || 'Unknown' }}, {{ job.state || '' }}</span>
+                                <span><mat-icon>attach_money</mat-icon> {{ getJobBudget(job) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="job-actions">
+                        <div class="bids-count">
+                            <span class="count">0</span>
+                            <span class="label">bids received</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="custom-btn outline-btn small" (click)="aiAnalyze(job, $event)">
+                                <mat-icon>auto_awesome</mat-icon> AI Analyze
+                            </button>
+                            <button class="custom-btn primary-btn small">Manage</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invite Subcontractors Toggle -->
+                <div class="card-footer-actions">
+                    <button class="toggle-invite-btn" (click)="toggleExpandJob(job.jobId, $event)">
+                        <span><mat-icon>person_add</mat-icon> Invite Subcontractors to Bid</span>
+                        <mat-icon [class.rotated]="expandedJobId === job.jobId">expand_more</mat-icon>
+                    </button>
+                </div>
+
+                <!-- Collapsible Invite Configuration -->
+                <div class="invite-section" *ngIf="expandedJobId === job.jobId" (click)="$event.stopPropagation()">
+                    <div class="invite-config">
+                        <div class="config-row">
+                            <label><mat-icon class="yellow-text">place</mat-icon> Search Radius</label>
+                            <div class="slider-wrapper">
+                                <input type="range" min="5" max="100" [value]="inviteRadius[job.jobId] || 25" (input)="inviteRadius[job.jobId] = $any($event.target).value">
+                                <span class="radius-val">{{ inviteRadius[job.jobId] || 25 }} miles</span>
+                            </div>
+                        </div>
+                        <div class="search-row">
+                            <div class="search-input">
+                                <mat-icon>search</mat-icon>
+                                <input type="text" placeholder="Search subcontractors..." [(ngModel)]="subcontractorSearch">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="subcontractors-list">
+                        <div class="sub-item" *ngFor="let sub of availableSubcontractors">
+                            <div class="sub-info">
+                                <div class="sub-icon"><mat-icon>business</mat-icon></div>
+                                <div>
+                                    <div class="sub-name">{{ sub.company }}</div>
+                                    <div class="sub-meta">
+                                        <span class="rating"><mat-icon>star</mat-icon> {{ sub.rating }}</span>
+                                        <span class="distance">{{ sub.distance }} mi away</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="custom-btn primary-btn small" (click)="inviteSubcontractor(sub, $event)">Invite</button>
+                        </div>
+                    </div>
+
+                    <!-- Invite by Email -->
+                    <div class="invite-by-email">
+                        <p class="invite-label">Can't find who you're looking for?</p>
+                        <div class="email-input-row">
+                             <div class="input-wrapper">
+                                <input type="email" placeholder="Enter email to invite..." [(ngModel)]="emailInvite" (click)="$event.stopPropagation()">
+                             </div>
+                             <button class="custom-btn outline-btn" (click)="$event.stopPropagation()">
+                                <mat-icon>mail</mat-icon> Send
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+      </div>
+
+      <!-- 2. BROWSE JOBS (Existing All Jobs) -->
+      <div *ngIf="activeTab === 'browse'" class="tab-pane">
+        <!-- Filters -->
+        <div class="filters-container card-style">
+            <div class="search-row">
+                <div class="search-input-wrapper">
+                    <mat-icon>search</mat-icon>
+                    <input type="text" placeholder="Search jobs..." [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()">
+                </div>
+
+                <div class="location-controls">
+                     <button class="toggle-btn" [class.active]="locationMode === 'saved'" (click)="setLocationMode('saved')">Saved Address</button>
+                     <button class="toggle-btn" [class.active]="locationMode === 'custom'" (click)="setLocationMode('custom')">Custom Address</button>
+                </div>
+                <div *ngIf="locationMode === 'custom'" class="custom-address-wrapper">
+                    <input #customAddressInput type="text" class="custom-address-input" placeholder="Type address..." />
+                </div>
+                 <!-- Address Select -->
+                <div *ngIf="locationMode === 'saved' && userAddresses.length > 1" class="address-select-wrapper">
+                    <select class="custom-select" [(ngModel)]="selectedAddressId" (change)="onAddressSelected()">
+                        <option *ngFor="let addr of userAddresses" [value]="addr.id">{{ addr.formattedAddress }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="advanced-filters-row">
+                <div class="range-filter">
+                    <label>Within {{ distance }} {{ distanceUnit }}</label>
+                    <input type="range" min="0" max="1000" step="20" [(ngModel)]="distance" (ngModelChange)="applyFilters()">
+                </div>
+
+                <select class="custom-select" (change)="onTradeFilterChange($event)">
+                    <option value="">All Trades</option>
+                    <option *ngFor="let trade of allTrades" [value]="trade" [selected]="selectedTrades.length === 1 && selectedTrades[0] === trade">
+                        {{ trade | titlecase }} ({{ tradeCounts[trade] || 0 }})
+                    </option>
+                </select>
+
+                <select class="custom-select" (change)="onJobTypeFilterChange($event)">
+                    <option value="">All Types</option>
+                    <option *ngFor="let type of allJobTypes" [value]="type.value" [selected]="selectedJobTypes.length === 1 && selectedJobTypes[0] === type.value">
+                        {{ type.viewValue }}
+                    </option>
+                </select>
+
+                <button mat-button (click)="clearFilters()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Job List -->
+        <div *ngIf="jobsLoading" class="loading">Loading jobs...</div>
+        <div *ngIf="!jobsLoading && filteredJobs.length === 0" class="no-jobs">No jobs found matching your criteria.</div>
+
+        <ul class="job-list" *ngIf="!jobsLoading && filteredJobs.length > 0">
+            <li *ngFor="let job of dataSource.connect() | async; trackBy: trackByJobId"
+                class="job-item card-style"
+                [class.saved-border]="savedJobs.includes(job.jobId)"
+                (mouseenter)="highlightMarker(job.jobId)"
+                (mouseleave)="unhighlightMarker(job.jobId)"
+                (click)="onJobClick(job)">
+
+                <app-job-card
+                    [job]="job"
+                    [userTrade]="userTrade"
+                    [quote]="getQuoteForJob(job.jobId)"
+                    (viewQuote)="onViewQuote(getQuoteForJob(job.jobId)!)"
+                    (withdrawBid)="onWithdrawBid(getBidForJob(job.jobId)!)"
+                    (editBid)="onEditBid(getBidForJob(job.jobId)!)"
+                    (viewMoreInfo)="onViewMoreInfo(job)"
+                    [showBidButton]="!getQuoteForJob(job.jobId) && !getBidForJob(job.jobId)"
+                >
+                </app-job-card>
+
+                <!-- Save Button Overlay -->
+                <button class="save-btn-overlay" (click)="toggleSavedJob(job.jobId, $event)">
+                    <mat-icon [class.saved]="savedJobs.includes(job.jobId)">
+                        {{ savedJobs.includes(job.jobId) ? 'bookmark' : 'bookmark_border' }}
+                    </mat-icon>
+                </button>
+            </li>
+        </ul>
+        <mat-paginator [length]="filteredJobs.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+      </div>
+
+      <!-- 3. MY BIDS -->
+      <div *ngIf="activeTab === 'bids'" class="tab-pane">
+        <div class="filter-buttons">
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'All'" (click)="quoteStatusFilter = 'All'; applyQuoteFilter()">All</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Draft'" (click)="quoteStatusFilter = 'Draft'; applyQuoteFilter()">Draft</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Submitted'" (click)="quoteStatusFilter = 'Submitted'; applyQuoteFilter()">Submitted</button>
+            <button class="filter-pill" [class.active]="quoteStatusFilter === 'Rejected'" (click)="quoteStatusFilter = 'Rejected'; applyQuoteFilter()">Rejected</button>
+        </div>
+
+        <div *ngIf="bidsLoading" class="loading">Loading your bids...</div>
+        <div *ngIf="!bidsLoading && myBidsDataSource.data.length === 0" class="no-jobs">
+            You haven't placed any bids yet.
+        </div>
+
+        <ul class="job-list" *ngIf="!bidsLoading && myBidsDataSource.data.length > 0">
+            <li *ngFor="let bid of myBidsDataSource.connect() | async; trackBy: trackByBidId" class="job-item card-style">
+                 <app-job-card
+                    *ngIf="bid.job"
+                    [job]="bid.job"
+                    [quote]="getQuoteForBid(bid)"
+                    (viewQuote)="onViewQuote(getQuoteForBid(bid)!)"
+                    (withdrawBid)="onWithdrawBid(bid)"
+                    (editBid)="onEditBid(bid)"
+                    (viewMoreInfo)="onViewMoreInfo(bid.job)"
+                    [userTrade]="userTrade"
+                    [showBidButton]="false"
+                >
+                </app-job-card>
+            </li>
+        </ul>
+        <mat-paginator [length]="myBidsDataSource.data.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+      </div>
+
+      <!-- 4. SAVED JOBS -->
+      <div *ngIf="activeTab === 'saved'" class="tab-pane">
+          <div *ngIf="savedJobs.length === 0" class="empty-state">
+              <mat-icon>bookmark_border</mat-icon>
+              <h3>No Saved Jobs</h3>
+              <p>Save jobs you're interested in to review and bid on later.</p>
+              <button mat-flat-button color="primary" (click)="setActiveTab('browse')">Browse Available Jobs</button>
+          </div>
+
+          <div *ngIf="savedJobs.length > 0">
+              <div class="section-header">
+                  <h3>Saved Jobs ({{ filteredJobs.length }})</h3>
+                  <button mat-stroked-button (click)="savedJobs = []; saveSavedJobs(); applyFilters()">Clear All</button>
+              </div>
+
+              <ul class="job-list">
+                <li *ngFor="let job of filteredJobs"
+                    class="job-item card-style saved-border"
+                    (click)="onJobClick(job)">
+                    <app-job-card
+                        [job]="job"
+                        [userTrade]="userTrade"
+                        [quote]="getQuoteForJob(job.jobId)"
+                        (viewMoreInfo)="onViewMoreInfo(job)"
+                        [showBidButton]="true"
+                    ></app-job-card>
+
+                    <button class="save-btn-overlay" (click)="toggleSavedJob(job.jobId, $event)">
+                        <mat-icon class="saved">bookmark</mat-icon>
+                    </button>
+                </li>
+              </ul>
+          </div>
+      </div>
+
+      <!-- 5. JOB ALERTS -->
+      <div *ngIf="activeTab === 'alerts'" class="tab-pane alerts-pane">
+        <div class="alerts-header-card">
+            <div class="header-content">
+                <div class="icon-box yellow-bg"><mat-icon class="yellow-text">notifications</mat-icon></div>
+                <div>
+                    <h3>Job Alert Preferences</h3>
+                    <p>Get notified when new jobs matching your criteria are posted</p>
+                </div>
+            </div>
+            <!-- Toggle switch placeholder -->
+             <!-- <mat-slide-toggle [checked]="true">Alerts Enabled</mat-slide-toggle> -->
+        </div>
+
+        <div class="alerts-grid">
+            <!-- Radius Card -->
+            <div class="config-card radius-card">
+                <div class="card-header">
+                    <h4><mat-icon class="yellow-text">place</mat-icon> Search Radius</h4>
+                    <p>Set how far you're willing to travel</p>
+                </div>
+                <div class="card-content centered">
+                    <div class="location-input-wrapper">
+                        <mat-icon (click)="useCurrentLocation()" class="clickable-icon" matTooltip="Use current location">my_location</mat-icon>
+                        <input type="text"
+                               placeholder="Enter location"
+                               [formControl]="alertsAddressControl"
+                               [matAutocomplete]="autoAlerts"
+                               class="location-input">
+                        <mat-autocomplete #autoAlerts="matAutocomplete" (optionSelected)="onAlertsAddressSelected($event)" [displayWith]="displayAlertsAddress">
+                            <mat-option *ngFor="let option of alertsOptions" [value]="option">
+                                {{ option.description }}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </div>
+
+                    <div class="distance-presets">
+                        <button *ngFor="let preset of presetDistances"
+                                class="preset-chip"
+                                [class.active]="distance === preset"
+                                (click)="setDistance(preset)">
+                            {{ preset }} {{ distanceUnit }}
+                        </button>
+                    </div>
+
+                    <div class="big-value">{{ distance }} <span class="unit">{{ distanceUnit }}</span></div>
+                    <input type="range" min="5" max="150" [(ngModel)]="distance" class="full-width-range">
+                    <div class="range-labels">
+                        <span>5 mi</span>
+                        <span>150 mi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Selection -->
+            <div class="config-card trades-card">
+                <div class="card-header with-actions">
+                    <div class="header-text">
+                        <h4><mat-icon class="yellow-text">build</mat-icon> Trade Types</h4>
+                        <p>Select trades to receive alerts for</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="link-btn" (click)="selectAllTrades()">Select All</button>
+                        <span class="divider">|</span>
+                        <button class="link-btn" (click)="clearAllTrades()">Clear</button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="trade-checkbox-grid">
+                        <mat-checkbox *ngFor="let trade of allTrades"
+                                      [checked]="selectedTrades.includes(trade)"
+                                      (change)="toggleTrade(trade)"
+                                      color="primary">
+                           {{ trade }}
+                        </mat-checkbox>
+                   </div>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="config-card notifications-card">
+                <div class="card-header">
+                    <h4><mat-icon class="yellow-text">notifications_active</mat-icon> Notification Preferences</h4>
+                    <p>Choose how you want to be notified</p>
+                </div>
+                <div class="card-content">
+                    <div class="notification-options-cards">
+                        <div class="notification-card" [class.active]="notificationPreferences.email">
+                            <div class="notif-icon-box">
+                                <mat-icon>mail</mat-icon>
+                            </div>
+                            <div class="notif-details">
+                                <div class="notif-title">Email</div>
+                                <div class="notif-desc">Get daily digests</div>
+                            </div>
+                            <mat-slide-toggle [(ngModel)]="notificationPreferences.email" color="primary"></mat-slide-toggle>
+                        </div>
+
+                        <div class="notification-card" [class.active]="notificationPreferences.push">
+                            <div class="notif-icon-box">
+                                <mat-icon>notifications</mat-icon>
+                            </div>
+                            <div class="notif-details">
+                                <div class="notif-title">Push</div>
+                                <div class="notif-desc">Real-time alerts</div>
+                            </div>
+                            <mat-slide-toggle [(ngModel)]="notificationPreferences.push" color="primary"></mat-slide-toggle>
+                        </div>
+
+                        <div class="notification-card" [class.active]="notificationPreferences.sms">
+                            <div class="notif-icon-box">
+                                <mat-icon>sms</mat-icon>
+                            </div>
+                            <div class="notif-details">
+                                <div class="notif-title">SMS</div>
+                                <div class="notif-desc">Instant text updates</div>
+                            </div>
+                            <mat-slide-toggle [(ngModel)]="notificationPreferences.sms" color="primary"></mat-slide-toggle>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="save-actions">
+            <button mat-flat-button color="primary">Save Preferences</button>
         </div>
       </div>
+
     </div>
   </div>
 </div>
