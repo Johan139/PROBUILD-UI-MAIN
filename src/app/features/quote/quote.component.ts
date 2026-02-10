@@ -6,6 +6,8 @@ import {
   ChangeDetectorRef,
   ChangeDetectionStrategy,
   OnDestroy,
+  inject,
+  DestroyRef,
 } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import {
@@ -43,7 +45,7 @@ import { BidsService } from '../../services/bids.service';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { CompanyService } from '../../services/company.service';
-import { QuoteDto, QuoteExtraCostDto } from './quote.model';
+import { QuoteDto, QuoteExtraCostDto, DocumentType } from './quote.model';
 import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JobDataService } from '../jobs/services/job-data.service';
@@ -74,8 +76,7 @@ import {
 } from './quote-preview-dialog.component';
 import { ArchiveService } from '../archive/archive-service';
 import { CompanyEditDialogComponent } from '../companies-dialog/company-edit-dialog.component';
-
-type DocumentType = 'QUOTE' | 'INVOICE';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 interface CompanyDetails {
   name?: string;
   address?: CompanyAddressDTO | string; // 👈 Allow both object and string
@@ -152,7 +153,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
   readOnly: boolean = false;
   isOwnQuote: boolean = false;
   isAlreadyActioned = false;
-
+  private destroyRef = inject(DestroyRef);
   isFinalBiddingRound = false;
   showFeeReminder = false;
   quoteDocuments: { url: string; name: string }[] = [];
@@ -433,7 +434,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     // If we don't have BOTH cached, fetch fresh data
     if (!hasSubtasks || !hasMaterials) {
-      this.jobDataService.fetchJobData({ jobId });
+      this.jobDataService
+        .fetchJobData({ jobId })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe();
     } else {
     }
   }
@@ -1937,7 +1941,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
     this.jobsLoading = true;
 
     // Trigger fetch
-    this.jobDataService.fetchJobData({ jobId });
+    this.jobDataService
+      .fetchJobData({ jobId })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
 
     // Wait ONCE for materials
     this.store

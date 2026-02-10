@@ -171,45 +171,54 @@ export class SubtaskService {
       }));
     this.store.setState({ subtaskGroups: updatedSubtaskGroups });
     const jobData = this.prepareProjectData('DRAFT');
+    const projectDetails = this.store.getState().projectDetails;
+
+    if (!projectDetails?.jobId) {
+      throw new Error('Missing project details');
+    }
+
     const subtaskList = updatedSubtaskGroups.flatMap((group) =>
       group.subtasks.map((subtask) => ({
         ...subtask,
         groupTitle: group.title,
-        jobId: this.store.getState().projectDetails.jobId,
+        jobId: projectDetails.jobId,
         deleted: subtask.deleted ?? false,
       })),
     );
     const userId: string | null = localStorage.getItem('userId');
 
-    this.jobsService
-      .updateJob(jobData, this.store.getState().projectDetails.jobId)
-      .subscribe({
-        next: (response) => {
-          this.jobsService.saveSubtasks(subtaskList, userId).subscribe({
-            next: () => {
-              this.snackBar.open('Saved Job Successfully', 'Close', {
-                duration: 3000,
-              });
-            },
-            error: (err) => {
-              this.snackBar.open('Job saved Successfully', 'Close', {
-                duration: 3000,
-              });
-            },
-          });
-        },
-        error: (err) => {
-          this.snackBar.open(
-            'An unexpected error occurred while saving the job.',
-            'Close',
-            { duration: 3000 },
-          );
-        },
-      });
+    this.jobsService.updateJob(jobData, projectDetails.jobId).subscribe({
+      next: (response) => {
+        this.jobsService.saveSubtasks(subtaskList, userId).subscribe({
+          next: () => {
+            this.snackBar.open('Saved Job Successfully', 'Close', {
+              duration: 3000,
+            });
+          },
+          error: (err) => {
+            this.snackBar.open('Job saved Successfully', 'Close', {
+              duration: 3000,
+            });
+          },
+        });
+      },
+      error: (err) => {
+        this.snackBar.open(
+          'An unexpected error occurred while saving the job.',
+          'Close',
+          { duration: 3000 },
+        );
+      },
+    });
   }
 
   private prepareProjectData(status: string): any {
     const projectDetails = this.store.getState().projectDetails;
+
+    if (!projectDetails) {
+      throw new Error('Missing project details');
+    }
+
     const subtaskGroups = this.store.getState().subtaskGroups;
     const formattedDate = (date: Date | string) => {
       let d;
@@ -271,42 +280,49 @@ export class SubtaskService {
 
   publish(): void {
     const projectData = this.prepareProjectData('PUBLISHED');
-    this.jobsService
-      .updateJob(projectData, this.store.getState().projectDetails.jobId)
-      .subscribe({
-        next: (response) => {
-          this.snackBar.open('Published Job Successfully', 'Close', {
-            duration: 3000,
-          });
-        },
-        error: (err) => {
-          this.snackBar.open(
-            'An unexpected error occurred. Contact support',
-            'Close',
-            { duration: 3000 },
-          );
-        },
-      });
+    const projectDetails = this.store.getState().projectDetails;
+
+    if (!projectDetails?.jobId) {
+      throw new Error('Missing project details');
+    }
+
+    this.jobsService.updateJob(projectData, projectDetails.jobId).subscribe({
+      next: (response) => {
+        this.snackBar.open('Published Job Successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        this.snackBar.open(
+          'An unexpected error occurred. Contact support',
+          'Close',
+          { duration: 3000 },
+        );
+      },
+    });
   }
 
   discard(): void {
     const projectData = this.prepareProjectData('DISCARD');
-    this.jobsService
-      .updateJob(projectData, this.store.getState().projectDetails.jobId)
-      .subscribe({
-        next: (response) => {
-          this.snackBar.open('Discarded Job Successfully', 'Close', {
-            duration: 3000,
-          });
-        },
-        error: (err) => {
-          this.snackBar.open(
-            'An unexpected error occurred. Contact support',
-            'Close',
-            { duration: 3000 },
-          );
-        },
-      });
+    const projectDetails = this.store.getState().projectDetails;
+
+    if (!projectDetails?.jobId) {
+      throw new Error('Missing project details');
+    }
+    this.jobsService.updateJob(projectData, projectDetails.jobId).subscribe({
+      next: (response) => {
+        this.snackBar.open('Discarded Job Successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        this.snackBar.open(
+          'An unexpected error occurred. Contact support',
+          'Close',
+          { duration: 3000 },
+        );
+      },
+    });
   }
 
   publishJob(jobId: number, job: any): Observable<any> {
@@ -315,6 +331,11 @@ export class SubtaskService {
 
   updateSubtask(task: any): void {
     // 1. Update Store
+    const projectDetails = this.store.getState().projectDetails;
+
+    if (!projectDetails?.jobId) {
+      throw new Error('Missing project details');
+    }
     const updatedState = this.store.getState().subtaskGroups.map((group) => {
       const taskIndex = group.subtasks.findIndex((t) => t.id === task.id);
       if (taskIndex > -1) {
@@ -335,7 +356,7 @@ export class SubtaskService {
     const subtaskToSave = {
       ...task,
       groupTitle: groupTitle,
-      jobId: this.store.getState().projectDetails.jobId,
+      jobId: projectDetails.jobId,
       deleted: task.deleted ?? false,
     };
 

@@ -8,6 +8,7 @@ import { AuthService } from '../../authentication/auth.service';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { UserService } from '../../services/user.service';
 import { Notification } from '../../models/notification';
+import { Router } from '@angular/router';
 
 type NotificationTab = 'ALL' | 'UNREAD';
 
@@ -39,6 +40,7 @@ export class NotificationsComponent implements OnInit {
     public authService: AuthService,
     private jobDataService: JobDataService,
     private userService: UserService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -51,7 +53,7 @@ export class NotificationsComponent implements OnInit {
       .getAllNotifications(this.currentPage, this.pageSize)
       .subscribe((response) => {
         this.paginatedNotifications = response?.notifications || [];
-
+        console.log(response);
         this.totalNotifications = response?.totalCount ?? 0;
         this.totalPages = this.totalNotifications
           ? Math.ceil(this.totalNotifications / this.pageSize)
@@ -62,8 +64,9 @@ export class NotificationsComponent implements OnInit {
   /* ================= TAB FILTER (VIEW-ONLY) ================= */
   get visibleNotifications(): Notification[] {
     if (this.activeTab === 'UNREAD') {
-      return this.paginatedNotifications.filter((n: any) => n.unread === true);
+      return this.paginatedNotifications.filter((n) => this.isUnread(n));
     }
+
     return this.paginatedNotifications;
   }
 
@@ -72,19 +75,50 @@ export class NotificationsComponent implements OnInit {
   }
 
   get unreadCount(): number {
-    return this.paginatedNotifications.filter((n: any) => n.unread === true)
-      .length;
+    return this.paginatedNotifications.filter((n) => this.isUnread(n)).length;
   }
 
   /* ================= OPEN + NAVIGATE ================= */
   onOpen(notification: Notification): void {
-    if ((notification as any).unread && this.notificationsService.markRead) {
-      this.notificationsService.markRead(notification.id).subscribe(() => {
-        (notification as any).unread = false;
+    // optimistic read
+    if (this.isUnread(notification)) {
+      notification.isRead = true;
+
+      this.notificationsService.markRead(notification.id).subscribe({
+        error: () => {
+          notification.isRead = false;
+        },
       });
     }
 
-    this.jobDataService.navigateToJob(notification);
+    this.navigateFromNotification(notification);
+  }
+  navigateFromNotification(notification: Notification): void {
+    switch (notification.type) {
+      case 'Quote':
+        this.router.navigate(['/quote'], {
+          queryParams: { quoteId: notification.quoteId },
+        });
+        break;
+
+      case 'Invoice':
+        this.router.navigate(['/quote'], {
+          queryParams: { quoteId: notification.quoteId },
+        });
+        break;
+
+      case 'Job':
+        this.jobDataService.navigateToJob(notification.jobId);
+        break;
+
+      default:
+        console.log(notification.type);
+        console.warn('Unknown notification type:', notification);
+    }
+  }
+
+  isUnread(n: Notification): boolean {
+    return n.isRead !== true;
   }
 
   /* ================= PAGINATION ================= */
@@ -112,7 +146,9 @@ export class NotificationsComponent implements OnInit {
     if (!this.notificationsService.markAllRead) return;
 
     this.notificationsService.markAllRead().subscribe(() => {
-      this.paginatedNotifications.forEach((n: any) => (n.unread = false));
+      this.paginatedNotifications.forEach((n) => {
+        n.isRead = true;
+      });
     });
   }
 

@@ -86,9 +86,13 @@ export class NotificationsService {
     this.hubConnection.on(
       'ReceiveNotification',
       (notification: Notification) => {
-        // console.log('Received real-time notification:', notification);
         const currentNotifications = this.notificationsSubject.value;
-        this.notificationsSubject.next([notification, ...currentNotifications]);
+
+        this.notificationsSubject.next([
+          { ...notification, isRead: notification.isRead ?? false },
+          ...currentNotifications,
+        ]);
+
         this.checkForUnreadNotifications();
       },
     );
@@ -133,8 +137,9 @@ export class NotificationsService {
     return this.http.post(`${this.apiUrl}/mark-as-read/${id}`, {}).pipe(
       tap(() => {
         const updated = this.notificationsSubject.value.map((n) =>
-          n.id === id ? { ...n, unread: false, isRead: true } : n,
+          n.id === id ? { ...n, isRead: true } : n,
         );
+
         this.notificationsSubject.next(updated);
         this.checkForUnreadNotifications();
       }),
@@ -146,7 +151,6 @@ export class NotificationsService {
       tap(() => {
         const updated = this.notificationsSubject.value.map((n) => ({
           ...n,
-          unread: false,
           isRead: true,
         }));
 
@@ -160,7 +164,7 @@ export class NotificationsService {
     const allNotifications = this.notificationsSubject.value;
 
     const hasUnread = allNotifications.some(
-      (n) => n.isRead === false || n.unread === true,
+      (n) => n.isRead !== true, // false OR null
     );
 
     this.hasUnreadNotifications$.next(hasUnread);

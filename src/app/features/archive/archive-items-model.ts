@@ -3,7 +3,14 @@ export interface ArchivedItem {
   type: 'JOB' | 'QUOTE' | 'INVOICE' | 'DOCUMENT' | 'TASK';
   title: string;
   status: string;
-  client: string;
   archivedAt: string;
-  amount: number;
+
+  // Quote / invoice specific
+  client?: string;
+  amount?: number;
+
+  // Document specific
+  project?: string;
+  documentType?: string;
+  size?: number;
 }
