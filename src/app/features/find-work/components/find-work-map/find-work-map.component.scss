@@ -1,0 +1,73 @@
+@use "styles/util/mixins" as u;
+@import '../find-work.shared.scss';
+
+// Map Section
+.map-section {
+  background: var(--color-surface);
+  border: 1px solid $color-border;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  .map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid $color-border;
+
+    .location-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 14px;
+
+      mat-icon {
+        color: $color-yellow;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+
+          &.green { background: $color-green; }
+          &.yellow { background: $color-yellow; }
+          &.blue { background: $color-blue; }
+          &.purple { background: $color-purple; }
+        }
+      }
+    }
+  }
+
+  .map-container {
+    height: 450px;
+    position: relative;
+    background: #27272a; 
+    overflow: hidden;
+
+    .map-loading, .map-error {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        color: #fff;
+    }
+  }
+}

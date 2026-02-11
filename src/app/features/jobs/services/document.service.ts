@@ -80,6 +80,26 @@ export class DocumentService {
     });
   }
 
+  downloadDocument(doc: any, fileName?: string): void {
+    this.jobsService.downloadJobDocument(doc.id).subscribe({
+      next: (response: Blob) => {
+        const blob = new Blob([response], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = window.document.createElement('a');
+        link.href = url;
+        link.download = fileName || doc.name || `document-${doc.id}.pdf`;
+        link.click();
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: (err) => {
+        console.error('Error downloading document:', err);
+        this.snackBar.open('Failed to download document.', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
   getFileType(fileName: string): string {
     const extension = fileName.split('.').pop()?.toLowerCase();
     switch (extension) {

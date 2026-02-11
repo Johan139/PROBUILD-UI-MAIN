@@ -1,0 +1,129 @@
+<div class="tab-pane">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon-box green-bg"><mat-icon class="green-text">check_circle</mat-icon></div>
+            <div>
+                <div class="stat-value">{{ myPostings.length }}</div>
+                <div class="stat-label">Open Postings</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="icon-box yellow-bg"><mat-icon class="yellow-text">visibility</mat-icon></div>
+            <div>
+                <div class="stat-value">1</div> <!-- TODO Mocked -->
+                <div class="stat-label">Reviewing Bids</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="icon-box blue-bg"><mat-icon class="blue-text">send</mat-icon></div>
+            <div>
+                <div class="stat-value">{{ getTotalBidsReceived() }}</div>
+                <div class="stat-label">Total Bids Received</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="icon-box purple-bg"><mat-icon class="purple-text">attach_money</mat-icon></div>
+            <div>
+                <div class="stat-value">{{ getTotalPostingsValue() }}</div>
+                <div class="stat-label">Total Value</div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="myPostings.length === 0" class="empty-state">
+        <mat-icon>post_add</mat-icon>
+        <h3>No Job Postings Yet</h3>
+        <p>Post a job to find subcontractors.</p>
+        <button mat-stroked-button color="primary" (click)="onPostJob()">Post First Job</button>
+    </div>
+
+    <ul class="job-list">
+        <li *ngFor="let job of myPostings" class="job-item card-style" (click)="onJobClick(job)">
+            <div class="job-card-content">
+                <div class="job-main">
+                    <div class="job-icon-box"><mat-icon>construction</mat-icon></div>
+                    <div class="job-details">
+                        <div class="job-header-row">
+                            <h4>{{ getPrimaryTrade(job) }}</h4>
+                            <span class="status-pill yellow">Reviewing</span>
+                        </div>
+                        <p class="project-name">{{ job.projectName }}</p>
+                        <div class="meta-row">
+                            <span><mat-icon>place</mat-icon> {{ job.city || 'Unknown' }}, {{ job.state || '' }}</span>
+                            <span><mat-icon>attach_money</mat-icon> {{ getJobBudget(job) }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <div class="bids-count">
+                        <span class="count">0</span>
+                        <span class="label">bids received</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="custom-btn outline-btn small" (click)="aiAnalyze(job, $event)">
+                            <mat-icon>auto_awesome</mat-icon> AI Analyze
+                        </button>
+                        <button class="custom-btn primary-btn small">Manage</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invite Subcontractors Toggle -->
+            <div class="card-footer-actions">
+                <button class="toggle-invite-btn" (click)="toggleExpandJob(job.jobId, $event)">
+                    <span><mat-icon>person_add</mat-icon> Invite Subcontractors to Bid</span>
+                    <mat-icon [class.rotated]="expandedJobId === job.jobId">expand_more</mat-icon>
+                </button>
+            </div>
+
+            <!-- Collapsible Invite Configuration -->
+            <div class="invite-section" *ngIf="expandedJobId === job.jobId" (click)="$event.stopPropagation()">
+                <div class="invite-config">
+                    <div class="config-row">
+                        <label><mat-icon class="yellow-text">place</mat-icon> Search Radius</label>
+                        <div class="slider-wrapper">
+                            <input type="range" min="5" max="100" [value]="inviteRadius[job.jobId] || 25" (input)="inviteRadius[job.jobId] = $any($event.target).value">
+                            <span class="radius-val">{{ inviteRadius[job.jobId] || 25 }} miles</span>
+                        </div>
+                    </div>
+                    <div class="search-row">
+                        <div class="search-input">
+                            <mat-icon>search</mat-icon>
+                            <input type="text" placeholder="Search subcontractors..." [(ngModel)]="subcontractorSearch">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subcontractors-list">
+                    <div class="sub-item" *ngFor="let sub of availableSubcontractors">
+                        <div class="sub-info">
+                            <div class="sub-icon"><mat-icon>business</mat-icon></div>
+                            <div>
+                                <div class="sub-name">{{ sub.company }}</div>
+                                <div class="sub-meta">
+                                    <span class="rating"><mat-icon>star</mat-icon> {{ sub.rating }}</span>
+                                    <span class="distance">{{ sub.distance }} mi away</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="custom-btn primary-btn small" (click)="inviteSubcontractor(sub, $event)">Invite</button>
+                    </div>
+                </div>
+
+                <!-- Invite by Email -->
+                <div class="invite-by-email">
+                    <p class="invite-label">Can't find who you're looking for?</p>
+                    <div class="email-input-row">
+                         <div class="input-wrapper">
+                            <input type="email" placeholder="Enter email to invite..." [(ngModel)]="emailInvite" (click)="$event.stopPropagation()">
+                         </div>
+                         <button class="custom-btn outline-btn" (click)="$event.stopPropagation()">
+                            <mat-icon>mail</mat-icon> Send
+                         </button>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>

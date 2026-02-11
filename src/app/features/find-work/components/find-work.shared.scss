@@ -1,0 +1,171 @@
+// Variables
+$color-yellow: #FCD109;
+$color-green: #22c55e;
+$color-blue: #3b82f6;
+$color-purple: #a855f7;
+$color-red: #ef4444;
+$color-border: var(--color-border);
+$color-surface: var(--color-surface);
+$color-surface-subtle: var(--color-surface-subtle);
+$color-text-muted: var(--color-text-muted);
+
+// Card Style
+.card-style {
+  background: var(--color-surface);
+  border: 1px solid $color-border;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba($color-surface-subtle, 0.3);
+  }
+
+  &.saved-border {
+    border-left: 4px solid $color-purple;
+  }
+}
+
+// Custom Buttons
+.custom-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    gap: 4px;
+
+    &.yellow-btn {
+        background-color: $color-yellow;
+        color: #000; // text-black
+        &:hover { background-color: rgba($color-yellow, 0.9); }
+    }
+
+    &.primary-btn {
+        @extend .yellow-btn;
+    }
+
+    &.outline-btn {
+        background-color: transparent;
+        border-color: $color-border;
+        color: var(--color-text);
+        &:hover { background-color: var(--color-surface); }
+    }
+
+    &.small {
+        font-size: 12px;
+        height: 28px;
+        padding: 0 8px;
+    }
+
+    mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        margin-right: 0;
+    }
+}
+
+// Job List
+.job-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .job-item {
+    position: relative;
+  }
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    background: var(--color-surface);
+    border: 1px solid $color-border;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.green-bg { background: rgba($color-green, 0.2); }
+      &.yellow-bg { background: rgba($color-yellow, 0.2); }
+      &.blue-bg { background: rgba($color-blue, 0.2); }
+      &.purple-bg { background: rgba($color-purple, 0.2); }
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+
+        &.green-text { color: $color-green; }
+        &.yellow-text { color: $color-yellow; }
+        &.blue-text { color: $color-blue; }
+        &.purple-text { color: $color-purple; }
+      }
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-label {
+      color: $color-text-muted;
+      font-size: 14px;
+    }
+  }
+}
+
+// Utility
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: $color-text-muted;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    opacity: 0.5;
+    margin-bottom: 12px;
+  }
+
+  h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; color: var(--color-text); }
+  p { font-size: 14px; margin-bottom: 16px; }
+}
+
+.section-title {
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+// Common text colors
+.yellow-text { color: $color-yellow; }
+.green-text { color: $color-green; }
+.blue-text { color: $color-blue; }
+.purple-text { color: $color-purple; }

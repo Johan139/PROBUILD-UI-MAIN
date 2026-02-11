@@ -594,4 +594,12 @@ export class BomService {
   refreshTradePackages(jobId: string | number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${jobId}/refresh`, {});
   }
+
+  updateTradePackage(id: number, tradePackage: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, tradePackage);
+  }
+
+  getMyMarketplacePostings(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/user/${userId}/postings`);
+  }
 }

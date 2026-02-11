@@ -16,4 +16,16 @@ export class BidsService {
   getBidsForJob(jobId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/job/${jobId}`);
   }
+
+  uploadBidPdf(
+    jobId: number,
+    documentUrl: string,
+    tradePackageId?: number,
+  ): Observable<any> {
+    return this.http.post(`${this.apiUrl}/upload`, {
+      jobId,
+      documentUrl,
+      tradePackageId: tradePackageId ?? null,
+    });
+  }
 }

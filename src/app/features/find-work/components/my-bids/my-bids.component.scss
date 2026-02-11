@@ -1,0 +1,22 @@
+@use "styles/util/mixins" as u;
+@import '../find-work.shared.scss';
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    .filter-pill {
+        padding: 6px 16px;
+        border-radius: 99px;
+        border: 1px solid $color-border;
+        background: transparent;
+        font-size: 14px;
+        cursor: pointer;
+
+        &.active {
+            border-color: $color-yellow;
+            color: $color-yellow;
+        }
+    }
+}

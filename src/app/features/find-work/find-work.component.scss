@@ -1,4 +1,5 @@
 @use "styles/util/mixins" as u;
+@import './components/find-work.shared.scss';
 
 :host {
   display: block;
@@ -6,14 +7,8 @@
   color: var(--color-text);
 }
 
-$color-yellow: #FCD109;
-$color-green: #22c55e;
-$color-blue: #3b82f6;
-$color-purple: #a855f7;
-$color-red: #ef4444;
-
 .find-work-container {
-  padding: var(--space-6);
+  padding: 24px;
   max-width: 100%;
   margin: 0 auto;
 }
@@ -22,30 +17,44 @@ $color-red: #ef4444;
 .header-container {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-6);
+  align-items: center;
+  margin-bottom: 24px;
 
   .title-section {
     h1 {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin: 0 0 4px 0;
+      margin: 0;
     }
     p {
-      color: var(--color-text-muted);
+      color: $color-text-muted;
       margin: 0;
+      font-size: 1rem;
     }
   }
 
   .post-job-btn {
     background-color: $color-yellow;
     color: #000;
-    font-weight: 600;
+    font-weight: 500;
     border-radius: var(--radius-md);
     padding: 8px 16px;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgba($color-yellow, 0.9);
+    }
 
     mat-icon {
-      margin-right: 8px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 0;
     }
   }
 }
@@ -53,20 +62,22 @@ $color-red: #ef4444;
 // Role Labels
 .role-labels {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
+  align-items: center;
+  gap: 24px;
+  padding: 0 4px;
+  margin-bottom: 8px;
 
   .role-label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     font-size: 12px;
-    color: var(--color-text-muted);
+    color: $color-text-muted;
 
     mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
     }
 
     &.right {
@@ -78,23 +89,25 @@ $color-red: #ef4444;
 // Tabs Navigation
 .tabs-navigation {
   display: flex;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: var(--space-6);
+  border-bottom: 1px solid $color-border;
+  margin-bottom: 24px;
   overflow-x: auto;
+  align-items: center;
 
   .tab-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 8px 16px;
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: var(--color-text-muted);
+    color: $color-text-muted;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: color 0.2s, border-color 0.2s;
 
     &:hover {
       color: var(--color-text);
@@ -103,23 +116,21 @@ $color-red: #ef4444;
     &.active {
       color: $color-yellow;
       border-bottom-color: $color-yellow;
-      color: var(--color-text);
-      border-bottom-color: $color-yellow;
     }
 
     .tab-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
     }
 
     .badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 99px;
-      font-weight: 600;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 400;
 
-      &.yellow { background: rgba($color-yellow, 0.2); color: darken($color-yellow, 20%); }
+      &.yellow { background: rgba($color-yellow, 0.2); color: $color-yellow; }
       &.green { background: rgba($color-green, 0.2); color: $color-green; }
       &.blue { background: rgba($color-blue, 0.2); color: $color-blue; }
       &.purple { background: rgba($color-purple, 0.2); color: $color-purple; }
@@ -127,51 +138,64 @@ $color-red: #ef4444;
   }
 }
 
+// Centered Spinner
+.centered-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+}
+
+// Content Area
+.content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 // Map Section
 .map-section {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid $color-border;
   border-radius: var(--radius-md);
   overflow: hidden;
-  margin-bottom: var(--space-6);
 
   .map-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-surface-subtle);
+    padding: 12px;
+    border-bottom: 1px solid $color-border;
 
     .location-label {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-weight: 600;
+      gap: 8px;
+      font-weight: 500;
       font-size: 14px;
 
       mat-icon {
         color: $color-yellow;
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
       }
     }
 
     .legend {
       display: flex;
       gap: 16px;
+      font-size: 12px;
 
       .legend-item {
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--color-text-muted);
+        gap: 4px;
 
         .dot {
-          width: 8px;
-          height: 8px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
 
           &.green { background: $color-green; }
@@ -184,9 +208,10 @@ $color-red: #ef4444;
   }
 
   .map-container {
-    height: 400px;
+    height: 450px;
     position: relative;
-    background: #e5e7eb;
+    background: #27272a;
+    overflow: hidden;
 
     .map-loading, .map-error {
         height: 100%;
@@ -195,820 +220,7 @@ $color-red: #ef4444;
         justify-content: center;
         align-items: center;
         gap: 1rem;
+        color: #fff;
     }
   }
-}
-
-// 4. Tab Content & Layout
-.tab-content {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-// Card Style (Base for Lists)
-.card-style {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: all 0.2s ease;
-  cursor: pointer;
-
-  &:hover {
-    background: var(--color-surface-subtle); // Slight hover effect
-    border-color: rgba($color-yellow, 0.5);
-  }
-
-  &.saved-border {
-    border-left: 4px solid $color-purple;
-  }
-}
-
-// 5. Job Lists (Common Grid/List Layout)
-.job-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-
-  .job-item {
-    position: relative;
-
-    // Save button overlay
-    .save-btn-overlay {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        z-index: 2;
-        padding: 4px;
-        border-radius: 4px;
-
-        mat-icon {
-            color: var(--color-text-muted);
-            transition: color 0.2s;
-
-            &.saved {
-                color: $color-purple;
-            }
-        }
-
-        &:hover mat-icon {
-            color: var(--color-text);
-        }
-    }
-  }
-}
-
-// Specific Styles for My Postings Tab
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-
-  .stat-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-
-    .icon-box {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &.green-bg { background: rgba($color-green, 0.1); }
-      &.yellow-bg { background: rgba($color-yellow, 0.1); }
-      &.blue-bg { background: rgba($color-blue, 0.1); }
-      &.purple-bg { background: rgba($color-purple, 0.1); }
-
-      mat-icon {
-        &.green-text { color: $color-green; }
-        &.yellow-text { color: darken($color-yellow, 10%); }
-        &.blue-text { color: $color-blue; }
-        &.purple-text { color: $color-purple; }
-      }
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-    }
-    .stat-label {
-      color: var(--color-text-muted);
-      font-size: 14px;
-    }
-  }
-}
-
-.job-card-content {
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-
-    .job-main {
-        display: flex;
-        gap: 16px;
-
-        .job-icon-box {
-            width: 48px;
-            height: 48px;
-            background: var(--color-surface-subtle);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            mat-icon { color: $color-yellow; }
-        }
-
-        .job-details {
-            .job-header-row {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 4px;
-
-                h4 { margin: 0; font-weight: 700; font-size: 16px; }
-
-                .status-pill {
-                    font-size: 10px;
-                    padding: 2px 8px;
-                    border-radius: 99px;
-                    font-weight: 600;
-                    &.yellow { background: rgba($color-yellow, 0.2); color: darken($color-yellow, 20%); }
-                }
-            }
-
-            .project-name {
-                color: var(--color-text-muted);
-                font-size: 14px;
-                margin: 0 0 8px 0;
-            }
-
-            .meta-row {
-                display: flex;
-                gap: 16px;
-                font-size: 13px;
-                color: var(--color-text-muted);
-
-                span {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    mat-icon { font-size: 14px; width: 14px; height: 14px; }
-                }
-            }
-        }
-    }
-
-    .job-actions {
-        text-align: right;
-
-        .bids-count {
-            margin-bottom: 8px;
-            .count { font-size: 20px; font-weight: 700; color: $color-yellow; display: block; }
-            .label { font-size: 11px; color: var(--color-text-muted); }
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-    }
-}
-
-// Custom Buttons
-.custom-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    gap: 6px;
-
-    &.primary-btn {
-        background-color: $color-yellow;
-        color: #000;
-        &:hover { background-color: darken($color-yellow, 5%); }
-    }
-
-    &.outline-btn {
-        background-color: transparent;
-        border-color: var(--color-border);
-        color: var(--color-text);
-        &:hover { background-color: var(--color-surface-subtle); }
-    }
-
-    &.small {
-        padding: 4px 12px;
-        font-size: 12px;
-        height: 32px;
-    }
-
-    mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-    }
-}
-
-// Invite Section Styles
-.card-footer-actions {
-    border-top: 1px solid var(--color-border);
-
-    .toggle-invite-btn {
-        width: 100%;
-        padding: 12px 16px;
-        background: transparent;
-        border: none;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        color: var(--color-text-muted);
-        font-weight: 500;
-        font-size: 13px;
-
-        &:hover {
-            color: var(--color-text);
-            background: var(--color-surface-subtle);
-        }
-
-        span { display: flex; align-items: center; gap: 8px; }
-
-        mat-icon {
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
-            transition: transform 0.2s ease;
-            &.rotated { transform: rotate(180deg); }
-        }
-    }
-}
-
-.invite-section {
-    border-top: 1px solid var(--color-border);
-    background: var(--color-surface-subtle);
-    padding: 16px;
-
-    .invite-config {
-        margin-bottom: 16px;
-
-        .config-row {
-            margin-bottom: 12px;
-            label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-            .yellow-text { color: darken($color-yellow, 10%); }
-
-            .slider-wrapper {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                input[type=range] { flex: 1; accent-color: $color-yellow; }
-                .radius-val { font-size: 13px; font-weight: 600; color: $color-yellow; width: 60px; text-align: right; }
-            }
-        }
-
-        .search-input {
-            position: relative;
-            mat-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--color-text-muted); }
-            input {
-                width: 100%;
-                padding: 8px 12px 8px 36px;
-                border-radius: 6px;
-                border: 1px solid var(--color-border);
-                background: var(--color-surface);
-            }
-        }
-    }
-
-    .subcontractors-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 12px;
-
-        .sub-item {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            .sub-info {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-
-                .sub-icon {
-                    width: 36px;
-                    height: 36px;
-                    background: var(--color-surface-subtle);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    mat-icon { font-size: 18px; width: 18px; height: 18px; color: $color-yellow; }
-                }
-
-                .sub-name { font-weight: 600; font-size: 13px; }
-                .sub-meta {
-                    font-size: 11px; color: var(--color-text-muted);
-                    display: flex; gap: 8px;
-                    .rating { display: flex; align-items: center; gap: 2px; mat-icon { font-size: 12px; width: 12px; height: 12px; color: $color-yellow; } }
-                }
-            }
-        }
-    }
-
-    .invite-by-email {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid var(--color-border);
-
-        .invite-label {
-            font-size: 13px;
-            color: var(--color-text-muted);
-            margin-bottom: 8px;
-        }
-
-        .email-input-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-
-            .input-wrapper {
-                flex: 1;
-                input {
-                    width: 100%;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    border: 1px solid var(--color-border);
-                    background: var(--color-surface);
-                    color: var(--color-text);
-                }
-            }
-
-            .custom-btn.outline-btn {
-                height: 35px;
-                color: $color-yellow;
-                border-color: $color-yellow;
-                white-space: nowrap;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-
-                &:hover {
-                    background: rgba($color-yellow, 0.1);
-                }
-            }
-        }
-    }
-}
-
-// 6. Browse Jobs Filters
-.filters-container {
-    padding: 16px;
-    margin-bottom: var(--space-4);
-
-    .search-row {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 16px;
-        align-items: center;
-        flex-wrap: wrap;
-
-        .search-input-wrapper {
-            flex: 1;
-            position: relative;
-            min-width: 250px;
-
-            mat-icon {
-                position: absolute;
-                left: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: var(--color-text-muted);
-            }
-
-            input {
-                width: 100%;
-                padding: 10px 12px 10px 40px;
-                border-radius: var(--radius-sm);
-                border: 1px solid var(--color-border);
-                background: var(--color-surface);
-                color: var(--color-text);
-
-                &:focus {
-                    outline: none;
-                    border-color: $color-yellow;
-                }
-            }
-        }
-
-        .location-controls {
-            display: flex;
-            gap: 8px;
-
-            .toggle-btn {
-                padding: 8px 16px;
-                border: 1px solid var(--color-border);
-                background: transparent;
-                border-radius: var(--radius-sm);
-                cursor: pointer;
-                font-size: 13px;
-
-                &.active {
-                    background: $color-yellow;
-                    color: #000;
-                    border-color: $color-yellow;
-                    font-weight: 600;
-                }
-            }
-        }
-    }
-
-    .advanced-filters-row {
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        flex-wrap: wrap;
-
-        .range-filter {
-            display: flex;
-            flex-direction: column;
-            width: 200px;
-
-            label { font-size: 12px; margin-bottom: 4px; font-weight: 500; }
-
-            input[type="range"] {
-                accent-color: $color-yellow;
-            }
-        }
-
-        .compact-field {
-            width: 180px;
-             ::ng-deep .mat-mdc-form-field-wrapper { padding: 0; }
-        }
-    }
-
-    .custom-select {
-        appearance: none;
-        -webkit-appearance: none;
-        background-color: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        padding: 8px 32px 8px 12px;
-        font-size: 13px;
-        color: var(--color-text);
-        cursor: pointer;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 8px center;
-        background-size: 16px;
-        min-width: 200px;
-        height: 37px;
-
-        &:focus {
-            outline: none;
-            border-color: $color-yellow;
-        }
-    }
-}
-
-// 7. My Bids Tab
-.filter-buttons {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-
-    .filter-pill {
-        padding: 6px 16px;
-        border-radius: 99px;
-        border: 1px solid var(--color-border);
-        background: transparent;
-        cursor: pointer;
-        font-size: 13px;
-
-        &.active {
-            border-color: $color-yellow;
-            color: $color-yellow;
-            background: rgba($color-yellow, 0.05);
-        }
-    }
-}
-
-// 8. Alerts Tab
-.alerts-pane {
-    max-width: 90%;
-    margin: 0 auto;
-
-    .alerts-header-card {
-        @extend .card-style;
-        padding: 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-        background: linear-gradient(to right, rgba($color-yellow, 0.1), transparent);
-        border-color: rgba($color-yellow, 0.3);
-
-        .header-content {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-
-            .icon-box {
-                width: 56px;
-                height: 56px;
-                background: rgba($color-yellow, 0.2);
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                mat-icon { color: darken($color-yellow, 10%); font-size: 28px; width: 28px; height: 28px; }
-            }
-
-            h3 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; }
-            p { margin: 0; color: var(--color-text-muted); }
-        }
-    }
-
-    .alerts-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        margin-bottom: 24px;
-
-        @media (max-width: 768px) {
-            grid-template-columns: 1fr;
-        }
-
-        .config-card {
-            @extend .card-style;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-
-            &.notifications-card {
-                grid-column: 1 / -1;
-            }
-
-            .card-header {
-                padding: 16px;
-                border-bottom: 1px solid var(--color-border);
-
-                &.with-actions {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                }
-
-                .header-actions {
-                    display: flex;
-                    gap: 8px;
-                    align-items: center;
-                    font-size: 12px;
-
-                    .link-btn {
-                        background: none;
-                        border: none;
-                        color: $color-blue;
-                        cursor: pointer;
-                        padding: 0;
-                        font-size: 12px;
-                        &:hover { text-decoration: underline; }
-                    }
-                    .divider { color: var(--color-border); }
-                }
-
-                h4 {
-                    margin: 0 0 4px 0;
-                    font-size: 16px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    mat-icon { color: $color-yellow; }
-                }
-                p { margin: 0; font-size: 12px; color: var(--color-text-muted); }
-            }
-
-            .card-content {
-                padding: 24px;
-                flex: 1;
-
-                &.centered { text-align: center; }
-
-                // Location Input in Radius Card
-                .location-input-wrapper {
-                    position: relative;
-                    margin-bottom: 20px;
-
-                    mat-icon {
-                        position: absolute;
-                        left: 12px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        color: var(--color-text-muted);
-                        cursor: pointer;
-                        z-index: 10;
-
-                        &:hover {
-                            color: $color-yellow;
-                        }
-                    }
-
-                    input {
-                        width: 100%;
-                        padding: 10px 12px 10px 40px;
-                        border-radius: var(--radius-sm);
-                        border: 1px solid var(--color-border);
-                        background: var(--color-surface);
-                        color: var(--color-text);
-
-                        &:focus {
-                            outline: none;
-                            border-color: $color-yellow;
-                        }
-                    }
-                }
-
-                // Preset Chips in Radius Card
-                .distance-presets {
-                    display: flex;
-                    justify-content: center;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                    margin-bottom: 24px;
-
-                    .preset-chip {
-                        padding: 6px 12px;
-                        border-radius: 99px;
-                        border: 1px solid var(--color-border);
-                        background: transparent;
-                        cursor: pointer;
-                        font-size: 12px;
-                        transition: all 0.2s;
-
-                        &:hover {
-                            background: var(--color-surface-subtle);
-                        }
-
-                        &.active {
-                            background: rgba($color-yellow, 0.2);
-                            color: darken($color-yellow, 20%);
-                            border-color: $color-yellow;
-                            font-weight: 600;
-                        }
-                    }
-                }
-
-                .big-value {
-                    font-size: 48px;
-                    font-weight: 700;
-                    color: $color-yellow;
-                    margin-bottom: 16px;
-
-                    .unit { font-size: 18px; color: var(--color-text-muted); font-weight: 400; }
-                }
-
-                .full-width-range { width: 100%; accent-color: $color-yellow; }
-
-                .range-labels {
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 12px;
-                    color: var(--color-text-muted);
-                    margin-top: 8px;
-                }
-
-                .trade-checkbox-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 12px;
-                    max-height: 300px;
-                    overflow-y: auto;
-                    padding-right: 8px;
-
-                    // Ensure text wraps properly 
-                    mat-checkbox {
-                        font-size: 13px;
-                    }
-                }
-
-                .notification-options-cards {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-                    gap: 16px;
-
-                    .notification-card {
-                        display: flex;
-                        align-items: center;
-                        gap: 16px;
-                        padding: 16px;
-                        border: 1px solid var(--color-border);
-                        border-radius: var(--radius-md);
-                        background: var(--color-surface);
-                        transition: all 0.2s ease;
-
-                        &.active {
-                            border-color: rgba($color-yellow, 0.5);
-                            background: linear-gradient(to right, rgba($color-yellow, 0.05), transparent);
-                        }
-
-                        .notif-icon-box {
-                            width: 40px;
-                            height: 40px;
-                            border-radius: 50%;
-                            background: var(--color-surface-subtle);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-
-                            mat-icon {
-                                color: var(--color-text-muted);
-                                font-size: 20px;
-                                width: 20px;
-                                height: 20px;
-                            }
-                        }
-
-                        .notif-details {
-                            flex: 1;
-                            .notif-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
-                            .notif-desc { font-size: 12px; color: var(--color-text-muted); }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .save-actions {
-        display: flex;
-        justify-content: flex-end;
-        button {
-            background-color: $color-yellow;
-            color: #000;
-            padding: 8px 24px;
-        }
-    }
-}
-
-// Utility
-.empty-state {
-    text-align: center;
-    padding: 64px 24px;
-    background: var(--color-surface);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-md);
-
-    mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: var(--color-text-muted);
-        margin-bottom: 16px;
-    }
-
-    h3 { margin: 0 0 8px 0; font-size: 18px; font-weight: 600; }
-    p { color: var(--color-text-muted); margin-bottom: 24px; }
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-
-    h3 { margin: 0; font-size: 18px; font-weight: 700; }
-}
-
-.centered-spinner-container {
-    display: flex;
-    justify-content: center;
-    padding: 48px;
 }

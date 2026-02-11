@@ -1,0 +1,127 @@
+<div class="tab-pane alerts-pane">
+    <div class="alerts-header-card">
+        <div class="header-content">
+            <div class="icon-box yellow-bg"><mat-icon class="yellow-text">notifications</mat-icon></div>
+            <div>
+                <h3>Job Alert Preferences</h3>
+                <p>Get notified when new jobs matching your criteria are posted</p>
+            </div>
+        </div>
+        <!-- Toggle switch placeholder -->
+         <!-- <mat-slide-toggle [checked]="true">Alerts Enabled</mat-slide-toggle> -->
+    </div>
+
+    <div class="alerts-grid">
+        <!-- Radius Card -->
+        <div class="config-card radius-card">
+            <div class="card-header">
+                <h4><mat-icon class="yellow-text">place</mat-icon> Search Radius</h4>
+                <p>Set how far you're willing to travel</p>
+            </div>
+            <div class="card-content centered">
+                <div class="location-input-wrapper">
+                    <mat-icon (click)="useCurrentLocation()" class="clickable-icon" matTooltip="Use current location">my_location</mat-icon>
+                    <input type="text"
+                           placeholder="Enter location"
+                           [formControl]="alertsAddressControl"
+                           [matAutocomplete]="autoAlerts"
+                           class="location-input">
+                    <mat-autocomplete #autoAlerts="matAutocomplete" (optionSelected)="onAlertsAddressSelected($event)" [displayWith]="displayAlertsAddress">
+                        <mat-option *ngFor="let option of alertsOptions" [value]="option">
+                            {{ option.description }}
+                        </mat-option>
+                    </mat-autocomplete>
+                </div>
+
+                <div class="distance-presets">
+                    <button *ngFor="let preset of presetDistances"
+                            class="preset-chip"
+                            [class.active]="distance === preset"
+                            (click)="setDistance(preset)">
+                        {{ preset }} {{ distanceUnit }}
+                    </button>
+                </div>
+
+                <div class="big-value">{{ distance }} <span class="unit">{{ distanceUnit }}</span></div>
+                <input type="range" min="5" max="150" [ngModel]="distance" (ngModelChange)="onDistanceChange($event)" class="full-width-range">
+                <div class="range-labels">
+                    <span>5 mi</span>
+                    <span>150 mi</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trade Selection -->
+        <div class="config-card trades-card">
+            <div class="card-header with-actions">
+                <div class="header-text">
+                    <h4><mat-icon class="yellow-text">build</mat-icon> Trade Types</h4>
+                    <p>Select trades to receive alerts for</p>
+                </div>
+                <div class="header-actions">
+                    <button class="link-btn" (click)="selectAllTrades()">Select All</button>
+                    <span class="divider">|</span>
+                    <button class="link-btn" (click)="clearAllTrades()">Clear</button>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="trade-checkbox-grid">
+                    <mat-checkbox *ngFor="let trade of allTrades"
+                                  [checked]="selectedTrades.includes(trade)"
+                                  (change)="toggleTrade(trade)"
+                                  color="primary">
+                       {{ trade }}
+                    </mat-checkbox>
+               </div>
+            </div>
+        </div>
+
+        <!-- Notification Preferences -->
+        <div class="config-card notifications-card">
+            <div class="card-header">
+                <h4><mat-icon class="yellow-text">notifications_active</mat-icon> Notification Preferences</h4>
+                <p>Choose how you want to be notified</p>
+            </div>
+            <div class="card-content">
+                <div class="notification-options-cards">
+                    <div class="notification-card" [class.active]="notificationPreferences.email">
+                        <div class="notif-icon-box">
+                            <mat-icon>mail</mat-icon>
+                        </div>
+                        <div class="notif-details">
+                            <div class="notif-title">Email</div>
+                            <div class="notif-desc">Get daily digests</div>
+                        </div>
+                        <mat-slide-toggle [(ngModel)]="notificationPreferences.email" color="primary"></mat-slide-toggle>
+                    </div>
+
+                    <div class="notification-card" [class.active]="notificationPreferences.push">
+                        <div class="notif-icon-box">
+                            <mat-icon>notifications</mat-icon>
+                        </div>
+                        <div class="notif-details">
+                            <div class="notif-title">Push</div>
+                            <div class="notif-desc">Real-time alerts</div>
+                        </div>
+                        <mat-slide-toggle [(ngModel)]="notificationPreferences.push" color="primary"></mat-slide-toggle>
+                    </div>
+
+                    <div class="notification-card" [class.active]="notificationPreferences.sms">
+                        <div class="notif-icon-box">
+                            <mat-icon>sms</mat-icon>
+                        </div>
+                        <div class="notif-details">
+                            <div class="notif-title">SMS</div>
+                            <div class="notif-desc">Instant text updates</div>
+                        </div>
+                        <mat-slide-toggle [(ngModel)]="notificationPreferences.sms" color="primary"></mat-slide-toggle>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="save-actions">
+        <button mat-flat-button color="primary" (click)="savePreferences.emit()">Save Preferences</button>
+    </div>
+</div>
