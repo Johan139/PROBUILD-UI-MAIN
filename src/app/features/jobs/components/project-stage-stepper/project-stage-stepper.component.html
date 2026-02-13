@@ -1,0 +1,57 @@
+<div class="stepper-container">
+  <div class="stepper-header">
+    <span class="stage-label">Project Stage:</span>
+
+    <div class="progress-track-container">
+      <!-- Background Line -->
+      <div class="progress-track-bg"></div>
+
+      <!-- Active Progress Line -->
+      <div class="progress-track-fill" [style.width]="progressWidth"></div>
+
+      <!-- Steps -->
+      <div class="steps-container">
+        <div
+          *ngFor="let step of lifecycleSteps; let i = index"
+          class="step-item"
+        >
+          <!-- Step Circle -->
+          <div
+            class="step-circle"
+            [class.completed]="isStepCompleted(step.id)"
+            [class.current]="isStepCurrent(step.id)"
+            [class.pending]="isStepPending(step.id)"
+          >
+            <lucide-angular
+              [img]="CheckCircle2"
+              class="step-icon"
+              *ngIf="isStepCompleted(step.id)"
+            >
+            </lucide-angular>
+
+            <lucide-angular
+              [img]="step.icon"
+              class="step-icon"
+              *ngIf="!isStepCompleted(step.id)"
+            >
+            </lucide-angular>
+          </div>
+
+          <!-- Step Label -->
+          <p
+            class="step-label"
+            [class.current-text]="isStepCurrent(step.id)"
+            [class.completed-text]="isStepCompleted(step.id)"
+            [class.pending-text]="isStepPending(step.id)"
+          >
+            {{ step.label }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <span class="current-stage-name">
+      {{ getCurrentStepLabel() }}
+    </span>
+  </div>
+</div>

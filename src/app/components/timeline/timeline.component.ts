@@ -75,6 +75,7 @@ export class TimelineComponent
   @Input() taskGroups: TimelineGroup[] = [];
   @Input() isProjectOwner: boolean = false;
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
+  @Output() onGroupDoubleClick = new EventEmitter<TimelineGroup>();
   @Output() onGroupMove = new EventEmitter<{
     groupId: string;
     newStartDate: Date;
@@ -111,6 +112,8 @@ export class TimelineComponent
   endDate: Date = new Date();
   private ghostElement: HTMLElement | null = null;
   private navigationInterval: any;
+  private clickTimeout: ReturnType<typeof setTimeout> | null = null;
+  private suppressClickOnce: boolean = false;
 
   private weeksToShow: number = 12;
   private mouseMoveListener?: (e: MouseEvent) => void;
@@ -136,6 +139,10 @@ export class TimelineComponent
 
   ngOnDestroy() {
     this.cleanupGlobalListeners();
+    if (this.clickTimeout) {
+      clearTimeout(this.clickTimeout);
+      this.clickTimeout = null;
+    }
     if (this.modalRef) {
       this.modalRef.close();
     }
@@ -306,10 +313,9 @@ export class TimelineComponent
     if (!this.panzoomContainer?.nativeElement) return;
 
     const options: PanzoomOptions = {
-      maxScale: 2,
-      minScale: 0.1, // Allow zooming out significantly to see everything
+      maxScale: 1,
+      minScale: 1,
       startScale: 1,
-      // contain: 'outside',
       cursor: 'move',
       excludeClass: 'task-group-bar', // Prevent dragging tasks from panning the grid
     };
@@ -323,41 +329,18 @@ export class TimelineComponent
     this.panzoomContainer.nativeElement.addEventListener(
       'panzoomchange',
       (event: any) => {
-        const { x, scale } = event.detail;
+        const { x } = event.detail;
         if (this.headerContent?.nativeElement) {
-          // FIXME: Apply X translation and X scale (uniform scale) to header. Zooming too much makes dates disappear
-          this.headerContent.nativeElement.style.transform = `translateX(${x}px) scale(${scale})`;
+          this.headerContent.nativeElement.style.transform = `translateX(${x}px)`;
           this.headerContent.nativeElement.style.transformOrigin = '0 0';
         }
 
         // Update visible date range
         if (this.timelineRef?.nativeElement) {
-            this.updateVisibleDates(x, scale, this.timelineRef.nativeElement.clientWidth);
+            this.updateVisibleDates(x, 1, this.timelineRef.nativeElement.clientWidth);
         }
       },
     );
-
-    // Enable mouse wheel zoom
-    this.panzoomContainer.nativeElement.parentElement?.addEventListener(
-      'wheel',
-      (event: WheelEvent) => {
-        if (!this.panzoom) return;
-        this.panzoom.zoomWithWheel(event);
-      },
-      { passive: false } // Required to prevent default scrolling
-    );
-  }
-
-  zoomIn() {
-    this.panzoom?.zoomIn();
-  }
-
-  zoomOut() {
-    this.panzoom?.zoomOut();
-  }
-
-  resetZoom() {
-    this.panzoom?.reset();
   }
 
   public getScheduleStatus(
@@ -438,9 +421,13 @@ export class TimelineComponent
     this.closeGroupModal();
   }
 
+  viewGroupTimeline(group: TimelineGroup) {
+    this.closeGroupModal();
+    this.onGroupDoubleClick.emit(group);
+  }
+
   handleDragStart(e: MouseEvent, group: TimelineGroup) {
     if (!this.isProjectOwner) {
-      this.openGroupModal(group);
       return;
     }
     // Prevent drag for right-click
@@ -478,6 +465,7 @@ export class TimelineComponent
   }
 
   handleDragEnd(e: MouseEvent) {
+    const wasDragging = this.isDragging;
     const group = this.taskGroups.find((g) => g.title === this.draggingGroup);
 
     if (this.isDragging) {
@@ -521,11 +509,44 @@ export class TimelineComponent
         });
       }
     } else if (group) {
-      // This is a click, not a drag
-      this.openGroupModal(group);
+      // Click handling is managed by click/double-click events on the bar
+    }
+
+    if (wasDragging) {
+      this.suppressClickOnce = true;
     }
 
     this.resetDrag();
+  }
+
+  handleGroupClickEvent(group: TimelineGroup) {
+    if (this.suppressClickOnce) {
+      this.suppressClickOnce = false;
+      return;
+    }
+
+    if (this.clickTimeout) {
+      clearTimeout(this.clickTimeout);
+      this.clickTimeout = null;
+    }
+
+    this.clickTimeout = setTimeout(() => {
+      this.onGroupClick.emit(group);
+      this.openGroupModal(group);
+      this.clickTimeout = null;
+    }, 250);
+  }
+
+  handleGroupDoubleClickEvent(group: TimelineGroup, event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.clickTimeout) {
+      clearTimeout(this.clickTimeout);
+      this.clickTimeout = null;
+    }
+
+    this.onGroupDoubleClick.emit(group);
   }
 
   private createGhostElement() {

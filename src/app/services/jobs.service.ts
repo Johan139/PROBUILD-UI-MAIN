@@ -150,4 +150,12 @@ export class JobsService {
       details,
     );
   }
+
+  updateJobStatus(jobId: number, status: string): Observable<any> {
+    return this.httpClient.put<any>(`${BASE_URL}/${jobId}/status`, { status });
+  }
+
+  getPlanningData(jobId: number): Observable<any> {
+    return this.httpClient.get<any>(`${BASE_URL}/${jobId}/planning-data`);
+  }
 }

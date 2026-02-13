@@ -2,291 +2,359 @@
   class="jobs-container"
   [attr.inert]="showAlert || isDialogOpen ? '' : null"
 >
-  <div class="job-header">
-    <div class="header-left">
-      <button
-        class="back-btn"
-        (click)="NavigateBack()"
-        matTooltip="Go Back"
-        matTooltipShowDelay="500"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+  <!-- Global Stepper -->
+  <app-project-stage-stepper
+    *ngIf="projectDetails"
+    [currentStage]="projectStage"
+  ></app-project-stage-stepper>
+
+  <!-- New Stages Container -->
+  <div class="stage-content-wrapper" [ngSwitch]="projectStage">
+    <!-- ANALYZING STAGE -->
+    <app-job-analysis-walkthrough
+      *ngSwitchCase="'ANALYZING'"
+      [jobId]="projectDetails?.jobId"
+      (continue)="onAnalysisComplete()"
+    ></app-job-analysis-walkthrough>
+
+    <!-- PRELIMINARY STAGE -->
+    <app-job-preliminary-view
+      *ngSwitchCase="'PRELIMINARY'"
+      [projectDetails]="projectDetails"
+      (jobGranted)="onJobGranted()"
+    ></app-job-preliminary-view>
+
+    <!-- BIDDING STAGE -->
+    <app-job-inbound-bidding
+      *ngSwitchCase="'BIDDING'"
+      [projectDetails]="projectDetails"
+      (goLive)="onGoLive()"
+    ></app-job-inbound-bidding>
+
+    <!-- CLOSURE STAGE -->
+    <app-job-closure
+      *ngSwitchCase="'CLOSURE'"
+      [projectDetails]="projectDetails"
+    ></app-job-closure>
+
+    <!-- LIVE STAGE-->
+    <div *ngSwitchCase="'LIVE'" class="live-stage-container">
+      <div class="job-header">
+        <div class="header-left">
+          <button
+            class="back-btn"
+            (click)="NavigateBack()"
+            matTooltip="Go Back"
+            matTooltipShowDelay="500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </button>
+          <div>
+            <h2>{{ projectDetails?.projectName }}</h2>
+            <span class="project-id"
+              >Project ID: {{ projectDetails?.jobId }}</span
+            >
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            (click)="subtaskService.acceptAllSubtasks()"
+            matTooltip="Mark all subtasks as approved"
+          >
+            Accept All Subtasks
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn publish-btn"
+            mat-raised-button
+            (click)="publishJob()"
+            matTooltip="Make this job available for bidding by subcontractors and vendors"
+            matTooltipShowDelay="500"
+          >
+            Publish Job for Bidding
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn save-btn"
+            mat-raised-button
+            (click)="subtaskService.saveOnly()"
+            matTooltip="Save the current state of the job and subtasks without publishing"
+            matTooltipShowDelay="500"
+          >
+            Save Job
+          </button>
+          <button
+            *ngIf="isProjectOwner"
+            class="submit-btn delete-btn"
+            mat-raised-button
+            (click)="subtaskService.discard()"
+            matTooltip="Discard all changes and revert the job to its last saved state"
+            matTooltipShowDelay="500"
+          >
+            Discard Job
+          </button>
+          <!-- Reports Dropdown -->
+          <button
+            class="submit-btn save-btn"
+            mat-raised-button
+            [matMenuTriggerFor]="reportsMenu"
+            matTooltip="View project reports and documents"
+            matTooltipShowDelay="500"
+          >
+            <mat-icon>download</mat-icon>
+            Export Report
+          </button>
+          <mat-menu #reportsMenu="matMenu">
+            <button mat-menu-item (click)="openDocumentsDialog()">
+              <mat-icon>description</mat-icon>
+              <span>View Documents</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>assessment</mat-icon>
+              <span *ngIf="!isReportLoading">View Full Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button mat-menu-item (click)="openBillOfMaterialsDialog()">
+              <mat-icon>list_alt</mat-icon>
+              <span>View Bill of Materials</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openExecutiveSummaryDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>summarize</mat-icon>
+              <span *ngIf="!isReportLoading">View Executive Summary</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button
+              mat-menu-item
+              *ngIf="!projectDetails?.isSelected"
+              (click)="openEnvironmentalReportDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>eco</mat-icon>
+              <span *ngIf="!isReportLoading">View Environmental Report</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openProcurementScheduleDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>schedule</mat-icon>
+              <span *ngIf="!isReportLoading">View Procurement Schedule</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="openDailyConstructionPlanDialog()"
+              [disabled]="isReportLoading"
+            >
+              <mat-icon>event_note</mat-icon>
+              <span *ngIf="!isReportLoading">View Daily Construction Plan</span>
+              <span *ngIf="isReportLoading">Loading...</span>
+            </button>
+          </mat-menu>
+
+          <!-- More Actions Dropdown -->
+          <button
+            class="submit-btn"
+            mat-raised-button
+            [matMenuTriggerFor]="moreActionsMenu"
+            matTooltip="More actions"
+            matTooltipShowDelay="500"
+          >
+            <mat-icon>more_vert</mat-icon>
+            More Actions
+          </button>
+          <mat-menu #moreActionsMenu="matMenu">
+            <button mat-menu-item (click)="triggerEditAddress()">
+              <mat-icon>edit_location</mat-icon>
+              <span>Edit Address</span>
+            </button>
+            <button mat-menu-item (click)="openEditClientDialog()">
+              <mat-icon>person_edit</mat-icon>
+              <span>Edit Client</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="nav-tabs">
+        <button
+          (click)="setActiveTab('overview')"
+          [class.active]="activeTab === 'overview'"
         >
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-      </button>
-      <div>
-        <h2>{{ projectDetails?.projectName }}</h2>
-        <span class="project-id">Project ID: {{ projectDetails?.jobId }}</span>
+          Overview
+        </button>
+        <button
+          (click)="setActiveTab('budget')"
+          [class.active]="activeTab === 'budget'"
+        >
+          Budget
+        </button>
+        <button
+          (click)="setActiveTab('timeline')"
+          [class.active]="activeTab === 'timeline'"
+        >
+          Timeline & Tasks
+        </button>
+        <button
+          (click)="setActiveTab('team')"
+          [class.active]="activeTab === 'team'"
+        >
+          Team & Subcontractors
+        </button>
+        <button
+          (click)="setActiveTab('blueprints')"
+          [class.active]="activeTab === 'blueprints'"
+        >
+          Blueprint Viewer
+        </button>
+      </div>
+
+      <!-- OVERVIEW TAB -->
+      <div [hidden]="activeTab !== 'overview'" class="tab-content fade-in">
+        <div class="fullcolumn">
+          <app-project-overview
+            [projects]="overviewProjects"
+            [liveProjectsCount]="liveProjectsCount"
+            [biddingProjectsCount]="biddingProjectsCount"
+            [projectDetails]="projectDetails"
+            [isLoading]="isLoading"
+            [startDateDisplay]="startDateDisplay"
+            [forecast]="store.getState().forecast"
+            [weatherError]="store.getState().weatherError"
+            [temperatureUnit]="temperatureUnit"
+            [teamMemberCount]="assignedTeamMembers.length"
+            [assignedTeamMembers]="assignedTeamMembers"
+            [timelineData]="timelineGroups"
+            (navigateToTab)="handleTabNavigation($event)"
+          ></app-project-overview>
+        </div>
+      </div>
+
+      <!-- BUDGET TRACKING TAB -->
+      <div *ngIf="activeTab === 'budget'" class="tab-content fade-in">
+        <app-project-budget-tracking
+          [projectDetails]="projectDetails"
+        ></app-project-budget-tracking>
+      </div>
+
+      <!-- TIMELINE TAB -->
+      <div *ngIf="activeTab === 'timeline'" class="tab-content fade-in">
+        <mat-accordion multi>
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title class="timeline-title"
+                >{{
+                  isSubtaskTimelineActive
+                    ? 'Subtask Timeline'
+                    : 'Probuild Construction Timeline'
+                }}</mat-panel-title
+              >
+            </mat-expansion-panel-header>
+            <mat-divider class="timeline-divider"></mat-divider>
+
+            <div
+              *ngIf="isSubtaskTimelineActive && selectedTimelineParentGroup"
+              class="timeline-context-banner"
+            >
+              <button
+                type="button"
+                class="timeline-back-btn"
+                (click)="returnToMainTimeline()"
+              >
+                ← Back to Main Timeline
+              </button>
+              <div class="timeline-context-details">
+                <div class="context-title">
+                  {{ selectedTimelineParentGroup.title }}
+                </div>
+                <div class="context-range">
+                  {{ selectedTimelineParentGroup.startDate | date: 'MMM d, y' }} -
+                  {{ selectedTimelineParentGroup.endDate | date: 'MMM d, y' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="timeline-wrapper">
+              <app-timeline
+                [taskGroups]="displayedTimelineGroups"
+                [isProjectOwner]="isProjectOwner"
+                (onGroupClick)="timelineService.handleGroupClick($event)"
+                (onGroupDoubleClick)="handleTimelineGroupDoubleClick($event)"
+                (onGroupMove)="handleGroupMove($event)"
+                (onEditGroup)="timelineService.handleEditGroup($event)"
+              >
+              </app-timeline>
+            </div>
+          </mat-expansion-panel>
+
+          <!-- Subtasks Section -->
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title>Tasks and Subtasks</mat-panel-title>
+            </mat-expansion-panel-header>
+            <mat-divider></mat-divider>
+            <app-construction-phases
+              [groups]="store.getState().subtaskGroups"
+              [isProjectOwner]="isProjectOwner"
+            >
+            </app-construction-phases>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+
+      <!-- TEAM TAB -->
+      <div *ngIf="activeTab === 'team'" class="tab-content fade-in">
+        <app-job-team
+          [projectDetails]="projectDetails"
+          [assignedTeamMembers]="assignedTeamMembers"
+          (refreshTeam)="loadAssignedTeam()"
+        ></app-job-team>
+      </div>
+
+      <!-- BLUEPRINTS TAB -->
+      <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
+        <div *ngIf="isLoadingBlueprints" class="loading-overlay">
+          <app-loader></app-loader>
+        </div>
+        <mat-card>
+          <mat-card-content>
+            <app-project-blueprint-viewer
+              [mode]="'view'"
+              [uploadedFiles]="blueprintFiles"
+              [selectedFile]="selectedBlueprint"
+              [pdfSrc]="blueprintPdfSrc"
+              (fileSelected)="handleBlueprintSelected($event)"
+            >
+            </app-project-blueprint-viewer>
+          </mat-card-content>
+        </mat-card>
       </div>
     </div>
-    <div class="action-buttons">
-      <button
-        *ngIf="isProjectOwner"
-        class="submit-btn save-btn"
-        (click)="subtaskService.acceptAllSubtasks()"
-        matTooltip="Mark all subtasks as approved"
-      >
-        Accept All Subtasks
-      </button>
-      <button
-        *ngIf="isProjectOwner"
-        class="submit-btn publish-btn"
-        mat-raised-button
-        (click)="publishJob()"
-        matTooltip="Make this job available for bidding by subcontractors and vendors"
-        matTooltipShowDelay="500"
-      >
-        Publish Job for Bidding
-      </button>
-      <button
-        *ngIf="isProjectOwner"
-        class="submit-btn save-btn"
-        mat-raised-button
-        (click)="subtaskService.saveOnly()"
-        matTooltip="Save the current state of the job and subtasks without publishing"
-        matTooltipShowDelay="500"
-      >
-        Save Job
-      </button>
-      <button
-        *ngIf="isProjectOwner"
-        class="submit-btn delete-btn"
-        mat-raised-button
-        (click)="subtaskService.discard()"
-        matTooltip="Discard all changes and revert the job to its last saved state"
-        matTooltipShowDelay="500"
-      >
-        Discard Job
-      </button>
-      <!-- Reports Dropdown -->
-      <button
-        class="submit-btn save-btn"
-        mat-raised-button
-        [matMenuTriggerFor]="reportsMenu"
-        matTooltip="View project reports and documents"
-        matTooltipShowDelay="500"
-      >
-        <mat-icon>download</mat-icon>
-        Export Report
-      </button>
-      <mat-menu #reportsMenu="matMenu">
-        <button mat-menu-item (click)="openDocumentsDialog()">
-          <mat-icon>description</mat-icon>
-          <span>View Documents</span>
-        </button>
-        <button
-          mat-menu-item
-          (click)="openReportDialog()"
-          [disabled]="isReportLoading"
-        >
-          <mat-icon>assessment</mat-icon>
-          <span *ngIf="!isReportLoading">View Full Report</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button mat-menu-item (click)="openBillOfMaterialsDialog()">
-          <mat-icon>list_alt</mat-icon>
-          <span>View Bill of Materials</span>
-        </button>
-        <button
-          mat-menu-item
-          (click)="openExecutiveSummaryDialog()"
-          [disabled]="isReportLoading"
-        >
-          <mat-icon>summarize</mat-icon>
-          <span *ngIf="!isReportLoading">View Executive Summary</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button
-          mat-menu-item
-          *ngIf="!projectDetails?.isSelected"
-          (click)="openEnvironmentalReportDialog()"
-          [disabled]="isReportLoading"
-        >
-          <mat-icon>eco</mat-icon>
-          <span *ngIf="!isReportLoading">View Environmental Report</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button
-          mat-menu-item
-          (click)="openProcurementScheduleDialog()"
-          [disabled]="isReportLoading"
-        >
-          <mat-icon>schedule</mat-icon>
-          <span *ngIf="!isReportLoading">View Procurement Schedule</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-        <button
-          mat-menu-item
-          (click)="openDailyConstructionPlanDialog()"
-          [disabled]="isReportLoading"
-        >
-          <mat-icon>event_note</mat-icon>
-          <span *ngIf="!isReportLoading">View Daily Construction Plan</span>
-          <span *ngIf="isReportLoading">Loading...</span>
-        </button>
-      </mat-menu>
-
-      <!-- More Actions Dropdown -->
-      <button
-        class="submit-btn"
-        mat-raised-button
-        [matMenuTriggerFor]="moreActionsMenu"
-        matTooltip="More actions"
-        matTooltipShowDelay="500"
-      >
-        <mat-icon>more_vert</mat-icon>
-        More Actions
-      </button>
-      <mat-menu #moreActionsMenu="matMenu">
-        <button mat-menu-item (click)="triggerEditAddress()">
-          <mat-icon>edit_location</mat-icon>
-          <span>Edit Address</span>
-        </button>
-        <button mat-menu-item (click)="openEditClientDialog()">
-          <mat-icon>person_edit</mat-icon>
-          <span>Edit Client</span>
-        </button>
-      </mat-menu>
-    </div>
-  </div>
-
-  <!-- Tabs -->
-  <div class="nav-tabs">
-    <button
-      (click)="setActiveTab('overview')"
-      [class.active]="activeTab === 'overview'"
-    >
-      Overview
-    </button>
-    <button
-      (click)="setActiveTab('budget')"
-      [class.active]="activeTab === 'budget'"
-    >
-      Budget
-    </button>
-    <button
-      (click)="setActiveTab('timeline')"
-      [class.active]="activeTab === 'timeline'"
-    >
-      Timeline & Tasks
-    </button>
-    <button
-      (click)="setActiveTab('team')"
-      [class.active]="activeTab === 'team'"
-    >
-      Team & Subcontractors
-    </button>
-    <button
-      (click)="setActiveTab('blueprints')"
-      [class.active]="activeTab === 'blueprints'"
-    >
-      Blueprint Viewer
-    </button>
-  </div>
-
-  <!-- OVERVIEW TAB -->
-  <div [hidden]="activeTab !== 'overview'" class="tab-content fade-in">
-    <div class="fullcolumn">
-      <app-project-overview
-        [projects]="overviewProjects"
-        [liveProjectsCount]="liveProjectsCount"
-        [biddingProjectsCount]="biddingProjectsCount"
-        [projectDetails]="projectDetails"
-        [isLoading]="isLoading"
-        [startDateDisplay]="startDateDisplay"
-        [forecast]="store.getState().forecast"
-        [weatherError]="store.getState().weatherError"
-        [temperatureUnit]="temperatureUnit"
-        [teamMemberCount]="assignedTeamMembers.length"
-        [assignedTeamMembers]="assignedTeamMembers"
-        [timelineData]="timelineGroups"
-        (navigateToTab)="handleTabNavigation($event)"
-        (jobArchived)="onJobArchived($event)"
-      ></app-project-overview>
-    </div>
-  </div>
-
-  <!-- BUDGET TRACKING TAB -->
-  <div *ngIf="activeTab === 'budget'" class="tab-content fade-in">
-    <app-project-budget-tracking
-      [projectDetails]="projectDetails"
-    ></app-project-budget-tracking>
-  </div>
-
-  <!-- TIMELINE TAB -->
-  <div *ngIf="activeTab === 'timeline'" class="tab-content fade-in">
-    <mat-accordion multi>
-      <mat-expansion-panel [expanded]="true">
-        <mat-expansion-panel-header>
-          <mat-panel-title class="timeline-title"
-            >Probuild Construction Timeline</mat-panel-title
-          >
-        </mat-expansion-panel-header>
-        <mat-divider class="timeline-divider"></mat-divider>
-        <div class="timeline-wrapper">
-          <app-timeline
-            [taskGroups]="timelineGroups"
-            [isProjectOwner]="isProjectOwner"
-            (onGroupClick)="timelineService.handleGroupClick($event)"
-            (onGroupMove)="handleGroupMove($event)"
-            (onEditGroup)="timelineService.handleEditGroup($event)"
-          >
-          </app-timeline>
-        </div>
-      </mat-expansion-panel>
-
-      <!-- Subtasks Section -->
-      <mat-expansion-panel [expanded]="true">
-        <mat-expansion-panel-header>
-          <mat-panel-title>Tasks and Subtasks</mat-panel-title>
-        </mat-expansion-panel-header>
-        <mat-divider></mat-divider>
-        <app-construction-phases
-          [groups]="store.getState().subtaskGroups"
-          [isProjectOwner]="isProjectOwner"
-        >
-        </app-construction-phases>
-      </mat-expansion-panel>
-    </mat-accordion>
-  </div>
-
-  <!-- TEAM TAB -->
-  <div *ngIf="activeTab === 'team'" class="tab-content fade-in">
-    <app-job-team
-      [projectDetails]="projectDetails"
-      [assignedTeamMembers]="assignedTeamMembers"
-      (refreshTeam)="loadAssignedTeam()"
-    ></app-job-team>
-  </div>
-
-  <!-- BLUEPRINTS TAB -->
-  <div *ngIf="activeTab === 'blueprints'" class="tab-content fade-in">
-    <div *ngIf="isLoadingBlueprints" class="loading-overlay">
-      <app-loader></app-loader>
-    </div>
-    <mat-card>
-      <mat-card-content>
-        <app-project-blueprint-viewer
-          [mode]="'view'"
-          [uploadedFiles]="blueprintFiles"
-          [selectedFile]="selectedBlueprint"
-          [pdfSrc]="blueprintPdfSrc"
-          (fileSelected)="handleBlueprintSelected($event)"
-        >
-        </app-project-blueprint-viewer>
-      </mat-card-content>
-    </mat-card>
   </div>
 </div>
 

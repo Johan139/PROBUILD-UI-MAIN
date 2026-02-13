@@ -3,6 +3,8 @@ import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -10,8 +12,11 @@ import autoTable from 'jspdf-autotable';
   providedIn: 'root',
 })
 export class BomService {
+  private apiUrl = environment.BACKEND_URL + '/tradepackages';
+
   constructor(
     private jobsService: JobsService,
+    private http: HttpClient,
     private snackBar: MatSnackBar,
   ) {}
 
@@ -455,5 +460,199 @@ export class BomService {
     }
 
     return null;
+  }
+
+  getValueEngineeringItems(jobId: string): Observable<any[]> {
+    return this.getBillOfMaterials(jobId).pipe(
+      map((results) => {
+        if (!results || results.length === 0 || !results[0].parsedReport) {
+          return [];
+        }
+        const report = results[0].parsedReport;
+        // Look for the "Value Engineering Options Table" or section title "Value Engineering"
+        const veSection = report.sections.find(
+          (s: any) =>
+            s.title &&
+            (s.title.includes('Value Engineering') ||
+              (s.headers && s.headers[0].includes('VE ID')))
+        );
+
+        if (!veSection || !veSection.content) {
+          return [];
+        }
+
+        return veSection.content.map((row: any[]) => {
+          const parseCost = (val: string) => {
+            if (!val) return 0;
+            const num = parseFloat(val.replace(/[^0-9.-]+/g, ''));
+            return isNaN(num) ? 0 : num;
+          };
+
+          return {
+            id: row[0],
+            category: row[1],
+            original: row[2],
+            proposed: row[3],
+            originalCost: parseCost(row[4]),
+            alternativeCost: parseCost(row[5]),
+            savings: parseCost(row[6]),
+            analysis: row[7],
+            // Helper fields
+            scheduleImpact: row[7]?.includes('Schedule Impact')
+              ? row[7]
+              : 'Unknown',
+            performanceImpact: row[7]?.includes('Performance Impact')
+              ? row[7]
+              : 'Unknown',
+          };
+        });
+      })
+    );
+  }
+
+  getTradePackages(jobId: string): Observable<any[]> {
+    // Try fetching from API first
+    return this.http.get<any[]>(`${this.apiUrl}/${jobId}`).pipe(
+      map((apiPackages) => {
+        if (apiPackages && apiPackages.length > 0) {
+          return apiPackages.map((pkg) => {
+            const parsedDays = this.parseDurationDays(pkg.estimatedDuration);
+            const derivedDays =
+              parsedDays ?? this.deriveDurationDaysFromHours(Number(pkg.estimatedManHours || 0));
+
+            return {
+              id: pkg.id,
+              jobId: pkg.jobId,
+              trade: pkg.tradeName,
+              category: pkg.category?.toLowerCase() || 'trade',
+              scopeOfWork: pkg.scopeOfWork,
+              status: pkg.status,
+              estimatedManHours: pkg.estimatedManHours,
+              hourlyRate: pkg.hourlyRate,
+              estimatedDuration: pkg.estimatedDuration || (derivedDays ? `${derivedDays} days` : ''),
+              durationDays: derivedDays,
+              startDate: pkg.startDate,
+              laborType: pkg.laborType || 'Labor and Materials',
+              bidDeadline: pkg.bidDeadline,
+              createdAt: pkg.createdAt,
+              budget: pkg.budget,
+              csiCode: pkg.csiCode,
+              bidType:
+                String(pkg.laborType || '')
+                  .toLowerCase()
+                  .includes('only')
+                  ? 'labor-only'
+                  : 'labor-material',
+              postedToMarketplace: pkg.postedToMarketplace,
+              bids: [], // Bids are loaded separately
+              hasInternalQuote: false,
+            };
+          });
+        }
+        return [];
+      }),
+      catchError((err) => {
+        console.warn('Failed to fetch trade packages from API, falling back to report parsing', err);
+        // Fallback to report parsing if API fails or returns empty (e.g. migration not run)
+        return this.getBillOfMaterials(jobId).pipe(
+          map((results) => {
+            if (!results || results.length === 0 || !results[0].parsedReport) {
+              return [];
+            }
+            const report = results[0].parsedReport;
+            const tradePackages: any[] = [];
+
+            // Iterate through sections to find "Subcontractor Cost Breakdown" tables
+            report.sections.forEach((section: any) => {
+              if (
+                section.title &&
+                (section.title.includes('Subcontractor Cost Breakdown') ||
+                  (section.headers &&
+                    section.headers.join(' ').toLowerCase().includes('scope of work')))
+              ) {
+                section.content.forEach((row: any[]) => {
+                  const tradeName = row[0];
+                  const scope = row[1];
+                  const hours = parseInt(row[2]) || 0;
+                  const rate = parseFloat(row[3]?.replace(/[^0-9.]/g, '')) || 0;
+                  const totalCost =
+                    parseFloat(row[4]?.replace(/[^0-9.]/g, '')) || 0;
+                  const csi = row[5];
+
+                  if (tradeName && tradeName !== 'Total Subcontractor Cost') {
+                    tradePackages.push({
+                      id: csi || tradeName.replace(/\s+/g, '-').toLowerCase(),
+                      jobId: Number(jobId),
+                      trade: tradeName,
+                      category: 'trade',
+                      scopeOfWork: scope,
+                      status: 'Draft',
+                      estimatedManHours: hours,
+                      hourlyRate: rate,
+                      estimatedDuration: hours > 0 ? `${Math.max(1, Math.ceil(hours / 8))} days` : null,
+                      durationDays: hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
+                      startDate: null,
+                      laborType: 'Labor and Materials',
+                      bidDeadline: null,
+                      createdAt: new Date().toISOString(),
+                      budget: totalCost,
+                      csiCode: csi,
+                      bidType: 'labor-material',
+                      postedToMarketplace: false,
+                      bids: [],
+                      hasInternalQuote: false,
+                    });
+                  }
+                });
+              }
+            });
+
+            return tradePackages;
+          })
+        );
+      })
+    );
+  }
+
+  private parseDurationDays(estimatedDuration: string | null | undefined): number | null {
+    if (!estimatedDuration) {
+      return null;
+    }
+
+    const match = String(estimatedDuration).match(/(\d+(?:\.\d+)?)/);
+    if (!match) {
+      return null;
+    }
+
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(value));
+  }
+
+  private deriveDurationDaysFromHours(estimatedManHours: number): number | null {
+    if (!Number.isFinite(estimatedManHours) || estimatedManHours <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(estimatedManHours / 8));
+  }
+
+  postTradePackage(id: string | number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/post`, {});
+  }
+
+  refreshTradePackages(jobId: string | number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${jobId}/refresh`, {});
+  }
+
+  updateTradePackage(id: number, tradePackage: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, tradePackage);
+  }
+
+  getMyMarketplacePostings(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/user/${userId}/postings`);
   }
 }

@@ -8,6 +8,23 @@
     <div class="status-badge" [ngClass]="statusColors[project.status]">
       {{ statusLabels[project.status] }}
     </div>
+
+    <div *ngIf="project.status === 'ANALYZING'" class="analyzing-overlay">
+      <div class="analyzing-content">
+        <div class="analyzing-header">
+          <mat-icon class="spinning">autorenew</mat-icon>
+          <span>AI Analysis in Progress</span>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="project.progress || 0"
+        ></mat-progress-bar>
+        <div class="analyzing-footer">
+          <span>Processing...</span>
+          <span>{{ project.progress || 0 }}%</span>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="card-content-wrapper">
     <mat-card-content class="card-content">
@@ -120,8 +137,15 @@
           class="view-details-button"
           (click)="onView.emit(project.jobId)"
         >
-          <mat-icon>visibility</mat-icon>
-          View Details
+          <mat-icon *ngIf="project.status !== 'ANALYZING'">visibility</mat-icon>
+          <mat-icon *ngIf="project.status === 'ANALYZING'" class="spinning"
+            >autorenew</mat-icon
+          >
+          {{
+            project.status === "ANALYZING"
+              ? "Continue Analysis"
+              : "View Details"
+          }}
         </button>
         <!-- <button class="icon-button" (click)="onEdit.emit(project.jobId)">
           <mat-icon>edit</mat-icon>

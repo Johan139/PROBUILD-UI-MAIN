@@ -1,0 +1,217 @@
+@use "styles/util/mixins" as u;
+@import '../find-work.shared.scss';
+
+// Component Specific
+.summary-cards-row {
+  @extend .stats-grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.summary-card {
+  @extend .stat-card;
+  .summary-value { @extend .stat-value; }
+  .summary-label { @extend .stat-label; }
+}
+
+.filters-container {
+    padding: 16px;
+    margin-bottom: 24px;
+
+    .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        .search-input-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+
+            mat-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+                color: $color-text-muted;
+            }
+            input {
+                width: 100%;
+                padding: 8px 16px 8px 40px;
+                background: var(--color-surface-subtle);
+                border-radius: var(--radius-md);
+                font-size: 14px;
+                border: 1px solid transparent;
+
+                &:focus { outline: none; border-color: $color-yellow; }
+            }
+        }
+
+        .location-controls {
+            display: flex;
+            gap: 8px;
+
+            .toggle-btn {
+                padding: 8px 16px;
+                border: 1px solid $color-border;
+                background: transparent;
+                border-radius: var(--radius-md);
+                font-size: 14px;
+                cursor: pointer;
+
+                &.active {
+                    border-color: $color-yellow;
+                    color: $color-yellow;
+                }
+            }
+        }
+    }
+
+    .advanced-filters-row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+
+        .range-filter {
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+            label { font-size: 12px; margin-bottom: 4px; }
+            input[type=range] { accent-color: $color-yellow; }
+        }
+    }
+
+    .custom-select {
+        padding: 8px 32px 8px 16px;
+        background: var(--color-surface-subtle);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        border: 1px solid transparent;
+        color: var(--color-text);
+        cursor: pointer;
+
+        &:focus { outline: none; border-color: $color-yellow; }
+    }
+}
+
+.job-card-content {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .job-main {
+        display: flex;
+        gap: 12px;
+        flex: 1;
+
+        .job-icon-box {
+            width: 40px;
+            height: 40px;
+            background: var(--color-surface-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            mat-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+                color: $color-yellow;
+
+                &.green-text { color: $color-green; }
+                &.purple-text { color: $color-purple; }
+                &.blue-text { color: $color-blue; }
+            }
+        }
+
+        .job-details {
+            width: 100%;
+
+            .job-header-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 2px;
+
+                h4 {
+                    margin: 0;
+                    font-weight: 700;
+                    font-size: 16px;
+                }
+
+                .status-pill {
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 9999px;
+
+                    &.green { background: rgba($color-green, 0.2); color: $color-green; }
+                    &.yellow { background: rgba($color-yellow, 0.2); color: $color-yellow; }
+                    &.blue { background: rgba($color-blue, 0.2); color: $color-blue; }
+                    &.purple { background: rgba($color-purple, 0.2); color: $color-purple; display: flex; align-items: center; gap: 4px; }
+
+                    .icon-xs { font-size: 12px; width: 12px; height: 12px; }
+                }
+            }
+
+            .project-name {
+                color: $color-text-muted;
+                font-size: 14px;
+                margin: 0 0 8px 0;
+            }
+
+            .meta-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                color: $color-text-muted;
+                margin-bottom: 8px;
+
+                mat-icon { font-size: 12px; width: 12px; height: 12px; margin-right: 0; }
+                strong { color: var(--color-text); font-weight: 500; }
+
+                .rating-pill {
+                    display: flex;
+                    align-items: center;
+                    gap: 2px;
+                    font-size: 12px;
+
+                    mat-icon { color: #4285F4; }
+                }
+            }
+
+            .stats-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 16px;
+                font-size: 14px;
+
+                .stat-pill {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    color: $color-text-muted;
+
+                    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+                }
+            }
+        }
+    }
+
+    .job-actions-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: 16px; 
+
+        .action-buttons {
+             display: flex;
+             gap: 8px;
+        }
+    }
+}

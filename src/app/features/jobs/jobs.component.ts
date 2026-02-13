@@ -106,7 +106,13 @@ import { ProjectBudgetTrackingComponent } from './project-budget-tracking/projec
 import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dialog.component';
 import { ConstructionPhasesComponent } from './components/construction-phases/construction-phases.component';
 import { JobTeamComponent } from './components/job-team/job-team.component';
+import { ProjectStageStepperComponent } from './components/project-stage-stepper/project-stage-stepper.component';
+import { JobAnalysisWalkthroughComponent } from './components/job-analysis-walkthrough/job-analysis-walkthrough.component';
+import { JobPreliminaryViewComponent } from './components/job-preliminary-view/job-preliminary-view.component';
+import { JobInboundBiddingComponent } from './components/job-inbound-bidding/job-inbound-bidding.component';
+import { JobClosureComponent } from './components/job-closure/job-closure.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 @Component({
   selector: 'app-jobs',
   standalone: true,
@@ -142,6 +148,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     ProjectBudgetTrackingComponent,
     ConstructionPhasesComponent,
     JobTeamComponent,
+    ProjectStageStepperComponent,
+    JobAnalysisWalkthroughComponent,
+    JobPreliminaryViewComponent,
+    JobInboundBiddingComponent,
+    JobClosureComponent
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
@@ -157,6 +168,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   addressSuggestions: { description: string; place_id: string }[] = [];
 
   projectDetails: any;
+  projectStage: 'ANALYZING' | 'PRELIMINARY' | 'BIDDING' | 'LIVE' | 'CLOSURE' = 'LIVE';
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
   selectedPlace: google.maps.places.PlaceResult | null = null;
@@ -199,6 +211,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroyRef = inject(DestroyRef);
 
   timelineGroups: TimelineGroup[] = [];
+  isSubtaskTimelineActive: boolean = false;
+  selectedTimelineParentGroup: TimelineGroup | null = null;
+  subtaskTimelineGroups: TimelineGroup[] = [];
   temperatureUnit: TemperatureUnit = 'C';
 
   // Tab State
@@ -556,6 +571,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       )
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
+        this.determineProjectStage(this.projectDetails?.status);
+
         if (this.projectDetails?.date) {
           const d = new Date(this.projectDetails.date);
           this.startDateDisplay = isNaN(d.getTime())
@@ -1007,6 +1024,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     newStartDate: Date;
     newEndDate: Date;
   }): void {
+    if (this.isSubtaskTimelineActive) {
+      return;
+    }
+
     this.authService.currentUser$
       .pipe(
         filter((user) => !!user),
@@ -1019,6 +1040,65 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           user.id,
         );
       });
+  }
+
+  handleTimelineGroupDoubleClick(group: TimelineGroup): void {
+    if (this.isSubtaskTimelineActive) {
+      return;
+    }
+
+    this.selectedTimelineParentGroup = group;
+    this.subtaskTimelineGroups = this.buildSubtaskTimelineGroups(group);
+    this.isSubtaskTimelineActive = true;
+  }
+
+  returnToMainTimeline(): void {
+    this.isSubtaskTimelineActive = false;
+    this.selectedTimelineParentGroup = null;
+    this.subtaskTimelineGroups = [];
+  }
+
+  get displayedTimelineGroups(): TimelineGroup[] {
+    return this.isSubtaskTimelineActive
+      ? this.subtaskTimelineGroups
+      : this.timelineGroups;
+  }
+
+  private buildSubtaskTimelineGroups(parentGroup: TimelineGroup): TimelineGroup[] {
+    const subtasks = (parentGroup.subtasks || []).filter((task) => !task.deleted);
+
+    return subtasks.map((task, index) => {
+      const startDate = this.resolveTaskDate(task.start, task.startDate);
+      const endDate = this.resolveTaskDate(task.end, task.endDate) ?? startDate;
+      const isComplete =
+        task.accepted || (task.status || '').toLowerCase() === 'completed';
+
+      return {
+        title: task.task || task.name || `Subtask ${index + 1}`,
+        subtasks: [task],
+        startDate: startDate ?? undefined,
+        endDate: endDate ?? undefined,
+        progress: isComplete ? 100 : 0,
+      };
+    });
+  }
+
+  private resolveTaskDate(
+    dateValue?: Date,
+    dateString?: string,
+  ): Date | null {
+    if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+      return dateValue;
+    }
+
+    if (dateString) {
+      const parsed = new Date(dateString);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return null;
   }
 
   NavigateBack(): void {
@@ -1115,6 +1195,64 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
               }
             });
         }
+      });
+  }
+
+  private determineProjectStage(status: string) {
+      if (!status) {
+          this.projectStage = 'LIVE'; // Default
+          return;
+      }
+
+      const s = status.toUpperCase();
+      if (s === 'ANALYZING') {
+          this.projectStage = 'ANALYZING';
+      } else if (s === 'PRELIMINARY' || s === 'NEW' || s === 'DRAFT') {
+          this.projectStage = 'PRELIMINARY';
+      } else if (s === 'BIDDING' || s === 'INBOUND-BIDDING') {
+          this.projectStage = 'BIDDING';
+      } else if (s === 'LIVE' || s === 'ACTIVE') {
+          this.projectStage = 'LIVE';
+      } else if (s === 'ARCHIVED' || s === 'CLOSURE' || s === 'COMPLETED') {
+          this.projectStage = 'CLOSURE';
+      } else {
+          this.projectStage = 'LIVE'; // Fallback
+      }
+  }
+
+  onAnalysisComplete() {
+      // Refresh job details to get new status (which should be PRELIMINARY)
+      this.jobDataService.fetchJobData(this.projectDetails);
+  }
+
+  onJobGranted() {
+      // Update status to BIDDING
+      this.updateJobStatus('BIDDING');
+  }
+
+  onGoLive() {
+      // Update status to LIVE
+      this.updateJobStatus('LIVE');
+  }
+
+  private updateJobStatus(status: string) {
+    if (!this.projectDetails?.jobId) return;
+
+    this.jobsService
+      .updateJobStatus(this.projectDetails.jobId, status)
+      .subscribe({
+        next: () => {
+          this.determineProjectStage(status);
+          this.snackBar.open(`Project status updated to ${status}`, 'Close', {
+            duration: 3000,
+          });
+        },
+        error: (err) => {
+          console.error('Failed to update status', err);
+          this.snackBar.open('Failed to update project status.', 'Close', {
+            duration: 3000,
+          });
+        },
       });
   }
 }

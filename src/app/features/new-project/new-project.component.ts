@@ -62,6 +62,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../authentication/auth.service';
 import { LocalStorageService } from '../../services/local-storage.service';
+import { Router } from '@angular/router';
 
 interface WalkthroughStep {
   stepIndex: number;
@@ -206,6 +207,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private snackBar: MatSnackBar,
     private localStorageService: LocalStorageService,
+    private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -257,17 +259,6 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     this.aiChatService.getMyPrompts();
 
     this.signalrService.startConnection();
-    this.signalrService.analysisProgress.subscribe((update) => {
-      this.state.next({ ...this.state.getValue(), analysisProgress: update });
-      if (update.isComplete || update.hasFailed) {
-        this.shouldDeleteTempFiles = false;
-        this.isLoading = false;
-        if (!update.hasFailed) {
-          this.setFlow('done');
-        }
-      }
-    });
-
     if (this.isBrowser) {
       try {
         await this.loadGoogleMapsScript();
@@ -672,14 +663,22 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
     this.newAnalysisService.startStandardAnalysis(formData).subscribe({
-      next: (response) => {
-        // console.log('Analysis started successfully', response);
+      next: (response: any) => {
         this.snackBar.open('Analysis started successfully!', 'Close', {
           duration: 5000,
         });
         this.clientForm.reset();
         this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
-        // Progress will be handled by the SignalR subscription
+
+        // Redirect to new Jobs view immediately
+        if (response && (response.id || response.JobId || response.jobId)) {
+             const jobId = response.id || response.JobId || response.jobId;
+             this.router.navigate(['/view-quote'], { queryParams: { jobId: jobId, userId: userId } });
+        } else {
+             // Fallback if ID not found, though backend should return it
+             this.snackBar.open('Job created, but could not redirect automatically.', 'Close');
+             this.isLoading = false;
+        }
       },
       error: (error) => {
         // console.error('Analysis failed to start', error);

@@ -1,0 +1,60 @@
+<h2 mat-dialog-title>Post New Job</h2>
+<mat-dialog-content>
+  <div class="form-container">
+    <div class="row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Trade</mat-label>
+        <mat-select [(ngModel)]="jobData.trade" required>
+          <mat-option *ngFor="let trade of trades" [value]="trade">{{ trade }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Project Name</mat-label>
+        <input matInput [(ngModel)]="jobData.projectName" required placeholder="e.g. Smith Residence Renovation">
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput [(ngModel)]="jobData.description" rows="4" placeholder="Describe the scope of work..."></textarea>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Budget Range (Min)</mat-label>
+        <span matPrefix>$&nbsp;</span>
+        <input matInput [(ngModel)]="jobData.budgetMin" type="number">
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Budget Range (Max)</mat-label>
+        <span matPrefix>$&nbsp;</span>
+        <input matInput [(ngModel)]="jobData.budgetMax" type="number">
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Start Date</mat-label>
+        <input matInput [matDatepicker]="picker" [(ngModel)]="jobData.startDate">
+        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Duration</mat-label>
+        <input matInput [(ngModel)]="jobData.duration" placeholder="e.g. 3 weeks">
+      </mat-form-field>
+    </div>
+
+    <div class="labor-type-section">
+      <label>Labor Type:</label>
+      <div class="radio-group">
+        <button class="type-btn" [class.active]="jobData.laborType === 'Labor Only'" (click)="jobData.laborType = 'Labor Only'">Labor Only</button>
+        <button class="type-btn" [class.active]="jobData.laborType === 'Labor and Materials'" (click)="jobData.laborType = 'Labor and Materials'">Labor & Materials</button>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="!jobData.trade || !jobData.projectName">Post Job</button>
+</mat-dialog-actions>

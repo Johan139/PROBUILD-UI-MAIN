@@ -1,0 +1,33 @@
+<div class="tab-pane">
+    <div *ngIf="savedJobIds.length === 0" class="empty-state">
+        <mat-icon>bookmark_border</mat-icon>
+        <h3>No Saved Jobs</h3>
+        <p>Save jobs you're interested in to review and bid on later.</p>
+        <button mat-flat-button color="primary" (click)="browseJobs.emit()">Browse Available Jobs</button>
+    </div>
+
+    <div *ngIf="savedJobIds.length > 0">
+        <div class="section-header">
+            <h3>Saved Jobs ({{ savedJobsList.length }})</h3>
+            <button mat-stroked-button (click)="clearAll.emit()">Clear All</button>
+        </div>
+
+        <ul class="job-list">
+          <li *ngFor="let job of savedJobsList"
+              class="job-item card-style saved-border"
+              (click)="jobClick.emit(job)">
+              <app-job-card
+                  [job]="job"
+                  [userTrade]="userTrade"
+                  [quote]="getQuoteForJob(job.jobId)"
+                  (viewMoreInfo)="viewMoreInfo.emit(job)"
+                  [showBidButton]="true"
+              ></app-job-card>
+
+              <button class="save-btn-overlay" (click)="toggleSaved.emit({jobId: job.jobId, event: $event})">
+                  <mat-icon class="saved">bookmark</mat-icon>
+              </button>
+          </li>
+        </ul>
+    </div>
+</div>

@@ -111,15 +111,6 @@
     <div class="button-group">
       <button
         class="btn-outline-custom"
-        (click)="importAiEstimates()"
-        *ngIf="!isAddingLineItem"
-        matTooltip="Import estimates from AI Analysis"
-      >
-        <mat-icon>smart_toy</mat-icon>
-        Import AI
-      </button>
-      <button
-        class="btn-outline-custom"
         (click)="startAddLineItem()"
         *ngIf="!isAddingLineItem"
       >

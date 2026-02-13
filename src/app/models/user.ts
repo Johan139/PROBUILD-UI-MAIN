@@ -21,4 +21,5 @@ export class User {
   productsOffered?: string;
   country?: string;
   city?: string;
+  state?: string;
 }

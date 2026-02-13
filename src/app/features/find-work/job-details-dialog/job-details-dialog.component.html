@@ -1,28 +1,415 @@
-<mat-card *ngIf="data.job">
-  <mat-card-header>
-    <mat-card-title>{{ data.job.title }}</mat-card-title>
-    <mat-card-subtitle>{{ data.job.projectName }}</mat-card-subtitle>
-  </mat-card-header>
-  <mat-card-content>
-    <p><strong>Address:</strong> {{ data.job.address }}</p>
-    <p *ngIf="data.job.description"><strong>Description:</strong> {{ data.job.description }}</p>
-    <p><strong>Job Type:</strong> {{ data.job.jobType | titlecase }}</p>
-    <!-- <p><strong>Status:</strong> {{ data.job.status }}</p> -->
-    <p *ngIf="data.job.potentialStartDate"><strong>Expected Start Date:</strong> {{ data.job.potentialStartDate | date }}</p>
-    <p *ngIf="data.job.potentialEndDate"><strong>Expected End Date:</strong> {{ data.job.potentialEndDate | date }}</p>
-    <p *ngIf="data.job.durationInDays"><strong>Expected Duration:</strong> {{ data.job.durationInDays }} days</p>
-
-    <div class="job-trades">
-      <strong>Trades:</strong>
-      <span *ngFor="let trade of data.job.trades" class="trade-pill" [class.match]="trade === userTrade">
-        {{ trade | titlecase }}
-      </span>
+<div class="dialog-container">
+  <div class="dialog-header">
+    <div class="header-main">
+      <div class="header-top-row">
+        <div class="title-group">
+          <h2 class="trade-title">{{ getPrimaryTrade() }}</h2>
+          <div class="badges">
+            <span class="status-pill" [ngClass]="getStatusClass()">{{ getStatusLabel() }}</span>
+            <span class="status-pill blue" *ngIf="data.job.biddingType === 'Labor Only'">Labor Only</span>
+            <span class="status-pill green" *ngIf="data.job.biddingType !== 'Labor Only'">Labor &amp; Materials</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" (click)="toggleSave()" [class.active]="isSaved" [title]="isSaved ? 'Unsave Job' : 'Save Job'">
+            <mat-icon>{{ isSaved ? 'bookmark' : 'bookmark_border' }}</mat-icon>
+          </button>
+          <!-- <button class="icon-btn" (click)="onShare()" title="Share Job">
+            <mat-icon>share</mat-icon>
+          </button> -->
+          <button class="icon-btn" [class.notes-active]="notes.length > 0" (click)="onAddNotes()" title="Add Notes">
+            <mat-icon>note_add</mat-icon>
+          </button>
+          <button class="icon-btn close-btn" (click)="onClose()" title="Close">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+      <p class="subtitle">{{ data.job.projectName }}</p>
     </div>
-    <p *ngIf="!tradeMatch" class="trade-warning">
-      Your trade does not match up to anything required by this job.
-    </p>
-  </mat-card-content>
-  <mat-card-actions>
-    <button mat-button (click)="onClose()">Close</button>
-  </mat-card-actions>
-</mat-card>
+  </div>
+
+  <mat-dialog-content class="content-scroll">
+    <div class="section location-section">
+      <h4 class="section-label">Location</h4>
+      <div class="location-row">
+        <mat-icon class="icon-yellow">place</mat-icon>
+        <span>{{ getLocationText() }}</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header-row">
+        <h4 class="section-label">Job Description</h4>
+        <!-- <button class="text-btn" (click)="onDownloadDescription()">
+          <mat-icon>file_download</mat-icon> Download PDF
+        </button> -->
+      </div>
+      <p class="description-text">
+        {{ data.job.description || 'No description provided.' }}
+      </p>
+    </div>
+
+    <div class="section">
+      <h4 class="section-label">Scope Type</h4>
+      <div class="scope-badge" [class.labor-only]="data.job.biddingType === 'Labor Only'">
+        <mat-icon>build</mat-icon>
+        <div>
+          <div class="scope-title">{{ data.job.biddingType || 'Labor and Materials' }}</div>
+          <div class="scope-desc">
+            {{ data.job.biddingType === 'Labor Only' ? 'Materials provided by owner/GC' : 'Contractor provides all materials' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-grid">
+      <div class="detail-box">
+        <label>Budget</label>
+        <ng-container *ngIf="canInlineEdit; else budgetReadOnly">
+          <div class="inline-edit-wrap currency-wrap">
+            <span class="currency-prefix">$</span>
+            <input
+              type="number"
+              class="inline-edit-input"
+              [(ngModel)]="editable.budget"
+              (ngModelChange)="markInlineEdited()"
+              min="0"
+              step="1"
+            />
+          </div>
+        </ng-container>
+        <ng-template #budgetReadOnly>
+          <span class="value yellow-text">{{ data.job.tradeBudgets?.[0]?.budget ? (data.job.tradeBudgets?.[0]?.budget | currency) : 'N/A' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Start Date</label>
+        <ng-container *ngIf="canInlineEdit; else startReadOnly">
+          <input
+            type="date"
+            class="inline-edit-input"
+            [(ngModel)]="editable.startDate"
+            (ngModelChange)="markInlineEdited()"
+          />
+        </ng-container>
+        <ng-template #startReadOnly>
+          <span class="value">{{ (data.job.potentialStartDate | date) || 'TBD' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Estimated Man Hours (AI estimate)</label>
+        <ng-container *ngIf="canInlineEdit; else manHoursReadOnly">
+          <div class="inline-edit-wrap duration-wrap">
+            <input
+              type="number"
+              class="inline-edit-input"
+              [(ngModel)]="editable.estimatedManHours"
+              (ngModelChange)="onEstimatedManHoursChanged()"
+              min="0"
+              step="1"
+            />
+            <span class="inline-suffix">hours</span>
+          </div>
+        </ng-container>
+        <ng-template #manHoursReadOnly>
+          <span class="value">{{ editable.estimatedManHours ? editable.estimatedManHours + ' hours' : 'TBD' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Duration</label>
+        <ng-container *ngIf="canInlineEdit; else durationReadOnly">
+          <div class="inline-edit-wrap duration-wrap">
+            <input
+              type="number"
+              class="inline-edit-input"
+              [(ngModel)]="editable.durationInDays"
+              (ngModelChange)="onDurationChanged()"
+              min="0"
+              step="1"
+            />
+            <span class="inline-suffix">days</span>
+          </div>
+        </ng-container>
+        <ng-template #durationReadOnly>
+          <span class="value">{{ data.job.durationInDays ? data.job.durationInDays + ' days' : 'TBD' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Labor Type</label>
+        <ng-container *ngIf="canInlineEdit; else laborReadOnly">
+          <select
+            class="inline-edit-input"
+            [(ngModel)]="editable.laborType"
+            (ngModelChange)="markInlineEdited()"
+          >
+            <option *ngFor="let option of getLaborTypeOptions()" [value]="option">{{ option }}</option>
+          </select>
+        </ng-container>
+        <ng-template #laborReadOnly>
+          <span class="value">{{ data.job.biddingType || 'Labor & Materials' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Bid Deadline</label>
+        <ng-container *ngIf="canInlineEdit; else deadlineReadOnly">
+          <input
+            type="date"
+            class="inline-edit-input"
+            [(ngModel)]="editable.bidDeadline"
+            (ngModelChange)="markInlineEdited()"
+          />
+        </ng-container>
+        <ng-template #deadlineReadOnly>
+          <span class="value">{{ (data.job.biddingStartDate | date) || 'TBD' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
+        <label>Posted Date</label>
+        <span class="value">{{ (data.job.createdAt | date) || 'TBD' }}</span>
+      </div>
+    </div>
+
+    <div class="inline-edit-actions" *ngIf="canInlineEdit && hasInlineEdits">
+      <button class="action-btn yellow-btn small" (click)="applyInlineEdits()">
+        <mat-icon>save</mat-icon> Apply Changes
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="section-header-row">
+        <h4 class="section-label">Blueprints & Documents</h4>
+        <!-- <button class="action-btn yellow-btn small" (click)="onImportToAnalyzer()">
+          <mat-icon>psychology</mat-icon> Import to AI Analyzer
+        </button> -->
+      </div>
+
+      <div *ngIf="isLoadingBlueprints" class="loading-overlay">
+        <app-loader></app-loader>
+        <p>Loading blueprints...</p>
+      </div>
+
+      <div *ngIf="!isLoadingBlueprints && blueprintFiles.length === 0" class="no-docs">
+        <p>No blueprints found for this project.</p>
+      </div>
+
+      <div class="blueprints-list" *ngIf="blueprintFiles.length > 0">
+        <div class="blueprint-item" *ngFor="let file of blueprintFiles">
+          <div class="file-info">
+            <div class="file-icon"><mat-icon>description</mat-icon></div>
+            <div>
+              <div class="file-name">{{ file.name }}</div>
+              <div class="file-meta">PDF • {{ (file.size / 1024 / 1024) | number:'1.1-2' }} MB</div>
+            </div>
+          </div>
+          <div class="file-actions">
+            <button class="icon-btn-small" (click)="viewBlueprintDocument(file, $event)">
+              <mat-icon>visibility</mat-icon> View
+            </button>
+            <button class="icon-btn-small" (click)="downloadBlueprintDocument(file, $event)">
+              <mat-icon>download</mat-icon> PDF
+            </button>
+          </div>
+        </div>
+      </div>
+<!--
+      <div class="blueprints-viewer-container" *ngIf="selectedBlueprint">
+        <app-project-blueprint-viewer
+          [mode]="'view'"
+          [uploadedFiles]="blueprintFiles"
+          [selectedFile]="selectedBlueprint"
+          [pdfSrc]="blueprintPdfSrc"
+          (fileSelected)="handleBlueprintSelected($event)"
+        >
+        </app-project-blueprint-viewer>
+      </div> -->
+
+      <div
+        *ngIf="showUploadQuoteSection()"
+        class="upload-quote-area"
+        [class.active-drop-zone]="isQuoteDropZoneActive"
+        (dragover)="onQuoteDragOver($event)"
+        (dragleave)="onQuoteDragLeave($event)"
+        (drop)="onFileDropped($event)"
+      >
+        <div class="upload-content" (click)="fileInput.click()">
+          <mat-icon class="yellow-text">cloud_upload</mat-icon>
+          <div class="upload-text">
+            <div class="upload-title">Upload Quote PDF</div>
+            <div class="upload-desc">Drag & drop or click to select a PDF quote document</div>
+            <div class="upload-desc" *ngIf="selectedQuoteFile">Selected: {{ selectedQuoteFile.name }}</div>
+            <div class="upload-desc" *ngIf="isQuoteUploading">Uploading... {{ quoteUploadProgress }}%</div>
+          </div>
+        </div>
+
+        <input
+          #fileInput
+          type="file"
+          accept=".pdf,application/pdf"
+          (change)="onFileSelected($event)"
+          style="display: none"
+        />
+
+        <div class="quote-upload-actions">
+          <button
+            class="action-btn outline-btn"
+            type="button"
+            (click)="clearSelectedQuote()"
+            [disabled]="!selectedQuoteFile || isQuoteUploading || isSubmittingBid"
+          >
+            Clear
+          </button>
+          <button
+            class="action-btn yellow-btn"
+            type="button"
+            (click)="uploadQuote()"
+            [disabled]="!selectedQuoteFile || isQuoteUploading || isSubmittingBid"
+          >
+            {{ isSubmittingBid ? 'Submitting...' : 'Upload & Submit Bid' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section bidders-section" *ngIf="hasBidders()">
+      <h4 class="section-label">Received Bids ({{ getBidders().length }})</h4>
+      <div class="bidders-list">
+        <div class="bidder-item" *ngFor="let bidder of getBidders()">
+          <div class="bidder-top-row">
+            <div class="bidder-company-wrap">
+              <div class="bidder-icon"><mat-icon>apartment</mat-icon></div>
+              <div>
+                <p class="bidder-company">{{ bidder.company || bidder.name || 'Bidder' }}</p>
+                <p class="bidder-meta">{{ bidder.email || 'Profile available' }}</p>
+              </div>
+            </div>
+            <p class="bidder-amount">{{ bidder.bid || bidder.amount || 'Bid Submitted' }}</p>
+          </div>
+
+          <div class="bidder-actions">
+            <button class="icon-btn-small"><mat-icon>person</mat-icon> View Profile</button>
+            <button class="icon-btn-small"><mat-icon>visibility</mat-icon> View Quote</button>
+            <button class="action-btn yellow-btn small"><mat-icon>check_circle</mat-icon> Accept Bid</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section contractor-section" *ngIf="showContractorSection()">
+      <h4 class="section-label">Posted By</h4>
+      <div class="contractor-card">
+        <div class="contractor-header">
+          <div class="contractor-info">
+            <div class="contractor-logo"><mat-icon>domain</mat-icon></div>
+            <div>
+              <div class="contractor-name">{{ data.job.clientCompanyName || data.job.clientName || 'Contractor' }}</div>
+              <div class="contractor-role">General Contractor</div>
+            </div>
+          </div>
+          <button class="text-btn small">
+            <mat-icon>person</mat-icon> View Profile
+          </button>
+        </div>
+
+        <div class="ratings-row">
+          <div class="rating-box google">
+            <div class="rating-label google-label">
+              <svg viewBox="0 0 24 24" class="google-icon" fill="none" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              <span>Google Rating</span>
+            </div>
+            <div class="rating-val">
+              <span class="score">{{ getRatingText('google') }}</span>
+              <div class="stars">
+                <mat-icon
+                  *ngFor="let i of stars"
+                  [class.star-filled]="isStarFilled(i, 'google')"
+                >
+                  star
+                </mat-icon>
+              </div>
+            </div>
+            <p class="rating-meta">{{ getGoogleReviewsText() }}</p>
+          </div>
+
+          <div class="rating-box probuild">
+            <div class="rating-label">ProBuild Rating</div>
+            <div class="rating-val">
+              <span class="score yellow-text">{{ getRatingText('probuild') }}</span>
+              <div class="stars">
+                <mat-icon
+                  *ngFor="let i of stars"
+                  [class.star-filled]="isStarFilled(i, 'probuild')"
+                  [class.yellow-text]="isStarFilled(i, 'probuild')"
+                >
+                  star
+                </mat-icon>
+              </div>
+            </div>
+            <p class="rating-meta">{{ getProbuildReviewsText() }}</p>
+          </div>
+        </div>
+
+        <!-- <div class="quick-stats-row">
+          <span class="quick-stat"><mat-icon>schedule</mat-icon> {{ yearsInBusiness }} yrs experience</span>
+          <span class="quick-stat"><mat-icon>work</mat-icon> {{ completedProjects }} projects</span>
+          <span class="quick-stat"><mat-icon>place</mat-icon> {{ getQuickStatsLocation() }}</span>
+        </div> -->
+
+        <div class="external-company-row" *ngIf="contractorExternalLoading">
+          <span class="quick-stat"><mat-icon>sync</mat-icon> Loading external contractor details...</span>
+        </div>
+
+        <div class="external-company-row" *ngIf="!contractorExternalLoading && contractorExternalError">
+          <span class="quick-stat"><mat-icon>error_outline</mat-icon> {{ contractorExternalError }}</span>
+        </div>
+
+        <div class="external-company-row" *ngIf="!contractorExternalLoading && contractorExternal">
+          <a class="quick-stat external-link" *ngIf="getContractorWebsite()" [href]="getContractorWebsite()" target="_blank" rel="noopener noreferrer">
+            <mat-icon>language</mat-icon> Website
+          </a>
+          <a class="quick-stat external-link" *ngIf="getContractorLinkedin()" [href]="getContractorLinkedin()" target="_blank" rel="noopener noreferrer">
+            <mat-icon>business</mat-icon> LinkedIn
+          </a>
+          <span class="quick-stat" *ngIf="getContractorContactEmail()">
+            <mat-icon>mail</mat-icon> {{ getContractorContactEmail() }}
+          </span>
+        </div>
+
+        <div class="external-company-description" *ngIf="getContractorDescription()">
+          {{ getContractorDescription() }}
+        </div>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <div class="dialog-footer">
+    <div class="footer-left">
+      <button class="footer-btn" (click)="toggleSave()">
+        <mat-icon>{{ isSaved ? 'bookmark' : 'bookmark_border' }}</mat-icon>
+        {{ isSaved ? 'Saved' : 'Save Job' }}
+      </button>
+      <!-- <button class="footer-btn" (click)="onDownloadAll()">
+        <mat-icon>download</mat-icon> Download All
+      </button> -->
+    </div>
+    <div class="footer-right">
+      <button class="action-btn outline-btn" (click)="onClose()">Close</button>
+      <button
+        class="action-btn yellow-btn"
+        *ngIf="showMessageBiddersButton()"
+        (click)="onMessageBidders()"
+        [disabled]="isMessageBiddersDisabled()"
+      >
+        <mat-icon>chat</mat-icon> Message Bidders
+      </button>
+      <button class="action-btn blue-btn" *ngIf="showContactContractorButton()" (click)="onContactContractor()">
+        <mat-icon>chat</mat-icon> Contact Contractor
+      </button>
+    </div>
+  </div>
+</div>

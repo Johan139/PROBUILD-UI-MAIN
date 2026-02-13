@@ -1,0 +1,348 @@
+<div class="analysis-container">
+  <!-- Progress Header -->
+  <div class="progress-card">
+    <div class="progress-header">
+      <div class="progress-icon-wrapper">
+        <lucide-angular
+          [img]="Loader2"
+          class="progress-icon"
+          [class.spinning]="currentStep !== 'complete'"
+        ></lucide-angular>
+      </div>
+      <div class="progress-info">
+        <h2 class="progress-title">Blueprint Analysis</h2>
+        <p class="progress-status">
+          {{
+            currentStep === "complete"
+              ? "Analysis complete - Review results below"
+              : statusMessage
+          }}
+        </p>
+      </div>
+      <div class="progress-stats">
+        <p class="progress-percent">
+          {{ analysisProgress | number: "1.0-0" }}%
+        </p>
+        <p class="progress-label">
+          {{ currentStep === "complete" ? "Complete" : "In Progress" }}
+        </p>
+      </div>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" [style.width.%]="analysisProgress"></div>
+    </div>
+    <p *ngIf="currentStep !== 'complete'" class="progress-note">
+      This process may take up to 15 minutes for complex blueprints. You can
+      navigate away and return anytime.
+    </p>
+  </div>
+
+  <!-- Steps List -->
+  <div class="steps-list">
+    <div *ngFor="let step of analysisSteps" class="step-card">
+      <button class="step-header" (click)="toggleSection(step.id)">
+        <div class="step-info-wrapper">
+          <div
+            class="step-status-icon"
+            [class.complete]="isStepComplete(step.id)"
+            [class.active]="isStepActive(step.id)"
+          >
+            <lucide-angular
+              [img]="CheckCircle2"
+              *ngIf="isStepComplete(step.id)"
+            ></lucide-angular>
+            <lucide-angular
+              [img]="Loader2"
+              class="spinning"
+              *ngIf="isStepActive(step.id)"
+            ></lucide-angular>
+            <lucide-angular
+              [img]="step.icon"
+              *ngIf="!isStepComplete(step.id) && !isStepActive(step.id)"
+            ></lucide-angular>
+          </div>
+          <div class="step-text">
+            <p
+              class="step-label"
+              [class.complete]="isStepComplete(step.id)"
+              [class.active]="isStepActive(step.id)"
+            >
+              {{ step.label }}
+            </p>
+            <p class="step-sublabel" *ngIf="isStepComplete(step.id)">
+              Completed
+            </p>
+            <p class="step-sublabel active" *ngIf="isStepActive(step.id)">
+              Analyzing...
+            </p>
+          </div>
+        </div>
+        <div class="step-actions">
+          <span *ngIf="isStepComplete(step.id)" class="badge-done">Done</span>
+          <lucide-angular
+            [img]="expandedSections.includes(step.id) ? ChevronUp : ChevronDown"
+            class="chevron"
+          ></lucide-angular>
+        </div>
+      </button>
+
+      <!-- Expanded Content -->
+      <div *ngIf="expandedSections.includes(step.id)" class="step-content">
+        <!-- Metadata Content -->
+        <div *ngIf="step.id === 'metadata'" class="step-detail">
+          <div class="grid-2-col">
+            <div *ngFor="let key of objectKeys(metadata)">
+              <label class="detail-label">{{
+                key.replace("([A-Z])", " $1") | titlecase
+              }}</label>
+              <p class="detail-value">{{ metadata[key] }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rooms Content -->
+        <div *ngIf="step.id === 'rooms'" class="step-detail">
+          <div class="rooms-header">
+            <h4>Detected Rooms</h4>
+            <p class="sub-text">
+              {{ rooms.length }} rooms - {{ totalArea | number }} sq ft total
+            </p>
+          </div>
+          <div class="rooms-grid">
+            <div *ngFor="let room of rooms" class="room-card">
+              <span class="room-name">{{ room.name }}</span>
+              <span class="room-area">{{ room.area }} sf</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Zoning Content -->
+        <div *ngIf="step.id === 'zoning'" class="step-detail">
+          <div class="grid-2-col mb-4">
+            <div>
+              <label class="detail-label">Zoning</label>
+              <p class="detail-value">{{ zoningData.zoning }}</p>
+            </div>
+            <div>
+              <label class="detail-label">Lot Size</label>
+              <p class="detail-value">{{ zoningData.lotSize }}</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="detail-label block mb-2">Setbacks</label>
+            <div class="flex-row gap-4">
+              <div
+                *ngFor="let key of objectKeys(zoningData.setbacks)"
+                class="tag-box"
+              >
+                <span class="tag-label">{{ key | titlecase }}:</span>
+                <span class="tag-value">{{ zoningData.setbacks[key] }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="detail-label block mb-2">Utilities</label>
+            <div class="flex-row gap-2">
+              <span
+                *ngFor="let util of zoningData.utilities"
+                class="badge badge-dark"
+                >{{ util }}</span
+              >
+            </div>
+          </div>
+          <div *ngIf="zoningData.unforeseenWork.length > 0">
+            <label class="detail-label block mb-2"
+              >Potential Unforeseen Work</label
+            >
+            <div class="list-stack">
+              <div
+                *ngFor="let item of zoningData.unforeseenWork"
+                class="risk-item"
+              >
+                <lucide-angular
+                  [img]="AlertTriangle"
+                  class="icon-sm"
+                  [class.text-yellow]="item.risk === 'medium'"
+                  [class.text-blue]="item.risk === 'low'"
+                ></lucide-angular>
+                <span class="risk-text">{{ item.item }}</span>
+                <span
+                  class="badge badge-risk ml-auto"
+                  [class.risk-medium]="item.risk === 'medium'"
+                  [class.risk-low]="item.risk === 'low'"
+                >
+                  {{ item.risk }} risk
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Permits Content -->
+        <div *ngIf="step.id === 'permits'" class="step-detail">
+          <h4 class="section-title">Required Permits</h4>
+          <div class="list-stack">
+            <div
+              *ngFor="let permit of permits"
+              class="permit-item"
+              [class.uploaded]="permit.status === 'uploaded'"
+            >
+              <div class="permit-info">
+                <lucide-angular
+                  [img]="permit.status === 'uploaded' ? CheckCircle2 : FileText"
+                  class="icon-md"
+                  [class.text-green]="permit.status === 'uploaded'"
+                  [class.text-gray]="permit.status !== 'uploaded'"
+                ></lucide-angular>
+                <div>
+                  <p class="permit-name">{{ permit.name }}</p>
+                  <p class="permit-agency">{{ permit.agency }}</p>
+                </div>
+              </div>
+              <div *ngIf="permit.status === 'uploaded'" class="permit-status">
+                <span class="badge badge-success">On File</span>
+                <span class="file-name">{{ permit.file }}</span>
+              </div>
+              <button
+                *ngIf="permit.status !== 'uploaded'"
+                class="btn-outline-sm"
+                (click)="handlePermitUpload(permit.id)"
+              >
+                I Have This
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Blueprint Review Content -->
+        <div *ngIf="step.id === 'blueprint-review'" class="step-detail">
+          <h4 class="section-title">Issues Found</h4>
+          <div class="list-stack">
+            <div *ngFor="let issue of blueprintIssues" class="issue-item">
+              <div class="issue-icon-wrapper">
+                <lucide-angular
+                  [img]="
+                    issue.type === 'error'
+                      ? AlertTriangle
+                      : issue.type === 'warning'
+                        ? AlertTriangle
+                        : Info
+                  "
+                  class="icon-md"
+                  [class.text-red]="issue.type === 'error'"
+                  [class.text-yellow]="issue.type === 'warning'"
+                  [class.text-blue]="issue.type === 'info'"
+                ></lucide-angular>
+              </div>
+              <div class="issue-content">
+                <p class="issue-title">{{ issue.title }}</p>
+                <p class="issue-location">{{ issue.location }}</p>
+              </div>
+              <div class="issue-meta">
+                <span class="badge badge-dark">{{ issue.code }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Site Logistics Content -->
+        <div *ngIf="step.id === 'site-logistics'" class="step-detail">
+          <div class="grid-2-col mb-4">
+            <div>
+              <label class="detail-label block mb-2">Site Zones</label>
+              <div class="list-stack-sm">
+                <div *ngFor="let zone of siteLogistics.zones" class="info-box">
+                  {{ zone }}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="detail-label block mb-2">Equipment Needed</label>
+              <div class="flex-wrap gap-2">
+                <span
+                  *ngFor="let eq of siteLogistics.equipment"
+                  class="badge badge-dark"
+                  >{{ eq }}</span
+                >
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="detail-label block mb-2">Safety Hazards</label>
+            <div class="list-stack-sm">
+              <div
+                *ngFor="let hazard of siteLogistics.hazards"
+                class="hazard-box"
+              >
+                <lucide-angular
+                  [img]="AlertTriangle"
+                  class="icon-sm text-red"
+                ></lucide-angular>
+                <span>{{ hazard }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quality Management Content -->
+        <div *ngIf="step.id === 'quality-management'" class="step-detail">
+          <div class="grid-2-col mb-4">
+            <div>
+              <label class="detail-label block mb-2">Applicable Codes</label>
+              <div class="flex-wrap gap-2">
+                <span
+                  *ngFor="let code of qualityManagement.codes"
+                  class="badge badge-dark"
+                  >{{ code }}</span
+                >
+              </div>
+            </div>
+            <div>
+              <label class="detail-label block mb-2">Required Mock-ups</label>
+              <div class="list-stack-sm">
+                <div
+                  *ngFor="let mockup of qualityManagement.mockups"
+                  class="info-box"
+                >
+                  {{ mockup }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="detail-label block mb-2"
+              >Inspection Hold Points</label
+            >
+            <div class="list-stack-sm">
+              <div
+                *ngFor="
+                  let point of qualityManagement.holdPoints;
+                  let i = index
+                "
+                class="hold-point"
+              >
+                <div class="step-number">{{ i + 1 }}</div>
+                <span>{{ point }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Estimation Content -->
+        <div *ngIf="step.id === 'cost-estimation'" class="step-detail">
+          <p class="placeholder-text">
+            Generating detailed Bill of Materials and cost estimates.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Continue Button -->
+  <div *ngIf="currentStep === 'complete'" class="actions-footer">
+    <button class="continue-btn" (click)="onContinue()">
+      Continue to Preliminary
+      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
+    </button>
+  </div>
+</div>

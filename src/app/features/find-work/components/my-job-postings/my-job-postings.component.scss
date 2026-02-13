@@ -1,0 +1,278 @@
+@use "styles/util/mixins" as u;
+@import '../find-work.shared.scss';
+
+.job-card-content {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .job-main {
+        display: flex;
+        gap: 12px;
+        flex: 1;
+
+        .job-icon-box {
+            width: 40px;
+            height: 40px;
+            background: var(--color-surface-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            mat-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+                color: $color-yellow;
+            }
+        }
+
+        .job-details {
+            width: 100%;
+
+            .job-header-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 2px;
+
+                h4 {
+                    margin: 0;
+                    font-weight: 700;
+                    font-size: 16px;
+                }
+
+                .status-pill {
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 9999px;
+
+                    &.green { background: rgba($color-green, 0.2); color: $color-green; }
+                    &.yellow { background: rgba($color-yellow, 0.2); color: $color-yellow; }
+                }
+            }
+
+            .project-name {
+                color: $color-text-muted;
+                font-size: 14px;
+                margin: 0 0 8px 0;
+            }
+
+            .meta-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                color: $color-text-muted;
+                margin-bottom: 8px;
+
+                mat-icon { font-size: 12px; width: 12px; height: 12px; margin-right: 0; }
+                strong { color: var(--color-text); font-weight: 500; }
+            }
+        }
+    }
+
+    .job-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: 16px;
+
+        .bids-count {
+            text-align: right;
+            .count { font-size: 1.5rem; font-weight: 700; color: $color-yellow; display: block; line-height: 1; }
+            .label { font-size: 12px; color: $color-text-muted; }
+        }
+
+        .action-buttons {
+             display: flex;
+             gap: 8px;
+        }
+    }
+}
+
+// Invite Section (Collapsible)
+.card-footer-actions {
+    border-top: 1px solid $color-border;
+
+    .toggle-invite-btn {
+        width: 100%;
+        padding: 8px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: transparent;
+        border: none;
+        color: $color-text-muted;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+            color: var(--color-text);
+            background: rgba($color-surface-subtle, 0.3);
+        }
+
+        span { display: flex; align-items: center; gap: 8px; }
+
+        mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+            &.rotated { transform: rotate(180deg); }
+        }
+    }
+}
+
+.invite-section {
+    padding: 16px;
+    border-top: 1px solid $color-border;
+    background: rgba($color-surface-subtle, 0.2);
+
+    .invite-config {
+        margin-bottom: 16px;
+
+        .config-row {
+            margin-bottom: 12px;
+            label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                margin-bottom: 4px;
+            }
+            .yellow-text { color: $color-yellow; }
+
+            .slider-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                input[type=range] { width: 100%; accent-color: $color-yellow; height: 8px; background: var(--color-surface-subtle); border-radius: 8px; appearance: none; }
+                .radius-val { font-size: 14px; font-weight: 600; color: $color-yellow; }
+            }
+        }
+
+        .search-row {
+             .search-input {
+                position: relative;
+                mat-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 16px;
+                    width: 16px;
+                    height: 16px;
+                    color: $color-text-muted;
+                }
+                input {
+                    width: 100%;
+                    padding: 8px 16px 8px 40px;
+                    background: rgba($color-surface-subtle, 0.5);
+                    border: 1px solid $color-border;
+                    border-radius: var(--radius-md);
+                    font-size: 14px;
+                    color: var(--color-text);
+
+                    &:focus { outline: none; border-color: $color-yellow; }
+                }
+             }
+        }
+    }
+
+    .subcontractors-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+
+        .sub-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba($color-surface-subtle, 0.3);
+            border-radius: var(--radius-md);
+            border: 1px solid $color-border;
+            transition: border-color 0.2s;
+
+            &:hover {
+                border-color: rgba($color-yellow, 0.5);
+            }
+
+            .sub-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+
+                .sub-icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: var(--color-surface-subtle);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    mat-icon { font-size: 20px; width: 20px; height: 20px; color: $color-yellow; }
+                }
+
+                .sub-name { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+                .sub-meta {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 12px;
+                    color: $color-text-muted;
+
+                    .rating {
+                         display: flex; align-items: center; gap: 4px;
+                         mat-icon { font-size: 12px; width: 12px; height: 12px; color: $color-yellow; }
+                    }
+                }
+            }
+        }
+    }
+
+    .invite-by-email {
+        margin-top: 12px;
+        border-top: 1px solid $color-border;
+        padding-top: 12px;
+
+        .invite-label {
+            font-size: 14px;
+            color: $color-text-muted;
+            margin-bottom: 8px;
+        }
+
+        .email-input-row {
+            display: flex;
+            gap: 8px;
+
+            .input-wrapper {
+                flex: 1;
+                input {
+                    width: 100%;
+                    padding: 8px 12px;
+                    background: rgba($color-surface-subtle, 0.5);
+                    border: 1px solid $color-border;
+                    border-radius: var(--radius-md);
+                    font-size: 14px;
+                    color: var(--color-text);
+                    &:focus { outline: none; border-color: $color-yellow; }
+                }
+            }
+
+            .custom-btn {
+                 background: transparent;
+                 border-color: $color-yellow;
+                 color: $color-yellow;
+                 &:hover { background: rgba($color-yellow, 0.1); } 
+            }
+        }
+    }
+}

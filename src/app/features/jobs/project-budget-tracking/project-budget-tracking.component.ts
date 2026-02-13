@@ -61,6 +61,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   newBudgetItem: Partial<BudgetLineItem> = {};
   editingItemId: number | null = null;
   editingItem: BudgetLineItem | null = null;
+  private isAutoImporting: boolean = false;
   budgetTableTab:
     | 'all'
     | 'Subcontractor'
@@ -207,6 +208,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
           localStorage.setItem(storageKey, JSON.stringify(this.budgetItems));
         }
         this.isLoadingBudget = false;
+        this.checkAndAutoImportAiEstimates();
       },
       error: (err) => {
         console.error('Error loading budget', err);
@@ -218,22 +220,12 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     });
   }
 
-  importAiEstimates(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: 'Import AI Estimates',
-        message:
-          'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
-        confirmButtonText: 'Import',
-        cancelButtonText: 'Cancel',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.processAiImport();
-      }
-    });
+  private checkAndAutoImportAiEstimates(): void {
+    const hasAiItems = this.budgetItems.some((item) => item.source === 'AI');
+    if (!hasAiItems) {
+      this.isAutoImporting = true;
+      this.processAiImport();
+    }
   }
 
   private processAiImport(): void {
@@ -418,40 +410,44 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
 
     if (newItems.length === 0) {
       this.isLoadingBudget = false;
-      this.snackBar.open('No estimable items found in AI report.', 'Close', {
-        duration: 3000,
-      });
+      if (!this.isAutoImporting) {
+        this.snackBar.open('No estimable items found in AI report.', 'Close', {
+          duration: 3000,
+        });
+      }
+      this.isAutoImporting = false;
       return;
     }
 
     const existingAiItems = this.budgetItems.filter((i) => i.source === 'AI');
     if (existingAiItems.length > 0) {
-      if (
-        !confirm(
-          `You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`,
-        )
-      ) {
-        this.isLoadingBudget = false;
-        return;
-      }
+      this.isLoadingBudget = false;
+      this.isAutoImporting = false;
+      return;
     }
 
     this.budgetService.addBudgetItemsBatch(newItems).subscribe({
       next: (savedItems) => {
         this.budgetItems = [...this.budgetItems, ...savedItems];
         this.isLoadingBudget = false;
-        this.snackBar.open(
-          `Successfully imported ${savedItems.length} items from AI.`,
-          'Close',
-          { duration: 3000 },
-        );
+        if (!this.isAutoImporting) {
+          this.snackBar.open(
+            `Successfully imported ${savedItems.length} items from AI.`,
+            'Close',
+            { duration: 3000 },
+          );
+        }
+        this.isAutoImporting = false;
       },
       error: (err) => {
         console.error('Batch import failed', err);
         this.isLoadingBudget = false;
-        this.snackBar.open('Failed to import items.', 'Close', {
-          duration: 3000,
-        });
+        if (!this.isAutoImporting) {
+          this.snackBar.open('Failed to import items.', 'Close', {
+            duration: 3000,
+          });
+        }
+        this.isAutoImporting = false;
       },
     });
   }
