@@ -515,20 +515,39 @@ export class BomService {
     return this.http.get<any[]>(`${this.apiUrl}/${jobId}`).pipe(
       map((apiPackages) => {
         if (apiPackages && apiPackages.length > 0) {
-          return apiPackages.map((pkg) => ({
-            id: pkg.id,
-            trade: pkg.tradeName,
-            category: pkg.category?.toLowerCase() || 'trade',
-            scopeOfWork: pkg.scopeOfWork,
-            estimatedManHours: pkg.estimatedManHours,
-            hourlyRate: pkg.hourlyRate,
-            budget: pkg.budget,
-            csiCode: pkg.csiCode,
-            bidType: 'labor-material',
-            postedToMarketplace: pkg.postedToMarketplace,
-            bids: [], // Bids are loaded separately
-            hasInternalQuote: false,
-          }));
+          return apiPackages.map((pkg) => {
+            const parsedDays = this.parseDurationDays(pkg.estimatedDuration);
+            const derivedDays =
+              parsedDays ?? this.deriveDurationDaysFromHours(Number(pkg.estimatedManHours || 0));
+
+            return {
+              id: pkg.id,
+              jobId: pkg.jobId,
+              trade: pkg.tradeName,
+              category: pkg.category?.toLowerCase() || 'trade',
+              scopeOfWork: pkg.scopeOfWork,
+              status: pkg.status,
+              estimatedManHours: pkg.estimatedManHours,
+              hourlyRate: pkg.hourlyRate,
+              estimatedDuration: pkg.estimatedDuration || (derivedDays ? `${derivedDays} days` : ''),
+              durationDays: derivedDays,
+              startDate: pkg.startDate,
+              laborType: pkg.laborType || 'Labor and Materials',
+              bidDeadline: pkg.bidDeadline,
+              createdAt: pkg.createdAt,
+              budget: pkg.budget,
+              csiCode: pkg.csiCode,
+              bidType:
+                String(pkg.laborType || '')
+                  .toLowerCase()
+                  .includes('only')
+                  ? 'labor-only'
+                  : 'labor-material',
+              postedToMarketplace: pkg.postedToMarketplace,
+              bids: [], // Bids are loaded separately
+              hasInternalQuote: false,
+            };
+          });
         }
         return [];
       }),
@@ -563,11 +582,19 @@ export class BomService {
                   if (tradeName && tradeName !== 'Total Subcontractor Cost') {
                     tradePackages.push({
                       id: csi || tradeName.replace(/\s+/g, '-').toLowerCase(),
+                      jobId: Number(jobId),
                       trade: tradeName,
                       category: 'trade',
                       scopeOfWork: scope,
+                      status: 'Draft',
                       estimatedManHours: hours,
                       hourlyRate: rate,
+                      estimatedDuration: hours > 0 ? `${Math.max(1, Math.ceil(hours / 8))} days` : null,
+                      durationDays: hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
+                      startDate: null,
+                      laborType: 'Labor and Materials',
+                      bidDeadline: null,
+                      createdAt: new Date().toISOString(),
                       budget: totalCost,
                       csiCode: csi,
                       bidType: 'labor-material',
@@ -585,6 +612,32 @@ export class BomService {
         );
       })
     );
+  }
+
+  private parseDurationDays(estimatedDuration: string | null | undefined): number | null {
+    if (!estimatedDuration) {
+      return null;
+    }
+
+    const match = String(estimatedDuration).match(/(\d+(?:\.\d+)?)/);
+    if (!match) {
+      return null;
+    }
+
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(value));
+  }
+
+  private deriveDurationDaysFromHours(estimatedManHours: number): number | null {
+    if (!Number.isFinite(estimatedManHours) || estimatedManHours <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(estimatedManHours / 8));
   }
 
   postTradePackage(id: string | number): Observable<any> {

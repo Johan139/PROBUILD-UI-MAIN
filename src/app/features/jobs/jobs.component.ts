@@ -209,6 +209,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
   timelineGroups: TimelineGroup[] = [];
+  isSubtaskTimelineActive: boolean = false;
+  selectedTimelineParentGroup: TimelineGroup | null = null;
+  subtaskTimelineGroups: TimelineGroup[] = [];
   temperatureUnit: TemperatureUnit = 'C';
 
   // Tab State
@@ -1010,6 +1013,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     newStartDate: Date;
     newEndDate: Date;
   }): void {
+    if (this.isSubtaskTimelineActive) {
+      return;
+    }
+
     this.authService.currentUser$
       .pipe(
         filter((user) => !!user),
@@ -1022,6 +1029,65 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           user.id,
         );
       });
+  }
+
+  handleTimelineGroupDoubleClick(group: TimelineGroup): void {
+    if (this.isSubtaskTimelineActive) {
+      return;
+    }
+
+    this.selectedTimelineParentGroup = group;
+    this.subtaskTimelineGroups = this.buildSubtaskTimelineGroups(group);
+    this.isSubtaskTimelineActive = true;
+  }
+
+  returnToMainTimeline(): void {
+    this.isSubtaskTimelineActive = false;
+    this.selectedTimelineParentGroup = null;
+    this.subtaskTimelineGroups = [];
+  }
+
+  get displayedTimelineGroups(): TimelineGroup[] {
+    return this.isSubtaskTimelineActive
+      ? this.subtaskTimelineGroups
+      : this.timelineGroups;
+  }
+
+  private buildSubtaskTimelineGroups(parentGroup: TimelineGroup): TimelineGroup[] {
+    const subtasks = (parentGroup.subtasks || []).filter((task) => !task.deleted);
+
+    return subtasks.map((task, index) => {
+      const startDate = this.resolveTaskDate(task.start, task.startDate);
+      const endDate = this.resolveTaskDate(task.end, task.endDate) ?? startDate;
+      const isComplete =
+        task.accepted || (task.status || '').toLowerCase() === 'completed';
+
+      return {
+        title: task.task || task.name || `Subtask ${index + 1}`,
+        subtasks: [task],
+        startDate: startDate ?? undefined,
+        endDate: endDate ?? undefined,
+        progress: isComplete ? 100 : 0,
+      };
+    });
+  }
+
+  private resolveTaskDate(
+    dateValue?: Date,
+    dateString?: string,
+  ): Date | null {
+    if (dateValue instanceof Date && !isNaN(dateValue.getTime())) {
+      return dateValue;
+    }
+
+    if (dateString) {
+      const parsed = new Date(dateString);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return null;
   }
 
   NavigateBack(): void {

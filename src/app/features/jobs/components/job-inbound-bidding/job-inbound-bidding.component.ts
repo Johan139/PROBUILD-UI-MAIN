@@ -22,13 +22,20 @@ import { map, catchError } from 'rxjs/operators';
 
   interface TradePackage {
       id: string;
+      jobId: number;
       trade: string;
       category: 'trade' | 'vendor' | 'equipment' | 'supplier';
       icon: string;
       scopeOfWork: string;
       estimatedManHours: number;
+      durationDays: number | null;
       hourlyRate: number;
       estimatedDuration: string;
+      startDate: string | null;
+      laborType: string;
+      status?: string;
+      bidDeadline?: string | null;
+      createdAt?: string;
       csiCode: string;
       budget: number;
       bidType: string;
@@ -204,17 +211,83 @@ export class JobInboundBiddingComponent implements OnInit {
       return this.tradePackages.filter(p => p.postedToMarketplace || p.hasInternalQuote).length;
   }
 
-  handlePostToMarketplace(pkg: any) {
-      this.bomService.postTradePackage(pkg.id).subscribe({
+  onEstimatedManHoursChanged(pkg: TradePackage, rawValue: string): void {
+    const manHours = Number(rawValue);
+    const safeManHours = Number.isFinite(manHours) && manHours >= 0 ? manHours : 0;
+
+    pkg.estimatedManHours = safeManHours;
+    const derivedDays = this.calculateDurationDaysFromHours(safeManHours);
+    pkg.durationDays = derivedDays;
+    pkg.estimatedDuration = derivedDays ? `${derivedDays} days` : '';
+  }
+
+  onDurationDaysChanged(pkg: TradePackage, rawValue: string): void {
+    const days = Number(rawValue);
+    const safeDays = Number.isFinite(days) && days > 0 ? Math.ceil(days) : null;
+
+    pkg.durationDays = safeDays;
+    pkg.estimatedDuration = safeDays ? `${safeDays} days` : '';
+    pkg.estimatedManHours = safeDays ? safeDays * 8 : 0;
+  }
+
+  onStartDateChanged(pkg: TradePackage, rawValue: string): void {
+    pkg.startDate = rawValue || null;
+  }
+
+  onLaborTypeChanged(pkg: TradePackage, laborType: 'Labor and Materials' | 'Labor'): void {
+    pkg.laborType = laborType;
+    pkg.bidType = laborType === 'Labor' ? 'labor-only' : 'labor-material';
+  }
+
+  handlePostToMarketplace(pkg: TradePackage): void {
+      const updatePayload = this.buildTradePackageUpdatePayload(pkg);
+
+      this.bomService.updateTradePackage(Number(pkg.id), updatePayload).subscribe({
         next: () => {
-          pkg.postedToMarketplace = true;
-          this.snackBar.open(`${pkg.trade} posted to marketplace`, 'Close', { duration: 3000 });
+          this.bomService.postTradePackage(pkg.id).subscribe({
+            next: () => {
+              pkg.postedToMarketplace = true;
+              this.snackBar.open(`${pkg.trade} posted to marketplace`, 'Close', { duration: 3000 });
+            },
+            error: (err) => {
+              console.error('Failed to post to marketplace', err);
+              this.snackBar.open(`Failed to post ${pkg.trade} to marketplace`, 'Close', { duration: 3000 });
+            }
+          });
         },
         error: (err) => {
-          console.error('Failed to post to marketplace', err);
-          this.snackBar.open(`Failed to post ${pkg.trade} to marketplace`, 'Close', { duration: 3000 });
+          console.error('Failed to save trade package updates before posting', err);
+          this.snackBar.open(`Failed to save updates for ${pkg.trade}`, 'Close', { duration: 3000 });
         }
       });
+  }
+
+  private calculateDurationDaysFromHours(hours: number): number | null {
+    if (!Number.isFinite(hours) || hours <= 0) {
+      return null;
+    }
+    return Math.max(1, Math.ceil(hours / 8));
+  }
+
+  private buildTradePackageUpdatePayload(pkg: TradePackage): any {
+    return {
+      id: Number(pkg.id),
+      jobId: Number(pkg.jobId),
+      tradeName: pkg.trade,
+      category: pkg.category,
+      scopeOfWork: pkg.scopeOfWork,
+      budget: Number(pkg.budget || 0),
+      status: pkg.status || (pkg.postedToMarketplace ? 'Posted' : 'Draft'),
+      estimatedManHours: Number(pkg.estimatedManHours || 0),
+      hourlyRate: Number(pkg.hourlyRate || 0),
+      estimatedDuration: pkg.estimatedDuration || null,
+      startDate: pkg.startDate || null,
+      bidDeadline: pkg.bidDeadline || null,
+      laborType: pkg.laborType || 'Labor and Materials',
+      csiCode: pkg.csiCode,
+      postedToMarketplace: !!pkg.postedToMarketplace,
+      createdAt: pkg.createdAt || new Date().toISOString(),
+    };
   }
 
   onGoLive() {

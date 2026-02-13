@@ -346,8 +346,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
             longitude: Number(job.longitude),
           }));
 
-          if (Array.isArray(myPostings)) {
-             this.myPostings = myPostings.map((pkg: any) => {
+           if (Array.isArray(myPostings)) {
+              this.myPostings = myPostings.map((pkg: any) => {
+               const durationInDays = this.parseDurationInDays(
+                 pkg.estimatedDuration,
+                 Number(pkg.estimatedManHours || 0),
+               );
+
                return {
                  jobId: pkg.jobId,
                  projectName: pkg.projectName,
@@ -363,18 +368,20 @@ export class FindWorkComponent implements OnInit, OnDestroy {
                  latitude: 0,
                  longitude: 0,
                  googlePlaceId: '',
-                 description: pkg.scopeOfWork,
-                 title: pkg.tradeName,
-                 biddingType: pkg.category,
-                 jobPreferences: '',
-                 trades: [pkg.tradeName],
-                 tradeBudgets: [{ tradeName: pkg.tradeName, budget: pkg.budget }],
-                 numberOfBids: 0,
-                 createdAt: pkg.createdAt,
-                 biddingStartDate: pkg.createdAt,
-                 // Marketplace trade-package linkage for inline editing/persistence
-                 tradePackageId: pkg.id,
-                 tradePackageStatus: pkg.status,
+                  description: pkg.scopeOfWork,
+                  title: pkg.tradeName,
+                  biddingType: pkg.laborType || 'Labor and Materials',
+                  jobPreferences: '',
+                  trades: [pkg.tradeName],
+                  tradeBudgets: [{ tradeName: pkg.tradeName, budget: pkg.budget }],
+                  potentialStartDate: pkg.startDate ? new Date(pkg.startDate) : undefined,
+                  durationInDays,
+                  numberOfBids: 0,
+                  createdAt: pkg.createdAt,
+                  biddingStartDate: pkg.bidDeadline || pkg.createdAt,
+                  // Marketplace trade-package linkage for inline editing/persistence
+                  tradePackageId: pkg.id,
+                  tradePackageStatus: pkg.status,
                  tradePackageEstimatedManHours: pkg.estimatedManHours,
                  tradePackageHourlyRate: pkg.hourlyRate,
                  tradePackageEstimatedDuration: pkg.estimatedDuration,
@@ -387,8 +394,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
                } as Job;
              });
           } else {
-             this.myPostings = [];
-          }
+              this.myPostings = [];
+           }
 
           this.myQuotes = quotes;
           this.draftQuotes.clear();
@@ -684,5 +691,25 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     return this.myQuotes.some(
       (q) => q.jobId === jobId && q.status === 'Submitted',
     );
+  }
+
+  private parseDurationInDays(
+    estimatedDuration: string | null | undefined,
+    estimatedManHours: number,
+  ): number | undefined {
+    const text = String(estimatedDuration || '').trim();
+    const fromText = text.match(/(\d+(?:\.\d+)?)/);
+    if (fromText) {
+      const parsed = Number(fromText[1]);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.ceil(parsed);
+      }
+    }
+
+    if (Number.isFinite(estimatedManHours) && estimatedManHours > 0) {
+      return Math.max(1, Math.ceil(estimatedManHours / 8));
+    }
+
+    return undefined;
   }
 }

@@ -1,0 +1,11 @@
+{
+  "/apollo": {
+    "target": "https://api.apollo.io",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/apollo": ""
+    },
+    "logLevel": "debug"
+  }
+}

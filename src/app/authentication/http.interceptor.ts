@@ -23,6 +23,12 @@ export const authInterceptor: HttpInterceptorFn = (
     token = localStorage.getItem('accessToken');
   }
 
+  const isApolloProxyRequest = req.url.startsWith('/apollo/');
+
+  if (isApolloProxyRequest) {
+    return next(req);
+  }
+
   if (token) {
     req = req.clone({
       setHeaders: {

@@ -4,6 +4,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { Job } from '../../../../models/job';
+import {
+  ExternalCompanyWithContacts,
+  ExternalContact,
+} from '../../../../models/external-data';
+import { ExternalDataService } from '../../../../services/external-data.service';
+import { InvitationService } from '../../../../services/invitation.service';
 
 @Component({
   selector: 'app-my-job-postings',
@@ -24,14 +30,14 @@ export class MyJobPostingsComponent {
   subcontractorSearch: string = '';
   emailInvite: string = '';
 
-  // Mock subcontractors. TODO: Real data from Apollo
-  availableSubcontractors = [
-    { id: 101, company: 'PowerLine Electrical', trade: 'Electrical', rating: 4.9, distance: 5, verified: true },
-    { id: 102, company: 'GreenScape Landscaping', trade: 'Landscaping', rating: 4.7, distance: 8, verified: true },
-    { id: 103, company: 'ProCoat Painters', trade: 'Painting', rating: 4.8, distance: 15, verified: true },
-    { id: 104, company: 'Elite Drywall', trade: 'Drywall', rating: 4.6, distance: 12, verified: false },
-    { id: 105, company: 'Foundation Masters', trade: 'Concrete', rating: 4.9, distance: 6, verified: true },
-  ];
+  availableSubcontractorsByJob: Record<number, ExternalCompanyWithContacts[]> = {};
+  subcontractorLoadingByJob: Record<number, boolean> = {};
+  subcontractorErrorByJob: Record<number, string> = {};
+
+  constructor(
+    private externalDataService: ExternalDataService,
+    private invitationService: InvitationService,
+  ) {}
 
   getTotalBidsReceived(): number {
     return this.myPostings.reduce((acc, job) => acc + (job.numberOfBids || 0), 0);
@@ -88,10 +94,137 @@ export class MyJobPostingsComponent {
   toggleExpandJob(jobId: number, event: MouseEvent): void {
     event.stopPropagation();
     this.expandedJobId = this.expandedJobId === jobId ? null : jobId;
+
+    if (this.expandedJobId === jobId) {
+      const job = this.myPostings.find((x) => x.jobId === jobId);
+      if (job) {
+        this.loadSubcontractorsForJob(job);
+      }
+    }
   }
 
-  inviteSubcontractor(sub: any, event: MouseEvent): void {
+  loadSubcontractorsForJob(job: Job): void {
+    const radius = Number(this.inviteRadius[job.jobId] || 25);
+    const tradeName = this.getPrimaryTrade(job);
+
+    this.subcontractorLoadingByJob[job.jobId] = true;
+    this.subcontractorErrorByJob[job.jobId] = '';
+
+    this.externalDataService
+      .discoverSubcontractors({
+        tradePackageId: (job as any).tradePackageId || undefined,
+        jobId: job.jobId,
+        tradeName,
+        city: job.city || undefined,
+        state: job.state || undefined,
+        radiusMiles: radius,
+        limit: 12,
+        searchText: this.subcontractorSearch?.trim() || undefined,
+      })
+      .subscribe({
+        next: (results) => {
+          this.availableSubcontractorsByJob[job.jobId] = Array.isArray(results)
+            ? results
+            : [];
+          this.subcontractorLoadingByJob[job.jobId] = false;
+        },
+        error: () => {
+          this.availableSubcontractorsByJob[job.jobId] = [];
+          this.subcontractorLoadingByJob[job.jobId] = false;
+          this.subcontractorErrorByJob[job.jobId] =
+            'Unable to load subcontractors right now.';
+        },
+      });
+  }
+
+  getVisibleSubcontractors(job: Job): ExternalCompanyWithContacts[] {
+    const list = this.availableSubcontractorsByJob[job.jobId] || [];
+    const q = this.subcontractorSearch.trim().toLowerCase();
+    if (!q) {
+      return list;
+    }
+
+    return list.filter((row) => {
+      const name = row.company?.name?.toLowerCase() || '';
+      const industry = row.company?.industry?.toLowerCase() || '';
+      const domain = row.company?.domain?.toLowerCase() || '';
+      return name.includes(q) || industry.includes(q) || domain.includes(q);
+    });
+  }
+
+  getPrimaryContact(row: ExternalCompanyWithContacts): ExternalContact | null {
+    if (!row?.contacts?.length) {
+      return null;
+    }
+
+    const withEmail = row.contacts.find((c) => !!c.email?.trim());
+    return withEmail || row.contacts[0] || null;
+  }
+
+  getPrimaryContactLabel(row: ExternalCompanyWithContacts): string {
+    const contact = this.getPrimaryContact(row);
+    if (!contact) {
+      return 'No contact found';
+    }
+
+    return contact.fullName || contact.title || contact.email || 'Contact';
+  }
+
+  inviteSubcontractor(
+    row: ExternalCompanyWithContacts,
+    event: MouseEvent,
+  ): void {
     event.stopPropagation();
-    alert(`Invitation sent to ${sub.company}!`);
+
+    const contact = this.getPrimaryContact(row);
+    const email = contact?.email?.trim();
+    if (!email) {
+      alert(`No email address found for ${row.company.name}.`);
+      return;
+    }
+
+    const nameParts = (contact?.fullName || '').trim().split(' ').filter(Boolean);
+    const firstName = nameParts[0] || row.company.name;
+    const lastName = nameParts.slice(1).join(' ') || 'Team';
+
+    this.invitationService
+      .inviteUser({
+        email,
+        firstName,
+        lastName,
+        phoneNumber: contact?.phone || undefined,
+      })
+      .subscribe({
+        next: () => {
+          alert(`Invitation sent to ${email}`);
+        },
+        error: () => {
+          alert(`Failed to send invitation to ${email}`);
+        },
+      });
+  }
+
+  sendDirectInvite(event: MouseEvent): void {
+    event.stopPropagation();
+    const email = this.emailInvite.trim();
+    if (!email) {
+      return;
+    }
+
+    this.invitationService
+      .inviteUser({
+        email,
+        firstName: 'Invite',
+        lastName: 'Recipient',
+      })
+      .subscribe({
+        next: () => {
+          alert(`Invitation sent to ${email}`);
+          this.emailInvite = '';
+        },
+        error: () => {
+          alert(`Failed to send invitation to ${email}`);
+        },
+      });
   }
 }

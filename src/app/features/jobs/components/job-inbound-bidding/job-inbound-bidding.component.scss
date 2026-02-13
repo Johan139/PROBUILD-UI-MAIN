@@ -220,6 +220,82 @@ lucide-angular {
     }
   }
 
+  .marketplace-config-section {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-800);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--gray-900), transparent 12%);
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+
+      @media (max-width: 980px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      font-weight: 500;
+      min-height: 2.4em;
+      line-height: 1.2;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .field-input {
+      width: 100%;
+      background-color: var(--gray-800);
+      border: 1px solid var(--gray-700);
+      color: var(--white);
+      padding: 0.45rem 0.55rem;
+      border-radius: 0.375rem;
+
+      &:focus {
+        outline: none;
+        border-color: var(--brand-yellow-primary);
+      }
+    }
+
+    .field-help {
+      font-size: 0.7rem;
+      color: var(--gray-500);
+      line-height: 1.35;
+    }
+
+    .labor-type-block {
+      margin-top: 0.75rem;
+    }
+
+    .radio-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+    }
+
+    .radio-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--gray-300);
+      font-size: 0.82rem;
+
+      input {
+        accent-color: var(--brand-yellow-primary);
+      }
+    }
+  }
+
   .posted-badge {
     display: flex;
     align-items: center;

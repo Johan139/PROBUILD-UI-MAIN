@@ -228,17 +228,18 @@ $color-text-muted: var(--color-text-muted);
 .details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 10px;
 
     .detail-box {
-        padding: 12px;
+        padding: 10px;
         background: rgba($color-surface-subtle, 0.3);
         border-radius: var(--radius-md);
+        border: 1px solid rgba($color-border, 0.4);
 
         label {
             font-size: 12px;
             color: $color-text-muted;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             display: block;
         }
 
@@ -250,18 +251,18 @@ $color-text-muted: var(--color-text-muted);
         .inline-edit-wrap {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .inline-edit-input {
             width: 100%;
-            height: 34px;
+            height: 32px;
             border: 1px solid $color-border;
             border-radius: var(--radius-sm);
             background: rgba($color-surface-subtle, 0.45);
             color: var(--color-text);
             font-size: 13px;
-            padding: 0 10px;
+            padding: 0 8px;
             outline: none;
 
             &:focus {
@@ -289,9 +290,41 @@ $color-text-muted: var(--color-text-muted);
 }
 
 .inline-edit-actions {
-    margin-top: -8px;
+    margin-top: -2px;
     display: flex;
     justify-content: flex-end;
+
+    .action-btn {
+        height: 34px;
+        padding: 0 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+        mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+        }
+
+        &.yellow-btn {
+            background: $color-yellow;
+            color: #000;
+            box-shadow: 0 6px 16px rgba($color-yellow, 0.24);
+
+            &:hover {
+                background: rgba($color-yellow, 0.92);
+                box-shadow: 0 8px 18px rgba($color-yellow, 0.3);
+                transform: translateY(-1px);
+            }
+        }
+    }
 }
 
 .blueprints-list {
@@ -372,6 +405,50 @@ $color-text-muted: var(--color-text-muted);
             .upload-desc { font-size: 12px; }
         }
     }
+
+    .quote-upload-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+
+        .action-btn {
+            height: 36px;
+            padding: 0 16px;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+
+            &.outline-btn {
+                background: transparent;
+                border-color: $color-border;
+                color: var(--color-text);
+
+                &:hover {
+                    background: var(--color-surface-subtle);
+                }
+            }
+
+            &.yellow-btn {
+                background: $color-yellow;
+                color: #000;
+                box-shadow: 0 6px 18px rgba($color-yellow, 0.22);
+
+                &:hover {
+                    background: rgba($color-yellow, 0.92);
+                    box-shadow: 0 8px 20px rgba($color-yellow, 0.28);
+                }
+            }
+
+            &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+        }
+    }
 }
 
 .notes-display {
@@ -381,6 +458,158 @@ $color-text-muted: var(--color-text-muted);
     border-radius: var(--radius-md);
     font-size: 14px;
     white-space: pre-wrap;
+}
+
+.notes-section {
+    .notes-default-pill {
+        display: inline-flex;
+        align-items: center;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: $color-blue;
+        border: 1px solid rgba($color-blue, 0.4);
+        background: rgba($color-blue, 0.1);
+    }
+
+    .notes-helper-text {
+        margin: 0 0 10px;
+        font-size: 12px;
+        color: $color-text-muted;
+    }
+
+    .notes-compose-row {
+        display: grid;
+        grid-template-columns: 1fr 170px;
+        gap: 10px;
+    }
+
+    .notes-input {
+        width: 100%;
+        min-height: 90px;
+        border: 1px solid $color-border;
+        border-radius: var(--radius-sm);
+        background: rgba($color-surface-subtle, 0.45);
+        color: var(--color-text);
+        font-size: 13px;
+        padding: 8px 10px;
+        resize: vertical;
+        outline: none;
+
+        &:focus {
+            border-color: rgba($color-yellow, 0.7);
+            box-shadow: 0 0 0 2px rgba($color-yellow, 0.2);
+            background: var(--color-surface);
+        }
+    }
+
+    .notes-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .notes-visibility-label {
+            font-size: 12px;
+            color: $color-text-muted;
+        }
+
+        .inline-edit-input {
+            width: 100%;
+            height: 32px;
+            border: 1px solid $color-border;
+            border-radius: var(--radius-sm);
+            background: rgba($color-surface-subtle, 0.45);
+            color: var(--color-text);
+            font-size: 13px;
+            padding: 0 8px;
+            outline: none;
+        }
+    }
+
+    .notes-meta-row {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .notes-char-count {
+        font-size: 12px;
+        color: $color-text-muted;
+
+        &.limit-danger {
+            color: $color-red;
+            font-weight: 600;
+        }
+    }
+
+    .notes-action-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .notes-loading,
+    .notes-empty {
+        margin-top: 10px;
+        font-size: 13px;
+        color: $color-text-muted;
+    }
+
+    .notes-list {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .note-item {
+        padding: 10px;
+        background: rgba($color-surface-subtle, 0.25);
+        border: 1px solid rgba($color-border, 0.45);
+        border-radius: var(--radius-md);
+    }
+
+    .note-item-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .note-author {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text);
+    }
+
+    .note-date {
+        font-size: 11px;
+        color: $color-text-muted;
+    }
+
+    .note-visibility-pill {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--color-text);
+        background: rgba($color-border, 0.2);
+        border: 1px solid rgba($color-border, 0.7);
+    }
+
+    .note-item-actions {
+        margin-top: 8px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
 }
 
 .bidders-section {
@@ -566,6 +795,46 @@ $color-text-muted: var(--color-text-muted);
             mat-icon { font-size: 14px; width: 14px; height: 14px; }
         }
     }
+
+    .external-company-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+
+        .quick-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1;
+
+            mat-icon {
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        .external-link {
+            text-decoration: none;
+            color: $color-blue;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .external-company-description {
+        margin-top: 10px;
+        font-size: 13px;
+        color: $color-text-muted;
+        line-height: 1.4;
+    }
 }
 
 .dialog-footer {
@@ -621,6 +890,12 @@ $color-text-muted: var(--color-text-muted);
               background: $color-yellow;
               color: #000;
               &:hover { background: rgba($color-yellow, 0.9); }
+
+              &:disabled {
+                  background: rgba($color-border, 0.7);
+                  color: $color-text-muted;
+                  cursor: not-allowed;
+              }
 
               &.small { height: 32px; font-size: 12px; padding: 0 12px; }
           }

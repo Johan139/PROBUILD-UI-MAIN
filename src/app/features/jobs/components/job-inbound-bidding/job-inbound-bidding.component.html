@@ -99,6 +99,69 @@
           </div>
         </div>
 
+        <div class="marketplace-config-section">
+          <div class="field-grid">
+            <div class="field-block">
+              <label class="field-label">Estimated Man Hours (AI estimate)</label>
+              <input
+                class="field-input"
+                type="number"
+                min="0"
+                [value]="pkg.estimatedManHours"
+                (input)="onEstimatedManHoursChanged(pkg, $any($event.target).value)"
+              />
+            </div>
+
+            <div class="field-block">
+              <label class="field-label">Estimated Duration (days)</label>
+              <input
+                class="field-input"
+                type="number"
+                min="1"
+                [value]="pkg.durationDays || ''"
+                (input)="onDurationDaysChanged(pkg, $any($event.target).value)"
+              />
+              <div class="field-help">
+                Auto-calculated using an 8-hour day. Editing either field updates the other.
+              </div>
+            </div>
+
+            <div class="field-block">
+              <label class="field-label">Start Date</label>
+              <input
+                class="field-input"
+                type="date"
+                [value]="pkg.startDate ? (pkg.startDate | date:'yyyy-MM-dd') : ''"
+                (input)="onStartDateChanged(pkg, $any($event.target).value)"
+              />
+            </div>
+          </div>
+
+          <div class="field-block labor-type-block">
+            <label class="field-label">Labor Type</label>
+            <div class="radio-row">
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  [name]="'labor-type-' + pkg.id"
+                  [checked]="pkg.laborType !== 'Labor'"
+                  (change)="onLaborTypeChanged(pkg, 'Labor and Materials')"
+                />
+                <span>Labor & Materials</span>
+              </label>
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  [name]="'labor-type-' + pkg.id"
+                  [checked]="pkg.laborType === 'Labor'"
+                  (change)="onLaborTypeChanged(pkg, 'Labor')"
+                />
+                <span>Just Labor</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <button
           *ngIf="!pkg.postedToMarketplace"
           class="btn-primary full-width"

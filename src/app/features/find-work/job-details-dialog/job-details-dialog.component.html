@@ -14,10 +14,10 @@
           <button class="icon-btn" (click)="toggleSave()" [class.active]="isSaved" [title]="isSaved ? 'Unsave Job' : 'Save Job'">
             <mat-icon>{{ isSaved ? 'bookmark' : 'bookmark_border' }}</mat-icon>
           </button>
-          <button class="icon-btn" (click)="onShare()" title="Share Job">
+          <!-- <button class="icon-btn" (click)="onShare()" title="Share Job">
             <mat-icon>share</mat-icon>
-          </button>
-          <button class="icon-btn" [class.notes-active]="!!userNotes" (click)="onAddNotes()" title="Add Notes">
+          </button> -->
+          <button class="icon-btn" [class.notes-active]="notes.length > 0" (click)="onAddNotes()" title="Add Notes">
             <mat-icon>note_add</mat-icon>
           </button>
           <button class="icon-btn close-btn" (click)="onClose()" title="Close">
@@ -98,6 +98,25 @@
         </ng-template>
       </div>
       <div class="detail-box">
+        <label>Estimated Man Hours (AI estimate)</label>
+        <ng-container *ngIf="canInlineEdit; else manHoursReadOnly">
+          <div class="inline-edit-wrap duration-wrap">
+            <input
+              type="number"
+              class="inline-edit-input"
+              [(ngModel)]="editable.estimatedManHours"
+              (ngModelChange)="onEstimatedManHoursChanged()"
+              min="0"
+              step="1"
+            />
+            <span class="inline-suffix">hours</span>
+          </div>
+        </ng-container>
+        <ng-template #manHoursReadOnly>
+          <span class="value">{{ editable.estimatedManHours ? editable.estimatedManHours + ' hours' : 'TBD' }}</span>
+        </ng-template>
+      </div>
+      <div class="detail-box">
         <label>Duration</label>
         <ng-container *ngIf="canInlineEdit; else durationReadOnly">
           <div class="inline-edit-wrap duration-wrap">
@@ -105,7 +124,7 @@
               type="number"
               class="inline-edit-input"
               [(ngModel)]="editable.durationInDays"
-              (ngModelChange)="markInlineEdited()"
+              (ngModelChange)="onDurationChanged()"
               min="0"
               step="1"
             />
@@ -160,9 +179,9 @@
     <div class="section">
       <div class="section-header-row">
         <h4 class="section-label">Blueprints & Documents</h4>
-        <button class="action-btn yellow-btn small" (click)="onImportToAnalyzer()">
+        <!-- <button class="action-btn yellow-btn small" (click)="onImportToAnalyzer()">
           <mat-icon>psychology</mat-icon> Import to AI Analyzer
-        </button>
+        </button> -->
       </div>
 
       <div *ngIf="isLoadingBlueprints" class="loading-overlay">
@@ -206,6 +225,7 @@
       </div> -->
 
       <div
+        *ngIf="showUploadQuoteSection()"
         class="upload-quote-area"
         [class.active-drop-zone]="isQuoteDropZoneActive"
         (dragover)="onQuoteDragOver($event)"
@@ -230,10 +250,18 @@
           style="display: none"
         />
 
-        <div style="margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end;">
-          <button class="action-btn outline-btn" (click)="onUploadQuote()">Select PDF</button>
+        <div class="quote-upload-actions">
+          <button
+            class="action-btn outline-btn"
+            type="button"
+            (click)="clearSelectedQuote()"
+            [disabled]="!selectedQuoteFile || isQuoteUploading || isSubmittingBid"
+          >
+            Clear
+          </button>
           <button
             class="action-btn yellow-btn"
+            type="button"
             (click)="uploadQuote()"
             [disabled]="!selectedQuoteFile || isQuoteUploading || isSubmittingBid"
           >
@@ -241,11 +269,6 @@
           </button>
         </div>
       </div>
-    </div>
-
-    <div class="section" *ngIf="userNotes">
-      <h4 class="section-label">Your Notes</h4>
-      <div class="notes-display">{{ userNotes }}</div>
     </div>
 
     <div class="section bidders-section" *ngIf="hasBidders()">
@@ -331,10 +354,34 @@
           </div>
         </div>
 
-        <div class="quick-stats-row">
+        <!-- <div class="quick-stats-row">
           <span class="quick-stat"><mat-icon>schedule</mat-icon> {{ yearsInBusiness }} yrs experience</span>
           <span class="quick-stat"><mat-icon>work</mat-icon> {{ completedProjects }} projects</span>
           <span class="quick-stat"><mat-icon>place</mat-icon> {{ getQuickStatsLocation() }}</span>
+        </div> -->
+
+        <div class="external-company-row" *ngIf="contractorExternalLoading">
+          <span class="quick-stat"><mat-icon>sync</mat-icon> Loading external contractor details...</span>
+        </div>
+
+        <div class="external-company-row" *ngIf="!contractorExternalLoading && contractorExternalError">
+          <span class="quick-stat"><mat-icon>error_outline</mat-icon> {{ contractorExternalError }}</span>
+        </div>
+
+        <div class="external-company-row" *ngIf="!contractorExternalLoading && contractorExternal">
+          <a class="quick-stat external-link" *ngIf="getContractorWebsite()" [href]="getContractorWebsite()" target="_blank" rel="noopener noreferrer">
+            <mat-icon>language</mat-icon> Website
+          </a>
+          <a class="quick-stat external-link" *ngIf="getContractorLinkedin()" [href]="getContractorLinkedin()" target="_blank" rel="noopener noreferrer">
+            <mat-icon>business</mat-icon> LinkedIn
+          </a>
+          <span class="quick-stat" *ngIf="getContractorContactEmail()">
+            <mat-icon>mail</mat-icon> {{ getContractorContactEmail() }}
+          </span>
+        </div>
+
+        <div class="external-company-description" *ngIf="getContractorDescription()">
+          {{ getContractorDescription() }}
         </div>
       </div>
     </div>
@@ -352,10 +399,15 @@
     </div>
     <div class="footer-right">
       <button class="action-btn outline-btn" (click)="onClose()">Close</button>
-      <button class="action-btn yellow-btn" *ngIf="hasBidders()" (click)="onMessageBidders()">
+      <button
+        class="action-btn yellow-btn"
+        *ngIf="showMessageBiddersButton()"
+        (click)="onMessageBidders()"
+        [disabled]="isMessageBiddersDisabled()"
+      >
         <mat-icon>chat</mat-icon> Message Bidders
       </button>
-      <button class="action-btn blue-btn" *ngIf="showContractorSection()" (click)="onContactContractor()">
+      <button class="action-btn blue-btn" *ngIf="showContactContractorButton()" (click)="onContactContractor()">
         <mat-icon>chat</mat-icon> Contact Contractor
       </button>
     </div>
