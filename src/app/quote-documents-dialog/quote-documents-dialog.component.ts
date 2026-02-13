@@ -8,92 +8,76 @@ import { CommonModule } from '@angular/common';
 import { LoaderComponent } from '../loader/loader.component';
 import { FileSizePipe } from '../features/Documents/filesize.pipe';
 import { JobsService } from '../services/jobs.service';
-import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-quote-documents-dialog',
   standalone: true,
   imports: [MatDialogModule, CommonModule, LoaderComponent, FileSizePipe],
   template: `
-    <ng-template #documentsDialog>
-      <div class="documents-dialog">
-        <h2 mat-dialog-title>Quote Documents</h2>
-        <mat-dialog-content>
-          <!-- Show loading indicator while fetching documents -->
-          <div *ngIf="isLoading" class="loading-documents">
-            <app-loader></app-loader>
-            <p>Loading documents...</p>
+    <div class="documents-dialog">
+      <h2 mat-dialog-title>Quote Documents</h2>
+      <mat-dialog-content>
+        <!-- Show loading indicator while fetching documents -->
+        <div *ngIf="isLoading" class="loading-documents">
+          <app-loader></app-loader>
+          <p>Loading documents...</p>
+        </div>
+        <!-- Show content only when not loading -->
+        <div *ngIf="!isLoading">
+          <div *ngIf="documents.length === 0 && !error" class="no-documents">
+            <p>No documents available for this quote.</p>
           </div>
-          <!-- Show content only when not loading -->
-          <div *ngIf="!isLoading">
-            <div *ngIf="documents.length === 0 && !error" class="no-documents">
-              <p>No documents available for this quote.</p>
-            </div>
-            <div *ngIf="error" class="no-documents">
-              <p>{{ error }}</p>
-            </div>
-            <div *ngIf="documents.length > 0" class="documents-list">
-              <div
-                class="document-item"
-                *ngFor="let doc of documents; let i = index"
-              >
-                <div class="document-info">
-                  <span class="document-name">{{ doc.name }}</span>
-                  <span class="document-meta"
-                    >{{ doc.type }} - {{ doc.size | filesize }}</span
-                  >
-                </div>
-                <button class="view-btn" mat-button (click)="viewDocument(doc)">
-                  View
-                </button>
+          <div *ngIf="error" class="no-documents">
+            <p>{{ error }}</p>
+          </div>
+          <div *ngIf="documents.length > 0" class="documents-list">
+            <div class="document-item" *ngFor="let doc of documents">
+              <div class="document-info">
+                <span class="document-name">{{ doc.name }}</span>
+                <span class="document-meta">
+                  {{ doc.type }} - {{ doc.size | filesize }}
+                </span>
               </div>
+              <button class="view-btn" mat-button (click)="viewDocument(doc)">
+                View
+              </button>
             </div>
           </div>
-        </mat-dialog-content>
-        <mat-dialog-actions>
-          <button class="submit-btn" mat-raised-button (click)="close()">
-            Cancel
-          </button>
-          <button
-            class="submit-btn"
-            mat-flat-button
-            color="primary"
-            (click)="close()"
-          >
-            Continue
-          </button>
-        </mat-dialog-actions>
-      </div>
-    </ng-template>
+        </div>
+      </mat-dialog-content>
+      <mat-dialog-actions>
+        <button class="submit-btn" mat-raised-button (click)="close()">
+          Cancel
+        </button>
+        <button
+          class="submit-btn"
+          mat-flat-button
+          color="primary"
+          (click)="close()"
+        >
+          Continue
+        </button>
+      </mat-dialog-actions>
+    </div>
   `,
   styles: [
     `
-      $primary-yellow: #fbd008;
-      $secondary-yellow: #fcd02d;
-      $darker-yellow: #e6bf00;
-      $cyan: #61a0af;
-      $black: #000000;
-      $dark-gray: #333;
-      $light-gray: #d9d9d9;
-      $white: #fff;
-      $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
       .submit-btn {
-        background: $primary-yellow;
+        background: #fbd008;
         border-radius: 10px;
         padding: 0 16px;
         font-weight: 500;
-        color: $black;
+        color: #000000;
         margin: 0 0.5rem;
+      }
 
-        &:hover {
-          background: $darker-yellow;
-        }
+      .submit-btn:hover {
+        background: #e6bf00;
       }
 
       .view-btn {
-        background-color: $primary-yellow;
-        color: $black;
+        background-color: #fbd008;
+        color: #000000;
         border-radius: 50%;
         width: 40px;
         height: 40px;
@@ -104,15 +88,15 @@ import { HttpClient } from '@angular/common/http';
         margin-left: 1rem;
         box-shadow: none;
         border: none;
+      }
 
-        &:hover {
-          background-color: $darker-yellow;
-        }
+      .view-btn:hover {
+        background-color: #e6bf00;
       }
 
       .document-meta {
         font-size: 0.85rem;
-        color: $dark-gray;
+        color: #333333;
         margin-left: 0.5rem;
         display: inline;
       }
@@ -148,35 +132,30 @@ import { HttpClient } from '@angular/common/http';
       .no-documents {
         text-align: center;
         padding: 1rem;
-        color: $dark-gray;
+        color: #333333;
+      }
 
-        p {
-          margin: 0;
-          font-size: 1rem;
-        }
-
-        &[error] {
-          color: #da4167;
-          font-weight: 500;
-        }
+      .no-documents p {
+        margin: 0;
+        font-size: 1rem;
       }
 
       .loading-documents {
         text-align: center;
         padding: 1rem;
-        color: $dark-gray;
+        color: #333333;
+      }
 
-        p {
-          margin: 0.5rem 0 0;
-          font-size: 1rem;
-        }
+      .loading-documents p {
+        margin: 0.5rem 0 0;
+        font-size: 1rem;
       }
 
       .documents-dialog {
         padding: 0.5rem;
-        background: $white;
+        background: #ffffff;
         border-radius: 8px;
-        box-shadow: $shadow;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         overflow: hidden;
       }
     `,
@@ -185,7 +164,6 @@ import { HttpClient } from '@angular/common/http';
 export class QuoteDocumentsDialogComponent {
   private dialogRef = inject(MatDialogRef<QuoteDocumentsDialogComponent>);
   private data = inject<{ fileUrls: string[] }>(MAT_DIALOG_DATA);
-  private http = inject(HttpClient);
 
   documents: any[] = [];
   isLoading = true;

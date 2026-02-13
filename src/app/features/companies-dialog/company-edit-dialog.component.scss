@@ -1,0 +1,95 @@
+/* =========================
+   Dialog layout
+   ========================= */
+
+:host {
+  display: block;
+}
+
+form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 20px;
+  row-gap: 18px;
+}
+
+mat-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.mat-form-field-infix {
+  min-width: 0;
+  width: 100%;
+}
+
+input.mat-input-element {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Make address span full width */
+mat-form-field:last-of-type {
+  grid-column: 1 / -1;
+}
+
+/* Remove extra hint/error space SAFELY */
+.mat-form-field-subscript-wrapper {
+  display: none;
+}
+
+/* =========================
+   Dialog actions
+   ========================= */
+
+mat-dialog-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+.mat-mdc-dialog-content {
+  padding-top: 12px !important;
+}
+
+mat-dialog-actions::before {
+  content: "";
+  flex: 1;
+}
+
+mat-dialog-actions button {
+  min-width: 100px;
+}
+
+/* =========================
+   Polish
+   ========================= */
+
+mat-label {
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+input,
+textarea {
+  font-size: 14px;
+}
+
+mat-form-field.mat-form-field-appearance-outline .mat-form-field-outline {
+  border-radius: 12px;
+}
+/* 🔥 Restore correct text inset inside outline fields */
+.mat-form-field-appearance-outline .mat-input-element {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+/* ✅ FIX MDC outlined input padding */
+.mat-mdc-form-field.mat-mdc-form-field-appearance-outline {
+  --mdc-outlined-text-field-input-padding-start: 16px;
+  --mdc-outlined-text-field-input-padding-end: 16px;
+}
+
+mat-dialog-container {
+  border-radius: 22px;
+  padding: 24px 28px 20px;
+}

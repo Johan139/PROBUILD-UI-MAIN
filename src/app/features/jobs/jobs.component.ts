@@ -9,6 +9,8 @@ import {
   ElementRef,
   AfterViewInit,
   ChangeDetectorRef,
+  inject,
+  DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -18,10 +20,7 @@ import {
   CommonModule,
 } from '@angular/common';
 import { MatButton } from '@angular/material/button';
-import {
-  MatCard,
-  MatCardContent,
-} from '@angular/material/card';
+import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
 import { SubtasksState } from '../../state/subtasks.state';
 import { Store } from '../../store/store.service';
@@ -112,6 +111,7 @@ import { JobAnalysisWalkthroughComponent } from './components/job-analysis-walkt
 import { JobPreliminaryViewComponent } from './components/job-preliminary-view/job-preliminary-view.component';
 import { JobInboundBiddingComponent } from './components/job-inbound-bidding/job-inbound-bidding.component';
 import { JobClosureComponent } from './components/job-closure/job-closure.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-jobs',
@@ -208,6 +208,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public isProjectOwner = false;
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
+  private destroyRef = inject(DestroyRef);
+
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
   selectedTimelineParentGroup: TimelineGroup | null = null;
@@ -559,7 +561,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(
         take(1),
         switchMap((params) => {
-          this.jobDataService.fetchJobData(params);
+          this.jobDataService
+            .fetchJobData(params)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
           return this.store.select((state) => state.projectDetails);
         }),
         filter((projectDetails) => !!projectDetails),
@@ -947,7 +952,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.jobDataService.fetchJobData(this.projectDetails);
+        this.jobDataService
+          .fetchJobData(this.projectDetails)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe();
       }
     });
   }
@@ -994,7 +1002,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         next: () => {
           this.isLoading = false;
           this.isEditingAddress = false;
-          this.jobDataService.fetchJobData(this.projectDetails);
+          this.jobDataService
+            .fetchJobData(this.projectDetails)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
           this.snackBar.open('Address updated successfully!', 'Close', {
             duration: 3000,
           });
@@ -1138,6 +1149,23 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.biddingProjectsCount = this.overviewProjects.filter(
       (p) => (p.status || '').toUpperCase() === 'BIDDING',
     ).length;
+  }
+  onJobArchived(jobId: number): void {
+    // Reload project list
+    this.projectService.loadProjects();
+
+    // Optional: if user is currently viewing the archived job
+    if (this.projectDetails?.jobId === jobId) {
+      this.snackBar.open('This project has been archived.', 'Close', {
+        duration: 3000,
+      });
+
+      // Navigate back to project list or dashboard
+      this.router.navigateByUrl('/projects', { replaceUrl: true }).then(() => {
+        this.projectDetails = null;
+        this.activeTab = 'overview';
+      });
+    }
   }
 
   private checkProjectOwnerStatus(jobId: string, userId: string): void {

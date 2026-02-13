@@ -222,10 +222,11 @@ mat-card-content {
 
   h2 {
     font: var(--fw-bold) var(--fs-1)/var(--lh-tight) var(--font-sans);
+    color: var(--page-title-color);
   }
 
   p {
-    color: var(--color-text-muted);
+    color: var(--mat-sidenav-content-text-color, var(--mat-sys-on-background));
     font-size: var(--fs-lg);
   }
 }
@@ -236,6 +237,7 @@ mat-card-content {
   h3 {
     font: var(--fw-semibold) var(--fs-2)/var(--lh-tight) var(--font-sans);
     margin-bottom: var(--space-3);
+    color: var(--page-title-color);
   }
 }
 

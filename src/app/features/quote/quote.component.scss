@@ -1,5 +1,6 @@
 @use "styles/util/mixins" as u;
 
+$line-item-columns: 1.8fr 0.5fr 0.6fr 0.7fr 0.7fr 40px;
 :host {
   display: block;
   background: var(--color-canvas);
@@ -26,15 +27,6 @@
 
 .full-width {
   grid-column: 1 / -1;
-}
-
-.edit-button {
-  width: 9% !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  min-width: unset;
 }
 
 .edit-button mat-icon {
@@ -363,10 +355,9 @@
 }
 
 .section-title {
-  color: var(--brand-yellow-primary);
-  font-weight: var(--fw-semibold);
-  font-size: 14px;
-  margin-bottom: 6px;
+  color: var(--color-text);
+  border-left: 3px solid var(--action-primary);
+  padding-left: 8px;
 }
 
 /* Stack of inputs */
@@ -434,19 +425,12 @@
   margin-top: 24px;
 }
 
-/* Header + rows MUST SHARE THIS GRID */
 .line-items-header,
 .line-item-row {
   display: grid;
-  grid-template-columns:
-    3fr /* Description */
-    0.8fr /* Qty */
-    1fr /* Unit */
-    1.2fr /* Unit Price */
-    1.2fr /* Amount */
-    40px; /* Delete */
-  align-items: center;
+  grid-template-columns: $line-item-columns;
   gap: 12px;
+  align-items: center;
 }
 
 /* FORCE amount visibility */
@@ -525,8 +509,13 @@
 }
 
 /* Delete button */
-.delete-btn {
-  color: #e5533d;
+.delete-btn,
+button[color="warn"] {
+  color: var(--action-danger) !important;
+
+  &:hover {
+    color: var(--action-danger-hover) !important;
+  }
 }
 
 /* ======================================================
@@ -631,13 +620,23 @@ mat-form-field {
    ====================================================== */
 
 .btn-primary {
-  background: var(--brand-yellow-primary) !important;
+  background: var(--action-primary) !important;
   color: var(--gray-900) !important;
   border-radius: var(--radius-sm);
-  padding: 10px 16px;
   font-weight: var(--fw-semibold);
-  @include u.interactive-states;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--action-primary-hover) !important;
+  }
+
+  &:disabled {
+    background: var(--action-disabled-bg) !important;
+    color: var(--action-disabled-text) !important;
+    cursor: not-allowed;
+  }
 }
+
 /* ======================================================
    QUOTE EDITOR HEADER
    ====================================================== */
@@ -647,7 +646,12 @@ mat-form-field {
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 1.5rem;
 }
-
+.parag {
+  color: var(
+    --mat-sidenav-content-text-color,
+    var(--mat-sys-on-background)
+  ) !important;
+}
 .tab-btn {
   flex: 1;
   display: flex;
@@ -796,11 +800,11 @@ button mat-spinner {
   }
 
   &.selected {
-    background: rgba(74, 144, 226, 0.1);
-    border-color: rgba(74, 144, 226, 0.5);
+    background: color-mix(in oklab, var(--action-primary) 15%, transparent);
+    border-color: var(--action-primary);
 
     .job-name {
-      color: #4a90e2;
+      color: var(--action-primary);
     }
   }
 }
@@ -847,7 +851,7 @@ button mat-spinner {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: var(--brand-yellow-primary);
+    color: var(--color-text-muted);
   }
 
   &:hover {
@@ -869,8 +873,9 @@ button mat-spinner {
   gap: 0.5rem;
   padding: 0.5rem 1rem !important;
   min-width: auto !important;
-  background: var(--brand-yellow-primary) !important;
-  color: black !important;
+  background: var(--action-primary) !important;
+
+  color: var(--gray-900) !important;
   border: none;
   border-radius: 6px;
   font-size: 0.8125rem;
@@ -888,9 +893,10 @@ button mat-spinner {
   }
 
   &:hover {
-    background: #357abd !important;
+    background: var(--action-primary-hover) !important;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+    box-shadow: 0 2px 8px
+      color-mix(in oklab, var(--action-primary) 40%, transparent);
   }
 
   &:active {
@@ -931,7 +937,7 @@ button mat-spinner {
   font-size: 22px;
   font-weight: 700;
   margin: 0;
-  color: var(--color-text);
+  color: var(--page-title-color);
 }
 
 .title-group p {
@@ -996,7 +1002,7 @@ button mat-spinner {
 }
 
 .toggle-btn.active {
-  background: var(--brand-yellow-primary);
+  background: var(--action-primary);
   color: var(--gray-900);
   font-weight: 600;
 }

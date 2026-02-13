@@ -27,6 +27,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TaskViewDialogComponent } from './task-view-dialog/task-view-dialog.component';
 import { ReportService } from '../jobs/services/report.service';
+import { JobParserService } from '../jobs/services/jobs/job-parser.service';
 
 @Component({
   selector: 'app-calendar',
@@ -74,6 +75,7 @@ export class CalendarComponent implements OnInit {
     private jobDataService: JobDataService,
     private reportService: ReportService,
     private dialog: MatDialog,
+    private jobParser: JobParserService,
   ) {
     this.calendarOptions = {
       plugins: [dayGridPlugin, interactionPlugin, timeGridPlugin, listPlugin],
@@ -334,7 +336,7 @@ export class CalendarComponent implements OnInit {
 
             if (reportContent) {
               dailyLogistics =
-                this.jobDataService.parseDailyConstructionPlan(reportContent);
+                this.jobParser.parseDailyConstructionPlan(reportContent);
             }
 
             // Filter logistics for this task's duration
@@ -350,7 +352,9 @@ export class CalendarComponent implements OnInit {
             });
 
             // Parse title components  Format: "[Project Name] Subtask: Task Name"
-            const titleParts = info.event.title.match(/\[(.*?)\] Subtask: (.*)/);
+            const titleParts = info.event.title.match(
+              /\[(.*?)\] Subtask: (.*)/,
+            );
             const projectName = titleParts ? titleParts[1] : 'Unknown Project';
             const subtaskName = titleParts ? titleParts[2] : info.event.title;
 
@@ -378,9 +382,7 @@ export class CalendarComponent implements OnInit {
           .catch((err) => {
             this.isLoading = false;
             console.error('Error fetching daily plan:', err);
-            alert(
-              `Event: ${info.event.title}\n(Could not load daily details)`,
-            );
+            alert(`Event: ${info.event.title}\n(Could not load daily details)`);
           });
       } else {
         alert(

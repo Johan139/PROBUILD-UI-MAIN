@@ -1,7 +1,9 @@
 <!-- DIRECTION TABS (Outbound / Inbound) -->
 <div class="page-header">
   <div>
-    <h1>{{ isInboundView ? "Received" : "My" }} Quotes & Invoices</h1>
+    <h1 class="h1-color">
+      {{ isInboundView ? "Received" : "My" }} Quotes & Invoices
+    </h1>
     <p>
       {{
         isInboundView
@@ -14,7 +16,7 @@
   <button
     *ngIf="!isInboundView"
     mat-raised-button
-    color="primary"
+    class="btn-primary"
     (click)="redirectToQuote()"
   >
     <mat-icon>add</mat-icon>
@@ -51,7 +53,7 @@
 </mat-tab-group>
 
 <!-- ================================================= -->
-<!-- =============== SHARED CONTENT ================= -->
+<!-- =============== SHARED CONTENT ================== -->
 <!-- ================================================= -->
 
 <ng-template #quotesContent>
@@ -105,7 +107,7 @@
       </div>
 
       <div class="stat-card danger">
-        <h4>{{ isInvoiceView ? "Void" : "Declined" }}</h4>
+        <h4>{{ isInvoiceView ? "Rejected" : "Rejected" }}</h4>
         <strong>{{ totals.declined }}</strong>
       </div>
     </div>

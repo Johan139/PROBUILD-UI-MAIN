@@ -1,3 +1,4 @@
+import { GroupedSubtask, JobProjectDetails } from '../models/job-domain.models';
 import { PhaseMaterials } from '../features/quote/quote.model';
 import { ForecastDay } from '../services/weather.service';
 
@@ -26,8 +27,8 @@ export interface SubtaskGroup {
 }
 
 export interface SubtasksState {
-  projectDetails: any;
-  subtaskGroups: any[];
+  projectDetails: JobProjectDetails | null;
+  subtaskGroups: GroupedSubtask[];
   materialGroups: PhaseMaterials[];
   forecast: any[];
   weatherDescription: string;

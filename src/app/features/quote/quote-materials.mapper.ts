@@ -17,8 +17,8 @@ export function mapMaterialsToQuoteRows(
     phase.materials.forEach((material) => {
       rows.push({
         description: `${phase.phase} - ${material.item}`,
-        quantity: 1,
-        unit: 'LS', // Lump Sum
+        quantity: material.quantity,
+        unit: material.unit, // Lump Sum
         unitPrice: material.cost,
         total: material.cost,
       });
@@ -45,7 +45,10 @@ export function mapMaterialsToQuoteRowsByPhase(
 
   materialGroups.forEach((phase) => {
     // Calculate total materials cost for this phase
-    const materialsCost = phase.materials.reduce((sum, m) => sum + m.cost, 0);
+    const materialsCost = phase.materials.reduce(
+      (sum, m) => sum + m.cost * m.quantity,
+      0,
+    );
 
     // Add phase as a single row with materials + labor
     rows.push({

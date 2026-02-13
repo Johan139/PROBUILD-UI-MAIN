@@ -1,12 +1,7 @@
 import { Injectable } from '@angular/core';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpHeaders,
-} from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
-import { QuoteDto, QuoteViewDto } from './quote.model';
-import { AuthService } from '../../authentication/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { QuoteDto, QuoteViewDto, QuoteStatus } from './quote.model';
 import { environment } from '../../../environments/environment';
 export interface SendToClientRequest {
   quoteId: string;
@@ -48,7 +43,7 @@ export class QuoteService {
     return this.http.get<QuoteViewDto>(`${this.apiUrl}/${quoteId}`);
   }
 
-  changeStatus(quoteId: string, status: string) {
+  changeStatus(quoteId: string, status: QuoteStatus) {
     return this.http.post<void>(
       `${this.apiUrl}/${quoteId}/status`,
       JSON.stringify(status),

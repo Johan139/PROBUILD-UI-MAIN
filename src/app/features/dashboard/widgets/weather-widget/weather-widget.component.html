@@ -5,6 +5,25 @@
         <mat-icon class="title-icon">wb_sunny</mat-icon>
         <strong>Weather Forecast</strong>
       </mat-card-title>
+
+      <span class="spacer"></span>
+
+      <div class="unit-toggle">
+        <button
+          class="unit-btn"
+          [class.active]="temperatureUnit === 'C'"
+          (click)="setUnit('C')"
+        >
+          °C
+        </button>
+        <button
+          class="unit-btn"
+          [class.active]="temperatureUnit === 'F'"
+          (click)="setUnit('F')"
+        >
+          °F
+        </button>
+      </div>
     </mat-card-header>
 
     <mat-card-content>
@@ -29,8 +48,10 @@
         <div class="right">
           <div class="temp-big">
             {{
-              measurementService.convertTemperature(forecast[0]?.highTemp)
-                | number: "1.0-0"
+              measurementService.convertTemperature(
+                forecast[0]?.highTemp,
+                temperatureUnit
+              ) | number: "1.0-0"
             }}°
           </div>
 
@@ -51,14 +72,18 @@
           <div class="temps">
             <span class="high">
               {{
-                measurementService.convertTemperature(day.highTemp)
-                  | number: "1.0-0"
+                measurementService.convertTemperature(
+                  day.highTemp,
+                  temperatureUnit
+                ) | number: "1.0-0"
               }}°
             </span>
             <span class="low">
               {{
-                measurementService.convertTemperature(day.lowTemp)
-                  | number: "1.0-0"
+                measurementService.convertTemperature(
+                  day.lowTemp,
+                  temperatureUnit
+                ) | number: "1.0-0"
               }}°
             </span>
           </div>

@@ -13,7 +13,12 @@
   <div class="quote-editor-header full-width">
     <!-- LEFT -->
     <div class="header-left">
-      <button mat-button class="back-btn" (click)="goBackToQuotes()">
+      <button
+        mat-button
+        class="back-btn"
+        (click)="goBackToQuotes()"
+        aria-label="Go back to quotes list"
+      >
         <mat-icon>arrow_back</mat-icon>
         Back to Quotes & Invoices
       </button>
@@ -30,7 +35,7 @@
                 : "Invoice Editor"
           }}
         </h1>
-        <p>
+        <p class="parag">
           {{
             isInboundQuote
               ? "Review and respond to this document"
@@ -153,14 +158,21 @@
       <section class="sidebar-card" *ngIf="!isInboundQuote">
         <div class="sidebar-header">
           <h4>Company Details</h4>
-          <button mat-icon-button class="edit-button" *ngIf="!readOnly">
+          <button
+            mat-icon-button
+            class="edit-button"
+            *ngIf="!readOnly"
+            (click)="openEditCompanyDialog()"
+          >
             <mat-icon>edit</mat-icon>
           </button>
         </div>
 
         <div class="sidebar-text" *ngIf="companyDetails as c">
           <div class="company-name">{{ c.name }}</div>
-          <div class="company-address" *ngIf="c.address">{{ c.address }}</div>
+          <div class="company-address" *ngIf="c.address">
+            {{ getCompanyAddress() }}
+          </div>
           <div class="company-email" *ngIf="c.email">{{ c.email }}</div>
           <div class="company-phone" *ngIf="c.phoneNumber">
             {{ c.phoneNumber }}
@@ -268,8 +280,8 @@
           <div class="company-block" *ngIf="companyDetails as c">
             <div class="company-name">{{ c.name }}</div>
 
-            <div class="company-details" *ngIf="c.address">
-              {{ c.address }}
+            <div class="company-address" *ngIf="c.address">
+              {{ getCompanyAddress() }}
             </div>
             <div class="company-details" *ngIf="c.email">
               {{ c.email }}
@@ -428,7 +440,7 @@
         <div
           class="line-item-row"
           *ngFor="
-            let row of quoteRows.controls;
+            let row of quoteRowsAsFormGroups;
             let i = index;
             trackBy: trackByIndex
           "
@@ -453,12 +465,10 @@
           <select
             class="dark-input"
             formControlName="unit"
-            [class.disabled]="readOnly"
-            (mousedown)="readOnly && $event.preventDefault()"
-            (keydown)="readOnly && $event.preventDefault()"
+            [disabled]="readOnly || isInboundQuote"
           >
-            <option *ngFor="let unit of units" [value]="unit">
-              {{ unit }}
+            <option *ngFor="let unit of units" [value]="unit.code">
+              {{ unit.label }}
             </option>
           </select>
 
@@ -715,6 +725,14 @@
             *ngIf="quoteId"
           >
             Duplicate
+          </button>
+          <button
+            mat-button
+            matTooltip="Archive this quote"
+            (click)="archiveItem()"
+            *ngIf="quoteId"
+          >
+            Archive
           </button>
 
           <button

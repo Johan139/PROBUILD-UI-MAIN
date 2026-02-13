@@ -1,3 +1,12 @@
+export type DocumentType = 'QUOTE' | 'INVOICE';
+export type QuoteStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'Approved'
+  | 'Rejected'
+  | 'Withdrawn';
+export type QuoteDirection = 'Outbound' | 'Inbound';
+
 export interface QuoteExtraCostDto {
   type: string;
   value: number;
@@ -17,7 +26,7 @@ export interface QuoteDto {
   jobID: number | null;
   companyId: number;
   number: string;
-  documentType: 'QUOTE' | 'INVOICE';
+  documentType: DocumentType;
 
   from: string;
   to: string;
@@ -46,8 +55,8 @@ export interface QuoteDto {
 export interface QuoteViewDto {
   quoteId: string;
   number: string;
-  status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
-  documentType: 'QUOTE' | 'INVOICE';
+  status: QuoteStatus;
+  documentType: DocumentType;
   currentVersion: number;
   logoUrl?: string;
   version: QuoteVersionDto;
@@ -82,10 +91,10 @@ export interface QuoteListItemDto {
   number: string;
   createdBy: string;
   createdDate: string;
-  direction: 'Outbound' | 'Inbound';
+  direction: QuoteDirection;
   sentTo?: string;
-  status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
-  documentType?: 'QUOTE' | 'INVOICE';
+  status: QuoteStatus;
+  documentType?: DocumentType;
   jobName?: string;
   clientName?: string;
   total?: number;
@@ -96,13 +105,14 @@ export interface LogoDto {
   url: string;
   fileName?: string;
 }
-export type QuoteStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected';
 export interface PhaseMaterials {
   phase: string;
   csiCode: string;
   description?: string;
   materials: {
     item: string;
+    quantity: number;
+    unit: string;
     cost: number;
   }[];
   labor: number;

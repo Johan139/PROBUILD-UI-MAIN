@@ -17,6 +17,29 @@
 
   color: var(--color-text);
 }
+.spacer {
+  flex: 1;
+}
+.unit-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.unit-btn {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.unit-btn.active {
+  background: var(--brand-yellow-primary);
+  color: #000;
+  opacity: 1;
+}
 
 /* Material card */
 mat-card {
