@@ -14,7 +14,6 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import Panzoom, { PanzoomObject, PanzoomOptions } from '@panzoom/panzoom';
 import {
   MatDialog,
   MatDialogRef,
@@ -94,12 +93,22 @@ export class TimelineComponent
   @ViewChild('groupDetailModal', { static: true })
   groupDetailModal!: TemplateRef<any>;
 
-  panzoom: PanzoomObject | null = null;
   viewStartDate: Date = new Date();
   visibleStartDate: Date = new Date();
   visibleEndDate: Date = new Date();
   contentWidth: number = 0;
+  zoomLevel: number = 1;
+  readonly minZoom: number = 0.25;
+  readonly maxZoom: number = 2.5;
+  panOffsetX: number = 0;
+  isPanningTimeline: boolean = false;
+
   private readonly PIXELS_PER_WEEK = 300;
+  private readonly ZOOM_STEP = 0.15;
+  private timelineMinDate: Date = new Date();
+  private timelineMaxDate: Date = new Date();
+  private panStartX: number = 0;
+  private panStartOffsetX: number = 0;
 
   draggingGroup: string | null = null;
   dragStartDate: Date | null = null;
@@ -146,9 +155,6 @@ export class TimelineComponent
     if (this.modalRef) {
       this.modalRef.close();
     }
-    if (this.panzoom) {
-      this.panzoom.destroy();
-    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -185,6 +191,9 @@ export class TimelineComponent
         this.viewStartDate.getDate() - this.viewStartDate.getDay(),
       );
       this.weeksToShow = 12;
+      this.contentWidth = this.weeksToShow * this.PIXELS_PER_WEEK;
+      this.timelineMinDate = new Date(this.viewStartDate);
+      this.timelineMaxDate = this.getEndDate();
       return;
     }
 
@@ -210,6 +219,9 @@ export class TimelineComponent
         this.viewStartDate.getDate() - this.viewStartDate.getDay(),
       );
       this.weeksToShow = 12;
+      this.contentWidth = this.weeksToShow * this.PIXELS_PER_WEEK;
+      this.timelineMinDate = new Date(this.viewStartDate);
+      this.timelineMaxDate = this.getEndDate();
       return;
     }
 
@@ -241,6 +253,11 @@ export class TimelineComponent
 
     // Calculate content width
     this.contentWidth = this.weeksToShow * this.PIXELS_PER_WEEK;
+
+    this.timelineMinDate = new Date(this.viewStartDate);
+    this.timelineMaxDate = this.getEndDate();
+    this.panOffsetX = 0;
+    this.zoomLevel = 1;
 
     // Initialise visible dates
     this.visibleStartDate = new Date(this.viewStartDate);
@@ -291,11 +308,14 @@ export class TimelineComponent
   }
 
   navigateTimeline(days: number) {
-    const newDate = new Date(this.viewStartDate);
-    newDate.setDate(newDate.getDate() + days);
-    this.viewStartDate = newDate;
-    this.generateWeeklyDates();
-    this.getEndDate();
+    const dayWidth = this.getDayWidth();
+    const requestedOffset = this.panOffsetX - days * dayWidth;
+    this.panOffsetX = this.clampPanOffsetX(requestedOffset);
+    this.updateVisibleDates(
+      this.panOffsetX,
+      this.zoomLevel,
+      this.getViewportWidth(),
+    );
   }
 
   startTimelineNavigation(direction: number) {
@@ -310,37 +330,79 @@ export class TimelineComponent
   }
 
   private initPanzoom() {
-    if (!this.panzoomContainer?.nativeElement) return;
-
-    const options: PanzoomOptions = {
-      maxScale: 1,
-      minScale: 1,
-      startScale: 1,
-      cursor: 'move',
-      excludeClass: 'task-group-bar', // Prevent dragging tasks from panning the grid
-    };
-
-    this.panzoom = Panzoom(this.panzoomContainer.nativeElement, options);
-
-    // Initial date update
-    this.updateVisibleDates(0, 1, this.timelineRef.nativeElement.clientWidth);
-
-    // Sync header with grid pan/zoom
-    this.panzoomContainer.nativeElement.addEventListener(
-      'panzoomchange',
-      (event: any) => {
-        const { x } = event.detail;
-        if (this.headerContent?.nativeElement) {
-          this.headerContent.nativeElement.style.transform = `translateX(${x}px)`;
-          this.headerContent.nativeElement.style.transformOrigin = '0 0';
-        }
-
-        // Update visible date range
-        if (this.timelineRef?.nativeElement) {
-            this.updateVisibleDates(x, 1, this.timelineRef.nativeElement.clientWidth);
-        }
-      },
+    this.panOffsetX = this.clampPanOffsetX(0);
+    this.updateVisibleDates(
+      this.panOffsetX,
+      this.zoomLevel,
+      this.getViewportWidth(),
     );
+  }
+
+  get renderedContentWidth(): number {
+    return this.contentWidth * this.zoomLevel;
+  }
+
+  get contentTransform(): string {
+    return `translateX(${this.panOffsetX}px)`;
+  }
+
+  handleTimelinePanStart(event: MouseEvent): void {
+    if (event.button !== 0 || !this.timelineRef?.nativeElement) {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    if (target.closest('.task-group-bar')) {
+      return;
+    }
+
+    this.isPanningTimeline = true;
+    this.panStartX = event.clientX;
+    this.panStartOffsetX = this.panOffsetX;
+  }
+
+  handleWheel(event: WheelEvent): void {
+    if (!event.ctrlKey && !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.deltaY > 0) {
+      this.zoomOut();
+    } else {
+      this.zoomIn();
+    }
+  }
+
+  zoomIn(): void {
+    this.setZoom(this.zoomLevel + this.ZOOM_STEP);
+  }
+
+  zoomOut(): void {
+    this.setZoom(this.zoomLevel - this.ZOOM_STEP);
+  }
+
+  resetZoom(): void {
+    this.setZoom(1);
+  }
+
+  private setZoom(requestedZoom: number): void {
+    const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, requestedZoom));
+    if (newZoom === this.zoomLevel) {
+      return;
+    }
+
+    const viewportWidth = this.getViewportWidth();
+    const oldDayWidth = this.getDayWidth();
+    const centerDay = (-this.panOffsetX + viewportWidth / 2) / oldDayWidth;
+
+    this.zoomLevel = newZoom;
+
+    const newDayWidth = this.getDayWidth();
+    const centeredOffset = -(centerDay * newDayWidth - viewportWidth / 2);
+    this.panOffsetX = this.clampPanOffsetX(centeredOffset);
+
+    this.updateVisibleDates(this.panOffsetX, this.zoomLevel, viewportWidth);
   }
 
   public getScheduleStatus(
@@ -446,6 +508,18 @@ export class TimelineComponent
   }
 
   handleDragOver(e: MouseEvent) {
+    if (this.isPanningTimeline) {
+      e.preventDefault();
+      const deltaX = e.clientX - this.panStartX;
+      this.panOffsetX = this.clampPanOffsetX(this.panStartOffsetX + deltaX);
+      this.updateVisibleDates(
+        this.panOffsetX,
+        this.zoomLevel,
+        this.getViewportWidth(),
+      );
+      return;
+    }
+
     if (!this.dragStartPos || !this.draggingGroup) {
       return;
     }
@@ -465,6 +539,11 @@ export class TimelineComponent
   }
 
   handleDragEnd(e: MouseEvent) {
+    if (this.isPanningTimeline) {
+      this.isPanningTimeline = false;
+      return;
+    }
+
     const wasDragging = this.isDragging;
     const group = this.taskGroups.find((g) => g.title === this.draggingGroup);
 
@@ -484,11 +563,8 @@ export class TimelineComponent
       // We need content width now
       const totalDays = this.weeksToShow * 7;
 
-      // Get current scale to adjust drag calculations
-      const scale = this.panzoom ? this.panzoom.getScale() : 1;
-
-      // Calculate day width based on the CONTENT width (fixed pixels per week)
-      const dayWidth = (this.contentWidth / totalDays) * scale;
+      // Calculate day width based on zoomed content width
+      const dayWidth = this.getDayWidth();
 
       const dragDelta = e.clientX - this.dragStartPos.x;
       const daysDelta = Math.round(dragDelta / dayWidth);
@@ -499,14 +575,29 @@ export class TimelineComponent
           group.startDate,
         );
 
-        const newStartDate = addDays(this.dragStartDate, daysDelta);
+        const minAllowedDelta = differenceInCalendarDays(
+          this.timelineMinDate,
+          this.dragStartDate,
+        );
+        const maxAllowedDelta = differenceInCalendarDays(
+          addDays(this.timelineMaxDate, -groupDuration),
+          this.dragStartDate,
+        );
+        const clampedDaysDelta = Math.max(
+          minAllowedDelta,
+          Math.min(daysDelta, maxAllowedDelta),
+        );
+
+        const newStartDate = addDays(this.dragStartDate, clampedDaysDelta);
         const newEndDate = addDays(newStartDate, groupDuration);
 
-        this.onGroupMove.emit({
-          groupId: group.title,
-          newStartDate,
-          newEndDate,
-        });
+        if (clampedDaysDelta !== 0) {
+          this.onGroupMove.emit({
+            groupId: group.title,
+            newStartDate,
+            newEndDate,
+          });
+        }
       }
     } else if (group) {
       // Click handling is managed by click/double-click events on the bar
@@ -649,6 +740,25 @@ export class TimelineComponent
     return endDate;
   }
 
+  private getViewportWidth(): number {
+    return this.timelineRef?.nativeElement?.clientWidth ?? 1;
+  }
+
+  private getDayWidth(): number {
+    const totalDays = Math.max(1, this.weeksToShow * 7);
+    return this.renderedContentWidth / totalDays;
+  }
+
+  private getMinPanOffsetX(viewportWidth: number): number {
+    return Math.min(0, viewportWidth - this.renderedContentWidth);
+  }
+
+  private clampPanOffsetX(offset: number): number {
+    const viewportWidth = this.getViewportWidth();
+    const minOffset = this.getMinPanOffsetX(viewportWidth);
+    return Math.max(minOffset, Math.min(0, offset));
+  }
+
   isCurrentWeek(weekStart: Date): boolean {
     const today = new Date();
     const weekEnd = new Date(weekStart);
@@ -736,12 +846,12 @@ export class TimelineComponent
     date: Date | undefined,
     dateString: string | undefined,
   ): Date {
-    if (date) {
+    if (date && !isNaN(date.getTime())) {
       return date;
     }
     if (dateString) {
-      const parsedDate = new Date(dateString);
-      if (!isNaN(parsedDate.getTime())) {
+      const parsedDate = this.parseMultipleFormats(dateString);
+      if (parsedDate) {
         return parsedDate;
       }
     }
@@ -770,7 +880,7 @@ export class TimelineComponent
 
   private updateVisibleDates(x: number, scale: number, viewportWidth: number) {
     const totalDays = this.weeksToShow * 7;
-    const dayWidth = (this.contentWidth / totalDays) * scale;
+    const dayWidth = this.renderedContentWidth / totalDays;
 
     // x is negative as we pan right
     const startOffsetPixels = -x;
