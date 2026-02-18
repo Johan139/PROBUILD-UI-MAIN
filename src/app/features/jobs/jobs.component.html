@@ -40,6 +40,7 @@
         *ngIf="stageDisplayMode === 'stage'"
         [projectDetails]="projectDetails"
         (jobGranted)="onJobGranted()"
+        (fullReportRequested)="openReportDialog()"
       ></app-job-preliminary-view>
 
       <ng-container *ngIf="stageDisplayMode === 'live'">

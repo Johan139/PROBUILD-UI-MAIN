@@ -180,6 +180,9 @@ export class ReportService {
       }
       let fullResponse = results[0].fullResponse;
 
+      // Ensure Executive Summary appears first in the final compiled report.
+      const executiveSummary = this.extractExecutiveSummarySection(fullResponse);
+
       // Remove initial JSON block
       fullResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
 
@@ -204,11 +207,47 @@ export class ReportService {
       // Clean up extra newlines that might result from removals
       fullResponse = fullResponse.replace(/\n{3,}/g, '\n\n').trim();
 
+      if (executiveSummary) {
+        // Remove any existing Executive Summary section from the body,
+        // then prepend it so it always renders at the top.
+        const escapedSummary = executiveSummary
+          .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          .replace(/\s+/g, '\\s+');
+
+        fullResponse = fullResponse
+          .replace(new RegExp(escapedSummary, 'i'), '')
+          .replace(/^\s+/, '')
+          .trim();
+
+        fullResponse = `${executiveSummary}\n\n${fullResponse}`.trim();
+      }
+
       return marked(fullResponse);
     } catch (err) {
       console.error('Failed to get full report content:', err);
       return null;
     }
+  }
+
+  private extractExecutiveSummarySection(fullResponse: string): string | null {
+    let cleanResponse = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+
+    const startMarkerRegex = /###?\s*Executive Summary/i;
+    const endMarker = 'Executive Summary Complete.';
+
+    const match = cleanResponse.match(startMarkerRegex);
+    if (!match || match.index === undefined) {
+      return null;
+    }
+
+    let content = cleanResponse.substring(match.index);
+    const endIndex = content.indexOf(endMarker);
+    if (endIndex !== -1) {
+      content = content.substring(0, endIndex);
+    }
+
+    content = content.replace(startMarkerRegex, '').trim();
+    return content ? `### Executive Summary\n\n${content}` : null;
   }
 
   async getExecutiveSummary(jobId: string): Promise<string | null> {
@@ -1012,4 +1051,3 @@ export class ReportService {
     }
   }
 }
-
