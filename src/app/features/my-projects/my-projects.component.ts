@@ -183,7 +183,23 @@ export class MyProjectsComponent implements OnInit {
   }
 
   uploadThumbnail(event: { jobId: number; file: File }): void {
-    this.projectService.uploadThumbnail(event.jobId, event.file);
+    this.projectService.uploadThumbnail(event.jobId, event.file).subscribe({
+      next: () => {
+        this.snackBar.open('Thumbnail uploaded successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        console.error('Thumbnail upload failed in component', err);
+        this.snackBar.open(
+          'Thumbnail upload failed. Please try again.',
+          'Close',
+          {
+            duration: 4000,
+          },
+        );
+      },
+    });
   }
 
   toggleProjectView(view: 'grid' | 'list') {
