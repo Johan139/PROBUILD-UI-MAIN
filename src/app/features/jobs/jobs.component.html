@@ -18,18 +18,65 @@
     ></app-job-analysis-walkthrough>
 
     <!-- PRELIMINARY STAGE -->
-    <app-job-preliminary-view
-      *ngSwitchCase="'PRELIMINARY'"
-      [projectDetails]="projectDetails"
-      (jobGranted)="onJobGranted()"
-    ></app-job-preliminary-view>
+    <div *ngSwitchCase="'PRELIMINARY'" class="stage-with-live-toggle">
+      <div class="stage-view-toggle" *ngIf="canUseLiveStageView()">
+        <button
+          type="button"
+          [class.active]="stageDisplayMode === 'stage'"
+          (click)="setStageDisplayMode('stage')"
+        >
+          Stage View
+        </button>
+        <button
+          type="button"
+          [class.active]="stageDisplayMode === 'live'"
+          (click)="setStageDisplayMode('live')"
+        >
+          Live View
+        </button>
+      </div>
+
+      <app-job-preliminary-view
+        *ngIf="stageDisplayMode === 'stage'"
+        [projectDetails]="projectDetails"
+        (jobGranted)="onJobGranted()"
+      ></app-job-preliminary-view>
+
+      <ng-container *ngIf="stageDisplayMode === 'live'">
+        <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
+      </ng-container>
+    </div>
 
     <!-- BIDDING STAGE -->
-    <app-job-inbound-bidding
-      *ngSwitchCase="'BIDDING'"
-      [projectDetails]="projectDetails"
-      (goLive)="onGoLive()"
-    ></app-job-inbound-bidding>
+    <div *ngSwitchCase="'BIDDING'" class="stage-with-live-toggle">
+      <div class="stage-view-toggle" *ngIf="canUseLiveStageView()">
+        <button
+          type="button"
+          [class.active]="stageDisplayMode === 'stage'"
+          (click)="setStageDisplayMode('stage')"
+        >
+          Stage View
+        </button>
+        <button
+          type="button"
+          [class.active]="stageDisplayMode === 'live'"
+          (click)="setStageDisplayMode('live')"
+        >
+          Live View
+        </button>
+      </div>
+
+      <app-job-inbound-bidding
+        *ngIf="stageDisplayMode === 'stage'"
+        [projectDetails]="projectDetails"
+        (back)="onBackToPreliminary()"
+        (goLive)="onGoLive()"
+      ></app-job-inbound-bidding>
+
+      <ng-container *ngIf="stageDisplayMode === 'live'">
+        <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
+      </ng-container>
+    </div>
 
     <!-- CLOSURE STAGE -->
     <app-job-closure
@@ -38,7 +85,14 @@
     ></app-job-closure>
 
     <!-- LIVE STAGE-->
-    <div *ngSwitchCase="'LIVE'" class="live-stage-container">
+    <div *ngSwitchCase="'LIVE'">
+      <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
+    </div>
+  </div>
+</div>
+
+<ng-template #liveStageView>
+  <div class="live-stage-container">
       <div class="job-header">
         <div class="header-left">
           <button
@@ -78,7 +132,7 @@
           >
             Accept All Subtasks
           </button>
-          <button
+          <!-- <BUTTON
             *ngIf="isProjectOwner"
             class="submit-btn publish-btn"
             mat-raised-button
@@ -87,7 +141,7 @@
             matTooltipShowDelay="500"
           >
             Publish Job for Bidding
-          </button>
+          </button> -->
           <button
             *ngIf="isProjectOwner"
             class="submit-btn save-btn"
@@ -355,8 +409,7 @@
         </mat-card>
       </div>
     </div>
-  </div>
-</div>
+</ng-template>
 
 <!-- Documents Dialog -->
 <ng-template #documentsDialog>

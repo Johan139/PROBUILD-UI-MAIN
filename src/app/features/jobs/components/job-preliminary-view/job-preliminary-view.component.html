@@ -30,11 +30,14 @@
         ></lucide-angular>
         {{ isSending ? "Sending..." : "Send to Client" }}
       </button>
-      <button class="btn-primary" (click)="onJobGranted()">
-        <lucide-angular [img]="CheckCircle2" class="btn-icon"></lucide-angular>
-        Job Granted
-      </button>
     </div>
+  </div>
+
+  <div class="banner-actions">
+    <button class="btn-primary" (click)="onJobGranted()">
+      <lucide-angular [img]="CheckCircle2" class="btn-icon"></lucide-angular>
+      Job Granted
+    </button>
   </div>
 
   <!-- Revision Card -->
