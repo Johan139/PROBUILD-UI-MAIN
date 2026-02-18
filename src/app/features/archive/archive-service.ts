@@ -39,7 +39,18 @@ export class ArchiveService {
 
   /** Permanently delete archived item */
   delete(itemId: string, type: ArchivedItem['type']): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/delete`, { id: itemId, type });
+    const userId = this.authService.currentUserSubject.value?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const params = new HttpParams()
+      .set('itemId', itemId)
+      .set('itemType', type)
+      .set('userId', userId);
+
+    return this.http.post<void>(`${this.baseUrl}/delete`, null, { params });
   }
 
   archiveQuoteInvoice(itemId: string): Observable<void> {
@@ -56,6 +67,13 @@ export class ArchiveService {
   }
   /** Empty entire archive */
   emptyArchive(): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}`);
+    const userId = this.authService.currentUserSubject.value?.id;
+
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const params = new HttpParams().set('userId', userId);
+    return this.http.delete<void>(`${this.baseUrl}`, { params });
   }
 }
