@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, Output, OnInit, ViewChild, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,7 +26,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   templateUrl: './browse-jobs.component.html',
   styleUrls: ['./browse-jobs.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatPaginatorModule, FormsModule, MatSelectModule, MatFormFieldModule]
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatButtonModule,
+    MatPaginatorModule,
+    FormsModule,
+    MatSelectModule,
+    MatFormFieldModule,
+  ],
 })
 export class BrowseJobsComponent implements OnInit, OnChanges {
   @Input() jobs: Job[] = []; // Raw jobs with distances calculated
@@ -31,12 +49,18 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
   @Output() locationModeChange = new EventEmitter<'saved' | 'custom'>();
   @Output() selectedAddressIdChange = new EventEmitter<number | null>();
   @Output() jobClick = new EventEmitter<Job>();
-  @Output() toggleSaved = new EventEmitter<{jobId: number, event: MouseEvent}>();
-  @Output() openBid = new EventEmitter<{jobId: number, event: MouseEvent}>();
+  @Output() toggleSaved = new EventEmitter<{
+    jobId: number;
+    event: MouseEvent;
+  }>();
+  @Output() openBid = new EventEmitter<{ jobId: number; event: MouseEvent }>();
   @Output() highlightMarker = new EventEmitter<number>();
   @Output() unhighlightMarker = new EventEmitter<number>();
   @Output() addressSelected = new EventEmitter<void>();
-  @Output() customLocationChange = new EventEmitter<{lat: number, lng: number}>();
+  @Output() customLocationChange = new EventEmitter<{
+    lat: number;
+    lng: number;
+  }>();
 
   // Filter State
   searchTerm: string = '';
@@ -54,10 +78,25 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
   autocomplete: google.maps.places.Autocomplete | null = null;
 
   allTrades: string[] = [
-    "Electrical", "Plumbing", "HVAC", "Roofing", "Concrete", "Framing",
-    "Drywall", "Painting", "Flooring", "Landscaping", "Masonry",
-    "Insulation", "Windows & Doors", "Cabinetry", "Tile & Stone",
-    "Demolition", "Excavation", "Steel & Welding"
+    'New Build',
+    'Electrical',
+    'Plumbing',
+    'HVAC',
+    'Roofing',
+    'Concrete',
+    'Framing',
+    'Drywall',
+    'Painting',
+    'Flooring',
+    'Landscaping',
+    'Masonry',
+    'Insulation',
+    'Windows & Doors',
+    'Cabinetry',
+    'Tile & Stone',
+    'Demolition',
+    'Excavation',
+    'Steel & Welding',
   ];
   tradeCounts: { [trade: string]: number } = {};
   allJobTypes = JOB_TYPES;
@@ -67,9 +106,9 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
     // Determine unit based on locale
     const userLocale = navigator.language;
     if (userLocale === 'en-US' || userLocale === 'en-GB') {
-        this.distanceUnit = 'mi';
+      this.distanceUnit = 'mi';
     }
-    this.selectedJobTypes = this.allJobTypes.map(t => t.value);
+    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
     this.applyFilters();
   }
 
@@ -82,7 +121,7 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
     if (this.locationMode === 'custom') {
-        this.setupAutocomplete();
+      this.setupAutocomplete();
     }
   }
 
@@ -237,7 +276,7 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
   onLocationModeSelect(mode: 'saved' | 'custom') {
     this.locationModeChange.emit(mode);
     if (mode === 'custom') {
-        setTimeout(() => this.setupAutocomplete(), 50);
+      setTimeout(() => this.setupAutocomplete(), 50);
     }
   }
 
@@ -245,9 +284,9 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
     const select = event.target as HTMLSelectElement;
     const trade = select.value;
     if (trade === '') {
-        this.selectedTrades = [...this.allTrades];
+      this.selectedTrades = [...this.allTrades];
     } else {
-        this.selectedTrades = [trade];
+      this.selectedTrades = [trade];
     }
     this.applyFilters();
   }
@@ -256,9 +295,9 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
     const select = event.target as HTMLSelectElement;
     const type = select.value;
     if (type === '') {
-        this.selectedJobTypes = this.allJobTypes.map(t => t.value);
+      this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
     } else {
-        this.selectedJobTypes = [type];
+      this.selectedJobTypes = [type];
     }
     this.applyFilters();
   }
@@ -268,13 +307,16 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
   }
 
   onAddressChange() {
-      this.selectedAddressIdChange.emit(this.selectedAddressId);
-      this.addressSelected.emit();
+    this.selectedAddressIdChange.emit(this.selectedAddressId);
+    this.addressSelected.emit();
   }
 
   getJobBudget(job: Job): string {
     if (job.tradeBudgets && job.tradeBudgets.length > 0) {
-      const total = job.tradeBudgets.reduce((sum, item) => sum + item.budget, 0);
+      const total = job.tradeBudgets.reduce(
+        (sum, item) => sum + item.budget,
+        0,
+      );
       return `$${total.toLocaleString()}`;
     }
     return 'N/A';

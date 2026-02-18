@@ -119,10 +119,25 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   userTrade: string | undefined;
 
   allTrades: string[] = [
-    "Electrical", "Plumbing", "HVAC", "Roofing", "Concrete", "Framing",
-    "Drywall", "Painting", "Flooring", "Landscaping", "Masonry",
-    "Insulation", "Windows & Doors", "Cabinetry", "Tile & Stone",
-    "Demolition", "Excavation", "Steel & Welding",
+    'New Build',
+    'Electrical',
+    'Plumbing',
+    'HVAC',
+    'Roofing',
+    'Concrete',
+    'Framing',
+    'Drywall',
+    'Painting',
+    'Flooring',
+    'Landscaping',
+    'Masonry',
+    'Insulation',
+    'Windows & Doors',
+    'Cabinetry',
+    'Tile & Stone',
+    'Demolition',
+    'Excavation',
+    'Steel & Welding',
   ];
   selectedTrades: string[] = []; // For Alerts
   allJobTypes = JOB_TYPES;
@@ -132,7 +147,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   selectedAddress: UserAddress | null = null;
 
   // UI state
-  activeTab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite' = 'browse';
+  activeTab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite' =
+    'browse';
   distanceUnit: 'km' | 'mi' = 'km';
   biddedJobIds: number[] = [];
   myPostings: Job[] = [];
@@ -144,7 +160,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   notificationPreferences = {
     email: true,
     push: true,
-    sms: false
+    sms: false,
   };
 
   // Loading states
@@ -304,10 +320,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.recalculateDistances(this.customAddressLat, this.customAddressLng);
   }
 
-  onCustomLocationChange(event: {lat: number, lng: number}) {
-      this.customAddressLat = event.lat;
-      this.customAddressLng = event.lng;
-      this.applyCustomAddress();
+  onCustomLocationChange(event: { lat: number; lng: number }) {
+    this.customAddressLat = event.lat;
+    this.customAddressLng = event.lng;
+    this.applyCustomAddress();
   }
 
   private recalculateDistances(lat: number, lng: number) {
@@ -319,15 +335,17 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         job.longitude,
       );
     });
+
     this.jobs = [...this.jobs]; // Trigger change detection for inputs
     // filteredJobs will be updated by BrowseJobsComponent when it receives new jobs
   }
 
   loadJobs(): void {
     const userId = this.authService.getUserId();
+
     if (!userId) {
-        this.filtersLoading = false;
-        return;
+      this.filtersLoading = false;
+      return;
     }
 
     this.jobsLoading = true;
@@ -340,62 +358,71 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ jobs, myPostings, quotes }) => {
+          const parseCoord = (val: any) =>
+            typeof val === 'string'
+              ? parseFloat(val.replace(',', '.'))
+              : Number(val);
+
           this.jobs = jobs.map((job) => ({
             ...job,
-            latitude: Number(job.latitude),
-            longitude: Number(job.longitude),
+            latitude: parseCoord(job.latitude),
+            longitude: parseCoord(job.longitude),
           }));
 
-           if (Array.isArray(myPostings)) {
-              this.myPostings = myPostings.map((pkg: any) => {
-               const durationInDays = this.parseDurationInDays(
-                 pkg.estimatedDuration,
-                 Number(pkg.estimatedManHours || 0),
-               );
+          if (Array.isArray(myPostings)) {
+            this.myPostings = myPostings.map((pkg: any) => {
+              const durationInDays = this.parseDurationInDays(
+                pkg.estimatedDuration,
+                Number(pkg.estimatedManHours || 0),
+              );
 
-               return {
-                 jobId: pkg.jobId,
-                 projectName: pkg.projectName,
-                 jobType: pkg.category,
-                 status: pkg.status,
-                 address: pkg.address,
-                 city: pkg.city,
-                 state: pkg.state,
-                 streetNumber: '',
-                 streetName: '',
-                 postalCode: '',
-                 country: '',
-                 latitude: 0,
-                 longitude: 0,
-                 googlePlaceId: '',
-                  description: pkg.scopeOfWork,
-                  title: pkg.tradeName,
-                  biddingType: pkg.laborType || 'Labor and Materials',
-                  jobPreferences: '',
-                  trades: [pkg.tradeName],
-                  tradeBudgets: [{ tradeName: pkg.tradeName, budget: pkg.budget }],
-                  potentialStartDate: pkg.startDate ? new Date(pkg.startDate) : undefined,
-                  durationInDays,
-                  numberOfBids: 0,
-                  createdAt: pkg.createdAt,
-                  biddingStartDate: pkg.bidDeadline || pkg.createdAt,
-                  // Marketplace trade-package linkage for inline editing/persistence
-                  tradePackageId: pkg.id,
-                  tradePackageStatus: pkg.status,
-                 tradePackageEstimatedManHours: pkg.estimatedManHours,
-                 tradePackageHourlyRate: pkg.hourlyRate,
-                 tradePackageEstimatedDuration: pkg.estimatedDuration,
-                 tradePackageStartDate: pkg.startDate,
-                 tradePackageBidDeadline: pkg.bidDeadline,
-                 tradePackageLaborType: pkg.laborType,
-                 tradePackageCsiCode: pkg.csiCode,
-                 tradePackagePostedToMarketplace: pkg.postedToMarketplace,
-                 tradePackageCreatedAt: pkg.createdAt,
-               } as Job;
-             });
+              return {
+                jobId: pkg.jobId,
+                projectName: pkg.projectName,
+                jobType: pkg.category,
+                status: pkg.status,
+                address: pkg.address,
+                city: pkg.city,
+                state: pkg.state,
+                streetNumber: '',
+                streetName: '',
+                postalCode: '',
+                country: '',
+                latitude: 0,
+                longitude: 0,
+                googlePlaceId: '',
+                description: pkg.scopeOfWork,
+                title: pkg.tradeName,
+                biddingType: pkg.laborType || 'Labor and Materials',
+                jobPreferences: '',
+                trades: [pkg.tradeName],
+                tradeBudgets: [
+                  { tradeName: pkg.tradeName, budget: pkg.budget },
+                ],
+                potentialStartDate: pkg.startDate
+                  ? new Date(pkg.startDate)
+                  : undefined,
+                durationInDays,
+                numberOfBids: 0,
+                createdAt: pkg.createdAt,
+                biddingStartDate: pkg.bidDeadline || pkg.createdAt,
+                // Marketplace trade-package linkage for inline editing/persistence
+                tradePackageId: pkg.id,
+                tradePackageStatus: pkg.status,
+                tradePackageEstimatedManHours: pkg.estimatedManHours,
+                tradePackageHourlyRate: pkg.hourlyRate,
+                tradePackageEstimatedDuration: pkg.estimatedDuration,
+                tradePackageStartDate: pkg.startDate,
+                tradePackageBidDeadline: pkg.bidDeadline,
+                tradePackageLaborType: pkg.laborType,
+                tradePackageCsiCode: pkg.csiCode,
+                tradePackagePostedToMarketplace: pkg.postedToMarketplace,
+                tradePackageCreatedAt: pkg.createdAt,
+              } as Job;
+            });
           } else {
-              this.myPostings = [];
-           }
+            this.myPostings = [];
+          }
 
           this.myQuotes = quotes;
           this.draftQuotes.clear();
@@ -406,7 +433,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
               this.draftQuotes.set(q.jobId, q.id);
             }
             if (q.status === 'Submitted' && q.jobId) {
-                this.biddedJobIds.push(q.jobId);
+              this.biddedJobIds.push(q.jobId);
             }
           });
 
@@ -423,7 +450,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       });
   }
 
-  setActiveTab(tab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite'): void {
+  setActiveTab(
+    tab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite',
+  ): void {
     this.activeTab = tab;
     this.selectedJob = null;
   }
@@ -512,13 +541,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
   highlightMarker(jobId: number): void {
     if (this.mapChild) {
-        this.mapChild.highlightMarker(jobId);
+      this.mapChild.highlightMarker(jobId);
     }
   }
 
   unhighlightMarker(jobId: number): void {
     if (this.mapChild) {
-        this.mapChild.unhighlightMarker(jobId);
+      this.mapChild.unhighlightMarker(jobId);
     }
   }
 
@@ -535,7 +564,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   onFilteredJobsChange(filteredJobs: Job[]) {
-      this.filteredJobs = filteredJobs;
+    this.filteredJobs = filteredJobs;
   }
 
   private loadFiltersFromLocalStorage(): void {
@@ -558,13 +587,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (event) event.stopPropagation();
 
     if (this.savedJobs.includes(jobId)) {
-      this.savedJobs = this.savedJobs.filter(id => id !== jobId);
+      this.savedJobs = this.savedJobs.filter((id) => id !== jobId);
     } else {
       this.savedJobs.push(jobId);
     }
     this.saveSavedJobs();
     if (this.activeTab === 'saved') {
-      this.filteredJobs = this.jobs.filter(job => this.savedJobs.includes(job.jobId));
+      this.filteredJobs = this.jobs.filter((job) =>
+        this.savedJobs.includes(job.jobId),
+      );
     }
   }
 
@@ -575,16 +606,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   openPostJobDialog(): void {
     const dialogRef = this.dialog.open(PostJobDialogComponent, {
       width: '600px',
-      disableClose: true
+      disableClose: true,
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         console.log('New Job Posted:', result);
       }
     });
   }
-
 
   openBidDialog(jobId: number, event: MouseEvent): void {
     event.stopPropagation();
@@ -638,52 +668,55 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-            if (result.saved && !this.savedJobs.includes(job.jobId)) {
-                this.savedJobs.push(job.jobId);
-                this.saveSavedJobs();
-            } else if (!result.saved && this.savedJobs.includes(job.jobId)) {
-                this.savedJobs = this.savedJobs.filter(id => id !== job.jobId);
-                this.saveSavedJobs();
-            }
-
-            if (result.notes !== undefined) {
-                this.jobNotes[job.jobId] = result.notes;
-                this.saveJobNotes();
-            }
-
-            if (result.updatedJob) {
-              const updateLocalJob = (target: Job) => {
-                target.tradeBudgets = result.updatedJob.tradeBudgets;
-                target.potentialStartDate = result.updatedJob.potentialStartDate;
-                target.durationInDays = result.updatedJob.durationInDays;
-                target.biddingType = result.updatedJob.biddingType;
-                target.biddingStartDate = result.updatedJob.biddingStartDate;
-              };
-
-              const posting = this.myPostings.find(
-                (j) => j.jobId === job.jobId && j.trades?.[0] === job.trades?.[0],
-              );
-              if (posting) updateLocalJob(posting);
-
-              const listJob = this.jobs.find((j) => j.jobId === job.jobId);
-              if (listJob) updateLocalJob(listJob);
-            }
-
-            if (result.tradePackageUpdate?.id) {
-              this.bomService
-                .updateTradePackage(result.tradePackageUpdate.id, result.tradePackageUpdate)
-                .subscribe({
-                  next: () => {
-                    this.loadJobs();
-                  },
-                  error: (err) => {
-                    console.error('Failed to persist trade package updates', err);
-                  },
-                });
-            }
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        if (result.saved && !this.savedJobs.includes(job.jobId)) {
+          this.savedJobs.push(job.jobId);
+          this.saveSavedJobs();
+        } else if (!result.saved && this.savedJobs.includes(job.jobId)) {
+          this.savedJobs = this.savedJobs.filter((id) => id !== job.jobId);
+          this.saveSavedJobs();
         }
+
+        if (result.notes !== undefined) {
+          this.jobNotes[job.jobId] = result.notes;
+          this.saveJobNotes();
+        }
+
+        if (result.updatedJob) {
+          const updateLocalJob = (target: Job) => {
+            target.tradeBudgets = result.updatedJob.tradeBudgets;
+            target.potentialStartDate = result.updatedJob.potentialStartDate;
+            target.durationInDays = result.updatedJob.durationInDays;
+            target.biddingType = result.updatedJob.biddingType;
+            target.biddingStartDate = result.updatedJob.biddingStartDate;
+          };
+
+          const posting = this.myPostings.find(
+            (j) => j.jobId === job.jobId && j.trades?.[0] === job.trades?.[0],
+          );
+          if (posting) updateLocalJob(posting);
+
+          const listJob = this.jobs.find((j) => j.jobId === job.jobId);
+          if (listJob) updateLocalJob(listJob);
+        }
+
+        if (result.tradePackageUpdate?.id) {
+          this.bomService
+            .updateTradePackage(
+              result.tradePackageUpdate.id,
+              result.tradePackageUpdate,
+            )
+            .subscribe({
+              next: () => {
+                this.loadJobs();
+              },
+              error: (err) => {
+                console.error('Failed to persist trade package updates', err);
+              },
+            });
+        }
+      }
     });
   }
 
