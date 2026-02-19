@@ -6,6 +6,10 @@
       <p>Post jobs to marketplace and manage bids from contractors</p>
     </div>
     <div class="header-actions">
+      <button class="btn-outline" (click)="markAllInHouse()">
+        <lucide-angular [img]="Users" class="btn-icon"></lucide-angular>
+        All In House
+      </button>
       <button class="btn-outline" (click)="refreshPackages()">
         <lucide-angular [img]="RotateCcw" class="btn-icon"></lucide-angular>
         Refresh Trade Packages
@@ -14,6 +18,19 @@
         <lucide-angular [img]="ArrowLeft" class="btn-icon"></lucide-angular>
         Back to Preliminary
       </button>
+    </div>
+  </div>
+
+  <div *ngIf="showAllInHouseConfirm" class="confirm-overlay" (click)="cancelAllInHouse()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <h4>Mark all packages as In House?</h4>
+      <p>
+        This will mark {{ pendingAllInHouseCount }} package(s) as In House and prevent them from being posted to the marketplace.
+      </p>
+      <div class="confirm-actions">
+        <button class="btn-outline" (click)="cancelAllInHouse()">Cancel</button>
+        <button class="btn-primary" (click)="confirmAllInHouse()">Confirm</button>
+      </div>
     </div>
   </div>
 
@@ -84,11 +101,11 @@
         <div class="budget-section">
           <div class="label-row">
             <span>Your Budget</span>
-            <span class="estimate"
-              >AI Estimate: ${{
-                pkg.estimatedManHours * pkg.hourlyRate | number
-              }}</span
-            >
+            <span class="estimate">{{ getEstimateLabel(pkg) }}</span>
+          </div>
+          <div class="field-help" style="margin-bottom: 6px">
+            Effective budget mode:
+            <strong>{{ getEffectiveModeLabel(pkg) }}</strong>
           </div>
           <div class="budget-input-wrapper">
             <lucide-angular
@@ -137,7 +154,7 @@
             </div>
           </div>
 
-          <div class="field-block labor-type-block">
+          <div class="field-block labor-type-block" *ngIf="pkg.category === 'trade'">
             <label class="field-label">Labor Type</label>
             <div class="radio-row">
               <label class="radio-option">
@@ -162,13 +179,27 @@
           </div>
         </div>
 
-        <button
-          *ngIf="!pkg.postedToMarketplace"
-          class="btn-primary full-width"
-          (click)="handlePostToMarketplace(pkg)"
-        >
-          Post to Marketplace
-        </button>
+        <div class="action-buttons-stack">
+          <button
+            *ngIf="!pkg.postedToMarketplace && !pkg.isInHouse"
+            class="btn-primary full-width"
+            (click)="handlePostToMarketplace(pkg)"
+          >
+            Post to Marketplace
+          </button>
+
+          <button
+            *ngIf="!pkg.isInHouse"
+            class="btn-outline full-width"
+            (click)="markInHouse(pkg)"
+          >
+            In House
+          </button>
+        </div>
+
+        <div *ngIf="pkg.isInHouse" class="posted-badge">
+          <lucide-angular [img]="Check" class="icon"></lucide-angular> In House
+        </div>
 
         <div *ngIf="pkg.postedToMarketplace" class="posted-badge">
           <lucide-angular [img]="Check" class="icon"></lucide-angular> Posted to

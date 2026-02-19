@@ -22,6 +22,7 @@ import { QuoteDto, QuoteRowDto } from '../../../../features/quote/quote.model';
 export class JobPreliminaryViewComponent implements OnInit {
   @Input() projectDetails: any;
   @Output() jobGranted = new EventEmitter<void>();
+  @Output() fullReportRequested = new EventEmitter<void>();
 
   // State
   activeTab: 'budget' | 'procurement' | 'value-engineering' = 'budget';
@@ -60,6 +61,11 @@ export class JobPreliminaryViewComponent implements OnInit {
   valueEngineering: any[] = [];
   procurement: any = { longLeadItems: [], criticalPath: [] };
   isLoading = true;
+  isReportLoading = false;
+  isGeneratingReport = false;
+  reportHtml: string | null = null;
+  reportTitle = 'Full Project Analysis Report';
+  reportError: string | null = null;
 
   constructor(
     private bomService: BomService,
@@ -214,6 +220,85 @@ export class JobPreliminaryViewComponent implements OnInit {
     console.log(`Download ${type}`);
   }
 
+  openReportDialog(): void {
+    this.fullReportRequested.emit();
+  }
+
+  closeReportDialog(): void {
+    // No-op: dialog is owned by parent Jobs component
+  }
+
+  downloadFullReport(): void {
+    const finalize = () => {
+      this.isGeneratingReport = false;
+    };
+
+    const generate = () => {
+      if (!this.reportHtml) {
+        finalize();
+        return;
+      }
+
+      const cleanTitle = this.reportTitle.replace(/ /g, '_');
+      const fileName = `${this.projectDetails.projectName}_${cleanTitle}.pdf`;
+
+      this.reportService
+        .generatePdfFromHtml(this.reportHtml, fileName, this.reportTitle)
+        .finally(finalize);
+    };
+
+    this.isGeneratingReport = true;
+
+    if (this.reportHtml) {
+      generate();
+      return;
+    }
+
+    this.handleReportAction(
+      'Full Project Analysis Report',
+      (id) => this.reportService.getFullReportContent(id),
+      'An error occurred while fetching the report.',
+      false,
+      generate,
+    );
+  }
+
+  private handleReportAction(
+    title: string,
+    action: (jobId: string) => Promise<string | null>,
+    errorMsg: string,
+    openDialogOnSuccess: boolean,
+    onSuccess?: () => void,
+  ): void {
+    this.isReportLoading = true;
+    this.reportError = null;
+    this.reportHtml = null;
+    this.reportTitle = title;
+
+    action(this.projectDetails.jobId)
+      .then((content) => {
+        if (content) {
+          this.reportHtml = content;
+          if (openDialogOnSuccess) this.openReportDialog();
+          onSuccess?.();
+        } else {
+          const message = `Could not retrieve ${title}.`;
+          this.reportError = message;
+          this.snackBar.open(message, 'Close', { duration: 3000 });
+          this.isGeneratingReport = false;
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        this.reportError = errorMsg;
+        this.snackBar.open(errorMsg, 'Close', { duration: 3000 });
+        this.isGeneratingReport = false;
+      })
+      .finally(() => {
+        this.isReportLoading = false;
+      });
+  }
+
   toggleBomSection(key: string) {
     if (this.expandedBomSections.includes(key)) {
       this.expandedBomSections = this.expandedBomSections.filter(k => k !== key);
@@ -270,19 +355,42 @@ export class JobPreliminaryViewComponent implements OnInit {
       clientPhone = clientDetails.phone || '';
     }
 
-    // Calculate Total Cost
-    const totalCost =
-      this.costAnalysis?.suggestedBid ||
-      0;
+    // Calculate total project cost
+    const totalCost = this.costAnalysis?.suggestedBid || 0;
 
-    // Create Single Row
-    const row: QuoteRowDto = {
-      description: 'Total Project Construction Cost',
-      quantity: 1,
-      unit: 'Lot',
-      unitPrice: totalCost,
-      total: totalCost,
-    };
+    // Build one row per budget phase with cost, then append a total row
+    // These phase totals are the same values shown in the Budget tab cards
+    const phaseRows: QuoteRowDto[] = Object.keys(this.billsOfMaterials || {})
+      .map((key) => {
+        const phase = this.billsOfMaterials[key];
+        if (!phase) return null;
+
+        const materialCost = Number(phase.totalMaterialCost || 0);
+        const laborCost = Number(phase.totalLaborCost || 0);
+        const phaseCost = materialCost + laborCost;
+
+        if (phaseCost <= 0) return null;
+
+        return {
+          description: `${phase.title || key} Cost`,
+          quantity: 1,
+          unit: 'LS',
+          unitPrice: phaseCost,
+          total: phaseCost,
+        } as QuoteRowDto;
+      })
+      .filter((row): row is QuoteRowDto => row !== null);
+
+    const rows: QuoteRowDto[] = [...phaseRows];
+
+    // Include the project total row in the generated quote?
+    // rows.push({
+    //   description: 'Total Project Construction Cost',
+    //   quantity: 1,
+    //   unit: 'Lot',
+    //   unitPrice: totalCost,
+    //   total: totalCost,
+    // });
 
     // Construct QuoteDto
     const quoteDto: QuoteDto = {
@@ -315,7 +423,7 @@ export class JobPreliminaryViewComponent implements OnInit {
       createdID: currentUser.id,
       createdBy: currentUser.firstName,
 
-      rows: [row],
+      rows,
       extraCosts: [], // No extra costs as we are using flat total row
     };
 

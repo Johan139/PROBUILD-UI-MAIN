@@ -5,7 +5,7 @@ import {
   TimelineTask,
   TimelineGroup,
 } from '../../../components/timeline/timeline.component';
-import { differenceInCalendarDays, format } from 'date-fns';
+import { differenceInCalendarDays, format, isValid, parse } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { Observable, map } from 'rxjs';
@@ -29,28 +29,26 @@ export class TimelineService {
       .select((state) => state.subtaskGroups)
       .pipe(
         map((subtaskGroups) => {
-          return (subtaskGroups || []).map(
-            (group: { title: string; subtasks: any[] }) => {
+          return ((subtaskGroups || [])
+            .map(
+            (group: { title: string; subtasks: any[] }): TimelineGroup | null => {
               const tasks = group.subtasks.filter((task: any) => !task.deleted);
 
               if (tasks.length === 0) {
-                return {
-                  title: group.title,
-                  subtasks: [],
-                  startDate: new Date(),
-                  endDate: new Date(),
-                  progress: 0,
-                  scheduleStatus: 'on-track' as const,
-                };
+                return null;
               }
 
               const startDates = tasks
-                .map((task: any) => new Date(task.startDate || task.start))
-                .filter((date: Date) => !isNaN(date.getTime()));
+                .map((task: any) => this.parseTaskDate(task.startDate || task.start))
+                .filter((date): date is Date => !!date);
 
               const endDates = tasks
-                .map((task: any) => new Date(task.endDate || task.end))
-                .filter((date: Date) => !isNaN(date.getTime()));
+                .map((task: any) => this.parseTaskDate(task.endDate || task.end))
+                .filter((date): date is Date => !!date);
+
+              if (startDates.length === 0 || endDates.length === 0) {
+                return null;
+              }
 
               const groupStartDate =
                 startDates.length > 0
@@ -90,35 +88,53 @@ export class TimelineService {
                   ? 'ahead'
                   : 'on-track';
 
+              const mappedSubtasks = tasks
+                .map((task: any) => {
+                  const parsedStart = this.parseTaskDate(task.startDate || task.start);
+                  const parsedEnd = this.parseTaskDate(task.endDate || task.end);
+
+                  if (!parsedStart || !parsedEnd) {
+                    return null;
+                  }
+
+                  return {
+                    id: task.id || Math.random().toString(),
+                    name: task.task || task.name || 'Untitled Task',
+                    task: task.task || task.name || 'Untitled Task',
+                    start: parsedStart,
+                    end: parsedEnd,
+                    startDate: parsedStart.toISOString().split('T')[0],
+                    endDate: parsedEnd.toISOString().split('T')[0],
+                    days: task.days,
+                    progress: task.accepted
+                      ? 100
+                      : task.status === 'completed'
+                        ? 100
+                        : 0,
+                    status: task.status || 'pending',
+                    isCritical: this.isTaskCritical(task),
+                    cost: task.cost,
+                    deleted: task.deleted,
+                    accepted: task.accepted,
+                  };
+                })
+                .filter((task): task is any => !!task);
+
+              if (mappedSubtasks.length === 0) {
+                return null;
+              }
+
               return {
                 title: group.title,
-                subtasks: tasks.map((task: any) => ({
-                  id: task.id || Math.random().toString(),
-                  name: task.task,
-                  task: task.task,
-                  start: new Date(task.startDate || task.start),
-                  end: new Date(task.endDate || task.end),
-                  startDate: task.startDate,
-                  endDate: task.endDate,
-                  days: task.days,
-                  progress: task.accepted
-                    ? 100
-                    : task.status === 'completed'
-                      ? 100
-                      : 0,
-                  status: task.status || 'pending',
-                  isCritical: this.isTaskCritical(task),
-                  cost: task.cost,
-                  deleted: task.deleted,
-                  accepted: task.accepted,
-                })),
+                subtasks: mappedSubtasks,
                 startDate: groupStartDate,
                 endDate: groupEndDate,
                 progress,
-                scheduleStatus,
+                scheduleStatus: scheduleStatus as 'on-track' | 'behind' | 'ahead',
               };
             },
-          );
+          )
+            .filter((group) => group !== null) as TimelineGroup[]);
         }),
       );
   }
@@ -319,5 +335,47 @@ export class TimelineService {
       return name.replace(/^\*\*|\*\*$/g, '').trim();
     }
     return name;
+  }
+
+  private parseTaskDate(dateInput: unknown): Date | null {
+    if (!dateInput) {
+      return null;
+    }
+
+    if (dateInput instanceof Date) {
+      return isValid(dateInput) ? dateInput : null;
+    }
+
+    const dateStr = String(dateInput).trim();
+    if (!dateStr) {
+      return null;
+    }
+
+    const native = new Date(dateStr);
+    if (isValid(native)) {
+      return native;
+    }
+
+    const formats = [
+      'dd/MM/yyyy',
+      'dd-MM-yyyy',
+      'MM/dd/yyyy',
+      'MM-dd-yyyy',
+      'yyyy-MM-dd',
+      'yyyy/MM/dd',
+      'dd/MM/yy',
+      'dd-MM-yy',
+      'MM/dd/yy',
+      'MM-dd-yy',
+    ];
+
+    for (const formatPattern of formats) {
+      const parsed = parse(dateStr, formatPattern, new Date());
+      if (isValid(parsed)) {
+        return parsed;
+      }
+    }
+
+    return null;
   }
 }

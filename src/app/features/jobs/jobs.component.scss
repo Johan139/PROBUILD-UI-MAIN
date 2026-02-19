@@ -20,6 +20,42 @@
   width: 100%;
 }
 
+.stage-with-live-toggle {
+  width: 100%;
+}
+
+.stage-view-toggle {
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  margin-bottom: var(--space-5);
+
+  button {
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--color-text);
+      background: var(--color-surface-hover);
+    }
+
+    &.active {
+      color: var(--color-text);
+      background: color-mix(in oklab, var(--color-primary) 20%, transparent);
+    }
+  }
+}
+
 .fullcolumn {
   width: 100%;
   overflow-x: auto;

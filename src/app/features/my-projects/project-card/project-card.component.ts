@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,6 +34,7 @@ import { Project } from '../../../models/project';
 })
 export class ProjectCardComponent {
   @Input() project!: Project;
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @Output() onView = new EventEmitter<number>();
   @Output() onEdit = new EventEmitter<number>();
   @Output() onDelete = new EventEmitter<number>();
@@ -59,8 +67,16 @@ export class ProjectCardComponent {
     ANALYZING: 'Analyzing',
   };
 
+  openThumbnailPicker(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.fileInputRef?.nativeElement.click();
+  }
+
   onFileSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
     if (file) {
       const allowedTypes = ['image/png', 'image/jpeg'];
       if (allowedTypes.includes(file.type)) {
@@ -74,6 +90,8 @@ export class ProjectCardComponent {
           },
         );
       }
+
+      input.value = '';
     }
   }
 }
