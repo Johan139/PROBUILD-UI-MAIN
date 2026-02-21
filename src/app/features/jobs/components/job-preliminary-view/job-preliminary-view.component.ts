@@ -355,8 +355,9 @@ export class JobPreliminaryViewComponent implements OnInit {
       clientPhone = clientDetails.phone || '';
     }
 
-    // Calculate total project cost
-    const totalCost = this.costAnalysis?.suggestedBid || 0;
+    // Calculate total project cost (align with preliminary "Suggested Bid Price")
+    const totalCost =
+      this.costAnalysis?.suggestedMarketBid || this.costAnalysis?.suggestedBid || 0;
 
     // Build one row per budget phase with cost, then append a total row
     // These phase totals are the same values shown in the Budget tab cards
@@ -382,6 +383,21 @@ export class JobPreliminaryViewComponent implements OnInit {
       .filter((row): row is QuoteRowDto => row !== null);
 
     const rows: QuoteRowDto[] = [...phaseRows];
+
+    // Ensure quote rows add up to the intended project total.
+    // Phase rows are direct costs only, so we add a balancing line for markups/allowances.
+    const directSubtotal = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+    const adjustment = Number((totalCost - directSubtotal).toFixed(2));
+
+    if (Math.abs(adjustment) > 0.01) {
+      rows.push({
+        description: 'GC Overhead, Contingency & Market Adjustment',
+        quantity: 1,
+        unit: 'LS',
+        unitPrice: adjustment,
+        total: adjustment,
+      });
+    }
 
     // Include the project total row in the generated quote?
     // rows.push({
@@ -501,6 +517,57 @@ export class JobPreliminaryViewComponent implements OnInit {
           this.cdr.detectChanges();
         },
       });
+  }
+
+  regenerateQuote() {
+    const jobId = this.projectDetails?.jobId;
+    if (!jobId) {
+      this.snackBar.open('Missing job context. Unable to regenerate quote.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Regenerating will permanently delete the current quote for this job and create a brand new one. This cannot be undone. Continue?',
+    );
+
+    if (!confirmed) return;
+
+    const existingQuoteId =
+      this.generatedQuoteId || this.localStorageService.getItem('quote_job_' + jobId);
+
+    const resetAndGenerate = () => {
+      this.quoteGenerated = false;
+      this.generatedQuoteId = null;
+      this.generatedQuote = null;
+      this.localStorageService.removeItem('quote_job_' + jobId);
+      this.generateQuotation();
+    };
+
+    if (!existingQuoteId) {
+      resetAndGenerate();
+      return;
+    }
+
+    this.isLoading = true;
+    this.quoteService.deleteQuote(existingQuoteId).subscribe({
+      next: () => {
+        this.snackBar.open('Previous quote deleted. Generating a new quote...', 'Close', {
+          duration: 3000,
+        });
+        this.isLoading = false;
+        resetAndGenerate();
+      },
+      error: (err) => {
+        console.error('Failed to delete existing quote before regeneration', err);
+        this.isLoading = false;
+        this.snackBar.open('Could not delete existing quote. Regeneration cancelled.', 'Close', {
+          duration: 4000,
+        });
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   onJobGranted() {

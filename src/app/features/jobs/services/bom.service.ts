@@ -35,6 +35,7 @@ export class BomService {
             parsedReport: this.parseReport(doc.fullResponse),
           }));
         }
+
         return { message: status.message, isProcessingComplete: false };
       }),
       catchError((error) => {
@@ -50,7 +51,7 @@ export class BomService {
       return { sections: [] };
     }
 
-    // console.log('Parsing AI Response:', fullResponse);
+    //console.log('Parsing AI Response:', fullResponse);
 
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {

@@ -18,10 +18,14 @@
         <lucide-angular [img]="Eye" class="btn-icon"></lucide-angular>
         View Quote
       </button>
+      <button class="btn-outline" (click)="regenerateQuote()" [disabled]="isLoading || isSending">
+        <lucide-angular [img]="RefreshCw" class="btn-icon"></lucide-angular>
+        Regenerate Quote
+      </button>
       <button
         class="btn-outline"
         (click)="sendToClient()"
-        [disabled]="isSending"
+        [disabled]="isSending || isLoading"
       >
         <lucide-angular
           [img]="isSending ? Loader : Mail"
@@ -209,7 +213,7 @@
         <div>
           <p class="label">Total Project Cost</p>
           <p class="value">
-            ${{ costAnalysis?.suggestedMarketBid || 0 | number }}
+            ${{ costAnalysis?.suggestedBid || 0 | number }}
           </p>
           <p *ngIf="totalVeSavings > 0" class="savings">
             -${{ totalVeSavings | number }} VE savings
@@ -240,7 +244,9 @@
         </div>
         <div>
           <p class="label">Suggested Bid Price</p>
-          <p class="value">${{ costAnalysis?.suggestedBid || 0 | number }}</p>
+          <p class="value">
+            ${{ costAnalysis?.suggestedMarketBid || costAnalysis?.suggestedBid || 0 | number }}
+          </p>
         </div>
       </div>
       <div class="hero-details">
@@ -512,7 +518,7 @@
     <div class="card-content">
       <div>
         <h3>Ready to Generate Quotation?</h3>
-        <p>We'll create a professional quotation based on your selections.</p>
+        <p>We'll create a quotation based on the suggested bid price.</p>
       </div>
       <button
         class="btn-primary"
@@ -540,7 +546,7 @@
       <div>
         <span>Total Project Cost</span
         ><span class="val"
-          >${{ costAnalysis?.suggestedMarketBid || 0 | number }}</span
+          >${{ costAnalysis?.suggestedBid || 0 | number }}</span
         >
       </div>
       <div>

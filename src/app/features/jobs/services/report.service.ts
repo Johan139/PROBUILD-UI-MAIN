@@ -307,7 +307,7 @@ export class ReportService {
         return null;
       }
       const fullResponse = results[0].fullResponse;
-      //console.log('Full Response for Executive Summary Data:', fullResponse);
+      //console.log('REPORT SERVICE - Full Response for Executive Summary Data:', fullResponse);
 
       // Extract Key Highlights
       const totalCostMatch = fullResponse.match(
