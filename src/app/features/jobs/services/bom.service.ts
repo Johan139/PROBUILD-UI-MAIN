@@ -544,7 +544,7 @@ export class BomService {
               materialBudget: Number(pkg.materialBudget || 0),
               totalBudget: Number(pkg.totalBudget || pkg.budget || 0),
               effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
-              estimatedDuration: pkg.estimatedDuration || (derivedDays ? `${derivedDays} days` : ''),
+
               durationDays: derivedDays,
               startDate: pkg.startDate,
               laborType: pkg.laborType || 'Labor and Materials',
@@ -563,12 +563,7 @@ export class BomService {
               isHidden: !!pkg.isHidden,
               sourceType: pkg.sourceType || null,
               isInHouse: !!pkg.isInHouse,
-              bidType:
-                String(pkg.laborType || '')
-                  .toLowerCase()
-                  .includes('only')
-                  ? 'labor-only'
-                  : 'labor-material',
+
               postedToMarketplace: pkg.postedToMarketplace,
               bids: [], // Bids are loaded separately
               hasInternalQuote: false,
@@ -631,8 +626,7 @@ export class BomService {
                       materialBudget: Math.max(0, totalCost - hours * rate),
                       totalBudget: totalCost,
                       effectiveBudget: totalCost,
-                      estimatedDuration: hours > 0 ? `${Math.max(1, Math.ceil(hours / 8))} days` : null,
-                      durationDays: hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
+
                       startDate: null,
                       laborType: 'Labor and Materials',
                       bidDeadline: null,
@@ -708,7 +702,7 @@ export class BomService {
     id: number,
     laborType: 'Labor and Materials' | 'Labor',
     totalBudget?: number,
-    laborBudget?: number
+    laborBudget?: number,
   ): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/sync-labor-type`, {
       laborType,
