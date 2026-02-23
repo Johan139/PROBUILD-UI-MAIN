@@ -71,6 +71,26 @@ export class RecentProjectsWidgetComponent {
     this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');
   }
 
+  uploadThumbnail(event: { jobId: number; file: File }): void {
+    this.projectService.uploadThumbnail(event.jobId, event.file).subscribe({
+      next: () => {
+        this.snackBar.open('Thumbnail uploaded successfully', 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (err) => {
+        console.error('Thumbnail upload failed in recent projects widget', err);
+        this.snackBar.open(
+          'Thumbnail upload failed. Please try again.',
+          'Close',
+          {
+            duration: 4000,
+          },
+        );
+      },
+    });
+  }
+
   archiveJob(jobId: number): void {
     this.archiveService.archiveJob(jobId).subscribe({
       next: () => {

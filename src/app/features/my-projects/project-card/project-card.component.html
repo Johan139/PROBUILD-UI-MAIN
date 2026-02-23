@@ -46,15 +46,8 @@
           <button mat-menu-item (click)="onArchive.emit(project.jobId)">
             Archive Project
           </button>
-          <button mat-menu-item (click)="fileInput.click()">
+          <button mat-menu-item (click)="openThumbnailPicker($event)">
             Upload Thumbnail
-            <input
-              #fileInput
-              type="file"
-              (change)="onFileSelected($event)"
-              style="display: none"
-              accept="image/png, image/jpeg"
-            />
           </button>
         </mat-menu>
       </div>
@@ -154,3 +147,11 @@
     </mat-card-actions>
   </div>
 </mat-card>
+
+<input
+  #fileInput
+  type="file"
+  (change)="onFileSelected($event)"
+  style="display: none"
+  accept="image/png, image/jpeg"
+/>

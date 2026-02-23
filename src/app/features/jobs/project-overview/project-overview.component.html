@@ -1193,6 +1193,7 @@
         [project]="project"
         (onView)="loadJob($event)"
         (onArchive)="archiveJob($event)"
+        (onUploadThumbnail)="uploadThumbnail($event)"
       ></app-project-card>
     </div>
     <div *ngIf="projectView === 'list'">

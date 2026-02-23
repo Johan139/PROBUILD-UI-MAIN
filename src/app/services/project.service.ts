@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, of, tap, throwError } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { JobsService } from './jobs.service';
+import { JobsService, UploadThumbnailResponse } from './jobs.service';
 import { AuthService } from '../authentication/auth.service';
 import { TeamManagementService } from './team-management.service';
 import { Project } from '../models/project';
@@ -94,18 +94,32 @@ export class ProjectService {
     });
   }
 
-  uploadThumbnail(jobId: number, file: File): void {
-    this.jobsService.uploadJobThumbnail(jobId, file).subscribe((response) => {
-      const currentProjects = this.projects.getValue();
-      const projectIndex = currentProjects.findIndex((p) => p.jobId === jobId);
-      if (projectIndex > -1) {
-        const updatedProjects = [...currentProjects];
-        updatedProjects[projectIndex] = {
-          ...updatedProjects[projectIndex],
-          thumbnailUrl: response.thumbnailUrl,
-        };
-        this.projects.next(updatedProjects);
-      }
-    });
+  uploadThumbnail(
+    jobId: number,
+    file: File,
+  ): Observable<UploadThumbnailResponse> {
+    return this.jobsService.uploadJobThumbnail(jobId, file).pipe(
+      tap((response) => {
+        const currentProjects = this.projects.getValue();
+        const projectIndex = currentProjects.findIndex((p) => p.jobId === jobId);
+        if (projectIndex > -1) {
+          const updatedProjects = [...currentProjects];
+          updatedProjects[projectIndex] = {
+            ...updatedProjects[projectIndex],
+            thumbnailUrl: response.thumbnailUrl,
+          };
+          this.projects.next(updatedProjects);
+
+          const userId = this.authService.getUserId();
+          if (userId) {
+            localStorage.setItem(`projects_${userId}`, JSON.stringify(updatedProjects));
+          }
+        }
+      }),
+      catchError((error) => {
+        console.error('Thumbnail upload failed', error);
+        return throwError(() => error);
+      }),
+    );
   }
 }

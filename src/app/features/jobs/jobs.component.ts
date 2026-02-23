@@ -219,6 +219,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   // Tab State
   activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' =
     'budget';
+  stageDisplayMode: 'stage' | 'live' = 'stage';
 
   // Blueprint Viewer Data
   blueprintFiles: UploadedFileInfo[] = [];
@@ -289,6 +290,14 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
   ): void {
     this.activeTab = tab;
+  }
+
+  setStageDisplayMode(mode: 'stage' | 'live'): void {
+    this.stageDisplayMode = mode;
+  }
+
+  canUseLiveStageView(): boolean {
+    return this.projectStage === 'PRELIMINARY' || this.projectStage === 'BIDDING';
   }
 
   handleTabNavigation(tab: string): void {
@@ -1201,6 +1210,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private determineProjectStage(status: string) {
       if (!status) {
           this.projectStage = 'LIVE'; // Default
+          this.stageDisplayMode = 'live';
           return;
       }
 
@@ -1218,6 +1228,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
           this.projectStage = 'LIVE'; // Fallback
       }
+
+      this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
   }
 
   onAnalysisComplete() {
@@ -1228,6 +1240,11 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   onJobGranted() {
       // Update status to BIDDING
       this.updateJobStatus('BIDDING');
+  }
+
+  onBackToPreliminary() {
+      this.projectStage = 'PRELIMINARY';
+      this.stageDisplayMode = 'stage';
   }
 
   onGoLive() {

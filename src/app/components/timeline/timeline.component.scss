@@ -21,6 +21,19 @@
 .timeline-navigation {
   display: flex; align-items: center; gap: .5rem;
 }
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-left: .75rem;
+}
+.zoom-level {
+  min-width: 3.25rem;
+  text-align: center;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
 .nav-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px;
@@ -125,7 +138,8 @@
   color: var(--color-text);
   cursor: grab;
 
-  &:active {
+  &:active,
+  &.panning {
     cursor: grabbing;
   }
 }
@@ -135,7 +149,7 @@
   min-height: 100%;
   transform-origin: 0 0;
   will-change: transform;
-  background-color: var(--color-surface); 
+  background-color: var(--color-surface);
 }
 .grid-background {
   display: flex;

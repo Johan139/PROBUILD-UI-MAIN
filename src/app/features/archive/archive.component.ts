@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { ArchiveSearchPipe } from './archive-search.pipe';
@@ -15,7 +17,13 @@ import { ArchiveService } from './archive-service';
   standalone: true,
   templateUrl: './archive.component.html',
   styleUrls: ['./archive.component.scss'],
-  imports: [CommonModule, FormsModule, MatIconModule, ArchiveSearchPipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatSnackBarModule,
+    ArchiveSearchPipe,
+  ],
 })
 export class ArchiveComponent implements OnInit {
   /** All archived items (single source of truth) */
@@ -44,6 +52,7 @@ export class ArchiveComponent implements OnInit {
     private archiveService: ArchiveService,
     private dialog: MatDialog,
     private authService: AuthService,
+    private snackBar: MatSnackBar,
   ) {}
 
   // =====================================================
@@ -120,7 +129,19 @@ export class ArchiveComponent implements OnInit {
 
       this.archiveService
         .delete(item.id, item.type)
-        .subscribe(() => this.loadArchivedItems());
+        .subscribe({
+          next: () => {
+            this.loadArchivedItems();
+            this.snackBar.open('Archived item deleted permanently.', 'Close', {
+              duration: 3000,
+            });
+          },
+          error: () => {
+            this.snackBar.open('Failed to delete archived item.', 'Close', {
+              duration: 3000,
+            });
+          },
+        });
     });
   }
 
@@ -140,9 +161,19 @@ export class ArchiveComponent implements OnInit {
     ref.afterClosed().subscribe((ok) => {
       if (!ok) return;
 
-      this.archiveService.emptyArchive().subscribe(() => {
-        this.archivedItems = [];
-        this.updateCounts();
+      this.archiveService.emptyArchive().subscribe({
+        next: () => {
+          this.archivedItems = [];
+          this.updateCounts();
+          this.snackBar.open('Archive emptied successfully.', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: () => {
+          this.snackBar.open('Failed to empty archive.', 'Close', {
+            duration: 3000,
+          });
+        },
       });
     });
   }

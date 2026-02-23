@@ -5,6 +5,10 @@ import { Observable } from 'rxjs';
 
 const BASE_URL = `${environment.BACKEND_URL}/Jobs`;
 
+export interface UploadThumbnailResponse {
+  thumbnailUrl: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -134,10 +138,16 @@ export class JobsService {
     return this.httpClient.get<any[]>(`${BASE_URL}/user-dashboard/${userId}`);
   }
 
-  uploadJobThumbnail(jobId: number, file: File): Observable<any> {
+  uploadJobThumbnail(
+    jobId: number,
+    file: File,
+  ): Observable<UploadThumbnailResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.httpClient.post(`${BASE_URL}/${jobId}/thumbnail`, formData);
+    return this.httpClient.post<UploadThumbnailResponse>(
+      `${BASE_URL}/${jobId}/thumbnail`,
+      formData,
+    );
   }
 
   getClientDetails(jobId: number): Observable<any> {
