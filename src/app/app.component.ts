@@ -191,7 +191,7 @@ export class AppComponent implements OnInit, OnDestroy {
     domSanitizer: DomSanitizer,
     private aiChatStateService: AiChatStateService,
     public themeService: ThemeService,
-    public onboardingService: OnboardingService
+    public onboardingService: OnboardingService,
   ) {
     effect(() => {
       this.themeService.isDarkMode();
@@ -212,7 +212,10 @@ export class AppComponent implements OnInit, OnDestroy {
         this.showHeader = !minimalLayout;
         this.showSidenav = !minimalLayout;
         this.showFooter =
-          !event.urlAfterRedirects.includes('/login') && !minimalLayout;
+          !event.urlAfterRedirects.includes('/login') &&
+          !event.urlAfterRedirects.includes('/register') &&
+          !event.urlAfterRedirects.includes('/trial-registration') &&
+          !minimalLayout;
 
         // ADD THIS LINE - scroll to top
         window.scrollTo(0, 0);

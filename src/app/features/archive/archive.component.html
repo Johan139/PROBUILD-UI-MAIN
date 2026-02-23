@@ -258,6 +258,63 @@
         </div>
       </div>
     </ng-container>
+    <!-- ================= JOB POSTINGS ================= -->
+    <ng-container *ngSwitchCase="'jobs'">
+      <div class="table-header">
+        <span>Job Title</span>
+        <span>Trade</span>
+        <span>Bids</span>
+        <span>Status</span>
+        <span>Archived</span>
+        <span>Actions</span>
+      </div>
+
+      <div
+        class="table-row"
+        *ngFor="let item of archivedJobs | archiveSearch: searchTerm"
+      >
+        <div class="cell main">
+          <strong>{{ item.title }}</strong>
+          <small>{{ item.jobId }}</small>
+        </div>
+
+        <div class="cell">
+          <span class="trade-pill">{{ item.tradeName || "—" }}</span>
+        </div>
+
+        <div class="cell">{{ item.bidsCount ?? 0 }} bids</div>
+
+        <div class="cell">
+          <span class="status" [ngClass]="item.status?.toLowerCase()">
+            {{ item.status }}
+          </span>
+        </div>
+
+        <div class="cell">
+          {{ item.archivedAt | date: "yyyy-MM-dd" }}
+        </div>
+
+        <div class="cell actions">
+          <div class="action-pill">
+            <button
+              class="icon-btn success"
+              matTooltip="Restore project"
+              (click)="unarchive(item)"
+            >
+              <mat-icon>restore</mat-icon>
+            </button>
+
+            <button
+              class="icon-btn danger"
+              matTooltip="Delete permanently"
+              (click)="delete(item)"
+            >
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </div>
 
   <!-- ================= EMPTY STATE ================= -->

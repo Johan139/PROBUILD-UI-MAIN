@@ -23,7 +23,7 @@ import { MatDialogModule } from '@angular/material/dialog';
       <mat-dialog-actions align="end">
         <button
           mat-button
-          class="dialog-btn confirm-btn"
+          class="dialog-btn cancel-btn"
           (click)="dialogRef.close(false)"
         >
           Cancel
@@ -47,13 +47,31 @@ import { MatDialogModule } from '@angular/material/dialog';
         font-weight: 500;
         transition: background-color 0.3s ease;
       }
-      .confirm-btn {
-        background-color: #fbd008; /* Red */
-        color: black;
+
+      .cancel-btn {
+        background-color: transparent;
+        color: #aaaaaa;
+        border: 1px solid #555555;
       }
 
-      .confirm-btn:hover {
-        background-color: #fbd008; /* Darker red */
+      .cancel-btn:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+      }
+
+      .confirm-btn {
+        background-color: #fbd008;
+        color: #000000;
+      }
+
+      .confirm-btn:hover:not([disabled]) {
+        background-color: #e0bb00;
+      }
+
+      .confirm-btn[disabled] {
+        background-color: #555;
+        color: #888;
+        cursor: not-allowed;
       }
     `,
   ],

@@ -10,13 +10,15 @@ import {
 } from '../../../../models/external-data';
 import { ExternalDataService } from '../../../../services/external-data.service';
 import { InvitationService } from '../../../../services/invitation.service';
-
+import { BomService } from '../../../jobs/services/bom.service';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmationDialogComponent } from '../../../quote/confirmation-dialog.component';
 @Component({
   selector: 'app-my-job-postings',
   templateUrl: './my-job-postings.component.html',
   styleUrls: ['./my-job-postings.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, FormsModule]
+  imports: [CommonModule, MatIconModule, MatButtonModule, FormsModule],
 })
 export class MyJobPostingsComponent {
   @Input() myPostings: Job[] = [];
@@ -30,38 +32,82 @@ export class MyJobPostingsComponent {
   subcontractorSearch: string = '';
   emailInvite: string = '';
 
-  availableSubcontractorsByJob: Record<number, ExternalCompanyWithContacts[]> = {};
+  availableSubcontractorsByJob: Record<number, ExternalCompanyWithContacts[]> =
+    {};
   subcontractorLoadingByJob: Record<number, boolean> = {};
   subcontractorErrorByJob: Record<number, string> = {};
 
   constructor(
     private externalDataService: ExternalDataService,
     private invitationService: InvitationService,
+    private bomService: BomService,
+    private dialog: MatDialog,
   ) {}
 
   getTotalBidsReceived(): number {
-    return this.myPostings.reduce((acc, job) => acc + (job.numberOfBids || 0), 0);
+    return this.myPostings.reduce(
+      (acc, job) => acc + (job.numberOfBids || 0),
+      0,
+    );
   }
 
   getTotalPostingsValue(): string {
     const total = this.myPostings.reduce((acc, job) => {
-        if (job.tradeBudgets && job.tradeBudgets.length > 0) {
-            return acc + job.tradeBudgets.reduce((sum, item) => sum + item.budget, 0);
-        }
-        return acc;
+      if (job.tradeBudgets && job.tradeBudgets.length > 0) {
+        return (
+          acc + job.tradeBudgets.reduce((sum, item) => sum + item.budget, 0)
+        );
+      }
+      return acc;
     }, 0);
 
     if (total > 1000000) {
-        return `$${(total / 1000000).toFixed(1)}M`;
+      return `$${(total / 1000000).toFixed(1)}M`;
     } else if (total > 1000) {
-        return `$${(total / 1000).toFixed(0)}K`;
+      return `$${(total / 1000).toFixed(0)}K`;
     }
     return `$${total}`;
   }
+  archiveJob(job: Job, event: MouseEvent): void {
+    event.stopPropagation();
 
+    const tradePackageId = (job as any).tradePackageId;
+    if (!tradePackageId) {
+      alert('No trade package found for this job.');
+      return;
+    }
+
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          title: 'Archive Job',
+          message: `Are you sure you want to archive "${job.projectName}"?`,
+          confirmText: 'Archive',
+          confirmColor: 'warn',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (!confirmed) return;
+
+        this.bomService.archivePackage(tradePackageId).subscribe({
+          next: () => {
+            this.myPostings = this.myPostings.filter(
+              (j) => j.jobId !== job.jobId,
+            );
+          },
+          error: () => {
+            alert('Failed to archive job. Please try again.');
+          },
+        });
+      });
+  }
   getJobBudget(job: Job): string {
     if (job.tradeBudgets && job.tradeBudgets.length > 0) {
-      const total = job.tradeBudgets.reduce((sum, item) => sum + item.budget, 0);
+      const total = job.tradeBudgets.reduce(
+        (sum, item) => sum + item.budget,
+        0,
+      );
       return `$${total.toLocaleString()}`;
     }
     return 'N/A';
@@ -183,7 +229,10 @@ export class MyJobPostingsComponent {
       return;
     }
 
-    const nameParts = (contact?.fullName || '').trim().split(' ').filter(Boolean);
+    const nameParts = (contact?.fullName || '')
+      .trim()
+      .split(' ')
+      .filter(Boolean);
     const firstName = nameParts[0] || row.company.name;
     const lastName = nameParts.slice(1).join(' ') || 'Team';
 
