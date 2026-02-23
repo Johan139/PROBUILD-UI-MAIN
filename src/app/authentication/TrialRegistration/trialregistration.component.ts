@@ -445,6 +445,15 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
 
   onPhoneInput(event: Event): void {
     const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+
+    if (inputEvent.inputType?.startsWith('delete')) {
+      this.registrationForm
+        .get('phoneNumber')
+        ?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
     const countryCode = (this.selectedCountryCode?.countryCode ||
       'ZA') as CountryCode;
     const formatted = new AsYouType(countryCode).input(input.value);

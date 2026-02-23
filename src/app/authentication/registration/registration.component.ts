@@ -531,14 +531,21 @@ export class RegistrationComponent implements OnInit {
 
   onPhoneInput(event: Event): void {
     const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+
+    if (inputEvent.inputType?.startsWith('delete')) {
+      this.registrationForm
+        .get('phoneNumber')
+        ?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
     const countryCode = (this.selectedCountryCode?.countryCode ||
       'US') as CountryCode;
-    // AsYouType formats as the user types (adds spaces, dashes per country standard)
     const formatted = new AsYouType(countryCode).input(input.value);
     this.registrationForm
       .get('phoneNumber')
       ?.setValue(formatted, { emitEvent: false });
-    // Don't move cursor — let browser handle it naturally for typing
   }
 
   onPhonePaste(event: ClipboardEvent): void {

@@ -98,11 +98,9 @@
                               formControlName="phoneNumber"
                               placeholder="Enter mobile number"
                               required
-                              (focus)="onPhoneFocus($event)"
-                              (keydown)="onPhoneKeyDown($event)"
-                              (click)="onPhoneClick($event)"
-                              (blur)="onPhoneBlur()"
+                              (input)="onPhoneInput($event)"
                               (paste)="onPhonePaste($event)"
+                              (blur)="onPhoneBlur()"
                             />
 
                             <mat-error
@@ -113,6 +111,16 @@
                               "
                             >
                               Mandatory Field: Input Required.
+                            </mat-error>
+                            <mat-error
+                              *ngIf="
+                                profileForm
+                                  .get('phoneNumber')
+                                  ?.hasError('invalidPhone')
+                              "
+                            >
+                              Please enter a valid phone number for the selected
+                              country.
                             </mat-error>
                           </mat-form-field>
                         </div>
@@ -246,6 +254,7 @@
                             <mat-select
                               [(value)]="selectedCompanyCountryCode"
                               (selectionChange)="onCountryChanged(true)"
+                              [compareWith]="compareCountryCodes"
                             >
                               <mat-option
                                 *ngFor="let c of countryNumberCode"
@@ -270,11 +279,9 @@
                               formControlName="companyPhone"
                               placeholder="Enter mobile number"
                               required
-                              (focus)="onPhoneFocus($event, true)"
-                              (keydown)="onPhoneKeyDown($event, true)"
-                              (click)="onPhoneClick($event, true)"
-                              (blur)="onPhoneBlur(true)"
+                              (input)="onPhoneInput($event, true)"
                               (paste)="onPhonePaste($event, true)"
+                              (blur)="onPhoneBlur(true)"
                             />
 
                             <mat-error
@@ -285,6 +292,16 @@
                               "
                             >
                               Mandatory Field: Input Required.
+                            </mat-error>
+                            <mat-error
+                              *ngIf="
+                                profileForm
+                                  .get('companyPhone')
+                                  ?.hasError('invalidPhone')
+                              "
+                            >
+                              Please enter a valid phone number for the selected
+                              country.
                             </mat-error>
                           </mat-form-field>
                         </div>
