@@ -241,13 +241,14 @@
 
         <div class="modal-actions">
           <button
+            *ngIf="canViewGroupTimeline"
             class="btn btn-primary"
             (click)="viewGroupTimeline(selectedGroup!)"
           >
             View this task's timeline
           </button>
           <button class="btn btn-secondary" (click)="closeGroupModal()">Close</button>
-          <button class="btn btn-primary" *ngIf="isProjectOwner" (click)="editGroup(selectedGroup!)">Edit Tasks</button>
+          <!-- <button class="btn btn-primary" *ngIf="isProjectOwner" (click)="editGroup(selectedGroup!)">Edit Tasks</button> -->
         </div>
       </div>
     </ng-template>

@@ -458,6 +458,7 @@ export class ReportService {
     sheetCount: number;
     roomCount: number;
     rooms: { name: string; area: string }[];
+    underRoofArea?: number;
     dimensionalAccuracy?: number;
     completeness?: number;
     readability?: number;
@@ -475,6 +476,7 @@ export class ReportService {
       let sheetCount = 0;
       let roomCount = 0;
       let rooms: { name: string; area: string }[] = [];
+      let underRoofArea = 0;
       let dimensionalAccuracy = 0;
       let completeness = 0;
       let readability = 0;
@@ -520,6 +522,20 @@ export class ReportService {
       if (sheetMatch && sheetMatch[1]) {
         const sheets = sheetMatch[1].split(',').map((s) => s.trim());
         sheetCount = sheets.length;
+      }
+
+      // 2. Extract Total Under-Roof Area from metadata report/table when present
+      // Supports values like:
+      // - "**Total Under-Roof Area (sq ft)**: 5,030"
+      // - "| **Total Under-Roof Area** | 5,171 sq ft (Per Sheet A-1) |"
+      const underRoofMatch = fullResponse.match(
+        /Total\s+Under[-\s]?Roof\s+Area(?:\s*\(sq\s*ft\))?\*{0,2}\s*(?:[:|]\s*)?(?:\*{0,2}\s*)?([0-9][0-9,]*(?:\.[0-9]+)?)/i,
+      );
+      if (underRoofMatch && underRoofMatch[1]) {
+        const parsed = parseFloat(underRoofMatch[1].replace(/,/g, ''));
+        if (!isNaN(parsed)) {
+          underRoofArea = parsed;
+        }
       }
 
       // 3. Extract Room Count (from Room Identification Table)
@@ -571,6 +587,7 @@ export class ReportService {
         sheetCount,
         roomCount,
         rooms,
+        underRoofArea,
         dimensionalAccuracy,
         completeness,
         readability,
@@ -582,6 +599,7 @@ export class ReportService {
         sheetCount: 0,
         roomCount: 0,
         rooms: [],
+        underRoofArea: 0,
         dimensionalAccuracy: 0,
         completeness: 0,
         readability: 0,

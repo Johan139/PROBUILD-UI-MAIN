@@ -85,7 +85,7 @@ export class ProjectOverviewComponent {
   @Input() startDateDisplay: any;
   @Input() forecast: any[] | undefined = [];
   @Input() weatherError: string | null | undefined = null;
-  @Input() temperatureUnit: string = 'C';
+  @Input() temperatureUnit: 'C' | 'F' = 'C';
 
   @Output() jobArchived = new EventEmitter<number>();
 
@@ -126,6 +126,8 @@ export class ProjectOverviewComponent {
   spentToDate: number = 0;
   remainingBudget: number = 0;
   bidPrice: number = 0;
+  totalProjectCost: number = 0;
+  costToBuild: number = 0;
   grossProfit: number = 0;
   profitMargin: number = 0;
   profitAtRisk: number = 0;
@@ -156,6 +158,7 @@ export class ProjectOverviewComponent {
   dimensionalAccuracy: number = 0;
   completeness: number = 0;
   readability: number = 0;
+  projectTotalArea: number | null = null;
   totalArea: number = 0;
   blueprintRooms: { name: string; area: string }[] = [];
 
@@ -221,6 +224,11 @@ export class ProjectOverviewComponent {
     private archiveService: ArchiveService,
   ) {}
 
+  setUnit(unit: 'C' | 'F'): void {
+    this.temperatureUnit = unit;
+    localStorage.setItem('tempUnit', unit);
+  }
+
   ngOnChanges(): void {
     if (this.projectDetails?.jobId) {
       this.localStorageKey = `project_overview_${this.projectDetails.jobId}`;
@@ -279,6 +287,8 @@ export class ProjectOverviewComponent {
       this.blueprintSheetCount = data.sheetCount;
       this.blueprintRoomCount = data.roomCount;
       this.blueprintRooms = data.rooms;
+      this.projectTotalArea =
+        data.underRoofArea && data.underRoofArea > 0 ? data.underRoofArea : null;
 
       this.dimensionalAccuracy = data.dimensionalAccuracy || 0;
       this.completeness = data.completeness || 0;
@@ -462,14 +472,26 @@ export class ProjectOverviewComponent {
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    this.reportService.getCostSummary(jobId).then((summary) => {
-      if (summary.bidPrice > 0) {
-        this.bidPrice = summary.bidPrice;
-        this.baselineCost = summary.directCosts;
-        this.overheadAndProfit = summary.overheadAndProfit;
-        this.contingency = summary.contingency;
-        this.escalation = summary.escalation;
-        this.taxes = summary.taxes;
+    this.reportService.getDetailedCostSummary(jobId).then((summary) => {
+      if (summary) {
+        this.costToBuild =
+          Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
+        this.totalProjectCost = Number(summary.suggestedBid || 0);
+        const marketBid = Number(summary.suggestedMarketBid || 0);
+
+        // Align with preliminary semantics:
+        // - Total Project Cost = suggestedBid
+        // - Suggested Bid Price = suggestedMarketBid
+        // Guardrail: never show client bid below total project cost
+        this.bidPrice = Math.max(this.totalProjectCost, marketBid);
+
+        // Use project total as budget baseline so cards stay consistent across pages.
+        this.baselineCost = this.totalProjectCost || Number(summary.directSubtotal || 0);
+        this.overheadAndProfit = Number(summary.overhead || 0);
+        this.contingency = Number(summary.contingency || 0);
+        this.escalation = Number(summary.escalation || 0);
+        this.taxes = Number(summary.taxes || 0);
+
         this.calculateProfitMetrics();
       }
     });
@@ -494,11 +516,12 @@ export class ProjectOverviewComponent {
   calculateBudgetStats(items: any[]): void {
     if (!items || items.length === 0) return;
 
-    // Active Value (Cost)
-    this.activeValue = items.reduce(
+    const estimatedFromBudget = items.reduce(
       (sum, item) => sum + (item.estimatedCost || 0),
       0,
     );
+
+    this.activeValue = estimatedFromBudget;
 
     this.spentToDate = items.reduce(
       (sum, item) => sum + (item.actualCost || 0),
@@ -544,27 +567,35 @@ export class ProjectOverviewComponent {
   calculateProfitMetrics(): void {
     // Baseline Cost should include Taxes as it's a hard cost
     const costBaseline = this.baselineCost + this.taxes;
+    const budgetForProfit = this.overallBudgetValue;
 
     // If we have a baseline cost from the report, and the current tracked items (activeValue)
-    // are significantly lower (e.g. data not fully imported), default to the baseline to show a realistic budget.
-    if (costBaseline > 0 && this.activeValue < costBaseline) {
-      this.activeValue = costBaseline;
-      this.remainingBudget = this.activeValue - this.spentToDate;
+    // are significantly lower (e.g. data not fully imported), default to the baseline to show a realistic budget
+    if (costBaseline > 0 && budgetForProfit < costBaseline) {
+      this.remainingBudget = costBaseline - this.spentToDate;
     }
 
     if (this.bidPrice > 0) {
-      this.grossProfit = this.bidPrice - this.activeValue;
+      this.grossProfit = this.bidPrice - budgetForProfit;
       this.profitMargin = (this.grossProfit / this.bidPrice) * 100;
 
       // Profit at Risk: If current estimated cost (activeValue) exceeds baseline
       if (costBaseline > 0) {
-        this.profitAtRisk = Math.max(0, this.activeValue - costBaseline);
+        this.profitAtRisk = Math.max(0, budgetForProfit - costBaseline);
       } else {
         // Fallback if no baseline: Assume 20% margin was target
         const targetCost = this.bidPrice / 1.2;
-        this.profitAtRisk = Math.max(0, this.activeValue - targetCost);
+        this.profitAtRisk = Math.max(0, budgetForProfit - targetCost);
       }
     }
+  }
+
+  get overallBudgetValue(): number {
+    return this.totalProjectCost > 0 ? this.totalProjectCost : this.activeValue;
+  }
+
+  get overallRemainingBudget(): number {
+    return this.overallBudgetValue - this.spentToDate;
   }
 
   get profitBreakdownTooltip(): string {

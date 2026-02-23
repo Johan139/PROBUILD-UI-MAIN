@@ -1,26 +1,206 @@
+<div class="not-found-state" *ngIf="!hasAccess; else authorizedBlueprintTest">
+  <h1>404 - Page Not Found</h1>
+  <a routerLink="/dashboard" class="dashboard-button">Back to Dashboard</a>
+</div>
+
+<ng-template #authorizedBlueprintTest>
 <div class="test-page-container">
   <div class="content-panel" [class.full-width]="!isViewerVisible || isPoppedOut">
-    <h2>Subscription Warning Test</h2>
-    <app-subscription-warning [subscriptionActive]="false" [isLoading]="false"></app-subscription-warning>
-    <br/>
+    <mat-tab-group>
+      <mat-tab label="Components Test">
+        <h2>Subscription Warning Test</h2>
+        <app-subscription-warning [subscriptionActive]="false" [isLoading]="false"></app-subscription-warning>
+        <br/>
     <hr/>
     <br/>
-    <h2>Lipsum</h2>
-    <p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      </mat-tab>
+      <mat-tab label="Rich Text Editor">
+        <div class="rich-text-test-panel">
+          <h2>Rich Text Editor Test</h2>
+          <app-rich-text-editor
+            [initialContent]="testContent"
+          ></app-rich-text-editor>
+        </div>
+      </mat-tab>
 
-Section 1.10.32 of "de Finibus Bonorum et Malorum", written by Cicero in 45 BC
-"Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?"
+      <mat-tab label="Apollo / External Data Test">
+        <div class="apollo-test-wrap">
+          <h2>Apollo Direct API Testing (No Backend Persistence)</h2>
+          <p>
+            This test tab calls Apollo directly from the browser. Use for exploratory testing only.
+          </p>
 
-1914 translation by H. Rackham
-"But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure. To take a trivial example, which of us ever undertakes laborious physical exercise, except to obtain some advantage from it? But who has any right to find fault with a man who chooses to enjoy a pleasure that has no annoying consequences, or one who avoids a pain that produces no resultant pleasure?"
+          <div class="apollo-instructions">
+            <mat-accordion class="apollo-accordion" multi>
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>How this test works (important)</mat-panel-title>
+                </mat-expansion-panel-header>
+                <ul class="instruction-list">
+                  <li>Requests are sent directly from your browser to Apollo endpoints.</li>
+                  <li>No data from this tab is persisted to ProBuild backend storage.</li>
+                  <li>Use this for exploratory validation and payload inspection only.</li>
+                  <li>Successful responses are shown as formatted JSON in the two response panels below.</li>
+                  <li>Errors (401/403/422/429/etc.) are rendered in the error block above each response panel.</li>
+                </ul>
+              </mat-expansion-panel>
 
-Section 1.10.33 of "de Finibus Bonorum et Malorum", written by Cicero in 45 BC
-"At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus. Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat."
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Field-by-field input guide</mat-panel-title>
+                </mat-expansion-panel-header>
+                <ul class="instruction-list">
+                  <li>
+                    <strong>Apollo API Key</strong>: Required for both actions. Paste your valid Apollo secret key.
+                    This is applied as <code>X-Api-Key</code> and <code>Authorization: Bearer ...</code>.
+                  </li>
+                  <li>
+                    <strong>Company Name</strong>: Company/org name hint used in keyword search and enrich fallback.
+                    Example: <code>ACME Construction Ltd</code>.
+                  </li>
+                  <li>
+                    <strong>Domain (optional)</strong>: Preferred for enrich calls when available. Example:
+                    <code>acme.com</code> (no protocol needed).
+                  </li>
+                  <li>
+                    <strong>Trade</strong>: Trade keyword to guide subcontractor discovery.
+                    Example values: <code>Electrical</code>, <code>Plumbing</code>, <code>Drywall</code>,
+                    <code>Roofing</code>.
+                  </li>
+                  <li>
+                    <strong>City</strong>: Geographic search hint. Example: <code>London</code>.
+                  </li>
+                  <li>
+                    <strong>State / Region</strong>: Region hint to narrow discovery. Example:
+                    <code>Greater London</code>, <code>Texas</code>.
+                  </li>
+                  <li>
+                    <strong>Search limit</strong>: Max records for <code>mixed_companies/search</code>. Recommended
+                    range: <code>5-25</code> for quick tests.
+                  </li>
+                </ul>
+              </mat-expansion-panel>
 
-1914 translation by H. Rackham
-"On the other hand, we denounce with righteous indignation and dislike men who are so beguiled and demoralized by the charms of pleasure of the moment, so blinded by desire, that they cannot foresee the pain and trouble that are bound to ensue; and equal blame belongs to those who fail in their duty through weakness of will, which is the same as saying through shrinking from toil and pain. These cases are perfectly simple and easy to distinguish. In a free hour, when our power of choice is untrammelled and when nothing prevents our being able to do what we like best, every pleasure is to be welcomed and every pain avoided. But in certain circumstances and owing to the claims of duty or the obligations of business it will frequently occur that pleasures have to be repudiated and annoyances accepted. The wise man therefore always holds in these matters to this principle of selection: he rejects pleasures to secure other greater pleasures, or else he endures pains to avoid worse pains."</p>
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Which button to use and when</mat-panel-title>
+                </mat-expansion-panel-header>
+                <ul class="instruction-list">
+                  <li>
+                    <strong>Run mixed_companies/search</strong>: broad discovery flow. Builds a keyword query from
+                    company/trade/city/state + <code>subcontractor</code>.
+                  </li>
+                  <li>
+                    This tester also applies Apollo query params from docs for discovery quality:
+                    <code>organization_locations[]</code> and <code>q_organization_keyword_tags[]</code>.
+                  </li>
+                  <li>
+                    <strong>Run organizations/enrich</strong>: organization enrichment flow.
+                    Uses <strong>Domain</strong> when provided, otherwise uses <strong>Company Name</strong>.
+                  </li>
+                  <li>
+                    <strong>Clear Results</strong>: clears both response and error boxes so you can run clean tests.
+                  </li>
+                </ul>
+              </mat-expansion-panel>
+
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Recommended test workflow</mat-panel-title>
+                </mat-expansion-panel-header>
+                <ol class="instruction-list numbered">
+                  <li>Paste Apollo API key.</li>
+                  <li>Set trade + location hints first (trade/city/state).</li>
+                  <li>Run <code>mixed_companies/search</code> and inspect returned organizations.</li>
+                  <li>Take one returned domain or organization name and place it in Domain/Company Name.</li>
+                  <li>Run <code>organizations/enrich</code> and compare detail quality.</li>
+                  <li>Use Clear Results between test cases for cleaner diffing/screenshots.</li>
+                </ol>
+              </mat-expansion-panel>
+            </mat-accordion>
+          </div>
+
+          <div class="apollo-grid">
+            <label>
+              Apollo API Key
+              <input type="password" [(ngModel)]="apolloApiKey" placeholder="Enter Apollo API key" />
+            </label>
+
+            <label>
+              Company Name
+              <input type="text" [(ngModel)]="apolloCompanyName" placeholder="e.g. ACME Construction" />
+            </label>
+
+            <label>
+              Domain (optional)
+              <input type="text" [(ngModel)]="apolloDomain" placeholder="e.g. acme.com" />
+            </label>
+
+            <label>
+              Trade
+              <input type="text" [(ngModel)]="apolloTrade" placeholder="e.g. Electrical" />
+            </label>
+
+            <label>
+              City
+              <input type="text" [(ngModel)]="apolloCity" placeholder="e.g. London" />
+            </label>
+
+            <label>
+              State / Region
+              <input type="text" [(ngModel)]="apolloState" placeholder="e.g. Greater London" />
+            </label>
+
+            <label>
+              Search limit
+              <input type="number" [(ngModel)]="apolloLimit" min="1" max="50" />
+            </label>
+
+            <label>
+              Start page
+              <input type="number" [(ngModel)]="apolloPage" min="1" />
+            </label>
+
+            <label>
+              Pages to scan
+              <input type="number" [(ngModel)]="apolloPagesToScan" min="1" max="20" />
+            </label>
+
+            <label>
+              Relevance filter
+              <input type="checkbox" [(ngModel)]="apolloApplyRelevanceFilter" />
+            </label>
+          </div>
+
+          <div class="apollo-actions">
+            <button (click)="runApolloMixedCompanySearch()" [disabled]="apolloSearchLoading || !apolloApiKey">
+              {{ apolloSearchLoading ? 'Running Search...' : 'Run mixed_companies/search' }}
+            </button>
+            <button (click)="runApolloOrganizationEnrich()" [disabled]="apolloEnrichLoading || !apolloApiKey || (!apolloCompanyName && !apolloDomain)">
+              {{ apolloEnrichLoading ? 'Running Enrich...' : 'Run organizations/enrich' }}
+            </button>
+            <button class="secondary" (click)="clearApolloResults()">Clear Results</button>
+          </div>
+
+          <div class="apollo-result-grid">
+            <div class="apollo-result-card">
+              <h3>Search Response</h3>
+              <div class="error" *ngIf="apolloSearchError">{{ apolloSearchError }}</div>
+              <pre>{{ apolloSearchResponse || 'No response yet.' }}</pre>
+            </div>
+
+            <div class="apollo-result-card">
+              <h3>Enrich Response</h3>
+              <div class="error" *ngIf="apolloEnrichError">{{ apolloEnrichError }}</div>
+              <pre>{{ apolloEnrichResponse || 'No response yet.' }}</pre>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
   </div>
-  <div class="viewer-container" *ngIf="!isPoppedOut">
+  <!-- <div class="viewer-container" *ngIf="!isPoppedOut">
     <app-pdf-viewer [blueprints]="blueprints"></app-pdf-viewer>
-  </div>
+  </div> -->
 </div>
+</ng-template>

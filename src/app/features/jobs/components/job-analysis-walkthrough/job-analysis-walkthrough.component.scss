@@ -11,6 +11,17 @@ lucide-angular {
 }
 
 .analysis-container {
+  --gray-900: var(--color-surface);
+  --gray-800: var(--color-border);
+  --gray-700: var(--color-border);
+  --gray-600: var(--color-text-muted);
+  --gray-500: var(--color-text-muted);
+  --gray-400: var(--color-text-muted);
+  --gray-300: color-mix(in oklab, var(--color-text) 75%, var(--color-surface));
+  --white: var(--color-text);
+  --brand-yellow-primary: var(--color-primary);
+  --brand-yellow-accent: var(--color-primary-hover);
+
   padding: 1.5rem;
   max-width: 64rem;
   margin: 0 auto;

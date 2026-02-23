@@ -5,8 +5,10 @@
       <span>Total Budget</span>
       <mat-icon class="text-yellow">attach_money</mat-icon>
     </div>
-    <p class="metric-value">${{ totalEstimated / 1000 | number: "1.0-0" }}K</p>
-    <p class="metric-subtext">Original estimate</p>
+    <p class="metric-value">${{ displayTotalBudget / 1000 | number: "1.0-0" }}K</p>
+    <p class="metric-subtext">
+      {{ totalProjectCost > 0 ? "AI total project cost" : "Original estimate" }}
+    </p>
   </div>
 
   <div class="dashboard-card">
@@ -16,7 +18,10 @@
     </div>
     <p class="metric-value">${{ totalActual / 1000 | number: "1.0-0" }}K</p>
     <p class="metric-subtext">
-      {{ (totalActual / totalEstimated) * 100 | number: "1.1-1" }}% of budget
+      {{
+        (displayTotalBudget > 0 ? totalActual / displayTotalBudget : 0)
+          * 100 | number: "1.1-1"
+      }}% of budget
     </p>
   </div>
 
@@ -38,12 +43,12 @@
     </div>
     <p
       class="metric-value"
-      [ngClass]="variance >= 0 ? 'text-green' : 'text-red'"
+      [ngClass]="budgetVariance >= 0 ? 'text-green' : 'text-red'"
     >
-      {{ variance >= 0 ? "+" : "" }}${{ variance / 1000 | number: "1.0-0" }}K
+      {{ budgetVariance >= 0 ? "+" : "" }}${{ budgetVariance / 1000 | number: "1.0-0" }}K
     </p>
     <p class="metric-subtext">
-      {{ variance >= 0 ? "Under" : "Over" }} budget by {{ variancePercent }}%
+      {{ budgetVariance >= 0 ? "Under" : "Over" }} budget by {{ budgetVariancePercent }}%
     </p>
   </div>
 </div>

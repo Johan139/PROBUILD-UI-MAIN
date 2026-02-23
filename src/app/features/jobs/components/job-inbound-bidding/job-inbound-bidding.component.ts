@@ -100,7 +100,8 @@ export class JobInboundBiddingComponent implements OnInit {
 
   ngOnInit() {
     if (this.projectDetails?.jobId) {
-      this.loadPackages(this.projectDetails.jobId);
+      // Auto-refresh on first entry so users don't have to click the button manually
+      this.refreshPackages(false);
     }
   }
 
@@ -494,18 +495,23 @@ export class JobInboundBiddingComponent implements OnInit {
       this.goLive.emit();
   }
 
-  refreshPackages() {
+  refreshPackages(showToast: boolean = true) {
     if (!this.projectDetails?.jobId) return;
 
     this.isLoading = true;
     this.bomService.refreshTradePackages(this.projectDetails.jobId).subscribe({
       next: () => {
-        this.snackBar.open('Trade packages refreshed', 'Close', { duration: 3000 });
+        if (showToast) {
+          this.snackBar.open('Trade packages refreshed', 'Close', { duration: 3000 });
+        }
         this.loadPackages(this.projectDetails.jobId);
       },
       error: (err) => {
         console.error('Failed to refresh packages', err);
-        this.snackBar.open('Failed to refresh trade packages', 'Close', { duration: 3000 });
+        if (showToast) {
+          this.snackBar.open('Failed to refresh trade packages', 'Close', { duration: 3000 });
+        }
+        this.loadPackages(this.projectDetails.jobId);
         this.isLoading = false;
       }
     });

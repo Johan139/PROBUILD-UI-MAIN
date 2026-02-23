@@ -111,6 +111,8 @@ export class JobPreliminaryViewComponent implements OnInit {
         (item) => (this.veSelections[item.id] = false),
       );
 
+      this.hydrateExecutiveSummaryHighlights();
+
       if (boms && boms.length > 0 && boms[0].parsedReport) {
         this.processBoms(boms[0].parsedReport);
       }
@@ -122,6 +124,64 @@ export class JobPreliminaryViewComponent implements OnInit {
 
       this.isLoading = false;
     });
+  }
+
+  private hydrateExecutiveSummaryHighlights(): void {
+    if (!this.executiveSummary?.keyHighlights?.length) {
+      return;
+    }
+
+    this.executiveSummary.keyHighlights = this.executiveSummary.keyHighlights.map(
+      (item: any) => {
+        const label = (item?.label || '').toLowerCase();
+
+        if (label.includes('total project cost')) {
+          const totalProjectCost =
+            this.costAnalysis?.suggestedBid ||
+            this.costAnalysis?.suggestedMarketBid ||
+            this.costAnalysis?.totalCost ||
+            0;
+
+          return {
+            ...item,
+            value: totalProjectCost > 0 ? `$${Number(totalProjectCost).toLocaleString()}` : 'N/A',
+          };
+        }
+
+        if (label.includes('project duration')) {
+          return {
+            ...item,
+            value: this.stripMarkdown(item?.value || 'N/A'),
+          };
+        }
+
+        if (label.includes('value engineering')) {
+          return {
+            ...item,
+            value:
+              this.totalVePotentialSavings > 0
+                ? `$${this.totalVePotentialSavings.toLocaleString()}`
+                : 'N/A',
+          };
+        }
+
+        return item;
+      },
+    );
+  }
+
+  private stripMarkdown(text: string): string {
+    return String(text)
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/_(.*?)_/g, '$1')
+      .replace(/`([^`]*)`/g, '$1')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+      .replace(/^>\s?/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   processBoms(report: any) {
@@ -630,6 +690,13 @@ export class JobPreliminaryViewComponent implements OnInit {
     return this.valueEngineering
       .filter(ve => this.veSelections[ve.id])
       .reduce((sum, ve) => sum + ve.savings, 0);
+  }
+
+  get totalVePotentialSavings(): number {
+    return this.valueEngineering.reduce(
+      (sum, ve) => sum + Number(ve?.savings || 0),
+      0,
+    );
   }
 
   get objectKeys() {

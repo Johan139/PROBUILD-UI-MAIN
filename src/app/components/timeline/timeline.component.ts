@@ -51,6 +51,7 @@ export interface TimelineTask {
 }
 
 export interface TimelineGroup {
+  id?: string;
   title: string;
   subtasks: TimelineTask[];
   startDate?: Date;
@@ -73,6 +74,7 @@ export class TimelineComponent
 {
   @Input() taskGroups: TimelineGroup[] = [];
   @Input() isProjectOwner: boolean = false;
+  @Input() canViewGroupTimeline: boolean = true;
   @Output() onGroupClick = new EventEmitter<TimelineGroup>();
   @Output() onGroupDoubleClick = new EventEmitter<TimelineGroup>();
   @Output() onGroupMove = new EventEmitter<{
@@ -484,6 +486,10 @@ export class TimelineComponent
   }
 
   viewGroupTimeline(group: TimelineGroup) {
+    if (!this.canViewGroupTimeline) {
+      return;
+    }
+
     this.closeGroupModal();
     this.onGroupDoubleClick.emit(group);
   }
@@ -593,7 +599,7 @@ export class TimelineComponent
 
         if (clampedDaysDelta !== 0) {
           this.onGroupMove.emit({
-            groupId: group.title,
+            groupId: group.id || group.title,
             newStartDate,
             newEndDate,
           });

@@ -1,4 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  NgZone,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +23,8 @@ import {
   SignalrService,
   AnalysisProgressUpdate,
 } from '../jobs/services/signalr.service';
+import { Subscription, interval } from 'rxjs';
+import { startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-my-projects',
@@ -36,7 +44,7 @@ import {
   templateUrl: './my-projects.component.html',
   styleUrls: ['./my-projects.component.scss'],
 })
-export class MyProjectsComponent implements OnInit {
+export class MyProjectsComponent implements OnInit, OnDestroy {
   isLoading = false;
   projects: Project[] = [];
   filteredProjects: Project[] = [];
@@ -55,12 +63,17 @@ export class MyProjectsComponent implements OnInit {
   draftProjectsCount = 0;
   failedProjectsCount = 0;
 
+  private analysisProgressSubscription?: Subscription;
+  private analysisStatePollingSubscription?: Subscription;
+
   constructor(
     private router: Router,
     private jobDataService: JobDataService,
     private snackBar: MatSnackBar,
     private projectService: ProjectService,
     private signalrService: SignalrService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -76,42 +89,99 @@ export class MyProjectsComponent implements OnInit {
 
     // SignalR Integration for Auto-Updates
     this.signalrService.startConnection();
-    this.signalrService.analysisProgress.subscribe(
+    this.analysisProgressSubscription = this.signalrService.analysisProgress.subscribe(
       (update: AnalysisProgressUpdate) => {
-        const projectIndex = this.projects.findIndex(
-          (p) => p.jobId === update.jobId,
-        );
-        if (projectIndex !== -1) {
-          const project = this.projects[projectIndex];
-
-          // Update Progress
-          if (update.totalSteps > 0) {
-            project.progress = Math.round(
-              (update.currentStep / update.totalSteps) * 100,
-            );
-          }
-
-          // Handle Completion
-          if (update.isComplete) {
-            project.status = 'PRELIMINARY';
-            project.progress = 100;
-            this.snackBar.open(
-              `Analysis complete for ${project.projectName}`,
-              'View',
-              {
-                duration: 5000,
-              },
-            ).onAction().subscribe(() => {
-                this.viewProject(project.jobId);
-            });
-          }
-
-          // Force refresh of filtered list and counts
-          this.updateCounts();
-          this.setProjectFilter(this.projectFilter);
-        }
+        this.ngZone.run(() => {
+          this.applyAnalysisUpdate(update.jobId, update);
+        });
       },
     );
+
+    this.startAnalysisStatePolling();
+  }
+
+  ngOnDestroy(): void {
+    this.analysisProgressSubscription?.unsubscribe();
+    this.analysisStatePollingSubscription?.unsubscribe();
+  }
+
+  private startAnalysisStatePolling(): void {
+    this.analysisStatePollingSubscription = interval(5000)
+      .pipe(startWith(0))
+      .subscribe(() => {
+        const analyzingProjects = this.projects.filter(
+          (project) => project.status === 'ANALYZING',
+        );
+
+        analyzingProjects.forEach((project) => {
+          this.signalrService
+            .getAnalysisState(Number(project.jobId))
+            .subscribe((state) => {
+              if (!state) {
+                return;
+              }
+
+              this.ngZone.run(() => {
+                this.applyAnalysisUpdate(project.jobId, {
+                  jobId: Number(project.jobId),
+                  statusMessage: state.statusMessage || '',
+                  currentStep: state.currentStep || 0,
+                  totalSteps: state.totalSteps || 0,
+                  isComplete: !!state.isComplete,
+                  hasFailed: !!state.hasFailed,
+                  errorMessage: state.errorMessage || '',
+                });
+              });
+            });
+        });
+      });
+  }
+
+  private applyAnalysisUpdate(
+    jobId: number,
+    update: AnalysisProgressUpdate,
+  ): void {
+    const projectIndex = this.projects.findIndex(
+      (p) => Number(p.jobId) === Number(jobId),
+    );
+
+    if (projectIndex === -1) {
+      return;
+    }
+
+    const currentProject = this.projects[projectIndex];
+    const updatedProject = { ...currentProject };
+
+    if (update.totalSteps > 0) {
+      updatedProject.progress = Math.round(
+        (update.currentStep / update.totalSteps) * 100,
+      );
+    }
+
+    if (update.isComplete) {
+      const wasComplete = currentProject.status === 'PRELIMINARY';
+      updatedProject.status = 'PRELIMINARY';
+      updatedProject.progress = 100;
+
+      if (!wasComplete) {
+        this.snackBar
+          .open(`Analysis complete for ${updatedProject.projectName}`, 'View', {
+            duration: 5000,
+          })
+          .onAction()
+          .subscribe(() => {
+            this.viewProject(updatedProject.jobId);
+          });
+      }
+    }
+
+    this.projects = this.projects.map((project, index) =>
+      index === projectIndex ? updatedProject : project,
+    );
+
+    this.updateCounts();
+    this.setProjectFilter(this.projectFilter);
+    this.cdr.detectChanges();
   }
 
   updateCounts(): void {

@@ -330,34 +330,86 @@ export class SubtaskService {
   }
 
   updateSubtask(task: any): void {
-    // 1. Update Store
     const projectDetails = this.store.getState().projectDetails;
 
     if (!projectDetails?.jobId) {
       throw new Error('Missing project details');
     }
+
+    const targetGroupTitle = task.groupTitle;
+    if (!targetGroupTitle) {
+      this.snackBar.open('Unable to update task: missing group context.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    const normalize = (value: unknown): string =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+
+    let matchedTask: any = null;
+
     const updatedState = this.store.getState().subtaskGroups.map((group) => {
-      const taskIndex = group.subtasks.findIndex((t) => t.id === task.id);
-      if (taskIndex > -1) {
-        const updatedSubtasks = [...group.subtasks];
-        updatedSubtasks[taskIndex] = { ...updatedSubtasks[taskIndex], ...task };
-        return { ...group, subtasks: updatedSubtasks };
+      if (group.title !== targetGroupTitle) {
+        return group;
       }
-      return group;
+
+      const taskId = task.id;
+      const hasValidId = taskId !== null && taskId !== undefined && taskId !== '';
+
+      let taskIndex = -1;
+
+      if (hasValidId) {
+        taskIndex = group.subtasks.findIndex(
+          (t) =>
+            t.id !== null &&
+            t.id !== undefined &&
+            String(t.id).trim() === String(taskId).trim(),
+        );
+      }
+
+      if (taskIndex === -1) {
+        const taskName = normalize(task.task || task.name);
+        taskIndex = group.subtasks.findIndex((t) => {
+          const sameName = normalize(t.task) === taskName;
+          const sameStart = String(t.startDate || '') === String(task.startDate || '');
+          return sameName && sameStart;
+        });
+      }
+
+      if (taskIndex === -1) {
+        taskIndex = group.subtasks.findIndex(
+          (t) => normalize(t.task) === normalize(task.task || task.name),
+        );
+      }
+
+      if (taskIndex === -1) {
+        return group;
+      }
+
+      const updatedSubtasks = [...group.subtasks];
+      updatedSubtasks[taskIndex] = { ...updatedSubtasks[taskIndex], ...task };
+      matchedTask = updatedSubtasks[taskIndex];
+      return { ...group, subtasks: updatedSubtasks };
     });
+
+    if (!matchedTask) {
+      this.snackBar.open('Failed to locate task to update.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
     this.store.setState({ subtaskGroups: updatedState });
 
-    // 2. Persist to Backend
-    const group = updatedState.find((g) =>
-      g.subtasks.some((t) => t.id === task.id),
-    );
-    const groupTitle = group ? group.title : '';
-
     const subtaskToSave = {
-      ...task,
-      groupTitle: groupTitle,
+      ...matchedTask,
+      groupTitle: targetGroupTitle,
       jobId: projectDetails.jobId,
-      deleted: task.deleted ?? false,
+      deleted: matchedTask.deleted ?? false,
     };
 
     const userId = this.authService.getUserId();

@@ -88,6 +88,7 @@ export class JobsService {
       { subtasks: subtaskList, userId: userId },
       {
         headers: { 'Content-Type': 'application/json' },
+        responseType: 'text' as 'json',
       },
     );
   }

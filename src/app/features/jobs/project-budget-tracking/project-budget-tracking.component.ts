@@ -27,6 +27,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { BudgetLineItem } from '../../../models/budget-line-item.model';
 import { BudgetService } from '../services/budget.service';
 import { BomService } from '../services/bom.service';
+import { ReportService } from '../services/report.service';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
@@ -55,6 +56,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   isLoadingBudget: boolean = false;
   processingResults: any[] = [];
   isBrowser: boolean;
+  totalProjectCost: number = 0;
 
   // Budget UI State
   isAddingLineItem: boolean = false;
@@ -72,6 +74,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   constructor(
     private budgetService: BudgetService,
     private bomService: BomService,
+    private reportService: ReportService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -82,13 +85,28 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     if (this.projectDetails?.jobId) {
       this.loadBudget();
+      this.loadCostSummary();
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['projectDetails'] && this.projectDetails?.jobId) {
       this.loadBudget();
+      this.loadCostSummary();
     }
+  }
+
+  private loadCostSummary(): void {
+    if (!this.projectDetails?.jobId) return;
+
+    this.reportService
+      .getDetailedCostSummary(this.projectDetails.jobId)
+      .then((summary) => {
+        this.totalProjectCost = Number(summary?.suggestedBid || 0);
+      })
+      .catch((err) => {
+        console.error('Failed to load detailed cost summary for budget tracking', err);
+      });
   }
 
   // Budget Calculations
@@ -114,6 +132,20 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   get variancePercent(): string {
     return this.totalEstimated > 0
       ? ((this.variance / this.totalEstimated) * 100).toFixed(1)
+      : '0.0';
+  }
+
+  get displayTotalBudget(): number {
+    return this.totalProjectCost > 0 ? this.totalProjectCost : this.totalEstimated;
+  }
+
+  get budgetVariance(): number {
+    return this.displayTotalBudget - this.totalForecast;
+  }
+
+  get budgetVariancePercent(): string {
+    return this.displayTotalBudget > 0
+      ? ((this.budgetVariance / this.displayTotalBudget) * 100).toFixed(1)
       : '0.0';
   }
 

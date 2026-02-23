@@ -2,14 +2,15 @@
   class="jobs-container"
   [attr.inert]="showAlert || isDialogOpen ? '' : null"
 >
-  <!-- Global Stepper -->
-  <app-project-stage-stepper
-    *ngIf="projectDetails"
-    [currentStage]="projectStage"
-  ></app-project-stage-stepper>
+  <ng-container *ngIf="isStageResolved; else stageLoading">
+    <!-- Global Stepper -->
+    <app-project-stage-stepper
+      *ngIf="projectDetails"
+      [currentStage]="projectStage"
+    ></app-project-stage-stepper>
 
-  <!-- New Stages Container -->
-  <div class="stage-content-wrapper" [ngSwitch]="projectStage">
+    <!-- Stages Container -->
+    <div class="stage-content-wrapper" [ngSwitch]="projectStage">
     <!-- ANALYZING STAGE -->
     <app-job-analysis-walkthrough
       *ngSwitchCase="'ANALYZING'"
@@ -32,7 +33,7 @@
           [class.active]="stageDisplayMode === 'live'"
           (click)="setStageDisplayMode('live')"
         >
-          Live View
+          Project Overview
         </button>
       </div>
 
@@ -63,7 +64,7 @@
           [class.active]="stageDisplayMode === 'live'"
           (click)="setStageDisplayMode('live')"
         >
-          Live View
+          Project Overview
         </button>
       </div>
 
@@ -89,7 +90,14 @@
     <div *ngSwitchCase="'LIVE'">
       <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
     </div>
-  </div>
+    </div>
+  </ng-container>
+
+  <ng-template #stageLoading>
+    <div class="stage-content-wrapper">
+      <app-loader></app-loader>
+    </div>
+  </ng-template>
 </div>
 
 <ng-template #liveStageView>
@@ -125,14 +133,14 @@
           </div>
         </div>
         <div class="action-buttons">
-          <button
+          <!-- <button
             *ngIf="isProjectOwner"
             class="submit-btn save-btn"
             (click)="subtaskService.acceptAllSubtasks()"
             matTooltip="Mark all subtasks as approved"
           >
             Accept All Subtasks
-          </button>
+          </button> -->
           <!-- <BUTTON
             *ngIf="isProjectOwner"
             class="submit-btn publish-btn"
@@ -143,7 +151,7 @@
           >
             Publish Job for Bidding
           </button> -->
-          <button
+          <!-- <button
             *ngIf="isProjectOwner"
             class="submit-btn save-btn"
             mat-raised-button
@@ -152,8 +160,8 @@
             matTooltipShowDelay="500"
           >
             Save Job
-          </button>
-          <button
+          </button> -->
+          <!-- <button
             *ngIf="isProjectOwner"
             class="submit-btn delete-btn"
             mat-raised-button
@@ -162,7 +170,7 @@
             matTooltipShowDelay="500"
           >
             Discard Job
-          </button>
+          </button> -->
           <!-- Reports Dropdown -->
           <button
             class="submit-btn save-btn"
@@ -232,7 +240,7 @@
           </mat-menu>
 
           <!-- More Actions Dropdown -->
-          <button
+          <!-- <button
             class="submit-btn"
             mat-raised-button
             [matMenuTriggerFor]="moreActionsMenu"
@@ -251,7 +259,7 @@
               <mat-icon>person_edit</mat-icon>
               <span>Edit Client</span>
             </button>
-          </mat-menu>
+          </mat-menu> -->
         </div>
       </div>
 
@@ -358,6 +366,7 @@
               <app-timeline
                 [taskGroups]="displayedTimelineGroups"
                 [isProjectOwner]="isProjectOwner"
+                [canViewGroupTimeline]="!isSubtaskTimelineActive"
                 (onGroupClick)="timelineService.handleGroupClick($event)"
                 (onGroupDoubleClick)="handleTimelineGroupDoubleClick($event)"
                 (onGroupMove)="handleGroupMove($event)"
