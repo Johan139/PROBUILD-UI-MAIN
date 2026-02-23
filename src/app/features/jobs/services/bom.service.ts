@@ -44,7 +44,12 @@ export class BomService {
       }),
     );
   }
-
+  archivePackage(tradePackageId: number): Observable<void> {
+    return this.http.put<void>(
+      `${this.apiUrl}/archivepackage/${tradePackageId}`,
+      {},
+    );
+  }
   parseReport(fullResponse: string): any {
     if (!fullResponse) {
       return { sections: [] };
@@ -474,7 +479,7 @@ export class BomService {
           (s: any) =>
             s.title &&
             (s.title.includes('Value Engineering') ||
-              (s.headers && s.headers[0].includes('VE ID')))
+              (s.headers && s.headers[0].includes('VE ID'))),
         );
 
         if (!veSection || !veSection.content) {
@@ -506,7 +511,7 @@ export class BomService {
               : 'Unknown',
           };
         });
-      })
+      }),
     );
   }
 
@@ -518,7 +523,10 @@ export class BomService {
           return apiPackages.map((pkg) => {
             const parsedDays = this.parseDurationDays(pkg.estimatedDuration);
             const derivedDays =
-              parsedDays ?? this.deriveDurationDaysFromHours(Number(pkg.estimatedManHours || 0));
+              parsedDays ??
+              this.deriveDurationDaysFromHours(
+                Number(pkg.estimatedManHours || 0),
+              );
 
             return {
               id: pkg.id,
@@ -529,7 +537,9 @@ export class BomService {
               status: pkg.status,
               estimatedManHours: pkg.estimatedManHours,
               hourlyRate: pkg.hourlyRate,
-              estimatedDuration: pkg.estimatedDuration || (derivedDays ? `${derivedDays} days` : ''),
+              estimatedDuration:
+                pkg.estimatedDuration ||
+                (derivedDays ? `${derivedDays} days` : ''),
               durationDays: derivedDays,
               startDate: pkg.startDate,
               laborType: pkg.laborType || 'Labor and Materials',
@@ -537,12 +547,11 @@ export class BomService {
               createdAt: pkg.createdAt,
               budget: pkg.budget,
               csiCode: pkg.csiCode,
-              bidType:
-                String(pkg.laborType || '')
-                  .toLowerCase()
-                  .includes('only')
-                  ? 'labor-only'
-                  : 'labor-material',
+              bidType: String(pkg.laborType || '')
+                .toLowerCase()
+                .includes('only')
+                ? 'labor-only'
+                : 'labor-material',
               postedToMarketplace: pkg.postedToMarketplace,
               bids: [], // Bids are loaded separately
               hasInternalQuote: false,
@@ -552,7 +561,10 @@ export class BomService {
         return [];
       }),
       catchError((err) => {
-        console.warn('Failed to fetch trade packages from API, falling back to report parsing', err);
+        console.warn(
+          'Failed to fetch trade packages from API, falling back to report parsing',
+          err,
+        );
         // Fallback to report parsing if API fails or returns empty (e.g. migration not run)
         return this.getBillOfMaterials(jobId).pipe(
           map((results) => {
@@ -568,7 +580,10 @@ export class BomService {
                 section.title &&
                 (section.title.includes('Subcontractor Cost Breakdown') ||
                   (section.headers &&
-                    section.headers.join(' ').toLowerCase().includes('scope of work')))
+                    section.headers
+                      .join(' ')
+                      .toLowerCase()
+                      .includes('scope of work')))
               ) {
                 section.content.forEach((row: any[]) => {
                   const tradeName = row[0];
@@ -589,8 +604,12 @@ export class BomService {
                       status: 'Draft',
                       estimatedManHours: hours,
                       hourlyRate: rate,
-                      estimatedDuration: hours > 0 ? `${Math.max(1, Math.ceil(hours / 8))} days` : null,
-                      durationDays: hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
+                      estimatedDuration:
+                        hours > 0
+                          ? `${Math.max(1, Math.ceil(hours / 8))} days`
+                          : null,
+                      durationDays:
+                        hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
                       startDate: null,
                       laborType: 'Labor and Materials',
                       bidDeadline: null,
@@ -608,13 +627,15 @@ export class BomService {
             });
 
             return tradePackages;
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
-  private parseDurationDays(estimatedDuration: string | null | undefined): number | null {
+  private parseDurationDays(
+    estimatedDuration: string | null | undefined,
+  ): number | null {
     if (!estimatedDuration) {
       return null;
     }
@@ -632,7 +653,9 @@ export class BomService {
     return Math.max(1, Math.ceil(value));
   }
 
-  private deriveDurationDaysFromHours(estimatedManHours: number): number | null {
+  private deriveDurationDaysFromHours(
+    estimatedManHours: number,
+  ): number | null {
     if (!Number.isFinite(estimatedManHours) || estimatedManHours <= 0) {
       return null;
     }
