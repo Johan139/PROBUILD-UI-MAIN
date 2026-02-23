@@ -237,7 +237,13 @@
   align-items: center;
   gap: 8px;
 }
-
+.archive-table.jobs {
+  .table-header,
+  .table-row {
+    // Job Title | Trade | Bids | Status | Archived | Actions
+    grid-template-columns: 2fr 1.5fr 1fr 1.2fr 1.4fr 1.2fr;
+  }
+}
 .icon-btn {
   width: 42px;
   height: 42px;

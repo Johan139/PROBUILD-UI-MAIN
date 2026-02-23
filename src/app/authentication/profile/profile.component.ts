@@ -8,9 +8,12 @@ import {
 } from '@angular/core';
 import { catchError, forkJoin, take, throwError } from 'rxjs';
 import {
+  AbstractControl,
   FormBuilder,
   FormControl,
   FormGroup,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -74,7 +77,11 @@ import { AddressDialogComponent } from '../../authentication/profile/address-dia
 import { UserAddressStoreService } from '../../services/UserAddressStoreService';
 import { CompanyService } from '../../services/company.service';
 import { GooglePlacesService } from '../../services/google-places.service';
-
+import {
+  parsePhoneNumberFromString,
+  AsYouType,
+  CountryCode,
+} from 'libphonenumber-js';
 const BASE_URL = environment.BACKEND_URL;
 
 interface SubscriptionPackage {
@@ -283,10 +290,10 @@ export class ProfileComponent implements OnInit {
       email: [null],
       firstName: [null, Validators.required],
       lastName: [null, Validators.required],
-      phoneNumber: [null, Validators.required],
+      phoneNumber: [null, [Validators.required, this.phoneValidator()]],
       userType: [null],
       companyEmail: [null],
-      companyPhone: [null],
+      companyPhone: [null, [this.phoneValidator()]],
       companyName: [null],
       companyRegNo: [null],
       companyCountryNumberCode: [''],
@@ -631,18 +638,16 @@ export class ProfileComponent implements OnInit {
               this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
               this.countryNumberCode[0];
 
-            // Update phoneNumber so it includes the dial code
-            const currentPhone =
-              this.profileForm.get('phoneNumber')?.value || '';
-            const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
-
-            if (currentPhone && !currentPhone.startsWith(dial)) {
-              const cleaned = currentPhone
-                .replace(/[^\d+]/g, '')
-                .replace(/^0+/, '');
-
+            const savedPhone = this.profileForm.get('phoneNumber')?.value || '';
+            const savedCountryCode = (this.selectedCountryCode?.countryCode ||
+              'ZA') as CountryCode;
+            const savedParsed = parsePhoneNumberFromString(
+              savedPhone,
+              savedCountryCode,
+            );
+            if (savedParsed?.isValid()) {
               this.profileForm.patchValue({
-                phoneNumber: `${dial}${cleaned}`,
+                phoneNumber: savedParsed.formatNational(),
               });
             }
 
@@ -794,19 +799,33 @@ export class ProfileComponent implements OnInit {
 
           this.profileForm.patchValue(patch);
 
-          if (company.countryNumberCode && this.countryNumberCode.length > 0) {
-            const matched = this.countryNumberCode.find(
+          console.log('company.countryNumberCode:', company.countryNumberCode);
+          console.log(
+            'countryNumberCode array length:',
+            this.countryNumberCode.length,
+          );
+          console.log(
+            'matched:',
+            this.countryNumberCode.find(
               (c) => c.id === company.countryNumberCode,
-            );
+            ),
+          );
 
-            this.selectedCompanyCountryCode =
+          if (this.countryNumberCode.length > 0) {
+            const matched = company.countryNumberCode
+              ? this.countryNumberCode.find(
+                  (c) => c.id === company.countryNumberCode,
+                )
+              : null;
+
+            const resolved =
               matched ||
               this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
               this.countryNumberCode[0];
 
-            this.profileForm.patchValue({
-              companyPhone: company.phoneNumber ?? null,
-              companyCountryNumberCode: this.selectedCompanyCountryCode.id,
+            // setTimeout forces Angular change detection AFTER mat-select options are rendered
+            setTimeout(() => {
+              this.selectedCompanyCountryCode = resolved;
             });
           }
         },
@@ -815,7 +834,10 @@ export class ProfileComponent implements OnInit {
         },
       });
   }
-
+  compareCountryCodes(a: any, b: any): boolean {
+    if (!a || !b) return false;
+    return a.id === b.id;
+  }
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
@@ -1317,12 +1339,28 @@ export class ProfileComponent implements OnInit {
       const updatedProfile: Profile = this.profileForm.value;
       updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
 
+      const personalPhone = this.profileForm.get('phoneNumber')?.value || '';
+      const personalParsed = parsePhoneNumberFromString(
+        personalPhone,
+        this.getCountryCode(false),
+      );
+      if (personalParsed) {
+        updatedProfile.phoneNumber = personalParsed.format('E.164');
+      }
+      const companyPhone = this.profileForm.get('companyPhone')?.value || '';
+      const companyParsed = parsePhoneNumberFromString(
+        companyPhone,
+        this.getCountryCode(true),
+      );
+      const e164CompanyPhone = companyParsed
+        ? companyParsed.format('E.164')
+        : companyPhone;
       const companyPayload = {
         name: this.profileForm.value.companyName,
         companyRegNo: this.profileForm.value.companyRegNo,
         vatNo: this.profileForm.value.vatNo,
         email: this.profileForm.value.companyEmail,
-        phoneNumber: this.profileForm.value.companyPhone,
+        phoneNumber: e164CompanyPhone,
         countryNumberCode: this.profileForm.value.companyCountryNumberCode,
         constructionType: this.profileForm.value.constructionType,
         nrEmployees: this.profileForm.value.nrEmployees,
@@ -2146,113 +2184,41 @@ export class ProfileComponent implements OnInit {
       ? this.profileForm.get('companyPhone')
       : this.profileForm.get('phoneNumber');
   }
-  onPhoneFocus(event: FocusEvent, isCompany = false) {
-    const dial = this.getDial(isCompany);
+
+  onPhoneBlur(isCompany = false): void {
     const ctrl = this.getPhoneCtrl(isCompany);
-    if (!dial || !ctrl) return;
-
-    const input = event.target as HTMLInputElement;
-    const value = ctrl.value || '';
-
-    if (!value || !value.startsWith(dial)) {
-      ctrl.setValue(dial, { emitEvent: false });
-      setTimeout(() => input.setSelectionRange(dial.length, dial.length));
-    } else {
-      const pos = input.selectionStart ?? 0;
-      if (pos < dial.length) {
-        setTimeout(() => input.setSelectionRange(dial.length, dial.length));
-      }
+    const value = ctrl?.value || '';
+    const countryCode = this.getCountryCode(isCompany);
+    const parsed = parsePhoneNumberFromString(value, countryCode);
+    if (parsed?.isValid()) {
+      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
     }
+    ctrl?.markAsTouched();
   }
-  onPhoneKeyDown(event: KeyboardEvent, isCompany = false) {
-    const dial = this.getDial(isCompany);
-    const input = event.target as HTMLInputElement;
-    const pos = input.selectionStart ?? 0;
-
-    if (!dial) return;
-
-    if (
-      (event.key === 'Backspace' && pos <= dial.length) ||
-      (event.key === 'Delete' && pos < dial.length) ||
-      (event.key === 'ArrowLeft' && pos <= dial.length)
-    ) {
-      event.preventDefault();
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault();
-      setTimeout(() => input.setSelectionRange(dial.length, dial.length));
-    }
-
-    if (event.key.length === 1 && !/[0-9]/.test(event.key)) {
-      event.preventDefault();
-    }
-  }
-  onPhoneClick(event: MouseEvent, isCompany = false) {
-    const dial = this.getDial(isCompany);
-    const input = event.target as HTMLInputElement;
-
-    setTimeout(() => {
-      const pos = input.selectionStart ?? 0;
-      if (pos < dial.length) {
-        input.setSelectionRange(dial.length, dial.length);
-      }
-    });
-  }
-  onPhoneBlur(isCompany = false) {
-    const dial = this.getDial(isCompany);
-    const ctrl = this.getPhoneCtrl(isCompany);
-    if (!dial || !ctrl) return;
-
-    let value = ctrl.value || '';
-
-    if (value === dial || !value.trim()) {
-      ctrl.setValue('', { emitEvent: false });
-      return;
-    }
-
-    let digits = value.replace(dial, '').replace(/\D/g, '').replace(/^0+/, '');
-
-    ctrl.setValue(digits ? dial + digits : '', { emitEvent: false });
-  }
-  onCountryChanged(isCompany = false) {
-    const ctrl = this.getPhoneCtrl(isCompany);
-    const dial = this.getDial(isCompany);
-
-    if (!ctrl || !dial) return;
-
-    // 🔥 CRITICAL: sync selected country → form control
+  onCountryChanged(isCompany = false): void {
+    // Sync the country code ID into the form
     if (isCompany && this.selectedCompanyCountryCode?.id) {
       this.profileForm.patchValue({
         companyCountryNumberCode: this.selectedCompanyCountryCode.id,
       });
     }
-
-    const value = String(ctrl.value || '');
-    if (!value) return;
-
-    // If already correct → do nothing
-    if (value.startsWith(dial)) return;
-
-    const digits = value
-      .replace(/^\+\d{1,4}/, '')
-      .replace(/\D/g, '')
-      .replace(/^0+/, '');
-
-    ctrl.setValue(digits ? dial + digits : '', { emitEvent: false });
+    // Re-run validation on the phone field with the new country context
+    this.getPhoneCtrl(isCompany)?.updateValueAndValidity();
   }
 
-  onPhonePaste(event: ClipboardEvent, isCompany = false) {
+  onPhonePaste(event: ClipboardEvent, isCompany = false): void {
     event.preventDefault();
-
-    const dial = this.getDial(isCompany);
+    const pasted = event.clipboardData?.getData('text') || '';
+    const countryCode = this.getCountryCode(isCompany);
+    const parsed = parsePhoneNumberFromString(pasted, countryCode);
     const ctrl = this.getPhoneCtrl(isCompany);
-    if (!dial || !ctrl) return;
-
-    let pasted = event.clipboardData?.getData('text') || '';
-    let clean = pasted.replace(/[^\d]/g, '').replace(/^0+/, '');
-
-    ctrl.setValue(dial + clean, { emitEvent: false });
+    if (parsed) {
+      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+    } else {
+      ctrl?.setValue(new AsYouType(countryCode).input(pasted), {
+        emitEvent: false,
+      });
+    }
   }
 
   reactivateTeamMember(id: string): void {
@@ -2344,7 +2310,16 @@ export class ProfileComponent implements OnInit {
       'VENDOR',
     ].includes(this.userRole || '');
   }
-
+  private phoneValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+      const isCompany = control === this.profileForm?.get('companyPhone');
+      const countryCode = this.getCountryCode(isCompany) as CountryCode;
+      const parsed = parsePhoneNumberFromString(value, countryCode);
+      return parsed?.isValid() ? null : { invalidPhone: true };
+    };
+  }
   canViewTradeSupplier(): boolean {
     return [
       'GENERAL_CONTRACTOR',
@@ -2375,6 +2350,26 @@ export class ProfileComponent implements OnInit {
       'SUBCONTRACTOR',
       'VENDOR',
     ].includes(this.userRole || '');
+  }
+  private getCountryCode(isCompany = false): CountryCode {
+    const code = isCompany
+      ? this.selectedCompanyCountryCode?.countryCode
+      : this.selectedCountryCode?.countryCode;
+    return (code || 'US') as CountryCode;
+  }
+  onPhoneInput(event: Event, isCompany = false): void {
+    const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+
+    // Don't reformat on deletion — let the user delete freely
+    if (inputEvent.inputType?.startsWith('delete')) {
+      this.getPhoneCtrl(isCompany)?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
+    const countryCode = this.getCountryCode(isCompany);
+    const formatted = new AsYouType(countryCode).input(input.value);
+    this.getPhoneCtrl(isCompany)?.setValue(formatted, { emitEvent: false });
   }
 }
 // To this:
