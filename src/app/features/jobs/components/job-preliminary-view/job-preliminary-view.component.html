@@ -18,7 +18,11 @@
         <lucide-angular [img]="Eye" class="btn-icon"></lucide-angular>
         View Quote
       </button>
-      <button class="btn-outline" (click)="regenerateQuote()" [disabled]="isLoading || isSending">
+      <button
+        class="btn-outline"
+        (click)="regenerateQuote()"
+        [disabled]="isLoading || isSending"
+      >
         <lucide-angular [img]="RefreshCw" class="btn-icon"></lucide-angular>
         Regenerate Quote
       </button>
@@ -113,7 +117,7 @@
           </button>
         </div>
         <span class="confidence-badge">
-          {{ executiveSummary.blueprintConfidence.overallConfidence }}%
+          {{ executiveSummary?.blueprintConfidence?.overallConfidence ?? "—" }}
           Confidence
         </span>
         <lucide-angular
@@ -123,7 +127,7 @@
       </div>
     </div>
 
-    <div *ngIf="executiveSummaryExpanded" class="card-body">
+    <div *ngIf="executiveSummaryExpanded && executiveSummary" class="card-body">
       <div class="section">
         <h4>Overview</h4>
         <p>{{ executiveSummary.overview }}</p>
@@ -212,9 +216,7 @@
         </div>
         <div>
           <p class="label">Total Project Cost</p>
-          <p class="value">
-            ${{ costAnalysis?.suggestedBid || 0 | number }}
-          </p>
+          <p class="value">${{ costAnalysis?.suggestedBid || 0 | number }}</p>
           <p *ngIf="totalVeSavings > 0" class="savings">
             -${{ totalVeSavings | number }} VE savings
           </p>
@@ -245,7 +247,11 @@
         <div>
           <p class="label">Suggested Bid Price</p>
           <p class="value">
-            ${{ costAnalysis?.suggestedMarketBid || costAnalysis?.suggestedBid || 0 | number }}
+            ${{
+              costAnalysis?.suggestedMarketBid ||
+                costAnalysis?.suggestedBid ||
+                0 | number
+            }}
           </p>
         </div>
       </div>
@@ -560,5 +566,4 @@
       </div>
     </div>
   </div>
-
 </div>
