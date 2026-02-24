@@ -211,6 +211,18 @@ export class ConstructionPhasesComponent implements OnInit, OnChanges {
       this.snackBar.open('Task updated', 'Close', { duration: 2000 });
   }
 
+  updateTask(group: any, task: Subtask) {
+    if (!this.isProjectOwner) return;
+
+    const payload = {
+      ...task,
+      task: task.task || (task as any).name || '',
+      groupTitle: group?.title,
+    };
+
+    this.subtaskService.updateSubtask(payload);
+  }
+
   handleApproval(group: any, task: Subtask) {
       if (!this.isProjectOwner) return;
       task.accepted = !task.accepted;

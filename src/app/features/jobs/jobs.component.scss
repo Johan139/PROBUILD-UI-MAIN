@@ -14,6 +14,18 @@
   flex-direction: column;
   background: var(--color-canvas);
   color: var(--color-text);
+
+  --gray-900: var(--color-surface);
+  --gray-800: var(--color-border);
+  --gray-700: var(--color-border);
+  --gray-600: color-mix(in oklab, var(--color-text-muted) 85%, var(--color-surface));
+  --gray-500: var(--color-text-muted);
+  --gray-400: var(--color-text-muted);
+  --gray-300: color-mix(in oklab, var(--color-text) 75%, var(--color-surface));
+  --white: var(--color-text);
+
+  --brand-yellow-primary: var(--color-primary);
+  --brand-yellow-accent: var(--color-primary-hover);
 }
 
 .tab-content {

@@ -8,7 +8,7 @@ import {
 import { differenceInCalendarDays, format, isValid, parse } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, throwError } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { JobsService } from '../../../services/jobs.service';
@@ -284,6 +284,109 @@ export class TimelineService {
         error: (err) => console.error('Failed to save timeline move', err),
       });
     }
+  }
+
+  moveSubtaskWithinGroup(
+    parentGroupTitle: string,
+    subtaskIdOrLabel: string,
+    newStartDate: Date,
+    jobId: number,
+    senderId: string,
+  ): Observable<void> {
+    const subtaskGroups = this.store.getState().subtaskGroups || [];
+    const groupIndex = subtaskGroups.findIndex(
+      (g: any) => g.title === parentGroupTitle,
+    );
+
+    if (groupIndex === -1) {
+      return throwError(() => new Error('Parent task group not found.'));
+    }
+
+    const group = subtaskGroups[groupIndex];
+    const normalizedLookup = String(subtaskIdOrLabel ?? '').trim().toLowerCase();
+    const numericLookup = Number(subtaskIdOrLabel);
+
+    const normalizeLabel = (value: unknown): string =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+
+    const subtaskIndex = group.subtasks.findIndex((task: any) => {
+      const taskIdRaw = task.id;
+      const taskIdString = taskIdRaw != null ? String(taskIdRaw).trim() : '';
+      const taskIdNumeric = Number(taskIdRaw);
+      const taskLabel = normalizeLabel(task.task || task.name);
+
+      const idStringMatch = taskIdString !== '' && taskIdString === String(subtaskIdOrLabel).trim();
+      const idNumberMatch =
+        !Number.isNaN(numericLookup) && !Number.isNaN(taskIdNumeric) && taskIdNumeric === numericLookup;
+      const labelMatch = taskLabel !== '' && taskLabel === normalizedLookup;
+
+      return idStringMatch || idNumberMatch || labelMatch;
+    });
+
+    if (subtaskIndex === -1) {
+      console.error('[TimelineService] Subtask lookup failed in selected group', {
+        parentGroupTitle,
+        lookup: subtaskIdOrLabel,
+        availableSubtasks: (group.subtasks || []).map((task: any) => ({
+          id: task.id,
+          task: task.task,
+          name: task.name,
+          startDate: task.startDate,
+          endDate: task.endDate,
+        })),
+      });
+      return throwError(() => new Error('Subtask not found in selected group.'));
+    }
+
+    const targetTask = group.subtasks[subtaskIndex];
+    const currentStart = this.parseTaskDate(targetTask.startDate);
+    const currentEnd = this.parseTaskDate(targetTask.endDate);
+
+    if (!currentStart || !currentEnd) {
+      return throwError(() => new Error('Subtask has invalid dates.'));
+    }
+
+    const taskDuration = differenceInCalendarDays(currentEnd, currentStart);
+    const daysDelta = differenceInCalendarDays(newStartDate, currentStart);
+
+    if (daysDelta === 0) {
+      return of(void 0);
+    }
+
+    const updatedStart = new Date(currentStart);
+    const updatedEnd = new Date(currentEnd);
+    updatedStart.setDate(updatedStart.getDate() + daysDelta);
+    updatedEnd.setDate(updatedEnd.getDate() + daysDelta);
+
+    targetTask.startDate = updatedStart.toISOString().split('T')[0];
+    targetTask.endDate = updatedEnd.toISOString().split('T')[0];
+    targetTask.days = taskDuration + 1;
+
+    this.store.setState({
+      subtaskGroups: [...subtaskGroups],
+    });
+
+    const taskToSave = {
+      ...targetTask,
+      groupTitle: group.title,
+      jobId,
+      deleted: targetTask.deleted ?? false,
+    };
+
+    const subtaskId = Number(targetTask.id);
+    const notify$ = Number.isNaN(subtaskId)
+      ? of(null)
+      : this.notifyTimelineUpdate(jobId, subtaskId, senderId).pipe(
+          catchError(() => of(null)),
+        );
+
+    return this.jobsService.saveSubtasks([taskToSave], senderId).pipe(
+      switchMap(() => notify$),
+      map(() => void 0),
+    );
   }
 
   notifyTimelineUpdate(

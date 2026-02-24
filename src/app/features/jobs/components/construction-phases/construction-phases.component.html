@@ -205,7 +205,13 @@
 
               <!-- Actions -->
               <div class="task-actions">
-                <button class="btn-xs-outline">Update</button>
+                <button
+                  class="btn-xs-outline"
+                  (click)="updateTask(selectedGroup, task)"
+                  [disabled]="!isProjectOwner"
+                >
+                  Update
+                </button>
                 <button class="btn-xs-yellow" (click)="deleteTask(selectedGroup, i)" *ngIf="isProjectOwner">Delete</button>
                 <mat-checkbox
                     [checked]="task.accepted"

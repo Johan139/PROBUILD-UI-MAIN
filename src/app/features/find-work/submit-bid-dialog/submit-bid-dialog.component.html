@@ -1,45 +1,110 @@
-<h2 mat-dialog-title>Submit a Bid</h2>
+<h2 mat-dialog-title class="dialog-title">Submit a Bid</h2>
 
-<div *ngIf="!selection">
+<div *ngIf="!selection" class="options-shell">
   <div class="options-container">
-    <p>How would you like to submit your bid?</p>
-    <button mat-raised-button color="primary" (click)="selectOption('create')">Create Quote with Probuild</button>
-    <button mat-raised-button (click)="selectOption('upload')">Upload PDF Quote</button>
+    <p class="options-title">How would you like to submit your bid?</p>
+    <p class="options-subtitle">
+      You can either generate a quote in Probuild or upload your own PDF.
+    </p>
+
+    <div class="option-buttons">
+      <button
+        mat-raised-button
+        class="btn-primary"
+        (click)="selectOption('create')"
+      >
+        Create Quote with Probuild
+      </button>
+      <button
+        mat-stroked-button
+        class="btn-secondary"
+        (click)="selectOption('upload')"
+      >
+        Upload PDF Quote
+      </button>
+    </div>
   </div>
 </div>
 
-<div *ngIf="selection === 'upload'">
-  <mat-stepper [linear]="true" #stepper>
-    <mat-step [completed]="currentStep > 1">
+<div *ngIf="selection === 'upload'" class="upload-shell">
+  <mat-stepper class="bid-stepper" [linear]="true" #stepper>
+    <mat-step [completed]="uploadComplete">
       <ng-template matStepLabel>Upload Quote</ng-template>
       <div class="step-container">
-        <p>Please select a PDF file to upload as your quote. The maximum file size is 200MB.</p>
-        <input type="file" (change)="onFileSelected($event)" accept=".pdf" #fileInput>
-        <button mat-raised-button color="primary" (click)="onUpload()" [disabled]="!selectedFile || isUploading">Upload</button>
+        <p class="step-title">Upload your quote</p>
+        <p class="step-text">
+          Please select a PDF file to upload as your quote. Maximum file size:
+          <strong>200MB</strong>.
+        </p>
+
+        <div class="file-row">
+          <input
+            class="file-input"
+            type="file"
+            (change)="onFileSelected($event)"
+            accept=".pdf"
+            #fileInput
+          />
+          <button
+            mat-raised-button
+            class="btn-primary"
+            (click)="onUpload()"
+            [disabled]="!selectedFile || isUploading"
+          >
+            {{ isUploading ? 'Uploading...' : 'Upload' }}
+          </button>
+        </div>
+
+        <p class="file-name" *ngIf="selectedFile">Selected: {{ selectedFile.name }}</p>
         <mat-progress-bar *ngIf="isUploading" [value]="uploadProgress"></mat-progress-bar>
       </div>
     </mat-step>
-    <mat-step [completed]="currentStep > 2">
+
+    <mat-step [completed]="uploadComplete">
       <ng-template matStepLabel>Review Quote</ng-template>
       <div class="step-container">
-        <p>Please review your uploaded quote to ensure it's correct before submitting.</p>
+        <p class="step-title">Review your upload</p>
+        <p class="step-text">
+          Please review your uploaded quote to ensure it is correct before
+          submitting.
+        </p>
+        <p class="file-name" *ngIf="uploadedFileUrl">File uploaded successfully.</p>
         <!-- <app-pdf-viewer *ngIf="uploadedFileUrl" [document]="{ url: uploadedFileUrl, name: 'Quote' }"></app-pdf-viewer> TODO: Reenable once complete -->
       </div>
     </mat-step>
+
     <mat-step>
       <ng-template matStepLabel>Submit Bid</ng-template>
       <div class="step-container">
-        <p>You're all set. Click the button below to submit your bid.</p>
+        <p class="step-title">Ready to submit</p>
+        <p class="step-text">
+          You are all set. Click submit to send your bid for review.
+        </p>
       </div>
     </mat-step>
   </mat-stepper>
-  <mat-dialog-actions align="end">
-    <button mat-button (click)="onNoClick()">Cancel</button>
-    <button mat-raised-button color="primary" (click)="stepper.next()" *ngIf="stepper.selectedIndex === 1 && uploadComplete">Next</button>
-    <button mat-raised-button color="primary" (click)="submitBid()" *ngIf="stepper.selectedIndex === 2">Submit Bid</button>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button class="btn-text" (click)="onNoClick()">Cancel</button>
+    <button
+      mat-raised-button
+      class="btn-primary"
+      (click)="stepper.next()"
+      *ngIf="stepper.selectedIndex === 1 && uploadComplete"
+    >
+      Next
+    </button>
+    <button
+      mat-raised-button
+      class="btn-primary"
+      (click)="submitBid()"
+      *ngIf="stepper.selectedIndex === 2"
+    >
+      Submit Bid
+    </button>
   </mat-dialog-actions>
 </div>
 
-<mat-dialog-actions align="end" *ngIf="!selection">
-  <button mat-button (click)="onNoClick()">Cancel</button>
+<mat-dialog-actions align="end" class="dialog-actions" *ngIf="!selection">
+  <button mat-button class="btn-text" (click)="onNoClick()">Cancel</button>
 </mat-dialog-actions>

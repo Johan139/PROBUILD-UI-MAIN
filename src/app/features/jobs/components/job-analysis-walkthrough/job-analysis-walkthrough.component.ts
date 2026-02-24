@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FileText, Home, MapPin, ClipboardList, AlertTriangle, Truck, Shield, CheckCircle2, Loader2, ChevronUp, ChevronDown, Info, ArrowRight, Calculator } from 'lucide-angular';
 import { SignalrService, AnalysisProgressUpdate } from '../../services/signalr.service';
 import { Subscription } from 'rxjs';
+import { interval } from 'rxjs';
+import { startWith } from 'rxjs/operators';
 
 type AnalysisStep = 'metadata' | 'rooms' | 'zoning' | 'permits' | 'blueprint-review' | 'site-logistics' | 'quality-management' | 'cost-estimation' | 'complete';
 
@@ -25,6 +27,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   statusMessage: string = 'Initializing analysis...';
 
   private signalRSubscription: Subscription | null = null;
+  private analysisDataSubscription: Subscription | null = null;
+  private analysisStatePollingSubscription: Subscription | null = null;
 
   FileText = FileText;
   Home = Home;
@@ -114,11 +118,34 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.signalrService.analysisData.subscribe((update: any) => {
+    this.analysisDataSubscription = this.signalrService.analysisData.subscribe((update: any) => {
       if (update && update.jobId === this.jobId) {
         this.updateData(update.dataType, update.data);
       }
     });
+
+    // Poll persisted state as a fallback when SignalR events are missed/reconnected
+    this.analysisStatePollingSubscription = interval(4000)
+      .pipe(startWith(0))
+      .subscribe(() => {
+        this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
+          if (!state) {
+            return;
+          }
+
+          const mappedUpdate: AnalysisProgressUpdate = {
+            jobId: this.jobId,
+            statusMessage: state.statusMessage || this.statusMessage,
+            currentStep: state.currentStep || 0,
+            totalSteps: state.totalSteps || 0,
+            isComplete: !!state.isComplete,
+            hasFailed: !!state.hasFailed,
+            errorMessage: state.errorMessage || '',
+          };
+
+          this.handleProgressUpdate(mappedUpdate);
+        });
+      });
   }
 
   restoreState(state: any) {
@@ -187,6 +214,12 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.signalRSubscription) {
       this.signalRSubscription.unsubscribe();
+    }
+    if (this.analysisDataSubscription) {
+      this.analysisDataSubscription.unsubscribe();
+    }
+    if (this.analysisStatePollingSubscription) {
+      this.analysisStatePollingSubscription.unsubscribe();
     }
   }
 

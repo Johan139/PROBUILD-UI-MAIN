@@ -257,6 +257,32 @@
   width: 100%;
 }
 
+.spacer {
+  flex: 1;
+}
+
+.unit-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.unit-btn {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+  color: var(--color-text);
+}
+
+.unit-btn.active {
+  background: var(--brand-yellow-primary);
+  color: #000;
+  opacity: 1;
+}
+
 .panel-title-text {
   font-size: var(--fs-md);
   font-weight: var(--fw-medium);

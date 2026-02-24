@@ -84,6 +84,7 @@ import {
 } from '../../services/measurement.service';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { format } from 'date-fns';
 import { TeamManagementService } from '../../services/team-management.service';
 import {
   JobUser,
@@ -169,6 +170,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   projectDetails: any;
   projectStage: 'ANALYZING' | 'PRELIMINARY' | 'BIDDING' | 'LIVE' | 'CLOSURE' = 'LIVE';
+  isStageResolved: boolean = false;
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
   selectedPlace: google.maps.places.PlaceResult | null = null;
@@ -547,6 +549,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    this.isStageResolved = false;
+
     this.projectService.projects$.subscribe((projects) => {
       this.overviewProjects = projects;
       this.calculateProjectCounts();
@@ -570,17 +574,34 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(
         take(1),
         switchMap((params) => {
+          const requestedJobId = Number(params?.['jobId']);
+          this.isStageResolved = false;
+
           this.jobDataService
             .fetchJobData(params)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe();
-          return this.store.select((state) => state.projectDetails);
+
+          return this.store.select((state) => state.projectDetails).pipe(
+            filter((projectDetails) => {
+              if (!projectDetails) {
+                return false;
+              }
+
+              const currentJobId = Number(projectDetails?.jobId);
+              if (!requestedJobId) {
+                return true;
+              }
+
+              return currentJobId === requestedJobId;
+            }),
+          );
         }),
-        filter((projectDetails) => !!projectDetails),
       )
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
         this.determineProjectStage(this.projectDetails?.status);
+        this.isStageResolved = true;
 
         if (this.projectDetails?.date) {
           const d = new Date(this.projectDetails.date);
@@ -641,6 +662,18 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       )
       .subscribe((processedTimelineGroups) => {
         this.timelineGroups = processedTimelineGroups;
+
+        if (this.isSubtaskTimelineActive && this.selectedTimelineParentGroup) {
+          const refreshedParent = processedTimelineGroups.find(
+            (group) => group.title === this.selectedTimelineParentGroup?.title,
+          );
+
+          if (refreshedParent) {
+            this.selectedTimelineParentGroup = refreshedParent;
+            this.subtaskTimelineGroups = this.buildSubtaskTimelineGroups(refreshedParent);
+          }
+        }
+
         this.cdr.detectChanges();
       });
   }
@@ -1033,22 +1066,84 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     newStartDate: Date;
     newEndDate: Date;
   }): void {
-    if (this.isSubtaskTimelineActive) {
-      return;
-    }
-
     this.authService.currentUser$
       .pipe(
         filter((user) => !!user),
         take(1),
       )
       .subscribe((user) => {
-        this.timelineService.handleGroupMove(
-          event,
-          this.projectDetails.jobId,
-          user.id,
-        );
+        if (this.isSubtaskTimelineActive) {
+          this.handleSubtaskTimelineMove(event, user.id);
+          return;
+        }
+
+        this.timelineService.handleGroupMove(event, this.projectDetails.jobId, user.id);
       });
+  }
+
+  private handleSubtaskTimelineMove(
+    event: { groupId: string; newStartDate: Date; newEndDate: Date },
+    senderId: string,
+  ): void {
+    if (!this.selectedTimelineParentGroup) {
+      return;
+    }
+
+    const selectedSubtaskGroup = this.subtaskTimelineGroups.find(
+      (group) => (group.id || group.title) === event.groupId,
+    );
+    const sourceSubtask = selectedSubtaskGroup?.subtasks?.[0];
+    const subtaskIdentifier =
+      sourceSubtask?.task ||
+      sourceSubtask?.name ||
+      (sourceSubtask?.id != null ? String(sourceSubtask.id) : null) ||
+      selectedSubtaskGroup?.title ||
+      event.groupId;
+    const subtaskDisplayName = selectedSubtaskGroup?.title || 'this subtask';
+
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Confirm Subtask Move',
+        message: `Please confirm you want to move ${subtaskDisplayName} to ${format(
+          event.newStartDate,
+          'MMM d, yyyy',
+        )}. This will update the task timeline and notify all users assigned to this task.`,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (!result || !this.selectedTimelineParentGroup) {
+        return;
+      }
+
+      console.log('[JobsComponent] Subtask move confirm', {
+        parentGroupTitle: this.selectedTimelineParentGroup.title,
+        subtaskIdentifier,
+        subtaskDisplayName,
+        newStartDate: event.newStartDate,
+      });
+
+      this.timelineService.moveSubtaskWithinGroup(
+        this.selectedTimelineParentGroup.title,
+        subtaskIdentifier,
+        event.newStartDate,
+        this.projectDetails.jobId,
+        senderId,
+      ).subscribe({
+        next: () => {
+          this.snackBar.open('Subtask timeline updated successfully.', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: (err) => {
+          this.snackBar.open(
+            err?.message || 'Failed to update subtask timeline.',
+            'Close',
+            { duration: 4000 },
+          );
+        },
+      });
+    });
   }
 
   handleTimelineGroupDoubleClick(group: TimelineGroup): void {
@@ -1083,6 +1178,10 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         task.accepted || (task.status || '').toLowerCase() === 'completed';
 
       return {
+        id:
+          task.id != null
+            ? String(task.id)
+            : task.task || task.name || `subtask-${index + 1}`,
         title: task.task || task.name || `Subtask ${index + 1}`,
         subtasks: [task],
         startDate: startDate ?? undefined,
