@@ -1,15 +1,26 @@
-<div class="prompt-container" *ngIf="onboardingService.showPrompt()" [@slideInOut]>
+<div class="prompt-container" *ngIf="shouldShowPrompt()" [@slideInOut]>
   <div class="prompt-content">
     <div class="icon-circle">
       <mat-icon>school</mat-icon>
     </div>
     <div class="text">
       <h3>Welcome to ProBuild AI!</h3>
-      <p>Would you like a quick tour to help you get started with creating your first project?</p>
+      <p>
+        Would you like a quick tour to help you get started with creating your
+        first project?
+      </p>
     </div>
   </div>
   <div class="prompt-actions">
-    <button mat-button (click)="onboardingService.skipOnboarding()">No, thanks</button>
-    <button mat-raised-button color="primary" (click)="onboardingService.startTour()">Start Tour</button>
+    <button mat-button (click)="onboardingService.skipOnboarding()">
+      No, thanks
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onboardingService.startTour()"
+    >
+      Start Tour
+    </button>
   </div>
 </div>
