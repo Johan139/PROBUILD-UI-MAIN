@@ -1,10 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, HardHat, Store, Package, Users, ArrowLeft, Check, Edit, ClipboardList, DollarSign, UserCheck, UserPlus, TrendingUp, Star, Rocket, ArrowRight, RotateCcw } from 'lucide-angular';
-import { BomService } from '../../services/bom.service';
-import { BiddingService } from '../../../../services/bidding.service';
-import { UserService } from '../../../../services/user.service';
-import { RatingService } from '../../../../services/rating.service';
+import { BomService } from '../../../services/bom.service';
+import { BiddingService } from '../../../../../services/bidding.service';
+import { UserService } from '../../../../../services/user.service';
+import { RatingService } from '../../../../../services/rating.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';

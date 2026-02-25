@@ -1,0 +1,171 @@
+<section class="phase-section">
+  <header class="phase-header">
+    <button type="button" class="phase-link" (click)="back.emit()">
+      ← Back to Detailed Estimating
+    </button>
+    <div class="phase-actions">
+      <button type="button" class="btn btn-danger" (click)="discard.emit()">
+        Discard Project
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!canProceed"
+        (click)="proceed.emit()"
+      >
+        Proceed to Pre-Construction & Compliance
+      </button>
+    </div>
+  </header>
+
+  <div class="project-summary">
+    <article>
+      <p class="label">Project</p>
+      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
+    </article>
+    <article>
+      <p class="label">Client</p>
+      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
+    </article>
+    <article>
+      <p class="label">Address</p>
+      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
+    </article>
+    <article>
+      <p class="label">Size</p>
+      <p class="value">{{ projectSizeSqFt }} sq ft</p>
+      <p class="sub-value">{{ projectSizeSqM }} m²</p>
+    </article>
+  </div>
+
+  <div class="method-grid">
+    <button
+      type="button"
+      class="method-card"
+      [class.active]="contractMethod === 'ai'"
+      (click)="selectMethod('ai')"
+    >
+      <h4>Generate Contract with AI</h4>
+      <p>Draft agreement from approved quote and project scope.</p>
+    </button>
+
+    <button
+      type="button"
+      class="method-card"
+      [class.active]="contractMethod === 'upload'"
+      (click)="selectMethod('upload')"
+    >
+      <h4>Upload Signed Contract</h4>
+      <p>Use an existing signed contract document.</p>
+    </button>
+  </div>
+
+  <section *ngIf="contractMethod === 'ai'" class="detail-card">
+    <ng-container *ngIf="contractGenerated; else generateBlock">
+      <div class="generated-head">
+        <h4>Contract Generated</h4>
+        <p>AI has drafted your construction agreement.</p>
+      </div>
+      <div class="generated-file-row">
+        <div>
+          <p class="file-name">{{ generatedContractName }}</p>
+          <p class="file-meta">Generated just now</p>
+        </div>
+        <span class="ready-pill">Ready</span>
+      </div>
+      <div class="generated-actions">
+        <button type="button" class="btn btn-outline">View Contract</button>
+        <button type="button" class="btn btn-primary">Download PDF</button>
+      </div>
+    </ng-container>
+
+    <ng-template #generateBlock>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="contractGenerating"
+        (click)="generateContract()"
+      >
+        {{ contractGenerating ? 'Generating...' : 'Generate Contract' }}
+      </button>
+    </ng-template>
+  </section>
+
+  <section *ngIf="contractMethod === 'upload'" class="detail-card">
+    <input
+      #contractInput
+      type="file"
+      accept=".pdf,.doc,.docx"
+      class="hidden-input"
+      (change)="onContractFileSelected($event)"
+    />
+    <button type="button" class="btn btn-outline" (click)="contractInput.click()">
+      Browse Contract File
+    </button>
+    <p *ngIf="uploadedContractName" class="ok">Uploaded: {{ uploadedContractName }}</p>
+  </section>
+
+  <section class="detail-card governance-card" *ngIf="contractMethod">
+    <div class="governance-head">
+      <h4>Contract Governance</h4>
+      <span>{{ milestoneDoneCount }} / {{ milestones.length }} milestones complete</span>
+    </div>
+
+    <div class="governance-list">
+      <article class="governance-row" *ngFor="let milestone of milestones">
+        <label>
+          <input type="checkbox" [checked]="milestone.done" (change)="toggleMilestone(milestone.id)" />
+          <span>{{ milestone.label }}</span>
+        </label>
+        <span class="file-meta">{{ milestone.owner }}</span>
+      </article>
+    </div>
+
+    <div class="governance-head">
+      <h4>Negotiation Log</h4>
+      <span>{{ resolvedNegotiations }} / {{ negotiationLog.length }} resolved</span>
+    </div>
+
+    <div class="governance-list">
+      <article class="governance-row" *ngFor="let log of negotiationLog">
+        <div>
+          <p class="file-name">{{ log.topic }}</p>
+          <p class="file-meta">Updated by {{ log.updatedBy }}</p>
+        </div>
+        <button type="button" class="btn btn-outline" (click)="toggleNegotiation(log.id)">
+          {{ log.status === 'resolved' ? 'Resolved' : 'Open' }}
+        </button>
+      </article>
+    </div>
+
+    <label class="terms-check">
+      <input type="checkbox" [(ngModel)]="termsAccepted" />
+      <span>I confirm terms, milestones, and negotiation records are final.</span>
+    </label>
+  </section>
+
+  <section class="skip-card">
+    <div>
+      <p class="skip-title">Skip This Step</p>
+      <p class="skip-copy">Contract not required at this stage — proceed to Pre-Construction.</p>
+    </div>
+    <button type="button" class="btn btn-outline" (click)="proceed.emit()">Skip to Pre-Construction</button>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Items Completed</span>
+      <strong>{{ completedItems }} / 2</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="(completedItems / 2) * 100"></div>
+    </div>
+    <p class="progress-copy" *ngIf="canProceed; else progressPending">
+      Contract ready. You may proceed to pre-construction.
+    </p>
+    <ng-template #progressPending>
+      <p class="progress-copy">Select a contract method and complete it to continue.</p>
+    </ng-template>
+  </section>
+</section>
+

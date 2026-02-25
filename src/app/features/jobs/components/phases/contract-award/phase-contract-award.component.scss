@@ -1,0 +1,270 @@
+.phase-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.phase-link {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.phase-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.project-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.project-summary article,
+.method-card,
+.detail-card,
+.progress-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+}
+
+.value {
+  margin: var(--space-1) 0 0;
+  font-weight: var(--fw-semibold);
+}
+
+.sub-value {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.method-card {
+  text-align: left;
+  cursor: pointer;
+
+  &.active {
+    border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+  }
+
+  h4 {
+    margin: 0 0 var(--space-1);
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.hidden-input {
+  display: none;
+}
+
+.ok {
+  margin: var(--space-2) 0 0;
+  color: var(--color-success);
+}
+
+.generated-head {
+  margin-bottom: var(--space-3);
+
+  h4 {
+    margin: 0;
+  }
+
+  p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.generated-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.file-name {
+  margin: 0;
+  font-weight: var(--fw-semibold);
+}
+
+.file-meta {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.ready-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-success);
+  background: color-mix(in oklab, var(--color-success) 12%, transparent);
+}
+
+.generated-actions {
+  display: flex;
+  gap: var(--space-2);
+
+  .btn {
+    flex: 1;
+  }
+}
+
+.governance-card {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.governance-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+
+  h4 {
+    margin: 0;
+  }
+
+  span {
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+  }
+}
+
+.governance-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.governance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-2) var(--space-3);
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+.terms-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.skip-card {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 20%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--color-primary) 4%, var(--color-surface));
+  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.skip-title {
+  margin: 0;
+  font-weight: var(--fw-semibold);
+}
+
+.skip-copy {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-success);
+}
+
+.progress-copy {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+

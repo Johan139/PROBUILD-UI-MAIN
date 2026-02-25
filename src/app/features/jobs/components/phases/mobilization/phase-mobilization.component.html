@@ -1,0 +1,159 @@
+<section class="phase-section">
+  <header class="phase-header">
+    <button type="button" class="phase-link" (click)="back.emit()">← Back to Trade Award</button>
+    <div class="phase-actions">
+      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canGoLive" (click)="goLive.emit()">
+        Go Live - Start Construction
+      </button>
+    </div>
+  </header>
+
+  <div class="project-summary">
+    <article>
+      <p class="label">Project</p>
+      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
+    </article>
+    <article>
+      <p class="label">Client</p>
+      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
+    </article>
+    <article>
+      <p class="label">Address</p>
+      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
+    </article>
+    <article>
+      <p class="label">Size</p>
+      <p class="value">{{ projectSizeSqFt }} sq ft</p>
+      <p class="sub-value">{{ projectSizeSqM }} m²</p>
+    </article>
+  </div>
+
+  <section class="intro-card">
+    <h3>Project Mobilization</h3>
+    <p>
+      Assign your team, review awarded trades, and set a construction start date.
+      Starting construction notifies all assigned participants.
+    </p>
+  </section>
+
+  <section class="card start-date-card" [class.is-ready]="isStartDateSet">
+    <div>
+      <h4>Construction Start Date <span>*</span></h4>
+      <p *ngIf="startDate; else noDate">Scheduled: {{ startDate }}</p>
+      <ng-template #noDate>
+        <p>Required before going live.</p>
+      </ng-template>
+    </div>
+    <input type="date" [(ngModel)]="startDate" />
+  </section>
+
+  <section class="team-card">
+    <div class="team-header">
+      <h4>Your Team</h4>
+      <div class="team-header-actions">
+        <span>{{ assignedMembersCount }} assigned · {{ availableCount }} available</span>
+        <button type="button" class="btn btn-outline" (click)="showInviteForm = !showInviteForm">
+          {{ showInviteForm ? 'Close Invite' : 'Invite New Member' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="team-filter-row">
+      <input type="text" placeholder="Search name, role, phone" [(ngModel)]="teamSearch" />
+      <label class="availability-toggle">
+        <input type="checkbox" [(ngModel)]="showOnlyAvailable" />
+        <span>Only available</span>
+      </label>
+    </div>
+
+    <div *ngIf="showInviteForm" class="invite-form">
+      <input type="text" placeholder="Full name" [(ngModel)]="inviteName" />
+      <input type="email" placeholder="Email address" [(ngModel)]="inviteEmail" />
+      <input type="text" placeholder="Role" [(ngModel)]="inviteRole" />
+      <div class="invite-actions">
+        <button type="button" class="btn btn-outline" (click)="showInviteForm = false">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="sendInvite()">Send Invite</button>
+      </div>
+    </div>
+
+    <div *ngIf="pendingInvites.length > 0" class="pending-invites">
+      <h5>Pending Invites</h5>
+      <article *ngFor="let invite of pendingInvites; index as idx">
+        <p>{{ invite.name }} · {{ invite.email }} · {{ invite.role }}</p>
+        <button type="button" class="btn btn-outline" (click)="removeInvite(idx)">Cancel</button>
+      </article>
+    </div>
+
+    <div class="team-lane">
+      <h5>Office / Management ({{ assignedOfficeCount }} / {{ officeTeam.length }})</h5>
+      <article class="team-member" *ngFor="let member of officeTeam" (click)="toggleMemberAssignment(member.id)">
+        <div>
+          <p class="member-name">{{ member.name }}</p>
+          <p class="member-meta">{{ member.role }} · {{ member.phone }}</p>
+          <p class="member-meta" *ngIf="!member.available">Currently unavailable</p>
+        </div>
+        <span class="state-pill" [class.is-active]="assignedMembers.has(member.id)">
+          {{ assignedMembers.has(member.id) ? 'Assigned' : 'Not Assigned' }}
+        </span>
+      </article>
+    </div>
+
+    <div class="team-lane">
+      <h5>On-Site / Field ({{ assignedFieldCount }} / {{ fieldTeam.length }})</h5>
+      <article class="team-member" *ngFor="let member of fieldTeam" (click)="toggleMemberAssignment(member.id)">
+        <div>
+          <p class="member-name">{{ member.name }}</p>
+          <p class="member-meta">{{ member.role }} · {{ member.phone }}</p>
+          <p class="member-meta" *ngIf="!member.available">Currently unavailable</p>
+        </div>
+        <span class="state-pill" [class.is-active]="assignedMembers.has(member.id)">
+          {{ assignedMembers.has(member.id) ? 'Assigned' : 'Not Assigned' }}
+        </span>
+      </article>
+    </div>
+  </section>
+
+  <section class="trade-card">
+    <div class="trade-header">
+      <h4>Subcontractors</h4>
+      <span>{{ assignedTradeCount }} trades assigned</span>
+    </div>
+    <article class="trade-item" *ngFor="let trade of tradePackages">
+      <button type="button" class="trade-summary" (click)="toggleTradeExpanded(trade.id)">
+        <div>
+          <p class="member-name">{{ trade.name }}</p>
+          <p class="member-meta">{{ trade.csiCode }} · {{ trade.durationDays }}d</p>
+        </div>
+        <div class="trade-right">
+          <span class="trade-budget">${{ trade.budget | number }}</span>
+          <span class="state-pill" [class.is-active]="trade.status !== 'open'">{{ trade.status }}</span>
+        </div>
+      </button>
+      <div class="trade-detail" *ngIf="expandedTradeIds.has(trade.id)">
+        <p *ngIf="trade.status === 'open'">Trade is still open and not yet ready for mobilization.</p>
+        <p *ngIf="trade.status !== 'open'">Trade package prepared for construction kickoff notifications.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Readiness</span>
+      <strong>{{ canGoLive ? 'Ready' : 'Pending' }}</strong>
+    </div>
+    <div class="progress-track">
+      <div
+        class="progress-fill"
+        [style.width.%]="readinessPercent"
+      ></div>
+    </div>
+    <p class="progress-copy" *ngIf="canGoLive; else mobilizationPending">
+      Start date set and at least one team member assigned. Ready to go live.
+    </p>
+    <ng-template #mobilizationPending>
+      <p class="progress-copy">Set a start date and assign team members before launching construction.</p>
+    </ng-template>
+  </section>
+</section>
+

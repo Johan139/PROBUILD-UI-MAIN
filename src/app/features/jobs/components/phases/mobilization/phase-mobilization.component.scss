@@ -1,0 +1,363 @@
+.phase-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.phase-link {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.phase-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.project-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.project-summary article,
+.intro-card,
+.team-card,
+.trade-card,
+.card,
+.progress-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+}
+
+.value {
+  margin: var(--space-1) 0 0;
+  font-weight: var(--fw-semibold);
+}
+
+.sub-value {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.intro-card {
+  border-color: color-mix(in oklab, var(--color-primary) 25%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface));
+
+  h3 {
+    margin: 0;
+  }
+
+  p {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.start-date-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+
+  h4 {
+    margin: 0;
+
+    span {
+      color: var(--color-primary);
+    }
+  }
+
+  p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+  }
+
+  &.is-ready {
+    border-color: color-mix(in oklab, var(--color-success) 30%, var(--color-border));
+    background: color-mix(in oklab, var(--color-success) 7%, var(--color-surface));
+  }
+}
+
+.team-header,
+.trade-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  h4 {
+    margin: 0;
+  }
+
+  span {
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+  }
+}
+
+.team-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.team-filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+
+  input[type='text'] {
+    flex: 1;
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+.availability-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+
+  input[type='checkbox'] {
+    accent-color: var(--color-primary);
+  }
+}
+
+.invite-form {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  input {
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+.invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.pending-invites {
+  margin-bottom: var(--space-3);
+
+  h5 {
+    margin: 0 0 var(--space-2);
+  }
+
+  article {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+
+    p {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: var(--fs-xs);
+    }
+  }
+}
+
+.team-lane {
+  margin-top: var(--space-3);
+
+  h5 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+.team-member {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  padding: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  margin-bottom: var(--space-2);
+}
+
+.member-name {
+  margin: 0;
+  font-weight: var(--fw-semibold);
+}
+
+.member-meta {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.state-pill {
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: color-mix(in oklab, var(--color-border) 35%, transparent);
+
+  &.is-active {
+    color: var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  }
+}
+
+.trade-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.trade-summary {
+  width: 100%;
+  border: none;
+  background: var(--color-surface-subtle);
+  color: inherit;
+  text-align: left;
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.trade-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.trade-budget {
+  font-weight: var(--fw-semibold);
+}
+
+.trade-detail {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3);
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+  }
+}
+
+input[type='date'] {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-3);
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn-danger {
+  background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-success);
+}
+
+.progress-copy {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+@media (max-width: 960px) {
+  .start-date-card,
+  .team-header,
+  .trade-header,
+  .team-member,
+  .trade-summary,
+  .pending-invites article {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .team-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+

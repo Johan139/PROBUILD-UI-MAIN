@@ -4,13 +4,13 @@ import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { LucideAngularModule, DollarSign, Package, Sparkles, FileText, CheckCircle2, ChevronUp, ChevronDown, Download, Calculator, TrendingUp, RefreshCw, UploadIcon, X, Mail, Eye, FileCheck, Loader } from 'lucide-angular';
 import { MatTabsModule } from '@angular/material/tabs';
-import { BomService } from '../../services/bom.service';
-import { ReportService } from '../../services/report.service';
-import { JobsService } from '../../../../services/jobs.service';
-import { QuoteService } from '../../../../features/quote/quote.service';
-import { AuthService } from '../../../../authentication/auth.service';
-import { LocalStorageService } from '../../../../services/local-storage.service';
-import { QuoteDto, QuoteRowDto } from '../../../../features/quote/quote.model';
+import { BomService } from '../../../services/bom.service';
+import { ReportService } from '../../../services/report.service';
+import { JobsService } from '../../../../../services/jobs.service';
+import { QuoteService } from '../../../../../features/quote/quote.service';
+import { AuthService } from '../../../../../authentication/auth.service';
+import { LocalStorageService } from '../../../../../services/local-storage.service';
+import { QuoteDto, QuoteRowDto } from '../../../../../features/quote/quote.model';
 
 @Component({
   selector: 'app-job-preliminary-view',

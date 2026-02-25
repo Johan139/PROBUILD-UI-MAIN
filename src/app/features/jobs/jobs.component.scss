@@ -68,6 +68,50 @@
   }
 }
 
+.scope-review-insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.insight-card {
+  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-primary) 45%, var(--color-border));
+    transform: translateY(-1px);
+  }
+
+  strong {
+    display: block;
+    margin-top: var(--space-2);
+    color: var(--color-text);
+  }
+}
+
+.insight-card-label {
+  display: block;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.phase-placeholder {
+  mat-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+  }
+}
+
 .fullcolumn {
   width: 100%;
   overflow-x: auto;

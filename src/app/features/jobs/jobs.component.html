@@ -11,85 +11,134 @@
 
     <!-- Stages Container -->
     <div class="stage-content-wrapper" [ngSwitch]="projectStage">
-    <!-- ANALYZING STAGE -->
-    <app-job-analysis-walkthrough
-      *ngSwitchCase="'ANALYZING'"
+    <!-- 1. INITIATION -->
+    <app-phase-initiation
+      *ngSwitchCase="'INITIATION'"
       [jobId]="projectDetails?.jobId"
       (continue)="onAnalysisComplete()"
-    ></app-job-analysis-walkthrough>
+    ></app-phase-initiation>
 
-    <!-- PRELIMINARY STAGE -->
-    <div *ngSwitchCase="'PRELIMINARY'" class="stage-with-live-toggle">
-      <div class="stage-view-toggle" *ngIf="canUseLiveStageView()">
-        <button
-          type="button"
-          [class.active]="stageDisplayMode === 'stage'"
-          (click)="setStageDisplayMode('stage')"
-        >
-          Stage View
-        </button>
-        <button
-          type="button"
-          [class.active]="stageDisplayMode === 'live'"
-          (click)="setStageDisplayMode('live')"
-        >
-          Project Overview
-        </button>
-      </div>
-
-      <app-job-preliminary-view
-        *ngIf="stageDisplayMode === 'stage'"
-        [projectDetails]="projectDetails"
-        (jobGranted)="onJobGranted()"
-        (fullReportRequested)="openReportDialog()"
-      ></app-job-preliminary-view>
-
-      <ng-container *ngIf="stageDisplayMode === 'live'">
-        <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
-      </ng-container>
-    </div>
-
-    <!-- BIDDING STAGE -->
-    <div *ngSwitchCase="'BIDDING'" class="stage-with-live-toggle">
-      <div class="stage-view-toggle" *ngIf="canUseLiveStageView()">
-        <button
-          type="button"
-          [class.active]="stageDisplayMode === 'stage'"
-          (click)="setStageDisplayMode('stage')"
-        >
-          Stage View
-        </button>
-        <button
-          type="button"
-          [class.active]="stageDisplayMode === 'live'"
-          (click)="setStageDisplayMode('live')"
-        >
-          Project Overview
-        </button>
-      </div>
-
-      <app-job-inbound-bidding
-        *ngIf="stageDisplayMode === 'stage'"
-        [projectDetails]="projectDetails"
-        (back)="onBackToPreliminary()"
-        (goLive)="onGoLive()"
-      ></app-job-inbound-bidding>
-
-      <ng-container *ngIf="stageDisplayMode === 'live'">
-        <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
-      </ng-container>
-    </div>
-
-    <!-- CLOSURE STAGE -->
-    <app-job-closure
-      *ngSwitchCase="'CLOSURE'"
+    <!-- 2. PRELIMINARY SCOPE REVIEW -->
+    <app-phase-preliminary-scope
+      *ngSwitchCase="'PRELIMINARY_SCOPE'"
       [projectDetails]="projectDetails"
-    ></app-job-closure>
+      [stageDisplayMode]="stageDisplayMode"
+      [canUseLiveStageView]="canUseLiveStageView()"
+      [liveStageTemplate]="liveStageView"
+      [timelineGroups]="timelineGroups"
+      [constructionPhaseGroups]="store.getState().subtaskGroups"
+      [isProjectOwner]="isProjectOwner"
+      [blueprintFiles]="blueprintFiles"
+      [selectedBlueprint]="selectedBlueprint"
+      [blueprintPdfSrc]="blueprintPdfSrc"
+      [isLoadingBlueprints]="isLoadingBlueprints"
+      [isReportLoading]="isReportLoading"
+      [showEnvironmentalReport]="!projectDetails?.isSelected"
+      (setDisplayMode)="setStageDisplayMode($event)"
+      (overallBudgetClick)="openOverallBudgetDialog()"
+      (overallTimelineClick)="openOverallTimelineDialog()"
+      (bidPriceClick)="openBidPriceDialog()"
+      (blueprintSelected)="handleBlueprintSelected($event)"
+      (backToSetup)="backToSetup()"
+      (discardProject)="confirmDiscardProject()"
+      (proceedToDetailedEstimating)="proceedToDetailedTakeoff()"
+      (documentsRequested)="openDocumentsDialog()"
+      (jobGranted)="onJobGranted()"
+      (fullReportRequested)="openReportDialog()"
+      (billOfMaterialsRequested)="openBillOfMaterialsDialog()"
+      (executiveSummaryRequested)="openExecutiveSummaryDialog()"
+      (environmentalReportRequested)="openEnvironmentalReportDialog()"
+      (procurementScheduleRequested)="openProcurementScheduleDialog()"
+      (dailyConstructionPlanRequested)="openDailyConstructionPlanDialog()"
+    ></app-phase-preliminary-scope>
 
-    <!-- LIVE STAGE-->
-    <div *ngSwitchCase="'LIVE'">
-      <ng-container *ngTemplateOutlet="liveStageView"></ng-container>
-    </div>
+    <!-- 6. BID SOLICITATION -->
+    <app-phase-bid-solicitation
+      *ngSwitchCase="'BID_SOLICITATION'"
+      [projectDetails]="projectDetails"
+      [stageDisplayMode]="stageDisplayMode"
+      [canUseLiveStageView]="canUseLiveStageView()"
+      [liveStageTemplate]="liveStageView"
+      (setDisplayMode)="setStageDisplayMode($event)"
+      (back)="onBackToPreConstruction()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToTradeAward()"
+    ></app-phase-bid-solicitation>
+
+    <!-- 10. CLOSEOUT -->
+    <app-phase-closeout
+      *ngSwitchCase="'CLOSEOUT'"
+      [projectDetails]="projectDetails"
+      (back)="onBackToConstructionLive()"
+      (discard)="confirmDiscardProject()"
+      (archive)="onArchiveProject()"
+    ></app-phase-closeout>
+
+    <!-- 9. CONSTRUCTION EXECUTION -->
+    <app-phase-construction-live
+      *ngSwitchCase="'CONSTRUCTION_LIVE'"
+      [projectDetails]="projectDetails"
+      [liveStageTemplate]="liveStageView"
+      (back)="onBackToMobilization()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToCloseout()"
+    ></app-phase-construction-live>
+
+    <!-- 3. DETAILED TAKEOFF -->
+    <app-phase-detailed-takeoff
+      *ngSwitchCase="'DETAILED_TAKEOFF'"
+      [projectDetails]="projectDetails"
+      [liveStageTemplate]="liveStageView"
+      [isReportLoading]="isReportLoading"
+      [showEnvironmentalReport]="!projectDetails?.isSelected"
+      (back)="onBackToPreliminary()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToContractAward()"
+      (documentsRequested)="openDocumentsDialog()"
+      (fullReportRequested)="openReportDialog()"
+      (billOfMaterialsRequested)="openBillOfMaterialsDialog()"
+      (executiveSummaryRequested)="openExecutiveSummaryDialog()"
+      (environmentalReportRequested)="openEnvironmentalReportDialog()"
+      (procurementScheduleRequested)="openProcurementScheduleDialog()"
+      (dailyConstructionPlanRequested)="openDailyConstructionPlanDialog()"
+    ></app-phase-detailed-takeoff>
+
+    <!-- 4. CONTRACT AWARD -->
+    <app-phase-contract-award
+      *ngSwitchCase="'CONTRACT_AWARD'"
+      [projectDetails]="projectDetails"
+      [liveStageTemplate]="liveStageView"
+      (back)="onBackToDetailedTakeoff()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToPreConstruction()"
+    ></app-phase-contract-award>
+
+    <!-- 5. PRE-CONSTRUCTION -->
+    <app-phase-pre-construction
+      *ngSwitchCase="'PRE_CONSTRUCTION'"
+      [projectDetails]="projectDetails"
+      (back)="onBackToContractAward()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToTradeAward()"
+    ></app-phase-pre-construction>
+
+    <!-- 7. TRADE AWARD -->
+    <app-phase-trade-award
+      *ngSwitchCase="'TRADE_AWARD'"
+      [projectDetails]="projectDetails"
+      (back)="onBackToBidSolicitation()"
+      (discard)="confirmDiscardProject()"
+      (proceed)="onProceedToMobilization()"
+    ></app-phase-trade-award>
+
+    <!-- 8. MOBILIZATION -->
+    <app-phase-mobilization
+      *ngSwitchCase="'MOBILIZATION'"
+      [projectDetails]="projectDetails"
+      (back)="onBackToTradeAward()"
+      (discard)="confirmDiscardProject()"
+      (goLive)="onGoLive()"
+    ></app-phase-mobilization>
     </div>
   </ng-container>
 
@@ -161,7 +210,7 @@
           >
             Save Job
           </button> -->
-          <!-- <button
+          <button
             *ngIf="isProjectOwner"
             class="submit-btn delete-btn"
             mat-raised-button
@@ -170,7 +219,7 @@
             matTooltipShowDelay="500"
           >
             Discard Job
-          </button> -->
+          </button>
           <!-- Reports Dropdown -->
           <button
             class="submit-btn save-btn"

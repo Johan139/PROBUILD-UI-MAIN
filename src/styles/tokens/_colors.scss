@@ -58,6 +58,20 @@
   --color-failed: #ef4444;
   --color-discard: #f59e0b;
   --color-new: #FCD109;
+  --color-analyzing: #f97316;
+
+  /* Project phase/status badge colors */
+  --color-status-initiation: #f97316;
+  --color-status-bid-solicitation: #3b82f6;
+  --color-status-construction-live: #22c55e;
+  --color-status-preliminary-scope: #6b7280;
+  --color-status-detailed-takeoff: #6366f1;
+  --color-status-contract-award: #8b5cf6;
+  --color-status-pre-construction: #06b6d4;
+  --color-status-trade-award: #0ea5e9;
+  --color-status-mobilization: #14b8a6;
+  --color-status-closeout: #059669;
+  --color-status-archived: #64748b;
 
   /* Elevation / shadow (unified names) */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
@@ -88,6 +102,19 @@
   --color-danger: #DC2626;
   --color-warning:#F59E0B;
   --color-success:#16A34A;
+
+  /* Project phase/status badge colors (dark theme semantic parity) */
+  --color-status-initiation: #f97316;
+  --color-status-bid-solicitation: #3b82f6;
+  --color-status-construction-live: #22c55e;
+  --color-status-preliminary-scope: #6b7280;
+  --color-status-detailed-takeoff: #6366f1;
+  --color-status-contract-award: #8b5cf6;
+  --color-status-pre-construction: #06b6d4;
+  --color-status-trade-award: #0ea5e9;
+  --color-status-mobilization: #14b8a6;
+  --color-status-closeout: #059669;
+  --color-status-archived: #64748b;
 
   /* Dark shadows */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);

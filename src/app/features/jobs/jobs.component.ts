@@ -52,6 +52,7 @@ import {
   map,
   filter,
   take,
+  firstValueFrom,
 } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -108,11 +109,48 @@ import { EditClientDialogComponent } from './edit-client-dialog/edit-client-dial
 import { ConstructionPhasesComponent } from './components/construction-phases/construction-phases.component';
 import { JobTeamComponent } from './components/job-team/job-team.component';
 import { ProjectStageStepperComponent } from './components/project-stage-stepper/project-stage-stepper.component';
-import { JobAnalysisWalkthroughComponent } from './components/job-analysis-walkthrough/job-analysis-walkthrough.component';
-import { JobPreliminaryViewComponent } from './components/job-preliminary-view/job-preliminary-view.component';
-import { JobInboundBiddingComponent } from './components/job-inbound-bidding/job-inbound-bidding.component';
-import { JobClosureComponent } from './components/job-closure/job-closure.component';
+import { PhaseDetailedTakeoffComponent } from './components/phases/detailed-takeoff/phase-detailed-takeoff.component';
+import { PhaseContractAwardComponent } from './components/phases/contract-award/phase-contract-award.component';
+import { PhasePreConstructionComponent } from './components/phases/pre-construction/phase-pre-construction.component';
+import { PhaseInitiationComponent } from './components/phases/initiation/phase-initiation.component';
+import { PhasePreliminaryScopeComponent } from './components/phases/preliminary-scope/phase-preliminary-scope.component';
+import { PhaseBidSolicitationComponent } from './components/phases/bid-solicitation/phase-bid-solicitation.component';
+import { PhaseTradeAwardComponent } from './components/phases/trade-award/phase-trade-award.component';
+import { PhaseMobilizationComponent } from './components/phases/mobilization/phase-mobilization.component';
+import { PhaseConstructionLiveComponent } from './components/phases/construction-live/phase-construction-live.component';
+import { PhaseCloseoutComponent } from './components/phases/closeout/phase-closeout.component';
+import {
+  OverallBudgetDialogComponent,
+  OverallBudgetDialogData,
+} from './components/scope-insight-dialogs/overall-budget-dialog.component';
+import {
+  OverallTimelineDialogComponent,
+  OverallTimelineDialogData,
+  TimelineMilestoneRow,
+} from './components/scope-insight-dialogs/overall-timeline-dialog.component';
+import {
+  BidPriceDialogComponent,
+  BidPriceDialogData,
+} from './components/scope-insight-dialogs/bid-price-dialog.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+type ProjectPhase =
+  | 'INITIATION'
+  | 'PRELIMINARY_SCOPE'
+  | 'DETAILED_TAKEOFF'
+  | 'CONTRACT_AWARD'
+  | 'PRE_CONSTRUCTION'
+  | 'BID_SOLICITATION'
+  | 'TRADE_AWARD'
+  | 'MOBILIZATION'
+  | 'CONSTRUCTION_LIVE'
+  | 'CLOSEOUT';
+
+interface ScopeRisk {
+  category: string;
+  description: string;
+  level: 'high' | 'medium' | 'low';
+}
 
 @Component({
   selector: 'app-jobs',
@@ -150,10 +188,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     ConstructionPhasesComponent,
     JobTeamComponent,
     ProjectStageStepperComponent,
-    JobAnalysisWalkthroughComponent,
-    JobPreliminaryViewComponent,
-    JobInboundBiddingComponent,
-    JobClosureComponent
+    PhaseDetailedTakeoffComponent,
+    PhaseContractAwardComponent,
+    PhasePreConstructionComponent,
+    PhaseInitiationComponent,
+    PhasePreliminaryScopeComponent,
+    PhaseBidSolicitationComponent,
+    PhaseTradeAwardComponent,
+    PhaseMobilizationComponent,
+    PhaseConstructionLiveComponent,
+    PhaseCloseoutComponent
   ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
@@ -169,7 +213,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   addressSuggestions: { description: string; place_id: string }[] = [];
 
   projectDetails: any;
-  projectStage: 'ANALYZING' | 'PRELIMINARY' | 'BIDDING' | 'LIVE' | 'CLOSURE' = 'LIVE';
+  projectStage: ProjectPhase = 'CONSTRUCTION_LIVE';
   isStageResolved: boolean = false;
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
@@ -222,12 +266,50 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints' =
     'budget';
   stageDisplayMode: 'stage' | 'live' = 'stage';
+  preliminaryTab: 0 | 1 | 2 = 0;
+  showExportMenu = false;
+  executiveSummaryOpen = true;
+  scopeReviewSummaryOpen = true;
+  internalTeamOpen = false;
+  selectedRisk: ScopeRisk | null = null;
+  editingProjectDetails = false;
+  editingClientDetails = false;
+
+  scopeProjectName = '';
+  scopeProjectAddress = '';
+  scopeProjectTotalArea = '0';
+  scopeClientFirstName = '';
+  scopeClientLastName = '';
+  scopeClientEmail = '';
+  scopeClientPhone = '';
+
+  readonly scopeRiskFactors: ScopeRisk[] = [
+    {
+      category: 'Geotechnical Uncertainty',
+      description: 'Missing site soil report may alter foundation design and cost.',
+      level: 'high',
+    },
+    {
+      category: 'Supply Chain',
+      description: 'Long-lead materials can impact critical path.',
+      level: 'medium',
+    },
+    {
+      category: 'Client Selections',
+      description: 'Allowance decisions can affect both schedule and pricing.',
+      level: 'medium',
+    },
+  ];
 
   // Blueprint Viewer Data
   blueprintFiles: UploadedFileInfo[] = [];
   selectedBlueprint: UploadedFileInfo | null = null;
   blueprintPdfSrc: string | Uint8Array | null = null;
   isLoadingBlueprints: boolean = false;
+  scopeCostSummary: any = null;
+  scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
+  scopePermitLeadTimeWeeks: number | null = null;
+  scopeMaterialLeadTimeWeeks: number | null = null;
 
   // Project Overview Data
   overviewProjects: Project[] = [];
@@ -298,8 +380,195 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.stageDisplayMode = mode;
   }
 
+  setPreliminaryTab(tab: 0 | 1 | 2): void {
+    this.preliminaryTab = tab;
+  }
+
+  toggleExportMenu(): void {
+    this.showExportMenu = !this.showExportMenu;
+  }
+
+  closeExportMenu(): void {
+    this.showExportMenu = false;
+  }
+
+  backToSetup(): void {
+    this.projectStage = 'INITIATION';
+    this.stageDisplayMode = 'stage';
+  }
+
+  proceedToDetailedTakeoff(): void {
+    this.updateJobStatus('DETAILED_TAKEOFF');
+  }
+
+  confirmDiscardProject(): void {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Discard Project?',
+        message:
+          'Are you sure you want to discard this project? All progress and entered data will be lost.',
+        confirmButtonText: 'Discard',
+        cancelButtonText: 'Cancel',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.NavigateBack();
+      }
+    });
+  }
+
+  get totalProjectCost(): number {
+    const fromSummary = Number(this.scopeCostSummary?.suggestedBid || 0);
+    if (fromSummary > 0) return fromSummary;
+    const raw =
+      this.projectDetails?.budget ||
+      this.projectDetails?.totalBudget ||
+      this.projectDetails?.estimatedBudget ||
+      1451759;
+    const parsed = Number(String(raw).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1451759;
+  }
+
+  get suggestedBid(): number {
+    const marketBid = Number(this.scopeCostSummary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return Math.max(this.totalProjectCost, marketBid);
+    return this.totalProjectCost;
+  }
+
+  get costToBuild(): number {
+    const directSubtotal = Number(this.scopeCostSummary?.directSubtotal || 0);
+    if (directSubtotal > 0) return directSubtotal;
+    const bomSubtotal = Number(this.scopeBomTotals?.directSubtotal || 0);
+    if (bomSubtotal > 0) return bomSubtotal;
+    return 0;
+  }
+
+  get materialsCost(): number {
+    const summaryValue = Number(this.scopeCostSummary?.materialCost || 0);
+    if (summaryValue > 0) return summaryValue;
+    return Number(this.scopeBomTotals?.materialCost || 0);
+  }
+
+  get laborCost(): number {
+    const summaryValue = Number(this.scopeCostSummary?.laborCost || 0);
+    if (summaryValue > 0) return summaryValue;
+    return Number(this.scopeBomTotals?.laborCost || 0);
+  }
+
+  get overheadProfit(): number {
+    return Number(this.scopeCostSummary?.overhead || 0);
+  }
+
+  get contingencyAllowance(): number {
+    return Number(this.scopeCostSummary?.contingency || 0);
+  }
+
+  get escalationAllowance(): number {
+    return Number(this.scopeCostSummary?.escalation || 0);
+  }
+
+  get taxesAllowance(): number {
+    return Number(this.scopeCostSummary?.taxes || 0);
+  }
+
+  get costPerSqFt(): number {
+    const fromSummary = Number(this.scopeCostSummary?.costPerSqFt || 0);
+    if (fromSummary > 0) return fromSummary;
+
+    const area = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
+    if (area > 0 && this.totalProjectCost > 0) return this.totalProjectCost / area;
+    return 0;
+  }
+
+  get marketRangeLow(): number {
+    return Number(this.scopeCostSummary?.marketLow || 0);
+  }
+
+  get marketRangeHigh(): number {
+    return Number(this.scopeCostSummary?.marketHigh || 0);
+  }
+
+  get totalDurationWeeksForDialog(): number {
+    if (!this.timelineGroups?.length) return 0;
+
+    const ranges = this.timelineGroups.flatMap((group) => {
+      const subtaskRanges = (group.subtasks || []).flatMap((task) => {
+        const start = task.start ? new Date(task.start) : task.startDate ? new Date(task.startDate) : null;
+        const end = task.end ? new Date(task.end) : task.endDate ? new Date(task.endDate) : null;
+        return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime()) ? [{ start, end }] : [];
+      });
+
+      if (subtaskRanges.length > 0) return subtaskRanges;
+
+      const start = group.startDate ? new Date(group.startDate) : null;
+      const end = group.endDate ? new Date(group.endDate) : null;
+      return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime()) ? [{ start, end }] : [];
+    });
+
+    if (!ranges.length) return 0;
+    const minStart = Math.min(...ranges.map((r) => r.start.getTime()));
+    const maxEnd = Math.max(...ranges.map((r) => r.end.getTime()));
+    const days = Math.max(7, Math.ceil((maxEnd - minStart) / (1000 * 60 * 60 * 24)));
+    return Math.max(1, Math.ceil(days / 7));
+  }
+
+  get substantialCompletionDate(): Date | null {
+    if (!this.projectStartDate || this.totalDurationWeeksForDialog <= 0) return null;
+    return new Date(this.projectStartDate.getTime() + this.totalDurationWeeksForDialog * 7 * 24 * 60 * 60 * 1000);
+  }
+
+  get workingDaysForDialog(): number {
+    return this.totalDurationWeeksForDialog > 0 ? this.totalDurationWeeksForDialog * 5 : 0;
+  }
+
+  get projectStartDate(): Date | null {
+    const d = this.projectDetails?.date ? new Date(this.projectDetails.date) : null;
+    return d && !isNaN(d.getTime()) ? d : null;
+  }
+
+  saveScopeProjectDetails(): void {
+    this.projectDetails = {
+      ...this.projectDetails,
+      projectName: this.scopeProjectName,
+      address: this.scopeProjectAddress,
+      buildingSize: this.scopeProjectTotalArea,
+    };
+    this.editingProjectDetails = false;
+  }
+
+  saveScopeClientDetails(): void {
+    this.projectDetails = {
+      ...this.projectDetails,
+      clientName: `${this.scopeClientFirstName} ${this.scopeClientLastName}`.trim(),
+      clientEmail: this.scopeClientEmail,
+      clientPhone: this.scopeClientPhone,
+    };
+    this.editingClientDetails = false;
+  }
+
+  private syncScopeReviewDrafts(): void {
+    this.scopeProjectName = this.projectDetails?.projectName || 'HERNANDEZ RESIDENCE';
+    this.scopeProjectAddress =
+      this.projectDetails?.address || 'Belicia Ln, Round Rock, TX';
+    this.scopeProjectTotalArea = String(
+      this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 3222,
+    );
+
+    const fullName = this.projectDetails?.clientName || 'Jacques Barnard';
+    const parts = String(fullName).split(' ');
+    this.scopeClientFirstName = parts[0] || 'Jacques';
+    this.scopeClientLastName = parts.slice(1).join(' ') || 'Barnard';
+    this.scopeClientEmail = this.projectDetails?.clientEmail || 'jb@probuildai.com';
+    this.scopeClientPhone = this.projectDetails?.clientPhone || '5124818499';
+  }
+
   canUseLiveStageView(): boolean {
-    return this.projectStage === 'PRELIMINARY' || this.projectStage === 'BIDDING';
+    return (
+      this.projectStage === 'PRELIMINARY_SCOPE' ||
+      this.projectStage === 'BID_SOLICITATION'
+    );
   }
 
   handleTabNavigation(tab: string): void {
@@ -601,6 +870,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
         this.determineProjectStage(this.projectDetails?.status);
+        this.syncScopeReviewDrafts();
         this.isStageResolved = true;
 
         if (this.projectDetails?.date) {
@@ -613,6 +883,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         if (this.projectDetails?.jobId) {
+          this.loadScopeInsightData(this.projectDetails.jobId);
           this.loadBlueprints();
           this.loadAssignedTeam();
           this.authService.currentUser$
@@ -676,6 +947,74 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.cdr.detectChanges();
       });
+  }
+
+  private loadScopeInsightData(jobId: string): void {
+    Promise.all([
+      this.reportService.getDetailedCostSummary(jobId),
+      firstValueFrom(this.bomService.getBillOfMaterials(jobId)),
+      this.reportService.getPermittingLeadTimeWeeks(jobId),
+      this.reportService.getMaxProcurementLeadTimeWeeks(jobId),
+    ])
+      .then(([summary, bomResults, permitWeeks, materialWeeks]) => {
+        this.scopeCostSummary = summary || null;
+        this.scopeBomTotals = this.extractScopeBomTotals(bomResults);
+        this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
+          ? Number(permitWeeks)
+          : null;
+        this.scopeMaterialLeadTimeWeeks = Number.isFinite(Number(materialWeeks))
+          ? Number(materialWeeks)
+          : null;
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.scopeCostSummary = null;
+        this.scopeBomTotals = null;
+        this.scopePermitLeadTimeWeeks = null;
+        this.scopeMaterialLeadTimeWeeks = null;
+        this.cdr.detectChanges();
+      });
+  }
+
+  private extractScopeBomTotals(bomResults: any): {
+    materialCost: number;
+    laborCost: number;
+    directSubtotal: number;
+  } | null {
+    const results = Array.isArray(bomResults) ? bomResults : [];
+    const parsed = results?.[0]?.parsedReport;
+    if (!parsed?.sections?.length) return null;
+
+    let materialCost = 0;
+    let laborCost = 0;
+
+    parsed.sections.forEach((section: any) => {
+      const title = String(section?.title || '').toLowerCase();
+      const rows = Array.isArray(section?.content) ? section.content : [];
+
+      if (title.includes('bill of materials')) {
+        rows.forEach((row: any[]) => {
+          if (!Array.isArray(row) || !row.length) return;
+          const item = String(row[0] || '').toLowerCase();
+          if (!item || item.includes('total')) return;
+          materialCost += Number(String(row[5] || '').replace(/[^0-9.-]/g, '')) || 0;
+        });
+      }
+
+      if (title.includes('subcontractor cost breakdown')) {
+        rows.forEach((row: any[]) => {
+          if (!Array.isArray(row) || !row.length) return;
+          const item = String(row[0] || '').toLowerCase();
+          if (!item || item.includes('total')) return;
+          laborCost += Number(String(row[4] || '').replace(/[^0-9.-]/g, '')) || 0;
+        });
+      }
+    });
+
+    const directSubtotal = materialCost + laborCost;
+    if (directSubtotal <= 0) return null;
+
+    return { materialCost, laborCost, directSubtotal };
   }
 
   ngAfterViewInit(): void {
@@ -970,6 +1309,180 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   closeDocumentsDialog() {
     this.dialog.closeAll();
+  }
+
+  openOverallBudgetDialog(): void {
+    const materialRatio = this.costToBuild > 0 ? (this.materialsCost / this.costToBuild) * 100 : 0;
+    const laborRatio = this.costToBuild > 0 ? (this.laborCost / this.costToBuild) * 100 : 0;
+
+    const data: OverallBudgetDialogData = {
+      materialsCost: this.materialsCost,
+      laborCost: this.laborCost,
+      costToBuild: this.costToBuild,
+      overheadProfit: this.overheadProfit,
+      contingencyAllowance: this.contingencyAllowance,
+      totalProjectCost: this.totalProjectCost,
+      costPerSqFt: this.costPerSqFt,
+      materialRatio,
+      laborRatio,
+    };
+
+    this.dialog.open(OverallBudgetDialogComponent, {
+      data,
+      width: '100%',
+      maxWidth: '460px',
+      maxHeight: '85vh',
+      autoFocus: true,
+      panelClass: 'scope-insight-panel',
+    });
+  }
+
+  openOverallTimelineDialog(): void {
+    const milestones = this.buildTimelineMilestones();
+
+    const data: OverallTimelineDialogData = {
+      noticeToProceed: this.projectStartDate
+        ? format(this.projectStartDate, 'MMM d, yyyy')
+        : 'TBD',
+      substantialCompletion: this.substantialCompletionDate
+        ? format(this.substantialCompletionDate, 'MMM d, yyyy')
+        : 'TBD',
+      contractDurationText:
+        this.totalDurationWeeksForDialog > 0
+          ? `${this.totalDurationWeeksForDialog} weeks (${this.totalDurationWeeksForDialog * 7} calendar days)`
+          : 'TBD',
+      workingDaysText:
+        this.workingDaysForDialog > 0 ? `${this.workingDaysForDialog} days` : 'TBD',
+      milestones,
+      weatherDelays: this.projectDetails?.weatherRiskLevel || 'Low Risk',
+      permitLeadTime:
+        this.scopePermitLeadTimeWeeks && this.scopePermitLeadTimeWeeks > 0
+          ? `${this.scopePermitLeadTimeWeeks} weeks`
+          : this.projectDetails?.permitLeadTime || 'Not available',
+      materialLeadTime:
+        this.scopeMaterialLeadTimeWeeks && this.scopeMaterialLeadTimeWeeks > 0
+          ? `${this.scopeMaterialLeadTimeWeeks} weeks`
+          : this.projectDetails?.materialLeadTime || 'Not available',
+    };
+
+    this.dialog.open(OverallTimelineDialogComponent, {
+      data,
+      width: '100%',
+      maxWidth: '460px',
+      maxHeight: '85vh',
+      autoFocus: true,
+      panelClass: 'scope-insight-panel',
+    });
+  }
+
+  private buildTimelineMilestones(): TimelineMilestoneRow[] {
+    if (!this.timelineGroups?.length) {
+      return [];
+    }
+
+    const ranges = this.timelineGroups
+      .map((group) => {
+        const subtaskRanges = (group.subtasks || [])
+          .map((task) => {
+            const start = task.start ? new Date(task.start) : task.startDate ? new Date(task.startDate) : null;
+            const end = task.end ? new Date(task.end) : task.endDate ? new Date(task.endDate) : null;
+            return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())
+              ? { start, end }
+              : null;
+          })
+          .filter((r): r is { start: Date; end: Date } => !!r);
+
+        let start: Date | null = null;
+        let end: Date | null = null;
+
+        if (subtaskRanges.length > 0) {
+          start = new Date(Math.min(...subtaskRanges.map((r) => r.start.getTime())));
+          end = new Date(Math.max(...subtaskRanges.map((r) => r.end.getTime())));
+        } else {
+          const gStart = group.startDate ? new Date(group.startDate) : null;
+          const gEnd = group.endDate ? new Date(group.endDate) : null;
+          if (gStart && gEnd && !isNaN(gStart.getTime()) && !isNaN(gEnd.getTime())) {
+            start = gStart;
+            end = gEnd;
+          }
+        }
+
+        if (!start || !end) return null;
+        return { title: group.title || 'Untitled Phase', start, end };
+      })
+      .filter((r): r is { title: string; start: Date; end: Date } => !!r)
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    if (!ranges.length) return [];
+
+    const projectStart = ranges[0].start.getTime();
+
+    return ranges.map((range, index) => {
+      const startWeek = Math.max(1, Math.ceil((range.start.getTime() - projectStart + 1) / (1000 * 60 * 60 * 24 * 7)));
+      const endWeek = Math.max(startWeek, Math.ceil((range.end.getTime() - projectStart + 1) / (1000 * 60 * 60 * 24 * 7)));
+
+      let tone: TimelineMilestoneRow['tone'] = 'default';
+      if (index === 0) tone = 'accent';
+      if (index === ranges.length - 1) tone = 'success';
+
+      return {
+        phase: range.title,
+        weeks: startWeek === endWeek ? `Wk ${startWeek}` : `Wk ${startWeek}-${endWeek}`,
+        tone,
+      };
+    });
+  }
+
+  openBidPriceDialog(): void {
+    const grossMargin = this.suggestedBid - this.costToBuild;
+    const grossMarginPercent = this.suggestedBid > 0 ? (grossMargin / this.suggestedBid) * 100 : 0;
+    const markupOnCostPercent = this.costToBuild > 0 ? ((this.suggestedBid / this.costToBuild) - 1) * 100 : 0;
+    const fullyLoadedCost =
+      this.costToBuild +
+      this.overheadProfit +
+      this.contingencyAllowance +
+      this.escalationAllowance +
+      this.taxesAllowance;
+    const totalCostBasis = fullyLoadedCost > 0 ? fullyLoadedCost : this.totalProjectCost;
+    const riskExposure = this.suggestedBid - totalCostBasis;
+    // Net contractor profit in this dialog follows user-facing bid economics:
+    // bid to client less direct costs.
+    const netContractorProfit = this.suggestedBid - this.costToBuild;
+    const netProfitMarginPercent =
+      this.suggestedBid > 0 ? (netContractorProfit / this.suggestedBid) * 100 : 0;
+    const returnOnCostPercent =
+      this.costToBuild > 0 ? (netContractorProfit / this.costToBuild) * 100 : 0;
+    const size = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
+
+    const data: BidPriceDialogData = {
+      suggestedBid: this.suggestedBid,
+      costToBuild: this.costToBuild,
+      totalProjectCost: this.totalProjectCost,
+      overheadProfit: this.overheadProfit,
+      contingencyAllowance: this.contingencyAllowance,
+      escalationAllowance: this.escalationAllowance,
+      taxesAllowance: this.taxesAllowance,
+      grossMargin,
+      grossMarginPercent,
+      markupOnCostPercent,
+      riskExposure,
+      netContractorProfit,
+      netProfitMarginPercent,
+      returnOnCostPercent,
+      marketRangeLow: this.marketRangeLow,
+      marketRangeHigh: this.marketRangeHigh,
+      costPerSqFt: this.costPerSqFt,
+      bidPerSqFtText: size > 0 ? `$${(this.suggestedBid / size).toFixed(2)}` : 'N/A',
+    };
+
+    this.dialog.open(BidPriceDialogComponent, {
+      data,
+      width: '100%',
+      maxWidth: '460px',
+      maxHeight: '85vh',
+      autoFocus: true,
+      panelClass: 'scope-insight-panel',
+    });
   }
 
   viewDocument(document: any) {
@@ -1308,24 +1821,39 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private determineProjectStage(status: string) {
       if (!status) {
-          this.projectStage = 'LIVE'; // Default
+          this.projectStage = 'CONSTRUCTION_LIVE'; // Default
           this.stageDisplayMode = 'live';
           return;
       }
 
       const s = status.toUpperCase();
-      if (s === 'ANALYZING') {
-          this.projectStage = 'ANALYZING';
-      } else if (s === 'PRELIMINARY' || s === 'NEW' || s === 'DRAFT') {
-          this.projectStage = 'PRELIMINARY';
-      } else if (s === 'BIDDING' || s === 'INBOUND-BIDDING') {
-          this.projectStage = 'BIDDING';
-      } else if (s === 'LIVE' || s === 'ACTIVE') {
-          this.projectStage = 'LIVE';
-      } else if (s === 'ARCHIVED' || s === 'CLOSURE' || s === 'COMPLETED') {
-          this.projectStage = 'CLOSURE';
+      if (s === 'ANALYZING' || s === 'INITIATION') {
+          this.projectStage = 'INITIATION';
+      } else if (
+        s === 'PRELIMINARY' ||
+        s === 'NEW' ||
+        s === 'DRAFT' ||
+        s === 'PRELIMINARY_SCOPE'
+      ) {
+          this.projectStage = 'PRELIMINARY_SCOPE';
+      } else if (s === 'DETAILED-TAKEOFF' || s === 'DETAILED_TAKEOFF') {
+          this.projectStage = 'DETAILED_TAKEOFF';
+      } else if (s === 'CONTRACT-AWARD' || s === 'CONTRACT_AWARD') {
+          this.projectStage = 'CONTRACT_AWARD';
+      } else if (s === 'PRE-CONSTRUCTION' || s === 'PRE_CONSTRUCTION') {
+          this.projectStage = 'PRE_CONSTRUCTION';
+      } else if (s === 'BIDDING' || s === 'INBOUND-BIDDING' || s === 'BID_SOLICITATION') {
+          this.projectStage = 'BID_SOLICITATION';
+      } else if (s === 'TRADE-AWARD' || s === 'TRADE_AWARD') {
+          this.projectStage = 'TRADE_AWARD';
+      } else if (s === 'MOBILIZATION') {
+          this.projectStage = 'MOBILIZATION';
+      } else if (s === 'LIVE' || s === 'ACTIVE' || s === 'CONSTRUCTION_LIVE') {
+          this.projectStage = 'CONSTRUCTION_LIVE';
+      } else if (s === 'ARCHIVED' || s === 'CLOSURE' || s === 'COMPLETED' || s === 'CLOSEOUT') {
+          this.projectStage = 'CLOSEOUT';
       } else {
-          this.projectStage = 'LIVE'; // Fallback
+          this.projectStage = 'CONSTRUCTION_LIVE'; // Fallback
       }
 
       this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
@@ -1342,8 +1870,60 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onBackToPreliminary() {
-      this.projectStage = 'PRELIMINARY';
+      this.projectStage = 'PRELIMINARY_SCOPE';
       this.stageDisplayMode = 'stage';
+  }
+
+  onBackToBidSolicitation(): void {
+    this.updateJobStatus('BID_SOLICITATION');
+  }
+
+  onBackToDetailedTakeoff(): void {
+    this.updateJobStatus('DETAILED_TAKEOFF');
+  }
+
+  onProceedToPreConstruction(): void {
+    this.updateJobStatus('PRE_CONSTRUCTION');
+  }
+
+  onBackToContractAward(): void {
+    this.updateJobStatus('CONTRACT_AWARD');
+  }
+
+  onProceedToContractAward(): void {
+    this.updateJobStatus('CONTRACT_AWARD');
+  }
+
+  onBackToPreConstruction(): void {
+    this.updateJobStatus('PRE_CONSTRUCTION');
+  }
+
+  onProceedToTradeAward(): void {
+    this.updateJobStatus('TRADE_AWARD');
+  }
+
+  onProceedToMobilization(): void {
+    this.updateJobStatus('MOBILIZATION');
+  }
+
+  onBackToTradeAward(): void {
+    this.updateJobStatus('TRADE_AWARD');
+  }
+
+  onBackToMobilization(): void {
+    this.updateJobStatus('MOBILIZATION');
+  }
+
+  onProceedToCloseout(): void {
+    this.updateJobStatus('CLOSEOUT');
+  }
+
+  onBackToConstructionLive(): void {
+    this.updateJobStatus('CONSTRUCTION_LIVE');
+  }
+
+  onArchiveProject(): void {
+    this.updateJobStatus('CLOSURE');
   }
 
   onGoLive() {
@@ -1359,9 +1939,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe({
         next: () => {
           this.determineProjectStage(status);
-          this.snackBar.open(`Project status updated to ${status}`, 'Close', {
-            duration: 3000,
-          });
+          // this.snackBar.open(`Project status updated to ${status}`, 'Close', {
+          //   duration: 3000,
+          // });
         },
         error: (err) => {
           console.error('Failed to update status', err);

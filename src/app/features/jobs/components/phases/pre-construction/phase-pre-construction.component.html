@@ -1,0 +1,246 @@
+<section class="phase-section">
+  <header class="phase-header">
+    <button type="button" class="phase-link" (click)="back.emit()">
+      ← Back to Contract Award
+    </button>
+    <div class="phase-actions">
+      <button type="button" class="btn btn-danger" (click)="discard.emit()">
+        Discard Project
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!canProceed"
+        (click)="proceed.emit()"
+      >
+        Proceed to Bid Solicitation
+      </button>
+    </div>
+  </header>
+
+  <div class="project-summary">
+    <article>
+      <p class="label">Project</p>
+      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
+    </article>
+    <article>
+      <p class="label">Client</p>
+      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
+    </article>
+    <article>
+      <p class="label">Address</p>
+      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
+    </article>
+    <article>
+      <p class="label">Size</p>
+      <p class="value">{{ projectSizeSqFt }} sq ft</p>
+      <p class="sub-value">{{ projectSizeSqM }} m²</p>
+    </article>
+  </div>
+
+  <section class="intro-card">
+    <h3>Pre-Construction & Compliance</h3>
+    <p>
+      Verify permits, insurance, bonds, and compliance items before proceeding to bid solicitation.
+      Every checklist item must be uploaded or marked N/A.
+    </p>
+  </section>
+
+  <input
+    #permitFileInput
+    type="file"
+    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.dwg"
+    class="hidden-input"
+    (change)="uploadActivePermit($event)"
+  />
+
+  <section class="permits-list">
+    <article class="permit-item" *ngFor="let item of permitItems">
+      <div class="permit-copy">
+        <div class="permit-title-row">
+          <h4 [class.is-na]="permitNA.has(item.key)">{{ item.label }}</h4>
+          <span *ngIf="permitUploads[item.key]" class="state-pill is-done">Done</span>
+          <span *ngIf="permitNA.has(item.key)" class="state-pill is-na">N/A</span>
+        </div>
+        <p>{{ item.description }}</p>
+        <p class="permit-accepts">Accepts: {{ item.accepts }}</p>
+      </div>
+
+      <div class="permit-actions" *ngIf="!permitUploads[item.key] && !permitNA.has(item.key)">
+        <button type="button" class="btn btn-outline" (click)="setActivePermitKey(item.key); permitFileInput.click()">
+          Upload
+        </button>
+        <button type="button" class="btn btn-outline na-btn" (click)="markNA(item.key)">
+          N/A
+        </button>
+      </div>
+
+      <div class="permit-actions" *ngIf="permitUploads[item.key]">
+        <span class="status ok">{{ permitUploads[item.key].name }} · {{ permitUploads[item.key].date }}</span>
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="setActivePermitKey(item.key); permitFileInput.click()"
+        >
+          Replace
+        </button>
+        <button type="button" class="btn btn-outline" (click)="removePermit(item.key)">Remove</button>
+      </div>
+
+      <div class="permit-actions" *ngIf="permitNA.has(item.key)">
+        <span class="status muted">Marked N/A</span>
+        <button type="button" class="btn btn-outline" (click)="undoNA(item.key)">Undo</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Items Completed</span>
+      <strong>{{ completedCount }} / {{ permitItems.length }}</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="(completedCount / permitItems.length) * 100"></div>
+    </div>
+    <p class="progress-copy" *ngIf="canProceed; else permitsPending">
+      All items addressed. You may proceed to Bid Solicitation.
+    </p>
+    <ng-template #permitsPending>
+      <p class="progress-copy">Please upload a document or mark as N/A for each item before proceeding.</p>
+    </ng-template>
+  </section>
+
+  <section class="schedule-card">
+    <div class="schedule-header">
+      <div>
+        <h3>Pre-Construction Timeline Governance</h3>
+      </div>
+      <div class="schedule-actions">
+        <button type="button" class="btn btn-outline" (click)="toggleAddScheduleTask()">
+          {{ addingScheduleTask ? 'Close Add Task' : 'Add Timeline Task' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="schedule-summary">
+      <span>Completed {{ completedScheduleCount }} / {{ scheduleTasks.length }}</span>
+    </div>
+
+    <div class="schedule-form" *ngIf="addingScheduleTask">
+      <div class="schedule-grid">
+        <label>
+          <span>Task</span>
+          <input type="text" [(ngModel)]="newScheduleTask.task" />
+        </label>
+        <label>
+          <span>Owner</span>
+          <input type="text" [(ngModel)]="newScheduleTask.owner" />
+        </label>
+        <label>
+          <span>Start Date</span>
+          <input
+            type="date"
+            [(ngModel)]="newScheduleTask.startDate"
+            (ngModelChange)="updateNewScheduleDates('startDate', $event)"
+          />
+        </label>
+        <label>
+          <span>Days</span>
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="newScheduleTask.days"
+            (ngModelChange)="updateNewScheduleDates('days', $event)"
+          />
+        </label>
+        <label>
+          <span>End Date</span>
+          <input
+            type="date"
+            [(ngModel)]="newScheduleTask.endDate"
+            (ngModelChange)="updateNewScheduleDates('endDate', $event)"
+          />
+        </label>
+        <label>
+          <span>Status</span>
+          <select [(ngModel)]="newScheduleTask.status">
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </label>
+      </div>
+      <div class="schedule-actions">
+        <button type="button" class="btn btn-primary" (click)="addScheduleTask()">Add Task</button>
+        <button type="button" class="btn btn-outline" (click)="toggleAddScheduleTask()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="schedule-table-wrap">
+      <table class="schedule-table" *ngIf="scheduleTasks.length > 0">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Start</th>
+            <th>End</th>
+            <th class="num">Days</th>
+            <th class="num">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let task of scheduleTasks">
+            <td>
+              <input
+                type="text"
+                [value]="task.task"
+                (change)="updateScheduleTaskField(task, 'task', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                [value]="task.owner"
+                (change)="updateScheduleTaskField(task, 'owner', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <select [value]="task.status" (change)="updateScheduleTaskField(task, 'status', $any($event.target).value)">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </td>
+            <td>
+              <input
+                type="date"
+                [value]="task.startDate"
+                (change)="updateScheduleTaskField(task, 'startDate', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <input
+                type="date"
+                [value]="task.endDate"
+                (change)="updateScheduleTaskField(task, 'endDate', $any($event.target).value)"
+              />
+            </td>
+            <td class="num">
+              <input
+                type="number"
+                min="0"
+                [value]="task.days"
+                (change)="updateScheduleTaskField(task, 'days', $any($event.target).value)"
+              />
+            </td>
+            <td class="num">
+              <button type="button" class="btn btn-danger" (click)="removeScheduleTask(task.id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+

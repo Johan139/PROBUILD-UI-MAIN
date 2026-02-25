@@ -1,0 +1,151 @@
+<section class="phase-section">
+  <header class="phase-header">
+    <button type="button" class="phase-link" (click)="back.emit()">
+      ← Back to Bid Solicitation
+    </button>
+    <div class="phase-actions">
+      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canProceed" (click)="proceed.emit()">
+        Proceed to Mobilization
+      </button>
+    </div>
+  </header>
+
+  <div class="project-summary">
+    <article>
+      <p class="label">Project</p>
+      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
+    </article>
+    <article>
+      <p class="label">Client</p>
+      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
+    </article>
+    <article>
+      <p class="label">Address</p>
+      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
+    </article>
+    <article>
+      <p class="label">Size</p>
+      <p class="value">{{ projectSizeSqFt }} sq ft</p>
+      <p class="sub-value">{{ projectSizeSqM }} m²</p>
+    </article>
+  </div>
+
+  <section class="summary-strip">
+    <article>
+      <p class="mini-label">Awarded</p>
+      <strong>{{ awardedCount }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Marked N/A</p>
+      <strong>{{ naCount }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Total Packages</p>
+      <strong>{{ totalCount }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Pending</p>
+      <strong>{{ pendingCount }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Estimated Value</p>
+      <strong>${{ totalEstimatedValue | number : '1.0-0' }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Best Bid Value</p>
+      <strong>${{ totalBestBidValue | number : '1.0-0' }}</strong>
+    </article>
+  </section>
+
+  <div class="tabs">
+    <button [class.active]="awardTab === 'trades'" (click)="setTab('trades')">Trades</button>
+    <button [class.active]="awardTab === 'vendors'" (click)="setTab('vendors')">Vendors</button>
+    <button [class.active]="awardTab === 'suppliers'" (click)="setTab('suppliers')">Suppliers</button>
+  </div>
+
+  <section class="award-grid">
+  <section class="award-list">
+    <article *ngFor="let item of currentItems" class="award-item">
+      <button type="button" class="item-main" [class.is-selected]="item.id === selectedItemId" (click)="selectItem(item.id)">
+      <div>
+        <h4>{{ item.label }}</h4>
+        <p>{{ item.csi }} · {{ item.bids }} bid{{ item.bids === 1 ? '' : 's' }} · Estimate ${{ item.estimate | number : '1.0-0' }}</p>
+        <p>
+          Best Bid ${{ item.bestBid | number : '1.0-0' }} ·
+          <span [class.overrun]="item.variance > 0">{{ item.variance }}%</span>
+        </p>
+      </div>
+      </button>
+      <div class="row-actions">
+        <span class="state-pill" [class.is-awarded]="item.status === 'awarded'" [class.is-na]="item.status === 'na'">
+          {{ item.status === 'awarded' ? 'Awarded' : item.status === 'na' ? 'N/A' : 'Pending' }}
+        </span>
+        <button type="button" class="btn btn-outline" (click)="toggleAward(item.id)">
+          {{ item.status === 'awarded' ? 'Unaward' : 'Award' }}
+        </button>
+        <button type="button" class="btn btn-outline" (click)="markNotApplicable(item.id)">
+          {{ item.status === 'na' ? 'Undo N/A' : 'N/A' }}
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <article class="decision-card" *ngIf="selectedItem as selected">
+    <h4>Award Decision Workspace</h4>
+    <p class="decision-title">{{ selected.label }}</p>
+    <div class="decision-grid">
+      <div>
+        <span class="mini-label">Recommendation</span>
+        <strong>{{ selected.recommendation | titlecase }}</strong>
+      </div>
+      <div>
+        <span class="mini-label">Best Bid</span>
+        <strong>${{ selected.bestBid | number : '1.0-0' }}</strong>
+      </div>
+      <div>
+        <span class="mini-label">Variance</span>
+        <strong [class.overrun]="selected.variance > 0">{{ selected.variance }}%</strong>
+      </div>
+      <div>
+        <span class="mini-label">Status</span>
+        <strong>{{ selected.status === 'na' ? 'Not Applicable' : (selected.status | titlecase) }}</strong>
+      </div>
+    </div>
+
+    <label class="notes-field">
+      <span>Award notes</span>
+      <textarea
+        rows="4"
+        [value]="selected.notes"
+        (input)="setSelectedItemNotes($any($event.target).value)"
+        placeholder="Add award rationale, exclusions, alternates, or procurement notes"
+      ></textarea>
+    </label>
+
+    <div class="decision-actions">
+      <button type="button" class="btn btn-outline" (click)="clearSelectedItemNotes()">Clear Notes</button>
+      <button type="button" class="btn btn-outline" (click)="toggleAward(selected.id)">
+        {{ selected.status === 'awarded' ? 'Revert Award' : 'Award Selected' }}
+      </button>
+    </div>
+  </article>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Items Addressed</span>
+      <strong>{{ awardedCount + naCount }} / {{ totalCount }}</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="completionPercent"></div>
+    </div>
+    <p class="progress-copy" *ngIf="canProceed; else awardPending">
+      All items are awarded or marked N/A. You may proceed to Mobilization.
+    </p>
+    <ng-template #awardPending>
+      <p class="progress-copy">Complete awards for all packages or mark non-required packages as N/A.</p>
+    </ng-template>
+  </section>
+</section>
+

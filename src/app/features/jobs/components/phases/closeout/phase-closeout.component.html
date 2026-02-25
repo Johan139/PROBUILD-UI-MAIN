@@ -1,0 +1,65 @@
+<section class="phase-section">
+  <header class="phase-header">
+    <button type="button" class="phase-link" (click)="back.emit()">← Back to Construction Execution</button>
+    <div class="phase-actions">
+      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canArchive" (click)="archive.emit()">
+        Archive Project
+      </button>
+    </div>
+  </header>
+
+  <div class="project-summary">
+    <article>
+      <p class="label">Project</p>
+      <p class="value">{{ projectDetails?.projectName || 'Community Center Renovation' }}</p>
+    </article>
+    <article>
+      <p class="label">Client</p>
+      <p class="value">{{ projectDetails?.clientName || projectDetails?.name || 'Hernandez Development' }}</p>
+    </article>
+    <article>
+      <p class="label">Address</p>
+      <p class="value">{{ projectDetails?.address || '120 Industrial Ave, Austin, TX' }}</p>
+    </article>
+    <article>
+      <p class="label">Size</p>
+      <p class="value">{{ projectSizeSqFt }} sq ft</p>
+      <p class="sub-value">{{ projectSizeSqM }} m²</p>
+    </article>
+  </div>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Closeout package completion</span>
+      <strong>{{ completionPercent }}%</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="completionPercent"></div>
+    </div>
+    <p class="hint">All deliverables must be complete before archival is enabled.</p>
+  </section>
+
+  <section class="checklist-card">
+    <h3>Turnover Deliverables</h3>
+    <article class="check-row" *ngFor="let item of closeoutItems">
+      <label>
+        <input type="checkbox" [checked]="item.done" (change)="toggleItem(item.id)" />
+        <span>{{ item.label }}</span>
+      </label>
+      <span class="status" [class.done]="item.done">{{ item.done ? 'Done' : 'Pending' }}</span>
+    </article>
+  </section>
+
+  <section class="closure-summary-card">
+    <h3>Project Closure</h3>
+    <p class="hint">Final handover package is complete and ready for archive.</p>
+
+    <div class="closure-grid">
+      <article *ngFor="let stat of closureStats">
+        <span class="label">{{ stat.label }}</span>
+        <strong [class.archive-pill]="stat.label === 'Archive State'">{{ stat.label === 'Archive State' ? archiveState : stat.value }}</strong>
+      </article>
+    </div>
+  </section>
+</section>

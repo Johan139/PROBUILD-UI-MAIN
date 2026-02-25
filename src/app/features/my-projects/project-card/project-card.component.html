@@ -5,8 +5,8 @@
       [alt]="project.projectName"
       class="thumbnail-img"
     />
-    <div class="status-badge" [ngClass]="statusColors[project.status]">
-      {{ statusLabels[project.status] }}
+    <div class="status-badge" [ngClass]="getStatusColor(project.status)">
+      {{ getStatusLabel(project.status) }}
     </div>
 
     <div *ngIf="project.status === 'ANALYZING'" class="analyzing-overlay">
@@ -111,7 +111,7 @@
       </div>
     </mat-card-content>
     <mat-card-actions class="card-actions">
-      <ng-container *ngIf="project.status === 'DRAFT'; else defaultActions">
+      <ng-container *ngIf="isActivationStage(project.status); else defaultActions">
         <button
           class="activate-button"
           (click)="onActivate.emit(project.jobId)"

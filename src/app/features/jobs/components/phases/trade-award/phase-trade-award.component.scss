@@ -1,0 +1,274 @@
+.phase-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.phase-link {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.phase-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.project-summary,
+.summary-strip article,
+.award-item,
+.progress-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.project-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+}
+
+.value {
+  margin: var(--space-1) 0 0;
+  font-weight: var(--fw-semibold);
+}
+
+.sub-value {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.mini-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+
+  & + strong {
+    display: block;
+    margin-top: 2px;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+
+  button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+
+    &.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-primary);
+    }
+  }
+}
+
+.award-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.award-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.award-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+
+  h4 {
+    margin: 0;
+  }
+
+  p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.item-main {
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.overrun {
+  color: var(--color-danger);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.state-pill {
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: color-mix(in oklab, var(--color-border) 35%, transparent);
+
+  &.is-awarded {
+    color: var(--color-success);
+    background: color-mix(in oklab, var(--color-success) 14%, transparent);
+  }
+
+  &.is-na {
+    color: var(--color-warning);
+    background: color-mix(in oklab, var(--color-warning) 14%, transparent);
+  }
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn-danger {
+  background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-success);
+}
+
+.progress-copy {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.decision-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.decision-title {
+  margin: 0;
+  font-weight: var(--fw-semibold);
+}
+
+.decision-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.notes-field {
+  display: grid;
+  gap: var(--space-2);
+
+  span {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+    padding: var(--space-2);
+    font: inherit;
+  }
+}
+
+.decision-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 960px) {
+  .project-summary,
+  .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .award-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .award-item,
+  .row-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
