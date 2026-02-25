@@ -307,8 +307,15 @@ export class ProjectOverviewComponent {
         if (contracts && contracts.length > 0) {
           // Sort by CreatedAt to find the first contract (Client Contract)
           const sortedContracts = contracts.sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            (a, b) => {
+              const aCreatedAt = a.createdAt
+                ? new Date(a.createdAt).getTime()
+                : 0;
+              const bCreatedAt = b.createdAt
+                ? new Date(b.createdAt).getTime()
+                : 0;
+              return aCreatedAt - bCreatedAt;
+            },
           );
           const clientContract = sortedContracts[0];
 

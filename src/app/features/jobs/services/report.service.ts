@@ -685,60 +685,89 @@ export class ReportService {
     fileName: string,
     title: string = 'Environmental Lifecycle Report',
   ): Promise<void> {
+    const pdfBlob = await this.generatePdfBlobFromHtml(htmlContent, title);
+    if (!pdfBlob) {
+      this.snackBar.open('An error occurred while generating the PDF.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(pdfBlob);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  async generatePdfBlobFromHtml(
+    htmlContent: string,
+    title: string = 'Environmental Lifecycle Report',
+  ): Promise<Blob | null> {
     const logo = new Image();
     logo.src = 'assets/logo.png';
 
-    const generateReport = (logoDataUrl?: string) => {
+    const generateReport = (logoDataUrl?: string): Promise<Blob> => {
       const worker = new Worker(
         new URL('../report-generator.worker', import.meta.url),
         { type: 'module' },
       );
 
-      worker.onmessage = ({ data }) => {
-        if (data.success) {
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(data.pdfBlob);
-          link.download = fileName;
-          link.click();
-          URL.revokeObjectURL(link.href);
-        } else {
-          this.snackBar.open(data.error, 'Close', { duration: 3000 });
-        }
-        worker.terminate();
-      };
+      return new Promise<Blob>((resolve, reject) => {
+        worker.onmessage = ({ data }) => {
+          if (data.success && data.pdfBlob) {
+            resolve(data.pdfBlob as Blob);
+          } else {
+            reject(new Error(data.error || 'Failed to generate PDF'));
+          }
+          worker.terminate();
+        };
 
-      worker.onerror = (error) => {
-        console.error('Worker error:', error);
-        this.snackBar.open(
-          'An error occurred while generating the PDF.',
-          'Close',
-          { duration: 3000 },
-        );
-        worker.terminate();
-      };
+        worker.onerror = (error) => {
+          console.error('Worker error:', error);
+          worker.terminate();
+          reject(new Error('An error occurred while generating the PDF.'));
+        };
 
-      const jsonContent = this._parseHtmlToJson(htmlContent);
-      worker.postMessage({
-        reportContent: jsonContent,
-        logoDataUrl: logoDataUrl,
-        title: title,
+        const jsonContent = this._parseHtmlToJson(htmlContent);
+        worker.postMessage({
+          reportContent: jsonContent,
+          logoDataUrl: logoDataUrl,
+          title: title,
+        });
       });
     };
 
-    logo.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = logo.width;
-      canvas.height = logo.height;
-      ctx!.drawImage(logo, 0, 0);
-      const logoDataUrl = canvas.toDataURL('image/png');
-      generateReport(logoDataUrl);
-    };
+    try {
+      return await new Promise<Blob>((resolve, reject) => {
+        logo.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = logo.width;
+          canvas.height = logo.height;
+          ctx!.drawImage(logo, 0, 0);
+          const logoDataUrl = canvas.toDataURL('image/png');
 
-    logo.onerror = () => {
-      console.warn('Could not load logo, proceeding without it.');
-      generateReport();
-    };
+          generateReport(logoDataUrl).then(resolve).catch(reject);
+        };
+
+        logo.onerror = () => {
+          console.warn('Could not load logo, proceeding without it.');
+          generateReport().then(resolve).catch(reject);
+        };
+      });
+    } catch (error) {
+      console.error('Failed to generate PDF blob:', error);
+      return null;
+    }
+  }
+
+  async generatePdfBlobFromMarkdown(
+    markdownContent: string,
+    title: string = 'Generated Report',
+  ): Promise<Blob | null> {
+    const html = await Promise.resolve(marked.parse(markdownContent) as string);
+    return this.generatePdfBlobFromHtml(html, title);
   }
 
   async downloadEnvironmentalReport(jobId: string): Promise<void> {
@@ -766,7 +795,12 @@ export class ReportService {
 
     elements.forEach((el) => {
       switch (el.tagName) {
+        case 'H1':
+        case 'H2':
         case 'H3':
+        case 'H4':
+        case 'H5':
+        case 'H6':
           json.push({ type: 'h3', text: el.textContent || '' });
           break;
         case 'P':

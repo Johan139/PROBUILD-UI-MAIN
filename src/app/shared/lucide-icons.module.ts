@@ -56,6 +56,10 @@ import {
   Mail,
   ShieldCheck,
   Cross,
+  ArrowRight,
+  Sparkles,
+  Download,
+  Check,
 } from 'lucide-angular';
 
 @NgModule({
@@ -116,6 +120,10 @@ import {
       Mail,
       ShieldCheck,
       Cross,
+      ArrowRight,
+      Sparkles,
+      Download,
+      Check,
     }),
   ],
   exports: [LucideAngularModule],
