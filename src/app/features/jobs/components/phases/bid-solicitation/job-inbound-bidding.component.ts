@@ -110,20 +110,19 @@ export class JobInboundBiddingComponent implements OnInit {
     this.bomService.getTradePackages(jobId).subscribe({
       next: (packages) => {
         this.tradePackages = packages.map(pkg => {
-          const estimatedHours = Number(pkg.estimatedManHours || 0);
-          const hourlyRate = Number(pkg.hourlyRate || 0);
-          const derivedLabor = Number((estimatedHours * hourlyRate).toFixed(2));
-
-          const totalBudget = Number(pkg.totalBudget || pkg.budget || 0);
-          const rawLabor = Number(pkg.laborBudget || 0);
-          const laborBudget = derivedLabor > 0
-            ? Math.min(derivedLabor, totalBudget > 0 ? totalBudget : derivedLabor)
-            : rawLabor;
-
-          const rawMaterial = Number(pkg.materialBudget || 0);
-          const materialBudget = rawMaterial > 0
-            ? rawMaterial
-            : Math.max(0, Number((totalBudget - laborBudget).toFixed(2)));
+          const laborBudget = Number(pkg.laborBudget || 0);
+          const materialBudget = Number(pkg.materialBudget || 0);
+          const totalBudget = Number(
+            pkg.totalBudget ||
+              (laborBudget + materialBudget > 0 ? laborBudget + materialBudget : 0) ||
+              pkg.budget ||
+              0,
+          );
+          const normalizedLaborType = String(pkg.laborType || '').trim().toLowerCase();
+          const isLaborOnly = normalizedLaborType === 'labor' || normalizedLaborType === 'labor only';
+          const effectiveBudget = Number(
+            pkg.effectiveBudget || (isLaborOnly ? laborBudget : totalBudget) || pkg.budget || 0,
+          );
 
           return {
             ...pkg,
@@ -131,8 +130,8 @@ export class JobInboundBiddingComponent implements OnInit {
             laborBudget,
             materialBudget,
             totalBudget,
-            effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
-            budget: Number(pkg.effectiveBudget || pkg.budget || 0),
+            effectiveBudget,
+            budget: effectiveBudget,
           };
         });
         this.tradePackages.forEach((pkg) => this.recalculateBudgets(pkg));
@@ -232,11 +231,15 @@ export class JobInboundBiddingComponent implements OnInit {
   }
 
   get tradesCount() {
-    return this.tradePackages.filter(p => p.category === 'trade').length;
+    return this.tradePackages.filter(
+      (p) => p.category === 'trade' && !p.isHidden && !p.isInactive,
+    ).length;
   }
 
   get vendorsCount() {
-    return this.tradePackages.filter(p => p.category === 'vendor' || p.category === 'equipment').length;
+    return this.tradePackages.filter(
+      (p) => (p.category === 'vendor' || p.category === 'equipment') && !p.isHidden && !p.isInactive,
+    ).length;
   }
 
   get suppliersCount() {
@@ -467,21 +470,12 @@ export class JobInboundBiddingComponent implements OnInit {
       return 0;
     }
 
-    const estimatedHours = Number(pkg.estimatedManHours || 0);
-    const hourlyRate = Number(pkg.hourlyRate || 0);
-    const derivedLabor = Number((estimatedHours * hourlyRate).toFixed(2));
     const storedLabor = Number(pkg.laborBudget || 0);
-    const total = Number(pkg.totalBudget || pkg.budget || 0);
-
-    if (derivedLabor > 0) {
-      return Math.min(derivedLabor, total > 0 ? total : derivedLabor);
+    if (storedLabor > 0) {
+      return storedLabor;
     }
 
-    if (total > 0 && storedLabor > total) {
-      return total;
-    }
-
-    return storedLabor;
+    return Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0);
   }
 
   getAiTotalEstimate(pkg: TradePackage): number {

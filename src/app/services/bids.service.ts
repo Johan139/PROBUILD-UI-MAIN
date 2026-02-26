@@ -28,4 +28,11 @@ export class BidsService {
       tradePackageId: tradePackageId ?? null,
     });
   }
+
+  analyzeTradePackage(jobId: number, tradePackageId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/analyze-trade-package`, {
+      jobId,
+      tradePackageId,
+    });
+  }
 }

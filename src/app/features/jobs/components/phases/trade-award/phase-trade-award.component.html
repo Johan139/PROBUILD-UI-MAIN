@@ -1,151 +1,265 @@
-<section class="phase-section">
-  <header class="phase-header">
-    <button type="button" class="phase-link" (click)="back.emit()">
-      ← Back to Bid Solicitation
-    </button>
-    <div class="phase-actions">
-      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
-      <button type="button" class="btn btn-primary" [disabled]="!canProceed" (click)="proceed.emit()">
-        Proceed to Mobilization
-      </button>
-    </div>
-  </header>
+<div class="trade-award-shell">
+  <app-phase-navigation-header
+    stageLabel="Subcontract Award &amp; Contracting"
+    backLabel="Back to Bid Solicitation"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Mobilization"
+    [projectName]="projectDetails?.projectName || 'HERNANDEZ RESIDENCE'"
+    [clientName]="clientName || 'Jacques Barnard'"
+    [projectAddress]="projectAddress || 'Belicia Ln, Round Rock, TX'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+  ></app-phase-navigation-header>
 
-  <div class="project-summary">
-    <article>
-      <p class="label">Project</p>
-      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
-    </article>
-    <article>
-      <p class="label">Client</p>
-      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
-    </article>
-    <article>
-      <p class="label">Address</p>
-      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
-    </article>
-    <article>
-      <p class="label">Size</p>
-      <p class="value">{{ projectSizeSqFt }} sq ft</p>
-      <p class="sub-value">{{ projectSizeSqM }} m²</p>
-    </article>
-  </div>
-
-  <section class="summary-strip">
-    <article>
-      <p class="mini-label">Awarded</p>
-      <strong>{{ awardedCount }}</strong>
-    </article>
-    <article>
-      <p class="mini-label">Marked N/A</p>
-      <strong>{{ naCount }}</strong>
-    </article>
-    <article>
-      <p class="mini-label">Total Packages</p>
-      <strong>{{ totalCount }}</strong>
-    </article>
-    <article>
-      <p class="mini-label">Pending</p>
-      <strong>{{ pendingCount }}</strong>
-    </article>
-    <article>
-      <p class="mini-label">Estimated Value</p>
-      <strong>${{ totalEstimatedValue | number : '1.0-0' }}</strong>
-    </article>
-    <article>
-      <p class="mini-label">Best Bid Value</p>
-      <strong>${{ totalBestBidValue | number : '1.0-0' }}</strong>
-    </article>
-  </section>
-
-  <div class="tabs">
-    <button [class.active]="awardTab === 'trades'" (click)="setTab('trades')">Trades</button>
-    <button [class.active]="awardTab === 'vendors'" (click)="setTab('vendors')">Vendors</button>
-    <button [class.active]="awardTab === 'suppliers'" (click)="setTab('suppliers')">Suppliers</button>
-  </div>
-
-  <section class="award-grid">
-  <section class="award-list">
-    <article *ngFor="let item of currentItems" class="award-item">
-      <button type="button" class="item-main" [class.is-selected]="item.id === selectedItemId" (click)="selectItem(item.id)">
+  <section class="trade-award-content" *ngIf="!isLoading; else loadingTemplate">
+    <article class="trade-award-intro-card">
+      <div class="trade-award-intro-icon">
+        <lucide-icon name="hammer"></lucide-icon>
+      </div>
       <div>
-        <h4>{{ item.label }}</h4>
-        <p>{{ item.csi }} · {{ item.bids }} bid{{ item.bids === 1 ? '' : 's' }} · Estimate ${{ item.estimate | number : '1.0-0' }}</p>
+        <h3>Subcontract Award &amp; Contracting</h3>
         <p>
-          Best Bid ${{ item.bestBid | number : '1.0-0' }} ·
-          <span [class.overrun]="item.variance > 0">{{ item.variance }}%</span>
+          Review bids for marketplace packages and upload quotations for in-house packages. Award each
+          package or mark as N/A.
         </p>
       </div>
-      </button>
-      <div class="row-actions">
-        <span class="state-pill" [class.is-awarded]="item.status === 'awarded'" [class.is-na]="item.status === 'na'">
-          {{ item.status === 'awarded' ? 'Awarded' : item.status === 'na' ? 'N/A' : 'Pending' }}
-        </span>
-        <button type="button" class="btn btn-outline" (click)="toggleAward(item.id)">
-          {{ item.status === 'awarded' ? 'Unaward' : 'Award' }}
-        </button>
-        <button type="button" class="btn btn-outline" (click)="markNotApplicable(item.id)">
-          {{ item.status === 'na' ? 'Undo N/A' : 'N/A' }}
-        </button>
-      </div>
     </article>
-  </section>
 
-  <article class="decision-card" *ngIf="selectedItem as selected">
-    <h4>Award Decision Workspace</h4>
-    <p class="decision-title">{{ selected.label }}</p>
-    <div class="decision-grid">
-      <div>
-        <span class="mini-label">Recommendation</span>
-        <strong>{{ selected.recommendation | titlecase }}</strong>
-      </div>
-      <div>
-        <span class="mini-label">Best Bid</span>
-        <strong>${{ selected.bestBid | number : '1.0-0' }}</strong>
-      </div>
-      <div>
-        <span class="mini-label">Variance</span>
-        <strong [class.overrun]="selected.variance > 0">{{ selected.variance }}%</strong>
-      </div>
-      <div>
-        <span class="mini-label">Status</span>
-        <strong>{{ selected.status === 'na' ? 'Not Applicable' : (selected.status | titlecase) }}</strong>
-      </div>
-    </div>
+    <section class="trade-award-summary-grid">
+      <article class="summary-card trades">
+        <lucide-icon name="hammer"></lucide-icon>
+        <p>Trades</p>
+        <strong>{{ tradeItems.length }}</strong>
+      </article>
+      <article class="summary-card vendors">
+        <lucide-icon name="users"></lucide-icon>
+        <p>Vendors</p>
+        <strong>{{ vendorItems.length }}</strong>
+      </article>
+      <article class="summary-card suppliers">
+        <lucide-icon name="folder-check"></lucide-icon>
+        <p>Suppliers</p>
+        <strong>{{ supplierItems.length }}</strong>
+      </article>
+      <article class="summary-card awarded">
+        <lucide-icon name="check-circle-2"></lucide-icon>
+        <p>Awarded / Addressed</p>
+        <strong>{{ awardedCount }}</strong>
+      </article>
+    </section>
 
-    <label class="notes-field">
-      <span>Award notes</span>
-      <textarea
-        rows="4"
-        [value]="selected.notes"
-        (input)="setSelectedItemNotes($any($event.target).value)"
-        placeholder="Add award rationale, exclusions, alternates, or procurement notes"
-      ></textarea>
-    </label>
-
-    <div class="decision-actions">
-      <button type="button" class="btn btn-outline" (click)="clearSelectedItemNotes()">Clear Notes</button>
-      <button type="button" class="btn btn-outline" (click)="toggleAward(selected.id)">
-        {{ selected.status === 'awarded' ? 'Revert Award' : 'Award Selected' }}
+    <div class="trade-award-tabs">
+      <button type="button" [class.active]="awardTab === 'trades'" (click)="setTab('trades')">
+        Trades <span>{{ tradeItems.length }}</span>
+      </button>
+      <button type="button" [class.active]="awardTab === 'vendors'" (click)="setTab('vendors')">
+        Vendors <span>{{ vendorItems.length }}</span>
+      </button>
+      <button type="button" [class.active]="awardTab === 'suppliers'" (click)="setTab('suppliers')">
+        Suppliers <span>{{ supplierItems.length }}</span>
       </button>
     </div>
-  </article>
+
+    <section class="trade-award-empty" *ngIf="currentItems.length === 0">
+      <lucide-icon name="alert-circle"></lucide-icon>
+      <p>No packages in this tab</p>
+      <small>Return to Bid Solicitation to publish marketplace packages or mark in-house packages.</small>
+    </section>
+
+    <section class="trade-award-list" *ngIf="currentItems.length > 0">
+      <article
+        class="trade-award-item"
+        *ngFor="let item of currentItems"
+        [class.na]="isNotApplicable(item)"
+        [ngClass]="['card-' + cardType(item), item.isInHouse ? 'lane-in-house' : 'lane-marketplace']"
+      >
+        <header>
+          <button type="button" class="toggle" (click)="toggleExpanded(item.id)">
+            <div class="toggle-left">
+              <div class="item-icon" [ngClass]="'icon-' + cardType(item)">
+                <lucide-icon [name]="cardIcon(item)"></lucide-icon>
+              </div>
+              <div>
+                <h4>{{ item.trade }}</h4>
+                <p>
+                  {{ item.csiCode }} • {{ itemLaneLabel(item) }}
+                  <span class="mode-pill" [class.in-house]="item.isInHouse" [class.marketplace]="!item.isInHouse">
+                    {{ item.isInHouse ? 'In-House' : 'Marketplace' }}
+                  </span>
+                  <span class="work-type-chip" [ngClass]="workTypeClass(item)">
+                    {{ workTypeLabel(item) }}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div class="toggle-right">
+              <span class="budget-chip">Budget ${{ itemBudget(item) | number : '1.0-0' }}</span>
+              <lucide-icon name="chevron-down" [class.open]="isExpanded(item.id)"></lucide-icon>
+            </div>
+          </button>
+
+          <div class="actions">
+            <span class="pill awarded" *ngIf="isAwarded(item)">Awarded</span>
+            <span class="pill na" *ngIf="isNotApplicable(item)">N/A</span>
+            <button type="button" class="ghost" (click)="toggleNotApplicable(item)">
+              {{ isNotApplicable(item) ? 'Undo N/A' : 'N/A' }}
+            </button>
+          </div>
+        </header>
+
+        <section *ngIf="isExpanded(item.id) && !isNotApplicable(item)">
+          <ng-container *ngIf="!isInHouse(item); else inHouseTemplate">
+            <div class="ai-row">
+              <button
+                type="button"
+                class="ai-analyze"
+                [disabled]="analyzingPackageIds.has(item.id)"
+                (click)="runAiAnalysis(item)"
+              >
+                <lucide-icon name="sparkles"></lucide-icon>
+                {{ analyzingPackageIds.has(item.id) ? 'AI Analyzing...' : 'AI Analyze Quotes' }}
+              </button>
+            </div>
+
+            <article class="ai-result" *ngIf="analysisFor(item) as analysis">
+              <h5>AI Recommendation</h5>
+              <p>{{ analysis.summary }}</p>
+              <ul *ngIf="analysis.reasons.length > 0">
+                <li *ngFor="let reason of analysis.reasons">{{ reason }}</li>
+              </ul>
+            </article>
+
+            <div class="bid-list">
+              <article class="bid-card" *ngFor="let bid of bidsForPackage(item)">
+                <div class="bid-main" (click)="toggleBidExpanded(item, bid)">
+                  <div class="bid-left-meta">
+                    <div class="bid-select-dot" [class.selected]="awardedBidByPackageId[item.id] === bid.bidId"></div>
+                    <div>
+                      <h5>{{ bid.bidderName }}</h5>
+                      <p>{{ bid.specialty || 'General Trade' }}</p>
+                      <div class="bid-badges">
+                        <span *ngIf="bid.insurance">Insured</span>
+                        <span *ngIf="bid.licenseNo">{{ bid.licenseNo }}</span>
+                        <span *ngIf="bid.bondable">Bondable</span>
+                        <span>{{ bid.location }}</span>
+                      </div>
+                      <div class="bid-ratings">
+                        <small>Google {{ bid.googleRating || bid.rating | number : '1.0-1' }}</small>
+                        <small>ProBuild {{ bid.proBuildRating || bid.rating | number : '1.0-1' }}</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bid-price-wrap">
+                    <div class="price">${{ bid.amount | number : '1.0-0' }}</div>
+                    <small [class.good]="bid.amount <= itemBudget(item)" [class.bad]="bid.amount > itemBudget(item)">
+                      {{ bid.amount <= itemBudget(item) ? 'Under budget' : 'Over budget' }}
+                    </small>
+                  </div>
+                </div>
+
+                <div class="bid-actions">
+                  <span class="ref">{{ bid.quoteRef || ('Q-' + bid.bidId) }} • {{ bid.submittedLabel || 'recently' }}</span>
+                  <button type="button" class="ghost" (click)="toggleBidExpanded(item, bid)">
+                    {{ isBidExpanded(item, bid) ? 'Hide Quote' : 'View Quote' }}
+                  </button>
+                </div>
+
+                <section class="bid-expanded" *ngIf="isBidExpanded(item, bid)">
+                  <div class="contact-grid">
+                    <p><strong>Contact:</strong> {{ bid.contact || 'Estimator Team' }}</p>
+                    <p><strong>Phone:</strong> {{ bid.phone || 'N/A' }}</p>
+                    <p><strong>Email:</strong> {{ bid.email || 'N/A' }}</p>
+                    <p><strong>Lead:</strong> {{ bid.leadTime }}</p>
+                  </div>
+
+                  <div class="inc-exc-grid">
+                    <div>
+                      <h6>Inclusions</h6>
+                      <ul>
+                        <li *ngFor="let inc of (bid.inclusions || ['Quoted scope as submitted'])">{{ inc }}</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h6>Exclusions</h6>
+                      <ul>
+                        <li *ngFor="let exc of (bid.exclusions || ['No exclusions specified'])">{{ exc }}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                <button type="button" class="award-btn" (click)="toggleAward(item, bid.bidId)">
+                  {{ awardedBidByPackageId[item.id] === bid.bidId ? 'Unaward' : 'Award' }}
+                </button>
+              </article>
+            </div>
+          </ng-container>
+
+          <ng-template #inHouseTemplate>
+            <div class="in-house-upload">
+              <div class="upload-head">
+                <lucide-icon name="file-text"></lucide-icon>
+                <div>
+                  <h5>Upload In-House Quote</h5>
+                  <p>Drag and drop a quote file or browse to upload.</p>
+                </div>
+              </div>
+
+              <div class="upload-drop-zone" appDragAndDrop (fileDropped)="onInHouseFilesDropped(item, $event)">
+                <lucide-icon name="upload"></lucide-icon>
+                <p>Drop quote file here</p>
+                <small>PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</small>
+
+                <label class="upload-btn" [attr.for]="'in-house-file-' + item.id">Browse files</label>
+                <input
+                  class="upload-input"
+                  [id]="'in-house-file-' + item.id"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  (change)="onInHouseFileSelected(item, $event)"
+                />
+              </div>
+
+              <div class="uploaded" *ngIf="inHouseUploadByPackageId[item.id] as uploaded">
+                <div>
+                  <strong>{{ uploaded.name }}</strong>
+                  <small>{{ uploaded.uploadedAt | date : 'medium' }}</small>
+                </div>
+                <span class="pill awarded">Quote Uploaded</span>
+              </div>
+            </div>
+          </ng-template>
+        </section>
+      </article>
+    </section>
+
+    <section class="trade-award-progress">
+      <div class="row">
+        <span>Items Completed</span>
+        <strong>{{ awardedCount }} / {{ totalCount }}</strong>
+      </div>
+      <div class="track">
+        <div class="fill" [style.width.%]="completionPercent"></div>
+      </div>
+      <p *ngIf="canProceed; else pendingTemplate">
+        All awards are complete. You may proceed to Mobilization.
+      </p>
+      <ng-template #pendingTemplate>
+        <p>Address every package by awarding or marking N/A to proceed.</p>
+      </ng-template>
+    </section>
   </section>
 
-  <section class="progress-card">
-    <div class="progress-row">
-      <span>Items Addressed</span>
-      <strong>{{ awardedCount + naCount }} / {{ totalCount }}</strong>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" [style.width.%]="completionPercent"></div>
-    </div>
-    <p class="progress-copy" *ngIf="canProceed; else awardPending">
-      All items are awarded or marked N/A. You may proceed to Mobilization.
-    </p>
-    <ng-template #awardPending>
-      <p class="progress-copy">Complete awards for all packages or mark non-required packages as N/A.</p>
-    </ng-template>
-  </section>
-</section>
+  <ng-template #loadingTemplate>
+    <section class="trade-award-loading">
+      <p>Loading trade award data...</p>
+    </section>
+  </ng-template>
+</div>
 

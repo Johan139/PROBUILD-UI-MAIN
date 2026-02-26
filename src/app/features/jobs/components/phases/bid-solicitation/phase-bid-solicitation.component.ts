@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { JobInboundBiddingComponent } from './job-inbound-bidding.component';
 import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
 
@@ -32,6 +32,9 @@ export class PhaseBidSolicitationComponent {
   @Input() stageDisplayMode: 'stage' | 'live' = 'stage';
   @Input() canUseLiveStageView = true;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
+
+  @ViewChild(JobInboundBiddingComponent)
+  inboundBiddingComponent?: JobInboundBiddingComponent;
 
   @Output() setDisplayMode = new EventEmitter<'stage' | 'live'>();
   @Output() back = new EventEmitter<void>();
@@ -144,7 +147,11 @@ export class PhaseBidSolicitationComponent {
   }
 
   get canProceed(): boolean {
-    return this.publishedCount > 0 && this.readinessItems.every((item) => item.done);
+    if (this.stageDisplayMode !== 'stage') {
+      return true;
+    }
+
+    return this.inboundBiddingComponent?.allChecklistItemsComplete ?? false;
   }
 
   get projectSizeSqFt(): string {

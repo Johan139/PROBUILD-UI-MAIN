@@ -1,120 +1,25 @@
-.phase-section {
+.trade-award-shell {
   display: grid;
   gap: var(--space-4);
 }
 
-.phase-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+.trade-award-content {
+  display: grid;
+  gap: var(--space-4);
 }
 
-.phase-link {
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.phase-actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.project-summary,
-.summary-strip article,
-.award-item,
-.progress-card {
-  border: 1px solid var(--color-border);
+.trade-award-intro-card {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 20%, var(--color-border));
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
   padding: var(--space-4);
-}
-
-.project-summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.label {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-}
-
-.value {
-  margin: var(--space-1) 0 0;
-  font-weight: var(--fw-semibold);
-}
-
-.sub-value {
-  margin: 2px 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-}
-
-.summary-strip {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.mini-label {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-
-  & + strong {
-    display: block;
-    margin-top: 2px;
-  }
-}
-
-.tabs {
   display: flex;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-
-  button {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    padding: var(--space-2) var(--space-3);
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-
-    &.active {
-      color: var(--color-text);
-      border-bottom-color: var(--color-primary);
-    }
-  }
-}
-
-.award-list {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.award-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: var(--space-3);
-  align-items: start;
-}
-
-.award-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
 
-  h4 {
+  h3 {
     margin: 0;
+    font-size: var(--fs-lg);
   }
 
   p {
@@ -123,152 +28,726 @@
   }
 }
 
-.item-main {
+.trade-award-intro-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.trade-award-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  .summary-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    padding: var(--space-3);
+    text-align: center;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+
+    .lucide-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+
+    &.trades {
+      border-color: color-mix(in oklab, #f59e0b 35%, var(--color-border));
+      background: color-mix(in oklab, #f59e0b 8%, var(--color-surface));
+
+      .lucide-icon,
+      strong {
+        color: #f59e0b;
+      }
+    }
+
+    &.vendors {
+      border-color: color-mix(in oklab, #0ea5e9 35%, var(--color-border));
+      background: color-mix(in oklab, #0ea5e9 8%, var(--color-surface));
+
+      .lucide-icon,
+      strong {
+        color: #0ea5e9;
+      }
+    }
+
+    &.suppliers {
+      border-color: color-mix(in oklab, #22c55e 35%, var(--color-border));
+      background: color-mix(in oklab, #22c55e 8%, var(--color-surface));
+
+      .lucide-icon,
+      strong {
+        color: #22c55e;
+      }
+    }
+
+    &.awarded {
+      border-color: color-mix(in oklab, #8b5cf6 35%, var(--color-border));
+      background: color-mix(in oklab, #8b5cf6 8%, var(--color-surface));
+
+      .lucide-icon,
+      strong {
+        color: #8b5cf6;
+      }
+    }
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: var(--fs-xs);
+  }
+
+  strong {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--fs-xl);
+  }
+}
+
+.trade-award-tabs {
+  display: flex;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+
+  button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: var(--fw-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    span {
+      font-size: 10px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: var(--color-surface-subtle);
+      color: var(--color-text-muted);
+    }
+
+    &.active {
+      border-bottom-color: var(--color-primary);
+      color: var(--color-text);
+
+      span {
+        background: color-mix(in oklab, var(--color-primary) 18%, transparent);
+        color: var(--color-primary);
+      }
+    }
+  }
+}
+
+.trade-award-empty {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-6);
+  text-align: center;
+
+  .lucide-icon {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+  }
+
+  p {
+    margin: 0;
+    font-weight: var(--fw-semibold);
+  }
+
+  small {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+  }
+}
+
+.trade-award-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.trade-award-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+
+  &.lane-in-house {
+    border-left: 4px solid #0ea5e9;
+  }
+
+  &.lane-marketplace {
+    border-left: 4px solid #f59e0b;
+  }
+
+  &.card-vendor {
+    border-color: color-mix(in oklab, #0ea5e9 35%, var(--color-border));
+  }
+
+  &.card-supplier {
+    border-color: color-mix(in oklab, #22c55e 35%, var(--color-border));
+  }
+
+  &.na {
+    opacity: 0.65;
+  }
+
+  > header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.toggle {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
   border: none;
   background: transparent;
   color: inherit;
   text-align: left;
-  padding: 0;
   cursor: pointer;
+
+  h4 {
+    margin: 0;
+    font-size: var(--fs-md);
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+  }
+
+  .lucide-icon {
+    transition: transform 160ms ease;
+  }
+
+  .open {
+    transform: rotate(180deg);
+  }
 }
 
-.overrun {
-  color: var(--color-danger);
-}
-
-.row-actions {
+.toggle-left {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.state-pill {
-  border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  background: color-mix(in oklab, var(--color-border) 35%, transparent);
-
-  &.is-awarded {
-    color: var(--color-success);
-    background: color-mix(in oklab, var(--color-success) 14%, transparent);
-  }
-
-  &.is-na {
-    color: var(--color-warning);
-    background: color-mix(in oklab, var(--color-warning) 14%, transparent);
-  }
+.toggle-right {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.btn {
-  border: 1px solid var(--color-border);
+.item-icon {
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  cursor: pointer;
-  background: transparent;
-  color: var(--color-text);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+
+  &.icon-trade {
+    background: color-mix(in oklab, #f59e0b 18%, transparent);
+    color: #f59e0b;
+  }
+
+  &.icon-vendor {
+    background: color-mix(in oklab, #0ea5e9 18%, transparent);
+    color: #0ea5e9;
+  }
+
+  &.icon-supplier {
+    background: color-mix(in oklab, #22c55e 18%, transparent);
+    color: #22c55e;
+  }
 }
 
-.btn-primary {
+.mode-pill {
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  padding: 2px 8px;
+
+  &.in-house {
+    background: color-mix(in oklab, #0ea5e9 16%, transparent);
+    color: #0ea5e9;
+  }
+
+  &.marketplace {
+    background: color-mix(in oklab, #f59e0b 16%, transparent);
+    color: #f59e0b;
+  }
+}
+
+.work-type-chip {
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  padding: 2px 8px;
+
+  &.labor-materials {
+    background: color-mix(in oklab, #8b5cf6 16%, transparent);
+    color: #8b5cf6;
+  }
+
+  &.labor-only {
+    background: color-mix(in oklab, #f97316 16%, transparent);
+    color: #f97316;
+  }
+
+  &.supply {
+    background: color-mix(in oklab, #22c55e 16%, transparent);
+    color: #22c55e;
+  }
+}
+
+.budget-chip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  border: 1px solid color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+
+  &.awarded {
+    color: var(--color-success);
+    background: color-mix(in oklab, var(--color-success) 18%, transparent);
+  }
+
+  &.na {
+    color: var(--color-warning);
+    background: color-mix(in oklab, var(--color-warning) 18%, transparent);
+  }
+}
+
+.ghost {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.trade-award-item > section {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ai-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ai-analyze {
+  border: none;
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-text-inverse);
+  padding: 8px 12px;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 }
 
-.btn-danger {
-  background: color-mix(in oklab, var(--color-danger) 12%, transparent);
-  color: var(--color-danger);
+.ai-result {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+  padding: var(--space-3);
+
+  h5 {
+    margin: 0;
+    color: var(--color-primary);
+  }
+
+  p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+  }
+
+  ul {
+    margin: var(--space-2) 0 0;
+    padding-left: 18px;
+    color: var(--color-text-muted);
+  }
 }
 
-.progress-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
+.bid-list {
+  display: grid;
+  gap: var(--space-2);
 }
 
-.progress-track {
-  height: 6px;
-  border-radius: 999px;
+.bid-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
-  overflow: hidden;
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--space-2);
+
+  h5 {
+    margin: 0;
+    font-size: var(--fs-sm);
+  }
+
+  p {
+    margin: 2px 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+  }
+
+  .bid-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-2);
+    cursor: pointer;
+  }
+
+  .bid-left-meta {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .bid-select-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid #4a5058;
+    margin-top: 3px;
+
+    &.selected {
+      border-color: #fcd109;
+      box-shadow: inset 0 0 0 3px #fcd109;
+    }
+  }
+
+  .bid-badges {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    span {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--color-text-muted);
+      background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+    }
+  }
+
+  .bid-ratings {
+    margin-top: 6px;
+    display: flex;
+    gap: 10px;
+
+    small {
+      color: var(--color-text-muted);
+      font-size: 10px;
+    }
+  }
+
+  .bid-price-wrap {
+    text-align: right;
+
+    .price {
+      font-weight: var(--fw-bold);
+      font-size: var(--fs-md);
+    }
+
+    small {
+      font-size: 10px;
+
+      &.good {
+        color: var(--color-success);
+      }
+
+      &.bad {
+        color: var(--color-danger, #ef4444);
+      }
+    }
+  }
+
+  .bid-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-border);
+    padding-top: 8px;
+
+    .ref {
+      color: var(--color-text-muted);
+      font-size: 10px;
+    }
+  }
+
+  .bid-expanded {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--color-border);
+    margin-top: 2px;
+    padding-top: 10px;
+    display: grid;
+    gap: 10px;
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 12px;
+
+      p {
+        margin: 0;
+        font-size: 12px;
+      }
+    }
+
+    .inc-exc-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+
+      h6 {
+        margin: 0 0 4px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--color-text-muted);
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+
+      li {
+        font-size: 12px;
+        color: var(--color-text);
+        margin-bottom: 2px;
+      }
+    }
+  }
+
+  .award-btn {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    padding: 6px 10px;
+    cursor: pointer;
+    align-self: start;
+  }
 }
 
-.progress-fill {
-  height: 100%;
-  background: var(--color-success);
+.in-house-upload {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-surface-subtle);
+
+  .upload-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+
+    .lucide-icon {
+      width: 18px;
+      height: 18px;
+      color: #0ea5e9;
+      margin-top: 2px;
+    }
+
+    h5 {
+      margin: 0;
+      font-size: var(--fs-sm);
+    }
+
+    p {
+      margin: 2px 0 0;
+      color: var(--color-text-muted);
+      font-size: var(--fs-xs);
+    }
+  }
+
+  .upload-drop-zone {
+    border: 1px dashed color-mix(in oklab, #0ea5e9 45%, var(--color-border));
+    border-radius: var(--radius-md);
+    background: color-mix(in oklab, #0ea5e9 6%, var(--color-surface));
+    padding: var(--space-4);
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 6px;
+    transition: all 140ms ease;
+
+    .lucide-icon {
+      color: #0ea5e9;
+    }
+
+    p {
+      margin: 0;
+      color: var(--color-text);
+      font-weight: var(--fw-semibold);
+    }
+
+    small {
+      color: var(--color-text-muted);
+    }
+
+    &.file-over {
+      background: color-mix(in oklab, #0ea5e9 12%, var(--color-surface));
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 2px color-mix(in oklab, #0ea5e9 26%, transparent);
+    }
+  }
+
+  .upload-btn {
+    margin-top: var(--space-1);
+    border: 1px solid color-mix(in oklab, #0ea5e9 40%, var(--color-border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, #0ea5e9 10%, var(--color-surface));
+    color: #0ea5e9;
+    padding: 7px 12px;
+    font-weight: var(--fw-semibold);
+    font-size: var(--fs-xs);
+    cursor: pointer;
+  }
+
+  .upload-input {
+    display: none;
+  }
+
+  p {
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-muted);
+  }
+
+  .uploaded {
+    margin-top: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    border: 1px solid color-mix(in oklab, var(--color-success) 28%, var(--color-border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklab, var(--color-success) 10%, var(--color-surface));
+    padding: var(--space-2);
+  }
+
+  small {
+    color: var(--color-text-muted);
+  }
 }
 
-.progress-copy {
-  margin: var(--space-2) 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--fs-xs);
-}
-
-.decision-card {
+.trade-award-progress {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-4);
-  display: grid;
-  gap: var(--space-3);
 
-  h4 {
-    margin: 0;
-  }
-}
-
-.decision-title {
-  margin: 0;
-  font-weight: var(--fw-semibold);
-}
-
-.decision-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.notes-field {
-  display: grid;
-  gap: var(--space-2);
-
-  span {
-    font-size: var(--fs-xs);
-    color: var(--color-text-muted);
-    text-transform: uppercase;
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
   }
 
-  textarea {
-    width: 100%;
-    resize: vertical;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border);
+  .track {
+    height: 6px;
+    border-radius: 999px;
     background: var(--color-surface-subtle);
-    color: var(--color-text);
-    padding: var(--space-2);
-    font: inherit;
+    overflow: hidden;
+  }
+
+  .fill {
+    height: 100%;
+    background: var(--color-success);
+  }
+
+  p {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
   }
 }
 
-.decision-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+.trade-award-loading {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--color-text-muted);
 }
 
-@media (max-width: 960px) {
-  .project-summary,
-  .summary-strip {
+@media (max-width: 980px) {
+  .trade-award-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .award-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .award-item,
-  .row-actions {
+  .trade-award-item > header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .bid-card {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 }
 

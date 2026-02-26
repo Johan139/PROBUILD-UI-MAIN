@@ -1,29 +1,84 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
+import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import { BomService } from '../../../services/bom.service';
+import { BiddingService } from '../../../../../services/bidding.service';
+import { BidsService } from '../../../../../services/bids.service';
+import { FileUploadService } from '../../../../../services/file-upload.service';
+import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
 
 type AwardTab = 'trades' | 'vendors' | 'suppliers';
 
-interface AwardItem {
-  id: string;
-  label: string;
-  csi: string;
-  estimate: number;
-  bids: number;
-  status: 'pending' | 'awarded' | 'na';
-  bestBid: number;
-  variance: number;
-  recommendation: 'award' | 'review' | 'na';
-  notes: string;
+interface TradePackageVm {
+  id: number;
+  jobId: number;
+  trade: string;
+  category: string;
+  scopeOfWork: string;
+  csiCode: string;
+  budget: number;
+  laborBudget: number;
+  materialBudget: number;
+  totalBudget: number;
+  laborType: string;
+  status: string;
+  postedToMarketplace: boolean;
+  isInHouse: boolean;
+  linkedTradePackageId?: number | null;
+  isInactive?: boolean;
+  isHidden?: boolean;
+  isMock?: boolean;
+}
+
+interface PackageBidVm {
+  id: number;
+  bidId: number;
+  tradePackageId: number;
+  bidderName: string;
+  rating: number;
+  googleRating?: number;
+  googleReviews?: number;
+  proBuildRating?: number;
+  proBuildReviews?: number;
+  location: string;
+  amount: number;
+  leadTime: string;
+  status: string;
+  specialty?: string;
+  insurance?: boolean;
+  licenseNo?: string;
+  bondable?: boolean;
+  completedJobs?: number;
+  yearsInBusiness?: number;
+  quoteRef?: string;
+  submittedLabel?: string;
+  validUntil?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+  inclusions?: string[];
+  exclusions?: string[];
+  submittedAt?: string;
+  documentUrl?: string | null;
+}
+
+interface BidAnalysisVm {
+  summary: string;
+  recommendedBidId: number | null;
+  reasons: string[];
+  topCandidates: Array<{ bidId: number; score: number; reason: string }>;
 }
 
 @Component({
   selector: 'app-phase-trade-award',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideIconsModule, PhaseNavigationHeaderComponent, DragAndDropDirective],
   templateUrl: './phase-trade-award.component.html',
   styleUrl: './phase-trade-award.component.scss',
 })
-export class PhaseTradeAwardComponent {
+export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
 
   @Output() back = new EventEmitter<void>();
@@ -31,104 +86,293 @@ export class PhaseTradeAwardComponent {
   @Output() proceed = new EventEmitter<void>();
 
   awardTab: AwardTab = 'trades';
+  isLoading = false;
 
-  tradeItems: AwardItem[] = [
+  tradePackages: TradePackageVm[] = [];
+  bidsByPackageId: Record<number, PackageBidVm[]> = {};
+
+  expandedIds = new Set<number>();
+  expandedBidIds = new Set<string>();
+  analyzingPackageIds = new Set<number>();
+  analyzedPackageIds = new Set<number>();
+
+  awardedBidByPackageId: Record<number, number> = {};
+  inHouseUploadByPackageId: Record<number, { name: string; url: string; uploadedAt: string }> = {};
+  naPackageIds = new Set<number>();
+
+  analysisByPackageId: Record<number, BidAnalysisVm> = {};
+
+  private readonly mockTradePackages: TradePackageVm[] = [
     {
-      id: 'electrical',
-      label: 'Electrical Contractor',
-      csi: '26 00 00',
-      estimate: 55200,
-      bids: 4,
-      status: 'pending',
-      bestBid: 53100,
-      variance: -3.8,
-      recommendation: 'award',
-      notes: '',
+      id: 91001,
+      jobId: 0,
+      trade: 'Demo Framing & Carpentry',
+      category: 'trade',
+      scopeOfWork: 'Supply and install framing package for demo styling validation.',
+      csiCode: '06 10 00',
+      budget: 18200,
+      laborBudget: 10100,
+      materialBudget: 8100,
+      totalBudget: 18200,
+      laborType: 'Labor and Materials',
+      status: 'Posted',
+      postedToMarketplace: true,
+      isInHouse: false,
+      linkedTradePackageId: null,
+      isInactive: false,
+      isHidden: false,
+      isMock: true,
     },
     {
-      id: 'plumbing',
-      label: 'Plumbing Contractor',
-      csi: '22 00 00',
-      estimate: 43800,
-      bids: 3,
-      status: 'pending',
-      bestBid: 45500,
-      variance: 3.9,
-      recommendation: 'review',
-      notes: '',
+      id: 91002,
+      jobId: 0,
+      trade: 'Demo HVAC Installation (Labor)',
+      category: 'trade',
+      scopeOfWork: 'Labor-only install package to test vendor-tab styling and AI flow.',
+      csiCode: '23 00 00',
+      budget: 11800,
+      laborBudget: 8600,
+      materialBudget: 3200,
+      totalBudget: 11800,
+      laborType: 'Labor',
+      status: 'Posted',
+      postedToMarketplace: true,
+      isInHouse: false,
+      linkedTradePackageId: 91002,
+      isInactive: false,
+      isHidden: false,
+      isMock: true,
     },
     {
-      id: 'hvac',
-      label: 'HVAC Contractor',
-      csi: '23 00 00',
-      estimate: 46850,
-      bids: 5,
-      status: 'pending',
-      bestBid: 46120,
-      variance: -1.6,
-      recommendation: 'award',
-      notes: '',
+      id: 91003,
+      jobId: 0,
+      trade: 'Demo Structural Steel Supplier',
+      category: 'supplier',
+      scopeOfWork: 'Supply steel package for supplier lane styling and quote comparison.',
+      csiCode: '05 12 00',
+      budget: 16400,
+      laborBudget: 0,
+      materialBudget: 16400,
+      totalBudget: 16400,
+      laborType: 'Labor and Materials',
+      status: 'Posted',
+      postedToMarketplace: true,
+      isInHouse: false,
+      linkedTradePackageId: null,
+      isInactive: false,
+      isHidden: false,
+      isMock: true,
     },
   ];
 
-  vendorItems: AwardItem[] = [
-    {
-      id: 'lumber',
-      label: 'Lumber Vendor',
-      csi: '06 10 00',
-      estimate: 16420,
-      bids: 3,
-      status: 'pending',
-      bestBid: 15800,
-      variance: -3.8,
-      recommendation: 'award',
-      notes: '',
-    },
-    {
-      id: 'roofing',
-      label: 'Roofing Vendor',
-      csi: '07 50 00',
-      estimate: 13900,
-      bids: 2,
-      status: 'pending',
-      bestBid: 14220,
-      variance: 2.3,
-      recommendation: 'review',
-      notes: '',
-    },
-  ];
+  private readonly mockBidsByPackageId: Record<number, PackageBidVm[]> = {
+    91001: [
+      {
+        id: 910011,
+        bidId: 910011,
+        tradePackageId: 91001,
+        bidderName: 'Atlas Build Co.',
+        rating: 4.8,
+        googleRating: 4.7,
+        googleReviews: 124,
+        proBuildRating: 4.8,
+        proBuildReviews: 38,
+        location: 'Austin, TX',
+        amount: 17650,
+        leadTime: '16 days',
+        status: 'Submitted',
+        specialty: 'Residential Framing',
+        insurance: true,
+        licenseNo: 'LIC-TX-AB-221',
+        bondable: true,
+        completedJobs: 54,
+        yearsInBusiness: 11,
+        quoteRef: 'ATLAS-91001-A',
+        submittedLabel: '2d ago',
+        validUntil: '30 days',
+        contact: 'Emma Turner',
+        phone: '(512) 555-0107',
+        email: 'bids@atlasbuild.com',
+        inclusions: ['Framing labor', 'Structural bracing', 'Site clean-down'],
+        exclusions: ['Permit fees', 'Scaffolding rental'],
+      },
+      {
+        id: 910012,
+        bidId: 910012,
+        tradePackageId: 91001,
+        bidderName: 'BluePeak Contractors',
+        rating: 4.6,
+        googleRating: 4.5,
+        googleReviews: 88,
+        proBuildRating: 4.6,
+        proBuildReviews: 26,
+        location: 'Round Rock, TX',
+        amount: 18320,
+        leadTime: '14 days',
+        status: 'Submitted',
+        specialty: 'Structural Carpentry',
+        insurance: true,
+        licenseNo: 'LIC-TX-BP-149',
+        bondable: true,
+        completedJobs: 42,
+        yearsInBusiness: 9,
+        quoteRef: 'BPEAK-91001-B',
+        submittedLabel: '1d ago',
+        validUntil: '21 days',
+        contact: 'Jordan Lee',
+        phone: '(737) 555-0141',
+        email: 'estimating@bluepeak.co',
+        inclusions: ['Framing crew', 'Fasteners', 'Waste removal'],
+        exclusions: ['Design revisions'],
+      },
+      {
+        id: 910013,
+        bidId: 910013,
+        tradePackageId: 91001,
+        bidderName: 'Cedar Ridge Framing',
+        rating: 4.3,
+        googleRating: 4.2,
+        googleReviews: 51,
+        proBuildRating: 4.3,
+        proBuildReviews: 19,
+        location: 'Georgetown, TX',
+        amount: 17190,
+        leadTime: '21 days',
+        status: 'Submitted',
+        specialty: 'Timber Framing',
+        insurance: true,
+        licenseNo: 'LIC-TX-CR-309',
+        bondable: false,
+        completedJobs: 27,
+        yearsInBusiness: 6,
+        quoteRef: 'CEDAR-91001-C',
+        submittedLabel: '3d ago',
+        validUntil: '14 days',
+        contact: 'Nolan Price',
+        phone: '(512) 555-0173',
+        email: 'quotes@cedarridge.com',
+        inclusions: ['Labor only', 'Basic supervision'],
+        exclusions: ['Material wastage >3%', 'Scaffolding'],
+      },
+    ],
+    91002: [
+      {
+        id: 910021,
+        bidId: 910021,
+        tradePackageId: 91002,
+        bidderName: 'Prime Air Installers',
+        rating: 4.7,
+        location: 'Austin, TX',
+        amount: 11200,
+        leadTime: '12 days',
+        status: 'Submitted',
+      },
+      {
+        id: 910022,
+        bidId: 910022,
+        tradePackageId: 91002,
+        bidderName: 'NorthStar Mechanical',
+        rating: 4.4,
+        location: 'Pflugerville, TX',
+        amount: 10990,
+        leadTime: '15 days',
+        status: 'Submitted',
+      },
+    ],
+    91003: [
+      {
+        id: 910031,
+        bidId: 910031,
+        tradePackageId: 91003,
+        bidderName: 'SteelDirect Supply',
+        rating: 4.9,
+        location: 'San Antonio, TX',
+        amount: 15820,
+        leadTime: '9 days',
+        status: 'Submitted',
+      },
+      {
+        id: 910032,
+        bidId: 910032,
+        tradePackageId: 91003,
+        bidderName: 'Lone Star Metals',
+        rating: 4.5,
+        location: 'Austin, TX',
+        amount: 15290,
+        leadTime: '13 days',
+        status: 'Submitted',
+      },
+      {
+        id: 910033,
+        bidId: 910033,
+        tradePackageId: 91003,
+        bidderName: 'Texas Fabrication Hub',
+        rating: 4.2,
+        location: 'Temple, TX',
+        amount: 14950,
+        leadTime: '18 days',
+        status: 'Submitted',
+      },
+    ],
+  };
 
-  supplierItems: AwardItem[] = [
-    {
-      id: 'insulation',
-      label: 'Insulation Supplier',
-      csi: '07 21 00',
-      estimate: 7200,
-      bids: 3,
-      status: 'pending',
-      bestBid: 6950,
-      variance: -3.5,
-      recommendation: 'award',
-      notes: '',
-    },
-    {
-      id: 'paint',
-      label: 'Paint Supplier',
-      csi: '09 90 00',
-      estimate: 4800,
-      bids: 2,
-      status: 'pending',
-      bestBid: 4920,
-      variance: 2.5,
-      recommendation: 'review',
-      notes: '',
-    },
-  ];
+  constructor(
+    private readonly bomService: BomService,
+    private readonly biddingService: BiddingService,
+    private readonly bidsService: BidsService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly snackBar: MatSnackBar,
+  ) {}
 
-  selectedItemId = this.tradeItems[0].id;
+  ngOnInit(): void {
+    this.loadTradeAwardData();
+  }
+
+  bidKey(item: TradePackageVm, bid: PackageBidVm): string {
+    return `${item.id}-${bid.bidId}`;
+  }
+
+  isBidExpanded(item: TradePackageVm, bid: PackageBidVm): boolean {
+    return this.expandedBidIds.has(this.bidKey(item, bid));
+  }
+
+  toggleBidExpanded(item: TradePackageVm, bid: PackageBidVm): void {
+    const next = new Set(this.expandedBidIds);
+    const key = this.bidKey(item, bid);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedBidIds = next;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['projectDetails'] && !changes['projectDetails'].firstChange) {
+      this.loadTradeAwardData();
+    }
+  }
+
+  get jobId(): number {
+    return Number(this.projectDetails?.jobId || 0);
+  }
 
   get projectSizeSqFt(): string {
     return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
+  }
+
+  get clientName(): string {
+    const explicitClient = this.projectDetails?.clientName;
+    if (explicitClient) {
+      return explicitClient;
+    }
+    const first = this.projectDetails?.clientFirstName || '';
+    const last = this.projectDetails?.clientLastName || '';
+    return `${first} ${last}`.trim();
+  }
+
+  get projectAddress(): string {
+    return this.projectDetails?.address || this.projectDetails?.projectAddress;
   }
 
   get projectSizeSqM(): string {
@@ -136,102 +380,465 @@ export class PhaseTradeAwardComponent {
     if (Number.isNaN(numeric) || numeric <= 0) {
       return '228';
     }
-
     return Math.round(numeric * 0.0929).toLocaleString();
   }
 
-  get awardedCount(): number {
-    return [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].filter((x) => x.status === 'awarded')
-      .length;
+  get tradeItems(): TradePackageVm[] {
+    return this.tradePackages.filter(
+      (p) =>
+        p.category === 'trade' &&
+        !p.isInactive &&
+        !p.isHidden &&
+        (p.postedToMarketplace || p.isInHouse),
+    );
   }
 
-  get naCount(): number {
-    return [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].filter((x) => x.status === 'na').length;
+  get vendorItems(): TradePackageVm[] {
+    return this.tradePackages.filter(
+      (p) =>
+        p.category === 'trade' &&
+        !p.isInactive &&
+        !p.isHidden &&
+        this.isLaborOnly(p) &&
+        p.materialBudget > 0,
+    );
+  }
+
+  get supplierItems(): TradePackageVm[] {
+    return this.tradePackages.filter(
+      (p) => p.category === 'supplier' && !p.isInactive && !p.isHidden,
+    );
+  }
+
+  get currentItems(): TradePackageVm[] {
+    if (this.awardTab === 'trades') {
+      return this.tradeItems;
+    }
+    if (this.awardTab === 'vendors') {
+      return this.vendorItems;
+    }
+    return this.supplierItems;
+  }
+
+  get awardedCount(): number {
+    return (
+      Object.keys(this.awardedBidByPackageId).length +
+      Object.keys(this.inHouseUploadByPackageId).length +
+      this.naPackageIds.size
+    );
   }
 
   get totalCount(): number {
     return this.tradeItems.length + this.vendorItems.length + this.supplierItems.length;
   }
 
-  get canProceed(): boolean {
-    return this.awardedCount + this.naCount === this.totalCount;
+  get pendingCount(): number {
+    return Math.max(0, this.totalCount - this.awardedCount);
   }
 
   get completionPercent(): number {
-    return ((this.awardedCount + this.naCount) / this.totalCount) * 100;
-  }
-
-  get pendingCount(): number {
-    return this.totalCount - (this.awardedCount + this.naCount);
-  }
-
-  get currentItems(): AwardItem[] {
-    if (this.awardTab === 'trades') {
-      return this.tradeItems;
+    if (!this.totalCount) {
+      return 0;
     }
-
-    if (this.awardTab === 'vendors') {
-      return this.vendorItems;
-    }
-
-    return this.supplierItems;
+    return Math.min(100, (this.awardedCount / this.totalCount) * 100);
   }
 
-  get totalEstimatedValue(): number {
-    return [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].reduce((sum, item) => sum + item.estimate, 0);
-  }
-
-  get totalBestBidValue(): number {
-    return [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].reduce((sum, item) => sum + item.bestBid, 0);
-  }
-
-  get selectedItem(): AwardItem {
-    return this.currentItems.find((item) => item.id === this.selectedItemId) || this.currentItems[0];
-  }
-
-  toggleAward(id: string): void {
-    const item = [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].find((x) => x.id === id);
-    if (!item) {
-      return;
-    }
-
-    item.status = item.status === 'awarded' ? 'pending' : 'awarded';
-  }
-
-  markNotApplicable(id: string): void {
-    const item = [...this.tradeItems, ...this.vendorItems, ...this.supplierItems].find((x) => x.id === id);
-    if (!item) {
-      return;
-    }
-
-    item.status = item.status === 'na' ? 'pending' : 'na';
+  get canProceed(): boolean {
+    return this.totalCount > 0 && this.awardedCount >= this.totalCount;
   }
 
   setTab(tab: AwardTab): void {
     this.awardTab = tab;
-    this.selectedItemId = this.currentItems[0]?.id || '';
   }
 
-  selectItem(itemId: string): void {
-    this.selectedItemId = itemId;
+  isExpanded(packageId: number): boolean {
+    return this.expandedIds.has(packageId);
   }
 
-  setSelectedItemNotes(value: string): void {
-    const item = this.selectedItem;
-    if (!item) {
+  toggleExpanded(packageId: number): void {
+    const next = new Set(this.expandedIds);
+    if (next.has(packageId)) {
+      next.delete(packageId);
+    } else {
+      next.add(packageId);
+    }
+    this.expandedIds = next;
+  }
+
+  bidsForPackage(item: TradePackageVm): PackageBidVm[] {
+    if (this.awardTab === 'vendors' && item.linkedTradePackageId) {
+      return this.bidsByPackageId[item.linkedTradePackageId] || [];
+    }
+    return this.bidsByPackageId[item.id] || [];
+  }
+
+  isInHouse(item: TradePackageVm): boolean {
+    return !!item.isInHouse;
+  }
+
+  isAwarded(item: TradePackageVm): boolean {
+    return !!this.awardedBidByPackageId[item.id] || !!this.inHouseUploadByPackageId[item.id];
+  }
+
+  isNotApplicable(item: TradePackageVm): boolean {
+    return this.naPackageIds.has(item.id);
+  }
+
+  toggleAward(item: TradePackageVm, bidId: number): void {
+    if (this.awardedBidByPackageId[item.id] === bidId) {
+      delete this.awardedBidByPackageId[item.id];
       return;
     }
 
-    item.notes = value;
+    this.awardedBidByPackageId[item.id] = bidId;
+    this.naPackageIds.delete(item.id);
   }
 
-  clearSelectedItemNotes(): void {
-    const item = this.selectedItem;
-    if (!item) {
+  toggleNotApplicable(item: TradePackageVm): void {
+    if (this.naPackageIds.has(item.id)) {
+      this.naPackageIds.delete(item.id);
       return;
     }
 
-    item.notes = '';
+    this.naPackageIds.add(item.id);
+    delete this.awardedBidByPackageId[item.id];
+  }
+
+  runAiAnalysis(item: TradePackageVm): void {
+    if (item.isInHouse) {
+      this.snackBar.open('AI analysis is only available for marketplace bid packages.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!item.isMock && !this.jobId) {
+      return;
+    }
+
+    this.analyzingPackageIds.add(item.id);
+
+    if (item.isMock) {
+      const packageComparisonType =
+        this.cardType(item) === 'supplier'
+          ? 'Supplier'
+          : this.cardType(item) === 'vendor'
+            ? 'Vendor'
+            : 'Subcontractor';
+
+      const previewBids = this.bidsForPackage(item).map((bid) => ({
+        bidId: bid.bidId,
+        amount: Number(bid.amount || 0),
+        status: bid.status || 'Submitted',
+        probuildRating: Number(bid.rating || 0),
+        googleRating: Number(bid.rating || 0),
+      }));
+
+      this.biddingService
+        .analyzePreviewBids(packageComparisonType, previewBids, {
+          id: item.id,
+          tradeName: item.trade,
+          category: item.category,
+          scopeOfWork: item.scopeOfWork,
+          csiCode: item.csiCode,
+          budget: Number(item.budget || 0),
+          laborBudget: Number(item.laborBudget || 0),
+          materialBudget: Number(item.materialBudget || 0),
+          laborType: item.laborType,
+        })
+        .subscribe({
+        next: (result) => {
+          this.applyAnalysisResult(item.id, result);
+        },
+        error: () => {
+          this.analyzingPackageIds.delete(item.id);
+          this.snackBar.open('AI analysis failed for this package.', 'Close', { duration: 3000 });
+        },
+      });
+      return;
+    }
+
+    this.biddingService.analyzeTradePackage(this.jobId, item.id).subscribe({
+      next: (result) => {
+        this.applyAnalysisResult(item.id, result);
+      },
+      error: () => {
+        this.analyzingPackageIds.delete(item.id);
+        this.snackBar.open('AI analysis failed for this package.', 'Close', { duration: 3000 });
+      },
+    });
+  }
+
+  uploadInHouseQuote(item: TradePackageVm, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.uploadInHouseFile(item, file);
+    input.value = '';
+  }
+
+  analysisFor(item: TradePackageVm): BidAnalysisVm | null {
+    return this.analysisByPackageId[item.id] || null;
+  }
+
+  cardType(item: TradePackageVm): 'trade' | 'vendor' | 'supplier' {
+    if (this.awardTab === 'vendors') {
+      return 'vendor';
+    }
+
+    if (this.awardTab === 'suppliers' || item.category === 'supplier') {
+      return 'supplier';
+    }
+
+    return 'trade';
+  }
+
+  cardIcon(item: TradePackageVm): string {
+    const type = this.cardType(item);
+    if (type === 'vendor') {
+      return 'users';
+    }
+
+    if (type === 'supplier') {
+      return 'folder';
+    }
+
+    return 'hammer';
+  }
+
+  itemLaneLabel(item: TradePackageVm): string {
+    if (this.cardType(item) === 'vendor') {
+      return 'Vendor Materials';
+    }
+
+    if (this.cardType(item) === 'supplier') {
+      return 'Supplier';
+    }
+
+    return item.isInHouse ? 'In-House' : 'Marketplace';
+  }
+
+  workTypeLabel(item: TradePackageVm): string {
+    if (this.cardType(item) === 'supplier') {
+      return 'Supply';
+    }
+
+    return this.isLaborOnly(item) ? 'Labor' : 'Labor & Materials';
+  }
+
+  workTypeClass(item: TradePackageVm): 'labor-only' | 'labor-materials' | 'supply' {
+    if (this.cardType(item) === 'supplier') {
+      return 'supply';
+    }
+
+    return this.isLaborOnly(item) ? 'labor-only' : 'labor-materials';
+  }
+
+  itemBudget(item: TradePackageVm): number {
+    if (this.cardType(item) === 'vendor') {
+      return Math.max(0, item.materialBudget || 0);
+    }
+
+    return Number(item.budget || 0);
+  }
+
+  onInHouseFilesDropped(item: TradePackageVm, files: FileList): void {
+    const file = files?.item(0);
+    if (!file) {
+      return;
+    }
+
+    this.uploadInHouseFile(item, file);
+  }
+
+  onInHouseFileSelected(item: TradePackageVm, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.uploadInHouseFile(item, file);
+    input.value = '';
+  }
+
+  private loadTradeAwardData(): void {
+    if (!this.jobId) {
+      this.tradePackages = [...this.mockTradePackages];
+      this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+      this.loadBids();
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.bomService.getTradePackages(String(this.jobId)).subscribe({
+      next: (packages) => {
+        this.tradePackages = (packages || []).map((pkg) => ({
+          id: Number(pkg.id),
+          jobId: Number(pkg.jobId),
+          trade: pkg.trade,
+          category: String(pkg.category || 'trade').toLowerCase(),
+          scopeOfWork: pkg.scopeOfWork || 'No scope provided.',
+          csiCode: pkg.csiCode || 'N/A',
+          budget: Number(pkg.budget || 0),
+          laborBudget: Number(pkg.laborBudget || 0),
+          materialBudget: Number(pkg.materialBudget || 0),
+          totalBudget: Number(pkg.totalBudget || pkg.budget || 0),
+          laborType: pkg.laborType || 'Labor and Materials',
+          status: pkg.status || 'Draft',
+          postedToMarketplace: !!pkg.postedToMarketplace,
+          isInHouse: !!pkg.isInHouse,
+          linkedTradePackageId: pkg.linkedTradePackageId || null,
+          isInactive: !!pkg.isInactive,
+          isHidden: !!pkg.isHidden,
+        }));
+
+        this.tradePackages = [...this.tradePackages, ...this.mockTradePackages];
+        this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+
+        this.loadBids();
+      },
+      error: () => {
+        this.tradePackages = [...this.mockTradePackages];
+        this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+        this.loadBids();
+        this.snackBar.open('Unable to load trade packages. Showing demo packages only.', 'Close', {
+          duration: 3000,
+        });
+      },
+    });
+  }
+
+  private loadBids(): void {
+    this.bidsByPackageId = {};
+
+    Object.entries(this.mockBidsByPackageId).forEach(([key, bids]) => {
+      this.bidsByPackageId[Number(key)] = [...bids].sort((a, b) => a.amount - b.amount);
+    });
+
+    this.biddingService.getBidsForJob(this.jobId).subscribe({
+      next: (bids: any) => {
+        const items = Array.isArray(bids) ? bids : [];
+
+        items.forEach((bid: any) => {
+          const packageId = Number(bid.tradePackageId || 0);
+          if (!packageId) {
+            return;
+          }
+
+          if (!this.bidsByPackageId[packageId]) {
+            this.bidsByPackageId[packageId] = [];
+          }
+
+          this.bidsByPackageId[packageId].push({
+            id: Number(bid.id),
+            bidId: Number(bid.id),
+            tradePackageId: packageId,
+            bidderName: bid.companyName || `Bidder #${bid.id}`,
+            rating: Number(bid.rating || 0),
+            googleRating: Number(bid.googleRating || bid.rating || 0),
+            googleReviews: Number(bid.googleReviews || 0),
+            proBuildRating: Number(bid.proBuildRating || bid.rating || 0),
+            proBuildReviews: Number(bid.proBuildReviews || bid.reviews || 0),
+            location: bid.location || 'N/A',
+            amount: Number(bid.amount || 0),
+            leadTime: bid.duration ? `${bid.duration} days` : 'N/A',
+            status: bid.status || 'Submitted',
+            specialty: bid.specialty || 'General Trade',
+            insurance: bid.insurance ?? true,
+            licenseNo: bid.licenseNo || 'Licensed',
+            bondable: bid.bondable ?? true,
+            completedJobs: Number(bid.completedJobs || 0),
+            yearsInBusiness: Number(bid.yearsInBusiness || 0),
+            quoteRef: bid.quoteRef || `Q-${bid.id}`,
+            submittedLabel: bid.submittedLabel || 'recently',
+            validUntil: bid.validUntil || 'TBC',
+            contact: bid.contact || 'Estimator Team',
+            phone: bid.phone || 'N/A',
+            email: bid.email || 'N/A',
+            inclusions: Array.isArray(bid.inclusions) ? bid.inclusions : ['Quoted scope as submitted'],
+            exclusions: Array.isArray(bid.exclusions) ? bid.exclusions : ['No exclusions specified'],
+            submittedAt: bid.submittedAt,
+            documentUrl: bid.documentUrl,
+          });
+        });
+
+        Object.keys(this.bidsByPackageId).forEach((key) => {
+          this.bidsByPackageId[Number(key)] = this.bidsByPackageId[Number(key)].sort(
+            (a, b) => a.amount - b.amount,
+          );
+        });
+
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+        this.snackBar.open('Live bids failed to load. Showing demo bids only.', 'Close', {
+          duration: 2500,
+        });
+      },
+    });
+  }
+
+  private isLaborOnly(pkg: TradePackageVm): boolean {
+    const normalized = String(pkg.laborType || '').trim().toLowerCase();
+    return normalized === 'labor' || normalized === 'labor only';
+  }
+
+  private uploadInHouseFile(item: TradePackageVm, file: File): void {
+    if (!this.jobId) {
+      this.snackBar.open('Job id not found. Unable to upload quote.', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.fileUploadService.uploadFiles([file], `${this.jobId}`).subscribe({
+      next: (upload) => {
+        if (upload.isUploading || !upload.files?.length) {
+          return;
+        }
+
+        const uploaded = upload.files[0];
+        this.inHouseUploadByPackageId[item.id] = {
+          name: file.name,
+          url: uploaded.url,
+          uploadedAt: new Date().toISOString(),
+        };
+        delete this.awardedBidByPackageId[item.id];
+        this.naPackageIds.delete(item.id);
+
+        this.bidsService.uploadBidPdf(this.jobId, uploaded.url, item.id).subscribe({
+          next: () => {
+            this.snackBar.open('In-house quote uploaded.', 'Close', { duration: 2500 });
+          },
+          error: () => {
+            this.snackBar.open('Quote uploaded, but bid record creation failed.', 'Close', {
+              duration: 3500,
+            });
+          },
+        });
+      },
+      error: () => {
+        this.snackBar.open('Failed to upload in-house quote.', 'Close', { duration: 3000 });
+      },
+    });
+  }
+
+  private applyAnalysisResult(packageId: number, result: any): void {
+    this.analyzingPackageIds.delete(packageId);
+    this.analyzedPackageIds.add(packageId);
+
+    const analysis: BidAnalysisVm = {
+      summary: result?.summary || 'Analysis complete.',
+      recommendedBidId: Number(result?.recommendedBidId || 0) || null,
+      reasons: Array.isArray(result?.reasons) ? result.reasons : [],
+      topCandidates: Array.isArray(result?.topCandidates) ? result.topCandidates : [],
+    };
+
+    this.analysisByPackageId[packageId] = analysis;
   }
 }
 
