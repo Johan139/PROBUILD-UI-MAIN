@@ -73,6 +73,20 @@
   --color-status-closeout: #059669;
   --color-status-archived: #64748b;
 
+  /* Trade award / bid detail UI */
+  --color-trade-select-dot-border: #4a5058;
+  --color-trade-chip-insured-text: #4ade80;
+  --color-trade-chip-license-text: #60a5fa;
+  --color-trade-chip-bondable-bg: #a855f7;
+  --color-trade-chip-bondable-text: #c084fc;
+  --color-trade-text-soft: #cbd5e1;
+  --color-trade-dialog-border: var(--gray-700);
+  --color-trade-dialog-surface: var(--gray-800);
+  --color-trade-dialog-surface-alt: var(--gray-900);
+  --color-trade-dialog-text: #f8fafc;
+  --color-trade-dialog-label: #94a3b8;
+  --color-overlay-strong: rgb(0 0 0 / 72%);
+
   /* Elevation / shadow (unified names) */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
   --shadow-2: 0 2px 8px 0 hsla(220 3% 15% / 0.08);
@@ -115,6 +129,20 @@
   --color-status-mobilization: #14b8a6;
   --color-status-closeout: #059669;
   --color-status-archived: #64748b;
+
+  /* Trade award / bid detail UI */
+  --color-trade-select-dot-border: #4a5058;
+  --color-trade-chip-insured-text: #4ade80;
+  --color-trade-chip-license-text: #60a5fa;
+  --color-trade-chip-bondable-bg: #a855f7;
+  --color-trade-chip-bondable-text: #c084fc;
+  --color-trade-text-soft: #cbd5e1;
+  --color-trade-dialog-border: var(--gray-700);
+  --color-trade-dialog-surface: var(--gray-800);
+  --color-trade-dialog-surface-alt: var(--gray-900);
+  --color-trade-dialog-text: #f8fafc;
+  --color-trade-dialog-label: #94a3b8;
+  --color-overlay-strong: rgb(0 0 0 / 72%);
 
   /* Dark shadows */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);

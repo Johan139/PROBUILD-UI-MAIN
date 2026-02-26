@@ -62,6 +62,14 @@ interface PackageBidVm {
   exclusions?: string[];
   submittedAt?: string;
   documentUrl?: string | null;
+  insuranceCoverage?: string;
+  warranty?: string;
+  quotedScope?: string;
+}
+
+interface BidDetailDialogState {
+  item: TradePackageVm;
+  bid: PackageBidVm;
 }
 
 interface BidAnalysisVm {
@@ -101,6 +109,9 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   naPackageIds = new Set<number>();
 
   analysisByPackageId: Record<number, BidAnalysisVm> = {};
+  detailDialog: BidDetailDialogState | null = null;
+  private readonly showDemoBids =
+    typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
   private readonly mockTradePackages: TradePackageVm[] = [
     {
@@ -110,10 +121,10 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       category: 'trade',
       scopeOfWork: 'Supply and install framing package for demo styling validation.',
       csiCode: '06 10 00',
-      budget: 18200,
-      laborBudget: 10100,
-      materialBudget: 8100,
-      totalBudget: 18200,
+      budget: 85000,
+      laborBudget: 61200,
+      materialBudget: 23800,
+      totalBudget: 85000,
       laborType: 'Labor and Materials',
       status: 'Posted',
       postedToMarketplace: true,
@@ -171,30 +182,39 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
         id: 910011,
         bidId: 910011,
         tradePackageId: 91001,
-        bidderName: 'Atlas Build Co.',
+        bidderName: 'Framing Pro Services',
         rating: 4.8,
         googleRating: 4.7,
-        googleReviews: 124,
+        googleReviews: 218,
         proBuildRating: 4.8,
-        proBuildReviews: 38,
+        proBuildReviews: 23,
         location: 'Austin, TX',
-        amount: 17650,
-        leadTime: '16 days',
+        amount: 78200,
+        leadTime: '3-5 days',
         status: 'Submitted',
-        specialty: 'Residential Framing',
+        specialty: 'Framing Specialist',
         insurance: true,
-        licenseNo: 'LIC-TX-AB-221',
+        licenseNo: 'TX-BLD-48291',
         bondable: true,
-        completedJobs: 54,
-        yearsInBusiness: 11,
-        quoteRef: 'ATLAS-91001-A',
-        submittedLabel: '2d ago',
-        validUntil: '30 days',
-        contact: 'Emma Turner',
-        phone: '(512) 555-0107',
-        email: 'bids@atlasbuild.com',
-        inclusions: ['Framing labor', 'Structural bracing', 'Site clean-down'],
-        exclusions: ['Permit fees', 'Scaffolding rental'],
+        completedJobs: 67,
+        yearsInBusiness: 14,
+        quoteRef: 'QR-061000-001',
+        submittedLabel: 'Feb 18, 2026',
+        validUntil: 'Mar 20, 2026',
+        contact: 'James Rodriguez',
+        phone: '(512) 555-0142',
+        email: 'james@framingpro.com',
+        insuranceCoverage: '$2M General Liability',
+        warranty: '2 Year Workmanship',
+        quotedScope:
+          'Erect all wood framing for walls and ceilings; install all specified LVL beams and headers; install all wall and roof sheathing; set pre-engineered roof trusses; install all specified structural hardware and connectors.',
+        inclusions: [
+          'All labor per scope',
+          'Cleanup & debris removal',
+          'Job-site safety measures',
+          'Project management & coordination',
+        ],
+        exclusions: ['Material procurement (if labor-only)', 'Permit fees', 'Engineering or design changes'],
       },
       {
         id: 910012,
@@ -345,6 +365,53 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       next.add(key);
     }
     this.expandedBidIds = next;
+  }
+
+  openBidDialog(item: TradePackageVm, bid: PackageBidVm): void {
+    this.detailDialog = { item, bid };
+  }
+
+  closeBidDialog(): void {
+    this.detailDialog = null;
+  }
+
+  budgetVarianceAmount(item: TradePackageVm, bid: PackageBidVm): number {
+    return Number((bid.amount || 0) - this.itemBudget(item));
+  }
+
+  budgetVariancePercent(item: TradePackageVm, bid: PackageBidVm): number {
+    const budget = this.itemBudget(item);
+    if (budget <= 0) {
+      return 0;
+    }
+
+    return Math.round((Math.abs(this.budgetVarianceAmount(item, bid)) / budget) * 100);
+  }
+
+  budgetVarianceLabel(item: TradePackageVm, bid: PackageBidVm): string {
+    const variance = this.budgetVarianceAmount(item, bid);
+    const percent = this.budgetVariancePercent(item, bid);
+
+    if (variance < 0) {
+      return `${percent}% under budget`;
+    }
+
+    if (variance > 0) {
+      return `${percent}% over budget`;
+    }
+
+    return 'On budget';
+  }
+
+  budgetVarianceClass(item: TradePackageVm, bid: PackageBidVm): 'good' | 'bad' | 'neutral' {
+    const variance = this.budgetVarianceAmount(item, bid);
+    if (variance < 0) {
+      return 'good';
+    }
+    if (variance > 0) {
+      return 'bad';
+    }
+    return 'neutral';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -667,8 +734,10 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   private loadTradeAwardData(): void {
     if (!this.jobId) {
-      this.tradePackages = [...this.mockTradePackages];
-      this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+      this.tradePackages = this.showDemoBids ? [...this.mockTradePackages] : [];
+      this.expandedIds = this.showDemoBids
+        ? new Set(this.mockTradePackages.map((pkg) => pkg.id))
+        : new Set<number>();
       this.loadBids();
       return;
     }
@@ -697,18 +766,31 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
           isHidden: !!pkg.isHidden,
         }));
 
-        this.tradePackages = [...this.tradePackages, ...this.mockTradePackages];
-        this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+        if (this.showDemoBids) {
+          this.tradePackages = [...this.tradePackages, ...this.mockTradePackages];
+          this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+        } else {
+          this.expandedIds = new Set<number>();
+        }
 
         this.loadBids();
       },
       error: () => {
-        this.tradePackages = [...this.mockTradePackages];
-        this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
+        this.tradePackages = this.showDemoBids ? [...this.mockTradePackages] : [];
+        this.expandedIds = this.showDemoBids
+          ? new Set(this.mockTradePackages.map((pkg) => pkg.id))
+          : new Set<number>();
         this.loadBids();
-        this.snackBar.open('Unable to load trade packages. Showing demo packages only.', 'Close', {
-          duration: 3000,
-        });
+
+        if (this.showDemoBids) {
+          this.snackBar.open('Unable to load trade packages. Showing demo packages only.', 'Close', {
+            duration: 3000,
+          });
+        } else {
+          this.snackBar.open('Unable to load trade packages.', 'Close', {
+            duration: 3000,
+          });
+        }
       },
     });
   }
@@ -716,9 +798,16 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   private loadBids(): void {
     this.bidsByPackageId = {};
 
-    Object.entries(this.mockBidsByPackageId).forEach(([key, bids]) => {
-      this.bidsByPackageId[Number(key)] = [...bids].sort((a, b) => a.amount - b.amount);
-    });
+    if (this.showDemoBids) {
+      Object.entries(this.mockBidsByPackageId).forEach(([key, bids]) => {
+        this.bidsByPackageId[Number(key)] = [...bids].sort((a, b) => a.amount - b.amount);
+      });
+    }
+
+    if (!this.jobId && !this.showDemoBids) {
+      this.isLoading = false;
+      return;
+    }
 
     this.biddingService.getBidsForJob(this.jobId).subscribe({
       next: (bids: any) => {
