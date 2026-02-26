@@ -385,6 +385,30 @@
           {{ isSending ? 'Sending...' : 'Send to Client' }}
         </button>
       </div>
+
+      <div class="quote-revision-card">
+        <div class="quote-revision-content">
+          <div class="quote-revision-icon" aria-hidden="true">
+            <lucide-icon name="rotate-ccw"></lucide-icon>
+          </div>
+          <div>
+            <h4 class="quote-revision-title">Need to make changes?</h4>
+            <p class="quote-revision-copy">
+              Update your BOM selections above and regenerate a revised quotation.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-outline quote-revision-btn"
+          [disabled]="isGeneratingQuote || isSending"
+          (click)="startQuoteRevision()"
+        >
+          <lucide-icon name="rotate-ccw"></lucide-icon>
+          Revise &amp; Regenerate
+        </button>
+      </div>
     </section>
   </ng-template>
 </section>

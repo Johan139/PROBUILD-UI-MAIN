@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { JobInboundBiddingComponent } from './job-inbound-bidding.component';
+import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
 
 interface SolicitationPacket {
   id: string;
@@ -22,7 +23,7 @@ interface ReadinessItem {
 @Component({
   selector: 'app-phase-bid-solicitation',
   standalone: true,
-  imports: [CommonModule, JobInboundBiddingComponent],
+  imports: [CommonModule, JobInboundBiddingComponent, PhaseNavigationHeaderComponent],
   templateUrl: './phase-bid-solicitation.component.html',
   styleUrl: './phase-bid-solicitation.component.scss',
 })
@@ -148,6 +149,22 @@ export class PhaseBidSolicitationComponent {
 
   get projectSizeSqFt(): string {
     return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
+  }
+
+  get clientName(): string {
+    const explicitClient = this.projectDetails?.clientName;
+    if (explicitClient) {
+      return explicitClient;
+    }
+
+    const first = this.projectDetails?.clientFirstName || '';
+    const last = this.projectDetails?.clientLastName || '';
+    const combined = `${first} ${last}`.trim();
+    return combined;
+  }
+
+  get projectAddress(): string {
+    return this.projectDetails?.address || this.projectDetails?.projectAddress;
   }
 
   get projectSizeSqM(): string {

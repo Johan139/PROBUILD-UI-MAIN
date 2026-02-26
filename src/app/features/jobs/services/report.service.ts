@@ -23,16 +23,9 @@ export class ReportService {
       }
       const fullResponse = results[0].fullResponse;
 
-      const startMarker = '### 4. Permits and Approvals Report';
-      const endMarker = '### 5. Blueprint Review & Error Report';
-
-      const startIndex = fullResponse.indexOf(startMarker);
-      if (startIndex === -1) return [];
-
-      let sectionContent = fullResponse.substring(startIndex);
-      const endIndex = sectionContent.indexOf(endMarker);
-      if (endIndex !== -1) {
-        sectionContent = sectionContent.substring(0, endIndex);
+      const sectionContent = this.extractPermitsSection(fullResponse);
+      if (!sectionContent) {
+        return [];
       }
 
       const lines = sectionContent.split('\n');
@@ -40,12 +33,21 @@ export class ReportService {
       let inTable = false;
 
       for (const line of lines) {
-        if (line.trim().startsWith('|') && line.includes('---')) {
+        const trimmed = line.trim();
+
+        if (!trimmed.startsWith('|')) {
+          if (inTable) {
+            break;
+          }
+          continue;
+        }
+
+        if (trimmed.includes('---')) {
           inTable = true;
           continue;
         }
 
-        if (inTable && line.trim().startsWith('|')) {
+        if (inTable) {
           const parts = line
             .split('|')
             .map((p) => p.trim())
@@ -55,7 +57,7 @@ export class ReportService {
             const agency = parts[1].replace(/\*\*/g, '');
             const requirements = parts[2].replace(/\*\*/g, '');
 
-            if (name !== 'Permit Name') {
+            if (name.toLowerCase() !== 'permit name') {
               permits.push({
                 jobId: parseInt(jobId),
                 name: name,
@@ -74,6 +76,27 @@ export class ReportService {
       console.error('Failed to get permits report:', err);
       return [];
     }
+  }
+
+  private extractPermitsSection(fullResponse: string): string | null {
+    const headingPattern = /^\s*#{2,6}\s*\*{0,2}\s*4\.\s*Permits\s+and\s+Approvals\s+Report\s*\*{0,2}\s*$/im;
+    const headingMatch = headingPattern.exec(fullResponse);
+
+    if (!headingMatch || headingMatch.index === undefined) {
+      return null;
+    }
+
+    const startIndex = headingMatch.index;
+    const afterStart = fullResponse.slice(startIndex + headingMatch[0].length);
+
+    const nextHeadingPattern = /^\s*#{2,6}\s*\*{0,2}\s*\d+\./im;
+    const nextHeadingMatch = nextHeadingPattern.exec(afterStart);
+
+    if (!nextHeadingMatch || nextHeadingMatch.index === undefined) {
+      return fullResponse.slice(startIndex);
+    }
+
+    return fullResponse.slice(startIndex, startIndex + headingMatch[0].length + nextHeadingMatch.index);
   }
 
   async getEnvironmentalReportContent(jobId: string): Promise<string | null> {

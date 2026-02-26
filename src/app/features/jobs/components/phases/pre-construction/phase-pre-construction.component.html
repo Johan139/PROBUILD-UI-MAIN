@@ -1,116 +1,190 @@
 <section class="phase-section">
-  <header class="phase-header">
-    <button type="button" class="phase-link" (click)="back.emit()">
-      ← Back to Contract Award
-    </button>
-    <div class="phase-actions">
-      <button type="button" class="btn btn-danger" (click)="discard.emit()">
-        Discard Project
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        [disabled]="!canProceed"
-        (click)="proceed.emit()"
-      >
-        Proceed to Bid Solicitation
-      </button>
-    </div>
-  </header>
-
-  <div class="project-summary">
-    <article>
-      <p class="label">Project</p>
-      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
-    </article>
-    <article>
-      <p class="label">Client</p>
-      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
-    </article>
-    <article>
-      <p class="label">Address</p>
-      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
-    </article>
-    <article>
-      <p class="label">Size</p>
-      <p class="value">{{ projectSizeSqFt }} sq ft</p>
-      <p class="sub-value">{{ projectSizeSqM }} m²</p>
-    </article>
-  </div>
+  <app-phase-navigation-header
+    stageLabel="Pre-Construction &amp; Compliance"
+    backLabel="Back to Contract Award"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Bid Solicitation"
+    [projectName]="projectDetails?.projectName || 'HERNANDEZ RESIDENCE'"
+    [clientName]="clientName"
+    [projectAddress]="projectAddress"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (fullReportRequested)="fullReportRequested.emit()"
+    (billOfMaterialsRequested)="billOfMaterialsRequested.emit()"
+    (executiveSummaryRequested)="executiveSummaryRequested.emit()"
+    (environmentalReportRequested)="environmentalReportRequested.emit()"
+    (procurementScheduleRequested)="procurementScheduleRequested.emit()"
+    (dailyConstructionPlanRequested)="dailyConstructionPlanRequested.emit()"
+  ></app-phase-navigation-header>
 
   <section class="intro-card">
-    <h3>Pre-Construction & Compliance</h3>
-    <p>
-      Verify permits, insurance, bonds, and compliance items before proceeding to bid solicitation.
-      Every checklist item must be uploaded or marked N/A.
-    </p>
+    <div class="intro-card__icon">
+      <lucide-icon name="shield-check"></lucide-icon>
+    </div>
+    <div class="intro-card__copy">
+      <h3>Pre-Construction & Compliance</h3>
+      <p>
+        Verify permits and compliance items before proceeding to bid solicitation.
+        Upload documents or mark N/A directly on each permit line.
+      </p>
+    </div>
   </section>
 
-  <input
-    #permitFileInput
-    type="file"
-    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.dwg"
-    class="hidden-input"
-    (change)="uploadActivePermit($event)"
-  />
-
   <section class="permits-list">
-    <article class="permit-item" *ngFor="let item of permitItems">
-      <div class="permit-copy">
+    <article class="permit-item permit-item--add" *ngIf="addingPermit">
+      <div class="permit-copy permit-copy--with-meta">
         <div class="permit-title-row">
-          <h4 [class.is-na]="permitNA.has(item.key)">{{ item.label }}</h4>
-          <span *ngIf="permitUploads[item.key]" class="state-pill is-done">Done</span>
-          <span *ngIf="permitNA.has(item.key)" class="state-pill is-na">N/A</span>
+          <div class="permit-title-main">
+            <span class="permit-icon-wrap">
+              <lucide-icon name="plus"></lucide-icon>
+            </span>
+            <h4>New Permit</h4>
+          </div>
         </div>
-        <p>{{ item.description }}</p>
-        <p class="permit-accepts">Accepts: {{ item.accepts }}</p>
+
+        <div class="permit-form-grid">
+          <label>
+            <span>Permit Name</span>
+            <input type="text" [(ngModel)]="newPermitDraft.name" placeholder="e.g. Fire Permit" />
+          </label>
+          <label>
+            <span>Issuing Agency</span>
+            <input type="text" [(ngModel)]="newPermitDraft.issuingAgency" placeholder="e.g. City of Georgetown" />
+          </label>
+          <label class="permit-form-grid__full">
+            <span>Requirements</span>
+            <input type="text" [(ngModel)]="newPermitDraft.requirements" placeholder="Brief requirements" />
+          </label>
+        </div>
       </div>
 
-      <div class="permit-actions" *ngIf="!permitUploads[item.key] && !permitNA.has(item.key)">
-        <button type="button" class="btn btn-outline" (click)="setActivePermitKey(item.key); permitFileInput.click()">
-          Upload
+      <div class="permit-actions">
+        <button type="button" class="btn btn-primary" (click)="saveNewPermit()">Save</button>
+        <button type="button" class="btn btn-outline" (click)="cancelAddPermit()">Cancel</button>
+      </div>
+    </article>
+
+    <article class="permit-item" *ngFor="let permit of permits">
+      <input
+        #permitFileInput
+        type="file"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        class="hidden-input"
+        (change)="onPermitFileSelected(permit, $event)"
+      />
+
+      <div class="permit-copy permit-copy--with-meta">
+        <div class="permit-title-row permit-title-row--with-status">
+          <div class="permit-title-main">
+            <span class="permit-icon-wrap">
+              <lucide-icon [name]="getPermitIconName(permit.name)"></lucide-icon>
+            </span>
+            <h4>{{ permit.name || 'Unnamed Permit' }}</h4>
+          </div>
+        </div>
+        <p>{{ permit.requirements || 'Permit requirements and agency checks are managed in the permit details dialog.' }}</p>
+        <p class="permit-accepts" *ngIf="permit.issuingAgency">Agency: {{ permit.issuingAgency }}</p>
+        <p class="permit-accepts" *ngIf="permit.expirationDate">
+          Expires: {{ permit.expirationDate | date: 'mediumDate' }}
+        </p>
+      </div>
+
+      <div class="permit-actions">
+        <div class="permit-actions-status">
+          <span class="state-pill" [ngClass]="getPermitStatusClass(permit.status)">
+            {{ getPermitStatusLabel(permit.status) }}
+          </span>
+          <lucide-icon *ngIf="permit.documentId" name="check-circle-2" class="permit-complete-icon"></lucide-icon>
+        </div>
+
+        <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
+          <lucide-icon name="upload" class="btn-icon"></lucide-icon>
+          <span>{{ permit.documentId ? 'Replace' : 'Upload' }}</span>
         </button>
-        <button type="button" class="btn btn-outline na-btn" (click)="markNA(item.key)">
+
+        <button
+          type="button"
+          class="btn btn-outline btn-na"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="!isPermitNA(permit.status)"
+          (click)="markPermitNA(permit)"
+        >
           N/A
         </button>
-      </div>
 
-      <div class="permit-actions" *ngIf="permitUploads[item.key]">
-        <span class="status ok">{{ permitUploads[item.key].name }} · {{ permitUploads[item.key].date }}</span>
         <button
           type="button"
           class="btn btn-outline"
-          (click)="setActivePermitKey(item.key); permitFileInput.click()"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="isPermitNA(permit.status)"
+          (click)="undoPermitNA(permit)"
         >
-          Replace
+          Undo
         </button>
-        <button type="button" class="btn btn-outline" (click)="removePermit(item.key)">Remove</button>
-      </div>
 
-      <div class="permit-actions" *ngIf="permitNA.has(item.key)">
-        <span class="status muted">Marked N/A</span>
-        <button type="button" class="btn btn-outline" (click)="undoNA(item.key)">Undo</button>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="permit.documentId"
+          (click)="viewPermitDocument(permit)"
+        >
+          View
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline btn-danger-ghost"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="permit.documentId"
+          (click)="removePermitDocument(permit)"
+        >
+          Remove
+        </button>
+      </div>
+    </article>
+
+    <article class="permit-item permit-item--empty" *ngIf="!isPermitLoading && permits.length === 0">
+      <div class="permit-copy">
+        <h4>No permits available yet</h4>
+        <p>
+          Use Permit Details to add permits manually or allow AI suggestions to populate the list.
+        </p>
       </div>
     </article>
   </section>
 
   <section class="progress-card">
-    <div class="progress-row">
-      <span>Items Completed</span>
-      <strong>{{ completedCount }} / {{ permitItems.length }}</strong>
+    <div class="progress-row progress-row--with-action">
+      <div>
+        <span>Permit Status</span>
+        <strong [ngClass]="permitStatus">{{ permitStatusText }}</strong>
+      </div>
+      <div class="progress-actions">
+        <button type="button" class="btn btn-outline" (click)="startAddPermit()" [disabled]="addingPermit">Add Permit</button>
+        <button type="button" class="btn btn-outline" (click)="openPermitsDialog()">Open Full Permit Details</button>
+      </div>
     </div>
     <div class="progress-track">
-      <div class="progress-fill" [style.width.%]="(completedCount / permitItems.length) * 100"></div>
+      <div class="progress-fill" [style.width.%]="permitProgressPercent"></div>
     </div>
+    <p class="progress-ratio">{{ completedCount }} / {{ totalPermitCount }} approved</p>
     <p class="progress-copy" *ngIf="canProceed; else permitsPending">
       All items addressed. You may proceed to Bid Solicitation.
     </p>
     <ng-template #permitsPending>
-      <p class="progress-copy">Please upload a document or mark as N/A for each item before proceeding.</p>
+      <p class="progress-copy">Please review permits and resolve pending or expired statuses before proceeding.</p>
     </ng-template>
   </section>
 
-  <section class="schedule-card">
+  <!-- <section class="schedule-card">
     <div class="schedule-header">
       <div>
         <h3>Pre-Construction Timeline Governance</h3>
@@ -241,6 +315,6 @@
         </tbody>
       </table>
     </div>
-  </section>
+  </section> -->
 </section>
 

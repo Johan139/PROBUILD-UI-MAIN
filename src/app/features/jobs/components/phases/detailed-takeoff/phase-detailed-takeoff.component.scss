@@ -574,6 +574,64 @@
   margin-top: var(--space-3);
 }
 
+.quote-revision-card {
+  margin-top: var(--space-3);
+  border: 1px solid color-mix(in oklab, #f97316 35%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, #f97316 8%, var(--color-surface));
+  padding: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.quote-revision-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.quote-revision-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, #f97316 14%, transparent);
+  border: 1px solid color-mix(in oklab, #f97316 35%, var(--color-border));
+  color: #fb923c;
+}
+
+.quote-revision-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.quote-revision-copy {
+  margin: 4px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.quote-revision-btn {
+  border-color: color-mix(in oklab, #f97316 42%, var(--color-border));
+  color: #fb923c;
+  font-weight: var(--fw-semibold);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    border-color: color-mix(in oklab, #f97316 62%, var(--color-border));
+    background: color-mix(in oklab, #f97316 12%, transparent);
+    color: #fdba74;
+  }
+}
+
 .budget-grid {
   margin-top: var(--space-3);
   display: grid;
@@ -754,6 +812,12 @@
   .ve-toggle,
   .ve-item-head,
   .quote-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quote-revision-card,
+  .quote-revision-content {
     flex-direction: column;
     align-items: flex-start;
   }

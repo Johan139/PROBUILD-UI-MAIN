@@ -60,6 +60,7 @@ import {
   Sparkles,
   Download,
   Check,
+  RotateCcw,
 } from 'lucide-angular';
 
 @NgModule({
@@ -124,6 +125,7 @@ import {
       Sparkles,
       Download,
       Check,
+      RotateCcw,
     }),
   ],
   exports: [LucideAngularModule],

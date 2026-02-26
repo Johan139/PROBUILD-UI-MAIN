@@ -60,6 +60,139 @@
     </button>
 
     <section *ngIf="contractMethod === 'ai'" class="detail-card">
+      <div class="contract-options-card">
+        <h4>Contract Risk Settings</h4>
+        <p>Configure clause defaults and required legal input placeholders before generation</p>
+
+        <div class="contract-badge-legend" aria-label="Field requirement legend">
+          <span class="option-badge required">Required</span>
+          <span class="option-badge optional">Optional</span>
+          <span class="option-badge conditional">Conditional</span>
+        </div>
+
+        <div class="contract-options-grid">
+          <label class="contract-option-field">
+            <span>Project Type <em class="option-badge required">Required</em></span>
+            <select
+              [ngModel]="projectType"
+              (ngModelChange)="onProjectTypeChanged($event)"
+            >
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+            </select>
+            <small class="contract-field-help">Used to set default risk posture. Liability cap defaults ON for commercial projects and OFF for residential.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>Liability Cap Type <em class="option-badge conditional">Conditional</em></span>
+            <select
+              [ngModel]="liabilityCapType"
+              (ngModelChange)="onLiabilityCapTypeChanged($event)"
+              [disabled]="!liabilityCapEnabled"
+            >
+              <option value="contract_sum">Contract Sum</option>
+              <option value="fixed_amount">Fixed Amount</option>
+            </select>
+            <small class="contract-field-help">Choose how the cap is calculated when limitation of liability is enabled.</small>
+          </label>
+
+          <label class="contract-option-field" *ngIf="liabilityCapEnabled && liabilityCapType === 'fixed_amount'">
+            <span>Liability Cap Amount <em class="option-badge required">Required</em></span>
+            <div class="inline-input-row">
+              <select [(ngModel)]="liabilityCapCurrency" class="inline-currency-select">
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+                <option value="EUR">EUR</option>
+                <option value="CAD">CAD</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="liabilityCapFixedAmount"
+                placeholder="e.g. 250000"
+              />
+            </div>
+            <small class="contract-field-help">Provide a positive amount for fixed-cap contracts. This is validated before generation.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>Dispute Resolution <em class="option-badge required">Required</em></span>
+            <select [(ngModel)]="disputeResolutionMode">
+              <option value="arbitration">Arbitration</option>
+              <option value="litigation">Litigation</option>
+            </select>
+            <small class="contract-field-help">Controls whether the disputes article is drafted for arbitration-first or court litigation.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>Insurance Limits <em class="option-badge required">Required</em></span>
+            <input
+              type="text"
+              [(ngModel)]="insuranceLimits"
+              placeholder="e.g. CGL $2M / Builder's Risk full replacement"
+            />
+            <small class="contract-field-help">Required structured input used in the contract data table and insurance article.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>Markups <em class="option-badge required">Required</em></span>
+            <input type="text" [(ngModel)]="markups" placeholder="e.g. OH&P 10%" />
+            <small class="contract-field-help">Defines agreed overhead/profit or pricing uplift assumptions for changes and allowances.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>Cure Periods <em class="option-badge required">Required</em></span>
+            <input type="text" [(ngModel)]="curePeriods" placeholder="e.g. 7/10 days" />
+            <small class="contract-field-help">Specifies notice-and-cure timelines before remedies like suspension or termination are triggered.</small>
+          </label>
+
+          <label class="contract-option-field">
+            <span>LD Cap <em class="option-badge required">Required</em></span>
+            <input type="text" [(ngModel)]="ldCap" placeholder="e.g. 10% of Contract Sum" />
+            <small class="contract-field-help">Sets the maximum liquidated damages exposure and supports enforceability framing.</small>
+          </label>
+        </div>
+
+        <div class="contract-flags-row">
+          <label class="contract-option-check">
+            <input type="checkbox" [(ngModel)]="consequentialDamagesWaiverEnabled" />
+            <span>
+              Consequential damages waiver (default ON) <em class="option-badge optional">Optional</em>
+              <small class="contract-field-help">Mutual waiver of indirect losses such as lost profits, financing costs, and business interruption.</small>
+            </span>
+          </label>
+          <label class="contract-option-check">
+            <input type="checkbox" [(ngModel)]="liabilityCapEnabled" />
+            <span>
+              Limitation of liability cap <em class="option-badge optional">Optional</em>
+              <small class="contract-field-help">Limits total liability exposure. If enabled, cap type and (if fixed) amount are enforced.</small>
+            </span>
+          </label>
+          <label class="contract-option-check">
+            <input type="checkbox" [(ngModel)]="rightToRepairReviewRequired" />
+            <span>
+              Flag right-to-repair review <em class="option-badge optional">Optional</em>
+              <small class="contract-field-help">Prompts jurisdictional review for state right-to-repair requirements without auto-inserting statutes.</small>
+            </span>
+          </label>
+          <label class="contract-option-check">
+            <input type="checkbox" [(ngModel)]="depositLimitReviewRequired" />
+            <span>
+              Flag deposit limitation review <em class="option-badge optional">Optional</em>
+              <small class="contract-field-help">Prompts review of local deposit caps and payment timing rules.</small>
+            </span>
+          </label>
+          <label class="contract-option-check">
+            <input type="checkbox" [(ngModel)]="antiIndemnityReviewRequired" />
+            <span>
+              Flag anti-indemnity review <em class="option-badge optional">Optional</em>
+              <small class="contract-field-help">Prompts legal review of indemnity language for anti-indemnity law compliance.</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
       <ng-container *ngIf="contractGenerated; else generateBlock">
         <div class="generated-head">
           <span class="success-icon"><lucide-icon name="check"></lucide-icon></span>

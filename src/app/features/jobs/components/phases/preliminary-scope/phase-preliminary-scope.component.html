@@ -411,6 +411,43 @@
     ></app-project-blueprint-viewer>
   </div>
 
+  <section class="internal-team-section" *ngIf="stageDisplayMode === 'stage'">
+    <div class="internal-team-card">
+      <button
+        type="button"
+        class="internal-team-header"
+        (click)="internalTeamOpen = !internalTeamOpen"
+      >
+        <div class="internal-team-header-left">
+          <span class="internal-team-icon-wrap">
+            <lucide-icon name="users"></lucide-icon>
+          </span>
+          <div>
+            <h4>Internal Team</h4>
+            <p>{{ assignedTeamMembers.length }} members assigned</p>
+          </div>
+        </div>
+
+        <div class="internal-team-header-right">
+          <span class="member-count-pill">{{ assignedTeamMembers.length }} members</span>
+          <lucide-icon
+            [name]="internalTeamOpen ? 'chevron-up' : 'chevron-down'"
+            class="team-chevron"
+          ></lucide-icon>
+        </div>
+      </button>
+
+      <div class="internal-team-body" *ngIf="internalTeamOpen">
+        <app-job-team
+          [projectDetails]="projectDetails"
+          [assignedTeamMembers]="assignedTeamMembers"
+          [showSubcontractors]="false"
+          (refreshTeam)="refreshTeamRequested.emit()"
+        ></app-job-team>
+      </div>
+    </div>
+  </section>
+
   <ng-container *ngIf="stageDisplayMode === 'live' && liveStageTemplate">
     <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
   </ng-container>

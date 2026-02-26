@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   Component,
   EventEmitter,
@@ -24,7 +25,9 @@ import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 import {
   ContractRecord,
   ContractService,
+  GenerateGeneralClientContractRequest,
 } from '../../../../../services/contract.service';
+import { ReportService } from '../../../services/report.service';
 import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
 
 @Component({
@@ -32,6 +35,7 @@ import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.di
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     PhaseNavigationHeaderComponent,
     LucideIconsModule,
     DragAndDropDirective,
@@ -40,7 +44,10 @@ import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.di
   styleUrl: './phase-contract-award.component.scss',
 })
 export class PhaseContractAwardComponent implements OnInit, OnChanges {
-  constructor(private contractService: ContractService) {}
+  constructor(
+    private contractService: ContractService,
+    private reportService: ReportService,
+  ) {}
 
   @Input() projectDetails: any;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
@@ -70,7 +77,24 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   isDownloading = false;
   private lastLoadedJobId: number | null = null;
 
+  projectType: 'residential' | 'commercial' = 'residential';
+  consequentialDamagesWaiverEnabled = true;
+  liabilityCapEnabled = false;
+  liabilityCapType: 'contract_sum' | 'fixed_amount' = 'contract_sum';
+  liabilityCapFixedAmount: number | null = null;
+  liabilityCapCurrency = 'USD';
+  disputeResolutionMode: 'arbitration' | 'litigation' = 'arbitration';
+  insuranceLimits = '';
+  markups = '';
+  curePeriods = '';
+  ldCap = '';
+  rightToRepairReviewRequired = true;
+  depositLimitReviewRequired = true;
+  antiIndemnityReviewRequired = true;
+
   ngOnInit(): void {
+    this.syncContractDefaultsFromProject();
+
     const jobId = this.jobId;
     if (!jobId) {
       return;
@@ -85,6 +109,8 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     if (!changes['projectDetails']) {
       return;
     }
+
+    this.syncContractDefaultsFromProject();
 
     const jobId = this.jobId;
     if (!jobId || this.lastLoadedJobId === jobId) {
@@ -182,6 +208,10 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return;
     }
 
+    if (!this.validateContractOptions()) {
+      return;
+    }
+
     const jobId = this.jobId;
     if (!jobId) {
       console.error('Missing job id for contract generation.');
@@ -199,18 +229,71 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     }
 
     this.contractGenerating = true;
-    this.contractService.generateGeneralClientContract(jobId).subscribe({
-      next: (contract) => {
-        this.hydrateContractState(contract);
-        this.contractMethod = 'ai';
-        this.contractGenerated = true;
-        this.contractGenerating = false;
-      },
-      error: (err) => {
-        console.error('Failed to generate client contract', err);
-        this.contractGenerating = false;
-      },
-    });
+
+    this.getExecutiveSummaryContext(jobId)
+      .then((executiveSummaryContext) => {
+        const request = this.buildGenerateContractRequest(executiveSummaryContext);
+        this.contractService
+          .generateGeneralClientContract(jobId, request)
+          .subscribe({
+            next: (contract) => {
+              this.hydrateContractState(contract);
+              this.contractMethod = 'ai';
+              this.contractGenerated = true;
+              this.contractGenerating = false;
+            },
+            error: (err) => {
+              console.error('Failed to generate client contract', err);
+              this.contractGenerating = false;
+            },
+          });
+      })
+      .catch((summaryErr) => {
+        console.warn('Failed to fetch executive summary context; continuing without it', summaryErr);
+        const request = this.buildGenerateContractRequest('');
+        this.contractService.generateGeneralClientContract(jobId, request).subscribe({
+          next: (contract) => {
+            this.hydrateContractState(contract);
+            this.contractMethod = 'ai';
+            this.contractGenerated = true;
+            this.contractGenerating = false;
+          },
+          error: (err) => {
+            console.error('Failed to generate client contract', err);
+            this.contractGenerating = false;
+          },
+        });
+      });
+  }
+
+  private async getExecutiveSummaryContext(jobId: number): Promise<string> {
+    const summaryHtml = await this.reportService.getExecutiveSummary(String(jobId));
+    if (!summaryHtml) {
+      return '';
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(summaryHtml, 'text/html');
+    const plain = (doc.body?.textContent || '').replace(/\s+/g, ' ').trim();
+    return plain;
+  }
+
+  onProjectTypeChanged(value: string): void {
+    this.projectType = value === 'commercial' ? 'commercial' : 'residential';
+    this.liabilityCapEnabled = this.projectType === 'commercial';
+
+    if (!this.liabilityCapEnabled) {
+      this.liabilityCapType = 'contract_sum';
+      this.liabilityCapFixedAmount = null;
+    }
+  }
+
+  onLiabilityCapTypeChanged(value: string): void {
+    this.liabilityCapType = value === 'fixed_amount' ? 'fixed_amount' : 'contract_sum';
+
+    if (this.liabilityCapType !== 'fixed_amount') {
+      this.liabilityCapFixedAmount = null;
+    }
   }
 
   onContractFileSelected(event: Event): void {
@@ -307,6 +390,10 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return;
     }
 
+    if (!this.validateContractOptions()) {
+      return;
+    }
+
     this.isUploading = true;
     this.contractMethod = 'upload';
 
@@ -331,7 +418,8 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.contractService.generateGeneralClientContract(jobId).subscribe({
+    const request = this.buildGenerateContractRequest('');
+    this.contractService.generateGeneralClientContract(jobId, request).subscribe({
       next: (contract) => {
         this.hydrateContractState(contract);
         if (!this.activeContractId) {
@@ -409,6 +497,99 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     this.activeContractId = null;
     this.isUploading = false;
     this.isDownloading = false;
+  }
+
+  private syncContractDefaultsFromProject(): void {
+    const candidate = String(this.projectDetails?.jobType || this.projectDetails?.projectType || '').toLowerCase();
+    if (candidate.includes('commercial')) {
+      this.projectType = 'commercial';
+      this.liabilityCapEnabled = true;
+      return;
+    }
+
+    if (candidate.includes('residential')) {
+      this.projectType = 'residential';
+      this.liabilityCapEnabled = false;
+    }
+  }
+
+  private buildGenerateContractRequest(
+    executiveSummaryContext: string,
+  ): GenerateGeneralClientContractRequest {
+    const normalize = (value: string): string | undefined => {
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : undefined;
+    };
+
+    const normalizedCurrency = (this.liabilityCapCurrency || 'USD')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 3);
+
+    const fixedAmount =
+      this.liabilityCapType === 'fixed_amount'
+        ? this.parsePositiveNumber(this.liabilityCapFixedAmount)
+        : undefined;
+
+    return {
+      executiveSummaryContext: executiveSummaryContext.trim() || undefined,
+      projectType: this.projectType,
+      consequentialDamagesWaiverEnabled: this.consequentialDamagesWaiverEnabled,
+      liabilityCapEnabled: this.liabilityCapEnabled,
+      liabilityCapBasis:
+        this.liabilityCapType === 'contract_sum'
+          ? 'Contract Sum'
+          : normalize(
+              `${normalizedCurrency || 'USD'} ${
+                fixedAmount != null ? fixedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''
+              }`.trim(),
+            ),
+      liabilityCapType: this.liabilityCapType,
+      liabilityCapFixedAmount: fixedAmount,
+      liabilityCapCurrency: normalize(normalizedCurrency || 'USD'),
+      disputeResolutionMode: this.disputeResolutionMode,
+      insuranceLimits: normalize(this.insuranceLimits),
+      markups: normalize(this.markups),
+      curePeriods: normalize(this.curePeriods),
+      ldCap: normalize(this.ldCap),
+      rightToRepairReviewRequired: this.rightToRepairReviewRequired,
+      depositLimitReviewRequired: this.depositLimitReviewRequired,
+      antiIndemnityReviewRequired: this.antiIndemnityReviewRequired,
+    };
+  }
+
+  private validateContractOptions(): boolean {
+    if (!this.liabilityCapEnabled) {
+      return true;
+    }
+
+    if (this.liabilityCapType !== 'fixed_amount') {
+      return true;
+    }
+
+    const amount = this.parsePositiveNumber(this.liabilityCapFixedAmount);
+    if (amount == null) {
+      window.alert('Please enter a valid fixed liability cap amount greater than 0.');
+      return false;
+    }
+
+    const currency = (this.liabilityCapCurrency || '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      window.alert('Please enter a valid 3-letter ISO currency code for the fixed liability cap (for example USD, GBP, EUR).');
+      return false;
+    }
+
+    return true;
+  }
+
+  private parsePositiveNumber(value: unknown): number | undefined {
+    const parsed = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return undefined;
+    }
+
+    return Math.round(parsed * 100) / 100;
   }
 
   private async buildContractHtml(markdown: string): Promise<string> {

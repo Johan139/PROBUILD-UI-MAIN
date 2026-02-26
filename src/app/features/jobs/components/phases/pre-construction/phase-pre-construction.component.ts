@@ -1,13 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-interface PermitItem {
-  key: string;
-  label: string;
-  description: string;
-  accepts: string;
-}
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { Permit } from '../../../../../models/permit';
+import { PermitsDialogComponent } from '../../../permits-dialog/permits-dialog.component';
+import { FileUploadService } from '../../../../../services/file-upload.service';
+import { PermitsService } from '../../../services/permits.service';
+import { ReportService } from '../../../services/report.service';
+import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 
 interface PreConstructionTask {
   id: number;
@@ -22,124 +32,47 @@ interface PreConstructionTask {
 @Component({
   selector: 'app-phase-pre-construction',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PhaseNavigationHeaderComponent, LucideIconsModule],
   templateUrl: './phase-pre-construction.component.html',
   styleUrl: './phase-pre-construction.component.scss',
 })
-export class PhasePreConstructionComponent {
+export class PhasePreConstructionComponent implements OnInit, OnChanges {
+  constructor(
+    private readonly dialog: MatDialog,
+    private readonly permitsService: PermitsService,
+    private readonly reportService: ReportService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly snackBar: MatSnackBar,
+  ) {}
+
   @Input() projectDetails: any;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
 
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() fullReportRequested = new EventEmitter<void>();
+  @Output() billOfMaterialsRequested = new EventEmitter<void>();
+  @Output() executiveSummaryRequested = new EventEmitter<void>();
+  @Output() environmentalReportRequested = new EventEmitter<void>();
+  @Output() procurementScheduleRequested = new EventEmitter<void>();
+  @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
 
-  readonly permitItems: PermitItem[] = [
-    {
-      key: 'building-permit',
-      label: 'Building Permit',
-      description: 'General building permit from local authority.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'electrical-permit',
-      label: 'Electrical Permit',
-      description: 'Permit for electrical and panel work.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'plumbing-permit',
-      label: 'Plumbing Permit',
-      description: 'Permit for plumbing rough-in and fixtures.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'mechanical-permit',
-      label: 'Mechanical / HVAC Permit',
-      description: 'Permit for mechanical and HVAC systems.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'grading-permit',
-      label: 'Grading & Excavation Permit',
-      description: 'Permit for grading and excavation activities.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'demolition-permit',
-      label: 'Demolition Permit',
-      description: 'Permit for demolition/removal work if required.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'fire-permit',
-      label: 'Fire Department Permit',
-      description: 'Approval for fire safety systems and access.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'environmental-permit',
-      label: 'Environmental / Stormwater',
-      description: 'Environmental and SWPPP compliance documents.',
-      accepts: 'PDF, JPG, PNG',
-    },
-    {
-      key: 'insurance',
-      label: 'Insurance Certificates (COI)',
-      description: 'GC and trade partner insurance certificates.',
-      accepts: 'PDF',
-    },
-    {
-      key: 'bonds',
-      label: 'Bond Requirements',
-      description: 'Performance/payment bonds where required.',
-      accepts: 'PDF',
-    },
-    {
-      key: 'ifc-drawings',
-      label: 'IFC Drawings Issued',
-      description: 'Issued for construction drawing package.',
-      accepts: 'PDF, DWG',
-    },
-    {
-      key: 'utility-clearances',
-      label: 'Utility Clearances',
-      description: 'Utility locate and clearance confirmations.',
-      accepts: 'PDF, JPG, PNG',
-    },
-  ];
-
-  permitUploads: Record<string, { name: string; date: string }> = {};
-  permitNA = new Set<string>();
-  activePermitKey: string | null = null;
+  permits: Permit[] = [];
+  permitStatus: 'success' | 'warning' | 'none' = 'none';
+  permitStatusText = 'No Permits';
+  isPermitLoading = false;
+  busyPermitIds = new Set<number>();
+  addingPermit = false;
+  newPermitDraft: Pick<Permit, 'name' | 'issuingAgency' | 'requirements'> = {
+    name: '',
+    issuingAgency: '',
+    requirements: '',
+  };
 
   scheduleTasks: PreConstructionTask[] = [
-    {
-      id: 1,
-      task: 'Jurisdiction pre-construction meeting',
-      owner: 'Project Manager',
-      startDate: '2026-03-01',
-      endDate: '2026-03-02',
-      days: 1,
-      status: 'In Progress',
-    },
-    {
-      id: 2,
-      task: 'Long-lead procurement lock-in',
-      owner: 'Procurement Lead',
-      startDate: '2026-03-03',
-      endDate: '2026-03-06',
-      days: 3,
-      status: 'Pending',
-    },
-    {
-      id: 3,
-      task: 'Site logistics and access plan sign-off',
-      owner: 'Superintendent',
-      startDate: '2026-03-04',
-      endDate: '2026-03-05',
-      days: 1,
-      status: 'Completed',
-    },
   ];
 
   addingScheduleTask = false;
@@ -152,6 +85,31 @@ export class PhasePreConstructionComponent {
     status: 'Pending' as PreConstructionTask['status'],
   };
   private nextTaskId = 4;
+
+  ngOnInit(): void {
+    this.refreshPermits();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['projectDetails']) {
+      this.refreshPermits();
+    }
+  }
+
+  get clientName(): string {
+    if (this.projectDetails?.clientName) {
+      return this.projectDetails.clientName;
+    }
+
+    const first = this.projectDetails?.clientFirstName || '';
+    const last = this.projectDetails?.clientLastName || '';
+    const joined = `${first} ${last}`.trim();
+    return joined || 'Jacques Barnard';
+  }
+
+  get projectAddress(): string {
+    return this.projectDetails?.address || this.projectDetails?.projectAddress || 'Belicia Ln, Round Rock, TX';
+  }
 
   get projectSizeSqFt(): string {
     return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
@@ -167,54 +125,393 @@ export class PhasePreConstructionComponent {
   }
 
   get completedCount(): number {
-    return this.permitItems.filter((i) => this.permitUploads[i.key] || this.permitNA.has(i.key)).length;
+    return this.permits.filter((permit) => this.isPermitHandled(permit)).length;
+  }
+
+  get totalPermitCount(): number {
+    return this.permits.length;
+  }
+
+  get permitProgressPercent(): number {
+    if (!this.totalPermitCount) {
+      return 0;
+    }
+
+    return (this.completedCount / this.totalPermitCount) * 100;
   }
 
   get canProceed(): boolean {
-    return this.completedCount === this.permitItems.length;
+    return this.totalPermitCount > 0 && this.completedCount === this.totalPermitCount;
   }
 
   get completedScheduleCount(): number {
     return this.scheduleTasks.filter((task) => task.status === 'Completed').length;
   }
 
-  setActivePermitKey(key: string): void {
-    this.activePermitKey = key;
-  }
-
-  uploadActivePermit(event: Event): void {
-    if (!this.activePermitKey) {
+  openPermitsDialog(): void {
+    if (!this.jobId) {
       return;
     }
 
-    this.uploadPermit(this.activePermitKey, event);
-    this.activePermitKey = null;
+    const dialogRef = this.dialog.open(PermitsDialogComponent, {
+      width: '90vw',
+      maxWidth: '1600px',
+      height: '90vh',
+      maxHeight: '90vh',
+      panelClass: 'full-screen-dialog',
+      data: { jobId: this.jobId },
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.checkPermitStatus(this.jobId!);
+    });
   }
 
-  uploadPermit(key: string, event: Event): void {
+  checkPermitStatus(jobId: number): void {
+    this.isPermitLoading = true;
+
+    this.permitsService.getPermits(jobId).subscribe({
+      next: (permits) => {
+        if (!permits || permits.length === 0) {
+          this.loadAiPermits(jobId);
+          return;
+        }
+
+        const normalizedPermits = this.getUniquePermits(permits);
+        this.permits = normalizedPermits;
+        const expired = normalizedPermits.some((p) => this.normalizeStatus(p.status) === 'expired');
+        const pending = normalizedPermits.some((p) => this.normalizeStatus(p.status) === 'pending');
+        const allActive = normalizedPermits.every((p) => this.isPermitApproved(p.status));
+
+        if (expired) {
+          this.permitStatus = 'warning';
+          this.permitStatusText = 'Expired Permit';
+        } else if (pending) {
+          this.permitStatus = 'warning';
+          this.permitStatusText = 'Pending Approval';
+        } else if (allActive) {
+          this.permitStatus = 'success';
+          this.permitStatusText = 'All Approved';
+        } else {
+          this.permitStatus = 'none';
+          this.permitStatusText = 'In Progress';
+        }
+
+        this.isPermitLoading = false;
+      },
+      error: () => {
+        this.loadAiPermits(jobId);
+      },
+    });
+  }
+
+  private loadAiPermits(jobId: number): void {
+    this.reportService
+      .getPermitsAndApprovalsReport(jobId.toString())
+      .then((aiPermits) => {
+        if (!aiPermits || aiPermits.length === 0) {
+          this.permits = [];
+          this.permitStatus = 'none';
+          this.permitStatusText = 'No Permits';
+          this.isPermitLoading = false;
+          return;
+        }
+
+        const uniqueAiPermits = this.getUniquePermits(aiPermits);
+
+        this.permitsService.savePermitsBatch(uniqueAiPermits).subscribe({
+          next: (savedPermits) => {
+            this.applyPermitStatus(savedPermits.length ? savedPermits : uniqueAiPermits);
+            this.isPermitLoading = false;
+          },
+          error: () => {
+            this.applyPermitStatus(uniqueAiPermits);
+            this.isPermitLoading = false;
+          },
+        });
+      })
+      .catch(() => {
+        this.permits = [];
+        this.permitStatus = 'none';
+        this.permitStatusText = 'Unknown';
+        this.isPermitLoading = false;
+      });
+  }
+
+  private applyPermitStatus(permits: Permit[]): void {
+    const uniquePermits = this.getUniquePermits(permits || []);
+    this.permits = uniquePermits;
+
+    if (!uniquePermits.length) {
+      this.permitStatus = 'none';
+      this.permitStatusText = 'No Permits';
+      return;
+    }
+
+    const expired = uniquePermits.some((p) => this.normalizeStatus(p.status) === 'expired');
+    const pending = uniquePermits.some((p) => this.normalizeStatus(p.status) === 'pending');
+    const allActive = uniquePermits.every((p) => this.isPermitApproved(p.status));
+
+    if (expired) {
+      this.permitStatus = 'warning';
+      this.permitStatusText = 'Expired Permit';
+    } else if (pending) {
+      this.permitStatus = 'warning';
+      this.permitStatusText = 'Pending Approval';
+    } else if (allActive) {
+      this.permitStatus = 'success';
+      this.permitStatusText = 'All Approved';
+    } else {
+      this.permitStatus = 'none';
+      this.permitStatusText = 'In Progress';
+    }
+  }
+
+  isPermitHandled(permit: Permit): boolean {
+    return !!permit.documentId || this.isPermitNA(permit.status) || this.isPermitApproved(permit.status);
+  }
+
+  isPermitNA(status: string): boolean {
+    const normalized = this.normalizeStatus(status);
+    return normalized === 'n/a' || normalized === 'na' || normalized === 'not applicable' || normalized === 'not_applicable';
+  }
+
+  getPermitIconName(permitName: string): string {
+    const name = (permitName || '').toLowerCase();
+
+    if (name.includes('building')) return 'building-2';
+    if (name.includes('electrical')) return 'zap';
+    if (name.includes('plumbing') || name.includes('sewage') || name.includes('septic')) return 'activity';
+    if (name.includes('mechanical') || name.includes('hvac')) return 'wrench';
+    if (name.includes('fire')) return 'shield-alert';
+    if (name.includes('accessibility') || name.includes('tas')) return 'check-circle-2';
+    if (name.includes('environment')) return 'shield-check';
+
+    return 'clipboard-list';
+  }
+
+  onPermitFileSelected(permit: Permit, event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
 
-    this.permitUploads[key] = {
-      name: file.name,
-      date: new Date().toLocaleDateString(),
+    if (!file || !permit.id) {
+      input.value = '';
+      return;
+    }
+
+    this.busyPermitIds.add(permit.id);
+
+    this.permitsService.uploadPermitDocument(file, permit.id, crypto.randomUUID()).subscribe({
+      next: (response) => {
+        permit.documentId = response.documentId;
+        permit.document = {
+          id: response.documentId,
+          fileName: file.name,
+          blobUrl: response.url,
+        };
+
+        if (this.isPermitNA(permit.status)) {
+          permit.status = 'Pending';
+        }
+
+        this.persistPermit(permit, false);
+        input.value = '';
+      },
+      error: () => {
+        this.busyPermitIds.delete(permit.id!);
+        this.snackBar.open('Failed to upload permit document', 'Close', { duration: 2500 });
+        input.value = '';
+      },
+    });
+  }
+
+  markPermitNA(permit: Permit): void {
+    permit.status = 'Not Applicable';
+    this.persistPermit(permit);
+  }
+
+  undoPermitNA(permit: Permit): void {
+    permit.status = permit.documentId ? 'Pending' : 'Pending';
+    this.persistPermit(permit);
+  }
+
+  removePermitDocument(permit: Permit): void {
+    permit.documentId = undefined;
+    permit.document = undefined;
+    if (!this.isPermitNA(permit.status)) {
+      permit.status = 'Pending';
+    }
+    this.persistPermit(permit);
+  }
+
+  viewPermitDocument(permit: Permit): void {
+    if (!permit.document?.blobUrl) {
+      return;
+    }
+
+    this.fileUploadService.getFile(permit.document.blobUrl).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: () => {
+        this.snackBar.open('Failed to open permit document', 'Close', { duration: 2500 });
+      },
+    });
+  }
+
+  isPermitBusy(permit: Permit): boolean {
+    return !!permit.id && this.busyPermitIds.has(permit.id);
+  }
+
+  startAddPermit(): void {
+    this.addingPermit = true;
+    this.newPermitDraft = {
+      name: '',
+      issuingAgency: '',
+      requirements: '',
     };
-    this.permitNA.delete(key);
-    input.value = '';
   }
 
-  removePermit(key: string): void {
-    delete this.permitUploads[key];
+  cancelAddPermit(): void {
+    this.addingPermit = false;
+    this.newPermitDraft = {
+      name: '',
+      issuingAgency: '',
+      requirements: '',
+    };
   }
 
-  markNA(key: string): void {
-    this.removePermit(key);
-    this.permitNA.add(key);
+  saveNewPermit(): void {
+    if (!this.jobId) {
+      return;
+    }
+
+    const name = this.newPermitDraft.name.trim();
+    if (!name) {
+      this.snackBar.open('Permit name is required', 'Close', { duration: 2200 });
+      return;
+    }
+
+    const newPermit: Permit = {
+      jobId: this.jobId,
+      name,
+      issuingAgency: (this.newPermitDraft.issuingAgency || '').trim(),
+      requirements: (this.newPermitDraft.requirements || '').trim(),
+      status: 'Pending',
+      isAiGenerated: false,
+    };
+
+    this.isPermitLoading = true;
+    this.permitsService.savePermit(newPermit).subscribe({
+      next: (saved) => {
+        this.cancelAddPermit();
+        this.permits = this.getUniquePermits([saved, ...this.permits]);
+        this.applyPermitStatus(this.permits);
+        this.isPermitLoading = false;
+        this.snackBar.open('Permit added', 'Close', { duration: 1800 });
+      },
+      error: () => {
+        this.isPermitLoading = false;
+        this.snackBar.open('Failed to add permit', 'Close', { duration: 2500 });
+      },
+    });
   }
 
-  undoNA(key: string): void {
-    this.permitNA.delete(key);
+  private persistPermit(permit: Permit, notify = true): void {
+    if (!permit.id) {
+      this.applyPermitStatus(this.permits);
+      return;
+    }
+
+    this.busyPermitIds.add(permit.id);
+    this.permitsService.updatePermit(permit).subscribe({
+      next: () => {
+        this.busyPermitIds.delete(permit.id!);
+        this.applyPermitStatus(this.permits);
+        if (notify) {
+          this.snackBar.open('Permit updated', 'Close', { duration: 1800 });
+        }
+      },
+      error: () => {
+        this.busyPermitIds.delete(permit.id!);
+        this.applyPermitStatus(this.permits);
+        this.snackBar.open('Failed to update permit', 'Close', { duration: 2500 });
+      },
+    });
+  }
+
+  getPermitStatusClass(status: string): string {
+    if (this.isPermitApproved(status)) {
+      return 'is-approved';
+    }
+
+    const normalized = this.normalizeStatus(status);
+    if (normalized === 'pending') {
+      return 'is-pending';
+    }
+
+    if (normalized === 'expired') {
+      return 'is-expired';
+    }
+
+    return 'is-neutral';
+  }
+
+  getPermitStatusLabel(status: string): string {
+    const normalized = this.normalizeStatus(status);
+    if (!normalized) {
+      return 'Unknown';
+    }
+
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  private normalizeStatus(status: string): string {
+    return (status || '').toLowerCase();
+  }
+
+  private isPermitApproved(status: string): boolean {
+    const normalized = this.normalizeStatus(status);
+    return normalized === 'active' || normalized === 'approved';
+  }
+
+  private refreshPermits(): void {
+    if (!this.jobId) {
+      this.permits = [];
+      this.permitStatus = 'none';
+      this.permitStatusText = 'No Permits';
+      return;
+    }
+
+    this.checkPermitStatus(this.jobId);
+  }
+
+  private get jobId(): number | null {
+    const id = Number(this.projectDetails?.jobId);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  private getUniquePermits(permits: Permit[]): Permit[] {
+    const byKey = new Map<string, Permit>();
+
+    for (const permit of permits) {
+      const key = `${(permit.name || '').trim().toLowerCase()}|${(permit.issuingAgency || '').trim().toLowerCase()}`;
+      const existing = byKey.get(key);
+
+      if (!existing) {
+        byKey.set(key, permit);
+        continue;
+      }
+
+      const existingHasDoc = !!existing.documentId;
+      const currentHasDoc = !!permit.documentId;
+      if (!existingHasDoc && currentHasDoc) {
+        byKey.set(key, permit);
+      }
+    }
+
+    return Array.from(byKey.values());
   }
 
   toggleAddScheduleTask(): void {

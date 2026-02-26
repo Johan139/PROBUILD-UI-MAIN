@@ -243,26 +243,21 @@
     </div>
   </div>
 
-  <!-- Go Live Button -->
-  <div class="go-live-card">
-    <div class="gl-content">
-      <div class="icon-wrapper green">
-        <lucide-angular [img]="Rocket" class="icon"></lucide-angular>
-      </div>
-      <div>
-        <h3>Ready to Go Live?</h3>
-        <p>
-          {{ packagesReadyCount }} of {{ tradePackages.length }} packages
-          configured
-        </p>
-      </div>
+  <section class="items-completed-card">
+    <div class="progress-row">
+      <span>Items Completed</span>
+      <strong>{{ completedChecklistItems }} / {{ totalChecklistItems }}</strong>
     </div>
-    <button
-      class="btn-primary green"
-      [disabled]="packagesReadyCount === 0"
-      (click)="onGoLive()"
-    >
-      <lucide-angular [img]="Rocket" class="btn-icon"></lucide-angular> Go Live
-    </button>
-  </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="checklistCompletionPercent"></div>
+    </div>
+
+    <p class="progress-copy" *ngIf="allChecklistItemsComplete; else itemsPending">
+      All trades, vendors, and suppliers addressed. You may proceed.
+    </p>
+    <ng-template #itemsPending>
+      <p class="progress-copy">Post each item to marketplace or mark as in-house to continue.</p>
+    </ng-template>
+  </section>
 </div>

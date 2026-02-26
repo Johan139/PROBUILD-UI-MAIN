@@ -42,6 +42,7 @@ import { SharedModule } from '../../../../shared/shared.module';
 export class JobTeamComponent implements OnChanges {
   @Input() projectDetails: any;
   @Input() assignedTeamMembers: JobUser[] = [];
+  @Input() showSubcontractors = true;
   @Output() refreshTeam = new EventEmitter<void>();
 
   internalTeam: JobUser[] = [];

@@ -22,6 +22,25 @@ export interface ContractRecord {
   updatedAt?: string | null;
 }
 
+export interface GenerateGeneralClientContractRequest {
+  executiveSummaryContext?: string;
+  projectType?: 'residential' | 'commercial';
+  consequentialDamagesWaiverEnabled?: boolean;
+  liabilityCapEnabled?: boolean;
+  liabilityCapBasis?: string;
+  liabilityCapType?: 'contract_sum' | 'fixed_amount';
+  liabilityCapFixedAmount?: number;
+  liabilityCapCurrency?: string;
+  disputeResolutionMode?: 'arbitration' | 'litigation';
+  insuranceLimits?: string;
+  markups?: string;
+  curePeriods?: string;
+  ldCap?: string;
+  rightToRepairReviewRequired?: boolean;
+  depositLimitReviewRequired?: boolean;
+  antiIndemnityReviewRequired?: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -40,10 +59,15 @@ export class ContractService {
     return this.http.get<ContractRecord[]>(`${BASE_URL}/contracts/job/${jobId}`);
   }
 
-  generateGeneralClientContract(jobId: number): Observable<ContractRecord> {
+  generateGeneralClientContract(
+    jobId: number,
+    request?: GenerateGeneralClientContractRequest,
+  ): Observable<ContractRecord> {
+    const body = request || {};
+
     return this.http.post<ContractRecord>(
       `${BASE_URL}/contracts/${jobId}/generate-general-client-contract`,
-      {},
+      body,
     );
   }
 

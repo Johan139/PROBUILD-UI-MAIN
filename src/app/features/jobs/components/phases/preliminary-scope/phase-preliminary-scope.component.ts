@@ -22,6 +22,8 @@ import { JobsService } from '../../../../../services/jobs.service';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
 import { ReportService } from '../../../services/report.service';
+import { JobTeamComponent } from '../../job-team/job-team.component';
+import { JobUser } from '../../../job-assignment/job-assignment.model';
 import { firstValueFrom } from 'rxjs';
 
 type ScopeTab = 'overview' | 'timeline' | 'blueprints';
@@ -39,6 +41,7 @@ type ScopeTab = 'overview' | 'timeline' | 'blueprints';
     MatExpansionModule,
     MatDividerModule,
     ProjectBlueprintViewerComponent,
+    JobTeamComponent,
   ],
   templateUrl: './phase-preliminary-scope.component.html',
   styleUrl: './phase-preliminary-scope.component.scss',
@@ -57,6 +60,7 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   @Input() isReportLoading = false;
   @Input() showEnvironmentalReport = true;
   @Input() isProjectOwner = false;
+  @Input() assignedTeamMembers: JobUser[] = [];
 
   @Output() setDisplayMode = new EventEmitter<'stage' | 'live'>();
   @Output() overallBudgetClick = new EventEmitter<void>();
@@ -74,8 +78,10 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   @Output() environmentalReportRequested = new EventEmitter<void>();
   @Output() procurementScheduleRequested = new EventEmitter<void>();
   @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
+  @Output() refreshTeamRequested = new EventEmitter<void>();
 
   activeTab: ScopeTab = 'overview';
+  internalTeamOpen = true;
   executiveSummaryExpanded = true;
   isEditingProject = false;
   isEditingClient = false;

@@ -1107,6 +1107,17 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     });
   }
 
+  startQuoteRevision(): void {
+    const jobId = this.projectDetails?.jobId;
+    this.quoteGenerated = false;
+    this.generatedQuote = null;
+    this.generatedQuoteId = null;
+
+    if (jobId) {
+      this.localStorageService.removeItem('quote_job_' + jobId);
+    }
+  }
+
   private checkExistingQuote(jobId: string): void {
     const existingQuoteId = this.localStorageService.getItem('quote_job_' + jobId);
     if (!existingQuoteId) {

@@ -1874,52 +1874,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.stageDisplayMode = 'stage';
   }
 
-  onBackToBidSolicitation(): void {
-    this.updateJobStatus('BID_SOLICITATION');
-  }
-
-  onBackToDetailedTakeoff(): void {
-    this.updateJobStatus('DETAILED_TAKEOFF');
-  }
-
-  onProceedToPreConstruction(): void {
-    this.updateJobStatus('PRE_CONSTRUCTION');
-  }
-
-  onBackToContractAward(): void {
-    this.updateJobStatus('CONTRACT_AWARD');
-  }
-
-  onProceedToContractAward(): void {
-    this.updateJobStatus('CONTRACT_AWARD');
-  }
-
-  onBackToPreConstruction(): void {
-    this.updateJobStatus('PRE_CONSTRUCTION');
-  }
-
-  onProceedToTradeAward(): void {
-    this.updateJobStatus('TRADE_AWARD');
-  }
-
-  onProceedToMobilization(): void {
-    this.updateJobStatus('MOBILIZATION');
-  }
-
-  onBackToTradeAward(): void {
-    this.updateJobStatus('TRADE_AWARD');
-  }
-
-  onBackToMobilization(): void {
-    this.updateJobStatus('MOBILIZATION');
-  }
-
-  onProceedToCloseout(): void {
-    this.updateJobStatus('CLOSEOUT');
-  }
-
-  onBackToConstructionLive(): void {
-    this.updateJobStatus('CONSTRUCTION_LIVE');
+  navigateTo(status: string): void {
+    this.updateJobStatus(status);
   }
 
   onArchiveProject(): void {
@@ -1927,7 +1883,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onGoLive() {
-      // Update status to LIVE
       this.updateJobStatus('LIVE');
   }
 

@@ -136,6 +136,202 @@
   padding: var(--space-4);
 }
 
+.contract-options-card {
+  border: 1px solid color-mix(in srgb, var(--brand-yellow-primary) 26%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-yellow-primary) 6%, var(--color-surface)) 0%,
+      var(--color-surface) 100%
+    );
+  padding: clamp(var(--space-3), 1.5vw, var(--space-4));
+  margin-bottom: var(--space-3);
+  box-shadow: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
+
+  h4 {
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+
+  > p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+    max-width: 72ch;
+  }
+}
+
+.contract-badge-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+
+  &.required {
+    color: #9fd3ff;
+    background: color-mix(in srgb, #3da4ff 14%, transparent);
+    border-color: color-mix(in srgb, #3da4ff 32%, transparent);
+  }
+
+  &.optional {
+    color: #b6f3c8;
+    background: color-mix(in srgb, #35c86a 14%, transparent);
+    border-color: color-mix(in srgb, #35c86a 32%, transparent);
+  }
+
+  &.conditional {
+    color: #ffe4a6;
+    background: color-mix(in srgb, var(--brand-yellow-primary) 18%, transparent);
+    border-color: color-mix(in srgb, var(--brand-yellow-primary) 34%, transparent);
+  }
+}
+
+.contract-options-grid {
+  margin-top: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (max-width: 920px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.contract-option-field {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-subtle) 70%, transparent);
+  padding: var(--space-2) var(--space-3);
+  min-height: 120px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+  &:focus-within {
+    border-color: color-mix(in srgb, var(--brand-yellow-primary) 58%, var(--color-border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-yellow-primary) 18%, transparent);
+    background: color-mix(in srgb, var(--brand-yellow-primary) 4%, var(--color-surface-subtle));
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: var(--fw-semibold);
+    color: color-mix(in srgb, var(--color-text) 84%, var(--color-text-muted));
+  }
+
+  input,
+  select {
+    width: 100%;
+    min-height: 2.45rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-surface) 92%, #000 8%);
+    color: var(--color-text);
+    padding: 0.5rem 0.65rem;
+    font: inherit;
+  }
+
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--brand-yellow-primary) 58%, var(--color-border));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-yellow-primary) 18%, transparent);
+  }
+}
+
+.inline-input-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-currency-select {
+    min-width: 0;
+  }
+}
+
+.contract-field-help {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.contract-option-check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 120px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-subtle) 70%, transparent);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+  &:focus-within {
+    border-color: color-mix(in srgb, var(--brand-yellow-primary) 58%, var(--color-border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-yellow-primary) 18%, transparent);
+    background: color-mix(in srgb, var(--brand-yellow-primary) 4%, var(--color-surface-subtle));
+  }
+
+  > span {
+    display: grid;
+    gap: 4px;
+    line-height: 1.35;
+  }
+
+  input[type='checkbox'] {
+    margin-top: 3px;
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--brand-yellow-primary);
+  }
+}
+
+.contract-flags-row {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed color-mix(in srgb, var(--brand-yellow-primary) 20%, var(--color-border));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  .contract-option-check {
+    min-height: 98px;
+  }
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+
+    .contract-option-check {
+      min-height: auto;
+    }
+  }
+}
+
 .generated-head {
   margin-bottom: var(--space-3);
   display: flex;

@@ -34,6 +34,7 @@
       [isLoadingBlueprints]="isLoadingBlueprints"
       [isReportLoading]="isReportLoading"
       [showEnvironmentalReport]="!projectDetails?.isSelected"
+      [assignedTeamMembers]="assignedTeamMembers"
       (setDisplayMode)="setStageDisplayMode($event)"
       (overallBudgetClick)="openOverallBudgetDialog()"
       (overallTimelineClick)="openOverallTimelineDialog()"
@@ -50,6 +51,7 @@
       (environmentalReportRequested)="openEnvironmentalReportDialog()"
       (procurementScheduleRequested)="openProcurementScheduleDialog()"
       (dailyConstructionPlanRequested)="openDailyConstructionPlanDialog()"
+      (refreshTeamRequested)="loadAssignedTeam()"
     ></app-phase-preliminary-scope>
 
     <!-- 6. BID SOLICITATION -->
@@ -60,16 +62,16 @@
       [canUseLiveStageView]="canUseLiveStageView()"
       [liveStageTemplate]="liveStageView"
       (setDisplayMode)="setStageDisplayMode($event)"
-      (back)="onBackToPreConstruction()"
+      (back)="navigateTo('PRE_CONSTRUCTION')"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToTradeAward()"
+      (proceed)="navigateTo('TRADE_AWARD')"
     ></app-phase-bid-solicitation>
 
     <!-- 10. CLOSEOUT -->
     <app-phase-closeout
       *ngSwitchCase="'CLOSEOUT'"
       [projectDetails]="projectDetails"
-      (back)="onBackToConstructionLive()"
+      (back)="navigateTo('CONSTRUCTION_LIVE')"
       (discard)="confirmDiscardProject()"
       (archive)="onArchiveProject()"
     ></app-phase-closeout>
@@ -79,9 +81,9 @@
       *ngSwitchCase="'CONSTRUCTION_LIVE'"
       [projectDetails]="projectDetails"
       [liveStageTemplate]="liveStageView"
-      (back)="onBackToMobilization()"
+      (back)="navigateTo('MOBILIZATION')"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToCloseout()"
+      (proceed)="navigateTo('CLOSEOUT')"
     ></app-phase-construction-live>
 
     <!-- 3. DETAILED TAKEOFF -->
@@ -93,7 +95,7 @@
       [showEnvironmentalReport]="!projectDetails?.isSelected"
       (back)="onBackToPreliminary()"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToContractAward()"
+      (proceed)="navigateTo('CONTRACT_AWARD')"
       (documentsRequested)="openDocumentsDialog()"
       (fullReportRequested)="openReportDialog()"
       (billOfMaterialsRequested)="openBillOfMaterialsDialog()"
@@ -108,34 +110,34 @@
       *ngSwitchCase="'CONTRACT_AWARD'"
       [projectDetails]="projectDetails"
       [liveStageTemplate]="liveStageView"
-      (back)="onBackToDetailedTakeoff()"
+      (back)="navigateTo('DETAILED_TAKEOFF')"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToPreConstruction()"
+      (proceed)="navigateTo('PRE_CONSTRUCTION')"
     ></app-phase-contract-award>
 
     <!-- 5. PRE-CONSTRUCTION -->
     <app-phase-pre-construction
       *ngSwitchCase="'PRE_CONSTRUCTION'"
       [projectDetails]="projectDetails"
-      (back)="onBackToContractAward()"
+      (back)="navigateTo('CONTRACT_AWARD')"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToTradeAward()"
+      (proceed)="navigateTo('BID_SOLICITATION')"
     ></app-phase-pre-construction>
 
     <!-- 7. TRADE AWARD -->
     <app-phase-trade-award
       *ngSwitchCase="'TRADE_AWARD'"
       [projectDetails]="projectDetails"
-      (back)="onBackToBidSolicitation()"
+      (back)="navigateTo('BID_SOLICITATION')"
       (discard)="confirmDiscardProject()"
-      (proceed)="onProceedToMobilization()"
+      (proceed)="navigateTo('MOBILIZATION')"
     ></app-phase-trade-award>
 
     <!-- 8. MOBILIZATION -->
     <app-phase-mobilization
       *ngSwitchCase="'MOBILIZATION'"
       [projectDetails]="projectDetails"
-      (back)="onBackToTradeAward()"
+      (back)="navigateTo('TRADE_AWARD')"
       (discard)="confirmDiscardProject()"
       (goLive)="onGoLive()"
     ></app-phase-mobilization>

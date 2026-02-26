@@ -109,15 +109,32 @@ export class JobInboundBiddingComponent implements OnInit {
     this.isLoading = true;
     this.bomService.getTradePackages(jobId).subscribe({
       next: (packages) => {
-        this.tradePackages = packages.map(pkg => ({
-          ...pkg,
-          trade: pkg.trade.replace(/\*\*/g, ''),
-          laborBudget: Number(pkg.laborBudget || (Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0))),
-          materialBudget: Number(pkg.materialBudget || 0),
-          totalBudget: Number(pkg.totalBudget || pkg.budget || 0),
-          effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
-          budget: Number(pkg.effectiveBudget || pkg.budget || 0),
-        }));
+        this.tradePackages = packages.map(pkg => {
+          const estimatedHours = Number(pkg.estimatedManHours || 0);
+          const hourlyRate = Number(pkg.hourlyRate || 0);
+          const derivedLabor = Number((estimatedHours * hourlyRate).toFixed(2));
+
+          const totalBudget = Number(pkg.totalBudget || pkg.budget || 0);
+          const rawLabor = Number(pkg.laborBudget || 0);
+          const laborBudget = derivedLabor > 0
+            ? Math.min(derivedLabor, totalBudget > 0 ? totalBudget : derivedLabor)
+            : rawLabor;
+
+          const rawMaterial = Number(pkg.materialBudget || 0);
+          const materialBudget = rawMaterial > 0
+            ? rawMaterial
+            : Math.max(0, Number((totalBudget - laborBudget).toFixed(2)));
+
+          return {
+            ...pkg,
+            trade: pkg.trade.replace(/\*\*/g, ''),
+            laborBudget,
+            materialBudget,
+            totalBudget,
+            effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
+            budget: Number(pkg.effectiveBudget || pkg.budget || 0),
+          };
+        });
         this.tradePackages.forEach((pkg) => this.recalculateBudgets(pkg));
         this.loadBids(jobId);
       },
@@ -228,6 +245,42 @@ export class JobInboundBiddingComponent implements OnInit {
 
   get packagesReadyCount() {
       return this.tradePackages.filter(p => p.postedToMarketplace || p.hasInternalQuote || p.isInHouse).length;
+  }
+
+  private isPackageHandled(pkg: TradePackage): boolean {
+    return !!(pkg.postedToMarketplace || pkg.hasInternalQuote || pkg.isInHouse);
+  }
+
+  get completedChecklistItems(): number {
+    const tradesHandled = this.tradePackages.filter(
+      (p) => p.category === 'trade' && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    const vendorsHandled = this.tradePackages.filter(
+      (p) => (p.category === 'vendor' || p.category === 'equipment') && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    const suppliersHandled = this.tradePackages.filter(
+      (p) => p.category === 'supplier' && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    return tradesHandled + vendorsHandled + suppliersHandled;
+  }
+
+  get totalChecklistItems(): number {
+    return this.tradesCount + this.vendorsCount + this.suppliersCount;
+  }
+
+  get checklistCompletionPercent(): number {
+    if (this.totalChecklistItems === 0) {
+      return 0;
+    }
+
+    return (this.completedChecklistItems / this.totalChecklistItems) * 100;
+  }
+
+  get allChecklistItemsComplete(): boolean {
+    return this.totalChecklistItems > 0 && this.completedChecklistItems === this.totalChecklistItems;
   }
 
   markAllInHouse(): void {
@@ -414,7 +467,21 @@ export class JobInboundBiddingComponent implements OnInit {
       return 0;
     }
 
-    return Number(pkg.laborBudget || (Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0)));
+    const estimatedHours = Number(pkg.estimatedManHours || 0);
+    const hourlyRate = Number(pkg.hourlyRate || 0);
+    const derivedLabor = Number((estimatedHours * hourlyRate).toFixed(2));
+    const storedLabor = Number(pkg.laborBudget || 0);
+    const total = Number(pkg.totalBudget || pkg.budget || 0);
+
+    if (derivedLabor > 0) {
+      return Math.min(derivedLabor, total > 0 ? total : derivedLabor);
+    }
+
+    if (total > 0 && storedLabor > total) {
+      return total;
+    }
+
+    return storedLabor;
   }
 
   getAiTotalEstimate(pkg: TradePackage): number {
