@@ -570,6 +570,7 @@ export class BomService {
               isInHouse: !!pkg.isInHouse,
 
               postedToMarketplace: pkg.postedToMarketplace,
+              awardedBidId: Number(pkg.awardedBidId || 0) || null,
               bids: [], // Bids are loaded separately
               hasInternalQuote: false,
             };

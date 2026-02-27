@@ -1,13 +1,23 @@
 <section class="phase-section">
-  <header class="phase-header">
-    <button type="button" class="phase-link" (click)="back.emit()">← Back to Construction Execution</button>
-    <div class="phase-actions">
-      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
-      <button type="button" class="btn btn-primary" [disabled]="!canArchive" (click)="archive.emit()">
-        Archive Project
-      </button>
-    </div>
-  </header>
+  <app-phase-navigation-header
+    stageLabel="Project Closeout &amp; Handover"
+    backLabel="Back to Construction Execution"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Archive Project"
+    [projectName]="projectDetails?.projectName || 'N/A'"
+    [clientName]="projectDetails?.clientName || projectDetails?.name || 'N/A'"
+    [projectAddress]="projectDetails?.address || 'N/A'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canArchive"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="archive.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
 
   <div class="project-summary">
     <article>

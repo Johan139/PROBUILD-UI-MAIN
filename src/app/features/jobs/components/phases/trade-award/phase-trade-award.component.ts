@@ -2,7 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
-import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 import { BomService } from '../../../services/bom.service';
 import { BiddingService } from '../../../../../services/bidding.service';
 import { BidsService } from '../../../../../services/bids.service';
@@ -18,6 +21,11 @@ interface TradePackageVm {
   category: string;
   scopeOfWork: string;
   csiCode: string;
+  estimatedManHours?: number;
+  hourlyRate?: number;
+  estimatedDuration?: string;
+  startDate?: string | Date | null;
+  bidDeadline?: string | Date | null;
   budget: number;
   laborBudget: number;
   materialBudget: number;
@@ -26,9 +34,11 @@ interface TradePackageVm {
   status: string;
   postedToMarketplace: boolean;
   isInHouse: boolean;
+  awardedBidId?: number | null;
   linkedTradePackageId?: number | null;
   isInactive?: boolean;
   isHidden?: boolean;
+  sourceType?: string | null;
   isMock?: boolean;
 }
 
@@ -88,10 +98,14 @@ interface BidAnalysisVm {
 })
 export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
 
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   awardTab: AwardTab = 'trades';
   isLoading = false;
@@ -488,15 +502,22 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   }
 
   get awardedCount(): number {
-    return (
-      Object.keys(this.awardedBidByPackageId).length +
-      Object.keys(this.inHouseUploadByPackageId).length +
-      this.naPackageIds.size
-    );
+    const completed = new Set<number>();
+    this.trackablePackageIds.forEach((id) => {
+      if (
+        !!this.awardedBidByPackageId[id] ||
+        !!this.inHouseUploadByPackageId[id] ||
+        this.naPackageIds.has(id)
+      ) {
+        completed.add(id);
+      }
+    });
+
+    return completed.size;
   }
 
   get totalCount(): number {
-    return this.tradeItems.length + this.vendorItems.length + this.supplierItems.length;
+    return this.trackablePackageIds.size;
   }
 
   get pendingCount(): number {
@@ -512,6 +533,14 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   get canProceed(): boolean {
     return this.totalCount > 0 && this.awardedCount >= this.totalCount;
+  }
+
+  private get trackablePackageIds(): Set<number> {
+    return new Set<number>([
+      ...this.tradeItems.map((p) => p.id),
+      ...this.vendorItems.map((p) => p.id),
+      ...this.supplierItems.map((p) => p.id),
+    ]);
   }
 
   setTab(tab: AwardTab): void {
@@ -553,22 +582,33 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   toggleAward(item: TradePackageVm, bidId: number): void {
     if (this.awardedBidByPackageId[item.id] === bidId) {
-      delete this.awardedBidByPackageId[item.id];
+      this.persistAwardForPackage(item, null);
       return;
     }
 
-    this.awardedBidByPackageId[item.id] = bidId;
-    this.naPackageIds.delete(item.id);
+    this.persistAwardForPackage(item, bidId);
   }
 
   toggleNotApplicable(item: TradePackageVm): void {
     if (this.naPackageIds.has(item.id)) {
       this.naPackageIds.delete(item.id);
+      const restoredStatus = item.isInHouse
+        ? 'In House'
+        : item.postedToMarketplace
+          ? 'Posted'
+          : 'Draft';
+      this.persistTradePackageStatus(item, restoredStatus);
       return;
     }
 
     this.naPackageIds.add(item.id);
+    const hadAward = !!this.awardedBidByPackageId[item.id];
     delete this.awardedBidByPackageId[item.id];
+    delete this.inHouseUploadByPackageId[item.id];
+    if (hadAward) {
+      this.persistAwardForPackage(item, null);
+    }
+    this.persistTradePackageStatus(item, 'N/A');
   }
 
   runAiAnalysis(item: TradePackageVm): void {
@@ -753,6 +793,11 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
           category: String(pkg.category || 'trade').toLowerCase(),
           scopeOfWork: pkg.scopeOfWork || 'No scope provided.',
           csiCode: pkg.csiCode || 'N/A',
+          estimatedManHours: Number(pkg.estimatedManHours || 0),
+          hourlyRate: Number(pkg.hourlyRate || 0),
+          estimatedDuration: pkg.estimatedDuration || '',
+          startDate: pkg.startDate || null,
+          bidDeadline: pkg.bidDeadline || null,
           budget: Number(pkg.budget || 0),
           laborBudget: Number(pkg.laborBudget || 0),
           materialBudget: Number(pkg.materialBudget || 0),
@@ -761,10 +806,29 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
           status: pkg.status || 'Draft',
           postedToMarketplace: !!pkg.postedToMarketplace,
           isInHouse: !!pkg.isInHouse,
+          awardedBidId: Number(pkg.awardedBidId || 0) || null,
           linkedTradePackageId: pkg.linkedTradePackageId || null,
           isInactive: !!pkg.isInactive,
           isHidden: !!pkg.isHidden,
+          sourceType: pkg.sourceType || null,
         }));
+
+        this.awardedBidByPackageId = this.tradePackages.reduce(
+          (acc, pkg) => {
+            const awardedBidId = Number(pkg.awardedBidId || 0);
+            if (awardedBidId > 0) {
+              acc[pkg.id] = awardedBidId;
+            }
+            return acc;
+          },
+          {} as Record<number, number>,
+        );
+
+        this.naPackageIds = new Set(
+          this.tradePackages
+            .filter((pkg) => String(pkg.status || '').trim().toLowerCase() === 'n/a')
+            .map((pkg) => pkg.id),
+        );
 
         if (this.showDemoBids) {
           this.tradePackages = [...this.tradePackages, ...this.mockTradePackages];
@@ -809,9 +873,13 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.biddingService.getBidsForJob(this.jobId).subscribe({
+    this.bidsService.getBidsForJob(String(this.jobId)).subscribe({
       next: (bids: any) => {
         const items = Array.isArray(bids) ? bids : [];
+        const persistedInHouseUploads: Record<number, { name: string; url: string; uploadedAt: string }> = {};
+        const inHousePackageIds = new Set(
+          this.tradePackages.filter((pkg) => !!pkg.isInHouse).map((pkg) => pkg.id),
+        );
 
         items.forEach((bid: any) => {
           const packageId = Number(bid.tradePackageId || 0);
@@ -854,7 +922,28 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
             submittedAt: bid.submittedAt,
             documentUrl: bid.documentUrl,
           });
+
+          if (inHousePackageIds.has(packageId) && bid.documentUrl) {
+            const uploadedAt =
+              (typeof bid.submittedAt === 'string' && bid.submittedAt) ||
+              new Date().toISOString();
+            const existing = persistedInHouseUploads[packageId];
+
+            if (!existing || new Date(uploadedAt).getTime() >= new Date(existing.uploadedAt).getTime()) {
+              persistedInHouseUploads[packageId] = {
+                name: this.fileNameFromUrl(String(bid.documentUrl)),
+                url: String(bid.documentUrl),
+                uploadedAt,
+              };
+            }
+          }
+
+          if ((bid.status || '').toString().toLowerCase() === 'awarded') {
+            this.awardedBidByPackageId[packageId] = Number(bid.id);
+          }
         });
+
+        this.inHouseUploadByPackageId = persistedInHouseUploads;
 
         Object.keys(this.bidsByPackageId).forEach((key) => {
           this.bidsByPackageId[Number(key)] = this.bidsByPackageId[Number(key)].sort(
@@ -866,9 +955,15 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       },
       error: () => {
         this.isLoading = false;
-        this.snackBar.open('Live bids failed to load. Showing demo bids only.', 'Close', {
-          duration: 2500,
-        });
+        if (this.showDemoBids) {
+          this.snackBar.open('Unable to load live bids. Showing demo bids only.', 'Close', {
+            duration: 2500,
+          });
+        } else {
+          this.snackBar.open('Unable to load bids right now.', 'Close', {
+            duration: 2500,
+          });
+        }
       },
     });
   }
@@ -901,6 +996,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
         this.bidsService.uploadBidPdf(this.jobId, uploaded.url, item.id).subscribe({
           next: () => {
+            this.persistTradePackageStatus(item, 'In House');
             this.snackBar.open('In-house quote uploaded.', 'Close', { duration: 2500 });
           },
           error: () => {
@@ -914,6 +1010,99 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
         this.snackBar.open('Failed to upload in-house quote.', 'Close', { duration: 3000 });
       },
     });
+  }
+
+  private persistTradePackageStatus(item: TradePackageVm, status: string): void {
+    if (!this.jobId || item.isMock) {
+      item.status = status;
+      return;
+    }
+
+    const payload = {
+      id: item.id,
+      jobId: item.jobId,
+      tradeName: item.trade,
+      category: item.category,
+      scopeOfWork: item.scopeOfWork,
+      status,
+      estimatedManHours: Number(item.estimatedManHours || 0),
+      hourlyRate: Number(item.hourlyRate || 0),
+      estimatedDuration: item.estimatedDuration || '',
+      startDate: item.startDate || null,
+      bidDeadline: item.bidDeadline || null,
+      laborType: item.laborType || null,
+      csiCode: item.csiCode || null,
+      linkedTradePackageId: item.linkedTradePackageId || null,
+      isAutoGenerated: !!item.isMock,
+      isInactive: !!item.isInactive,
+      isHidden: !!item.isHidden,
+      sourceType: item.sourceType || null,
+      isInHouse: !!item.isInHouse,
+      laborBudget: Number(item.laborBudget || 0),
+      materialBudget: Number(item.materialBudget || 0),
+      totalBudget: Number(item.totalBudget || item.budget || 0),
+      effectiveBudget: Number(item.totalBudget || item.budget || 0),
+      budget: Number(item.budget || 0),
+      postedToMarketplace: !!item.postedToMarketplace,
+    };
+
+    this.bomService.updateTradePackage(item.id, payload).subscribe({
+      next: () => {
+        item.status = status;
+      },
+      error: () => {
+        this.snackBar.open('Failed to persist package status change.', 'Close', {
+          duration: 3200,
+        });
+      },
+    });
+  }
+
+  private persistAwardForPackage(item: TradePackageVm, bidId: number | null): void {
+    if (!this.jobId || item.isMock) {
+      if (bidId) {
+        this.awardedBidByPackageId[item.id] = bidId;
+        this.naPackageIds.delete(item.id);
+      } else {
+        delete this.awardedBidByPackageId[item.id];
+      }
+      return;
+    }
+
+    this.bidsService.awardTradePackageBid(this.jobId, item.id, bidId).subscribe({
+      next: () => {
+        if (bidId) {
+          this.awardedBidByPackageId[item.id] = bidId;
+          this.naPackageIds.delete(item.id);
+          item.status = item.isInHouse ? 'In House' : 'Awarded';
+          item.awardedBidId = bidId;
+        } else {
+          delete this.awardedBidByPackageId[item.id];
+          item.status = item.isInHouse
+            ? 'In House'
+            : item.postedToMarketplace
+              ? 'Posted'
+              : 'Draft';
+          item.awardedBidId = null;
+        }
+      },
+      error: () => {
+        this.snackBar.open('Failed to persist award selection.', 'Close', {
+          duration: 3200,
+        });
+      },
+    });
+  }
+
+  private fileNameFromUrl(url: string): string {
+    try {
+      const decoded = decodeURIComponent(url);
+      const normalized = decoded.split('?')[0].split('#')[0];
+      const segments = normalized.split('/');
+      return segments[segments.length - 1] || 'Uploaded quote.pdf';
+    } catch {
+      return 'Uploaded quote.pdf';
+    }
   }
 
   private applyAnalysisResult(packageId: number, result: any): void {

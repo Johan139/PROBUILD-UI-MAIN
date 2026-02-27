@@ -25,7 +25,7 @@
         <div class="phase-export-menu" *ngIf="showExportMenu">
           <p class="export-menu-title">Reports &amp; Documents</p>
 
-          <button type="button" class="export-item" (click)="request(documentsRequested)">
+          <button type="button" class="export-item" (click)="requestDocuments()">
             <span class="export-item-icon"><lucide-icon name="folder" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">View Documents</span>
@@ -34,7 +34,7 @@
             <lucide-icon name="chevron-right" class="mini-icon export-item-arrow"></lucide-icon>
           </button>
 
-          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request(fullReportRequested)">
+          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request('fullReport')">
             <span class="export-item-icon"><lucide-icon name="file-text" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">{{ isReportLoading ? 'Loading...' : 'View Full Report' }}</span>
@@ -43,7 +43,7 @@
             <lucide-icon name="chevron-right" class="mini-icon export-item-arrow"></lucide-icon>
           </button>
 
-          <button type="button" class="export-item" (click)="request(billOfMaterialsRequested)">
+          <button type="button" class="export-item" (click)="request('billOfMaterials')">
             <span class="export-item-icon"><lucide-icon name="file-text" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">View Bill of Materials</span>
@@ -52,7 +52,7 @@
             <lucide-icon name="chevron-right" class="mini-icon export-item-arrow"></lucide-icon>
           </button>
 
-          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request(executiveSummaryRequested)">
+          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request('executiveSummary')">
             <span class="export-item-icon"><lucide-icon name="target" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">{{ isReportLoading ? 'Loading...' : 'View Executive Summary' }}</span>
@@ -66,7 +66,7 @@
             class="export-item"
             *ngIf="showEnvironmentalReport"
             [disabled]="isReportLoading"
-            (click)="request(environmentalReportRequested)"
+            (click)="request('environmentalReport')"
           >
             <span class="export-item-icon"><lucide-icon name="map-pin" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
@@ -76,7 +76,7 @@
             <lucide-icon name="chevron-right" class="mini-icon export-item-arrow"></lucide-icon>
           </button>
 
-          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request(procurementScheduleRequested)">
+          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request('procurementSchedule')">
             <span class="export-item-icon"><lucide-icon name="clock" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">{{ isReportLoading ? 'Loading...' : 'View Procurement Schedule' }}</span>
@@ -85,7 +85,7 @@
             <lucide-icon name="chevron-right" class="mini-icon export-item-arrow"></lucide-icon>
           </button>
 
-          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request(dailyConstructionPlanRequested)">
+          <button type="button" class="export-item" [disabled]="isReportLoading" (click)="request('dailyConstructionPlan')">
             <span class="export-item-icon"><lucide-icon name="dollar-sign" class="mini-icon"></lucide-icon></span>
             <span class="export-item-copy">
               <span class="export-item-label">{{ isReportLoading ? 'Loading...' : 'View Daily Construction Plan' }}</span>

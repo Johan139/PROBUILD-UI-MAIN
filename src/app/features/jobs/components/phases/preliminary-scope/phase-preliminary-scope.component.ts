@@ -20,7 +20,10 @@ import { ProjectBlueprintViewerComponent } from '../../../../../components/proje
 import { UploadedFileInfo } from '../../../../../services/file-upload.service';
 import { JobsService } from '../../../../../services/jobs.service';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
-import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 import { ReportService } from '../../../services/report.service';
 import { JobTeamComponent } from '../../job-team/job-team.component';
 import { JobUser } from '../../../job-assignment/job-assignment.model';
@@ -68,16 +71,11 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   @Output() bidPriceClick = new EventEmitter<void>();
   @Output() blueprintSelected = new EventEmitter<UploadedFileInfo>();
   @Output() jobGranted = new EventEmitter<void>();
-  @Output() fullReportRequested = new EventEmitter<void>();
   @Output() backToSetup = new EventEmitter<void>();
   @Output() discardProject = new EventEmitter<void>();
   @Output() proceedToDetailedEstimating = new EventEmitter<void>();
   @Output() documentsRequested = new EventEmitter<void>();
-  @Output() billOfMaterialsRequested = new EventEmitter<void>();
-  @Output() executiveSummaryRequested = new EventEmitter<void>();
-  @Output() environmentalReportRequested = new EventEmitter<void>();
-  @Output() procurementScheduleRequested = new EventEmitter<void>();
-  @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
   @Output() refreshTeamRequested = new EventEmitter<void>();
 
   activeTab: ScopeTab = 'overview';
@@ -357,8 +355,13 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   }
 
   get estimatedCompletionDate(): Date {
-    const start = this.getTimelineDateRange()?.start
-      || (this.projectDetails?.date ? new Date(this.projectDetails.date) : null);
+    const fallbackStartRaw =
+      this.projectDetails?.desiredStartDate ??
+      this.projectDetails?.DesiredStartDate ??
+      this.projectDetails?.date ??
+      null;
+
+    const start = this.getTimelineDateRange()?.start || (fallbackStartRaw ? new Date(fallbackStartRaw) : null);
     if (!start || isNaN(start.getTime())) {
       return new Date(Date.now() + this.totalDurationWeeks * 7 * 24 * 60 * 60 * 1000);
     }

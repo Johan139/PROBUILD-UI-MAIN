@@ -53,7 +53,11 @@ export class BrowseJobsComponent implements OnInit, OnChanges {
     jobId: number;
     event: MouseEvent;
   }>();
-  @Output() openBid = new EventEmitter<{ jobId: number; event: MouseEvent }>();
+  @Output() openBid = new EventEmitter<{
+    jobId: number;
+    tradePackageId?: number;
+    event: MouseEvent;
+  }>();
   @Output() highlightMarker = new EventEmitter<number>();
   @Output() unhighlightMarker = new EventEmitter<number>();
   @Output() addressSelected = new EventEmitter<void>();

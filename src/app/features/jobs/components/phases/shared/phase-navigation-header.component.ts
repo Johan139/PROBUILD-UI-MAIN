@@ -2,6 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 
+export type PhaseReportRequestType =
+  | 'fullReport'
+  | 'billOfMaterials'
+  | 'executiveSummary'
+  | 'environmentalReport'
+  | 'procurementSchedule'
+  | 'dailyConstructionPlan';
+
 @Component({
   selector: 'app-phase-navigation-header',
   standalone: true,
@@ -28,12 +36,7 @@ export class PhaseNavigationHeaderComponent {
   @Output() proceed = new EventEmitter<void>();
 
   @Output() documentsRequested = new EventEmitter<void>();
-  @Output() fullReportRequested = new EventEmitter<void>();
-  @Output() billOfMaterialsRequested = new EventEmitter<void>();
-  @Output() executiveSummaryRequested = new EventEmitter<void>();
-  @Output() environmentalReportRequested = new EventEmitter<void>();
-  @Output() procurementScheduleRequested = new EventEmitter<void>();
-  @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   showExportMenu = false;
 
@@ -45,9 +48,14 @@ export class PhaseNavigationHeaderComponent {
     this.showExportMenu = false;
   }
 
-  request(action: EventEmitter<void>): void {
+  requestDocuments(): void {
     this.showExportMenu = false;
-    action.emit();
+    this.documentsRequested.emit();
+  }
+
+  request(reportType: PhaseReportRequestType): void {
+    this.showExportMenu = false;
+    this.reportRequested.emit(reportType);
   }
 }
 

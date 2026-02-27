@@ -9,10 +9,14 @@
     [clientName]="clientName || 'Jacques Barnard'"
     [projectAddress]="projectAddress || 'Belicia Ln, Round Rock, TX'"
     [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
     [proceedDisabled]="!canProceed"
     (back)="back.emit()"
     (discard)="discard.emit()"
     (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
   <section class="trade-award-content" *ngIf="!isLoading; else loadingTemplate">

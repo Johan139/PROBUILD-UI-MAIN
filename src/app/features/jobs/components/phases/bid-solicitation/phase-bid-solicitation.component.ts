@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { JobInboundBiddingComponent } from './job-inbound-bidding.component';
-import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 
 interface SolicitationPacket {
   id: string;
@@ -32,6 +35,8 @@ export class PhaseBidSolicitationComponent {
   @Input() stageDisplayMode: 'stage' | 'live' = 'stage';
   @Input() canUseLiveStageView = true;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
 
   @ViewChild(JobInboundBiddingComponent)
   inboundBiddingComponent?: JobInboundBiddingComponent;
@@ -40,6 +45,8 @@ export class PhaseBidSolicitationComponent {
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   packets: SolicitationPacket[] = [
     {

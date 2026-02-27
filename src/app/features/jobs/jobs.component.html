@@ -45,12 +45,7 @@
       (proceedToDetailedEstimating)="proceedToDetailedTakeoff()"
       (documentsRequested)="openDocumentsDialog()"
       (jobGranted)="onJobGranted()"
-      (fullReportRequested)="openReportDialog()"
-      (billOfMaterialsRequested)="openBillOfMaterialsDialog()"
-      (executiveSummaryRequested)="openExecutiveSummaryDialog()"
-      (environmentalReportRequested)="openEnvironmentalReportDialog()"
-      (procurementScheduleRequested)="openProcurementScheduleDialog()"
-      (dailyConstructionPlanRequested)="openDailyConstructionPlanDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
       (refreshTeamRequested)="loadAssignedTeam()"
     ></app-phase-preliminary-scope>
 
@@ -65,6 +60,8 @@
       (back)="navigateTo('PRE_CONSTRUCTION')"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('TRADE_AWARD')"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-bid-solicitation>
 
     <!-- 10. CLOSEOUT -->
@@ -74,6 +71,8 @@
       (back)="navigateTo('CONSTRUCTION_LIVE')"
       (discard)="confirmDiscardProject()"
       (archive)="onArchiveProject()"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-closeout>
 
     <!-- 9. CONSTRUCTION EXECUTION -->
@@ -84,6 +83,8 @@
       (back)="navigateTo('MOBILIZATION')"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('CLOSEOUT')"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-construction-live>
 
     <!-- 3. DETAILED TAKEOFF -->
@@ -97,12 +98,7 @@
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('CONTRACT_AWARD')"
       (documentsRequested)="openDocumentsDialog()"
-      (fullReportRequested)="openReportDialog()"
-      (billOfMaterialsRequested)="openBillOfMaterialsDialog()"
-      (executiveSummaryRequested)="openExecutiveSummaryDialog()"
-      (environmentalReportRequested)="openEnvironmentalReportDialog()"
-      (procurementScheduleRequested)="openProcurementScheduleDialog()"
-      (dailyConstructionPlanRequested)="openDailyConstructionPlanDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-detailed-takeoff>
 
     <!-- 4. CONTRACT AWARD -->
@@ -113,6 +109,8 @@
       (back)="navigateTo('DETAILED_TAKEOFF')"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('PRE_CONSTRUCTION')"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-contract-award>
 
     <!-- 5. PRE-CONSTRUCTION -->
@@ -122,6 +120,8 @@
       (back)="navigateTo('CONTRACT_AWARD')"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('BID_SOLICITATION')"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-pre-construction>
 
     <!-- 7. TRADE AWARD -->
@@ -131,14 +131,20 @@
       (back)="navigateTo('BID_SOLICITATION')"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('MOBILIZATION')"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
     ></app-phase-trade-award>
 
     <!-- 8. MOBILIZATION -->
     <app-phase-mobilization
       *ngSwitchCase="'MOBILIZATION'"
       [projectDetails]="projectDetails"
+      [assignedTeamMembers]="assignedTeamMembers"
       (back)="navigateTo('TRADE_AWARD')"
       (discard)="confirmDiscardProject()"
+      (documentsRequested)="openDocumentsDialog()"
+      (reportRequested)="onPhaseReportRequested($event)"
+      (startDateSaved)="onMobilizationStartDateSaved($event)"
       (goLive)="onGoLive()"
     ></app-phase-mobilization>
     </div>

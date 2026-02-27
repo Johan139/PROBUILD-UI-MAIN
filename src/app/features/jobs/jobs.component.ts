@@ -119,6 +119,7 @@ import { PhaseTradeAwardComponent } from './components/phases/trade-award/phase-
 import { PhaseMobilizationComponent } from './components/phases/mobilization/phase-mobilization.component';
 import { PhaseConstructionLiveComponent } from './components/phases/construction-live/phase-construction-live.component';
 import { PhaseCloseoutComponent } from './components/phases/closeout/phase-closeout.component';
+import { PhaseReportRequestType } from './components/phases/shared/phase-navigation-header.component';
 import {
   OverallBudgetDialogComponent,
   OverallBudgetDialogData,
@@ -524,8 +525,32 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   get projectStartDate(): Date | null {
-    const d = this.projectDetails?.date ? new Date(this.projectDetails.date) : null;
+    const rawDate =
+      this.projectDetails?.desiredStartDate ??
+      this.projectDetails?.DesiredStartDate ??
+      this.projectDetails?.date ??
+      null;
+    const d = rawDate ? new Date(rawDate) : null;
     return d && !isNaN(d.getTime()) ? d : null;
+  }
+
+  onMobilizationStartDateSaved(isoDate: string): void {
+    if (!isoDate) {
+      return;
+    }
+
+    this.projectDetails = {
+      ...(this.projectDetails || {}),
+      desiredStartDate: isoDate,
+      DesiredStartDate: isoDate,
+      date: isoDate,
+    };
+
+    this.startDateDisplay = isoDate.split('T')[0] || null;
+
+    this.store.setState({
+      projectDetails: this.projectDetails,
+    });
   }
 
   saveScopeProjectDetails(): void {
@@ -873,8 +898,14 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.syncScopeReviewDrafts();
         this.isStageResolved = true;
 
-        if (this.projectDetails?.date) {
-          const d = new Date(this.projectDetails.date);
+        const initialStartRaw =
+          this.projectDetails?.desiredStartDate ??
+          this.projectDetails?.DesiredStartDate ??
+          this.projectDetails?.date ??
+          null;
+
+        if (initialStartRaw) {
+          const d = new Date(initialStartRaw);
           this.startDateDisplay = isNaN(d.getTime())
             ? null
             : d.toISOString().split('T')[0];
@@ -1188,6 +1219,31 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .finally(() => {
         this.isReportLoading = false;
       });
+  }
+
+  onPhaseReportRequested(reportType: PhaseReportRequestType): void {
+    switch (reportType) {
+      case 'fullReport':
+        this.openReportDialog();
+        break;
+      case 'billOfMaterials':
+        this.openBillOfMaterialsDialog();
+        break;
+      case 'executiveSummary':
+        this.openExecutiveSummaryDialog();
+        break;
+      case 'environmentalReport':
+        this.openEnvironmentalReportDialog();
+        break;
+      case 'procurementSchedule':
+        this.openProcurementScheduleDialog();
+        break;
+      case 'dailyConstructionPlan':
+        this.openDailyConstructionPlanDialog();
+        break;
+      default:
+        break;
+    }
   }
 
   openProcurementScheduleDialog(): void {

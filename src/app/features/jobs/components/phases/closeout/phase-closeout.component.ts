@@ -1,19 +1,27 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 
 @Component({
   selector: 'app-phase-closeout',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PhaseNavigationHeaderComponent],
   templateUrl: './phase-closeout.component.html',
   styleUrl: './phase-closeout.component.scss',
 })
 export class PhaseCloseoutComponent {
   @Input() projectDetails: any;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
 
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() archive = new EventEmitter<void>();
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   readonly closeoutItems = [
     { id: 'as-builts', label: 'As-built drawings package', done: true },

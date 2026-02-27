@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
-import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 import { BomService } from '../../../services/bom.service';
 import { ReportService } from '../../../services/report.service';
 import { BudgetService } from '../../../services/budget.service';
@@ -62,12 +65,7 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
   @Output() documentsRequested = new EventEmitter<void>();
-  @Output() fullReportRequested = new EventEmitter<void>();
-  @Output() billOfMaterialsRequested = new EventEmitter<void>();
-  @Output() executiveSummaryRequested = new EventEmitter<void>();
-  @Output() environmentalReportRequested = new EventEmitter<void>();
-  @Output() procurementScheduleRequested = new EventEmitter<void>();
-  @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   billsOfMaterials: Record<string, BomSection> = {};
   expandedBomSections: string[] = [];

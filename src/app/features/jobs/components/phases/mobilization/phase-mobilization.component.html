@@ -1,61 +1,83 @@
 <section class="phase-section">
-  <header class="phase-header">
-    <button type="button" class="phase-link" (click)="back.emit()">← Back to Trade Award</button>
-    <div class="phase-actions">
-      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
-      <button type="button" class="btn btn-primary" [disabled]="!canGoLive" (click)="goLive.emit()">
-        Go Live - Start Construction
-      </button>
-    </div>
-  </header>
-
-  <div class="project-summary">
-    <article>
-      <p class="label">Project</p>
-      <p class="value">{{ projectDetails?.projectName || 'HERNANDEZ RESIDENCE' }}</p>
-    </article>
-    <article>
-      <p class="label">Client</p>
-      <p class="value">{{ projectDetails?.clientName || 'Jacques Barnard' }}</p>
-    </article>
-    <article>
-      <p class="label">Address</p>
-      <p class="value">{{ projectDetails?.address || 'Belicia Ln, Round Rock, TX' }}</p>
-    </article>
-    <article>
-      <p class="label">Size</p>
-      <p class="value">{{ projectSizeSqFt }} sq ft</p>
-      <p class="sub-value">{{ projectSizeSqM }} m²</p>
-    </article>
-  </div>
+  <app-phase-navigation-header
+    stageLabel="Project Mobilization"
+    backLabel="Back to Subcontract Award"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Go Live - Start Construction"
+    [projectName]="projectDetails?.projectName"
+    [clientName]="projectDetails?.clientName"
+    [projectAddress]="projectDetails?.address || projectDetails?.jobAddress?.formatted_address"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canGoLive"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="openGoLiveDialog()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
 
   <section class="intro-card">
-    <h3>Project Mobilization</h3>
-    <p>
-      Assign your team, review awarded trades, and set a construction start date.
-      Starting construction notifies all assigned participants.
-    </p>
+    <div class="intro-icon-wrap">
+      <lucide-icon name="flag-triangle-right" class="intro-icon"></lucide-icon>
+    </div>
+    <div>
+      <h3>Project Mobilization</h3>
+      <p>
+        Assign your team, review all awarded trades, and go live. Starting construction notifies assigned
+        subcontractors and internal team members with kickoff details.
+      </p>
+    </div>
   </section>
 
-  <section class="card start-date-card" [class.is-ready]="isStartDateSet">
-    <div>
-      <h4>Construction Start Date <span>*</span></h4>
-      <p *ngIf="startDate; else noDate">Scheduled: {{ startDate }}</p>
-      <ng-template #noDate>
-        <p>Required before going live.</p>
-      </ng-template>
+  <section class="intro-card" [class.is-ready]="isStartDateSet" [class.is-pending]="!isStartDateSet">
+    <div class="start-date-main">
+      <div class="card-head">
+        <div class="intro-icon-wrap" [class.ready]="isStartDateSet">
+          <lucide-icon [name]="isStartDateSet ? 'check' : 'calendar'" class="intro-icon"></lucide-icon>
+        </div>
+        <div>
+          <h4>Construction Start Date <span>*</span></h4>
+          <p *ngIf="shouldShowScheduledDate; else noDate">Scheduled: {{ startDate | date: 'EEEE, MMM d, y' }}</p>
+          <ng-template #noDate>
+            <p>Required before going live.</p>
+          </ng-template>
+        </div>
+      </div>
+      <p class="start-date-note" *ngIf="!isStartDateSet">
+        A construction start date is required before going live. Team and trade notifications will include this date.
+      </p>
     </div>
-    <input type="date" [(ngModel)]="startDate" />
+    <div class="start-date-control">
+      <div class="date-input-wrap">
+        <lucide-icon name="calendar" class="intro-icon"></lucide-icon>
+        <input type="date" [(ngModel)]="startDate" (ngModelChange)="onStartDateChanged($event)" />
+      </div>
+    </div>
   </section>
 
   <section class="team-card">
     <div class="team-header">
-      <h4>Your Team</h4>
+      <div class="title-wrap">
+        <lucide-icon name="users" class="title-icon"></lucide-icon>
+        <h4>Your Team</h4>
+      </div>
       <div class="team-header-actions">
         <span>{{ assignedMembersCount }} assigned · {{ availableCount }} available</span>
         <button type="button" class="btn btn-outline" (click)="showInviteForm = !showInviteForm">
+          <lucide-icon name="user-plus" class="btn-icon"></lucide-icon>
           {{ showInviteForm ? 'Close Invite' : 'Invite New Member' }}
         </button>
+      </div>
+    </div>
+
+    <div class="carried-over-banner" *ngIf="carriedOverAssignedCount > 0">
+      <lucide-icon name="users" class="banner-icon"></lucide-icon>
+      <div>
+        <p>{{ carriedOverAssignedCount }} team member(s) carried over from Scope Review</p>
+        <small>These assignments were pre-selected and can be adjusted here.</small>
       </div>
     </div>
 
@@ -73,7 +95,10 @@
       <input type="text" placeholder="Role" [(ngModel)]="inviteRole" />
       <div class="invite-actions">
         <button type="button" class="btn btn-outline" (click)="showInviteForm = false">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="sendInvite()">Send Invite</button>
+        <button type="button" class="btn btn-primary" (click)="sendInvite()">
+          <lucide-icon name="mail" class="btn-icon"></lucide-icon>
+          Send Invite
+        </button>
       </div>
     </div>
 
@@ -86,28 +111,63 @@
     </div>
 
     <div class="team-lane">
-      <h5>Office / Management ({{ assignedOfficeCount }} / {{ officeTeam.length }})</h5>
-      <article class="team-member" *ngFor="let member of officeTeam" (click)="toggleMemberAssignment(member.id)">
-        <div>
-          <p class="member-name">{{ member.name }}</p>
-          <p class="member-meta">{{ member.role }} · {{ member.phone }}</p>
-          <p class="member-meta" *ngIf="!member.available">Currently unavailable</p>
+      <h5>
+        <lucide-icon name="briefcase" class="lane-icon"></lucide-icon>
+        Office / Management ({{ assignedOfficeCount }} / {{ officeTeam.length }})
+      </h5>
+      <article
+        class="team-member"
+        *ngFor="let member of officeTeam"
+        [class.is-assigned]="assignedMembers.has(member.id)"
+        [class.is-scope]="member.fromScopeReview"
+        [class.is-unavailable]="!member.available"
+        (click)="openTeamMemberDetail(member)"
+      >
+        <div class="member-main">
+          <div class="member-avatar">{{ getMemberInitials(member.name) }}</div>
+          <div>
+            <p class="member-name">{{ member.name }}</p>
+            <p class="member-meta">
+              {{ member.role }}
+              <span class="current-job-chip" *ngIf="!member.available">On another project</span>
+            </p>
+            <p class="member-meta"><lucide-icon name="phone" class="intro-icon"></lucide-icon>{{ member.phone }}</p>
+            <p class="member-meta" *ngIf="member.email"><lucide-icon name="mail" class="intro-icon"></lucide-icon>{{ member.email }}</p>
+          </div>
         </div>
         <span class="state-pill" [class.is-active]="assignedMembers.has(member.id)">
+          <lucide-icon [name]="assignedMembers.has(member.id) ? 'check' : 'plus'" class="state-icon"></lucide-icon>
           {{ assignedMembers.has(member.id) ? 'Assigned' : 'Not Assigned' }}
         </span>
       </article>
     </div>
 
     <div class="team-lane">
-      <h5>On-Site / Field ({{ assignedFieldCount }} / {{ fieldTeam.length }})</h5>
-      <article class="team-member" *ngFor="let member of fieldTeam" (click)="toggleMemberAssignment(member.id)">
-        <div>
-          <p class="member-name">{{ member.name }}</p>
-          <p class="member-meta">{{ member.role }} · {{ member.phone }}</p>
-          <p class="member-meta" *ngIf="!member.available">Currently unavailable</p>
+      <h5>
+        <lucide-icon name="hard-hat" class="lane-icon"></lucide-icon>
+        On-Site / Field ({{ assignedFieldCount }} / {{ fieldTeam.length }})
+      </h5>
+      <article
+        class="team-member"
+        *ngFor="let member of fieldTeam"
+        [class.is-assigned]="assignedMembers.has(member.id)"
+        [class.is-scope]="member.fromScopeReview"
+        [class.is-unavailable]="!member.available"
+        (click)="openTeamMemberDetail(member)"
+      >
+        <div class="member-main">
+          <div class="member-avatar">{{ getMemberInitials(member.name) }}</div>
+          <div>
+            <p class="member-name">{{ member.name }}</p>
+            <p class="member-meta">
+              {{ member.role }}
+              <span class="current-job-chip" *ngIf="!member.available">On another project</span>
+            </p>
+            <p class="member-meta"><lucide-icon name="phone" class="intro-icon"></lucide-icon>{{ member.phone }}</p>
+          </div>
         </div>
         <span class="state-pill" [class.is-active]="assignedMembers.has(member.id)">
+          <lucide-icon [name]="assignedMembers.has(member.id) ? 'check' : 'plus'" class="state-icon"></lucide-icon>
           {{ assignedMembers.has(member.id) ? 'Assigned' : 'Not Assigned' }}
         </span>
       </article>
@@ -116,23 +176,154 @@
 
   <section class="trade-card">
     <div class="trade-header">
-      <h4>Subcontractors</h4>
+      <div class="title-wrap">
+        <lucide-icon name="hammer" class="title-icon"></lucide-icon>
+        <h4>Subcontractors</h4>
+      </div>
       <span>{{ assignedTradeCount }} trades assigned</span>
     </div>
-    <article class="trade-item" *ngFor="let trade of tradePackages">
+    <p class="empty-copy" *ngIf="isLoadingTradeData">Loading mobilization trade data…</p>
+    <p class="empty-copy" *ngIf="!isLoadingTradeData && subcontractorTrades.length === 0">
+      No subcontractor trade packages available yet.
+    </p>
+    <article
+      class="trade-item"
+      *ngFor="let trade of subcontractorTrades"
+      [class.is-open]="getTradeMobilizationStatus(trade) === 'pending'"
+      [class.is-ready]="getTradeMobilizationStatus(trade) === 'confirmed'"
+    >
       <button type="button" class="trade-summary" (click)="toggleTradeExpanded(trade.id)">
         <div>
-          <p class="member-name">{{ trade.name }}</p>
-          <p class="member-meta">{{ trade.csiCode }} · {{ trade.durationDays }}d</p>
+          <p class="member-name">{{ trade.trade }}</p>
+          <p class="member-meta">
+            {{ trade.csiCode || 'CSI pending' }} · {{ tradeDurationLabel(trade) }}
+            <span class="in-house-chip" *ngIf="trade.isInHouse">In House</span>
+          </p>
         </div>
         <div class="trade-right">
-          <span class="trade-budget">${{ trade.budget | number }}</span>
-          <span class="state-pill" [class.is-active]="trade.status !== 'open'">{{ trade.status }}</span>
+          <span class="trade-budget">${{ (getTradeContact(trade)?.amount ?? trade.totalBudget ?? trade.budget) | number }}</span>
+          <span
+            class="state-pill"
+            [class.is-confirmed]="getTradeMobilizationStatus(trade) === 'confirmed'"
+            [class.is-pending]="getTradeMobilizationStatus(trade) === 'pending'"
+            >{{ getTradeMobilizationStatus(trade) }}</span
+          >
+          <lucide-icon name="chevron-down" class="chev" [class.open]="expandedTradeIds.has(trade.id)"></lucide-icon>
         </div>
       </button>
       <div class="trade-detail" *ngIf="expandedTradeIds.has(trade.id)">
-        <p *ngIf="trade.status === 'open'">Trade is still open and not yet ready for mobilization.</p>
-        <p *ngIf="trade.status !== 'open'">Trade package prepared for construction kickoff notifications.</p>
+        <p *ngIf="getTradeMobilizationStatus(trade) === 'pending'">
+          No awarded subcontractor yet. This trade is still pending award for mobilization.
+        </p>
+
+        <div class="trade-detail-grid" *ngIf="getTradeMobilizationStatus(trade) === 'confirmed'">
+          <div class="trade-cell">
+            <small>Company</small>
+            <strong>{{ getTradeContact(trade)?.company }}</strong>
+          </div>
+          <div class="trade-cell">
+            <small>Contact Person</small>
+            <strong>{{ getTradeContact(trade)?.contact }}</strong>
+          </div>
+          <div class="trade-cell">
+            <small>Email</small>
+            <strong>{{ getTradeContact(trade)?.email }}</strong>
+          </div>
+          <div class="trade-cell">
+            <small>Mobile / Phone</small>
+            <strong>{{ getTradeContact(trade)?.phone }}</strong>
+          </div>
+        </div>
+
+        <div class="trade-kpis" *ngIf="getTradeMobilizationStatus(trade) === 'confirmed'">
+          <div class="trade-cell compact">
+            <small>Contract Value</small>
+            <strong>${{ getTradeContact(trade)?.amount || trade.budget | number }}</strong>
+          </div>
+          <div class="trade-cell compact">
+            <small>Start Date</small>
+            <strong>{{ startDate ? (startDate | date: 'MMM d, y') : 'TBD' }}</strong>
+          </div>
+          <div class="trade-cell compact">
+            <small>Duration</small>
+            <strong>{{ tradeDurationLabel(trade) }}</strong>
+          </div>
+          <div class="trade-cell compact">
+            <small>Man Hours</small>
+            <strong>{{ getTradeContact(trade)?.manHours ?? 'TBD' }}</strong>
+          </div>
+        </div>
+
+        <div class="trade-notice" *ngIf="getTradeMobilizationStatus(trade) === 'confirmed'">
+          <lucide-icon [name]="canGoLive ? 'check' : 'bell'"></lucide-icon>
+          <span>
+            {{
+              canGoLive
+                ? 'Notification sent — schedule and start date delivered'
+                : 'Will be notified when you Go Live'
+            }}
+          </span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="trade-card partners vendors-card">
+    <div class="trade-header">
+      <div class="title-wrap">
+        <lucide-icon name="package" class="title-icon"></lucide-icon>
+        <h4>Vendors</h4>
+      </div>
+      <span>{{ vendorPartners.length }} material vendors</span>
+    </div>
+    <p class="empty-copy" *ngIf="!isLoadingTradeData && vendorPartners.length === 0">
+      No vendor packages available yet.
+    </p>
+    <article class="partner-item" *ngFor="let vendor of vendorPartners">
+      <div class="partner-main">
+        <div class="partner-icon orange"><lucide-icon name="package"></lucide-icon></div>
+        <div>
+          <p class="member-name">{{ vendor.category }}</p>
+          <p class="member-meta">
+            {{ vendor.company }} · {{ vendor.contact }}
+            <span class="in-house-chip in-house-chip--vendor" *ngIf="vendor.isInHouse">In House</span>
+          </p>
+        </div>
+      </div>
+      <div class="partner-right">
+        <span class="trade-budget">${{ vendor.value | number }}</span>
+        <span class="state-pill" [class.is-confirmed]="vendor.status === 'confirmed'" [class.is-pending]="vendor.status === 'pending'">{{ vendor.status }}</span>
+        <small>Lead: {{ vendor.lead }}</small>
+      </div>
+    </article>
+  </section>
+
+  <section class="trade-card partners suppliers-card">
+    <div class="trade-header">
+      <div class="title-wrap">
+        <lucide-icon name="truck" class="title-icon"></lucide-icon>
+        <h4>Suppliers</h4>
+      </div>
+      <span>{{ supplierPartners.length }} material suppliers</span>
+    </div>
+    <p class="empty-copy" *ngIf="!isLoadingTradeData && supplierPartners.length === 0">
+      No supplier packages available yet.
+    </p>
+    <article class="partner-item" *ngFor="let supplier of supplierPartners">
+      <div class="partner-main">
+        <div class="partner-icon blue"><lucide-icon name="truck"></lucide-icon></div>
+        <div>
+          <p class="member-name">{{ supplier.category }}</p>
+          <p class="member-meta">
+            {{ supplier.company }} · {{ supplier.contact }}
+            <span class="in-house-chip in-house-chip--supplier" *ngIf="supplier.isInHouse">In House</span>
+          </p>
+        </div>
+      </div>
+      <div class="partner-right">
+        <span class="trade-budget">${{ supplier.value | number }}</span>
+        <span class="state-pill" [class.is-confirmed]="supplier.status === 'confirmed'" [class.is-pending]="supplier.status === 'pending'">{{ supplier.status }}</span>
+        <small>Lead: {{ supplier.lead }}</small>
       </div>
     </article>
   </section>
@@ -143,10 +334,7 @@
       <strong>{{ canGoLive ? 'Ready' : 'Pending' }}</strong>
     </div>
     <div class="progress-track">
-      <div
-        class="progress-fill"
-        [style.width.%]="readinessPercent"
-      ></div>
+      <div class="progress-fill" [style.width.%]="readinessPercent"></div>
     </div>
     <p class="progress-copy" *ngIf="canGoLive; else mobilizationPending">
       Start date set and at least one team member assigned. Ready to go live.
@@ -155,5 +343,170 @@
       <p class="progress-copy">Set a start date and assign team members before launching construction.</p>
     </ng-template>
   </section>
+
+  <div class="member-modal-backdrop go-live-backdrop" *ngIf="goLiveDialogOpen" (click)="closeGoLiveDialog()">
+    <article class="member-modal go-live-modal" (click)="$event.stopPropagation()">
+      <div class="go-live-head">
+        <div class="go-live-icon-wrap">
+          <lucide-icon name="rocket" class="go-live-icon"></lucide-icon>
+        </div>
+        <h3>Confirm Go Live</h3>
+        <p>You are about to launch this project into live construction.</p>
+      </div>
+
+      <div class="go-live-body">
+        <div class="go-live-summary">
+          <div class="summary-row">
+            <p>Project</p>
+            <strong>{{ goLiveProjectName }}</strong>
+          </div>
+          <div class="summary-row">
+            <p>Start Date</p>
+            <strong class="start-date-value">{{ startDate ? (startDate | date: 'EEE, MMMM d, y') : 'TBD' }}</strong>
+          </div>
+          <div class="summary-kpis">
+            <div>
+              <strong>{{ assignedMembersCount }}</strong>
+              <small>Team Members</small>
+            </div>
+            <div>
+              <strong>{{ goLiveAssignedSubcontractorsCount }}</strong>
+              <small>Subs Awarded</small>
+            </div>
+            <div>
+              <strong>{{ goLiveVendorSupplierCount }}</strong>
+              <small>Vendors/Suppliers</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="go-live-impact">
+          <p class="impact-title">What happens when you go live</p>
+          <div class="impact-item">
+            <lucide-icon name="bell"></lucide-icon>
+            <p>All assigned team members, subcontractors, vendors, and suppliers will be <strong>notified immediately</strong></p>
+          </div>
+          <div class="impact-item">
+            <lucide-icon name="calendar"></lucide-icon>
+            <p>Project schedules and milestones will be <strong>sent to all parties</strong> based on the start date</p>
+          </div>
+          <div class="impact-item">
+            <lucide-icon name="file-text"></lucide-icon>
+            <p>Contracts, purchase orders, and work schedules will be <strong>distributed automatically</strong></p>
+          </div>
+          <div class="impact-item">
+            <lucide-icon name="hard-hat"></lucide-icon>
+            <p>The project enters <strong>live construction mode</strong> with real-time tracking</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="go-live-actions">
+        <button type="button" class="btn btn-outline" (click)="closeGoLiveDialog()">Cancel</button>
+        <button type="button" class="btn btn-primary go-live-confirm" (click)="confirmGoLive()">
+          <lucide-icon name="rocket"></lucide-icon>
+          Confirm Go Live
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="member-modal-backdrop" *ngIf="selectedTeamMember as member" (click)="closeTeamMemberDetail()">
+    <article class="member-modal" (click)="$event.stopPropagation()">
+      <header class="member-modal-head">
+        <div class="member-main">
+          <div class="member-avatar modal">{{ getMemberInitials(member.name) }}</div>
+          <div>
+            <h3>{{ member.name }}</h3>
+            <p>{{ member.role }}</p>
+            <span class="availability" [class.available]="member.available">
+              {{ member.available ? 'Available' : 'On another project' }}
+            </span>
+          </div>
+        </div>
+        <button type="button" class="modal-close" (click)="closeTeamMemberDetail()">
+          <lucide-icon name="x"></lucide-icon>
+        </button>
+      </header>
+
+      <section class="member-modal-info">
+        <p><lucide-icon name="phone"></lucide-icon><span>Phone:</span><strong>{{ member.phone }}</strong></p>
+        <p><lucide-icon name="dollar-sign"></lucide-icon><span>Rate:</span><strong>{{ member.rate || '' }}</strong></p>
+        <p><lucide-icon name="mail"></lucide-icon><span>Email:</span><strong>{{ member.email || 'Not listed' }}</strong></p>
+        <p><lucide-icon name="clock"></lucide-icon><span>Experience:</span><strong>{{ member.experience || '' }}</strong></p>
+        <p class="wide"><lucide-icon name="shield-check"></lucide-icon><span>Certifications:</span><strong>{{ member.certifications || '' }}</strong></p>
+        <p class="wide modal-current-job" *ngIf="member.currentProject && member.currentProject !== 'None'">
+          <lucide-icon name="briefcase"></lucide-icon><span>Current Project:</span><strong>{{ member.currentProject }}</strong>
+        </p>
+      </section>
+
+      <div class="member-modal-actions">
+        <button
+          type="button"
+          class="btn btn-primary"
+          *ngIf="!assignedMembers.has(member.id)"
+          (click)="assignSelectedTeamMember()"
+        >
+          <lucide-icon name="check"></lucide-icon>
+          Assign to Project
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          *ngIf="assignedMembers.has(member.id)"
+          (click)="removeSelectedTeamMember()"
+        >
+          <lucide-icon name="x"></lucide-icon>
+          Remove from Project
+        </button>
+        <button type="button" class="btn btn-outline" (click)="closeTeamMemberDetail()">Close</button>
+      </div>
+    </article>
+  </div>
+
+  <div class="member-modal-backdrop" *ngIf="conflictMember as member" (click)="cancelAssignmentConflict()">
+    <article class="member-modal conflict-modal" (click)="$event.stopPropagation()">
+      <header class="member-modal-head">
+        <div>
+          <h3>Team Member Already Assigned</h3>
+          <p>
+            {{ member.name }} is currently assigned to one or more other projects. Choose how to proceed.
+          </p>
+        </div>
+        <button type="button" class="modal-close" (click)="cancelAssignmentConflict()">
+          <lucide-icon name="x"></lucide-icon>
+        </button>
+      </header>
+
+      <section class="conflict-list" *ngIf="conflictAssignments().length > 0">
+        <div class="conflict-row" *ngFor="let job of conflictAssignments()">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="isConflictRemovalSelected(job.id)"
+              (change)="toggleConflictRemovalJob(job.id)"
+            />
+            <span>{{ job.projectName || ('Job #' + job.id) }}</span>
+          </label>
+          <small>ID: {{ job.id }}</small>
+        </div>
+
+        <div class="conflict-tools">
+          <button type="button" class="btn btn-outline" (click)="selectAllConflictJobs()">Select all</button>
+          <button type="button" class="btn btn-outline" (click)="clearConflictJobs()">Clear</button>
+        </div>
+      </section>
+
+      <div class="member-modal-actions">
+        <button type="button" class="btn btn-primary" (click)="keepMemberOnBothProjects()">
+          Keep on existing projects + assign here
+        </button>
+        <button type="button" class="btn btn-danger" (click)="moveMemberToThisProjectOnly()">
+          Remove from selected projects + assign here
+        </button>
+        <button type="button" class="btn btn-outline" (click)="cancelAssignmentConflict()">Cancel</button>
+      </div>
+    </article>
+  </div>
 </section>
 

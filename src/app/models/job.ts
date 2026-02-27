@@ -18,6 +18,7 @@ export interface TradeBudget {
 
 export interface Job {
   jobId: number;
+  tradePackageId?: number;
   projectName: string;
   jobType: string;
   status: string;

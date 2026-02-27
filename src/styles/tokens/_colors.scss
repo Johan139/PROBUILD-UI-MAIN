@@ -87,6 +87,11 @@
   --color-trade-dialog-label: #94a3b8;
   --color-overlay-strong: rgb(0 0 0 / 72%);
 
+  /* Mobilization accents */
+  --color-mobilization-cyan: #22c1dc;
+  --color-mobilization-orange: var(--color-warning);
+  --color-mobilization-blue: #60a5fa;
+
   /* Elevation / shadow (unified names) */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
   --shadow-2: 0 2px 8px 0 hsla(220 3% 15% / 0.08);
@@ -143,6 +148,11 @@
   --color-trade-dialog-text: #f8fafc;
   --color-trade-dialog-label: #94a3b8;
   --color-overlay-strong: rgb(0 0 0 / 72%);
+
+  /* Mobilization accents */
+  --color-mobilization-cyan: #22c1dc;
+  --color-mobilization-orange: var(--color-warning);
+  --color-mobilization-blue: #60a5fa;
 
   /* Dark shadows */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);

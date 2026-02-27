@@ -1,34 +1,24 @@
 <section class="phase-section">
-  <header class="phase-header">
-    <button type="button" class="phase-link" (click)="back.emit()">← Back to Mobilization</button>
-    <div class="phase-actions">
-      <button type="button" class="btn btn-danger" (click)="discard.emit()">Discard Project</button>
-      <button type="button" class="btn btn-primary" [disabled]="!canProceed" (click)="proceed.emit()">
-        Proceed to Closeout &amp; Handover
-      </button>
-    </div>
-  </header>
-
-  <div class="project-summary">
-    <article>
-      <p class="label">Project</p>
-      <p class="value">{{ projectDetails?.projectName }}</p>
-    </article>
-    <article>
-      <p class="label">Client</p>
-      <p class="value">{{ projectDetails?.clientName || projectDetails?.name }}</p>
-    </article>
-    <article>
-      <p class="label">Address</p>
-      <p class="value">{{ projectDetails?.address }}</p>
-    </article>
-    <article>
-      <p class="label">Size</p>
-      <p class="value">{{ projectSizeSqFt }} sq ft</p>
-      <p class="sub-value">{{ projectSizeSqM }} m²</p>
-    </article>
-  </div>
-
+  <app-phase-navigation-header
+    stageLabel="Construction Execution"
+    backLabel="Back to Mobilization"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Closeout &amp; Handover"
+    [projectName]="projectDetails?.projectName || 'N/A'"
+    [clientName]="projectDetails?.clientName || projectDetails?.name || 'N/A'"
+    [projectAddress]="projectDetails?.address || 'N/A'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+<!--
   <section class="summary-strip">
     <article>
       <p class="mini-label">Active Crews</p>
@@ -215,7 +205,7 @@
     <ng-template #noTasks>
       <p class="hint">No tasks available in this group yet.</p>
     </ng-template>
-  </section>
+  </section> -->
 
   <section class="live-view-card" *ngIf="liveStageTemplate">
     <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>

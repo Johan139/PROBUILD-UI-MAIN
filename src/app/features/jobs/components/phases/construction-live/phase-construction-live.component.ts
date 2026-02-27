@@ -1,6 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 
 interface LiveTask {
   id: number;
@@ -21,17 +25,21 @@ interface LiveTaskGroup {
 @Component({
   selector: 'app-phase-construction-live',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PhaseNavigationHeaderComponent],
   templateUrl: './phase-construction-live.component.html',
   styleUrl: './phase-construction-live.component.scss',
 })
 export class PhaseConstructionLiveComponent {
   @Input() projectDetails: any;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
 
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   readonly liveMetrics = {
     activeCrews: 6,

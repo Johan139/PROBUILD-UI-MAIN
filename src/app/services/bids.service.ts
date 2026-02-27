@@ -35,4 +35,16 @@ export class BidsService {
       tradePackageId,
     });
   }
+
+  awardTradePackageBid(
+    jobId: number,
+    tradePackageId: number,
+    bidId?: number | null,
+  ): Observable<any> {
+    return this.http.post(`${this.apiUrl}/award-trade-package-bid`, {
+      jobId,
+      tradePackageId,
+      bidId: bidId ?? null,
+    });
+  }
 }

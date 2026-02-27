@@ -630,12 +630,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     });
   }
 
-  openBidDialog(jobId: number, event: MouseEvent): void {
+  openBidDialog(jobId: number, tradePackageId: number | undefined, event: MouseEvent): void {
     event.stopPropagation();
 
     const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
       width: '800px',
-      data: { jobId: jobId },
+      data: { jobId: jobId, tradePackageId },
     });
 
     dialogRef.afterClosed().subscribe((result) => {

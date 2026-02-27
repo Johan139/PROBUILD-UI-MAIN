@@ -16,7 +16,10 @@ import { PermitsDialogComponent } from '../../../permits-dialog/permits-dialog.c
 import { FileUploadService } from '../../../../../services/file-upload.service';
 import { PermitsService } from '../../../services/permits.service';
 import { ReportService } from '../../../services/report.service';
-import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 
 interface PreConstructionTask {
@@ -53,12 +56,7 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges {
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
   @Output() documentsRequested = new EventEmitter<void>();
-  @Output() fullReportRequested = new EventEmitter<void>();
-  @Output() billOfMaterialsRequested = new EventEmitter<void>();
-  @Output() executiveSummaryRequested = new EventEmitter<void>();
-  @Output() environmentalReportRequested = new EventEmitter<void>();
-  @Output() procurementScheduleRequested = new EventEmitter<void>();
-  @Output() dailyConstructionPlanRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   permits: Permit[] = [];
   permitStatus: 'success' | 'warning' | 'none' = 'none';

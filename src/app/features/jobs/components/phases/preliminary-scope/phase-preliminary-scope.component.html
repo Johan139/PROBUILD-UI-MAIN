@@ -14,12 +14,7 @@
     (discard)="discardProject.emit()"
     (proceed)="proceedToDetailedEstimating.emit()"
     (documentsRequested)="documentsRequested.emit()"
-    (fullReportRequested)="fullReportRequested.emit()"
-    (billOfMaterialsRequested)="billOfMaterialsRequested.emit()"
-    (executiveSummaryRequested)="executiveSummaryRequested.emit()"
-    (environmentalReportRequested)="environmentalReportRequested.emit()"
-    (procurementScheduleRequested)="procurementScheduleRequested.emit()"
-    (dailyConstructionPlanRequested)="dailyConstructionPlanRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
   <div class="scope-tabs tabs-navigation" *ngIf="stageDisplayMode === 'stage'">

@@ -61,6 +61,13 @@ import {
   Download,
   Check,
   RotateCcw,
+  UserPlus,
+  Briefcase,
+  HardHat,
+  FlagTriangleRight,
+  Package,
+  Truck,
+  Rocket,
 } from 'lucide-angular';
 
 @NgModule({
@@ -126,6 +133,13 @@ import {
       Download,
       Check,
       RotateCcw,
+      UserPlus,
+      Briefcase,
+      HardHat,
+      FlagTriangleRight,
+      Package,
+      Truck,
+      Rocket,
     }),
   ],
   exports: [LucideAngularModule],
