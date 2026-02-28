@@ -185,18 +185,34 @@
       </div>
 
       <div class="detail-list edit-mode" *ngIf="isEditingProject">
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Project Name</mat-label>
-          <input matInput [(ngModel)]="tempProjectDetails.projectName" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Address</mat-label>
-          <input matInput [(ngModel)]="tempProjectDetails.address" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Project Type</mat-label>
-          <input matInput [(ngModel)]="tempProjectDetails.jobType" />
-        </mat-form-field>
+        <div class="custom-edit-form">
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Project Name</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempProjectDetails.projectName"
+            />
+          </label>
+
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Address</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempProjectDetails.address"
+            />
+          </label>
+
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Project Type</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempProjectDetails.jobType"
+            />
+          </label>
+        </div>
       </div>
     </div>
 
@@ -247,22 +263,43 @@
       </div>
 
       <div class="detail-list edit-mode" *ngIf="isEditingClient">
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>First Name</mat-label>
-          <input matInput [(ngModel)]="tempClientDetails.firstName" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Last Name</mat-label>
-          <input matInput [(ngModel)]="tempClientDetails.lastName" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Email</mat-label>
-          <input matInput [(ngModel)]="tempClientDetails.email" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="dense-form-field">
-          <mat-label>Phone</mat-label>
-          <input matInput [(ngModel)]="tempClientDetails.phone" />
-        </mat-form-field>
+        <div class="custom-edit-form">
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">First Name</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempClientDetails.firstName"
+            />
+          </label>
+
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Last Name</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempClientDetails.lastName"
+            />
+          </label>
+
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Email</span>
+            <input
+              class="custom-edit-input"
+              type="email"
+              [(ngModel)]="tempClientDetails.email"
+            />
+          </label>
+
+          <label class="custom-edit-row">
+            <span class="custom-edit-label">Phone</span>
+            <input
+              class="custom-edit-input"
+              type="text"
+              [(ngModel)]="tempClientDetails.phone"
+            />
+          </label>
+        </div>
       </div>
     </div>
 

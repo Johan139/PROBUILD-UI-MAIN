@@ -635,48 +635,105 @@ export class ReportService {
       }
 
       // 3. Extract Room Count (from Room Identification Table)
-      // Look for the table under "2. Room Identification"
-      const roomSectionStart = fullResponse.indexOf(
-        '### 2. Room Identification',
-      );
-      if (roomSectionStart !== -1) {
-        const tableStart = fullResponse.indexOf(
-          '| Room Name | Area',
-          roomSectionStart,
-        );
-        if (tableStart !== -1) {
-          const tableEnd = fullResponse.indexOf(
-            '**Total (Sum):**',
-            tableStart,
-          );
-          if (tableEnd !== -1) {
-            const tableContent = fullResponse.substring(tableStart, tableEnd);
-            // Count lines that start with '|' and are not header/separator
-            const lines = tableContent.split('\n').filter((line) => {
-              const trimmed = line.trim();
-              return (
-                trimmed.startsWith('|') &&
-                !trimmed.includes('Room Name') &&
-                !trimmed.includes(':---')
-              );
-            });
-            roomCount = lines.length;
+      // Supports markdown table format variants and excludes summary/total rows
+      const cleanCell = (value: string): string =>
+        value
+          .replace(/\*\*/g, '')
+          .replace(/`/g, '')
+          .replace(/<br\s*\/?>/gi, ' ')
+          .trim();
 
-            rooms = lines
-              .map((line) => {
-                const parts = line
-                  .split('|')
-                  .map((p) => p.trim())
-                  .filter((p) => p !== '');
-                if (parts.length >= 2) {
-                  return { name: parts[0], area: parts[1] };
-                }
-                return null;
-              })
-              .filter((r): r is { name: string; area: string } => r !== null);
+      const splitMarkdownRow = (line: string): string[] =>
+        line
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((cell) => cleanCell(cell));
+
+      const isSeparatorRow = (line: string): boolean => {
+        const compact = line.replace(/\s+/g, '');
+        return /^\|?[:\-\|]+\|?$/.test(compact);
+      };
+
+      const parseRoomsFromTable = (
+        source: string,
+      ): { name: string; area: string }[] => {
+        const lines = source.split(/\r?\n/);
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line.startsWith('|')) continue;
+
+          const headerCells = splitMarkdownRow(line).map((c) =>
+            c.toLowerCase().trim(),
+          );
+          if (headerCells.length < 2) continue;
+
+          const roomColIndex = headerCells.findIndex((cell) =>
+            /\broom\b/.test(cell),
+          );
+          const areaColIndex = headerCells.findIndex(
+            (cell) => /\barea\b/.test(cell) || /sq\s*ft/.test(cell),
+          );
+
+          if (roomColIndex === -1 || areaColIndex === -1) continue;
+
+          let cursor = i + 1;
+          if (cursor < lines.length && isSeparatorRow(lines[cursor].trim())) {
+            cursor += 1;
+          }
+
+          const parsedRows: { name: string; area: string }[] = [];
+
+          for (; cursor < lines.length; cursor++) {
+            const rowLine = lines[cursor].trim();
+            if (!rowLine.startsWith('|')) break;
+            if (isSeparatorRow(rowLine)) continue;
+
+            const cells = splitMarkdownRow(rowLine);
+            if (
+              cells.length <= roomColIndex ||
+              cells.length <= areaColIndex
+            ) {
+              continue;
+            }
+
+            const roomName = cleanCell(cells[roomColIndex]);
+            const areaValue = cleanCell(cells[areaColIndex]);
+            const normalizedRoom = roomName.toLowerCase();
+
+            if (!roomName || !areaValue) continue;
+            if (/\btotal\b|\bsum\b/.test(normalizedRoom)) continue;
+            if (/^room\s*name$/i.test(roomName)) continue;
+
+            parsedRows.push({ name: roomName, area: areaValue });
+          }
+
+          if (parsedRows.length > 0) {
+            return parsedRows;
           }
         }
+
+        return [];
+      };
+
+      const roomSectionMatch = fullResponse.match(
+        /###\s*\d+\.\s*Room\s+Identification([\s\S]*?)(?=\n###\s*\d+\.|$)/i,
+      );
+
+      const roomSectionContent = roomSectionMatch
+        ? roomSectionMatch[1]
+        : fullResponse;
+
+      rooms = parseRoomsFromTable(roomSectionContent);
+
+      // Fallback for reports where headings vary but table still exists
+      if (rooms.length === 0) {
+        rooms = parseRoomsFromTable(fullResponse);
       }
+
+      roomCount = rooms.length;
 
       return {
         confidenceScore,

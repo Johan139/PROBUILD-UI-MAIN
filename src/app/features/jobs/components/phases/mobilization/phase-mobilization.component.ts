@@ -8,6 +8,7 @@ import { AuthService } from '../../../../../authentication/auth.service';
 import { BidsService } from '../../../../../services/bids.service';
 import { JobsService } from '../../../../../services/jobs.service';
 import { TeamManagementService } from '../../../../../services/team-management.service';
+import { TimelineService } from '../../../services/timeline.service';
 import { JobAssignment, JobUser } from '../../../job-assignment/job-assignment.model';
 import { JobAssignmentService } from '../../../job-assignment/job-assignment.service';
 import { BomService } from '../../../services/bom.service';
@@ -144,6 +145,7 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
     private readonly teamManagementService: TeamManagementService,
     private readonly jobAssignmentService: JobAssignmentService,
     private readonly jobsService: JobsService,
+    private readonly timelineService: TimelineService,
     private readonly bomService: BomService,
     private readonly bidsService: BidsService,
     private readonly snackBar: MatSnackBar,
@@ -592,7 +594,7 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
       return;
     }
 
-    const parsedDate = new Date(value);
+    const parsedDate = new Date(`${value}T00:00:00`);
     if (Number.isNaN(parsedDate.getTime())) {
       this.snackBar.open('Invalid start date.', 'Close', { duration: 3000 });
       return;
@@ -619,8 +621,25 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
               ...(this.projectDetails || {}),
               desiredStartDate: isoDate,
               DesiredStartDate: isoDate,
+              date: isoDate,
             };
-            this.startDateSaved.emit(isoDate);
+
+            const senderId = this.authService.getUserId() || '';
+            this.timelineService
+              .shiftTimelineToStartDate(parsedDate, jobId, senderId)
+              .subscribe({
+                next: () => {
+                  this.startDateSaved.emit(isoDate);
+                },
+                error: () => {
+                  this.startDateSaved.emit(isoDate);
+                  this.snackBar.open(
+                    'Start date saved, but timeline tasks could not be shifted.',
+                    'Close',
+                    { duration: 4500 },
+                  );
+                },
+              });
           },
           error: () => {
             this.snackBar.open('Failed to save start date.', 'Close', { duration: 3000 });

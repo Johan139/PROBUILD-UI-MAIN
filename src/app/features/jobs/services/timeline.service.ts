@@ -8,7 +8,15 @@ import {
 import { differenceInCalendarDays, format, isValid, parse } from 'date-fns';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
-import { Observable, catchError, map, of, switchMap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  forkJoin,
+  map,
+  of,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { JobsService } from '../../../services/jobs.service';
@@ -386,6 +394,92 @@ export class TimelineService {
     return this.jobsService.saveSubtasks([taskToSave], senderId).pipe(
       switchMap(() => notify$),
       map(() => void 0),
+    );
+  }
+
+  shiftTimelineToStartDate(
+    newProjectStartDate: Date,
+    jobId: number,
+    senderId: string,
+  ): Observable<void> {
+    const subtaskGroups = this.store.getState().subtaskGroups || [];
+
+    const earliestTaskStart = subtaskGroups
+      .flatMap((group: any) =>
+        (group.subtasks || [])
+          .map((task: any) =>
+            this.parseTaskDate(task.startDate || task.start),
+          )
+          .filter((date): date is Date => !!date),
+      )
+      .sort((a, b) => a.getTime() - b.getTime())[0];
+
+    if (!earliestTaskStart) {
+      return of(void 0);
+    }
+
+    const daysDelta = differenceInCalendarDays(
+      newProjectStartDate,
+      earliestTaskStart,
+    );
+
+    if (daysDelta === 0) {
+      return of(void 0);
+    }
+
+    const tasksToSave: any[] = [];
+    const notifyRequests: Observable<any>[] = [];
+
+    subtaskGroups.forEach((group: any) => {
+      (group.subtasks || []).forEach((task: any) => {
+        const taskStart = this.parseTaskDate(task.startDate || task.start);
+        const taskEnd = this.parseTaskDate(task.endDate || task.end);
+
+        if (!taskStart || !taskEnd) {
+          return;
+        }
+
+        taskStart.setDate(taskStart.getDate() + daysDelta);
+        taskEnd.setDate(taskEnd.getDate() + daysDelta);
+
+        const startDate = format(taskStart, 'yyyy-MM-dd');
+        const endDate = format(taskEnd, 'yyyy-MM-dd');
+
+        task.startDate = startDate;
+        task.endDate = endDate;
+
+        tasksToSave.push({
+          ...task,
+          groupTitle: group.title,
+          jobId,
+          deleted: task.deleted ?? false,
+        });
+
+        const subtaskId = Number(task.id);
+        if (!Number.isNaN(subtaskId)) {
+          notifyRequests.push(
+            this.notifyTimelineUpdate(jobId, subtaskId, senderId).pipe(
+              catchError(() => of(null)),
+            ),
+          );
+        }
+      });
+    });
+
+    this.store.setState({
+      subtaskGroups: [...subtaskGroups],
+    });
+
+    if (tasksToSave.length === 0) {
+      return of(void 0);
+    }
+
+    return this.jobsService.saveSubtasks(tasksToSave, senderId).pipe(
+      switchMap(() =>
+        notifyRequests.length > 0
+          ? forkJoin(notifyRequests).pipe(map(() => void 0))
+          : of(void 0),
+      ),
     );
   }
 

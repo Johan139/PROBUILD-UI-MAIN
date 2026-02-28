@@ -66,7 +66,7 @@
           </div>
           <div>
             <h3>Subcontractors</h3>
-            <p class="subtitle">{{ subcontractors.length }} trades assigned</p>
+            <p class="subtitle">{{ subcontractorPackages.length }} trade packages</p>
           </div>
         </div>
         <button
@@ -80,43 +80,128 @@
       </div>
 
       <div class="member-list">
-        <div *ngFor="let sub of subcontractors" class="member-item">
-          <button class="member-btn" (click)="openSubcontractorDetail(sub)">
+        <div *ngIf="isLoadingTradePackages" class="empty-state">
+          <p>Loading subcontractor packages...</p>
+        </div>
+
+        <div *ngFor="let sub of subcontractorPackages" class="member-item">
+          <button class="member-btn" type="button">
             <div class="avatar gray-bg">
               <mat-icon class="yellow-text">build</mat-icon>
             </div>
             <div class="member-info">
               <div class="trade-row">
-                <p class="name">
-                  {{ (sub.jobRole || "" | roleDisplay) || "Subcontractor" }}
-                </p>
-                <!-- TODO: Status pill mocked, need real data -->
-                <span class="status-pill confirmed">Confirmed</span>
+                <p class="name">{{ sub.trade }}</p>
+                <span class="status-pill" [class.confirmed]="sub.status === 'assigned'" [class.pending]="sub.status === 'unassigned'">
+                  {{ sub.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                </span>
+                <span class="in-house-chip" *ngIf="sub.isInHouse">In House</span>
               </div>
-              <p class="company">{{ sub.firstName }} {{ sub.lastName }}</p>
+              <p class="company">{{ sub.partnerName }}</p>
+              <p class="role" *ngIf="sub.csiCode">{{ sub.csiCode }}</p>
             </div>
             <div class="member-meta desktop-only">
-              <!-- TODO: Mock contract value -->
-              <!-- <p class="contract-value">$0.00</p> -->
-              <!-- TODO: Rating mock -->
-              <div class="rating">
-                <mat-icon class="star-icon">star</mat-icon>
-                <span>{{ ratings[sub.id] || 0 }}</span>
-              </div>
+              <p class="contract-value">${{ sub.totalBudget | number }}</p>
             </div>
-          </button>
-          <button
-            mat-icon-button
-            class="remove-btn"
-            (click)="confirmRemove(sub, 'sub')"
-            matTooltip="Remove subcontractor"
-          >
-            <mat-icon>person_remove</mat-icon>
           </button>
         </div>
 
-        <div *ngIf="subcontractors.length === 0" class="empty-state">
-          <p>No subcontractors assigned.</p>
+        <div *ngIf="!isLoadingTradePackages && subcontractorPackages.length === 0" class="empty-state">
+          <p>No subcontractor trade packages available.</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Vendors Section -->
+    <mat-card class="team-card" *ngIf="showSubcontractors">
+      <div class="card-header">
+        <div class="header-content">
+          <div class="icon-container orange-bg">
+            <mat-icon class="orange-text">inventory_2</mat-icon>
+          </div>
+          <div>
+            <h3>Vendors</h3>
+            <p class="subtitle">{{ vendorPackages.length }} vendor packages</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="member-list">
+        <div *ngIf="isLoadingTradePackages" class="empty-state">
+          <p>Loading vendor packages...</p>
+        </div>
+
+        <div *ngFor="let vendor of vendorPackages" class="member-item">
+          <button class="member-btn" type="button">
+            <div class="avatar gray-bg">
+              <mat-icon class="orange-text">inventory_2</mat-icon>
+            </div>
+            <div class="member-info">
+              <div class="trade-row">
+                <p class="name">{{ vendor.trade }}</p>
+                <span class="status-pill" [class.confirmed]="vendor.status === 'assigned'" [class.pending]="vendor.status === 'unassigned'">
+                  {{ vendor.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                </span>
+                <span class="in-house-chip" *ngIf="vendor.isInHouse">In House</span>
+              </div>
+              <p class="company">{{ vendor.partnerName }}</p>
+              <p class="role" *ngIf="vendor.csiCode">{{ vendor.csiCode }}</p>
+            </div>
+            <div class="member-meta desktop-only">
+              <p class="contract-value">${{ vendor.totalBudget | number }}</p>
+            </div>
+          </button>
+        </div>
+
+        <div *ngIf="!isLoadingTradePackages && vendorPackages.length === 0" class="empty-state">
+          <p>No vendor packages available.</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- Suppliers Section -->
+    <mat-card class="team-card" *ngIf="showSubcontractors">
+      <div class="card-header">
+        <div class="header-content">
+          <div class="icon-container blue-bg">
+            <mat-icon class="blue-text">local_shipping</mat-icon>
+          </div>
+          <div>
+            <h3>Suppliers</h3>
+            <p class="subtitle">{{ supplierPackages.length }} supplier packages</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="member-list">
+        <div *ngIf="isLoadingTradePackages" class="empty-state">
+          <p>Loading supplier packages...</p>
+        </div>
+
+        <div *ngFor="let supplier of supplierPackages" class="member-item">
+          <button class="member-btn" type="button">
+            <div class="avatar gray-bg">
+              <mat-icon class="blue-text">local_shipping</mat-icon>
+            </div>
+            <div class="member-info">
+              <div class="trade-row">
+                <p class="name">{{ supplier.trade }}</p>
+                <span class="status-pill" [class.confirmed]="supplier.status === 'assigned'" [class.pending]="supplier.status === 'unassigned'">
+                  {{ supplier.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                </span>
+                <span class="in-house-chip" *ngIf="supplier.isInHouse">In House</span>
+              </div>
+              <p class="company">{{ supplier.partnerName }}</p>
+              <p class="role" *ngIf="supplier.csiCode">{{ supplier.csiCode }}</p>
+            </div>
+            <div class="member-meta desktop-only">
+              <p class="contract-value">${{ supplier.totalBudget | number }}</p>
+            </div>
+          </button>
+        </div>
+
+        <div *ngIf="!isLoadingTradePackages && supplierPackages.length === 0" class="empty-state">
+          <p>No supplier packages available.</p>
         </div>
       </div>
     </mat-card>

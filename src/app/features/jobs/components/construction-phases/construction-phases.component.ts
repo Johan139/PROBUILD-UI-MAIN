@@ -59,15 +59,43 @@ export class ConstructionPhasesComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['groups'] && this.groups && this.groups.length > 0 && !this.selectedGroup) {
-      this.selectedGroup = this.groups[0];
-    } else if (changes['groups'] && this.selectedGroup) {
-        // Keep selection if possible
-        const found = this.groups.find(g => g.title === this.selectedGroup.title);
-        if (found) {
-            this.selectedGroup = found;
-        }
+    if (!changes['groups']) {
+      return;
     }
+
+    if (!Array.isArray(this.groups) || this.groups.length === 0) {
+      this.selectedGroup = null;
+      return;
+    }
+
+    if (!this.selectedGroup) {
+      this.selectedGroup = this.groups[0];
+      return;
+    }
+
+    // Keep current selection by title when possible, otherwise fallback to first group
+    const found = this.groups.find((g) => g?.title === this.selectedGroup?.title);
+    this.selectedGroup = found || this.groups[0];
+  }
+
+  private getSafeGroup(group: any): any {
+    if (group && Array.isArray(group.subtasks)) {
+      return group;
+    }
+
+    if (this.selectedGroup && Array.isArray(this.selectedGroup.subtasks)) {
+      return this.selectedGroup;
+    }
+
+    if (Array.isArray(this.groups) && this.groups.length > 0) {
+      const fallback = this.groups[0];
+      if (!this.selectedGroup) {
+        this.selectedGroup = fallback;
+      }
+      return fallback;
+    }
+
+    return null;
   }
 
   selectGroup(group: any) {
@@ -79,7 +107,8 @@ export class ConstructionPhasesComponent implements OnInit, OnChanges {
   }
 
   getVisibleSubtasks(group: any): Subtask[] {
-    return this.subtaskService.getVisibleSubtasks(group);
+    const safeGroup = this.getSafeGroup(group);
+    return safeGroup ? this.subtaskService.getVisibleSubtasks(safeGroup) : [];
   }
 
   getCompletedCount(group: any): number {

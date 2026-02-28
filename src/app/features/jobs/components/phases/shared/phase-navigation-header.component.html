@@ -105,6 +105,16 @@
         <span>{{ proceedLabel }}</span>
         <lucide-icon name="chevron-right" class="mini-icon trailing"></lucide-icon>
       </button>
+
+      <button
+        *ngIf="showDevProceedButton"
+        type="button"
+        class="phase-action-btn dev-primary"
+        (click)="forceProceed()"
+      >
+        <lucide-icon name="chevron-right" class="mini-icon"></lucide-icon>
+        <span>Dev: Next Phase</span>
+      </button>
     </div>
   </div>
 

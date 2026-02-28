@@ -54,9 +54,14 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   // Budget Data
   budgetItems: BudgetLineItem[] = [];
   isLoadingBudget: boolean = false;
+  isLoadingSummary: boolean = false;
+  isBudgetViewReady: boolean = false;
   processingResults: any[] = [];
   isBrowser: boolean;
   totalProjectCost: number = 0;
+  private budgetLoaded = false;
+  private summaryLoaded = false;
+  private currentLoadToken = 0;
 
   // Budget UI State
   isAddingLineItem: boolean = false;
@@ -84,28 +89,54 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     if (this.projectDetails?.jobId) {
-      this.loadBudget();
-      this.loadCostSummary();
+      this.loadBudgetViewData();
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['projectDetails'] && this.projectDetails?.jobId) {
-      this.loadBudget();
-      this.loadCostSummary();
+      this.loadBudgetViewData();
     }
   }
 
-  private loadCostSummary(): void {
+  private loadBudgetViewData(): void {
+    const jobId = this.projectDetails?.jobId;
+    if (!jobId) return;
+
+    const loadToken = ++this.currentLoadToken;
+    this.isBudgetViewReady = false;
+    this.isLoadingBudget = true;
+    this.isLoadingSummary = true;
+    this.budgetLoaded = false;
+    this.summaryLoaded = false;
+
+    this.loadBudget(loadToken);
+    this.loadCostSummary(loadToken);
+  }
+
+  private loadCostSummary(loadToken: number): void {
     if (!this.projectDetails?.jobId) return;
 
     this.reportService
       .getDetailedCostSummary(this.projectDetails.jobId)
       .then((summary) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         this.totalProjectCost = Number(summary?.suggestedBid || 0);
+        this.summaryLoaded = true;
+        this.isLoadingSummary = false;
+        this.updateBudgetViewReadyState(loadToken);
       })
       .catch((err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         console.error('Failed to load detailed cost summary for budget tracking', err);
+        this.totalProjectCost = 0;
+        this.summaryLoaded = true;
+        this.isLoadingSummary = false;
+        this.updateBudgetViewReadyState(loadToken);
       });
   }
 
@@ -217,7 +248,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     this.cancelEditLineItem();
   }
 
-  loadBudget(): void {
+  loadBudget(loadToken: number): void {
     if (!this.projectDetails?.jobId) return;
 
     const storageKey = `budget_${this.projectDetails.jobId}`;
@@ -232,24 +263,41 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
       }
     }
 
-    this.isLoadingBudget = true;
     this.budgetService.getBudget(this.projectDetails.jobId).subscribe({
       next: (items) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         this.budgetItems = items;
         if (this.isBrowser) {
           localStorage.setItem(storageKey, JSON.stringify(this.budgetItems));
         }
         this.isLoadingBudget = false;
+        this.budgetLoaded = true;
+        this.updateBudgetViewReadyState(loadToken);
         this.checkAndAutoImportAiEstimates();
       },
       error: (err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         console.error('Error loading budget', err);
         this.isLoadingBudget = false;
+        this.budgetLoaded = true;
+        this.updateBudgetViewReadyState(loadToken);
         this.snackBar.open('Failed to load budget.', 'Close', {
           duration: 3000,
         });
       },
     });
+  }
+
+  private updateBudgetViewReadyState(loadToken: number): void {
+    if (loadToken !== this.currentLoadToken) {
+      return;
+    }
+
+    this.isBudgetViewReady = this.budgetLoaded && this.summaryLoaded;
   }
 
   private checkAndAutoImportAiEstimates(): void {

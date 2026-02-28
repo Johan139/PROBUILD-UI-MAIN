@@ -1,10 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  TemplateRef,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   PhaseNavigationHeaderComponent,
   PhaseReportRequestType,
 } from '../shared/phase-navigation-header.component';
+import { JobCacheService } from '../../../services/jobs/job-cache.service';
 
 interface LiveTask {
   id: number;
@@ -20,6 +29,14 @@ interface LiveTaskGroup {
   id: string;
   title: string;
   subtasks: LiveTask[];
+}
+
+interface ConstructionLiveCache {
+  version: 1;
+  selectedGroupId: string;
+  tasksExpanded: boolean;
+  taskGroups: LiveTaskGroup[];
+  updatedAt: string;
 }
 
 @Component({
@@ -48,7 +65,10 @@ export class PhaseConstructionLiveComponent {
     scheduleHealth: 92,
   };
 
-  readonly taskGroups: LiveTaskGroup[] = [
+  private readonly cacheVersion = 1 as const;
+  private activeJobId: string | null = null;
+
+  private readonly defaultTaskGroups: LiveTaskGroup[] = [
     {
       id: 'site-ops',
       title: 'Site Operations',
@@ -99,6 +119,7 @@ export class PhaseConstructionLiveComponent {
     },
   ];
 
+  taskGroups: LiveTaskGroup[] = this.cloneTaskGroups(this.defaultTaskGroups);
   selectedGroupId = this.taskGroups[0]?.id || '';
   tasksExpanded = true;
   addingTask = false;
@@ -114,6 +135,25 @@ export class PhaseConstructionLiveComponent {
     null;
 
   private nextTaskId = 3000;
+
+  constructor(private readonly jobCache: JobCacheService) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['projectDetails']) {
+      return;
+    }
+
+    const nextJobId = this.projectDetails?.jobId
+      ? String(this.projectDetails.jobId)
+      : null;
+
+    if (!nextJobId || nextJobId === this.activeJobId) {
+      return;
+    }
+
+    this.activeJobId = nextJobId;
+    this.hydrateFromCacheThenRefresh(nextJobId);
+  }
 
   get projectSizeSqFt(): string {
     return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
@@ -158,10 +198,12 @@ export class PhaseConstructionLiveComponent {
     this.selectedGroupId = groupId;
     this.addingTask = false;
     this.editingTask = null;
+    this.persistCache();
   }
 
   toggleTasksExpanded(): void {
     this.tasksExpanded = !this.tasksExpanded;
+    this.persistCache();
   }
 
   getCompletedCount(group: LiveTaskGroup): number {
@@ -192,6 +234,7 @@ export class PhaseConstructionLiveComponent {
   toggleAddTask(): void {
     this.addingTask = !this.addingTask;
     if (!this.addingTask) {
+      this.persistCache();
       return;
     }
 
@@ -207,6 +250,7 @@ export class PhaseConstructionLiveComponent {
       endDate: end.toISOString().split('T')[0],
       status: 'Pending',
     };
+    this.persistCache();
   }
 
   updateNewTaskDate(field: 'startDate' | 'endDate' | 'days', value: string | number): void {
@@ -262,11 +306,13 @@ export class PhaseConstructionLiveComponent {
 
     this.addingTask = false;
     this.newTask.name = '';
+    this.persistCache();
   }
 
   cancelAddTask(): void {
     this.addingTask = false;
     this.newTask.name = '';
+    this.persistCache();
   }
 
   startEditing(task: LiveTask, field: 'task' | 'startDate' | 'endDate' | 'days' | 'status'): void {
@@ -285,6 +331,7 @@ export class PhaseConstructionLiveComponent {
       const end = new Date(start);
       end.setDate(end.getDate() + Number(task.days || 0));
       task.endDate = end.toISOString().split('T')[0];
+      this.persistCache();
       return;
     }
 
@@ -294,6 +341,8 @@ export class PhaseConstructionLiveComponent {
       const diffTime = Math.abs(end.getTime() - start.getTime());
       task.days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
+
+    this.persistCache();
   }
 
   deleteTask(taskId: number): void {
@@ -305,14 +354,18 @@ export class PhaseConstructionLiveComponent {
     if (this.editingTask?.taskId === taskId) {
       this.editingTask = null;
     }
+
+    this.persistCache();
   }
 
   handleApproval(task: LiveTask): void {
     task.accepted = !task.accepted;
+    this.persistCache();
   }
 
   updateTaskStatus(task: LiveTask, status: LiveTask['status']): void {
     task.status = status;
+    this.persistCache();
   }
 
   markMilestoneComplete(): void {
@@ -326,6 +379,87 @@ export class PhaseConstructionLiveComponent {
 
     pendingTask.status = 'Completed';
     pendingTask.accepted = true;
+    this.persistCache();
+  }
+
+  private hydrateFromCacheThenRefresh(jobId: string): void {
+    this.applyFreshDefaults();
+
+    const cached = this.jobCache.get<ConstructionLiveCache>(
+      this.getStorageKey(jobId),
+    );
+    if (cached && cached.version === this.cacheVersion) {
+      this.taskGroups = this.cloneTaskGroups(cached.taskGroups);
+      this.selectedGroupId = this.resolveSelectedGroupId(cached.selectedGroupId);
+      this.tasksExpanded = cached.tasksExpanded;
+      this.recalculateNextTaskId();
+    }
+
+    this.refreshFromProjectPayload(jobId);
+  }
+
+  private refreshFromProjectPayload(jobId: string): void {
+    const incomingTaskGroups = this.projectDetails?.constructionLiveTaskGroups;
+    if (!Array.isArray(incomingTaskGroups) || incomingTaskGroups.length === 0) {
+      this.persistCache();
+      return;
+    }
+
+    this.taskGroups = this.cloneTaskGroups(incomingTaskGroups);
+    this.selectedGroupId = this.resolveSelectedGroupId(this.selectedGroupId);
+    this.recalculateNextTaskId();
+    this.persistCache(jobId);
+  }
+
+  private applyFreshDefaults(): void {
+    this.taskGroups = this.cloneTaskGroups(this.defaultTaskGroups);
+    this.selectedGroupId = this.taskGroups[0]?.id || '';
+    this.tasksExpanded = true;
+    this.addingTask = false;
+    this.editingTask = null;
+    this.recalculateNextTaskId();
+  }
+
+  private persistCache(jobId?: string): void {
+    const resolvedJobId = jobId || this.activeJobId;
+    if (!resolvedJobId) {
+      return;
+    }
+
+    const payload: ConstructionLiveCache = {
+      version: this.cacheVersion,
+      selectedGroupId: this.resolveSelectedGroupId(this.selectedGroupId),
+      tasksExpanded: this.tasksExpanded,
+      taskGroups: this.cloneTaskGroups(this.taskGroups),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.jobCache.set(this.getStorageKey(resolvedJobId), payload);
+  }
+
+  private getStorageKey(jobId: string): string {
+    return `construction_live_${jobId}`;
+  }
+
+  private resolveSelectedGroupId(desiredId: string): string {
+    return this.taskGroups.some((group) => group.id === desiredId)
+      ? desiredId
+      : this.taskGroups[0]?.id || '';
+  }
+
+  private recalculateNextTaskId(): void {
+    const maxId = this.taskGroups
+      .flatMap((group) => group.subtasks)
+      .reduce((max, task) => Math.max(max, task.id), 0);
+
+    this.nextTaskId = Math.max(3000, maxId + 1);
+  }
+
+  private cloneTaskGroups(groups: LiveTaskGroup[]): LiveTaskGroup[] {
+    return groups.map((group) => ({
+      ...group,
+      subtasks: group.subtasks.map((task) => ({ ...task })),
+    }));
   }
 }
 

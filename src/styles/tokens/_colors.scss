@@ -92,6 +92,18 @@
   --color-mobilization-orange: var(--color-warning);
   --color-mobilization-blue: #60a5fa;
 
+  /* Closeout phase accents */
+  --color-closeout-surface: var(--gray-800);
+  --color-closeout-surface-alt: var(--gray-900);
+  --color-closeout-border: var(--gray-700);
+  --color-closeout-text-strong: #f9fafb;
+  --color-closeout-text-muted: var(--gray-400);
+  --color-closeout-text-soft: var(--gray-500);
+  --color-closeout-accent: var(--color-primary);
+  --color-closeout-success: #4ade80;
+  --color-closeout-danger: #f87171;
+  --color-closeout-track: var(--gray-900);
+
   /* Elevation / shadow (unified names) */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
   --shadow-2: 0 2px 8px 0 hsla(220 3% 15% / 0.08);
@@ -153,6 +165,18 @@
   --color-mobilization-cyan: #22c1dc;
   --color-mobilization-orange: var(--color-warning);
   --color-mobilization-blue: #60a5fa;
+
+  /* Closeout phase accents */
+  --color-closeout-surface: var(--gray-800);
+  --color-closeout-surface-alt: var(--gray-900);
+  --color-closeout-border: var(--gray-700);
+  --color-closeout-text-strong: #f9fafb;
+  --color-closeout-text-muted: var(--gray-400);
+  --color-closeout-text-soft: var(--gray-500);
+  --color-closeout-accent: var(--color-primary);
+  --color-closeout-success: #4ade80;
+  --color-closeout-danger: #f87171;
+  --color-closeout-track: var(--gray-900);
 
   /* Dark shadows */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);

@@ -718,19 +718,57 @@
 .detail-list.edit-mode {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+}
+
+.custom-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.custom-edit-row {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
-.dense-form-field {
-  width: 100%;
-  font-size: var(--fs-sm);
+.custom-edit-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
 
-  ::ng-deep .mat-mdc-form-field-wrapper {
-    padding-bottom: 0;
+.custom-edit-input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--brand-yellow-primary) 45%, var(--color-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-subtle) 88%, transparent);
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+  padding: 0.55rem 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+  &::placeholder {
+    color: var(--color-text-muted);
   }
-  ::ng-deep .mat-mdc-form-field-infix {
-    padding: 0.5em 0;
-    min-height: unset;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--brand-yellow-primary) 65%, var(--color-border));
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand-yellow-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-yellow-primary) 28%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 }
 

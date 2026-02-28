@@ -23,6 +23,28 @@ import { SubcontractorDetailDialogComponent } from './dialogs/subcontractor-deta
 import { PostToMarketplaceDialogComponent } from './dialogs/post-to-marketplace-dialog/post-to-marketplace-dialog.component';
 import { RatingService } from '../../../../services/rating.service';
 import { SharedModule } from '../../../../shared/shared.module';
+import { BomService } from '../../services/bom.service';
+import { BidsService } from '../../../../services/bids.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+interface TradePackageVm {
+  id: number;
+  trade: string;
+  category: 'subcontractor' | 'vendor' | 'supplier';
+  csiCode: string;
+  totalBudget: number;
+  isInHouse: boolean;
+  status: 'assigned' | 'unassigned';
+  partnerName: string;
+}
+
+interface TradeBidVm {
+  id: number;
+  tradePackageId: number;
+  companyName: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-job-team',
@@ -47,40 +69,181 @@ export class JobTeamComponent implements OnChanges {
 
   internalTeam: JobUser[] = [];
   subcontractors: JobUser[] = [];
+  vendors: JobUser[] = [];
+  suppliers: JobUser[] = [];
+  isLoadingTradePackages = false;
+
+  subcontractorPackages: TradePackageVm[] = [];
+  vendorPackages: TradePackageVm[] = [];
+  supplierPackages: TradePackageVm[] = [];
+
+  private bidsByPackageId: Record<number, TradeBidVm[]> = {};
+  private awardedBidByPackageId: Record<number, number> = {};
+
   ratings: { [userId: string]: number } = {};
 
   constructor(
     private dialog: MatDialog,
     private jobAssignmentService: JobAssignmentService,
     private ratingService: RatingService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private bomService: BomService,
+    private bidsService: BidsService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['projectDetails']) {
+      this.loadTradePackages();
+    }
+
     if (changes['assignedTeamMembers']) {
       this.filterMembers();
     }
   }
 
+  private loadTradePackages(): void {
+    const jobId = Number(this.projectDetails?.jobId || 0);
+    if (!jobId) {
+      this.subcontractorPackages = [];
+      this.vendorPackages = [];
+      this.supplierPackages = [];
+      return;
+    }
+
+    this.isLoadingTradePackages = true;
+
+    forkJoin({
+      packages: this.bomService.getTradePackages(String(jobId)).pipe(catchError(() => of([]))),
+      bids: this.bidsService.getBidsForJob(String(jobId)).pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ packages, bids }) => {
+        this.bidsByPackageId = {};
+        this.awardedBidByPackageId = {};
+
+        (Array.isArray(bids) ? bids : []).forEach((bid: any) => {
+          const packageId = Number(bid.tradePackageId || 0);
+          if (!packageId) return;
+
+          if (!this.bidsByPackageId[packageId]) {
+            this.bidsByPackageId[packageId] = [];
+          }
+
+          this.bidsByPackageId[packageId].push({
+            id: Number(bid.id || 0),
+            tradePackageId: packageId,
+            companyName: String(bid.companyName || '').trim(),
+            status: String(bid.status || '').trim(),
+          });
+
+          if (String(bid.status || '').trim().toLowerCase() === 'awarded') {
+            this.awardedBidByPackageId[packageId] = Number(bid.id || 0);
+          }
+        });
+
+        const normalized = (Array.isArray(packages) ? packages : []).map((pkg: any) =>
+          this.toTradePackageVm(pkg),
+        );
+
+        this.subcontractorPackages = normalized.filter((pkg) => pkg.category === 'subcontractor');
+        this.vendorPackages = normalized.filter((pkg) => pkg.category === 'vendor');
+        this.supplierPackages = normalized.filter((pkg) => pkg.category === 'supplier');
+        this.isLoadingTradePackages = false;
+      },
+      error: () => {
+        this.subcontractorPackages = [];
+        this.vendorPackages = [];
+        this.supplierPackages = [];
+        this.isLoadingTradePackages = false;
+      },
+    });
+  }
+
+  private toTradePackageVm(pkg: any): TradePackageVm {
+    const id = Number(pkg?.id || 0);
+    const categoryRaw = String(pkg?.category || '').trim().toLowerCase();
+    const category: TradePackageVm['category'] =
+      categoryRaw === 'vendor'
+        ? 'vendor'
+        : categoryRaw === 'supplier'
+          ? 'supplier'
+          : 'subcontractor';
+
+    const isInHouse = !!pkg?.isInHouse;
+    const awardedBidId = Number(pkg?.awardedBidId || this.awardedBidByPackageId[id] || 0);
+    const awardedBid = (this.bidsByPackageId[id] || []).find((b) => b.id === awardedBidId);
+    const hasPartner = isInHouse || !!awardedBid;
+
+    return {
+      id,
+      trade: String(pkg?.trade || pkg?.tradeName || 'Untitled Package').trim(),
+      category,
+      csiCode: String(pkg?.csiCode || '').trim(),
+      totalBudget: Number(pkg?.totalBudget || pkg?.budget || 0),
+      isInHouse,
+      status: hasPartner ? 'assigned' : 'unassigned',
+      partnerName: isInHouse
+        ? 'In-House Team'
+        : awardedBid?.companyName || 'No awarded partner yet',
+    };
+  }
+
   filterMembers(): void {
     this.internalTeam = [];
     this.subcontractors = [];
+    this.vendors = [];
+    this.suppliers = [];
 
     if (this.assignedTeamMembers) {
       this.assignedTeamMembers.forEach((member) => {
-        const isSubcontractor =
-          member.userType === 'SUBCONTRACTOR' ||
-          member.jobRole === 'SUBCONTRACTOR' ||
-          member.jobRole === 'Subcontractor';
+        const isSubcontractor = this.isSubcontractor(member);
+        const isVendor = this.isVendor(member);
+        const isSupplier = this.isSupplier(member);
 
         if (isSubcontractor) {
           this.subcontractors.push(member);
           this.loadRating(member.id);
+        } else if (isVendor) {
+          this.vendors.push(member);
+        } else if (isSupplier) {
+          this.suppliers.push(member);
         } else {
           this.internalTeam.push(member);
         }
       });
     }
+  }
+
+  private normalizeRoleValue(value: string | undefined): string {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[_\-\s]+/g, '');
+  }
+
+  private isSubcontractor(member: JobUser): boolean {
+    const userType = this.normalizeRoleValue(member.userType);
+    const jobRole = this.normalizeRoleValue(member.jobRole);
+    return userType === 'subcontractor' || jobRole === 'subcontractor';
+  }
+
+  private isVendor(member: JobUser): boolean {
+    const userType = this.normalizeRoleValue(member.userType);
+    const jobRole = this.normalizeRoleValue(member.jobRole);
+    return userType === 'vendor' || jobRole.includes('vendor');
+  }
+
+  private isSupplier(member: JobUser): boolean {
+    const userType = this.normalizeRoleValue(member.userType);
+    const jobRole = this.normalizeRoleValue(member.jobRole);
+    return (
+      userType === 'supplier' ||
+      jobRole.includes('supplier') ||
+      jobRole.includes('materialsupplier')
+    );
+  }
+
+  isInHousePartner(member: JobUser): boolean {
+    const userType = this.normalizeRoleValue(member.userType);
+    return userType !== 'vendor' && userType !== 'supplier';
   }
 
   loadRating(userId: string): void {

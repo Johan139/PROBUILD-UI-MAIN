@@ -40,6 +40,18 @@ export class PhaseNavigationHeaderComponent {
 
   showExportMenu = false;
 
+  get showDevProceedButton(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.location.href.startsWith('http://localhost:4200/');
+  }
+
+  forceProceed(): void {
+    this.proceed.emit();
+  }
+
   toggleExportMenu(): void {
     this.showExportMenu = !this.showExportMenu;
   }

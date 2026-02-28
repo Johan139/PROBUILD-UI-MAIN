@@ -115,15 +115,24 @@ export class DocumentService {
     }
   }
 
-  uploadFile(file: File, jobId: string, sessionId: string): Observable<any> {
+  uploadFile(
+    file: File,
+    jobId: string,
+    sessionId: string,
+    metadata?: { title?: string; description?: string; type?: string },
+  ): Observable<any> {
     const formData = new FormData();
     formData.append('Blueprint', file);
-    formData.append('Title', 'test');
-    formData.append('Description', 'tester');
+    formData.append('Title', metadata?.title || 'Unknown Document');
+    formData.append('Description', metadata?.description || 'Unknown description');
+    if (metadata?.type) {
+      formData.append('Type', metadata.type);
+    }
+    formData.append('JobId', jobId);
     formData.append('sessionId', sessionId);
 
     return this.httpClient
-      .post<any>(`${BASE_URL}/Jobs/UploadNoteImage`, formData, {
+      .post<any>(`${BASE_URL}/Jobs/UploadImage`, formData, {
         reportProgress: true,
         observe: 'events',
         headers: new HttpHeaders({ Accept: 'application/json' }),

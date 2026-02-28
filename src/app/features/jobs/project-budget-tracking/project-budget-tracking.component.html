@@ -1,3 +1,4 @@
+<ng-container *ngIf="isBudgetViewReady; else budgetLoadingState">
 <!-- Financial Overview Panel -->
 <div class="dashboard-grid">
   <div class="dashboard-card">
@@ -715,6 +716,14 @@
     </table>
   </div>
 </mat-card>
+
+</ng-container>
+
+<ng-template #budgetLoadingState>
+  <mat-card class="mb-6">
+    <div style="padding: 1.25rem; text-align: center;">Loading budget data...</div>
+  </mat-card>
+</ng-template>
 
 <!-- Additional Sections -->
 <div class="two-column-grid">

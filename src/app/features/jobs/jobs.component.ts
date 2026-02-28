@@ -134,6 +134,7 @@ import {
   BidPriceDialogData,
 } from './components/scope-insight-dialogs/bid-price-dialog.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { JobCacheService } from './services/jobs/job-cache.service';
 
 type ProjectPhase =
   | 'INITIATION'
@@ -151,6 +152,14 @@ interface ScopeRisk {
   category: string;
   description: string;
   level: 'high' | 'medium' | 'low';
+}
+
+interface JobUiStateCache {
+  version: 1;
+  activeTab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints';
+  stageDisplayMode: 'stage' | 'live';
+  preliminaryTab: 0 | 1 | 2;
+  updatedAt: string;
 }
 
 @Component({
@@ -256,6 +265,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   public currentUserId: string = '';
   private pollingSubscription: Subscription | null = null;
   private destroyRef = inject(DestroyRef);
+  private readonly uiCacheVersion = 1 as const;
 
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
@@ -354,6 +364,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     private fileUploadService: FileUploadService,
     private jobsService: JobsService,
     private projectService: ProjectService,
+    private jobCache: JobCacheService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -375,14 +386,17 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
     tab: 'overview' | 'budget' | 'timeline' | 'team' | 'blueprints',
   ): void {
     this.activeTab = tab;
+    this.persistJobUiState();
   }
 
   setStageDisplayMode(mode: 'stage' | 'live'): void {
     this.stageDisplayMode = mode;
+    this.persistJobUiState();
   }
 
   setPreliminaryTab(tab: 0 | 1 | 2): void {
     this.preliminaryTab = tab;
+    this.persistJobUiState();
   }
 
   toggleExportMenu(): void {
@@ -895,6 +909,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
         this.determineProjectStage(this.projectDetails?.status);
+        this.hydrateJobUiStateFromCache(this.projectDetails?.jobId);
         this.syncScopeReviewDrafts();
         this.isStageResolved = true;
 
@@ -978,6 +993,45 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.cdr.detectChanges();
       });
+  }
+
+  private getUiStateCacheKey(jobId: string | number): string {
+    return `job_ui_state_${jobId}`;
+  }
+
+  private hydrateJobUiStateFromCache(jobId: string | number | undefined): void {
+    if (!jobId) {
+      return;
+    }
+
+    const cached = this.jobCache.get<JobUiStateCache>(
+      this.getUiStateCacheKey(jobId),
+    );
+
+    if (!cached || cached.version !== this.uiCacheVersion) {
+      return;
+    }
+
+    this.activeTab = cached.activeTab;
+    this.stageDisplayMode = cached.stageDisplayMode;
+    this.preliminaryTab = cached.preliminaryTab;
+  }
+
+  private persistJobUiState(): void {
+    const jobId = this.projectDetails?.jobId;
+    if (!jobId) {
+      return;
+    }
+
+    const payload: JobUiStateCache = {
+      version: this.uiCacheVersion,
+      activeTab: this.activeTab,
+      stageDisplayMode: this.stageDisplayMode,
+      preliminaryTab: this.preliminaryTab,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.jobCache.set(this.getUiStateCacheKey(jobId), payload);
   }
 
   private loadScopeInsightData(jobId: string): void {
