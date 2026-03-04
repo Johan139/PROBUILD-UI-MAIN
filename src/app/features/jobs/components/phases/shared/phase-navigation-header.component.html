@@ -118,41 +118,43 @@
     </div>
   </div>
 
-  <div class="phase-project-card">
-    <div class="phase-project-head">
+  <div class="project-details-card">
+    <div class="project-details-head">
       <p>Project Details</p>
       <span>{{ stageLabel }}</span>
     </div>
-    <div class="phase-project-grid">
-      <div class="phase-project-item">
-        <lucide-icon name="folder" class="mini-icon"></lucide-icon>
+    <div class="project-details-grid">
+      <article class="project-detail-item">
+        <div class="project-detail-icon"><lucide-icon name="folder-open"></lucide-icon></div>
         <div>
           <small>Project</small>
           <strong>{{ projectName }}</strong>
         </div>
-      </div>
-      <div class="phase-project-item">
-        <lucide-icon name="user" class="mini-icon"></lucide-icon>
+      </article>
+
+      <article class="project-detail-item">
+        <div class="project-detail-icon"><lucide-icon name="user"></lucide-icon></div>
         <div>
           <small>Client</small>
-          <strong>{{ clientName }}</strong>
+          <strong>{{ clientName || 'Client' }}</strong>
         </div>
-      </div>
-      <div class="phase-project-item">
-        <lucide-icon name="map-pin" class="mini-icon"></lucide-icon>
+      </article>
+
+      <article class="project-detail-item">
+        <div class="project-detail-icon"><lucide-icon name="map-pin"></lucide-icon></div>
         <div>
           <small>Address</small>
-          <strong>{{ projectAddress }}</strong>
+          <strong>{{ projectAddress || 'Address pending' }}</strong>
         </div>
-      </div>
-      <div class="phase-project-item">
-        <lucide-icon name="ruler" class="mini-icon"></lucide-icon>
+      </article>
+
+      <article class="project-detail-item">
+        <div class="project-detail-icon"><lucide-icon name="ruler"></lucide-icon></div>
         <div>
           <small>Size</small>
           <strong>{{ projectSizeSqFt }} sq ft</strong>
         </div>
-      </div>
+      </article>
     </div>
-  </div>
 </div>
 

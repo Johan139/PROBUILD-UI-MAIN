@@ -161,7 +161,7 @@
   <div class="live-stage-container">
       <div class="job-header">
         <div class="header-left">
-          <button
+          <!-- <button
             class="back-btn"
             (click)="NavigateBack()"
             matTooltip="Go Back"
@@ -181,7 +181,7 @@
               <path d="m12 19-7-7 7-7" />
               <path d="M19 12H5" />
             </svg>
-          </button>
+          </button> -->
           <div>
             <h2>{{ projectDetails?.projectName }}</h2>
             <span class="project-id"
@@ -218,7 +218,7 @@
           >
             Save Job
           </button> -->
-          <button
+          <!-- <button
             *ngIf="isProjectOwner"
             class="submit-btn delete-btn"
             mat-raised-button
@@ -227,9 +227,9 @@
             matTooltipShowDelay="500"
           >
             Discard Job
-          </button>
+          </button> -->
           <!-- Reports Dropdown -->
-          <button
+          <!-- <button
             class="submit-btn save-btn"
             mat-raised-button
             [matMenuTriggerFor]="reportsMenu"
@@ -238,7 +238,7 @@
           >
             <mat-icon>download</mat-icon>
             Export Report
-          </button>
+          </button> -->
           <mat-menu #reportsMenu="matMenu">
             <button mat-menu-item (click)="openDocumentsDialog()">
               <mat-icon>description</mat-icon>

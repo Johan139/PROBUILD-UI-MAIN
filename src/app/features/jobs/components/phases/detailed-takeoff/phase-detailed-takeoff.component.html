@@ -248,7 +248,7 @@
                 <span class="ve-icon-badge small" [class.is-active]="isVeApplied(ve.id)" [class.is-inactive]="!isVeApplied(ve.id)">
                   <lucide-icon name="zap" class="ve-zap small"></lucide-icon>
                 </span>
-                {{ ve.id }} — {{ stripMarkdown(ve.category || 'Value Engineering') }}
+                {{ ve.id }} - {{ stripMarkdown(ve.category || 'Value Engineering') }}
               </p>
               <p class="phase-meta">You Save ${{ getVeSavings(ve) | number : '1.0-0' }}</p>
             </div>

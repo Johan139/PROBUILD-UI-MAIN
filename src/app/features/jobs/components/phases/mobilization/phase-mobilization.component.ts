@@ -2,16 +2,19 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../../../authentication/auth.service';
 import { BidsService } from '../../../../../services/bids.service';
 import { JobsService } from '../../../../../services/jobs.service';
 import { TeamManagementService } from '../../../../../services/team-management.service';
+import { FileUploadService } from '../../../../../services/file-upload.service';
 import { TimelineService } from '../../../services/timeline.service';
+import { PermitsService } from '../../../services/permits.service';
 import { JobAssignment, JobUser } from '../../../job-assignment/job-assignment.model';
 import { JobAssignmentService } from '../../../job-assignment/job-assignment.service';
 import { BomService } from '../../../services/bom.service';
+import { Permit } from '../../../../../models/permit';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 import {
   PhaseNavigationHeaderComponent,
@@ -39,6 +42,30 @@ interface PendingInvite {
   name: string;
   email: string;
   role: string;
+}
+
+type PermitAnswer = 'yes' | 'no' | 'na';
+
+interface PermitUpload {
+  name: string;
+  date: string;
+  permitId?: number;
+  documentId?: number;
+  blobUrl?: string;
+}
+
+interface GoLivePermitItem {
+  key: string;
+  label: string;
+}
+
+interface GoLiveTimelinePhase {
+  id: string;
+  title: string;
+  itemCount: number;
+  startDate: Date;
+  endDate: Date;
+  durationWeeks: number;
 }
 
 interface TradePackage {
@@ -108,6 +135,8 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
   @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
   @Output() startDateSaved = new EventEmitter<string>();
 
+  readonly todayIso = new Date().toISOString().split('T')[0];
+
   startDate = '';
   private hydratedStartDateForJobId: number | null = null;
   private suppressStartDatePersist = false;
@@ -123,6 +152,8 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
   isLoadingTradeData = false;
   tradeDataLoadFailed = false;
   goLiveDialogOpen = false;
+  goLiveStep = 0;
+  goLiveStartDate = '';
   isLoadingTeamData = false;
   private assignmentJobsByUserId = new Map<string, JobAssignment[]>();
 
@@ -140,10 +171,32 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
 
   expandedTradeIds = new Set<number>();
 
+  readonly goLivePermitItems: GoLivePermitItem[] = [
+    { key: 'building-permit', label: 'Building Permit' },
+    { key: 'electrical-permit', label: 'Electrical Permit' },
+    { key: 'plumbing-permit', label: 'Plumbing Permit' },
+    { key: 'mechanical-permit', label: 'Mechanical / HVAC Permit' },
+    { key: 'grading-permit', label: 'Grading & Excavation Permit' },
+    { key: 'demolition-permit', label: 'Demolition Permit' },
+    { key: 'fire-permit', label: 'Fire Department Permit' },
+    { key: 'environmental-permit', label: 'Environmental Permit' },
+    { key: 'insurance', label: 'Insurance Certificates (COI)' },
+    { key: 'bonds', label: 'Bond Requirements' },
+    { key: 'ifc-drawings', label: 'IFC Drawings Issued' },
+    { key: 'utility-clearances', label: 'Utility Clearances' },
+  ];
+
+  permitAnswers: Record<string, PermitAnswer | undefined> = {};
+  permitUploads: Record<string, PermitUpload | undefined> = {};
+  private permitByItemKey: Record<string, Permit | undefined> = {};
+  goLiveTimelinePhases: GoLiveTimelinePhase[] = [];
+
   constructor(
     private readonly authService: AuthService,
     private readonly teamManagementService: TeamManagementService,
     private readonly jobAssignmentService: JobAssignmentService,
+    private readonly permitsService: PermitsService,
+    private readonly fileUploadService: FileUploadService,
     private readonly jobsService: JobsService,
     private readonly timelineService: TimelineService,
     private readonly bomService: BomService,
@@ -153,6 +206,8 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.hydrateStartDateFromProjectDetails();
+    this.loadGoLivePermitState();
+    this.loadGoLiveTimelineData();
     this.loadAssignmentSnapshot();
     this.loadOrganizationTeamMembers();
     this.hydrateTeamFromScopeReview();
@@ -169,6 +224,8 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
       const previousJobId = this.resolveJobIdFromDetails(changes['projectDetails'].previousValue);
       const currentJobId = this.resolveJobIdFromDetails(changes['projectDetails'].currentValue);
       if (previousJobId !== currentJobId) {
+        this.loadGoLivePermitState();
+        this.loadGoLiveTimelineData();
         this.loadAssignmentSnapshot();
         this.loadMobilizationTradeData();
       }
@@ -270,16 +327,301 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
       return;
     }
 
+    this.goLiveStep = 0;
+    this.goLiveStartDate = '';
+    this.loadGoLiveTimelineData();
     this.goLiveDialogOpen = true;
   }
 
   closeGoLiveDialog(): void {
     this.goLiveDialogOpen = false;
+    this.goLiveStep = 0;
+    this.goLiveStartDate = '';
   }
 
   confirmGoLive(): void {
+    const selectedDate = this.goLiveSelectedDate;
+    if (!selectedDate) {
+      return;
+    }
+
+    if (selectedDate !== this.startDate) {
+      this.startDate = selectedDate;
+      this.onStartDateChanged(selectedDate);
+    }
+
     this.goLiveDialogOpen = false;
+    this.goLiveStep = 0;
+    this.goLiveStartDate = '';
     this.goLive.emit();
+  }
+
+  nextGoLiveStep(): void {
+    if (this.goLiveStep === 0 && !this.canProceedPermitStep) {
+      return;
+    }
+
+    if (this.goLiveStep < 2) {
+      this.goLiveStep += 1;
+    }
+  }
+
+  previousGoLiveStep(): void {
+    if (this.goLiveStep === 0) {
+      this.closeGoLiveDialog();
+      return;
+    }
+
+    this.goLiveStep -= 1;
+  }
+
+  setPermitAnswer(key: string, answer: PermitAnswer): void {
+    this.permitAnswers = {
+      ...this.permitAnswers,
+      [key]: answer,
+    };
+
+    if (answer === 'no' || answer === 'na') {
+      const nextUploads = { ...this.permitUploads };
+      delete nextUploads[key];
+      this.permitUploads = nextUploads;
+    }
+
+    if (answer === 'na') {
+      this.persistPermitStatusForItem(key, 'Not Applicable');
+    }
+
+    if (answer === 'yes') {
+      this.persistPermitStatusForItem(key, 'Pending');
+    }
+  }
+
+  onPermitFileSelected(key: string, event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    const file = target?.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.ensurePermitForItem(
+      key,
+      (permit) => {
+        if (!permit.id) {
+          this.snackBar.open('Unable to create permit record for upload.', 'Close', { duration: 2500 });
+          if (target) {
+            target.value = '';
+          }
+          return;
+        }
+
+        this.permitsService.uploadPermitDocument(file, permit.id, crypto.randomUUID()).subscribe({
+          next: (response) => {
+            const updatedPermit: Permit = {
+              ...permit,
+              status: 'Pending',
+              documentId: response?.documentId || response?.id || permit.documentId,
+              document: {
+                id: response?.documentId || response?.id || permit.documentId || 0,
+                fileName: file.name,
+                blobUrl: response?.url || response?.blobUrl || permit.document?.blobUrl || '',
+              },
+            };
+
+            this.permitByItemKey = {
+              ...this.permitByItemKey,
+              [key]: updatedPermit,
+            };
+
+            this.permitUploads = {
+              ...this.permitUploads,
+              [key]: {
+                name: file.name,
+                date: new Date().toLocaleDateString(),
+                permitId: updatedPermit.id,
+                documentId: updatedPermit.documentId,
+                blobUrl: updatedPermit.document?.blobUrl,
+              },
+            };
+
+            this.permitAnswers = {
+              ...this.permitAnswers,
+              [key]: 'yes',
+            };
+
+            this.permitsService.updatePermit(updatedPermit).subscribe({
+              error: () => {
+                this.snackBar.open('Permit file uploaded but failed to persist permit status.', 'Close', {
+                  duration: 2600,
+                });
+              },
+            });
+
+            if (target) {
+              target.value = '';
+            }
+          },
+          error: () => {
+            this.snackBar.open('Failed to upload permit document.', 'Close', { duration: 2500 });
+            if (target) {
+              target.value = '';
+            }
+          },
+        });
+      },
+      () => {
+        this.snackBar.open('Failed to initialize permit record.', 'Close', { duration: 2500 });
+        if (target) {
+          target.value = '';
+        }
+      },
+    );
+  }
+
+  markPermitAsNa(key: string): void {
+    this.setPermitAnswer(key, 'na');
+  }
+
+  clearPermitUpload(key: string): void {
+    const nextUploads = { ...this.permitUploads };
+    delete nextUploads[key];
+    this.permitUploads = nextUploads;
+
+    this.persistPermitStatusForItem(key, 'Pending', true);
+  }
+
+  viewPermitUpload(key: string): void {
+    const upload = this.permitUploads[key];
+    if (!upload) {
+      return;
+    }
+
+    if (!upload.blobUrl) {
+      this.snackBar.open(`Viewing: ${upload.name}`, 'Close', { duration: 2200 });
+      return;
+    }
+
+    this.fileUploadService.getFile(upload.blobUrl).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: () => {
+        this.snackBar.open('Failed to open permit document.', 'Close', { duration: 2500 });
+      },
+    });
+  }
+
+  getPermitHandledCount(): number {
+    return this.goLivePermitItems.filter((item) => {
+      const answer = this.permitAnswers[item.key];
+      return !!this.permitUploads[item.key] || answer === 'yes' || answer === 'no' || answer === 'na';
+    }).length;
+  }
+
+  getPermitUploadedCount(): number {
+    return this.goLivePermitItems.filter((item) => !!this.permitUploads[item.key]).length;
+  }
+
+  getPermitYesCount(): number {
+    return this.goLivePermitItems.filter((item) => this.permitAnswers[item.key] === 'yes').length;
+  }
+
+  getPermitNoCount(): number {
+    return this.goLivePermitItems.filter((item) => this.permitAnswers[item.key] === 'no').length;
+  }
+
+  getPermitNaCount(): number {
+    return this.goLivePermitItems.filter((item) => this.permitAnswers[item.key] === 'na').length;
+  }
+
+  getPermitUnansweredCount(): number {
+    return this.goLivePermitItems.length - this.getPermitHandledCount();
+  }
+
+  isPermitItemHandled(itemKey: string): boolean {
+    return !!this.permitUploads[itemKey] || !!this.permitAnswers[itemKey];
+  }
+
+  get goLivePermitProgressPercent(): number {
+    if (!this.goLivePermitItems.length) {
+      return 0;
+    }
+
+    return (this.getPermitHandledCount() / this.goLivePermitItems.length) * 100;
+  }
+
+  get goLiveEstimatedWeeks(): number {
+    if (!this.goLiveTimelinePhases.length) {
+      return 1;
+    }
+
+    const minStart = Math.min(...this.goLiveTimelinePhases.map((phase) => phase.startDate.getTime()));
+    const maxEnd = Math.max(...this.goLiveTimelinePhases.map((phase) => phase.endDate.getTime()));
+    const totalDays = Math.max(1, Math.ceil((maxEnd - minStart) / (1000 * 60 * 60 * 24)) + 1);
+
+    return Math.max(1, Math.ceil(totalDays / 7));
+  }
+
+  get goLiveSelectedDate(): string {
+    return this.goLiveStartDate || this.startDate;
+  }
+
+  get goLiveCanConfirm(): boolean {
+    return !!this.goLiveSelectedDate;
+  }
+
+  get goLivePhaseCount(): number {
+    return this.goLiveTimelinePhases.length;
+  }
+
+  get goLiveLineItemsCount(): number {
+    return this.goLiveTimelinePhases.reduce((sum, phase) => sum + phase.itemCount, 0);
+  }
+
+  get canProceedPermitStep(): boolean {
+    return this.getPermitHandledCount() === this.goLivePermitItems.length;
+  }
+
+  goLivePhaseDurationWeeks(phase: TradePackage | GoLiveTimelinePhase): number {
+    if ((phase as GoLiveTimelinePhase).durationWeeks !== undefined) {
+      return Math.max(1, Number((phase as GoLiveTimelinePhase).durationWeeks || 1));
+    }
+
+    const trade = phase as TradePackage;
+    const raw = String(trade.estimatedDuration || '').trim();
+    const numeric = Number(raw.replace(/[^\d.]/g, ''));
+
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return 2;
+    }
+
+    return Math.max(1, Math.ceil(numeric / 7));
+  }
+
+  goLivePhaseProgressWidth(phase: TradePackage | GoLiveTimelinePhase): number {
+    const duration = this.goLivePhaseDurationWeeks(phase);
+    const estimated = this.goLiveEstimatedWeeks;
+    return Math.min(100, (duration / estimated) * 300);
+  }
+
+  goLiveCompletionDateLabel(): string {
+    const selected = this.goLiveSelectedDate;
+    if (!selected) {
+      return '';
+    }
+
+    const completion = new Date(`${selected}T00:00:00`);
+    if (Number.isNaN(completion.getTime())) {
+      return '';
+    }
+
+    completion.setDate(completion.getDate() + this.goLiveEstimatedWeeks * 7);
+    return completion.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
 
   toggleMemberAssignment(memberId: string): void {
@@ -1080,6 +1422,198 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
 
   private bidsForTrade(trade: TradePackage): TradeBid[] {
     return this.bidsByPackageId[trade.id] || [];
+  }
+
+  private loadGoLivePermitState(): void {
+    const jobId = this.resolvedJobId();
+    if (!jobId) {
+      this.permitAnswers = {};
+      this.permitUploads = {};
+      this.permitByItemKey = {};
+      return;
+    }
+
+    this.permitsService.getPermits(jobId).subscribe({
+      next: (permits) => {
+        this.hydratePermitState(permits || []);
+      },
+      error: () => {
+        this.permitAnswers = {};
+        this.permitUploads = {};
+        this.permitByItemKey = {};
+      },
+    });
+  }
+
+  private loadGoLiveTimelineData(): void {
+    this.timelineService.timelineGroups$.pipe(take(1)).subscribe((groups: any[]) => {
+      const mapped = (Array.isArray(groups) ? groups : [])
+        .map((group: any, idx: number): GoLiveTimelinePhase | null => {
+          const groupStart = group?.startDate ? new Date(group.startDate) : null;
+          const groupEnd = group?.endDate ? new Date(group.endDate) : null;
+
+          if (!groupStart || !groupEnd || Number.isNaN(groupStart.getTime()) || Number.isNaN(groupEnd.getTime())) {
+            return null;
+          }
+
+          const durationDays = Math.max(
+            1,
+            Math.ceil((groupEnd.getTime() - groupStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+          );
+
+          return {
+            id: String(group?.id || group?.title || `phase-${idx}`),
+            title: String(group?.title || `Phase ${idx + 1}`),
+            itemCount: Array.isArray(group?.subtasks) ? group.subtasks.length : 0,
+            startDate: groupStart,
+            endDate: groupEnd,
+            durationWeeks: Math.max(1, Math.ceil(durationDays / 7)),
+          };
+        })
+        .filter((phase): phase is GoLiveTimelinePhase => !!phase);
+
+      this.goLiveTimelinePhases = mapped;
+    });
+  }
+
+  private hydratePermitState(permits: Permit[]): void {
+    const answers: Record<string, PermitAnswer | undefined> = {};
+    const uploads: Record<string, PermitUpload | undefined> = {};
+    const permitMap: Record<string, Permit | undefined> = {};
+
+    this.goLivePermitItems.forEach((item) => {
+      const permit = this.findPermitForItem(item, permits);
+      if (!permit) {
+        return;
+      }
+
+      permitMap[item.key] = permit;
+
+      const normalizedStatus = this.normalizePermitStatus(permit.status);
+      const hasDocument = !!permit.documentId || !!permit.document?.blobUrl;
+
+      if (hasDocument) {
+        answers[item.key] = 'yes';
+        uploads[item.key] = {
+          name: permit.document?.fileName || `${item.label}.pdf`,
+          date: '',
+          permitId: permit.id,
+          documentId: permit.documentId,
+          blobUrl: permit.document?.blobUrl,
+        };
+        return;
+      }
+
+      if (normalizedStatus === 'not applicable' || normalizedStatus === 'na' || normalizedStatus === 'n/a') {
+        answers[item.key] = 'na';
+        return;
+      }
+
+      if (normalizedStatus === 'expired' || normalizedStatus === 'rejected') {
+        answers[item.key] = 'no';
+        return;
+      }
+
+      if (permit.id) {
+        answers[item.key] = 'yes';
+      }
+    });
+
+    this.permitAnswers = answers;
+    this.permitUploads = uploads;
+    this.permitByItemKey = permitMap;
+  }
+
+  private findPermitForItem(item: GoLivePermitItem, permits: Permit[]): Permit | undefined {
+    const itemLabel = this.normalizePermitLabel(item.label);
+
+    return permits.find((permit) => {
+      const permitLabel = this.normalizePermitLabel(permit.name || '');
+      return permitLabel === itemLabel || permitLabel.includes(itemLabel) || itemLabel.includes(permitLabel);
+    });
+  }
+
+  private normalizePermitLabel(value: string): string {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/\(.*?\)/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  private normalizePermitStatus(status: string): string {
+    return String(status || '').trim().toLowerCase();
+  }
+
+  private persistPermitStatusForItem(itemKey: string, status: string, clearDocument = false): void {
+    this.ensurePermitForItem(itemKey, (permit) => {
+      const updatedPermit: Permit = {
+        ...permit,
+        status,
+      };
+
+      if (clearDocument) {
+        updatedPermit.documentId = undefined;
+        updatedPermit.document = undefined;
+      }
+
+      this.permitByItemKey = {
+        ...this.permitByItemKey,
+        [itemKey]: updatedPermit,
+      };
+
+      if (!updatedPermit.id) {
+        return;
+      }
+
+      this.permitsService.updatePermit(updatedPermit).subscribe();
+    });
+  }
+
+  private ensurePermitForItem(
+    itemKey: string,
+    onResolved: (permit: Permit) => void,
+    onError?: () => void,
+  ): void {
+    const existing = this.permitByItemKey[itemKey];
+    if (existing?.id) {
+      onResolved(existing);
+      return;
+    }
+
+    const jobId = this.resolvedJobId();
+    if (!jobId) {
+      onError?.();
+      return;
+    }
+
+    const item = this.goLivePermitItems.find((permitItem) => permitItem.key === itemKey);
+    if (!item) {
+      onError?.();
+      return;
+    }
+
+    const draft: Permit = {
+      jobId,
+      name: item.label,
+      issuingAgency: '',
+      requirements: '',
+      status: 'Pending',
+      isAiGenerated: false,
+    };
+
+    this.permitsService.savePermit(draft).subscribe({
+      next: (saved) => {
+        this.permitByItemKey = {
+          ...this.permitByItemKey,
+          [itemKey]: saved,
+        };
+        onResolved(saved);
+      },
+      error: () => {
+        onError?.();
+      },
+    });
   }
 
   private buildPartnersByCategory(category: 'vendor' | 'supplier'): VendorPartner[] {

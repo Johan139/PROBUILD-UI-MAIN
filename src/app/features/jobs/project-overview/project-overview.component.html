@@ -361,6 +361,183 @@
 
   <!-- Collapsible Sections -->
   <mat-accordion class="dashboard-accordion" multi>
+    <div class="summary-card">
+      <div class="card-header-btn" (click)="toggleExecutiveSummary()">
+        <div class="header-content">
+          <div class="icon-wrapper yellow">
+            <lucide-icon name="file-text" class="icon"></lucide-icon>
+          </div>
+          <div class="text-left">
+            <h3>Executive Summary</h3>
+            <p *ngIf="isSummaryLoading">Loading project analysis...</p>
+            <p *ngIf="!isSummaryLoading">Complete project analysis overview</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span
+            class="confidence-badge"
+            *ngIf="executiveSummary.blueprintConfidence.overallConfidence > 0"
+          >
+            {{ executiveSummary.blueprintConfidence.overallConfidence }}%
+            Confidence
+          </span>
+          <lucide-icon
+            [name]="executiveSummaryExpanded ? 'chevron-up' : 'chevron-down'"
+            class="chevron"
+          ></lucide-icon>
+        </div>
+      </div>
+
+      <div *ngIf="executiveSummaryExpanded" class="card-body">
+        <div class="section" *ngIf="executiveSummary.overview">
+          <h4>Overview</h4>
+          <p>{{ executiveSummary.overview }}</p>
+        </div>
+
+        <div class="section" *ngIf="executiveSummary.keyHighlights.length > 0">
+          <h4>Key Highlights</h4>
+          <div class="grid-3">
+            <div
+              *ngFor="let item of executiveSummary.keyHighlights"
+              class="highlight-box"
+            >
+              <span class="label">{{ item.label }}</span>
+              <span class="value">{{ item.value }}</span>
+              <span class="note">{{ item.note }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" *ngIf="executiveSummary.riskFactors.length > 0">
+          <h4>Risk Factors</h4>
+          <div class="risk-list">
+            <div
+              *ngFor="let item of executiveSummary.riskFactors"
+              class="risk-item"
+            >
+              <div
+                class="risk-dot"
+                [class.high]="item.severity === 'high'"
+                [class.medium]="item.severity === 'medium'"
+              ></div>
+              <div class="risk-content">
+                <span class="risk-title">{{ item.risk }}</span>
+                <span class="risk-desc">{{ item.description }}</span>
+              </div>
+              <span
+                class="risk-badge"
+                [class.high]="item.severity === 'high'"
+                [class.medium]="item.severity === 'medium'"
+              >
+                {{ item.severity }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="section"
+          *ngIf="
+            executiveSummary.strategicAnalysis.opportunities.length > 0 ||
+            executiveSummary.strategicAnalysis.risks.length > 0 ||
+            executiveSummary.strategicAnalysis.implications.length > 0
+          "
+        >
+          <h4>Strategic Analysis</h4>
+
+          <div
+            class="risk-list"
+            *ngIf="executiveSummary.strategicAnalysis.opportunities.length > 0"
+          >
+            <div
+              class="risk-item"
+              *ngFor="let item of executiveSummary.strategicAnalysis.opportunities"
+            >
+              <div class="risk-dot medium"></div>
+              <div class="risk-content">
+                <span class="risk-title">Opportunity</span>
+                <span class="risk-desc">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="risk-list"
+            *ngIf="executiveSummary.strategicAnalysis.risks.length > 0"
+          >
+            <div
+              class="risk-item"
+              *ngFor="let item of executiveSummary.strategicAnalysis.risks"
+            >
+              <div class="risk-dot high"></div>
+              <div class="risk-content">
+                <span class="risk-title">Risk</span>
+                <span class="risk-desc">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="risk-list"
+            *ngIf="executiveSummary.strategicAnalysis.implications.length > 0"
+          >
+            <div
+              class="risk-item"
+              *ngFor="let item of executiveSummary.strategicAnalysis.implications"
+            >
+              <div class="risk-dot"></div>
+              <div class="risk-content">
+                <span class="risk-title">Implication</span>
+                <span class="risk-desc">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" *ngIf="executiveSummary.topPriorities.length > 0">
+          <h4>Top 3 Executive Priorities</h4>
+          <div class="risk-list">
+            <div
+              class="risk-item"
+              *ngFor="let item of executiveSummary.topPriorities; let i = index"
+            >
+              <div class="risk-dot medium"></div>
+              <div class="risk-content">
+                <span class="risk-title">Priority {{ i + 1 }}</span>
+                <span class="risk-desc">{{ item }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" *ngIf="executiveSummary.executiveRecommendation">
+          <h4>Executive Recommendation</h4>
+          <p>{{ executiveSummary.executiveRecommendation }}</p>
+        </div>
+
+        <p
+          class="summary-empty"
+          *ngIf="
+            !executiveSummary.overview &&
+            executiveSummary.keyHighlights.length === 0 &&
+            executiveSummary.riskFactors.length === 0 &&
+            executiveSummary.strategicAnalysis.opportunities.length === 0 &&
+            executiveSummary.strategicAnalysis.risks.length === 0 &&
+            executiveSummary.strategicAnalysis.implications.length === 0 &&
+            executiveSummary.topPriorities.length === 0 &&
+            !executiveSummary.executiveRecommendation &&
+            !isSummaryLoading
+          "
+        >
+          Executive summary data is not available for this project yet.
+        </p>
+
+        <p class="summary-disclaimer" *ngIf="!isSummaryLoading">
+          This report was generated by AI. View our terms and conditions.
+        </p>
+      </div>
+    </div>
+
     <!-- Room & Area Breakdown -->
     <mat-expansion-panel class="dashboard-panel">
       <mat-expansion-panel-header>
@@ -503,111 +680,6 @@
           >Timeline adjusted and team notified. New completion:
           {{ adjustedCompletionDate | date }}</span
         >
-      </div>
-    </mat-expansion-panel>
-
-    <!-- Budget Breakdown -->
-    <mat-expansion-panel class="dashboard-panel">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <div class="panel-header-content">
-            <lucide-icon name="pie-chart" class="title-icon"></lucide-icon>
-            <span class="panel-title-text">Budget Breakdown by Division</span>
-            <span class="panel-subtitle">Material vs Labor</span>
-          </div>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-
-      <div class="budget-breakdown-container">
-        <!-- Division List -->
-        <div class="division-list">
-          <div class="list-header">Cost by Division</div>
-          <button
-            class="division-item"
-            [class.active]="selectedDivision === 'all'"
-            (click)="selectedDivision = 'all'"
-          >
-            <span>All Divisions (Total)</span>
-            <div class="division-stats">
-              <span class="pct">100%</span>
-              <span class="amount">{{
-                overallBudgetValue | currency: "USD" : "symbol" : "1.0-0"
-              }}</span>
-            </div>
-          </button>
-          <button
-            *ngFor="let phase of costByPhase"
-            class="division-item"
-            [class.active]="selectedDivision === phase.name"
-            (click)="selectedDivision = phase.name"
-          >
-            <span class="phase-name">{{ phase.name }}</span>
-            <div class="division-stats">
-              <span class="pct">{{
-                (overallBudgetValue > 0 ? phase.value / overallBudgetValue : 0)
-                  | percent: "1.0-0"
-              }}</span>
-              <span class="amount">{{
-                phase.value | currency: "USD" : "symbol" : "1.0-0"
-              }}</span>
-            </div>
-          </button>
-        </div>
-
-        <!-- Split Chart -->
-        <div class="split-view">
-          <div class="split-header">
-            Material vs Labor Split
-            <span class="highlight">{{ currentDivisionStats.name }}</span>
-          </div>
-          <div class="split-card">
-            <!-- Material -->
-            <div class="split-row">
-              <div class="split-label-row">
-                <span>Materials</span>
-                <span class="font-medium"
-                  >{{ currentDivisionStats.materials }}%</span
-                >
-              </div>
-              <div class="split-progress-bg">
-                <div
-                  class="split-progress yellow"
-                  [style.width.%]="currentDivisionStats.materials"
-                ></div>
-              </div>
-              <p class="split-amount">
-                {{
-                  currentDivisionStats.amount *
-                    (currentDivisionStats.materials / 100)
-                    | currency: "USD" : "symbol" : "1.0-0"
-                }}
-              </p>
-            </div>
-
-            <!-- Labor -->
-            <div class="split-row mt-4">
-              <div class="split-label-row">
-                <span>Labor</span>
-                <span class="font-medium"
-                  >{{ currentDivisionStats.labor }}%</span
-                >
-              </div>
-              <div class="split-progress-bg">
-                <div
-                  class="split-progress blue"
-                  [style.width.%]="currentDivisionStats.labor"
-                ></div>
-              </div>
-              <p class="split-amount">
-                {{
-                  currentDivisionStats.amount *
-                    (currentDivisionStats.labor / 100)
-                    | currency: "USD" : "symbol" : "1.0-0"
-                }}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </mat-expansion-panel>
 
@@ -1264,4 +1336,4 @@
       </app-projects-table>
     </div>
   </div>
-</div>
+

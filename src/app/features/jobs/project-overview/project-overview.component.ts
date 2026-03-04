@@ -83,6 +83,10 @@ export class ProjectOverviewComponent {
   @Input() weatherError: string | null | undefined = null;
   @Input() temperatureUnit: 'C' | 'F' = 'C';
 
+  executiveSummaryExpanded = false;
+  isSummaryLoading = false;
+  private loadedExecutiveSummary: any = null;
+
   @Output() jobArchived = new EventEmitter<number>();
 
   @Output() selectProject = new EventEmitter<string>();
@@ -276,6 +280,19 @@ export class ProjectOverviewComponent {
     this.loadFromCache();
 
     const jobId = this.projectDetails.jobId;
+
+    this.isSummaryLoading = true;
+    this.reportService
+      .getExecutiveSummaryData(jobId)
+      .then((summary) => {
+        this.loadedExecutiveSummary = summary;
+      })
+      .catch(() => {
+        this.loadedExecutiveSummary = null;
+      })
+      .finally(() => {
+        this.isSummaryLoading = false;
+      });
 
     // 1. Blueprint Intelligence
     this.reportService.getBlueprintIntelligence(jobId).then((data) => {
@@ -518,6 +535,88 @@ export class ProjectOverviewComponent {
       },
       error: (err) => console.error('Failed to load bids', err),
     });
+  }
+
+  toggleExecutiveSummary(): void {
+    this.executiveSummaryExpanded = !this.executiveSummaryExpanded;
+  }
+
+  get executiveSummary(): {
+    overview: string;
+    blueprintConfidence: { overallConfidence: number };
+    keyHighlights: Array<{ label: string; value: string; note: string }>;
+    riskFactors: Array<{
+      risk: string;
+      description: string;
+      severity: 'high' | 'medium';
+    }>;
+    strategicAnalysis: {
+      opportunities: string[];
+      risks: string[];
+      implications: string[];
+    };
+    topPriorities: string[];
+    executiveRecommendation: string;
+  } {
+    const summary =
+      this.loadedExecutiveSummary ||
+      this.projectDetails?.executiveSummary ||
+      this.projectDetails?.scopeExecutiveSummary ||
+      this.projectDetails?.preliminaryScope?.executiveSummary ||
+      null;
+
+    return {
+      overview: String(summary?.overview || ''),
+      blueprintConfidence: {
+        overallConfidence: Number(
+          summary?.blueprintConfidence?.overallConfidence || 0,
+        ),
+      },
+      keyHighlights: Array.isArray(summary?.keyHighlights)
+        ? summary.keyHighlights
+            .map((item: any) => ({
+              label: String(item?.label || ''),
+              value: String(item?.value || ''),
+              note: String(item?.note || ''),
+            }))
+            .filter((item: any) => item.label || item.value || item.note)
+        : [],
+      riskFactors: Array.isArray(summary?.riskFactors)
+        ? summary.riskFactors
+            .map((item: any) => ({
+              risk: String(item?.risk || ''),
+              description: String(item?.description || ''),
+              severity:
+                String(item?.severity || '').toLowerCase() === 'high'
+                  ? 'high'
+                  : 'medium',
+            }))
+            .filter((item: any) => item.risk || item.description)
+        : [],
+      strategicAnalysis: {
+        opportunities: Array.isArray(summary?.strategicAnalysis?.opportunities)
+          ? summary.strategicAnalysis.opportunities
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+        risks: Array.isArray(summary?.strategicAnalysis?.risks)
+          ? summary.strategicAnalysis.risks
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+        implications: Array.isArray(summary?.strategicAnalysis?.implications)
+          ? summary.strategicAnalysis.implications
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+      },
+      topPriorities: Array.isArray(summary?.topPriorities)
+        ? summary.topPriorities
+            .map((item: any) => String(item || '').trim())
+            .filter(Boolean)
+        : [],
+      executiveRecommendation: String(summary?.executiveRecommendation || ''),
+    };
   }
 
   calculateBudgetStats(items: any[]): void {

@@ -70,6 +70,7 @@ import {
   Package,
   Truck,
   Rocket,
+  CalendarDays,
 } from 'lucide-angular';
 
 @NgModule({
@@ -144,6 +145,7 @@ import {
       Package,
       Truck,
       Rocket,
+      CalendarDays,
     }),
   ],
   exports: [LucideAngularModule],

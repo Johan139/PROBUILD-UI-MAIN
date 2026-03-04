@@ -21,6 +21,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -40,6 +41,7 @@ import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmatio
     MatCardModule,
     MatIconModule,
     MatTooltipModule,
+    MatExpansionModule,
     NgIf,
     NgForOf,
     DecimalPipe,
@@ -75,6 +77,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     | 'Materials'
     | 'Equipment'
     | 'Other' = 'all';
+  selectedDivision: string | null = 'all';
 
   constructor(
     private budgetService: BudgetService,
@@ -212,6 +215,62 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
       .filter((item) => item.category === 'Subcontractor')
       .sort((a, b) => b.actualCost - a.actualCost)
       .slice(0, 5);
+  }
+
+  get costByPhase(): { name: string; value: number }[] {
+    const phaseMap = new Map<string, number>();
+    this.budgetItems.forEach((item) => {
+      const phase = item.phase || 'Unassigned';
+      const current = phaseMap.get(phase) || 0;
+      phaseMap.set(phase, current + (item.estimatedCost || 0));
+    });
+
+    return Array.from(phaseMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }
+
+  get currentDivisionStats() {
+    let items = this.budgetItems;
+    let name = 'All Divisions';
+    let total = this.displayTotalBudget;
+
+    if (this.selectedDivision !== 'all' && this.selectedDivision) {
+      items = this.budgetItems.filter((i) => i.phase === this.selectedDivision);
+      name = this.selectedDivision;
+      total = items.reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    }
+
+    if (total === 0) {
+      return {
+        name,
+        amount: 0,
+        pct: '0%',
+        materials: 0,
+        labor: 0,
+      };
+    }
+
+    const materials = items
+      .filter((i) => i.category === 'Materials')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    const labor = items
+      .filter((i) => i.category === 'Subcontractor' || i.category === 'Labor')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+
+    return {
+      name,
+      amount: total,
+      pct:
+        this.displayTotalBudget > 0
+          ? Math.round((total / this.displayTotalBudget) * 100) + '%'
+          : '0%',
+      materials: Math.round((materials / total) * 100),
+      labor: Math.round((labor / total) * 100),
+      materialAmount: materials,
+      laborAmount: labor,
+    };
   }
 
   getVariance(item: BudgetLineItem): number {

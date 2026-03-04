@@ -216,6 +216,200 @@
 /* ACCORDION SECTIONS */
 /* ========================================= */
 
+.summary-card {
+  background-color: var(--gray-900);
+  border: 1px solid var(--gray-800);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+
+  .card-header-btn {
+    width: 100%;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--gray-800);
+    }
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .icon-wrapper.yellow {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background-color: color-mix(
+      in srgb,
+      var(--brand-yellow-primary),
+      transparent 80%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--brand-yellow-primary);
+  }
+
+  .text-left {
+    text-align: left;
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--white);
+      margin: 0;
+    }
+
+    p {
+      font-size: 0.875rem;
+      color: var(--gray-400);
+      margin: 0;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .confidence-badge {
+    background: color-mix(in srgb, var(--color-success), transparent 80%);
+    color: var(--color-success);
+    border: 1px solid color-mix(in srgb, var(--color-success), transparent 65%);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-800);
+  }
+
+  .section {
+    margin-bottom: 1.5rem;
+
+    h4 {
+      color: var(--brand-yellow-primary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: var(--gray-300);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+
+  .summary-disclaimer {
+    margin: 1rem 0 0;
+    text-align: center;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--gray-500);
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .highlight-box {
+    background-color: var(--gray-800);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+
+    .label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--gray-400);
+    }
+
+    .value {
+      display: block;
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .note {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--gray-500);
+    }
+  }
+
+  .risk-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--gray-800);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .risk-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+
+    &.high {
+      background-color: var(--color-danger);
+    }
+
+    &.medium {
+      background-color: var(--color-warning);
+    }
+  }
+
+  .risk-content {
+    flex: 1;
+  }
+
+  .risk-title {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  .risk-desc {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--gray-400);
+  }
+
+  .risk-badge {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+
+    &.high {
+      color: var(--color-danger);
+    }
+
+    &.medium {
+      color: var(--color-warning);
+    }
+  }
+}
+
 .dashboard-accordion {
   margin-bottom: var(--space-6);
 }
@@ -1431,7 +1625,7 @@ button {
 }
 .forecast-card {
   flex: 0 0 auto;
-  width: 100px;
+  width: 130px;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
