@@ -1,0 +1,39 @@
+.page-wrapper {
+  padding: 24px;
+}
+
+.page-card {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.filter {
+  width: 320px;
+  max-width: 100%;
+}
+
+.logs-table {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
