@@ -14,6 +14,15 @@ export interface EmailTemplate {
   modifiedDate?: string;
 }
 
+export interface EmailTemplateSendTestRequest {
+  toEmail: string;
+  subject?: string;
+  body: string;
+  fromEmail?: string;
+  fromName?: string;
+  templateName?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EmailTemplateService {
   private http = inject(HttpClient);
@@ -28,5 +37,9 @@ export class EmailTemplateService {
 
   update(id: number, payload: any) {
     return this.http.put(`${this.baseUrl}/${id}`, payload);
+  }
+
+  sendTest(id: number, payload: EmailTemplateSendTestRequest) {
+    return this.http.post(`${this.baseUrl}/${id}/send-test`, payload);
   }
 }

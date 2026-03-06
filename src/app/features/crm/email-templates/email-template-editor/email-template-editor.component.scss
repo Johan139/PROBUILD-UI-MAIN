@@ -458,11 +458,14 @@
   border-radius: 12px;
   width: 100%;
   max-width: 600px;
-  overflow: hidden;
+  overflow: auto;
   box-shadow: var(--shadow-2);
   border: 1px solid var(--color-border);
 }
 
-.preview-card > div {
-  padding: 18px;
+.preview-iframe {
+  display: block;
+  width: 100%;
+  height: 80vh;
+  border: 0;
 }

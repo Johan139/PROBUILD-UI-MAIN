@@ -1,3 +1,18 @@
+.page-wrapper {
+  padding: 24px;
+}
+
+.page-card {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -6,8 +21,9 @@
 }
 
 .template-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
   border-radius: 18px;
   padding: 20px;
   cursor: pointer;
@@ -18,8 +34,9 @@
 
   &:hover {
     transform: translateY(-4px);
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--color-surface-hover);
+    border-color: color-mix(in oklab, var(--color-border) 65%, var(--color-text) 35%);
+    box-shadow: var(--shadow-2);
   }
 }
 
@@ -75,8 +92,8 @@
   font-size: 11px;
   font-weight: 600;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ccc;
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
 }
 
 /* Title */
@@ -88,7 +105,7 @@
 /* Subject / Key */
 .card-key {
   font-size: 13px;
-  color: #9aa0a6;
+  color: var(--color-text-muted);
   word-break: break-word;
 }
 
@@ -102,5 +119,5 @@
 
 .meta {
   font-size: 12px;
-  color: #9aa0a6;
+  color: var(--color-text-muted);
 }

@@ -7,11 +7,15 @@
   padding: 24px;
 }
 
-.header {
+.topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
 }
 
 .filters {

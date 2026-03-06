@@ -9,11 +9,12 @@ import {
   EmailTemplate,
 } from './../email-template.service';
 import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-email-template-list',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './email-template-list.component.html',
   styleUrls: ['./email-template-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

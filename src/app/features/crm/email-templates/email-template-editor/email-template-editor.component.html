@@ -17,7 +17,7 @@
     </div>
 
     <div class="topbar-right">
-      <button mat-stroked-button class="btn-ghost" [disabled]="savingTemplate">
+      <button mat-stroked-button class="btn-ghost" [disabled]="savingTemplate || sendingTest" (click)="sendTest()">
         <mat-icon>send</mat-icon>
         Send Test
       </button>
@@ -261,7 +261,11 @@
 
     <div class="preview-body">
       <div class="preview-card">
-        <div [innerHTML]="previewHtml"></div>
+        <iframe
+          class="preview-iframe"
+          [src]="previewUrl"
+          (load)="onPreviewIframeLoad($event)"
+        ></iframe>
       </div>
     </div>
   </div>

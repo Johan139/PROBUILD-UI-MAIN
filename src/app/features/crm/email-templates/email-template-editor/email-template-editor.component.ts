@@ -14,8 +14,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  FormControl,
+  Validators,
+} from '@angular/forms';
+import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,10 +28,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { Subject, finalize, takeUntil } from 'rxjs';
 import * as monaco from 'monaco-editor';
 
 import { EmailTemplateService } from '../email-template.service';
+import { EmailTemplateSendTestRequest } from '../email-template.service';
 import { ThemeService } from '../../../../theme.service';
 import {
   EmailTemplateAssetsService,
@@ -47,6 +59,7 @@ import {
     MatSlideToggleModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   templateUrl: './email-template-editor.component.html',
   styleUrls: ['./email-template-editor.component.scss'],
@@ -65,6 +78,7 @@ export class EmailTemplateEditorComponent
   private themeService = inject(ThemeService);
   private injector = inject(Injector);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
   private destroy$ = new Subject<void>();
 
   headerAssets: EmailTemplateAsset[] = [];
@@ -73,6 +87,7 @@ export class EmailTemplateEditorComponent
   uploadingHeader = false;
   uploadingFooter = false;
   savingTemplate = false;
+  sendingTest = false;
 
   // ── View ──────────────────────────────────────────────────
   @ViewChild('editorContainer', { static: false })
@@ -87,6 +102,9 @@ export class EmailTemplateEditorComponent
   // ── State ─────────────────────────────────────────────────
   templateId = Number(this.route.snapshot.paramMap.get('id'));
   previewHtml: SafeHtml | null = null;
+  previewSrcdoc: string | null = null;
+  previewUrl: SafeResourceUrl | null = null;
+  private previewObjectUrl: string | null = null;
   previewMode: 'mobile' | 'desktop' = 'desktop';
   editorLineCount = 0;
   previewOpen = false;
@@ -314,6 +332,109 @@ export class EmailTemplateEditorComponent
     this.syncSelectedAssetUrlsFromGallery();
     this.refreshPreview();
   }
+
+  private buildRenderedEmailHtml(rawHtml: string): string {
+    const headerUrl = this.form.get('headerImageUrl')?.value ?? '';
+    const footerUrl = this.form.get('footerImageUrl')?.value ?? '';
+
+    const rawHeaderHtml = this.form.get('headerHtml')?.value ?? '';
+    const rawFooterHtml = this.form.get('footerHtml')?.value ?? '';
+
+    const hasOwnFooter =
+      /<footer[\s>]/i.test(rawHtml) ||
+      /class\s*=\s*["'][^"']*\bfooter\b[^"']*["']/i.test(rawHtml);
+
+    const headerHtml = this.applySelectedAssetToHtml(rawHeaderHtml, headerUrl, 'header', {
+      stripQuery: false,
+    });
+    const footerHtml = hasOwnFooter
+      ? ''
+      : this.applySelectedAssetToHtml(rawFooterHtml, footerUrl, 'footer', {
+          stripQuery: false,
+        });
+
+    const hasHeaderToken = /\{\{\s*Header\s*\}\}/i.test(rawHtml);
+    const hasFooterToken = /\{\{\s*Footer\s*\}\}/i.test(rawHtml);
+
+    let rendered = rawHtml;
+    if (hasHeaderToken) {
+      rendered = rendered.replace(/\{\{\s*Header\s*\}\}/gi, headerHtml);
+    }
+    if (hasFooterToken) {
+      rendered = rendered.replace(/\{\{\s*Footer\s*\}\}/gi, footerHtml);
+    }
+
+    if (!hasHeaderToken && !hasFooterToken && (headerHtml || footerHtml)) {
+      if (/<body[\s>]/i.test(rendered)) {
+        rendered = rendered.replace(/(<body[^>]*>)/i, `$1\n${headerHtml}`);
+        rendered = rendered.replace(/<\/body>/i, `${footerHtml}\n</body>`);
+      } else {
+        rendered = `${headerHtml}\n${rendered}\n${footerHtml}`;
+      }
+    }
+
+    return rendered;
+  }
+
+  sendTest(): void {
+    if (this.sendingTest) return;
+    if (!this.editor) return;
+
+    const ref = this.dialog.open(EmailTemplateSendTestDialogComponent, {
+      width: '420px',
+      data: {
+        defaultEmail: '',
+      },
+    });
+
+    ref
+      .afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((toEmail: string | null | undefined) => {
+        const email = (toEmail ?? '').trim();
+        if (!email) return;
+
+        this.sendTestTo(email);
+      });
+  }
+
+  private sendTestTo(toEmail: string): void {
+    if (this.sendingTest) return;
+
+    const subject = (this.form.get('subject')?.value ?? '').toString();
+    const fromEmail = (this.form.get('fromEmail')?.value ?? '').toString();
+    const fromName = (this.form.get('fromName')?.value ?? '').toString();
+    const templateName = (this.form.get('templateName')?.value ?? '').toString();
+
+    const rawHtml = this.editor.getValue();
+    const body = this.buildRenderedEmailHtml(rawHtml);
+
+    const payload: EmailTemplateSendTestRequest = {
+      toEmail,
+      subject: subject || undefined,
+      body,
+      fromEmail: fromEmail || undefined,
+      fromName: fromName || undefined,
+      templateName: templateName || undefined,
+    };
+
+    this.sendingTest = true;
+    this.cdr.markForCheck();
+
+    this.service
+      .sendTest(this.templateId, payload)
+      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        finalize(() => {
+          this.sendingTest = false;
+          this.cdr.markForCheck();
+        }),
+      )
+      .subscribe({
+        next: () => this.notify('Test email sent'),
+        error: () => this.notify('Failed to send test email', true),
+      });
+  }
   refreshPreview() {
     if (!this.editor) return;
 
@@ -395,55 +516,89 @@ export class EmailTemplateEditorComponent
       });
   }
   ngOnDestroy(): void {
+    if (this.previewObjectUrl) {
+      URL.revokeObjectURL(this.previewObjectUrl);
+      this.previewObjectUrl = null;
+    }
     this.editor?.dispose();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   // ── Methods ───────────────────────────────────────────────
-  updatePreview(html: string): void {
-    if (!this.previewOpen) {
-      this.previewHtml = null;
-      return;
+updatePreview(html: string): void {
+  if (!this.previewOpen) {
+    this.previewHtml = null;
+    this.previewSrcdoc = null;
+    this.previewUrl = null;
+    if (this.previewObjectUrl) {
+      URL.revokeObjectURL(this.previewObjectUrl);
+      this.previewObjectUrl = null;
     }
-
-    const headerUrl = this.form.get('headerImageUrl')?.value ?? '';
-    const footerUrl = this.form.get('footerImageUrl')?.value ?? '';
-
-    const rawHeaderHtml = this.form.get('headerHtml')?.value ?? '';
-    const rawFooterHtml = this.form.get('footerHtml')?.value ?? '';
-
-    const headerHtml = this.applySelectedAssetToHtml(rawHeaderHtml, headerUrl, 'header', {
-      stripQuery: false,
-    });
-    const footerHtml = this.applySelectedAssetToHtml(rawFooterHtml, footerUrl, 'footer', {
-      stripQuery: false,
-    });
-
-    const hasHeaderToken = /\{\{\s*Header\s*\}\}/i.test(html);
-    const hasFooterToken = /\{\{\s*Footer\s*\}\}/i.test(html);
-
-    let rendered = html;
-    if (hasHeaderToken) {
-      rendered = rendered.replace(/\{\{\s*Header\s*\}\}/gi, headerHtml);
-    }
-    if (hasFooterToken) {
-      rendered = rendered.replace(/\{\{\s*Footer\s*\}\}/gi, footerHtml);
-    }
-
-    if (!hasHeaderToken && !hasFooterToken) {
-      rendered = `
-  <div style="font-family: Arial, sans-serif;">
-    ${headerHtml}
-    ${html}
-    ${footerHtml}
-  </div>
-  `;
-    }
-
-    this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(rendered);
+    return;
   }
 
+  const headerUrl = this.form.get('headerImageUrl')?.value ?? '';
+  const footerUrl = this.form.get('footerImageUrl')?.value ?? '';
+
+  const rawHeaderHtml = this.form.get('headerHtml')?.value ?? '';
+  const rawFooterHtml = this.form.get('footerHtml')?.value ?? '';
+
+  const hasOwnFooter = /<footer[\s>]/i.test(html) || /class\s*=\s*["'][^"']*\bfooter\b[^"']*["']/i.test(html);
+
+  const headerHtml = this.applySelectedAssetToHtml(rawHeaderHtml, headerUrl, 'header', { stripQuery: false });
+  const footerHtml = hasOwnFooter
+    ? ''
+    : this.applySelectedAssetToHtml(rawFooterHtml, footerUrl, 'footer', { stripQuery: false });
+
+  const hasHeaderToken = /\{\{\s*Header\s*\}\}/i.test(html);
+  const hasFooterToken = /\{\{\s*Footer\s*\}\}/i.test(html);
+
+  let rendered = html;
+
+  if (hasHeaderToken) {
+    rendered = rendered.replace(/\{\{\s*Header\s*\}\}/gi, headerHtml);
+  }
+  if (hasFooterToken) {
+    rendered = rendered.replace(/\{\{\s*Footer\s*\}\}/gi, footerHtml);
+  }
+
+  // ← KEY FIX: instead of wrapping, inject into <body> if tokens are absent
+  if (!hasHeaderToken && !hasFooterToken && (headerHtml || footerHtml)) {
+    // Inject after <body> opening tag if present
+    if (/<body[\s>]/i.test(rendered)) {
+      rendered = rendered.replace(/(<body[^>]*>)/i, `$1\n${headerHtml}`);
+      rendered = rendered.replace(/<\/body>/i, `${footerHtml}\n</body>`);
+    } else {
+      // No <body> tag — safe to prepend/append
+      rendered = `${headerHtml}\n${rendered}\n${footerHtml}`;
+    }
+  }
+
+  this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(rendered);
+  this.previewSrcdoc = rendered;
+
+  if (this.previewObjectUrl) {
+    URL.revokeObjectURL(this.previewObjectUrl);
+    this.previewObjectUrl = null;
+  }
+
+  const blob = new Blob([rendered], { type: 'text/html;charset=utf-8' });
+  const objUrl = URL.createObjectURL(blob);
+  this.previewObjectUrl = objUrl;
+  this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(objUrl);
+}
+onPreviewIframeLoad(event: Event): void {
+  const iframe = event.target as HTMLIFrameElement;
+  try {
+    const height = iframe.contentDocument?.documentElement?.scrollHeight;
+    if (height) {
+      iframe.style.height = height + 'px';
+    }
+  } catch {
+    // cross-origin guard
+  }
+}
   private extractFirstImageSrc(html: unknown): string {
     if (!html || typeof html !== 'string') return '';
     const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
@@ -548,18 +703,25 @@ export class EmailTemplateEditorComponent
     const headerUrl = this.form.get('headerImageUrl')?.value ?? '';
     const footerUrl = this.form.get('footerImageUrl')?.value ?? '';
 
+    const bodyHtml = this.form.get('body')?.value ?? '';
+    const hasOwnFooter =
+      /<footer[\s>]/i.test(bodyHtml) ||
+      /class\s*=\s*["'][^"']*\bfooter\b[^"']*["']/i.test(bodyHtml);
+
     const headerHtml = this.applySelectedAssetToHtml(
       this.form.get('headerHtml')?.value ?? '',
       headerUrl,
       'header',
       { stripQuery: true },
     );
-    const footerHtml = this.applySelectedAssetToHtml(
-      this.form.get('footerHtml')?.value ?? '',
-      footerUrl,
-      'footer',
-      { stripQuery: true },
-    );
+    const footerHtml = hasOwnFooter
+      ? ''
+      : this.applySelectedAssetToHtml(
+          this.form.get('footerHtml')?.value ?? '',
+          footerUrl,
+          'footer',
+          { stripQuery: true },
+        );
 
     const payload: any = {
       templateName: this.form.get('templateName')?.value ?? '',
@@ -640,5 +802,52 @@ export class EmailTemplateEditorComponent
     }
 
     return html;
+  }
+}
+
+@Component({
+  selector: 'app-email-template-send-test-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>Send test email</h2>
+    <div mat-dialog-content>
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Recipient email</mat-label>
+        <input matInput [formControl]="email" placeholder="name@company.com" autocomplete="email" />
+        <mat-error *ngIf="email.invalid">Enter a valid email address</mat-error>
+      </mat-form-field>
+    </div>
+    <div mat-dialog-actions align="end">
+      <button mat-button (click)="onCancel()">Cancel</button>
+      <button mat-flat-button color="primary" [disabled]="email.invalid" (click)="onSend()">
+        Send
+      </button>
+    </div>
+  `,
+})
+export class EmailTemplateSendTestDialogComponent {
+  private dialogRef = inject(MatDialogRef<EmailTemplateSendTestDialogComponent>);
+  private data = inject<{ defaultEmail?: string }>(MAT_DIALOG_DATA);
+
+  email = new FormControl<string>(this.data?.defaultEmail ?? '', {
+    nonNullable: true,
+    validators: [Validators.required, Validators.email],
+  });
+
+  onCancel(): void {
+    this.dialogRef.close(null);
+  }
+
+  onSend(): void {
+    if (this.email.invalid) return;
+    this.dialogRef.close(this.email.value);
   }
 }

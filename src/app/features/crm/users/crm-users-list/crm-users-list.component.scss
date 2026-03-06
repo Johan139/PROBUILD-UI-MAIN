@@ -7,6 +7,12 @@
   padding: 24px;
 }
 
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .filters {
   display: flex;
   gap: 12px;

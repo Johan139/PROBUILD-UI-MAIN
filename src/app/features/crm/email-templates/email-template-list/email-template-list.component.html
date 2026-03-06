@@ -1,6 +1,13 @@
 <div class="page-wrapper">
   <mat-card class="page-card">
-    <h2>Email Templates</h2>
+    <div class="topbar">
+      <button mat-button routerLink="/crm">
+        <mat-icon>arrow_back</mat-icon>
+        Back
+      </button>
+
+      <h2>Email Templates</h2>
+    </div>
 
     <ng-container *ngIf="templates$ | async as templates; else loading">
       <div class="template-grid" *ngIf="templates.length; else empty">
