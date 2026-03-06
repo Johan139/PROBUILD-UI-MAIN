@@ -348,8 +348,30 @@
 .google-btn-container {
   display: flex;
   justify-content: center;
+  overflow: hidden;
+  margin: 0 -2px;
+  width: calc(100% + 4px);
+
+  > div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  iframe {
+    display: block !important;
+    margin: 0 !important;
+    border: none !important;
+  }
 }
 
+.divider ~ .google-btn-container {
+  background: var(--login-card-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.light-scheme {
+  color-scheme: light;
+}
 // ─── Footer ──────────────────────────────────────────────────────────────────
 .card-footer {
   margin-top: var(--space-5);

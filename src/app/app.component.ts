@@ -126,12 +126,12 @@ export class AppComponent implements OnInit, OnDestroy {
       route: ['/my-projects'],
       tooltip: 'View and manage your ongoing projects',
     },
-    {
-      label: 'Project Assignment',
-      icon: 'assignment_ind',
-      route: ['/job-assignment'],
-      tooltip: 'Assign team members to your projects',
-    },
+    // {
+    //   label: 'Project Assignment',
+    //   icon: 'assignment_ind',
+    //   route: ['/job-assignment'],
+    //   tooltip: 'Assign team members to your projects',
+    // },
     {
       label: 'Calendar',
       icon: 'calendar_today',
@@ -272,6 +272,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
       this.authService.currentUser$.subscribe((user) => {
         this.loggedIn = !!user;
+
+        const isAdmin = user && this.authService.isAdmin();
+
+        // Remove CRM if it exists
+        this.navItems = this.navItems.filter((n) => n.label !== 'CRM');
+
+        // Add CRM if admin
+        if (isAdmin) {
+          this.navItems.push({
+            label: 'CRM',
+            icon: 'support_agent',
+            route: ['/crm'],
+            tooltip: 'Manage email templates and CRM tools',
+          });
+        }
+
         if (user) {
           const firstName =
             user.firstName || localStorage.getItem('firstName') || '';

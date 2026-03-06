@@ -34,6 +34,7 @@ import { NewProjectComponent } from './features/new-project/new-project.componen
 import { MyProjectsComponent } from './features/my-projects/my-projects.component';
 import { FindWorkComponent } from './features/find-work/find-work.component';
 import { AcceptInviteComponent } from './authentication/accept-invite-team/accept-invite.component';
+import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -110,6 +111,12 @@ export const routes: Routes = [
     path: 'jobselection',
     component: JobSelectionComponent,
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'crm',
+    canActivate: [AdminGuard],
+    loadChildren: () =>
+      import('./features/crm/crm.routes').then((m) => m.CRM_ROUTES),
   },
   {
     path: 'notifications',

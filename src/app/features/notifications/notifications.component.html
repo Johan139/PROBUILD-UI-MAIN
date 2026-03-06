@@ -122,4 +122,25 @@
       <span class="material-symbols-outlined">chevron_right</span>
     </button>
   </nav>
+  <!-- ================= PREFERENCES ================= -->
+  <section class="preferences">
+    <div class="preferences__header">
+      <mat-icon>settings</mat-icon>
+      <h2>Notification Preferences</h2>
+    </div>
+
+    <div class="preferences__grid">
+      <div class="pref-item" *ngFor="let row of preferenceRows">
+        <span>{{ row.label }}</span>
+
+        <mat-slide-toggle
+          [checked]="isPreferenceEnabled(row.type, NotificationChannel.InApp)"
+          (change)="
+            onToggle(row.type, NotificationChannel.InApp, $event.checked)
+          "
+        >
+        </mat-slide-toggle>
+      </div>
+    </div>
+  </section>
 </div>

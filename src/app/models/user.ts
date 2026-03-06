@@ -6,6 +6,7 @@ export class User {
   lastName!: string;
   email!: string;
   userType!: string;
+  isAdmin?: boolean;
   isTeamMember?: boolean;
   companyName?: string;
   role?: string;

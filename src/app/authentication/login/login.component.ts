@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, effect } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -19,6 +19,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ThemeService } from '../../theme.service'; // adjust path as needed
 declare const google: any;
 
 @Component({
@@ -48,12 +49,14 @@ export class LoginComponent {
   isLoading: boolean = false;
   hidePassword: boolean = true;
   showResendLink: boolean = true;
+
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar,
     private route: ActivatedRoute,
+    private themeService: ThemeService,
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', Validators.required],
@@ -68,7 +71,13 @@ export class LoginComponent {
         ],
       ],
     });
+
+    effect(() => {
+      const isDark = this.themeService.isDarkMode();
+      this.rerenderGoogleButton(isDark);
+    });
   }
+
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       if (params['confirmed'] === 'true') {
@@ -96,31 +105,30 @@ export class LoginComponent {
             '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
           callback: (response: any) => this.handleGoogleCredential(response),
           cancel_on_tap_outside: true,
+          auto_select: false,
+          use_fedcm_for_prompt: false,
         });
+        google.accounts.id.disableAutoSelect();
 
-        // ✅ Existing button (unchanged)
-        google.accounts.id.renderButton(divExists, {
-          theme: 'outline',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          logo_alignment: 'center',
-        });
-
-        // ✅ NEW: Google One Tap
-        google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed()) {
-            console.debug(
-              'One Tap not displayed:',
-              notification.getNotDisplayedReason(),
-            );
-          }
-          if (notification.isSkippedMoment()) {
-            console.debug('One Tap skipped:', notification.getSkippedReason());
-          }
-        });
+        this.rerenderGoogleButton(this.themeService.isDarkMode());
       }
     }, 250);
+  }
+
+  private rerenderGoogleButton(isDark: boolean) {
+    const divExists = document.getElementById('googleSignInDiv');
+    if (!divExists || typeof google === 'undefined') return;
+
+    divExists.innerHTML = '';
+    google.accounts.id.renderButton(divExists, {
+      theme: isDark ? 'filled_black' : 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      logo_alignment: 'center',
+      width: 360,
+      
+    });
   }
 
   handleGoogleCredential(response: any) {
@@ -131,12 +139,10 @@ export class LoginComponent {
       next: (res: any) => {
         this.isLoading = false;
 
-        // Check if backend says registration is required
         if (res.requiresRegistration) {
           sessionStorage.setItem('googleData', JSON.stringify(res));
           this.router.navigate(['/register']);
         } else {
-          // ✅ Normal flow (handleSuccessfulLogin was already called inside the pipe)
           this.router.navigateByUrl('dashboard');
         }
       },
@@ -171,17 +177,14 @@ export class LoginComponent {
 
           let backendError = error.error;
 
-          // If it's a string, try parsing JSON; otherwise keep as-is
           if (typeof backendError === 'string') {
             try {
               backendError = JSON.parse(backendError);
             } catch {
-              // fallback to wrapping string into object
               backendError = { error: backendError };
             }
           }
 
-          // Ensure we always have something
           const backendMessage =
             backendError?.error || backendError?.message || message;
 
@@ -203,7 +206,6 @@ export class LoginComponent {
       });
     } else {
       this.showResendLink = false;
-
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
@@ -212,6 +214,7 @@ export class LoginComponent {
   closeAlert(): void {
     this.showAlert = false;
   }
+
   resendEmail() {
     const credentials = this.loginForm.value;
     this.authService.resendverificationemail(credentials.email).subscribe({

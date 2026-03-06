@@ -1,0 +1,272 @@
+<div class="editor-shell">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <a
+        mat-stroked-button
+        class="btn-ghost btn-back"
+        [routerLink]="['/crm/email-templates']"
+      >
+        <mat-icon>arrow_back</mat-icon>
+        Back to templates
+      </a>
+      <div class="logo">
+        <div class="logo-dot"></div>
+        MailCraft
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button mat-stroked-button class="btn-ghost" [disabled]="savingTemplate || sendingTest" (click)="sendTest()">
+        <mat-icon>send</mat-icon>
+        Send Test
+      </button>
+
+      <button
+        mat-stroked-button
+        class="btn-ghost"
+        (click)="openPreview()"
+        [disabled]="savingTemplate"
+      >
+        <mat-icon>visibility</mat-icon>
+        Preview
+      </button>
+
+      <button
+        mat-flat-button
+        class="btn-primary"
+        (click)="save()"
+        [disabled]="savingTemplate"
+      >
+        <mat-icon>save</mat-icon>
+        Save Template
+      </button>
+    </div>
+  </div>
+
+  <!-- EMAIL TEMPLATE SETTINGS -->
+  <div class="settings-panel" [formGroup]="form">
+    <div class="settings-title">Email Template Settings</div>
+
+    <div class="settings-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Template Name</mat-label>
+        <input matInput formControlName="templateName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Subject Line</mat-label>
+        <input matInput formControlName="subject" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Description</mat-label>
+        <input matInput formControlName="description" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>From Name</mat-label>
+        <input matInput formControlName="fromName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>From Email</mat-label>
+        <input matInput formControlName="fromEmail" />
+      </mat-form-field>
+
+      <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
+    </div>
+
+    <div class="asset-sections">
+      <div class="asset-section">
+        <div class="asset-section-header">
+          <div class="asset-section-title">Header Image</div>
+
+          <mat-progress-spinner
+            *ngIf="assetsLoading"
+            class="asset-spinner"
+            mode="indeterminate"
+            diameter="18"
+          ></mat-progress-spinner>
+
+          <button
+            mat-stroked-button
+            class="btn-ghost"
+            type="button"
+            (click)="headerUploadInput.click()"
+            [disabled]="uploadingHeader"
+          >
+            <mat-icon>upload</mat-icon>
+            Upload
+          </button>
+
+          <input
+            #headerUploadInput
+            type="file"
+            accept="image/*"
+            (change)="onHeaderUploadSelected($event)"
+            style="display: none"
+          />
+        </div>
+
+        <div class="asset-gallery" #headerGallery>
+          <button
+            class="asset-tile"
+            type="button"
+            [class.selected]="!form.get('headerImageUrl')?.value"
+            (click)="onHeaderAssetSelected('')"
+          >
+            <div class="asset-none">None</div>
+          </button>
+
+          <button
+            class="asset-tile"
+            type="button"
+            *ngFor="let a of headerAssets; trackBy: trackByAssetUrl"
+            [class.selected]="stripUrlQuery(form.get('headerImageUrl')?.value || '') === stripUrlQuery(a.url)"
+            (click)="onHeaderAssetSelected(a.url)"
+            [attr.data-asset-url]="a.url"
+          >
+            <button
+              class="asset-delete"
+              type="button"
+              mat-icon-button
+              (click)="$event.stopPropagation(); deleteAsset(a, 'header')"
+              [disabled]="savingTemplate || uploadingHeader"
+              aria-label="Delete asset"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+            <img [src]="a.url" [alt]="a.name" loading="lazy" />
+            <div class="asset-name">{{ a.name }}</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="asset-section">
+        <div class="asset-section-header">
+          <div class="asset-section-title">Footer Image</div>
+
+          <mat-progress-spinner
+            *ngIf="assetsLoading"
+            class="asset-spinner"
+            mode="indeterminate"
+            diameter="18"
+          ></mat-progress-spinner>
+
+          <button
+            mat-stroked-button
+            class="btn-ghost"
+            type="button"
+            (click)="footerUploadInput.click()"
+            [disabled]="uploadingFooter"
+          >
+            <mat-icon>upload</mat-icon>
+            Upload
+          </button>
+
+          <input
+            #footerUploadInput
+            type="file"
+            accept="image/*"
+            (change)="onFooterUploadSelected($event)"
+            style="display: none"
+          />
+        </div>
+
+        <div class="asset-gallery" #footerGallery>
+          <button
+            class="asset-tile"
+            type="button"
+            [class.selected]="!form.get('footerImageUrl')?.value"
+            (click)="onFooterAssetSelected('')"
+          >
+            <div class="asset-none">None</div>
+          </button>
+
+          <button
+            class="asset-tile"
+            type="button"
+            *ngFor="let a of footerAssets; trackBy: trackByAssetUrl"
+            [class.selected]="stripUrlQuery(form.get('footerImageUrl')?.value || '') === stripUrlQuery(a.url)"
+            (click)="onFooterAssetSelected(a.url)"
+            [attr.data-asset-url]="a.url"
+          >
+            <button
+              class="asset-delete"
+              type="button"
+              mat-icon-button
+              (click)="$event.stopPropagation(); deleteAsset(a, 'footer')"
+              [disabled]="savingTemplate || uploadingFooter"
+              aria-label="Delete asset"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+            <img [src]="a.url" [alt]="a.name" loading="lazy" />
+            <div class="asset-name">{{ a.name }}</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HTML EDITOR -->
+  <div class="editor-pane">
+    <div class="pane-header">
+      <div class="pane-title">HTML Editor</div>
+
+      <div class="pane-actions">
+        <button mat-icon-button (click)="formatHtml()">
+          <mat-icon>auto_fix_high</mat-icon>
+        </button>
+
+        <button mat-icon-button (click)="refreshPreview()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="vars-bar">
+      <div class="vars-label">Personalization</div>
+      <div class="vars-list">
+        <button
+          mat-stroked-button
+          class="var-btn"
+          *ngFor="let v of templateVars"
+          (click)="insertVariable(v)"
+          type="button"
+        >
+          {{ '{{' }}{{ v }}{{ '}}' }}
+        </button>
+      </div>
+    </div>
+
+    <div #editorContainer class="monaco-editor"></div>
+
+    <div class="editor-footer">
+      <span class="editor-stat">UTF-8 · HTML</span>
+      <span class="editor-stat">{{ editorLineCount }} lines</span>
+    </div>
+  </div>
+
+  <!-- PREVIEW DRAWER -->
+  <div class="preview-drawer" [class.open]="previewOpen">
+    <div class="preview-header">
+      <span>Email Preview</span>
+
+      <button mat-icon-button (click)="previewOpen = false">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="preview-body">
+      <div class="preview-card">
+        <iframe
+          class="preview-iframe"
+          [src]="previewUrl"
+          (load)="onPreviewIframeLoad($event)"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+</div>

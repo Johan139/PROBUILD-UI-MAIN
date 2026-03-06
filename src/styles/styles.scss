@@ -67,7 +67,10 @@
   --action-disabled-bg: var(--color-border);
   --action-disabled-text: var(--color-text-muted);
 }
-
+iframe[id^="gsi_"] {
+  margin: 0 !important;
+  display: block !important;
+}
 html {
   font-size: 100%;
   font-family: var(--font-sans);

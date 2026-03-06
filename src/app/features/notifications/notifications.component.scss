@@ -283,7 +283,65 @@
     font-weight: var(--fw-extrabold);
   }
 }
+/* =========================================================
+   NOTIFICATION PREFERENCES
+========================================================= */
 
+.preferences {
+  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+
+    mat-icon {
+      font-size: 20px;
+      color: var(--color-text-muted);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: var(--fw-semibold);
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+.pref-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  border: 1px solid transparent;
+  font-size: var(--fs-sm);
+}
+
+.status {
+  font-weight: var(--fw-semibold);
+
+  &.on {
+    color: #00e676; // nice green like your screenshot
+  }
+
+  &.off {
+    color: var(--color-text-muted);
+  }
+}
 /* =========================================================
    RESPONSIVE
 ========================================================= */
