@@ -9,13 +9,20 @@ import { JobDataService } from '../jobs/services/job-data.service';
 import { UserService } from '../../services/user.service';
 import { Notification } from '../../models/notification';
 import { Router } from '@angular/router';
+import {
+  NotificationChannel,
+  NotificationType,
+} from './models/notification.enums';
+import { NotificationPreferencesService } from './services/notification-preferences.service';
+import { NotificationPreference } from './models/notification-preference.model';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 type NotificationTab = 'ALL' | 'UNREAD';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatSlideToggleModule],
   templateUrl: './notifications.component.html',
   styleUrls: ['./notifications.component.scss'],
   providers: [DatePipe],
@@ -29,22 +36,38 @@ export class NotificationsComponent implements OnInit {
   totalPages = 1;
   totalNotifications = 0;
 
+  preferenceRows = [
+    { label: 'New bids received', type: NotificationType.NewBid },
+    { label: 'Quote accepted/declined', type: NotificationType.QuoteStatus },
+    { label: 'Payment received', type: NotificationType.PaymentReceived },
+    { label: 'Invoice overdue', type: NotificationType.InvoiceOverdue },
+    { label: 'Weather alerts', type: NotificationType.WeatherAlert },
+    { label: 'Task updates', type: NotificationType.TaskUpdate },
+    { label: 'Job matches', type: NotificationType.JobMatch },
+    { label: 'Team changes', type: NotificationType.TeamChange },
+  ];
+
+  preferences: NotificationPreference[] = [];
+  NotificationType = NotificationType;
+  NotificationChannel = NotificationChannel;
   /* ================= DATA ================= */
   paginatedNotifications: Notification[] = [];
 
   /* ================= TABS ================= */
   activeTab: NotificationTab = 'ALL';
-
+  updating = false;
   constructor(
     private notificationsService: NotificationsService,
     public authService: AuthService,
     private jobDataService: JobDataService,
     private userService: UserService,
     private router: Router,
+    private preferencesService: NotificationPreferencesService,
   ) {}
 
   ngOnInit(): void {
     this.loadNotifications();
+    this.loadPreferences();
   }
 
   /* ================= LOAD (SAME AS OLD VERSION) ================= */
@@ -151,7 +174,51 @@ export class NotificationsComponent implements OnInit {
       });
     });
   }
+  onToggle(
+    type: NotificationType,
+    channel: NotificationChannel,
+    value: boolean,
+  ) {
+    const pref = this.preferences.find(
+      (p) => p.notificationType === type && p.channel === channel,
+    );
 
+    const previousValue = pref?.isEnabled ?? true;
+
+    if (pref) {
+      pref.isEnabled = value;
+    }
+
+    this.preferencesService
+      .updatePreference({
+        notificationType: type,
+        channel: channel,
+        isEnabled: value,
+      })
+      .subscribe({
+        error: () => {
+          if (pref) {
+            pref.isEnabled = previousValue;
+          }
+        },
+      });
+  }
+  isPreferenceEnabled(
+    type: NotificationType,
+    channel: NotificationChannel,
+  ): boolean {
+    const pref = this.preferences.find(
+      (p) => p.notificationType === type && p.channel === channel,
+    );
+
+    return pref?.isEnabled ?? true; // default true if missing
+  }
+
+  loadPreferences(): void {
+    this.preferencesService.getPreferences().subscribe((prefs) => {
+      this.preferences = prefs;
+    });
+  }
   /* ================= HELPERS ================= */
   trackByNotif = (_: number, n: Notification) =>
     n.id ?? (n as any).timestamp ?? _;

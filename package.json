@@ -58,6 +58,7 @@
     "libphonenumber-js": "^1.12.37",
     "lucide-angular": "^0.552.0",
     "marked": "^15.0.12",
+    "monaco-editor": "^0.55.1",
     "ng2-pdfjs-viewer": "^25.0.9",
     "ngx-infinite-scroll": "^19.0.0",
     "ngx-markdown": "^19.1.1",

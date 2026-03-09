@@ -54,6 +54,7 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     '0caf7e35-45df-4d2f-8b1e-a661e50bd43c',
     '4929f316-4a97-4c9b-a671-8962532b6ab5',
   ]);
+
   hasAccess = false;
   blueprints: BlueprintDocument[] = [];
   isPoppedOut = false;
@@ -64,13 +65,24 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
   apolloApiKey = '';
   apolloCompanyName = '';
   apolloDomain = '';
-  apolloTrade = 'Electrical';
+  apolloTrade = 'Plumbing';
   apolloCity = '';
   apolloState = '';
   apolloLimit = 10;
   apolloPage = 1;
-  apolloPagesToScan = 5;
+  apolloPagesToScan = 1;
   apolloApplyRelevanceFilter = true;
+
+  apolloPostalCode = '78628';
+  apolloCountry = 'United States';
+  apolloRadiusMiles = 100;
+
+  // How many top results to enrich (to get location, etc.)
+  apolloEnrichTopN = 5;
+
+  backendTestLoading = false;
+  backendTestResponse = '';
+  backendTestError = '';
 
   apolloSearchLoading = false;
   apolloEnrichLoading = false;
@@ -112,9 +124,7 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     const userId = this.resolveCurrentUserId();
     this.hasAccess = this.isAllowedUser(userId);
 
-    if (!this.hasAccess) {
-      return;
-    }
+    if (!this.hasAccess) return;
 
     this.http
       .get('/assets/sample-data/fr1.md', { responseType: 'text' })
@@ -169,30 +179,52 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     ];
 
     this.popoutSubscription = this.pdfViewerState.isPoppedOut$.subscribe(
-      (isPoppedOut) => {
-        this.isPoppedOut = isPoppedOut;
-      },
+      (isPoppedOut) => (this.isPoppedOut = isPoppedOut),
     );
 
     this.visibilitySubscription = this.pdfViewerState.visibility$.subscribe(
-      (isVisible) => {
-        this.isViewerVisible = isVisible;
-      },
+      (isVisible) => (this.isViewerVisible = isVisible),
     );
   }
 
   ngOnDestroy(): void {
-    if (this.popoutSubscription) {
-      this.popoutSubscription.unsubscribe();
-    }
-    if (this.visibilitySubscription) {
-      this.visibilitySubscription.unsubscribe();
+    this.popoutSubscription?.unsubscribe();
+    this.visibilitySubscription?.unsubscribe();
+  }
+
+  async runBackendSubcontractorDiscover(): Promise<void> {
+    this.backendTestLoading = true;
+    this.backendTestResponse = '';
+    this.backendTestError = '';
+
+    const request = {
+      tradeName: this.apolloTrade || 'Electrical',
+      city: this.apolloCity || undefined,
+      state: this.apolloState || undefined,
+      radiusMiles: 50,
+      limit: this.apolloLimit || 10,
+      searchText: this.apolloCompanyName || undefined,
+    };
+
+    try {
+      const result = await firstValueFrom(
+        this.http.post(
+          'http://localhost:5000/api/ExternalData/subcontractors/discover',
+          request,
+        ),
+      );
+      this.backendTestResponse = JSON.stringify(result, null, 2);
+    } catch (err) {
+      this.backendTestError = this.getErrorMessage(err);
+    } finally {
+      this.backendTestLoading = false;
     }
   }
 
   async runApolloMixedCompanySearch(): Promise<void> {
     this.apolloSearchLoading = true;
     this.apolloSearchError = '';
+    this.apolloSearchResponse = '';
 
     const searchKeywords = [
       this.apolloCompanyName,
@@ -207,26 +239,61 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
       .join(' ')
       .trim();
 
-    const payload = {
-      q_keywords: searchKeywords || this.apolloTrade || 'subcontractor',
+    const payload: any = {
+      q_organization_keyword_tags: [
+        this.apolloTrade,
+        `${this.apolloTrade} contractor`,
+        `${this.apolloTrade} subcontractor`,
+      ],
       page: Math.max(1, Number(this.apolloPage || 1)),
       per_page: Math.max(1, Math.min(100, Number(this.apolloLimit || 10))),
+      fields: [
+        'id',
+        'name',
+        'city',
+        'state',
+        'country',
+        'country_code',
+        'zip',
+        'street_address',
+        'headquarters_city',
+        'headquarters_state',
+        'headquarters_country',
+        'phone',
+        'primary_phone',
+        'primary_domain',
+        'website_url',
+      ],
     };
-
-    const pagesToScan = Math.max(1, Math.min(20, Number(this.apolloPagesToScan || 1)));
+    if (this.apolloPostalCode.trim()) {
+      payload.organization_locations = [
+        {
+          country: this.apolloCountry.trim(),
+          postal_code: this.apolloPostalCode.trim(),
+          distance: this.apolloRadiusMiles,
+        },
+      ];
+    }
+    const pagesToScan = Math.max(
+      1,
+      Math.min(20, Number(this.apolloPagesToScan || 1)),
+    );
 
     try {
       const allOrgs: any[] = [];
-      const rawCountsByPage: Array<{ page: number; rawOrganizations: number }> = [];
+      const rawCountsByPage: Array<{ page: number; rawOrganizations: number }> =
+        [];
       let finalParams = '';
 
+      // 1) SEARCH ONLY (no enrich here)
       for (let i = 0; i < pagesToScan; i++) {
         const currentPage = payload.page + i;
-        const params = this.buildMixedCompanyParams(currentPage, payload.per_page);
-        const pagePayload = {
-          ...payload,
-          page: currentPage,
-        };
+        const params = this.buildMixedCompanyParams(
+          currentPage,
+          payload.per_page,
+        );
+
+        const pagePayload = { ...payload, page: currentPage };
         finalParams = params.toString();
 
         const response = await firstValueFrom(
@@ -237,24 +304,65 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
         );
 
         const organizations = this.extractOrganizations(response);
-        rawCountsByPage.push({ page: currentPage, rawOrganizations: organizations.length });
+        rawCountsByPage.push({
+          page: currentPage,
+          rawOrganizations: organizations.length,
+        });
+
         allOrgs.push(...organizations);
       }
 
-      const deduped = allOrgs;//this.dedupeOrganizations(allOrgs);
+      const deduped = allOrgs; // this.dedupeOrganizations(allOrgs);
+
+      // 2) RANK
       const ranked = deduped
         .map((org) => ({ org, score: this.getRelevanceScore(org) }))
         .sort((a, b) => b.score - a.score);
 
+      // 3) FILTER
       let filteredOrganizations = this.apolloApplyRelevanceFilter
         ? ranked.filter((row) => row.score >= 1).map((row) => row.org)
         : deduped;
 
       let filterNotice: string | null = null;
-      if (this.apolloApplyRelevanceFilter && filteredOrganizations.length === 0 && deduped.length > 0) {
+      if (
+        this.apolloApplyRelevanceFilter &&
+        filteredOrganizations.length === 0 &&
+        deduped.length > 0
+      ) {
         filteredOrganizations = deduped;
-        filterNotice = 'No records met local relevance threshold. Showing raw Apollo results instead.';
+        filterNotice =
+          'No records met local relevance threshold. Showing raw Apollo results instead.';
       }
+
+      // 4) ENRICH TOP N ONLY (to get HQ/location etc.)
+      const topN = Math.max(
+        0,
+        Math.min(20, Number(this.apolloEnrichTopN || 0)),
+      );
+      const toEnrich = topN > 0 ? filteredOrganizations.slice(0, topN) : [];
+
+      // mark enrich loading separately (optional)
+      this.apolloEnrichLoading = toEnrich.length > 0;
+      this.apolloEnrichError = '';
+
+      const enrichedTop = await this.enrichOrganizations(toEnrich);
+
+      // Merge back: replace the first N items with enriched versions
+      const byKey = new Map<string, any>();
+      for (const e of enrichedTop) {
+        const key = String(e?.id || e?.primary_domain || e?.name || '')
+          .trim()
+          .toLowerCase();
+        if (key) byKey.set(key, e);
+      }
+
+      const finalOrganizations = filteredOrganizations.map((org) => {
+        const key = String(org?.id || org?.primary_domain || org?.name || '')
+          .trim()
+          .toLowerCase();
+        return (key && byKey.get(key)) || org;
+      });
 
       this.apolloSearchResponse = JSON.stringify(
         {
@@ -264,20 +372,22 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
           pageBreakdown: rawCountsByPage,
           appliedRelevanceFilter: this.apolloApplyRelevanceFilter,
           filterNotice,
+          enrichTopN: topN,
           counts: {
             rawOrganizations: allOrgs.length,
             dedupedOrganizations: deduped.length,
-            returnedOrganizations: filteredOrganizations.length,
+            returnedOrganizations: finalOrganizations.length,
           },
-          organizations: filteredOrganizations,
+          organizations: finalOrganizations,
         },
         null,
         2,
       );
-      this.apolloSearchLoading = false;
     } catch (err) {
       this.apolloSearchError = this.getErrorMessage(err);
+    } finally {
       this.apolloSearchLoading = false;
+      this.apolloEnrichLoading = false;
     }
   }
 
@@ -312,6 +422,52 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     this.apolloEnrichError = '';
   }
 
+  private async enrichOrganizations(orgs: any[]): Promise<any[]> {
+    if (!orgs || orgs.length === 0) return [];
+
+    // Dedup by domain/id to avoid wasting enrich calls
+    const unique = new Map<string, any>();
+    for (const org of orgs) {
+      const key = String(org?.primary_domain || org?.id || org?.name || '')
+        .trim()
+        .toLowerCase();
+      if (!key) continue;
+      if (!unique.has(key)) unique.set(key, org);
+    }
+
+    const list = [...unique.values()];
+
+    // Parallel enrich (much faster) with per-item error handling
+    const enriched = await Promise.all(
+      list.map(async (org) => {
+        const domain = String(org?.primary_domain || '').trim();
+        if (!domain) return org;
+
+        try {
+          const enrich: any = await firstValueFrom(
+            this.http.get(
+              `/apollo/api/v1/organizations/enrich?domain=${encodeURIComponent(domain)}`,
+              { headers: this.buildApolloHeaders() },
+            ),
+          );
+
+          // Apollo enrich often returns { organization: {...} } or the org directly
+          const enrichedOrg =
+            enrich?.organization && typeof enrich.organization === 'object'
+              ? enrich.organization
+              : enrich;
+
+          return { ...org, ...enrichedOrg };
+        } catch (e) {
+          // swallow per-org errors so one bad enrich doesn't kill the whole search
+          return org;
+        }
+      }),
+    );
+
+    return enriched;
+  }
+
   private buildApolloHeaders(): HttpHeaders {
     const key = this.apolloApiKey.trim();
     return new HttpHeaders({
@@ -331,17 +487,14 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
         return 'Unknown Apollo error.';
       }
     }
-
     return err?.message || 'Request failed.';
   }
 
   private extractOrganizations(response: any): any[] {
     if (!response || typeof response !== 'object') return [];
-
     if (Array.isArray(response.organizations)) return response.organizations;
     if (Array.isArray(response.companies)) return response.companies;
     if (Array.isArray(response.accounts)) return response.accounts;
-
     return [];
   }
 
@@ -355,37 +508,35 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     const cityHit = !!city && blob.includes(city);
     const stateHit = stateTerms.some((term) => blob.includes(term));
     const constructionContextHit =
-      blob.includes('subcontractor')
-      || blob.includes('contractor')
-      || blob.includes('construction')
-      || blob.includes('mep');
+      blob.includes('subcontractor') ||
+      blob.includes('contractor') ||
+      blob.includes('construction') ||
+      blob.includes('mep');
 
     let score = 0;
     if (tradeHit) score += 2;
     if (cityHit) score += 1;
     if (stateHit) score += 1;
     if (constructionContextHit) score += 1;
-
     return score;
   }
 
   private buildMixedCompanyParams(page: number, perPage: number): HttpParams {
-    let params = new HttpParams().set('page', String(page)).set('per_page', String(perPage));
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('per_page', String(perPage));
 
-    if (this.apolloTrade.trim()) {
+    // 🔥 RADIUS SEARCH
+    if (this.apolloPostalCode.trim()) {
       params = params
-        .append('q_organization_keyword_tags[]', this.apolloTrade.trim())
-        .append('q_organization_keyword_tags[]', `${this.apolloTrade.trim()} contractor`)
-        .append('q_organization_keyword_tags[]', `${this.apolloTrade.trim()} subcontractor`)
-        .append('q_organization_keyword_tags[]', 'construction');
-    }
-
-    if (this.apolloCity.trim()) {
-      params = params.append('organization_locations[]', this.apolloCity.trim());
-    }
-
-    if (this.apolloState.trim()) {
-      params = params.append('organization_locations[]', this.apolloState.trim());
+        .append(
+          'q_organization_locations[][postal_code]',
+          this.apolloPostalCode.trim(),
+        )
+        .append(
+          'q_organization_locations[][country]',
+          this.apolloCountry.trim(),
+        );
     }
 
     return params;
@@ -393,34 +544,33 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
 
   private dedupeOrganizations(list: any[]): any[] {
     const map = new Map<string, any>();
-
     for (const org of list) {
-      const key = String(org?.id || org?.primary_domain || org?.name || '').trim().toLowerCase();
+      const key = String(org?.id || org?.primary_domain || org?.name || '')
+        .trim()
+        .toLowerCase();
       if (!key) continue;
-      if (!map.has(key)) {
-        map.set(key, org);
-      }
+      if (!map.has(key)) map.set(key, org);
     }
-
     return [...map.values()];
   }
 
   private flattenStringValues(input: any): string {
     if (input == null) return '';
-    if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+    if (
+      typeof input === 'string' ||
+      typeof input === 'number' ||
+      typeof input === 'boolean'
+    ) {
       return String(input);
     }
-
     if (Array.isArray(input)) {
       return input.map((x) => this.flattenStringValues(x)).join(' ');
     }
-
     if (typeof input === 'object') {
       return Object.values(input)
         .map((x) => this.flattenStringValues(x))
         .join(' ');
     }
-
     return '';
   }
 
@@ -429,9 +579,23 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     if (!raw) return [];
 
     const tradeSynonyms: Record<string, string[]> = {
-      electrical: ['electrical', 'electric', 'electrician', 'low voltage', 'wiring', 'mep'],
+      electrical: [
+        'electrical',
+        'electric',
+        'electrician',
+        'low voltage',
+        'wiring',
+        'mep',
+      ],
       plumbing: ['plumbing', 'plumber', 'pipefitting', 'piping', 'mep'],
-      hvac: ['hvac', 'mechanical', 'heating', 'ventilation', 'air conditioning', 'mep'],
+      hvac: [
+        'hvac',
+        'mechanical',
+        'heating',
+        'ventilation',
+        'air conditioning',
+        'mep',
+      ],
       roofing: ['roofing', 'roofer', 'roof'],
       drywall: ['drywall', 'gypsum', 'sheetrock'],
       concrete: ['concrete', 'foundations', 'formwork'],
@@ -439,11 +603,8 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
 
     const terms = new Set<string>([raw, ...raw.split(/\s+/)]);
     for (const [key, values] of Object.entries(tradeSynonyms)) {
-      if (raw.includes(key)) {
-        values.forEach((v) => terms.add(v));
-      }
+      if (raw.includes(key)) values.forEach((v) => terms.add(v));
     }
-
     return [...terms].filter((x) => x.length > 1);
   }
 
@@ -469,18 +630,23 @@ export class BlueprintTestPageComponent implements OnInit, OnDestroy {
     };
 
     const normalized = raw.replace(/\./g, '').trim();
-    const inverse = Object.entries(stateMap).find(([, abbr]) => abbr === normalized)?.[0];
+    const inverse = Object.entries(stateMap).find(
+      ([, abbr]) => abbr === normalized,
+    )?.[0];
     const abbr = stateMap[normalized];
 
     const terms = new Set<string>([normalized]);
     if (abbr) terms.add(abbr);
     if (inverse) terms.add(inverse);
-
     return [...terms];
   }
 
   private resolveCurrentUserId(): string {
-    return String(this.authService.currentUserSubject.value?.id || localStorage.getItem('userId') || '')
+    return String(
+      this.authService.currentUserSubject.value?.id ||
+        localStorage.getItem('userId') ||
+        '',
+    )
       .trim()
       .toLowerCase();
   }

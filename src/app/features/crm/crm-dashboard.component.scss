@@ -1,0 +1,35 @@
+.crm-wrapper {
+  padding: 24px;
+}
+
+.crm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.crm-card {
+  cursor: pointer;
+  padding: 24px;
+  border-radius: 20px;
+  transition: transform 0.2s ease;
+
+  mat-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    margin: 8px 0;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.crm-card.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

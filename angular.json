@@ -25,6 +25,11 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
+            "loader": {
+    ".ttf": "file",
+    ".woff": "file",
+    ".woff2": "file"
+  },
             "webWorkerTsConfig": "tsconfig.worker.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -33,6 +38,11 @@
               "src/app/assets/custom-svg",
               "src/app/assets/job-card",
               "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor/min/vs",
+                "output": "/assets/monaco/vs"
+              },
               {
                 "glob": "**/*",
                 "input": "public",

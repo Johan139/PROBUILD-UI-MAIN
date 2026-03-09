@@ -33,9 +33,11 @@ import { MatDividerModule } from '@angular/material/divider';
 })
 export class ForgotPasswordComponent {
   forgotPasswordForm: FormGroup;
-  showAlert: boolean = false;
+  showAlert = false;
   alertMessage: string = '';
-  isLoading: boolean = false;
+  isLoading = false;
+  successMessage: string | null = null;
+  errorMessage: string | null = null;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -46,31 +48,38 @@ export class ForgotPasswordComponent {
       email: ['', [Validators.required, Validators.email]],
     });
   }
-
-  onSubmit() {
-    if (this.forgotPasswordForm.valid) {
-      this.isLoading = true;
-      const email = this.forgotPasswordForm.value.email;
-      this.forgotPasswordService.requestPasswordReset(email).subscribe({
-        next: () => {
-          this.isLoading = false;
-          this.showAlert = true;
-          this.alertMessage =
-            'A password reset link has been sent to your email. Please check your inbox and spam folder.';
-        },
-        error: (error) => {
-          this.isLoading = false;
-          this.showAlert = true;
-          this.alertMessage = error.message;
-        },
-      });
-    } else {
-      this.showAlert = true;
-      this.alertMessage = 'Please enter a valid email address.';
-    }
-  }
-
   closeAlert(): void {
     this.showAlert = false;
+    this.router.navigate(['/login']);
+  }
+  onSubmit() {
+    if (this.forgotPasswordForm.invalid) {
+      this.alertMessage = 'Please enter a valid email address.';
+      this.showAlert = true;
+      return;
+    }
+
+    this.isLoading = true;
+    const email = this.forgotPasswordForm.value.email;
+
+    this.forgotPasswordService.requestPasswordReset(email).subscribe({
+      next: () => {
+        this.isLoading = false;
+
+        // Always show the same message (security safe)
+        this.alertMessage =
+          'If an account exists with this email address, you will receive a password reset link.';
+        this.showAlert = true;
+
+        // Optional: clear form
+        this.forgotPasswordForm.reset();
+      },
+      error: () => {
+        this.isLoading = false;
+
+        this.alertMessage = 'Something went wrong. Please try again later.';
+        this.showAlert = true;
+      },
+    });
   }
 }

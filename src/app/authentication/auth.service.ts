@@ -106,13 +106,19 @@ export class AuthService {
   }
 
   public hasPermission(permissionKey: string): Observable<boolean> {
-    const userRole = this.getUserRole();
-    if (userRole === 'GENERAL_CONTRACTOR') {
+    if (this.isAdmin()) {
       return new BehaviorSubject(true).asObservable();
     }
     return this.userPermissions$.pipe(
       map((permissions) => permissions.includes(permissionKey)),
     );
+  }
+
+  isAdmin(): boolean {
+    const user = this.currentUserSubject.getValue();
+    if (user && typeof user.isAdmin === 'boolean') return user.isAdmin;
+    if (!isPlatformBrowser(this.platformId)) return false;
+    return localStorage.getItem('isAdmin') === 'true';
   }
 
   async initialize(): Promise<void> {
@@ -214,6 +220,8 @@ export class AuthService {
 
       const payload = this.parseJwt<any>(token) ?? {};
       const companyName = payload.CompanyName || '';
+      const isAdmin =
+        response.isAdmin ?? payload.IsAdmin ?? payload.isAdmin ?? false;
 
       const user = {
         id: userId,
@@ -222,6 +230,7 @@ export class AuthService {
         userType,
         companyName,
         email,
+        isAdmin: !!isAdmin,
       };
 
       localStorage.setItem('userId', userId);
@@ -230,6 +239,7 @@ export class AuthService {
       localStorage.setItem('userType', userType);
       localStorage.setItem('companyName', companyName);
       localStorage.setItem('email', email);
+      localStorage.setItem('isAdmin', String(!!isAdmin));
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
       this.startInactivityTimer();
@@ -306,6 +316,7 @@ export class AuthService {
       localStorage.removeItem('firstName');
       localStorage.removeItem('lastName');
       localStorage.removeItem('userId');
+      localStorage.removeItem('isAdmin');
       localStorage.removeItem('loggedIn');
       localStorage.removeItem('currentUser');
       localStorage.removeItem('fw_selectedAddressId');
@@ -412,6 +423,7 @@ export class AuthService {
         userType: localStorage.getItem('userType'),
         firstName: localStorage.getItem('firstName'),
         lastName: localStorage.getItem('lastName'),
+        isAdmin: localStorage.getItem('isAdmin') === 'true',
       });
       return;
     }
@@ -440,6 +452,11 @@ export class AuthService {
             email: teamMember.email,
             userType: teamMember.role,
             isTeamMember: true,
+            isAdmin:
+              teamMember.isAdmin ??
+              payload.IsAdmin ??
+              payload.isAdmin ??
+              localStorage.getItem('isAdmin') === 'true',
           };
           if (user.inviterId) {
             this.currentUserSubject.next(user);
@@ -447,6 +464,9 @@ export class AuthService {
             console.warn(
               'Team member data is incomplete. Waiting for inviterId.',
             );
+          }
+          if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('isAdmin', String(!!user.isAdmin));
           }
           this.loadUserPermissions(teamMemberId);
         },
@@ -467,8 +487,15 @@ export class AuthService {
           payload.email ||
           payload.unique_name ||
           localStorage.getItem('email'),
+        isAdmin:
+          payload.IsAdmin ??
+          payload.isAdmin ??
+          localStorage.getItem('isAdmin') === 'true',
       };
       this.currentUserSubject.next(user);
+      if (isPlatformBrowser(this.platformId)) {
+        localStorage.setItem('isAdmin', String(!!user.isAdmin));
+      }
     }
   }
 
@@ -482,17 +509,21 @@ export class AuthService {
 
     return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
       tap((memberDetails) => {
+        const isAdmin =
+          memberDetails.isAdmin ?? payload?.IsAdmin ?? payload?.isAdmin ?? false;
         const user = {
           id: memberDetails.id,
           inviterId: memberDetails.inviterId,
           firstName: memberDetails.firstName,
           lastName: memberDetails.lastName,
           role: memberDetails.role,
+          isAdmin: !!isAdmin,
         };
         localStorage.setItem('userId', user.id);
         localStorage.setItem('firstName', user.firstName);
         localStorage.setItem('lastName', user.lastName);
         localStorage.setItem('userType', user.role);
+        localStorage.setItem('isAdmin', String(!!isAdmin));
         localStorage.setItem('currentUser', JSON.stringify(user));
         this.currentUserSubject.next(user);
       }),
