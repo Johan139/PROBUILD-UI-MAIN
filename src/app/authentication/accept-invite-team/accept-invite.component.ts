@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { TeamManagementService } from '../../services/team-management.service';
+import { getAuthUiErrorMessage } from '../auth.service';
 
 @Component({
   selector: 'app-accept-invite',
@@ -66,7 +67,10 @@ export class AcceptInviteComponent implements OnInit {
         catchError((err) => {
           this.isLoading = false;
           this.showError(
-            'Failed to load invitation. It may be invalid or expired.',
+            getAuthUiErrorMessage(
+              err,
+              'Failed to load invitation. It may be invalid or expired.',
+            ),
           );
           return of(null);
         }),
@@ -97,7 +101,10 @@ export class AcceptInviteComponent implements OnInit {
         catchError((err) => {
           this.isLoading = false;
           this.showError(
-            'Unable to accept invitation. Please contact support.',
+            getAuthUiErrorMessage(
+              err,
+              'Unable to accept invitation. Please contact support.',
+            ),
           );
           return of(null);
         }),

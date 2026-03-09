@@ -13,6 +13,8 @@ export interface DashboardWidget {
 }
 
 const STORAGE_KEY = 'dashboardWidgets';
+const CUSTOM_STORAGE_KEY = 'dashboardWidgets.custom';
+const SELECTED_LAYOUT_KEY = 'dashboardWidgets.layout';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardWidgetsService {
@@ -22,6 +24,13 @@ export class DashboardWidgetsService {
       title: 'Weather',
       icon: 'cloud',
       size: 'small', // 4 columns (1/3 width)
+      enabled: true,
+    },
+    {
+      id: 'executiveSnapshot',
+      title: 'Executive Snapshot',
+      icon: 'insights',
+      size: 'medium',
       enabled: true,
     },
     {
@@ -42,6 +51,57 @@ export class DashboardWidgetsService {
         this.persist();
       }
     }
+  }
+
+  getSelectedLayout(): 'default' | 'compact' | 'focus' | 'monitoring' | 'custom' {
+    const raw = localStorage.getItem(SELECTED_LAYOUT_KEY);
+    const id = String(raw ?? 'default');
+    if (id === 'compact' || id === 'focus' || id === 'monitoring' || id === 'custom') return id;
+    return 'default';
+  }
+
+  setSelectedLayout(id: 'default' | 'compact' | 'focus' | 'monitoring' | 'custom'): void {
+    localStorage.setItem(SELECTED_LAYOUT_KEY, id);
+  }
+
+  saveCustomLayout(): void {
+    localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(this.widgets));
+  }
+
+  loadCustomLayout(): DashboardWidget[] | null {
+    const saved = localStorage.getItem(CUSTOM_STORAGE_KEY);
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved) as DashboardWidget[];
+    } catch {
+      return null;
+    }
+  }
+
+  hasCustomLayout(): boolean {
+    return !!this.loadCustomLayout();
+  }
+
+  applyLayout(id: 'default' | 'compact' | 'focus' | 'monitoring' | 'custom'): void {
+    if (id === 'default') {
+      const custom = this.loadCustomLayout();
+      if (custom?.length) {
+        this.setWidgets(custom);
+        return;
+      }
+      this.applyPresetInternal('default');
+      return;
+    }
+
+    if (id === 'custom') {
+      const custom = this.loadCustomLayout();
+      if (custom?.length) {
+        this.setWidgets(custom);
+      }
+      return;
+    }
+
+    this.applyPresetInternal(id);
   }
 
   /** Full widget registry (used by config bar + dashboard) */
@@ -87,22 +147,31 @@ export class DashboardWidgetsService {
   private persist(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.widgets));
   }
+
   applyPreset(presetId: 'default' | 'compact' | 'focus' | 'monitoring'): void {
+    this.applyLayout(presetId);
+  }
+
+  private applyPresetInternal(presetId: 'default' | 'compact' | 'focus' | 'monitoring'): void {
     const presets = {
       default: [
         { id: 'weather', size: 'small' as WidgetSize },
+        { id: 'executiveSnapshot', size: 'medium' as WidgetSize },
         { id: 'actionPoints', size: 'medium' as WidgetSize },
       ],
       compact: [
         { id: 'weather', size: 'small' as WidgetSize },
+        { id: 'executiveSnapshot', size: 'small' as WidgetSize },
         { id: 'actionPoints', size: 'small' as WidgetSize },
       ],
       focus: [
+        { id: 'executiveSnapshot', size: 'large' as WidgetSize },
         { id: 'actionPoints', size: 'large' as WidgetSize },
         { id: 'weather', size: 'small' as WidgetSize },
       ],
       monitoring: [
         { id: 'weather', size: 'large' as WidgetSize },
+        { id: 'executiveSnapshot', size: 'large' as WidgetSize },
         { id: 'actionPoints', size: 'large' as WidgetSize },
       ],
     };

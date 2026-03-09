@@ -60,6 +60,7 @@ import {
 import { RegistrationService } from '../../services/registration.service';
 import { ElementRef, AfterViewInit, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { getAuthUiErrorMessage } from '../auth.service';
 
 const BASE_URL = environment.BACKEND_URL;
 declare const google: any;
@@ -330,8 +331,11 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
             }
             this.registrationForm.get('userType')?.disable();
           },
-          error: () => {
-            this.alertMessage = 'Invalid or expired invitation token.';
+          error: (err) => {
+            this.alertMessage = getAuthUiErrorMessage(
+              err,
+              'Invalid or expired invitation token.',
+            );
             this.showAlert = true;
           },
         });
@@ -690,9 +694,12 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
           this.showAlert = true;
           this.routeURL = 'login?type=member';
         },
-        error: () => {
+        error: (err) => {
           this.isLoading = false;
-          this.alertMessage = 'Failed to complete registration.';
+          this.alertMessage = getAuthUiErrorMessage(
+            err,
+            'Failed to complete registration.',
+          );
           this.showAlert = true;
         },
       });
@@ -749,18 +756,14 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
         .pipe(
           catchError((error) => {
             this.isLoading = false;
-            if (error.status === 400) {
-              this.alertMessage =
-                error.error[0]?.code === 'DuplicateUserName'
-                  ? 'You are already Registered, please proceed to Login'
-                  : 'Data is malformed. Please check all input fields.';
-            } else if (error.status === 500) {
-              this.alertMessage =
-                'Oops something went wrong, please try again later.';
-            } else {
-              this.alertMessage =
-                'An unexpected error occurred. Contact support@probuildai.com';
-            }
+            const duplicateUserName =
+              Array.isArray(error?.error) && error?.error?.[0]?.code === 'DuplicateUserName';
+            this.alertMessage = duplicateUserName
+              ? 'You are already registered. Please sign in instead.'
+              : getAuthUiErrorMessage(
+                  error,
+                  'Please check the information you entered and try again.',
+                );
             this.showAlert = true;
             return of(null);
           }),

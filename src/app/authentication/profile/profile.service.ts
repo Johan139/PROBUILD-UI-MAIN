@@ -40,12 +40,20 @@ export class ProfileService {
   ) {}
 
   initializeSignalR(): void {
+    const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
+    const hubUrl = `${baseUrl}/hubs/progressHub`;
+
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(
-        'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub',
-      )
+      .withUrl(hubUrl, {
+        accessTokenFactory: async (): Promise<string> =>
+          (await this.authService.getToken()) ?? '',
+      })
+      .withAutomaticReconnect([0, 2000, 10000, 30000])
       .configureLogging(LogLevel.Debug)
       .build();
+
+    this.hubConnection.keepAliveIntervalInMilliseconds = 15000;
+    this.hubConnection.serverTimeoutInMilliseconds = 120000;
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
@@ -76,10 +84,8 @@ export class ProfileService {
   }
 
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     });
   }
 

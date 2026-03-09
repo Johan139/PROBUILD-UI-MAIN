@@ -7,7 +7,7 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { PLATFORM_ID, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { from, Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
@@ -17,51 +17,62 @@ export const authInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const platformId = inject(PLATFORM_ID);
   const authService = inject(AuthService);
-  let token: string | null = null;
-
-  if (isPlatformBrowser(platformId)) {
-    token = localStorage.getItem('accessToken');
-  }
-
   const isApolloProxyRequest = req.url.startsWith('/apollo/');
 
   if (isApolloProxyRequest) {
     return next(req);
   }
 
-  if (token) {
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
+  // Use AuthService as the single source of truth for token retrieval/refresh.
+  // On the server we skip attaching auth headers.
+  const withAuthHeaders$ = isPlatformBrowser(platformId)
+    ? from(authService.getToken()).pipe(
+        switchMap((token) => {
+          if (!token) return next(req);
+          const authedReq = req.clone({
+            setHeaders: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          return next(authedReq);
+        }),
+      )
+    : next(req);
 
-  return next(req).pipe(
+  return withAuthHeaders$.pipe(
     catchError((error: any) => {
       const isAuthEndpoint =
         req.url.includes('/login') || req.url.includes('/refresh-token');
+      const alreadyRetried = req.headers.get('X-Auth-Retry') === '1';
 
       if (
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
-        !isAuthEndpoint
+        !isAuthEndpoint &&
+        !alreadyRetried
       ) {
         return authService.refreshToken().pipe(
           switchMap((tokenResponse: any) => {
-            if (!tokenResponse || !tokenResponse.token) {
+            const refreshedTokenRaw = tokenResponse?.token as string | undefined;
+            const refreshedToken = refreshedTokenRaw?.startsWith('Bearer ')
+              ? refreshedTokenRaw.slice(7).trim()
+              : refreshedTokenRaw;
+
+            if (!refreshedToken) {
               authService.logout();
               return throwError(
                 () => new Error('Unable to refresh access token.'),
               );
             }
 
-            req = req.clone({
+            const retryReq = req.clone({
               setHeaders: {
-                Authorization: `Bearer ${tokenResponse.token}`,
+                Authorization: `Bearer ${refreshedToken}`,
+                'X-Auth-Retry': '1',
               },
             });
-            return next(req);
+
+            return next(retryReq);
           }),
           catchError((refreshErr) => {
             authService.logout();

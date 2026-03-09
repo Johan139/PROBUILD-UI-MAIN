@@ -1,0 +1,198 @@
+<section class="card executive-snapshot-card">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="title-icon">insights</mat-icon>
+        <strong>Executive Snapshot</strong>
+      </mat-card-title>
+
+      <span class="spacer"></span>
+
+      <div class="filter-row">
+        <button class="chip" [class.active]="statusFilter === 'all'" (click)="setStatusFilter('all')">
+          All
+        </button>
+        <button class="chip" [class.active]="statusFilter === 'live'" (click)="setStatusFilter('live')">
+          Live
+        </button>
+        <button
+          class="chip"
+          [class.active]="statusFilter === 'archived'"
+          (click)="setStatusFilter('archived')"
+        >
+          Archived
+        </button>
+        <button
+          class="chip"
+          [class.active]="statusFilter === 'completed'"
+          (click)="setStatusFilter('completed')"
+        >
+          Completed
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="top-project">
+        <div class="project-nav">
+          <button
+            mat-icon-button
+            class="nav-btn"
+            (click)="prevProject()"
+            [disabled]="currentProjectIndex === 0"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+
+          <div class="project-position">
+            {{ filteredProjects.length ? (currentProjectIndex + 1) : 0 }}/{{ filteredProjects.length }}
+          </div>
+
+          <button
+            mat-icon-button
+            class="nav-btn"
+            (click)="nextProject()"
+            [disabled]="currentProjectIndex >= filteredProjects.length - 1"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+
+        <div class="project-name">{{ projectName }}</div>
+        <div class="project-meta">
+          <span class="pill live">{{ statusLabel }}</span>
+          <span class="rating">
+            <mat-icon class="star">star</mat-icon>
+            <span class="dots">•••••</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="section-title">BUDGET</div>
+      <div class="budget-row">
+        <div class="budget-bar">
+          <div class="budget-fill" [style.width.%]="budgetUsedPct"></div>
+        </div>
+        <div class="budget-values">
+          <div class="used">
+            <ng-container *ngIf="!isLoading; else usedLoading">
+              {{ spentToDate | currency: 'USD' : 'symbol' : '1.0-0' }}
+            </ng-container>
+            <ng-template #usedLoading>—</ng-template>
+          </div>
+          <div class="total">
+            <ng-container *ngIf="!isLoading && !(isCostSummaryLoading && overallBudget === 0); else totalLoading">
+              {{ overallBudget | currency: 'USD' : 'symbol' : '1.0-0' }}
+            </ng-container>
+            <ng-template #totalLoading>—</ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">QUOTE / INVOICE</div>
+      <div class="doc-summary">
+        <div class="doc-left">
+          <div class="doc-top">
+            <mat-icon class="doc-icon">{{ quoteDocTypeLabel === 'Invoice' ? 'receipt_long' : 'request_quote' }}</mat-icon>
+            <div class="doc-title">Latest {{ quoteDocTypeLabel }}</div>
+            <span class="doc-status" [class.muted]="quoteStatusLabel === '—'">{{ quoteStatusLabel }}</span>
+          </div>
+
+          <div class="doc-meta">
+            <div class="doc-meta-item">
+              <span class="k">Total</span>
+              <span class="v">{{ quoteTotal === null ? '—' : (quoteTotal | currency: 'USD' : 'symbol' : '1.0-0') }}</span>
+            </div>
+            <div class="doc-meta-item">
+              <span class="k">Due</span>
+              <span class="v">{{ quoteDueDate ? (quoteDueDate | date: 'MMM d, y') : '—' }}</span>
+            </div>
+            <div class="doc-meta-item">
+              <span class="k">Docs</span>
+              <span class="v">{{ quoteCount }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="doc-open"
+          mat-stroked-button
+          (click)="openLatestQuote()"
+          [disabled]="!latestQuoteId || isQuoteLoading"
+        >
+          <mat-icon>open_in_new</mat-icon>
+          Open
+        </button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-block">
+          <div class="kpi-title">Crews</div>
+          <div class="kpi-value neutral">{{ crews }}</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-title">Labor Hrs</div>
+          <div class="kpi-value info">{{ laborHours | number: '1.0-0' }}</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-title">Sub Days</div>
+          <div class="kpi-value success">{{ subDays }}</div>
+        </div>
+      </div>
+
+      <div class="section-title">FINANCIAL</div>
+      <div class="kpi-grid two">
+        <div class="kpi-block">
+          <div class="kpi-title">Receivables</div>
+          <div class="kpi-value info">{{ receivables | currency: 'USD' : 'symbol' : '1.0-0' }}</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-title">Payables</div>
+          <div class="kpi-value warning">{{ payables | currency: 'USD' : 'symbol' : '1.0-0' }}</div>
+        </div>
+      </div>
+
+      <div class="section-title">PROCUREMENT</div>
+      <div class="kpi-grid three">
+        <div class="kpi-block">
+          <div class="kpi-title">RFQs</div>
+          <div class="kpi-value neutral">{{ rfqs }}</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-title">Deliveries</div>
+          <div class="kpi-value info">{{ deliveries }}</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-title">Inspections</div>
+          <div class="kpi-value warning">{{ inspections }}</div>
+        </div>
+      </div>
+
+      <div class="section-title">RISKS</div>
+      <div
+        class="risk-banner"
+        [class.warning]="riskType === 'warning'"
+        [class.danger]="riskType === 'danger'"
+        [class.expandable]="hasMoreRiskItems"
+        [class.expanded]="riskExpanded"
+        (click)="toggleRiskExpanded()"
+      >
+        <mat-icon class="risk-icon">warning</mat-icon>
+        <span class="risk-text">{{ riskMessage }}</span>
+        <span class="spacer"></span>
+        <mat-icon class="risk-chevron" *ngIf="hasMoreRiskItems">
+          {{ riskExpanded ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </div>
+
+      <div class="risk-details" *ngIf="riskExpanded">
+        <div class="risk-item" *ngFor="let item of riskItems">{{ item }}</div>
+      </div>
+
+      <button class="cta" mat-flat-button (click)="viewFullProject()" [disabled]="!jobId">
+        <mat-icon>open_in_new</mat-icon>
+        View Full Project
+      </button>
+    </mat-card-content>
+  </mat-card>
+</section>

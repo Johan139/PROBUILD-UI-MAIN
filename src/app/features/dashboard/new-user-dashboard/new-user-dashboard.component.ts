@@ -56,9 +56,7 @@ import {
   DashboardWidgetsService,
 } from '../widgets/dashboard-widgets.service';
 import { WeatherWidgetComponent } from '../widgets/weather-widget/weather-widget.component';
-import { CdkDragStart, DragDropModule } from '@angular/cdk/drag-drop';
-import { CdkDragDrop, moveItemInArray, CdkDrag } from '@angular/cdk/drag-drop';
-import { ViewChildren, QueryList, AfterViewInit } from '@angular/core';
+import { ExecutiveSnapshotWidgetComponent } from '../widgets/executive-snapshot-widget/executive-snapshot-widget.component';
 
 import { ViewEncapsulation } from '@angular/core';
 const BASE_URL = environment.BACKEND_URL;
@@ -82,13 +80,13 @@ const BASE_URL = environment.BACKEND_URL;
     MatMenuModule,
     MatIconModule,
     MatTableModule,
-    DragDropModule,
     ProjectCardComponent,
     ProjectsTableComponent,
     MatTooltipModule,
     ActionPointsWidgetComponent,
     RecentProjectsWidgetComponent,
     WeatherWidgetComponent,
+    ExecutiveSnapshotWidgetComponent,
   ],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
@@ -98,7 +96,6 @@ const BASE_URL = environment.BACKEND_URL;
 export class NewUserDashboardComponent implements OnInit {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('approvalReasonDialog') approvalReasonDialog!: TemplateRef<any>;
-  @ViewChildren(CdkDrag) draggableItems!: QueryList<CdkDrag>;
   userType: string = '';
   isSubContractor: boolean = false;
   userJobs: {
@@ -206,19 +203,14 @@ export class NewUserDashboardComponent implements OnInit {
     }
     return 'Pending';
   }
-  resetDrag(event: any) {
-    event.source._dragRef.reset();
-  }
-  ngAfterViewInit() {
-    // Configure all drag items to follow cursor
-    this.draggableItems.forEach((dragItem) => {
-      dragItem._dragRef.beforeStarted.subscribe(() => {});
-    });
-  }
   ngOnInit() {
     this.isLoading = true;
     this.userType = this.loginService.getUserType();
     const saved = localStorage.getItem('dashboardWidgets');
+    const selectedLayoutId = this.dashboardWidgets.getSelectedLayout();
+    this.currentLayout =
+      this.layouts.find((l) => l.id === selectedLayoutId) ?? this.layouts[0];
+    this.dashboardWidgets.applyLayout(selectedLayoutId);
     this.widgets = this.dashboardWidgets.getWidgets();
     if (this.authService.isTeamMember()) {
       this.teamManagementService.getMyTeams().subscribe((teams) => {
@@ -676,9 +668,18 @@ export class NewUserDashboardComponent implements OnInit {
         label: 'Custom',
         description: 'Your custom layout',
       };
+      this.dashboardWidgets.setSelectedLayout('custom');
+      this.dashboardWidgets.applyLayout('custom');
+      this.widgets = this.dashboardWidgets.getWidgets();
     } else {
+      // Persist custom layout snapshot when leaving customize mode
+      this.dashboardWidgets.saveCustomLayout();
+      // Default should resolve to saved custom if present
+      this.dashboardWidgets.setSelectedLayout('default');
+      this.dashboardWidgets.applyLayout('default');
       // Return to default layout when exiting customize mode
       this.currentLayout = this.layouts[0]; // Default layout
+      this.widgets = this.dashboardWidgets.getWidgets();
     }
   }
 
@@ -688,6 +689,10 @@ export class NewUserDashboardComponent implements OnInit {
 
   toggleWidget(widgetId: string) {
     this.dashboardWidgets.toggle(widgetId);
+    this.widgets = this.dashboardWidgets.getWidgets();
+    if (this.isCustomizeMode) {
+      this.dashboardWidgets.saveCustomLayout();
+    }
   }
 
   layouts: DashboardLayout[] = [
@@ -718,68 +723,73 @@ export class NewUserDashboardComponent implements OnInit {
   selectLayout(layout: DashboardLayout) {
     this.currentLayout = layout;
 
+    this.dashboardWidgets.setSelectedLayout(layout.id);
+
     // Exit customize mode when selecting preset layouts
     if (layout.id !== 'custom') {
       this.isCustomizeMode = false;
 
       // Apply the preset configuration from the service
-      this.dashboardWidgets.applyPreset(layout.id);
+      this.dashboardWidgets.applyLayout(layout.id);
 
       // Refresh widgets to reflect the new layout
       this.widgets = this.dashboardWidgets.getWidgets();
-    }
-  }
-  onDragStarted() {
-    this.isDragging = true;
-  }
-  onDragEnded() {
-    this.isDragging = false;
-  }
-  onWidgetDrop(event: CdkDragDrop<any[]>) {
-    if (!this.isCustomizeMode) return;
-
-    const container = event.container.element.nativeElement as HTMLElement;
-    const items = Array.from(
-      container.querySelectorAll('.card'),
-    ) as HTMLElement[];
-
-    const pointerX = event.dropPoint?.x ?? (event.event as MouseEvent).clientX;
-    const pointerY = event.dropPoint?.y ?? (event.event as MouseEvent).clientY;
-
-    let targetIndex = event.previousIndex;
-
-    for (let i = 0; i < items.length; i++) {
-      const rect = items[i].getBoundingClientRect();
-
-      if (
-        pointerX >= rect.left &&
-        pointerX <= rect.right &&
-        pointerY >= rect.top &&
-        pointerY <= rect.bottom
-      ) {
-        targetIndex = i;
-        break;
-      }
+      return;
     }
 
-    if (targetIndex === event.previousIndex) return;
-
-    moveItemInArray(this.widgets, event.previousIndex, targetIndex);
-    this.dashboardWidgets.setWidgets(this.widgets);
+    this.isCustomizeMode = true;
+    this.dashboardWidgets.applyLayout('custom');
+    this.widgets = this.dashboardWidgets.getWidgets();
   }
-  onDragStart(index: number) {
+  onDragStart(event: DragEvent, index: number) {
     this.dragIndex = index;
+    console.log('[dashboard] dragstart', { index, widgetId: this.widgets?.[index]?.id });
+    try {
+      event.dataTransfer?.setData('text/plain', String(index));
+      const dragEl = (event.currentTarget as Element | null) ?? (event.target as Element | null);
+      if (dragEl) {
+        event.dataTransfer?.setDragImage(dragEl, 0, 0);
+      }
+      event.dataTransfer?.setData('application/x-dashboard-widget', '1');
+      event.dataTransfer!.effectAllowed = 'move';
+    } catch {
+      // ignore - dataTransfer is not always available
+    }
   }
 
   onDragOver(event: DragEvent) {
     event.preventDefault(); // REQUIRED
   }
 
-  onDrop(targetIndex: number) {
-    if (this.dragIndex === null || this.dragIndex === targetIndex) return;
+  onDrop(event: DragEvent, targetIndex: number) {
+    event.preventDefault();
+    const sourceIndexRaw = event.dataTransfer?.getData('text/plain') ?? '';
+    const sourceIndexFromDataTransfer = Number.isFinite(Number(sourceIndexRaw))
+      ? Number(sourceIndexRaw)
+      : null;
+    const sourceIndex = this.dragIndex ?? sourceIndexFromDataTransfer;
 
-    const moved = this.widgets.splice(this.dragIndex, 1)[0];
+    console.log('[dashboard] drop', {
+      sourceIndex,
+      targetIndex,
+      sourceIndexRaw,
+      dragIndex: this.dragIndex,
+      sourceWidgetId: sourceIndex !== null ? this.widgets?.[sourceIndex]?.id : null,
+      targetWidgetId: this.widgets?.[targetIndex]?.id,
+    });
+
+    if (sourceIndex === null || sourceIndex === targetIndex) return;
+
+    const moved = this.widgets.splice(sourceIndex, 1)[0];
     this.widgets.splice(targetIndex, 0, moved);
+
+    this.widgets = [...this.widgets];
+
+    this.dashboardWidgets.setWidgets(this.widgets);
+
+    if (this.isCustomizeMode) {
+      this.dashboardWidgets.saveCustomLayout();
+    }
 
     this.dragIndex = null;
   }
@@ -798,8 +808,11 @@ export class NewUserDashboardComponent implements OnInit {
     const widget = this.widgets.find((w) => w.id === widgetId);
     if (widget) {
       widget.size = size;
-      // If using service:
-      // this.widgetsService.setSize(widgetId, size);
+      this.dashboardWidgets.setSize(widgetId, size);
+      this.widgets = this.dashboardWidgets.getWidgets();
+      if (this.isCustomizeMode) {
+        this.dashboardWidgets.saveCustomLayout();
+      }
     }
   }
 

@@ -105,6 +105,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.analysisProgress = this.initialProgress;
 
+    this.signalrService.bindJob(this.jobId);
+
     this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
       if (state) {
         this.restoreState(state);
@@ -212,6 +214,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.signalrService.unbindJob(this.jobId);
+
     if (this.signalRSubscription) {
       this.signalRSubscription.unsubscribe();
     }

@@ -15,6 +15,7 @@ import { LoaderComponent } from '../../loader/loader.component';
 import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { getAuthUiErrorMessage } from '../auth.service';
 
 @Component({
   selector: 'app-confirm-email',
@@ -70,21 +71,24 @@ export class ConfirmEmailComponent implements OnInit {
       .pipe(
         catchError((error) => {
           this.isLoading = false;
+          const backendMessage = getAuthUiErrorMessage(
+            error,
+            'An unexpected error occurred. Contact support.',
+          );
           if (error.status === 401) {
             this.showAlert = true;
             this.routeURL = 'login';
             this.alertMessage =
+              backendMessage ||
               'Email Confirmation failed, please register or contact support@probuildai.com';
           } else if (error.status === 500) {
             this.showAlert = true;
             this.routeURL = '';
-            this.alertMessage =
-              'Oops, something went wrong. Please try again later.';
+            this.alertMessage = backendMessage;
           } else {
             this.showAlert = true;
             this.routeURL = '';
-            this.alertMessage =
-              'An unexpected error occurred. Contact support.';
+            this.alertMessage = backendMessage;
           }
           return of(null); // Return null observable to keep the stream alive
         }),

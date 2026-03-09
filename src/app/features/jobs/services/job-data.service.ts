@@ -42,8 +42,20 @@ export class JobDataService {
         const updatedProjectDetails = { ...projectDetails, ...jobDetails };
         if (jobDetails.address) {
           updatedProjectDetails.address = jobDetails.address;
-          updatedProjectDetails.latitude = jobDetails.latitude;
-          updatedProjectDetails.longitude = jobDetails.longitude;
+        }
+
+        const latCandidate =
+          jobDetails.latitude ??
+          jobDetails?.jobAddress?.geometry?.location?.lat ??
+          jobDetails?.jobAddress?.geometry?.location?.latitude;
+        const lonCandidate =
+          jobDetails.longitude ??
+          jobDetails?.jobAddress?.geometry?.location?.lng ??
+          jobDetails?.jobAddress?.geometry?.location?.longitude;
+
+        if (latCandidate != null && lonCandidate != null) {
+          updatedProjectDetails.latitude = latCandidate;
+          updatedProjectDetails.longitude = lonCandidate;
         }
         this.store.setState({ projectDetails: updatedProjectDetails });
         if (updatedProjectDetails.latitude && updatedProjectDetails.longitude) {

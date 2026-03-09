@@ -14,7 +14,7 @@ export class RegistrationService {
   constructor(private httpClient: HttpClient) {}
 
   register(request: RegistrationForm) {
-    this.httpClient.post(BASE_URL, request);
+    return this.httpClient.post(BASE_URL, request);
   }
 
   getCountries(): Observable<any[]> {

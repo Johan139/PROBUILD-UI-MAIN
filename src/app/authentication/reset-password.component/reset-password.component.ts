@@ -1,11 +1,11 @@
-import { Component, Injectable, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { ForgotPasswordService } from '../forgot-password/forgot-password.service';
@@ -17,10 +17,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatError } from '@angular/material/form-field'; // For mat-error
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; // optional, if app-loader uses spinner
 import { LoaderComponent } from '../../loader/loader.component';
+import { getAuthUiErrorMessage } from '../auth.service';
 
-@Injectable({
-  providedIn: 'root',
-})
 @Component({
   selector: 'app-reset-password',
   templateUrl: './reset-password.component.html',
@@ -37,6 +35,7 @@ import { LoaderComponent } from '../../loader/loader.component';
     MatProgressSpinnerModule,
     LoaderComponent,
     HttpClientModule,
+    RouterLink,
   ],
 })
 export class ResetPasswordComponent implements OnInit {
@@ -114,7 +113,10 @@ export class ResetPasswordComponent implements OnInit {
         setTimeout(() => this.router.navigate(['/login']), 3000);
       },
       error: (err) => {
-        this.error = err.error.error;
+        this.error = getAuthUiErrorMessage(
+          err,
+          'Unable to reset password. Please request a new reset link.',
+        );
       },
     });
   }

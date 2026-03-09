@@ -56,12 +56,23 @@
 
 .dashboard-widget[data-widget-id="weather"],
 .dashboard-widget[data-widget-id="actionPoints"] {
-  order: 1;
   align-self: start;
 }
 
 .dashboard-widget[data-widget-id="recentProjects"] {
-  order: 999;
+  align-self: start;
+}
+
+.dashboard-widget[data-widget-id="executiveSnapshot"] {
+  position: relative;
+}
+
+.executive-drag-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: move;
+  background: transparent;
 }
 
 /* Draggable state - only in customize mode */
@@ -69,6 +80,11 @@
   cursor: move;
   position: relative;
   transition: transform 0.2s ease;
+
+  * {
+    pointer-events: none;
+    user-select: none;
+  }
 
   &::before {
     content: "⋮⋮";
@@ -141,76 +157,6 @@ mat-card-content {
   flex: 1;
   overflow: auto;
   padding: var(--space-5);
-}
-
-/* ======================================================
-   DRAG & DROP
-   ====================================================== */
-
-.widget-drag-handle {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px;
-  cursor: grab;
-  opacity: 0.4;
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
-.cdk-drag-preview {
-  position: fixed !important;
-  pointer-events: none !important;
-  z-index: 9999;
-}
-
-.cdk-drag-dragging {
-  opacity: 0.4 !important;
-  filter: grayscale(0.5);
-}
-
-.cdk-drag-placeholder {
-  visibility: hidden;
-}
-
-.widget-placeholder {
-  height: 100%;
-  min-height: 100%;
-  width: 100%;
-  border-radius: 14px;
-  border: 2px solid var(--brand-yellow-primary);
-  background: rgba(255, 215, 0, 0.18);
-  position: relative;
-
-  &::before {
-    content: "DROP HERE";
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    letter-spacing: 2px;
-    color: var(--brand-yellow-primary);
-  }
-}
-
-.widget-drag-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 22px;
-  min-width: 220px;
-  background: rgba(18, 18, 18, 0.95);
-  border: 2px solid var(--brand-yellow-primary);
-  border-radius: 14px;
-  color: var(--brand-yellow-primary);
-  font-weight: 700;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-
-  mat-icon {
-    font-size: 22px;
-  }
 }
 
 /* ======================================================
@@ -351,8 +297,8 @@ mat-card-content {
    ====================================================== */
 
 .layout-menu {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   min-width: 280px;
 
@@ -365,7 +311,7 @@ mat-card-content {
     padding: 12px;
     border-radius: 6px;
     margin-bottom: 4px;
-    color: #ffffff;
+    color: var(--color-text);
     transition: all 0.2s;
 
     &:last-child {
@@ -373,8 +319,8 @@ mat-card-content {
     }
 
     &:hover {
-      background: rgba(255, 215, 0, 0.15);
-      color: var(--brand-yellow-primary);
+      background: color-mix(in oklab, var(--brand-yellow-primary) 14%, var(--color-surface));
+      color: var(--color-text);
 
       .title {
         color: var(--brand-yellow-primary);
@@ -382,8 +328,8 @@ mat-card-content {
     }
 
     &.active {
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid var(--brand-yellow-primary);
+      background: color-mix(in oklab, var(--brand-yellow-primary) 10%, var(--color-surface));
+      border: 1px solid color-mix(in oklab, var(--brand-yellow-primary) 55%, var(--color-border));
     }
   }
 
@@ -401,13 +347,13 @@ mat-card-content {
     .title {
       font-size: 14px;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--color-text);
       margin-bottom: 2px;
     }
 
     .subtitle {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--color-text-muted);
     }
   }
 
@@ -420,12 +366,12 @@ mat-card-content {
 
   .layout-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--color-border);
     margin: 8px 0;
   }
 
   .layout-custom-item {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--color-border);
     margin-top: 4px;
     padding-top: 12px;
   }
@@ -547,8 +493,8 @@ mat-card-content {
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   min-width: 140px;
 
@@ -559,19 +505,19 @@ mat-card-content {
     padding: 10px 12px;
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: var(--color-text);
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
     font-size: 14px;
 
     mat-icon {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--color-text-muted);
     }
 
     &:hover {
-      background: rgba(255, 215, 0, 0.15);
-      color: var(--brand-yellow-primary);
+      background: color-mix(in oklab, var(--brand-yellow-primary) 14%, var(--color-surface));
+      color: var(--color-text);
 
       mat-icon {
         color: var(--brand-yellow-primary);
@@ -600,7 +546,7 @@ mat-card-content {
 
     .size-cols {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--color-text-muted);
       font-weight: 500;
     }
   }

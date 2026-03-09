@@ -26,7 +26,7 @@
             <div style="margin-top: 1.5rem">
               <mat-card-actions>
                 <button
-                  class="w-100"
+                  class="w-100 submit-btn"
                   mat-raised-button
                   color="primary"
                   type="submit"
@@ -45,6 +45,6 @@
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button mat-raised-button (click)="closeAlert()">OK</button>
+    <button class="submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
   </div>
 </div>

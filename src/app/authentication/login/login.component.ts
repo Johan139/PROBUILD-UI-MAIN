@@ -14,7 +14,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { LoaderComponent } from '../../loader/loader.component';
-import { AuthService } from '../auth.service';
+import {
+  AuthService,
+  extractBackendErrorMessage,
+  getAuthUiErrorMessage,
+} from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -48,7 +52,7 @@ export class LoginComponent {
   alertMessage: string = '';
   isLoading: boolean = false;
   hidePassword: boolean = true;
-  showResendLink: boolean = true;
+  showResendLink: boolean = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -172,35 +176,29 @@ export class LoginComponent {
           this.isLoading = false;
           this.showAlert = true;
 
-          let message = 'Invalid login credentials.';
-          this.alertMessage = message;
+          const backendMessage = extractBackendErrorMessage(
+            error,
+            'Invalid login credentials.',
+          );
+          const uiMessage = getAuthUiErrorMessage(
+            error,
+            'Invalid login credentials.',
+          );
 
-          let backendError = error.error;
-
-          if (typeof backendError === 'string') {
-            try {
-              backendError = JSON.parse(backendError);
-            } catch {
-              backendError = { error: backendError };
-            }
-          }
-
-          const backendMessage =
-            backendError?.error || backendError?.message || message;
+          const backendCode =
+            error?.error?.code ??
+            error?.error?.Code ??
+            error?.error?.errors?.[0]?.code;
 
           if (error.status === 401) {
-            this.alertMessage = backendMessage;
-            this.showResendLink = false;
-            if (
-              backendMessage.includes('Email address has not been verified')
-            ) {
-              this.showResendLink = true;
-            }
+            this.alertMessage = uiMessage;
+            this.showResendLink = backendCode === 'EMAIL_NOT_VERIFIED';
           } else if (error.status === 500) {
-            this.alertMessage =
-              backendMessage || 'Server error. Try again later.';
+            this.alertMessage = uiMessage;
+            this.showResendLink = false;
           } else {
-            this.alertMessage = backendMessage;
+            this.alertMessage = uiMessage;
+            this.showResendLink = false;
           }
         },
       });

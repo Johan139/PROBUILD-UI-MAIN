@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { NgIf } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { LoaderComponent } from '../../loader/loader.component';
 import { ForgotPasswordService } from './forgot-password.service';
 import { MatDividerModule } from '@angular/material/divider';
+import { getAuthUiErrorMessage } from '../auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -27,6 +28,7 @@ import { MatDividerModule } from '@angular/material/divider';
     LoaderComponent,
     MatButtonModule,
     MatDividerModule,
+    RouterLink,
   ],
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss'],
@@ -74,10 +76,13 @@ export class ForgotPasswordComponent {
         // Optional: clear form
         this.forgotPasswordForm.reset();
       },
-      error: () => {
+      error: (err) => {
         this.isLoading = false;
 
-        this.alertMessage = 'Something went wrong. Please try again later.';
+        this.alertMessage = getAuthUiErrorMessage(
+          err,
+          'Something went wrong. Please try again later.',
+        );
         this.showAlert = true;
       },
     });

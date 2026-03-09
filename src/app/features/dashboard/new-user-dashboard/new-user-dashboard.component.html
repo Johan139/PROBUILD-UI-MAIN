@@ -213,14 +213,18 @@
       [hidden]="!widget.enabled"
       [draggable]="currentLayout.id === 'custom' && isCustomizeMode"
       (dragstart)="
-        currentLayout.id === 'custom' && isCustomizeMode && onDragStart(i)
+        currentLayout.id === 'custom' && isCustomizeMode && onDragStart($event, i)
       "
       (dragover)="
         currentLayout.id === 'custom' && isCustomizeMode && onDragOver($event)
       "
-      (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop(i)"
+      (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop($event, i)"
     >
       <ng-container [ngSwitch]="widget.id">
+        <app-executive-snapshot-widget
+          *ngSwitchCase="'executiveSnapshot'"
+        ></app-executive-snapshot-widget>
+
         <app-action-points-widget
           *ngSwitchCase="'actionPoints'"
           [notes]="notes"

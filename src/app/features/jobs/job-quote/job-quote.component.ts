@@ -40,6 +40,7 @@ import { DatePipe } from '@angular/common';
 import {
   HubConnection,
   HubConnectionBuilder,
+  HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr';
 import { v4 as uuidv4 } from 'uuid';
@@ -163,6 +164,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   isAnalyzing: boolean = false;
   jobTypes = JOB_TYPES;
 
+  private hubStartPromise?: Promise<void>;
+  private hubManuallyStopped = false;
+  private hubRestartAttempt = 0;
+  private hubPingInterval: any;
+
   constructor(
     private formBuilder: FormBuilder,
     private jobService: JobsService,
@@ -252,16 +258,40 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       });
 
+    const signalrBaseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
+    const progressHubUrl = `${signalrBaseUrl}/hubs/progressHub`;
+
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(
-        'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/progressHub',
+        progressHubUrl,
         {
-          accessTokenFactory: () => localStorage.getItem('authToken') || '',
+          accessTokenFactory: async (): Promise<string> =>
+            (await this.authService.getToken()) ?? '',
         },
       )
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Debug)
       .build();
+
+    this.hubConnection.keepAliveIntervalInMilliseconds = 15000;
+    this.hubConnection.serverTimeoutInMilliseconds = 120000;
+
+    this.hubConnection.onreconnecting((error) => {
+      console.warn('SignalR connection lost. Reconnecting...', error);
+    });
+
+    this.hubConnection.onreconnected(() => {
+      this.hubRestartAttempt = 0;
+    });
+
+    this.hubConnection.onclose((err) => {
+      this.clearHubPingInterval();
+      if (this.hubManuallyStopped) {
+        return;
+      }
+      console.warn('SignalR connection closed. Restarting...', err);
+      void this.ensureHubStarted();
+    });
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       const cappedProgress = Math.min(100, progress);
@@ -277,6 +307,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
       // console.log(`Server-to-Azure upload complete. Total ${this.uploadedFileInfos.length} file(s) uploaded.`);
       // console.log('Current uploadedFileInfos:', this.uploadedFileInfos);
     });
+
+    void this.ensureHubStarted();
 
     this.authService.currentUser$
       .pipe(
@@ -432,15 +464,87 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.hubConnection) {
+      this.hubManuallyStopped = true;
+      this.clearHubPingInterval();
       this.hubConnection
         .stop()
         .then()
         .catch((err) => console.error('Error stopping SignalR:', err));
     }
-    //this.deleteTemporaryFiles();
   }
 
-  loadGoogleMapsScript(): Promise<void> {
+  private async ensureHubStarted(): Promise<void> {
+    if (this.hubStartPromise) {
+      return this.hubStartPromise;
+    }
+
+    if (this.hubConnection?.state === HubConnectionState.Connected) {
+      return;
+    }
+
+    this.hubManuallyStopped = false;
+    this.hubStartPromise = this.startHubWithRetry();
+
+    try {
+      await this.hubStartPromise;
+    } finally {
+      this.hubStartPromise = undefined;
+    }
+  }
+
+  private async startHubWithRetry(): Promise<void> {
+    if (this.hubConnection.state === HubConnectionState.Connected) {
+      this.hubRestartAttempt = 0;
+      this.startHubPingInterval();
+      return;
+    }
+
+    if (this.hubConnection.state !== HubConnectionState.Disconnected) {
+      return;
+    }
+
+    try {
+      await this.hubConnection.start();
+      this.hubRestartAttempt = 0;
+      this.startHubPingInterval();
+    } catch (err) {
+      this.hubRestartAttempt++;
+      const backoffMs = Math.min(
+        30000,
+        1000 * Math.pow(2, this.hubRestartAttempt),
+      );
+      console.error('SignalR Connection Error:', err);
+      await this.delay(backoffMs);
+
+      if (!this.hubManuallyStopped) {
+        return this.startHubWithRetry();
+      }
+    }
+  }
+
+  private startHubPingInterval(): void {
+    this.clearHubPingInterval();
+    this.hubPingInterval = setInterval(() => {
+      if (this.hubConnection?.state === HubConnectionState.Connected) {
+        this.hubConnection.invoke('Ping').catch((err) => {
+          console.warn('SignalR Ping failed:', err);
+        });
+      }
+    }, 60000);
+  }
+
+  private clearHubPingInterval(): void {
+    if (this.hubPingInterval) {
+      clearInterval(this.hubPingInterval);
+      this.hubPingInterval = null;
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private loadGoogleMapsScript(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (typeof google !== 'undefined' && google.maps) {
         resolve();

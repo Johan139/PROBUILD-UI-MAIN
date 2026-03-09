@@ -19,6 +19,95 @@ import { TeamManagementService } from '../services/team-management.service';
 import { Router } from '@angular/router';
 import { UserAddressStoreService } from '../services/UserAddressStoreService';
 
+export function extractBackendErrorMessage(
+  error: any,
+  fallback: string = 'Something went wrong. Please try again.',
+): string {
+  const httpError = error as HttpErrorResponse | undefined;
+  const raw = httpError?.error ?? error;
+
+  const normalize = (v: any): any => {
+    if (typeof v === 'string') {
+      try {
+        return JSON.parse(v);
+      } catch {
+        return { message: v };
+      }
+    }
+    return v;
+  };
+
+  const data = normalize(raw);
+
+  if (!data) return fallback;
+  if (Array.isArray(data)) {
+    const first = data[0];
+    if (typeof first === 'string') return first;
+    return (
+      first?.error ||
+      first?.message ||
+      first?.title ||
+      first?.detail ||
+      fallback
+    );
+  }
+
+  return (
+    data.error ||
+    data.message ||
+    data.title ||
+    data.detail ||
+    httpError?.message ||
+    fallback
+  );
+}
+
+export function getAuthUiErrorMessage(
+  error: any,
+  fallback: string = 'Something went wrong. Please try again.',
+): string {
+  const httpError = error as HttpErrorResponse | undefined;
+  const status = httpError?.status;
+  const backend = extractBackendErrorMessage(error, fallback);
+  const backendLower = (backend || '').toLowerCase();
+
+  // Network / CORS / offline
+  if (status === 0) {
+    return 'Unable to reach the server. Check your connection and try again.';
+  }
+
+  // Common auth-specific cases
+  if (backendLower.includes('email address has not been verified')) {
+    return 'Your email address is not verified yet. Please check your inbox (and spam) for the verification email.';
+  }
+  if (
+    backendLower.includes('invalid token') ||
+    backendLower.includes('expired token') ||
+    backendLower.includes('token expired')
+  ) {
+    return 'This link has expired or is invalid. Please request a new one.';
+  }
+
+  // Status code based fallbacks
+  if (status === 400) {
+    return backend || 'Please check the information you entered and try again.';
+  }
+  if (status === 401) {
+    return backend || 'Incorrect email or password.';
+  }
+  if (status === 403) {
+    return 'You do not have permission to perform this action.';
+  }
+  if (status === 404) {
+    return 'The requested resource was not found.';
+  }
+  if (status && status >= 500) {
+    return 'Server error. Please try again in a few minutes.';
+  }
+
+  return backend || fallback;
+}
+
 @Injectable({
   providedIn: 'root',
 })
