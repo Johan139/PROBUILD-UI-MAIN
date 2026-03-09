@@ -377,6 +377,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
                 pkg.estimatedDuration,
                 Number(pkg.estimatedManHours || 0),
               );
+              const laborBudget = Number(pkg.laborBudget || 0);
+              const materialBudget = Number(pkg.materialBudget || 0);
+              const laborBudgetVisible = pkg.laborBudgetVisible !== false;
+              const materialBudgetVisible = pkg.materialBudgetVisible !== false;
+              const visibleBudget =
+                (laborBudgetVisible ? laborBudget : 0) +
+                (materialBudgetVisible ? materialBudget : 0);
 
               return {
                 jobId: pkg.jobId,
@@ -401,7 +408,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
                 tradeBudgets: [
                   {
                     tradeName: pkg.tradeName,
-                    budget: Number(pkg.effectiveBudget || pkg.budget || 0),
+                    budget: Number(visibleBudget || 0),
                   },
                 ],
                 potentialStartDate: pkg.startDate
@@ -415,8 +422,10 @@ export class FindWorkComponent implements OnInit, OnDestroy {
                 tradePackageStatus: pkg.status,
                 tradePackageEstimatedManHours: pkg.estimatedManHours,
                 tradePackageHourlyRate: pkg.hourlyRate,
-                tradePackageLaborBudget: Number(pkg.laborBudget || 0),
-                tradePackageMaterialBudget: Number(pkg.materialBudget || 0),
+                tradePackageLaborBudget: laborBudget,
+                tradePackageMaterialBudget: materialBudget,
+                tradePackageLaborBudgetVisible: laborBudgetVisible,
+                tradePackageMaterialBudgetVisible: materialBudgetVisible,
                 tradePackageTotalBudget: Number(pkg.totalBudget || pkg.budget || 0),
                 tradePackageEffectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
                 tradePackageEstimatedDuration: pkg.estimatedDuration,

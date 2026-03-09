@@ -16,6 +16,11 @@ export interface TradeBudget {
   budget: number;
 }
 
+export interface TradeBudgetVisibility {
+  laborVisible: boolean;
+  materialsVisible: boolean;
+}
+
 export interface Job {
   jobId: number;
   tradePackageId?: number;
@@ -49,4 +54,6 @@ export interface Job {
   createdAt?: Date;
   biddingStartDate?: Date;
   archivedAt?: Date;
+  tradePackageLaborBudgetVisible?: boolean;
+  tradePackageMaterialBudgetVisible?: boolean;
 }

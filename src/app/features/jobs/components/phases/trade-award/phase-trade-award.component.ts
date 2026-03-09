@@ -1044,6 +1044,9 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       effectiveBudget: Number(item.totalBudget || item.budget || 0),
       budget: Number(item.budget || 0),
       postedToMarketplace: !!item.postedToMarketplace,
+      notes: (item as any).notes || null,
+      laborBudgetVisible: (item as any).laborBudgetVisible !== false,
+      materialBudgetVisible: (item as any).materialBudgetVisible !== false,
     };
 
     this.bomService.updateTradePackage(item.id, payload).subscribe({
