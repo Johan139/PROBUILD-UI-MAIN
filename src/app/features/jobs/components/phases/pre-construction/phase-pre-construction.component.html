@@ -1,0 +1,315 @@
+<section class="phase-section">
+  <app-phase-navigation-header
+    stageLabel="Pre-Construction &amp; Compliance"
+    backLabel="Back to Contract Award"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Bid Solicitation"
+    [projectName]="projectDetails?.projectName || 'HERNANDEZ RESIDENCE'"
+    [clientName]="clientName"
+    [projectAddress]="projectAddress"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+
+  <section class="intro-card">
+    <div class="intro-card__icon">
+      <lucide-icon name="shield-check"></lucide-icon>
+    </div>
+    <div class="intro-card__copy">
+      <h3>Pre-Construction & Compliance</h3>
+      <p>
+        Verify permits and compliance items before proceeding to bid solicitation.
+        Upload documents or mark N/A directly on each permit line.
+      </p>
+    </div>
+  </section>
+
+  <section class="permits-list">
+    <article class="permit-item permit-item--add" *ngIf="addingPermit">
+      <div class="permit-copy permit-copy--with-meta">
+        <div class="permit-title-row">
+          <div class="permit-title-main">
+            <span class="permit-icon-wrap">
+              <lucide-icon name="plus"></lucide-icon>
+            </span>
+            <h4>New Permit</h4>
+          </div>
+        </div>
+
+        <div class="permit-form-grid">
+          <label>
+            <span>Permit Name</span>
+            <input type="text" [(ngModel)]="newPermitDraft.name" placeholder="e.g. Fire Permit" />
+          </label>
+          <label>
+            <span>Issuing Agency</span>
+            <input type="text" [(ngModel)]="newPermitDraft.issuingAgency" placeholder="e.g. City of Georgetown" />
+          </label>
+          <label class="permit-form-grid__full">
+            <span>Requirements</span>
+            <input type="text" [(ngModel)]="newPermitDraft.requirements" placeholder="Brief requirements" />
+          </label>
+        </div>
+      </div>
+
+      <div class="permit-actions">
+        <button type="button" class="btn btn-primary" (click)="saveNewPermit()">Save</button>
+        <button type="button" class="btn btn-outline" (click)="cancelAddPermit()">Cancel</button>
+      </div>
+    </article>
+
+    <article class="permit-item" *ngFor="let permit of permits">
+      <input
+        #permitFileInput
+        type="file"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        class="hidden-input"
+        (change)="onPermitFileSelected(permit, $event)"
+      />
+
+      <div class="permit-copy permit-copy--with-meta">
+        <div class="permit-title-row permit-title-row--with-status">
+          <div class="permit-title-main">
+            <span class="permit-icon-wrap">
+              <lucide-icon [name]="getPermitIconName(permit.name)"></lucide-icon>
+            </span>
+            <h4>{{ permit.name || 'Unnamed Permit' }}</h4>
+          </div>
+        </div>
+        <p>{{ permit.requirements || 'Permit requirements and agency checks are managed in the permit details dialog.' }}</p>
+        <p class="permit-accepts" *ngIf="permit.issuingAgency">Agency: {{ permit.issuingAgency }}</p>
+        <p class="permit-accepts" *ngIf="permit.expirationDate">
+          Expires: {{ permit.expirationDate | date: 'mediumDate' }}
+        </p>
+      </div>
+
+      <div class="permit-actions">
+        <div class="permit-actions-status">
+          <span class="state-pill" [ngClass]="getPermitStatusClass(permit.status)">
+            {{ getPermitStatusLabel(permit.status) }}
+          </span>
+          <lucide-icon *ngIf="permit.documentId" name="check-circle-2" class="permit-complete-icon"></lucide-icon>
+        </div>
+
+        <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
+          <lucide-icon name="upload" class="btn-icon"></lucide-icon>
+          <span>{{ permit.documentId ? 'Replace' : 'Upload' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline btn-na"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="!isPermitNA(permit.status)"
+          (click)="markPermitNA(permit)"
+        >
+          N/A
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="isPermitNA(permit.status)"
+          (click)="undoPermitNA(permit)"
+        >
+          Undo
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="permit.documentId"
+          (click)="viewPermitDocument(permit)"
+        >
+          View
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-outline btn-danger-ghost"
+          [disabled]="isPermitBusy(permit)"
+          *ngIf="permit.documentId"
+          (click)="removePermitDocument(permit)"
+        >
+          Remove
+        </button>
+      </div>
+    </article>
+
+    <article class="permit-item permit-item--empty" *ngIf="!isPermitLoading && permits.length === 0">
+      <div class="permit-copy">
+        <h4>No permits available yet</h4>
+        <p>
+          Use Permit Details to add permits manually or allow AI suggestions to populate the list.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row progress-row--with-action">
+      <div>
+        <span>Permit Status</span>
+        <strong [ngClass]="permitStatus">{{ permitStatusText }}</strong>
+      </div>
+      <div class="progress-actions">
+        <button type="button" class="btn btn-outline" (click)="startAddPermit()" [disabled]="addingPermit">Add Permit</button>
+        <button type="button" class="btn btn-outline" (click)="openPermitsDialog()">Open Full Permit Details</button>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="permitProgressPercent"></div>
+    </div>
+    <p class="progress-ratio">{{ completedCount }} / {{ totalPermitCount }} approved</p>
+    <p class="progress-copy" *ngIf="canProceed; else permitsPending">
+      All items addressed. You may proceed to Bid Solicitation.
+    </p>
+    <ng-template #permitsPending>
+      <p class="progress-copy">Please review permits and resolve pending or expired statuses before proceeding.</p>
+    </ng-template>
+  </section>
+
+  <!-- <section class="schedule-card">
+    <div class="schedule-header">
+      <div>
+        <h3>Pre-Construction Timeline Governance</h3>
+      </div>
+      <div class="schedule-actions">
+        <button type="button" class="btn btn-outline" (click)="toggleAddScheduleTask()">
+          {{ addingScheduleTask ? 'Close Add Task' : 'Add Timeline Task' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="schedule-summary">
+      <span>Completed {{ completedScheduleCount }} / {{ scheduleTasks.length }}</span>
+    </div>
+
+    <div class="schedule-form" *ngIf="addingScheduleTask">
+      <div class="schedule-grid">
+        <label>
+          <span>Task</span>
+          <input type="text" [(ngModel)]="newScheduleTask.task" />
+        </label>
+        <label>
+          <span>Owner</span>
+          <input type="text" [(ngModel)]="newScheduleTask.owner" />
+        </label>
+        <label>
+          <span>Start Date</span>
+          <input
+            type="date"
+            [(ngModel)]="newScheduleTask.startDate"
+            (ngModelChange)="updateNewScheduleDates('startDate', $event)"
+          />
+        </label>
+        <label>
+          <span>Days</span>
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="newScheduleTask.days"
+            (ngModelChange)="updateNewScheduleDates('days', $event)"
+          />
+        </label>
+        <label>
+          <span>End Date</span>
+          <input
+            type="date"
+            [(ngModel)]="newScheduleTask.endDate"
+            (ngModelChange)="updateNewScheduleDates('endDate', $event)"
+          />
+        </label>
+        <label>
+          <span>Status</span>
+          <select [(ngModel)]="newScheduleTask.status">
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </label>
+      </div>
+      <div class="schedule-actions">
+        <button type="button" class="btn btn-primary" (click)="addScheduleTask()">Add Task</button>
+        <button type="button" class="btn btn-outline" (click)="toggleAddScheduleTask()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="schedule-table-wrap">
+      <table class="schedule-table" *ngIf="scheduleTasks.length > 0">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Start</th>
+            <th>End</th>
+            <th class="num">Days</th>
+            <th class="num">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let task of scheduleTasks">
+            <td>
+              <input
+                type="text"
+                [value]="task.task"
+                (change)="updateScheduleTaskField(task, 'task', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                [value]="task.owner"
+                (change)="updateScheduleTaskField(task, 'owner', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <select [value]="task.status" (change)="updateScheduleTaskField(task, 'status', $any($event.target).value)">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </td>
+            <td>
+              <input
+                type="date"
+                [value]="task.startDate"
+                (change)="updateScheduleTaskField(task, 'startDate', $any($event.target).value)"
+              />
+            </td>
+            <td>
+              <input
+                type="date"
+                [value]="task.endDate"
+                (change)="updateScheduleTaskField(task, 'endDate', $any($event.target).value)"
+              />
+            </td>
+            <td class="num">
+              <input
+                type="number"
+                min="0"
+                [value]="task.days"
+                (change)="updateScheduleTaskField(task, 'days', $any($event.target).value)"
+              />
+            </td>
+            <td class="num">
+              <button type="button" class="btn btn-danger" (click)="removeScheduleTask(task.id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section> -->
+</section>
+

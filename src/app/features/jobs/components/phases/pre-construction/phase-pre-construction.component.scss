@@ -1,0 +1,503 @@
+.phase-section {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.permit-item,
+.progress-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.intro-card {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 25%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface));
+  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+
+  .intro-card__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+    color: var(--color-primary);
+  }
+
+  .intro-card__copy {
+    min-width: 0;
+  }
+
+  h3 {
+    margin: 0;
+  }
+
+  p {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.permits-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hidden-input {
+  display: none;
+}
+
+.permit-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid color-mix(in oklab, var(--color-border) 85%, transparent);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-primary) 15%, transparent);
+  }
+
+  &.permit-item--empty {
+    grid-template-columns: 1fr;
+    opacity: 0.9;
+  }
+}
+
+.permit-copy h4 {
+  margin: 0;
+}
+
+.permit-copy--with-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.permit-form-grid {
+  margin-top: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  label {
+    display: grid;
+    gap: 6px;
+  }
+
+  span {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted);
+  }
+
+  input {
+    min-height: 38px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+    background: color-mix(in oklab, var(--color-surface-subtle) 85%, var(--color-surface));
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+
+    &::placeholder {
+      color: color-mix(in oklab, var(--color-text-muted) 80%, transparent);
+    }
+
+    &:hover {
+      border-color: color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
+    }
+
+    &:focus {
+      border-color: color-mix(in oklab, var(--color-primary) 55%, var(--color-border));
+      box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-primary) 20%, transparent);
+      background: color-mix(in oklab, var(--color-surface-subtle) 70%, var(--color-surface));
+    }
+  }
+
+  .permit-form-grid__full {
+    grid-column: 1 / -1;
+  }
+}
+
+.permit-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.permit-title-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+
+  h4 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.permit-title-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.permit-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 11%, transparent);
+  flex-shrink: 0;
+}
+
+.permit-complete-icon {
+  color: var(--color-success);
+}
+
+.permit-copy p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
+
+.permit-accepts {
+  font-size: var(--fs-xs);
+}
+
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+
+  &.is-approved {
+    color: var(--color-success);
+    background: color-mix(in oklab, var(--color-success) 12%, transparent);
+  }
+
+  &.is-pending {
+    color: var(--color-warning, #f5b942);
+    background: color-mix(in oklab, var(--color-warning, #f5b942) 14%, transparent);
+  }
+
+  &.is-expired {
+    color: var(--color-danger);
+    background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+  }
+
+  &.is-neutral {
+    color: var(--color-text-muted);
+    background: color-mix(in oklab, var(--color-border) 30%, transparent);
+  }
+}
+
+.permit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.permit-actions-status {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 960px) {
+  .permit-item {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .permit-actions {
+    justify-content: flex-start;
+  }
+
+  .permit-actions-status {
+    justify-content: flex-start;
+  }
+
+  .permit-form-grid {
+    grid-template-columns: 1fr;
+
+    .permit-form-grid__full {
+      grid-column: auto;
+    }
+  }
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-text);
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+    border-color: color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
+    color: var(--color-text);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.btn-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.btn-danger {
+  background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.btn-danger-ghost {
+  color: var(--color-danger);
+  border-color: color-mix(in oklab, var(--color-danger) 30%, var(--color-border));
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-danger) 12%, transparent);
+    border-color: color-mix(in oklab, var(--color-danger) 45%, var(--color-border));
+    color: var(--color-danger);
+  }
+}
+
+.btn-na {
+  color: var(--color-warning, #f5b942);
+  border-color: color-mix(in oklab, var(--color-warning, #f5b942) 40%, var(--color-border));
+
+  &:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-warning, #f5b942) 14%, transparent);
+    border-color: color-mix(in oklab, var(--color-warning, #f5b942) 55%, var(--color-border));
+    color: var(--color-warning, #f5b942);
+  }
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+
+  input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.status.ok {
+  color: var(--color-success);
+}
+
+.status.muted {
+  color: var(--color-text-muted);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.progress-row--with-action {
+  gap: var(--space-2);
+  flex-wrap: wrap;
+
+  > div {
+    display: grid;
+    gap: 2px;
+
+    span {
+      color: var(--color-text-muted);
+      font-size: var(--fs-xs);
+      text-transform: uppercase;
+    }
+
+    strong {
+      &.success {
+        color: var(--color-success);
+      }
+
+      &.warning {
+        color: var(--color-warning, #f5b942);
+      }
+
+      &.none {
+        color: var(--color-text-muted);
+      }
+    }
+  }
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-success);
+}
+
+.progress-copy {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.progress-ratio {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.schedule-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.schedule-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.schedule-summary {
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+.schedule-form {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  label {
+    display: grid;
+    gap: 4px;
+  }
+
+  span {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  input,
+  select {
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+.schedule-table-wrap {
+  overflow-x: auto;
+}
+
+.schedule-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 8px;
+    border-bottom: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+    font-size: var(--fs-xs);
+    text-align: left;
+  }
+
+  .num {
+    text-align: right;
+  }
+
+  input,
+  select {
+    width: 100%;
+    background: var(--color-surface-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    padding: 6px 7px;
+    min-height: 32px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 960px) {
+  .schedule-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

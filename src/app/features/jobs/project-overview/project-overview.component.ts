@@ -13,8 +13,6 @@ import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   MatAutocompleteModule,
@@ -57,8 +55,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatAutocompleteModule,
     MatTooltipModule,
     MatExpansionModule,
@@ -86,6 +82,10 @@ export class ProjectOverviewComponent {
   @Input() forecast: any[] | undefined = [];
   @Input() weatherError: string | null | undefined = null;
   @Input() temperatureUnit: 'C' | 'F' = 'C';
+
+  executiveSummaryExpanded = false;
+  isSummaryLoading = false;
+  private loadedExecutiveSummary: any = null;
 
   @Output() jobArchived = new EventEmitter<number>();
 
@@ -281,6 +281,19 @@ export class ProjectOverviewComponent {
 
     const jobId = this.projectDetails.jobId;
 
+    this.isSummaryLoading = true;
+    this.reportService
+      .getExecutiveSummaryData(jobId)
+      .then((summary) => {
+        this.loadedExecutiveSummary = summary;
+      })
+      .catch(() => {
+        this.loadedExecutiveSummary = null;
+      })
+      .finally(() => {
+        this.isSummaryLoading = false;
+      });
+
     // 1. Blueprint Intelligence
     this.reportService.getBlueprintIntelligence(jobId).then((data) => {
       this.blueprintConfidenceScore = data.confidenceScore;
@@ -307,8 +320,15 @@ export class ProjectOverviewComponent {
         if (contracts && contracts.length > 0) {
           // Sort by CreatedAt to find the first contract (Client Contract)
           const sortedContracts = contracts.sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            (a, b) => {
+              const aCreatedAt = a.createdAt
+                ? new Date(a.createdAt).getTime()
+                : 0;
+              const bCreatedAt = b.createdAt
+                ? new Date(b.createdAt).getTime()
+                : 0;
+              return aCreatedAt - bCreatedAt;
+            },
           );
           const clientContract = sortedContracts[0];
 
@@ -474,8 +494,11 @@ export class ProjectOverviewComponent {
 
     this.reportService.getDetailedCostSummary(jobId).then((summary) => {
       if (summary) {
-        this.costToBuild =
-          Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
+        this.costToBuild = Number(summary.directSubtotal || 0);
+        if (this.costToBuild <= 0) {
+          this.costToBuild =
+            Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
+        }
         this.totalProjectCost = Number(summary.suggestedBid || 0);
         const marketBid = Number(summary.suggestedMarketBid || 0);
 
@@ -485,8 +508,9 @@ export class ProjectOverviewComponent {
         // Guardrail: never show client bid below total project cost
         this.bidPrice = Math.max(this.totalProjectCost, marketBid);
 
-        // Use project total as budget baseline so cards stay consistent across pages.
-        this.baselineCost = this.totalProjectCost || Number(summary.directSubtotal || 0);
+        // Baseline for profitability should represent build cost, not client bid.
+        this.baselineCost =
+          this.costToBuild || Number(summary.directSubtotal || 0);
         this.overheadAndProfit = Number(summary.overhead || 0);
         this.contingency = Number(summary.contingency || 0);
         this.escalation = Number(summary.escalation || 0);
@@ -513,8 +537,97 @@ export class ProjectOverviewComponent {
     });
   }
 
+  toggleExecutiveSummary(): void {
+    this.executiveSummaryExpanded = !this.executiveSummaryExpanded;
+  }
+
+  get executiveSummary(): {
+    overview: string;
+    blueprintConfidence: { overallConfidence: number };
+    keyHighlights: Array<{ label: string; value: string; note: string }>;
+    riskFactors: Array<{
+      risk: string;
+      description: string;
+      severity: 'high' | 'medium';
+    }>;
+    strategicAnalysis: {
+      opportunities: string[];
+      risks: string[];
+      implications: string[];
+    };
+    topPriorities: string[];
+    executiveRecommendation: string;
+  } {
+    const summary =
+      this.loadedExecutiveSummary ||
+      this.projectDetails?.executiveSummary ||
+      this.projectDetails?.scopeExecutiveSummary ||
+      this.projectDetails?.preliminaryScope?.executiveSummary ||
+      null;
+
+    return {
+      overview: String(summary?.overview || ''),
+      blueprintConfidence: {
+        overallConfidence: Number(
+          summary?.blueprintConfidence?.overallConfidence || 0,
+        ),
+      },
+      keyHighlights: Array.isArray(summary?.keyHighlights)
+        ? summary.keyHighlights
+            .map((item: any) => ({
+              label: String(item?.label || ''),
+              value: String(item?.value || ''),
+              note: String(item?.note || ''),
+            }))
+            .filter((item: any) => item.label || item.value || item.note)
+        : [],
+      riskFactors: Array.isArray(summary?.riskFactors)
+        ? summary.riskFactors
+            .map((item: any) => ({
+              risk: String(item?.risk || ''),
+              description: String(item?.description || ''),
+              severity:
+                String(item?.severity || '').toLowerCase() === 'high'
+                  ? 'high'
+                  : 'medium',
+            }))
+            .filter((item: any) => item.risk || item.description)
+        : [],
+      strategicAnalysis: {
+        opportunities: Array.isArray(summary?.strategicAnalysis?.opportunities)
+          ? summary.strategicAnalysis.opportunities
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+        risks: Array.isArray(summary?.strategicAnalysis?.risks)
+          ? summary.strategicAnalysis.risks
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+        implications: Array.isArray(summary?.strategicAnalysis?.implications)
+          ? summary.strategicAnalysis.implications
+              .map((item: any) => String(item || '').trim())
+              .filter(Boolean)
+          : [],
+      },
+      topPriorities: Array.isArray(summary?.topPriorities)
+        ? summary.topPriorities
+            .map((item: any) => String(item || '').trim())
+            .filter(Boolean)
+        : [],
+      executiveRecommendation: String(summary?.executiveRecommendation || ''),
+    };
+  }
+
   calculateBudgetStats(items: any[]): void {
-    if (!items || items.length === 0) return;
+    if (!items || items.length === 0) {
+      this.spentToDate = Number(
+        this.projectDetails?.actualCost || this.projectDetails?.spentToDate || 0,
+      );
+      this.remainingBudget = this.overallBudgetValue - this.spentToDate;
+      this.calculateProfitMetrics();
+      return;
+    }
 
     const estimatedFromBudget = items.reduce(
       (sum, item) => sum + (item.estimatedCost || 0),
@@ -523,10 +636,18 @@ export class ProjectOverviewComponent {
 
     this.activeValue = estimatedFromBudget;
 
-    this.spentToDate = items.reduce(
-      (sum, item) => sum + (item.actualCost || 0),
-      0,
-    );
+    this.spentToDate = items.reduce((sum, item) => {
+      const actual = Number(
+        item.actualCost ?? item.actual ?? item.spentToDate ?? 0,
+      );
+      return sum + (isNaN(actual) ? 0 : actual);
+    }, 0);
+
+    if (this.spentToDate <= 0) {
+      this.spentToDate = Number(
+        this.projectDetails?.actualCost || this.projectDetails?.spentToDate || 0,
+      );
+    }
 
     this.remainingBudget = this.activeValue - this.spentToDate;
 
@@ -567,7 +688,12 @@ export class ProjectOverviewComponent {
   calculateProfitMetrics(): void {
     // Baseline Cost should include Taxes as it's a hard cost
     const costBaseline = this.baselineCost + this.taxes;
-    const budgetForProfit = this.overallBudgetValue;
+    const budgetForProfit =
+      this.costToBuild > 0
+        ? this.costToBuild
+        : this.activeValue > 0
+          ? this.activeValue
+          : this.overallBudgetValue;
 
     // If we have a baseline cost from the report, and the current tracked items (activeValue)
     // are significantly lower (e.g. data not fully imported), default to the baseline to show a realistic budget

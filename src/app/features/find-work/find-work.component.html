@@ -103,7 +103,7 @@
         (filteredJobsChange)="onFilteredJobsChange($event)"
         (jobClick)="onJobClick($event)"
         (toggleSaved)="toggleSavedJob($event.jobId, $event.event)"
-        (openBid)="openBidDialog($event.jobId, $event.event)"
+        (openBid)="openBidDialog($event.jobId, $event.tradePackageId, $event.event)"
         (highlightMarker)="highlightMarker($event)"
         (unhighlightMarker)="unhighlightMarker($event)"
         (addressSelected)="onAddressSelected()"

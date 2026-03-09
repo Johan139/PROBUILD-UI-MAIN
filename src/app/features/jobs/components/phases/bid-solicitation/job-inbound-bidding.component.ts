@@ -1,10 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, HardHat, Store, Package, Users, ArrowLeft, Check, Edit, ClipboardList, DollarSign, UserCheck, UserPlus, TrendingUp, Star, Rocket, ArrowRight, RotateCcw } from 'lucide-angular';
-import { BomService } from '../../services/bom.service';
-import { BiddingService } from '../../../../services/bidding.service';
-import { UserService } from '../../../../services/user.service';
-import { RatingService } from '../../../../services/rating.service';
+import { FormsModule } from '@angular/forms';
+import { LucideAngularModule, HardHat, Store, Package, Users, ArrowLeft, Check, Edit, ClipboardList, DollarSign, UserCheck, UserPlus, TrendingUp, Star, Rocket, ArrowRight, RotateCcw, ChevronDown, Eye, EyeOff, MessageSquare, Building2, Truck, Send, X, Mail, Phone, Shield, CheckCircle2, Zap } from 'lucide-angular';
+import { BomService } from '../../../services/bom.service';
+import { BiddingService } from '../../../../../services/bidding.service';
+import { UserService } from '../../../../../services/user.service';
+import { RatingService } from '../../../../../services/rating.service';
+import { TeamManagementService, SendSubcontractorInviteRequest } from '../../../../../services/team-management.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -52,12 +54,23 @@ import { map, catchError } from 'rxjs/operators';
       postedToMarketplace: boolean;
       bids: Bid[];
       hasInternalQuote: boolean;
+      notes?: string | null;
+      laborBudgetVisible?: boolean;
+      materialBudgetVisible?: boolean;
+  }
+
+  interface InviteCandidate {
+    name: string;
+    company: string;
+    rating: number;
+    responseTime: string;
+    specialty: string;
   }
 
 @Component({
   selector: 'app-job-inbound-bidding',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './job-inbound-bidding.component.html',
   styleUrls: ['./job-inbound-bidding.component.scss']
 })
@@ -85,16 +98,54 @@ export class JobInboundBiddingComponent implements OnInit {
   Rocket = Rocket;
   ArrowRight = ArrowRight;
   RotateCcw = RotateCcw;
+  ChevronDown = ChevronDown;
+  Eye = Eye;
+  EyeOff = EyeOff;
+  MessageSquare = MessageSquare;
+  Building2 = Building2;
+  Truck = Truck;
+  Send = Send;
+  X = X;
+  Mail = Mail;
+  Phone = Phone;
+  Shield = Shield;
+  CheckCircle2 = CheckCircle2;
+  Zap = Zap;
 
   tradePackages: TradePackage[] = [];
   showAllInHouseConfirm = false;
   pendingAllInHouseCount = 0;
+  expandedPackageIds = new Set<string>();
+  hiddenLaborBudgetIds = new Set<string>();
+  hiddenMaterialsBudgetIds = new Set<string>();
+  packageNotes: Record<string, string> = {};
+  isSavingPackage = false;
+
+  directInviteOpen = false;
+  directInvitePkg: TradePackage | null = null;
+  directInviteName = '';
+  directInviteEmail = '';
+  directInvitePhone = '';
+  directInviteAlsoMarketplace = false;
+  directInviteSelected = new Set<number>();
+
+  marketplaceConfirmOpen = false;
+  marketplaceConfirmPkg: TradePackage | null = null;
+  marketplaceConfirmSelected = new Set<number>();
+
+  readonly inviteCandidates: InviteCandidate[] = [
+    { name: 'Marcus Rivera', company: 'Rivera Electric Co.', rating: 4.9, responseTime: '< 24 hrs', specialty: 'Commercial & Residential Electrical' },
+    { name: 'James O\'Connor', company: 'O\'Connor Mechanical', rating: 4.8, responseTime: '< 12 hrs', specialty: 'HVAC & Plumbing' },
+    { name: 'Sarah Mitchell', company: 'Mitchell Plumbing LLC', rating: 4.9, responseTime: '< 6 hrs', specialty: 'Residential Plumbing' },
+    { name: 'Robert Kowalski', company: 'Kowalski Roofing', rating: 4.6, responseTime: '< 24 hrs', specialty: 'Roofing & Waterproofing' },
+  ];
 
   constructor(
     private bomService: BomService,
     private biddingService: BiddingService,
     private userService: UserService,
     private ratingService: RatingService,
+    private teamManagementService: TeamManagementService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -109,15 +160,52 @@ export class JobInboundBiddingComponent implements OnInit {
     this.isLoading = true;
     this.bomService.getTradePackages(jobId).subscribe({
       next: (packages) => {
-        this.tradePackages = packages.map(pkg => ({
-          ...pkg,
-          trade: pkg.trade.replace(/\*\*/g, ''),
-          laborBudget: Number(pkg.laborBudget || (Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0))),
-          materialBudget: Number(pkg.materialBudget || 0),
-          totalBudget: Number(pkg.totalBudget || pkg.budget || 0),
-          effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
-          budget: Number(pkg.effectiveBudget || pkg.budget || 0),
-        }));
+        this.tradePackages = packages.map(pkg => {
+          const laborBudget = Number(pkg.laborBudget || 0);
+          const materialBudget = Number(pkg.materialBudget || 0);
+          const totalBudget = Number(
+            pkg.totalBudget ||
+              (laborBudget + materialBudget > 0 ? laborBudget + materialBudget : 0) ||
+              pkg.budget ||
+              0,
+          );
+          const normalizedLaborType = String(pkg.laborType || '').trim().toLowerCase();
+          const isLaborOnly = normalizedLaborType === 'labor' || normalizedLaborType === 'labor only';
+          const effectiveBudget = Number(
+            pkg.effectiveBudget || (isLaborOnly ? laborBudget : totalBudget) || pkg.budget || 0,
+          );
+
+          return {
+            ...pkg,
+            trade: pkg.trade.replace(/\*\*/g, ''),
+            laborBudget,
+            materialBudget,
+            totalBudget,
+            effectiveBudget,
+            budget: effectiveBudget,
+            notes: pkg.notes || '',
+            laborBudgetVisible: pkg.laborBudgetVisible !== false,
+            materialBudgetVisible: pkg.materialBudgetVisible !== false,
+          };
+        });
+
+        this.packageNotes = this.tradePackages.reduce((acc, pkg) => {
+          acc[pkg.id] = pkg.notes || '';
+          return acc;
+        }, {} as Record<string, string>);
+
+        this.hiddenLaborBudgetIds = new Set(
+          this.tradePackages
+            .filter((pkg) => pkg.laborBudgetVisible === false)
+            .map((pkg) => pkg.id),
+        );
+
+        this.hiddenMaterialsBudgetIds = new Set(
+          this.tradePackages
+            .filter((pkg) => pkg.materialBudgetVisible === false)
+            .map((pkg) => pkg.id),
+        );
+
         this.tradePackages.forEach((pkg) => this.recalculateBudgets(pkg));
         this.loadBids(jobId);
       },
@@ -214,12 +302,243 @@ export class JobInboundBiddingComponent implements OnInit {
       return [];
   }
 
+  isExpanded(pkgId: string): boolean {
+    return this.expandedPackageIds.has(pkgId);
+  }
+
+  toggleExpanded(pkgId: string): void {
+    const next = new Set(this.expandedPackageIds);
+    if (next.has(pkgId)) {
+      next.delete(pkgId);
+    } else {
+      next.add(pkgId);
+    }
+    this.expandedPackageIds = next;
+  }
+
+  expandAllVisible(): void {
+    this.expandedPackageIds = new Set(this.filteredPackages.map((pkg) => pkg.id));
+  }
+
+  collapseAllVisible(): void {
+    const next = new Set(this.expandedPackageIds);
+    this.filteredPackages.forEach((pkg) => next.delete(pkg.id));
+    this.expandedPackageIds = next;
+  }
+
+  get allVisibleExpanded(): boolean {
+    return this.filteredPackages.length > 0 && this.filteredPackages.every((pkg) => this.expandedPackageIds.has(pkg.id));
+  }
+
+  get allVisibleCollapsed(): boolean {
+    return this.filteredPackages.every((pkg) => !this.expandedPackageIds.has(pkg.id));
+  }
+
+  getCategoryIcon(pkg: TradePackage) {
+    if (pkg.category === 'supplier') return this.Truck;
+    if (pkg.category === 'vendor' || pkg.category === 'equipment') return this.Store;
+    return this.HardHat;
+  }
+
+  getCategoryLabel(pkg: TradePackage): string {
+    if (pkg.category === 'supplier') return 'Supplier';
+    if (pkg.category === 'vendor' || pkg.category === 'equipment') return 'Vendor';
+    return 'Trade';
+  }
+
+  onBudgetChanged(pkg: TradePackage, rawValue: string): void {
+    const budget = Number(rawValue);
+    const safeBudget = Number.isFinite(budget) && budget >= 0 ? budget : 0;
+    pkg.budget = safeBudget;
+    pkg.effectiveBudget = safeBudget;
+  }
+
+  getNotes(pkg: TradePackage): string {
+    return this.packageNotes[pkg.id] || '';
+  }
+
+  setNotes(pkg: TradePackage, value: string): void {
+    this.packageNotes[pkg.id] = value;
+    pkg.notes = value;
+  }
+
+  saveNotes(pkg: TradePackage): void {
+    this.persistPackageEdits(pkg, 'Notes saved');
+  }
+
+  toggleVisibility(pkg: TradePackage, target: 'labor' | 'materials'): void {
+    const setToToggle = target === 'labor' ? this.hiddenLaborBudgetIds : this.hiddenMaterialsBudgetIds;
+    const next = new Set(setToToggle);
+    if (next.has(pkg.id)) {
+      next.delete(pkg.id);
+    } else {
+      next.add(pkg.id);
+    }
+
+    if (target === 'labor') {
+      this.hiddenLaborBudgetIds = next;
+    } else {
+      this.hiddenMaterialsBudgetIds = next;
+    }
+
+    this.persistPackageEdits(pkg);
+  }
+
+  isVisibilityHidden(pkg: TradePackage, target: 'labor' | 'materials'): boolean {
+    return target === 'labor' ? this.hiddenLaborBudgetIds.has(pkg.id) : this.hiddenMaterialsBudgetIds.has(pkg.id);
+  }
+
+  showMaterialsVisibility(pkg: TradePackage): boolean {
+    if (pkg.category === 'supplier') return true;
+    if (pkg.category === 'vendor' || pkg.category === 'equipment') return true;
+    return !this.isLaborOnly(pkg);
+  }
+
+  getPostActionLabel(pkg: TradePackage): string {
+    if (pkg.category === 'supplier') return 'Request Supplier Quotes';
+    if (pkg.category === 'vendor' || pkg.category === 'equipment') return 'Post to Vendor Marketplace';
+    return 'Post to Marketplace';
+  }
+
+  onPlaceholderAction(action: 'directInvite', pkg: TradePackage): void {
+    if (action === 'directInvite') {
+      this.openDirectInvite(pkg);
+    }
+  }
+
+  openDirectInvite(pkg: TradePackage): void {
+    this.directInvitePkg = pkg;
+    this.directInviteOpen = true;
+    this.directInviteName = '';
+    this.directInviteEmail = '';
+    this.directInvitePhone = '';
+    this.directInviteAlsoMarketplace = false;
+    this.directInviteSelected = new Set<number>();
+  }
+
+  closeDirectInvite(): void {
+    this.directInviteOpen = false;
+    this.directInvitePkg = null;
+  }
+
+  toggleDirectInviteCandidate(index: number): void {
+    const next = new Set(this.directInviteSelected);
+    if (next.has(index)) {
+      next.delete(index);
+    } else {
+      next.add(index);
+    }
+    this.directInviteSelected = next;
+  }
+
+  get directInviteCount(): number {
+    const typedInvite = this.directInviteName.trim() && this.directInviteEmail.trim() ? 1 : 0;
+    return typedInvite + this.directInviteSelected.size;
+  }
+
+  sendDirectInvites(): void {
+    if (!this.directInvitePkg) return;
+    if (this.directInviteCount === 0) {
+      this.snackBar.open('Add at least one contact before sending invites.', 'Close', { duration: 2400 });
+      return;
+    }
+
+    const pkg = this.directInvitePkg;
+    const postAfterInvite = this.directInviteAlsoMarketplace;
+    const email = this.directInviteEmail.trim();
+    const contactName = this.directInviteName.trim();
+    const phoneNumber = this.directInvitePhone.trim();
+
+    if (!email) {
+      this.snackBar.open('Direct invite email is required. Recommended contractor sending is coming soon.', 'Close', {
+        duration: 3200,
+      });
+      return;
+    }
+
+    const parsedJobId = Number(this.projectDetails?.jobId || pkg.jobId);
+    const parsedTradePackageId = Number(pkg.id);
+
+    const invitePayload: SendSubcontractorInviteRequest = {
+      email,
+      contactName: contactName || null,
+      phoneNumber: phoneNumber || null,
+      jobId: Number.isFinite(parsedJobId) ? parsedJobId : null,
+      tradePackageId: Number.isFinite(parsedTradePackageId) ? parsedTradePackageId : null,
+      tradeName: pkg.trade,
+      category: pkg.category,
+      scopeOfWork: pkg.scopeOfWork || null,
+      budget: Number(pkg.effectiveBudget || pkg.totalBudget || pkg.budget || 0),
+      alsoMarketplace: postAfterInvite,
+    };
+
+    this.teamManagementService.sendSubcontractorInvite(invitePayload).subscribe({
+      next: () => {
+        pkg.status = postAfterInvite ? 'Posted' : 'Invited';
+        pkg.postedToMarketplace = postAfterInvite;
+
+        this.persistPackageEdits(
+          pkg,
+          postAfterInvite
+            ? `${pkg.trade} invited directly and pushed to marketplace.`
+            : `${pkg.trade} direct invite sent.`,
+          () => {
+            if (postAfterInvite) {
+              this.postPackageToMarketplace(pkg);
+            }
+          },
+        );
+
+        this.closeDirectInvite();
+      },
+      error: (err) => {
+        console.error('Failed to send subcontractor invite', err);
+        this.snackBar.open('Unable to send direct invite right now. Please try again.', 'Close', {
+          duration: 3200,
+        });
+      },
+    });
+  }
+
+  openMarketplaceConfirm(pkg: TradePackage): void {
+    this.marketplaceConfirmPkg = pkg;
+    this.marketplaceConfirmOpen = true;
+    this.marketplaceConfirmSelected = new Set<number>();
+  }
+
+  closeMarketplaceConfirm(): void {
+    this.marketplaceConfirmOpen = false;
+    this.marketplaceConfirmPkg = null;
+  }
+
+  toggleMarketplaceInvite(index: number): void {
+    const next = new Set(this.marketplaceConfirmSelected);
+    if (next.has(index)) {
+      next.delete(index);
+    } else {
+      next.add(index);
+    }
+    this.marketplaceConfirmSelected = next;
+  }
+
+  confirmMarketplacePost(): void {
+    if (!this.marketplaceConfirmPkg) return;
+    const pkg = this.marketplaceConfirmPkg;
+    const inviteCount = this.marketplaceConfirmSelected.size;
+    this.closeMarketplaceConfirm();
+    this.postPackageToMarketplace(pkg, inviteCount);
+  }
+
   get tradesCount() {
-    return this.tradePackages.filter(p => p.category === 'trade').length;
+    return this.tradePackages.filter(
+      (p) => p.category === 'trade' && !p.isHidden && !p.isInactive,
+    ).length;
   }
 
   get vendorsCount() {
-    return this.tradePackages.filter(p => p.category === 'vendor' || p.category === 'equipment').length;
+    return this.tradePackages.filter(
+      (p) => (p.category === 'vendor' || p.category === 'equipment') && !p.isHidden && !p.isInactive,
+    ).length;
   }
 
   get suppliersCount() {
@@ -228,6 +547,42 @@ export class JobInboundBiddingComponent implements OnInit {
 
   get packagesReadyCount() {
       return this.tradePackages.filter(p => p.postedToMarketplace || p.hasInternalQuote || p.isInHouse).length;
+  }
+
+  private isPackageHandled(pkg: TradePackage): boolean {
+    return !!(pkg.postedToMarketplace || pkg.hasInternalQuote || pkg.isInHouse);
+  }
+
+  get completedChecklistItems(): number {
+    const tradesHandled = this.tradePackages.filter(
+      (p) => p.category === 'trade' && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    const vendorsHandled = this.tradePackages.filter(
+      (p) => (p.category === 'vendor' || p.category === 'equipment') && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    const suppliersHandled = this.tradePackages.filter(
+      (p) => p.category === 'supplier' && !p.isHidden && !p.isInactive && this.isPackageHandled(p)
+    ).length;
+
+    return tradesHandled + vendorsHandled + suppliersHandled;
+  }
+
+  get totalChecklistItems(): number {
+    return this.tradesCount + this.vendorsCount + this.suppliersCount;
+  }
+
+  get checklistCompletionPercent(): number {
+    if (this.totalChecklistItems === 0) {
+      return 0;
+    }
+
+    return (this.completedChecklistItems / this.totalChecklistItems) * 100;
+  }
+
+  get allChecklistItemsComplete(): boolean {
+    return this.totalChecklistItems > 0 && this.completedChecklistItems === this.totalChecklistItems;
   }
 
   markAllInHouse(): void {
@@ -370,6 +725,10 @@ export class JobInboundBiddingComponent implements OnInit {
   }
 
   handlePostToMarketplace(pkg: TradePackage): void {
+      this.openMarketplaceConfirm(pkg);
+  }
+
+  private postPackageToMarketplace(pkg: TradePackage, invitesCount: number = 0): void {
       if (pkg.isInHouse) {
         this.snackBar.open('In-house packages are not posted to marketplace', 'Close', { duration: 3000 });
         return;
@@ -382,7 +741,8 @@ export class JobInboundBiddingComponent implements OnInit {
           this.bomService.postTradePackage(pkg.id).subscribe({
             next: () => {
               pkg.postedToMarketplace = true;
-              this.snackBar.open(`${pkg.trade} posted to marketplace`, 'Close', { duration: 3000 });
+              const inviteSuffix = invitesCount > 0 ? ` (+${invitesCount} direct invite${invitesCount > 1 ? 's' : ''})` : '';
+              this.snackBar.open(`${pkg.trade} posted to marketplace${inviteSuffix}`, 'Close', { duration: 3000 });
             },
             error: (err) => {
               console.error('Failed to post to marketplace', err);
@@ -395,6 +755,65 @@ export class JobInboundBiddingComponent implements OnInit {
           this.snackBar.open(`Failed to save updates for ${pkg.trade}`, 'Close', { duration: 3000 });
         }
       });
+  }
+
+  private persistPackageEdits(
+    pkg: TradePackage,
+    successMessage?: string,
+    onSuccess?: () => void,
+  ): void {
+    const payload = this.buildTradePackageUpdatePayload(pkg);
+    this.isSavingPackage = true;
+
+    this.bomService.updateTradePackage(Number(pkg.id), payload).subscribe({
+      next: () => {
+        this.isSavingPackage = false;
+        if (successMessage) {
+          this.snackBar.open(successMessage, 'Close', { duration: 2200 });
+        }
+        onSuccess?.();
+      },
+      error: (err) => {
+        this.isSavingPackage = false;
+        console.error('Failed to persist trade package edits', err);
+        this.snackBar.open(`Failed to save updates for ${pkg.trade}`, 'Close', { duration: 2600 });
+      },
+    });
+  }
+
+  shouldShowMaterialsToProcure(pkg: TradePackage): boolean {
+    return pkg.category === 'trade' && this.isLaborOnly(pkg) && Number(pkg.materialBudget || 0) > 0;
+  }
+
+  getMaterialsToProcure(pkg: TradePackage): Array<{ item: string; vendor: string; estimate: number }> {
+    const materialsCost = Math.max(0, Number(pkg.materialBudget || 0));
+    const prefix = (pkg.csiCode || '').substring(0, 5).trim();
+
+    const split = (items: Array<{ item: string; vendor: string; ratio: number }>) =>
+      items.map((it) => ({ ...it, estimate: Math.round(materialsCost * it.ratio) }));
+
+    if (prefix === '06 10') {
+      return split([
+        { item: 'Framing Lumber', vendor: 'Lumber Supplier', ratio: 0.45 },
+        { item: 'LVL Beams & Headers', vendor: 'Engineered Wood Supplier', ratio: 0.25 },
+        { item: 'Sheathing (OSB/Plywood)', vendor: 'Lumber Supplier', ratio: 0.2 },
+        { item: 'Fasteners & Hardware', vendor: 'Hardware Vendor', ratio: 0.1 },
+      ]);
+    }
+
+    if (prefix === '07 01') {
+      return split([
+        { item: 'Roof Panels/Shingles', vendor: 'Roofing Supplier', ratio: 0.55 },
+        { item: 'Underlayment & Flashing', vendor: 'Roofing Supplier', ratio: 0.25 },
+        { item: 'Sealants & Fasteners', vendor: 'Hardware Vendor', ratio: 0.2 },
+      ]);
+    }
+
+    return split([
+      { item: 'Primary Materials', vendor: 'General Supplier', ratio: 0.6 },
+      { item: 'Secondary Materials', vendor: 'General Supplier', ratio: 0.25 },
+      { item: 'Consumables', vendor: 'Hardware Vendor', ratio: 0.15 },
+    ]);
   }
 
   private calculateDurationDaysFromHours(hours: number): number | null {
@@ -414,7 +833,12 @@ export class JobInboundBiddingComponent implements OnInit {
       return 0;
     }
 
-    return Number(pkg.laborBudget || (Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0)));
+    const storedLabor = Number(pkg.laborBudget || 0);
+    if (storedLabor > 0) {
+      return storedLabor;
+    }
+
+    return Number(pkg.estimatedManHours || 0) * Number(pkg.hourlyRate || 0);
   }
 
   getAiTotalEstimate(pkg: TradePackage): number {
@@ -487,6 +911,9 @@ export class JobInboundBiddingComponent implements OnInit {
       sourceType: pkg.sourceType || null,
       isInHouse: !!pkg.isInHouse,
       postedToMarketplace: !!pkg.postedToMarketplace,
+      notes: this.getNotes(pkg) || null,
+      laborBudgetVisible: !this.hiddenLaborBudgetIds.has(pkg.id),
+      materialBudgetVisible: !this.hiddenMaterialsBudgetIds.has(pkg.id),
       createdAt: pkg.createdAt || new Date().toISOString(),
     };
   }

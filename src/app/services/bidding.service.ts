@@ -38,6 +38,41 @@ export class BiddingService {
     return this.http.post(`${this.apiUrl}/${jobId}/analyze-bids`, {});
   }
 
+  analyzeTradePackage(jobId: number, tradePackageId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/analyze-trade-package`, {
+      jobId,
+      tradePackageId,
+    });
+  }
+
+  analyzePreviewBids(
+    comparisonType: string,
+    bids: Array<{
+      bidId: number;
+      amount: number;
+      status: string;
+      probuildRating: number;
+      googleRating: number;
+    }>,
+    tradePackage?: {
+      id?: number;
+      tradeName?: string;
+      category?: string;
+      scopeOfWork?: string;
+      csiCode?: string;
+      budget?: number;
+      laborBudget?: number;
+      materialBudget?: number;
+      laborType?: string;
+    },
+  ): Observable<any> {
+    return this.http.post(`${this.apiUrl}/analyze-preview-bids`, {
+      comparisonType,
+      bids,
+      tradePackage,
+    });
+  }
+
   getBidsForJob(jobId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/${jobId}/bids`);
   }

@@ -80,6 +80,24 @@
         <p class="step-text">
           You are all set. Click submit to send your bid for review.
         </p>
+
+        <div *ngIf="loadingTradePackages" class="step-text">
+          Loading trade packages...
+        </div>
+
+        <div *ngIf="!loadingTradePackages && availableTradePackages.length > 0">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Trade package</mat-label>
+            <mat-select [(ngModel)]="selectedTradePackageId" required>
+              <mat-option
+                *ngFor="let pkg of availableTradePackages"
+                [value]="pkg.id"
+              >
+                {{ pkg.trade }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
       </div>
     </mat-step>
   </mat-stepper>

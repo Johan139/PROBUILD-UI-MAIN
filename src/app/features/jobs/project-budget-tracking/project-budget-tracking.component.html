@@ -1,3 +1,4 @@
+<ng-container *ngIf="isBudgetViewReady; else budgetLoadingState">
 <!-- Financial Overview Panel -->
 <div class="dashboard-grid">
   <div class="dashboard-card">
@@ -100,7 +101,108 @@
 </div>
 
 <!-- Budget Tracking Table -->
-<mat-card class="mb-6">
+<mat-accordion class="dashboard-accordion mb-6" multi>
+  <mat-expansion-panel class="dashboard-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <div class="panel-header-content">
+          <mat-icon class="title-icon">pie_chart</mat-icon>
+          <span class="panel-title-text">Budget Breakdown by Division</span>
+          <span class="panel-subtitle">Material vs Labor</span>
+        </div>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="budget-breakdown-container">
+      <div class="division-list">
+        <div class="list-header">Cost by Division</div>
+        <button
+          class="division-item"
+          [class.active]="selectedDivision === 'all'"
+          (click)="selectedDivision = 'all'"
+        >
+          <span>All Divisions (Total)</span>
+          <div class="division-stats">
+            <span class="pct">100%</span>
+            <span class="amount">{{ displayTotalBudget | currency: "USD" : "symbol" : "1.0-0" }}</span>
+          </div>
+        </button>
+        <button
+          *ngFor="let phase of costByPhase"
+          class="division-item"
+          [class.active]="selectedDivision === phase.name"
+          (click)="selectedDivision = phase.name"
+        >
+          <span class="phase-name">{{ phase.name }}</span>
+          <div class="division-stats">
+            <span class="pct">{{ (displayTotalBudget > 0 ? phase.value / displayTotalBudget : 0) | percent: "1.0-0" }}</span>
+            <span class="amount">{{ phase.value | currency: "USD" : "symbol" : "1.0-0" }}</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="split-view">
+        <div class="split-header">
+          Material vs Labor Split
+          <span class="highlight">{{ currentDivisionStats.name }}</span>
+        </div>
+        <div class="split-card">
+          <div class="split-row">
+            <div class="split-label-row">
+              <span>Materials</span>
+              <span class="font-medium">{{ currentDivisionStats.materials }}%</span>
+            </div>
+            <div class="split-progress-bg">
+              <div
+                class="split-progress yellow"
+                [style.width.%]="currentDivisionStats.materials"
+              ></div>
+            </div>
+            <p class="split-amount">
+              {{ currentDivisionStats.amount * (currentDivisionStats.materials / 100) | currency: "USD" : "symbol" : "1.0-0" }}
+            </p>
+          </div>
+
+          <div class="split-row mt-4">
+            <div class="split-label-row">
+              <span>Labor</span>
+              <span class="font-medium">{{ currentDivisionStats.labor }}%</span>
+            </div>
+            <div class="split-progress-bg">
+              <div
+                class="split-progress blue"
+                [style.width.%]="currentDivisionStats.labor"
+              ></div>
+            </div>
+            <p class="split-amount">
+              {{ currentDivisionStats.amount * (currentDivisionStats.labor / 100) | currency: "USD" : "symbol" : "1.0-0" }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel class="dashboard-panel" [expanded]="false">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <div class="panel-header-content">
+          <mat-icon class="title-icon">table_chart</mat-icon>
+          <span class="panel-title-text">
+            <ng-container [ngSwitch]="budgetTableTab">
+              <span *ngSwitchCase="'all'">Budget Breakdown</span>
+              <span *ngSwitchCase="'Subcontractor'"
+                >Subcontractor & Labor Breakdown</span
+              >
+              <span *ngSwitchCase="'Materials'">Materials Breakdown</span>
+              <span *ngSwitchCase="'Equipment'">Equipment Costs</span>
+              <span *ngSwitchCase="'Other'">Other Costs</span>
+            </ng-container>
+          </span>
+        </div>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
   <div class="table-header-row">
     <h3>
       <ng-container [ngSwitch]="budgetTableTab">
@@ -714,7 +816,16 @@
       </tfoot>
     </table>
   </div>
-</mat-card>
+  </mat-expansion-panel>
+</mat-accordion>
+
+</ng-container>
+
+<ng-template #budgetLoadingState>
+  <mat-card class="mb-6">
+    <div style="padding: 1.25rem; text-align: center;">Loading budget data...</div>
+  </mat-card>
+</ng-template>
 
 <!-- Additional Sections -->
 <div class="two-column-grid">

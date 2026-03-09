@@ -1,0 +1,410 @@
+<section class="phase-section">
+  <app-phase-navigation-header
+    stageLabel="Detailed Estimating &amp; Takeoff"
+    backLabel="Back to Scope Review"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Contract Award"
+    proceedLabel="Proceed to Contract Award"
+    [projectName]="projectDetails?.projectName"
+    [clientName]="projectDetails?.clientName"
+    [projectAddress]="projectDetails?.address"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+
+  <section class="takeoff-card">
+    <div class="takeoff-head">
+      <h3>Bills of Materials by Phase</h3>
+      <p>Review each phase breakdown and confirm you are happy before proceeding.</p>
+    </div>
+
+    <div class="takeoff-controls">
+      <button type="button" class="btn btn-outline" (click)="collapseAll()">Collapse All</button>
+      <button type="button" class="btn btn-outline" (click)="expandAll()">Expand All</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!bomKeys.length || allPhasesConfirmed"
+        (click)="confirmAllPhases()"
+      >
+        Confirm All Phases
+      </button>
+    </div>
+
+    <div class="phase-list" *ngIf="!isLoading; else loadingBomBlock">
+      <article class="phase-item" *ngFor="let key of objectKeys(billsOfMaterials)">
+        <button type="button" class="phase-item-header" (click)="toggleBomSection(key)">
+          <div class="phase-left">
+            <span class="phase-icon" [class.is-confirmed]="confirmedBomSections.has(key)">
+              {{ confirmedBomSections.has(key) ? '✓' : '$' }}
+            </span>
+            <div>
+            <p class="phase-name">{{ billsOfMaterials[key].name }}</p>
+            <p class="phase-meta">{{ billsOfMaterials[key].summary }}</p>
+            </div>
+          </div>
+          <div class="phase-right">
+            <span class="phase-total">
+              ${{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | number : '1.2-2' }}
+            </span>
+            <span class="state-pill" [class.is-active]="confirmedBomSections.has(key)">
+              {{ confirmedBomSections.has(key) ? 'Confirmed' : 'Pending' }}
+            </span>
+          </div>
+        </button>
+
+        <div class="phase-item-body" *ngIf="expandedBomSections.includes(key)">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Spec</th>
+                <th class="num">Qty</th>
+                <th class="num">Unit</th>
+                <th class="num">Unit Cost</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mat of billsOfMaterials[key].materials; let i = index">
+                <td>{{ mat.item }}</td>
+                <td>{{ mat.spec }}</td>
+                <td class="num">
+                  <button
+                    type="button"
+                    class="cell-edit-btn"
+                    *ngIf="!isEditingCell(key, 'materials', i, 'qty')"
+                    (click)="startCellEdit(key, 'materials', i, 'qty', mat.qty)"
+                  >
+                    {{ mat.qty }}
+                  </button>
+                  <input
+                    *ngIf="isEditingCell(key, 'materials', i, 'qty')"
+                    class="cell-edit-input"
+                    type="number"
+                    [value]="editBuffer"
+                    (input)="editBuffer = $any($event.target).value"
+                    (blur)="commitCellEdit()"
+                    (keydown)="handleEditKeydown($event)"
+                  />
+                </td>
+                <td class="num">{{ mat.unit }}</td>
+                <td class="num">
+                  <button
+                    type="button"
+                    class="cell-edit-btn"
+                    *ngIf="!isEditingCell(key, 'materials', i, 'unitCost')"
+                    (click)="startCellEdit(key, 'materials', i, 'unitCost', mat.unitCost)"
+                  >
+                    ${{ mat.unitCost }}
+                  </button>
+                  <input
+                    *ngIf="isEditingCell(key, 'materials', i, 'unitCost')"
+                    class="cell-edit-input"
+                    type="number"
+                    [value]="editBuffer"
+                    (input)="editBuffer = $any($event.target).value"
+                    (blur)="commitCellEdit()"
+                    (keydown)="handleEditKeydown($event)"
+                  />
+                </td>
+                <td class="num">${{ mat.total | number : '1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="items-table" *ngIf="billsOfMaterials[key].labor?.length">
+            <thead>
+              <tr>
+                <th>Trade</th>
+                <th>Scope</th>
+                <th class="num">Hours</th>
+                <th class="num">Rate</th>
+                <th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let labor of billsOfMaterials[key].labor; let i = index">
+                <td>{{ labor.trade }}</td>
+                <td>{{ labor.scope }}</td>
+                <td class="num">
+                  <button
+                    type="button"
+                    class="cell-edit-btn"
+                    *ngIf="!isEditingCell(key, 'labor', i, 'hours')"
+                    (click)="startCellEdit(key, 'labor', i, 'hours', labor.hours)"
+                  >
+                    {{ labor.hours }}
+                  </button>
+                  <input
+                    *ngIf="isEditingCell(key, 'labor', i, 'hours')"
+                    class="cell-edit-input"
+                    type="number"
+                    [value]="editBuffer"
+                    (input)="editBuffer = $any($event.target).value"
+                    (blur)="commitCellEdit()"
+                    (keydown)="handleEditKeydown($event)"
+                  />
+                </td>
+                <td class="num">
+                  <button
+                    type="button"
+                    class="cell-edit-btn"
+                    *ngIf="!isEditingCell(key, 'labor', i, 'rate')"
+                    (click)="startCellEdit(key, 'labor', i, 'rate', labor.rate)"
+                  >
+                    ${{ labor.rate }}
+                  </button>
+                  <input
+                    *ngIf="isEditingCell(key, 'labor', i, 'rate')"
+                    class="cell-edit-input"
+                    type="number"
+                    [value]="editBuffer"
+                    (input)="editBuffer = $any($event.target).value"
+                    (blur)="commitCellEdit()"
+                    (keydown)="handleEditKeydown($event)"
+                  />
+                </td>
+                <td class="num">${{ labor.total | number : '1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="phase-footer">
+            <span>Phase Subtotal</span>
+            <strong>
+              ${{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | number : '1.2-2' }}
+            </strong>
+          </div>
+
+          <div class="inline-disclaimer" *ngIf="!confirmedBomSections.has(key)">
+            <strong>AI-Generated Estimate.</strong>
+            Review quantities and pricing carefully before accepting this phase.
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-outline confirm-btn"
+            [class.is-confirmed]="confirmedBomSections.has(key)"
+            (click)="toggleSectionConfirm(key)"
+          >
+            {{ confirmedBomSections.has(key)
+              ? 'Remove Confirmation'
+              : 'I have reviewed and confirm this phase' }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #loadingBomBlock>
+      <p class="phase-meta">Loading BOM analysis...</p>
+    </ng-template>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Confirmed Phases</span>
+      <strong>{{ confirmedBomSections.size }} / {{ bomKeys.length }}</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="confirmedProgressPercent"></div>
+    </div>
+  </section>
+
+  <section class="ve-card">
+    <button type="button" class="ve-toggle" (click)="toggleVeOpen()">
+      <div class="ve-header">
+        <div>
+          <h3>
+            <span class="ve-icon-badge">
+              <lucide-icon name="zap" class="ve-zap"></lucide-icon>
+            </span>
+            Value Engineering Options
+          </h3>
+          <p>Select options to reduce costs without significantly compromising quality.</p>
+        </div>
+        <div class="text-right">
+          <p class="mini-label">Potential Savings</p>
+          <p class="phase-total">${{ totalVeSavings | number : '1.0-0' }}</p>
+        </div>
+      </div>
+      <span class="ve-caret" [class.is-open]="veOpen">⌄</span>
+    </button>
+
+    <div class="ve-list" *ngIf="veOpen">
+      <article class="ve-item" *ngFor="let ve of valueEngineering">
+        <button type="button" class="ve-item-head" (click)="toggleVeExpanded(ve.id)">
+          <div class="ve-main">
+            <div>
+              <p class="phase-name">
+                <span class="ve-icon-badge small" [class.is-active]="isVeApplied(ve.id)" [class.is-inactive]="!isVeApplied(ve.id)">
+                  <lucide-icon name="zap" class="ve-zap small"></lucide-icon>
+                </span>
+                {{ ve.id }} - {{ stripMarkdown(ve.category || 'Value Engineering') }}
+              </p>
+              <p class="phase-meta">You Save ${{ getVeSavings(ve) | number : '1.0-0' }}</p>
+            </div>
+          </div>
+          <div class="ve-head-right">
+            <span class="state-pill" [class.is-active]="isVeApplied(ve.id)" [class.is-inactive]="!isVeApplied(ve.id)">
+              {{ isVeApplied(ve.id) ? 'Applied' : 'Not Applied' }}
+            </span>
+            <span class="ve-row-caret" [class.is-open]="expandedVE === ve.id">⌄</span>
+          </div>
+        </button>
+
+        <div class="ve-item-body" *ngIf="expandedVE === ve.id">
+          <div class="ve-cost-summary">
+            <article>
+              <p class="mini-label">Original Cost</p>
+              <strong>${{ getVeOriginalCost(ve) | number : '1.0-0' }}</strong>
+            </article>
+            <article>
+              <p class="mini-label">Alternative Cost</p>
+              <strong>${{ getVeAlternativeCost(ve) | number : '1.0-0' }}</strong>
+            </article>
+            <article class="save">
+              <p class="mini-label">You Save</p>
+              <strong>${{ getVeSavings(ve) | number : '1.0-0' }}</strong>
+            </article>
+          </div>
+
+          <div class="ve-details-grid">
+            <div>
+              <p class="mini-label ve-detail-label">Original Specification</p>
+              <p>{{ stripMarkdown(ve.original) }}</p>
+            </div>
+            <div>
+              <p class="mini-label ve-detail-label">Proposed Alternative</p>
+              <p>{{ stripMarkdown(ve.proposed) }}</p>
+            </div>
+            <div>
+              <p class="mini-label ve-detail-label">Schedule Impact</p>
+              <p>{{ stripMarkdown(ve.scheduleImpact || 'Neutral') }}</p>
+            </div>
+            <div>
+              <p class="mini-label ve-detail-label">Performance Impact</p>
+              <p>{{ stripMarkdown(ve.performanceImpact || 'See analysis') }}</p>
+            </div>
+          </div>
+
+          <div class="ve-actions">
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="!isVeApplied(ve.id)"
+              [class.btn-outline]="isVeApplied(ve.id)"
+              [disabled]="isVeSaving(ve.id)"
+              (click)="applyOrRemoveVe(ve.id)"
+            >
+              {{
+                isVeSaving(ve.id)
+                  ? (isVeApplied(ve.id) ? 'Removing...' : 'Applying...')
+                  : (isVeApplied(ve.id) ? 'Remove Option' : 'Apply Option')
+              }}
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="quote-card" *ngIf="!quoteGenerated; else generatedQuoteBlock">
+    <h4>{{ allPhasesConfirmed ? 'Ready to Generate Quotation?' : 'Confirm All Phases to Continue' }}</h4>
+    <p *ngIf="allPhasesConfirmed; else phaseReminder">
+      We will create a client-facing quotation from your confirmed selections.
+    </p>
+    <ng-template #phaseReminder>
+      <p>
+        {{ bomKeys.length - confirmedBomSections.size }} phase{{ bomKeys.length - confirmedBomSections.size === 1 ? '' : 's' }}
+        remaining.
+      </p>
+    </ng-template>
+
+    <div class="quote-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!allPhasesConfirmed || isGeneratingQuote"
+        (click)="generateQuotation()"
+      >
+        {{ isGeneratingQuote ? 'Generating Quote...' : 'Generate Quotation' }}
+      </button>
+    </div>
+
+    <div class="budget-grid">
+      <article>
+        <p class="mini-label">Direct Costs</p>
+        <strong>${{ adjustedEstimateTotal | number : '1.2-2' }}</strong>
+      </article>
+      <article>
+        <p class="mini-label">Total Project Budget</p>
+        <strong>${{ projectBudget | number : '1.0-0' }}</strong>
+      </article>
+      <article>
+        <p class="mini-label">Recommended Bid</p>
+        <strong>${{ recommendedBid | number : '1.0-0' }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <ng-template #generatedQuoteBlock>
+    <section class="quote-card generated">
+      <h4>Quotation Generated</h4>
+      <p>Quotation is ready. You can view, regenerate, or send it to the client.</p>
+
+      <div class="quote-actions">
+        <button type="button" class="btn btn-outline" (click)="viewQuote()">View Quote</button>
+        <button
+          type="button"
+          class="btn btn-outline"
+          [disabled]="isGeneratingQuote"
+          (click)="regenerateQuote()"
+        >
+          {{ isGeneratingQuote ? 'Regenerating...' : 'Regenerate Quote' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSending || isGeneratingQuote"
+          (click)="sendToClient()"
+        >
+          {{ isSending ? 'Sending...' : 'Send to Client' }}
+        </button>
+      </div>
+
+      <div class="quote-revision-card">
+        <div class="quote-revision-content">
+          <div class="quote-revision-icon" aria-hidden="true">
+            <lucide-icon name="rotate-ccw"></lucide-icon>
+          </div>
+          <div>
+            <h4 class="quote-revision-title">Need to make changes?</h4>
+            <p class="quote-revision-copy">
+              Update your BOM selections above and regenerate a revised quotation.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-outline quote-revision-btn"
+          [disabled]="isGeneratingQuote || isSending"
+          (click)="startQuoteRevision()"
+        >
+          <lucide-icon name="rotate-ccw"></lucide-icon>
+          Revise &amp; Regenerate
+        </button>
+      </div>
+    </section>
+  </ng-template>
+</section>
+

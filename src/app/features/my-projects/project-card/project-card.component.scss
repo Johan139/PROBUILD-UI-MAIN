@@ -178,29 +178,61 @@
   }
 }
 
-// Background color classes for status
-.bg-blue-500 {
-  background-color: var(--color-bidding);
+// Status badge color )
+.status-initiation {
+  background-color: var(--color-status-initiation);
 }
 
-.bg-green-500 {
-  background-color: var(--color-live);
+.status-bid-solicitation {
+  background-color: var(--color-status-bid-solicitation);
 }
 
-.bg-gray-500 {
-  background-color: var(--color-draft);
+.status-construction-live {
+  background-color: var(--color-status-construction-live);
 }
 
-.bg-red-500 {
+.status-preliminary-scope {
+  background-color: var(--color-status-preliminary-scope);
+}
+
+.status-detailed-takeoff {
+  background-color: var(--color-status-detailed-takeoff);
+}
+
+.status-contract-award {
+  background-color: var(--color-status-contract-award);
+}
+
+.status-pre-construction {
+  background-color: var(--color-status-pre-construction);
+}
+
+.status-trade-award {
+  background-color: var(--color-status-trade-award);
+}
+
+.status-mobilization {
+  background-color: var(--color-status-mobilization);
+}
+
+.status-closeout {
+  background-color: var(--color-status-closeout);
+}
+
+.status-failed {
   background-color: var(--color-failed);
 }
 
-.bg-yellow-500 {
+.status-discard {
   background-color: var(--color-discard);
 }
 
-.bg-purple-500 {
+.status-new {
   background-color: var(--color-new);
+}
+
+.status-archived {
+  background-color: var(--color-status-archived);
 }
 
 .card-title-bar {
@@ -219,8 +251,8 @@
 }
 
 // New Analyzing Styles
-.bg-orange-500 {
-  background-color: #f97316;
+.status-analyzing {
+  background-color: var(--color-analyzing);
 }
 
 .analyzing-overlay {
@@ -253,7 +285,7 @@
       font-size: 18px;
       width: 18px;
       height: 18px;
-      color: #f97316;
+      color: var(--color-analyzing);
     }
   }
 

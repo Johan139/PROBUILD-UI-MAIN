@@ -47,25 +47,72 @@ export class ProjectCardComponent {
 
   constructor(private snackBar: MatSnackBar) {}
 
-  statusColors = {
-    BIDDING: 'bg-blue-500',
-    LIVE: 'bg-green-500',
-    DRAFT: 'bg-gray-500',
-    FAILED: 'bg-red-500',
-    DISCARD: 'bg-purple-500',
-    NEW: 'bg-yellow-500',
-    ANALYZING: 'bg-orange-500',
+  statusColors: Record<string, string> = {
+    INITIATION: 'status-initiation',
+    BIDDING: 'status-bid-solicitation',
+    BID_SOLICITATION: 'status-bid-solicitation',
+    LIVE: 'status-construction-live',
+    CONSTRUCTION_LIVE: 'status-construction-live',
+    DRAFT: 'status-preliminary-scope',
+    PRELIMINARY: 'status-preliminary-scope',
+    PRELIMINARY_SCOPE: 'status-preliminary-scope',
+    DETAILED_TAKEOFF: 'status-detailed-takeoff',
+    CONTRACT_AWARD: 'status-contract-award',
+    PRE_CONSTRUCTION: 'status-pre-construction',
+    TRADE_AWARD: 'status-trade-award',
+    MOBILIZATION: 'status-mobilization',
+    CLOSEOUT: 'status-closeout',
+    COMPLETED: 'status-closeout',
+    FAILED: 'status-failed',
+    DISCARD: 'status-discard',
+    ARCHIVED: 'status-archived',
+    CLOSURE: 'status-archived',
+    NEW: 'status-new',
+    ANALYZING: 'status-analyzing',
   };
 
-  statusLabels = {
+  statusLabels: Record<string, string> = {
+    INITIATION: 'Project Initiation',
     BIDDING: 'Bidding Phase',
+    BID_SOLICITATION: 'Bid Solicitation',
     LIVE: 'Live Project',
+    CONSTRUCTION_LIVE: 'Construction Live',
     DRAFT: 'Preliminary',
+    PRELIMINARY: 'Preliminary Scope Review',
+    PRELIMINARY_SCOPE: 'Preliminary Scope Review',
+    DETAILED_TAKEOFF: 'Detailed Estimating & Takeoff',
+    CONTRACT_AWARD: 'Contract Award & Execution',
+    PRE_CONSTRUCTION: 'Pre-Construction & Compliance',
+    TRADE_AWARD: 'Trade Award & Final Buyout',
+    MOBILIZATION: 'Project Mobilization',
+    CLOSEOUT: 'Project Closeout & Handover',
+    COMPLETED: 'Completed',
     FAILED: 'Failed',
     DISCARD: 'Discarded',
+    ARCHIVED: 'Archived',
+    CLOSURE: 'Closed',
     NEW: 'New',
     ANALYZING: 'Analyzing',
   };
+
+  getStatusColor(status: string | undefined): string {
+    if (!status) return 'status-preliminary-scope';
+    return this.statusColors[status] || 'status-preliminary-scope';
+  }
+
+  getStatusLabel(status: string | undefined): string {
+    if (!status) return 'Unknown';
+    return this.statusLabels[status] || status.replace(/_/g, ' ');
+  }
+
+  isActivationStage(status: string | undefined): boolean {
+    return (
+      status === 'DRAFT' ||
+      status === 'NEW' ||
+      status === 'PRELIMINARY' ||
+      status === 'PRELIMINARY_SCOPE'
+    );
+  }
 
   openThumbnailPicker(event: MouseEvent): void {
     event.preventDefault();

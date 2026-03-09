@@ -23,16 +23,9 @@ export class ReportService {
       }
       const fullResponse = results[0].fullResponse;
 
-      const startMarker = '### 4. Permits and Approvals Report';
-      const endMarker = '### 5. Blueprint Review & Error Report';
-
-      const startIndex = fullResponse.indexOf(startMarker);
-      if (startIndex === -1) return [];
-
-      let sectionContent = fullResponse.substring(startIndex);
-      const endIndex = sectionContent.indexOf(endMarker);
-      if (endIndex !== -1) {
-        sectionContent = sectionContent.substring(0, endIndex);
+      const sectionContent = this.extractPermitsSection(fullResponse);
+      if (!sectionContent) {
+        return [];
       }
 
       const lines = sectionContent.split('\n');
@@ -40,12 +33,21 @@ export class ReportService {
       let inTable = false;
 
       for (const line of lines) {
-        if (line.trim().startsWith('|') && line.includes('---')) {
+        const trimmed = line.trim();
+
+        if (!trimmed.startsWith('|')) {
+          if (inTable) {
+            break;
+          }
+          continue;
+        }
+
+        if (trimmed.includes('---')) {
           inTable = true;
           continue;
         }
 
-        if (inTable && line.trim().startsWith('|')) {
+        if (inTable) {
           const parts = line
             .split('|')
             .map((p) => p.trim())
@@ -55,7 +57,7 @@ export class ReportService {
             const agency = parts[1].replace(/\*\*/g, '');
             const requirements = parts[2].replace(/\*\*/g, '');
 
-            if (name !== 'Permit Name') {
+            if (name.toLowerCase() !== 'permit name') {
               permits.push({
                 jobId: parseInt(jobId),
                 name: name,
@@ -74,6 +76,27 @@ export class ReportService {
       console.error('Failed to get permits report:', err);
       return [];
     }
+  }
+
+  private extractPermitsSection(fullResponse: string): string | null {
+    const headingPattern = /^\s*#{2,6}\s*\*{0,2}\s*4\.\s*Permits\s+and\s+Approvals\s+Report\s*\*{0,2}\s*$/im;
+    const headingMatch = headingPattern.exec(fullResponse);
+
+    if (!headingMatch || headingMatch.index === undefined) {
+      return null;
+    }
+
+    const startIndex = headingMatch.index;
+    const afterStart = fullResponse.slice(startIndex + headingMatch[0].length);
+
+    const nextHeadingPattern = /^\s*#{2,6}\s*\*{0,2}\s*\d+\./im;
+    const nextHeadingMatch = nextHeadingPattern.exec(afterStart);
+
+    if (!nextHeadingMatch || nextHeadingMatch.index === undefined) {
+      return fullResponse.slice(startIndex);
+    }
+
+    return fullResponse.slice(startIndex, startIndex + headingMatch[0].length + nextHeadingMatch.index);
   }
 
   async getEnvironmentalReportContent(jobId: string): Promise<string | null> {
@@ -307,78 +330,151 @@ export class ReportService {
         return null;
       }
       const fullResponse = results[0].fullResponse;
-      //console.log('REPORT SERVICE - Full Response for Executive Summary Data:', fullResponse);
+      const cleaned = fullResponse.replace(/```json[\s\S]*?```/g, '').trim();
+      const sectionMatch = cleaned.match(
+        /###\s*Executive Summary([\s\S]*?)(?:Executive Summary Complete\.|$)/i,
+      );
+      const summaryText = sectionMatch?.[1] || cleaned;
 
-      // Extract Key Highlights
-      const totalCostMatch = fullResponse.match(
-        /\*\*\s*Total Estimated Cost:?\s*\*\*\s*(\$[0-9,.]+)/i
-      );
-      const durationMatch = fullResponse.match(
-        /\*\*\s*Project Duration:?\s*\*\*\s*(.*?)(?=\n|$)/i
-      );
-      const veMatch = fullResponse.match(
-        /\*\*\s*Value Engineering Potential:?\s*\*\*\s*(\$[0-9,.]+)/i
-      );
-      const riskMatch = fullResponse.match(
-        /\*\*\s*Critical Blueprint Deficiency:?\s*\*\*\s*(.*?)(?=\n|$)/i
-      );
-      const complianceMatch = fullResponse.match(
-        /\*\*\s*Compliance Risk:?\s*\*\*\s*(.*?)(?=\n|$)/i
+      const cleanText = (value: string): string =>
+        String(value || '')
+          .replace(/\*\*/g, '')
+          .replace(/`/g, '')
+          .trim();
+
+      const extractBlock = (titleRegex: RegExp, untilRegex?: RegExp): string => {
+        const fromTitle = summaryText.match(titleRegex);
+        if (!fromTitle || fromTitle.index === undefined) return '';
+
+        const blockStart = fromTitle.index + fromTitle[0].length;
+        let block = summaryText.substring(blockStart);
+        if (untilRegex) {
+          const end = block.match(untilRegex);
+          if (end && end.index !== undefined) {
+            block = block.substring(0, end.index);
+          }
+        }
+        return cleanText(block);
+      };
+
+      const numberedHeading = (numPattern: string, title: string): RegExp =>
+        new RegExp(
+          `(?:^|\\n)\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?${numPattern}\\.?\\s*${title}(?:\\*\\*)?\\s*`,'i',
+        );
+
+      const nextNumberedHeading = (numPattern: string): RegExp =>
+        new RegExp(`(?:\\n)\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?${numPattern}\\.?`,'i');
+
+      const overview = extractBlock(
+        numberedHeading('1', 'Overview'),
+        nextNumberedHeading('2'),
       );
 
-      // Extract Overall Confidence
-      const confidenceMatch = fullResponse.match(
-        /\|\s*\*\*Overall Confidence Index\*\*\s*\|\s*\*\*(\d+)%\*\*/
+      const keyHighlightsBlock = extractBlock(
+        numberedHeading('2', 'Key Highlights'),
+        nextNumberedHeading('3'),
+      );
+      const keyHighlights = keyHighlightsBlock
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /^[-*]\s+/.test(line))
+        .map((line) => line.replace(/^[-*]\s+/, ''))
+        .map((line) => {
+          const parts = line.split(':');
+          const label = cleanText(parts[0] || 'Highlight');
+          const valueRaw = cleanText(parts.slice(1).join(':'));
+          const money = valueRaw.match(/\$[\d,.]+/);
+          const percent = valueRaw.match(/\d+(?:\.\d+)?%/);
+          const duration = valueRaw.match(/\b\d+\s*(?:months?|weeks?)\b/i);
+          const value = money?.[0] || percent?.[0] || duration?.[0] || valueRaw || 'N/A';
+          return {
+            label,
+            value,
+            note: valueRaw,
+          };
+        });
+
+      const extractBullets = (block: string): string[] =>
+        block
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => /^[-*]\s+/.test(line))
+          .map((line) => cleanText(line.replace(/^[-*]\s+/, '')))
+          .filter(Boolean);
+
+      const opportunities = extractBullets(
+        extractBlock(numberedHeading('3\\.1', 'Opportunities'), nextNumberedHeading('3\\.2')),
+      );
+      const strategicRisks = extractBullets(
+        extractBlock(
+          numberedHeading('3\\.2', 'Risks\\s*&\\s*Challenges'),
+          nextNumberedHeading('3\\.3'),
+        ),
+      );
+      const strategicImplications = extractBullets(
+        extractBlock(
+          numberedHeading('3\\.3', 'Strategic\\s*Implications'),
+          nextNumberedHeading('4'),
+        ),
       );
 
-      // Extract Risk Factors from Table
+      const recommendation = extractBlock(
+        numberedHeading('13', 'Executive Recommendation'),
+        /\n\s*Executive Summary Complete\.|\n###/i,
+      );
+
+      const priorities = summaryText
+        .match(new RegExp(`${numberedHeading('10', 'Top 3 Executive Priorities[\\s\\S]*').source}[\\s\\S]*?(?=${nextNumberedHeading('11').source}|\\n###|$)`, 'i'))?.[0]
+        ?.split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /^\d+\./.test(line))
+        .map((line) => cleanText(line.replace(/^\d+\.\s*/, '')))
+        .filter(Boolean) || [];
+
       const risks: any[] = [];
-      const riskTableRegex = /\| Risk Category \| Severity \| Probability \| Notes \|\s*\n\| :--- \| :--- \| :--- \| :--- \|\s*\n([\s\S]*?)(?=\n\n)/;
-      const riskTableMatch = fullResponse.match(riskTableRegex);
-
+      const riskTableRegex =
+        /\|\s*Risk Category\s*\|\s*Severity\s*\|\s*Probability\s*\|\s*Notes\s*\|\s*\n\|[\s:\-\|]+\n([\s\S]*?)(?=\n\n|\n####|\n###|$)/i;
+      const riskTableMatch = summaryText.match(riskTableRegex);
       if (riskTableMatch && riskTableMatch[1]) {
-        const lines = riskTableMatch[1].trim().split('\n');
+        const lines = riskTableMatch[1]
+          .trim()
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('|'));
+
         lines.forEach((line) => {
-          const parts = line.split('|').map((p) => p.trim());
-          if (parts.length >= 5) {
+          const parts = line
+            .split('|')
+            .map((p) => cleanText(p))
+            .filter((p) => p !== '');
+          if (parts.length >= 4) {
             risks.push({
-              risk: parts[1].replace(/\*\*/g, ''), // Category
-              severity: parts[2].toLowerCase(),
-              probability: parts[3],
-              description: parts[4].replace(/\*\*/g, ''),
+              risk: parts[0],
+              severity: parts[1].toLowerCase() === 'high' ? 'high' : 'medium',
+              probability: parts[2],
+              description: parts[3],
             });
           }
         });
       }
 
+      const confidenceMatch =
+        summaryText.match(/\*\*Overall Confidence Score\*\*\s*\|\s*\*\*(\d+)%\*\*/i) ||
+        summaryText.match(/\*\*Overall Confidence Index\*\*\s*\|\s*\*\*(\d+)%\*\*/i);
+
       return {
-        overview:
-          'This document presents a comprehensive construction analysis based on the provided blueprints.', // Default text or extract from "1. Overview"
-        keyHighlights: [
-          {
-            label: 'Total Project Cost',
-            value: totalCostMatch ? totalCostMatch[1] : 'N/A',
-            note: 'Estimated',
-          },
-          {
-            label: 'Project Duration',
-            value: durationMatch ? durationMatch[1] : 'N/A',
-            note: 'Estimated',
-          },
-          {
-            label: 'Value Engineering',
-            value: veMatch ? veMatch[1] : 'N/A',
-            note: 'Potential Savings',
-          },
-          {
-            label: 'Critical Risk',
-            value: riskMatch ? 'Deficiencies Found' : 'None Identified',
-            note: riskMatch ? riskMatch[1].substring(0, 50) + '...' : '',
-          },
-        ],
-        riskFactors: risks.length > 0 ? risks : [],
+        overview,
+        keyHighlights,
+        riskFactors: risks,
+        strategicAnalysis: {
+          opportunities,
+          risks: strategicRisks,
+          implications: strategicImplications,
+        },
+        topPriorities: priorities,
+        executiveRecommendation: recommendation,
         blueprintConfidence: {
-          overallConfidence: confidenceMatch ? parseInt(confidenceMatch[1]) : 0,
+          overallConfidence: confidenceMatch ? parseInt(confidenceMatch[1], 10) : 0,
         },
       };
     } catch (err) {
@@ -539,48 +635,105 @@ export class ReportService {
       }
 
       // 3. Extract Room Count (from Room Identification Table)
-      // Look for the table under "2. Room Identification"
-      const roomSectionStart = fullResponse.indexOf(
-        '### 2. Room Identification',
-      );
-      if (roomSectionStart !== -1) {
-        const tableStart = fullResponse.indexOf(
-          '| Room Name | Area',
-          roomSectionStart,
-        );
-        if (tableStart !== -1) {
-          const tableEnd = fullResponse.indexOf(
-            '**Total (Sum):**',
-            tableStart,
-          );
-          if (tableEnd !== -1) {
-            const tableContent = fullResponse.substring(tableStart, tableEnd);
-            // Count lines that start with '|' and are not header/separator
-            const lines = tableContent.split('\n').filter((line) => {
-              const trimmed = line.trim();
-              return (
-                trimmed.startsWith('|') &&
-                !trimmed.includes('Room Name') &&
-                !trimmed.includes(':---')
-              );
-            });
-            roomCount = lines.length;
+      // Supports markdown table format variants and excludes summary/total rows
+      const cleanCell = (value: string): string =>
+        value
+          .replace(/\*\*/g, '')
+          .replace(/`/g, '')
+          .replace(/<br\s*\/?>/gi, ' ')
+          .trim();
 
-            rooms = lines
-              .map((line) => {
-                const parts = line
-                  .split('|')
-                  .map((p) => p.trim())
-                  .filter((p) => p !== '');
-                if (parts.length >= 2) {
-                  return { name: parts[0], area: parts[1] };
-                }
-                return null;
-              })
-              .filter((r): r is { name: string; area: string } => r !== null);
+      const splitMarkdownRow = (line: string): string[] =>
+        line
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((cell) => cleanCell(cell));
+
+      const isSeparatorRow = (line: string): boolean => {
+        const compact = line.replace(/\s+/g, '');
+        return /^\|?[:\-\|]+\|?$/.test(compact);
+      };
+
+      const parseRoomsFromTable = (
+        source: string,
+      ): { name: string; area: string }[] => {
+        const lines = source.split(/\r?\n/);
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line.startsWith('|')) continue;
+
+          const headerCells = splitMarkdownRow(line).map((c) =>
+            c.toLowerCase().trim(),
+          );
+          if (headerCells.length < 2) continue;
+
+          const roomColIndex = headerCells.findIndex((cell) =>
+            /\broom\b/.test(cell),
+          );
+          const areaColIndex = headerCells.findIndex(
+            (cell) => /\barea\b/.test(cell) || /sq\s*ft/.test(cell),
+          );
+
+          if (roomColIndex === -1 || areaColIndex === -1) continue;
+
+          let cursor = i + 1;
+          if (cursor < lines.length && isSeparatorRow(lines[cursor].trim())) {
+            cursor += 1;
+          }
+
+          const parsedRows: { name: string; area: string }[] = [];
+
+          for (; cursor < lines.length; cursor++) {
+            const rowLine = lines[cursor].trim();
+            if (!rowLine.startsWith('|')) break;
+            if (isSeparatorRow(rowLine)) continue;
+
+            const cells = splitMarkdownRow(rowLine);
+            if (
+              cells.length <= roomColIndex ||
+              cells.length <= areaColIndex
+            ) {
+              continue;
+            }
+
+            const roomName = cleanCell(cells[roomColIndex]);
+            const areaValue = cleanCell(cells[areaColIndex]);
+            const normalizedRoom = roomName.toLowerCase();
+
+            if (!roomName || !areaValue) continue;
+            if (/\btotal\b|\bsum\b/.test(normalizedRoom)) continue;
+            if (/^room\s*name$/i.test(roomName)) continue;
+
+            parsedRows.push({ name: roomName, area: areaValue });
+          }
+
+          if (parsedRows.length > 0) {
+            return parsedRows;
           }
         }
+
+        return [];
+      };
+
+      const roomSectionMatch = fullResponse.match(
+        /###\s*\d+\.\s*Room\s+Identification([\s\S]*?)(?=\n###\s*\d+\.|$)/i,
+      );
+
+      const roomSectionContent = roomSectionMatch
+        ? roomSectionMatch[1]
+        : fullResponse;
+
+      rooms = parseRoomsFromTable(roomSectionContent);
+
+      // Fallback for reports where headings vary but table still exists
+      if (rooms.length === 0) {
+        rooms = parseRoomsFromTable(fullResponse);
       }
+
+      roomCount = rooms.length;
 
       return {
         confidenceScore,
@@ -612,60 +765,89 @@ export class ReportService {
     fileName: string,
     title: string = 'Environmental Lifecycle Report',
   ): Promise<void> {
+    const pdfBlob = await this.generatePdfBlobFromHtml(htmlContent, title);
+    if (!pdfBlob) {
+      this.snackBar.open('An error occurred while generating the PDF.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(pdfBlob);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  async generatePdfBlobFromHtml(
+    htmlContent: string,
+    title: string = 'Environmental Lifecycle Report',
+  ): Promise<Blob | null> {
     const logo = new Image();
     logo.src = 'assets/logo.png';
 
-    const generateReport = (logoDataUrl?: string) => {
+    const generateReport = (logoDataUrl?: string): Promise<Blob> => {
       const worker = new Worker(
         new URL('../report-generator.worker', import.meta.url),
         { type: 'module' },
       );
 
-      worker.onmessage = ({ data }) => {
-        if (data.success) {
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(data.pdfBlob);
-          link.download = fileName;
-          link.click();
-          URL.revokeObjectURL(link.href);
-        } else {
-          this.snackBar.open(data.error, 'Close', { duration: 3000 });
-        }
-        worker.terminate();
-      };
+      return new Promise<Blob>((resolve, reject) => {
+        worker.onmessage = ({ data }) => {
+          if (data.success && data.pdfBlob) {
+            resolve(data.pdfBlob as Blob);
+          } else {
+            reject(new Error(data.error || 'Failed to generate PDF'));
+          }
+          worker.terminate();
+        };
 
-      worker.onerror = (error) => {
-        console.error('Worker error:', error);
-        this.snackBar.open(
-          'An error occurred while generating the PDF.',
-          'Close',
-          { duration: 3000 },
-        );
-        worker.terminate();
-      };
+        worker.onerror = (error) => {
+          console.error('Worker error:', error);
+          worker.terminate();
+          reject(new Error('An error occurred while generating the PDF.'));
+        };
 
-      const jsonContent = this._parseHtmlToJson(htmlContent);
-      worker.postMessage({
-        reportContent: jsonContent,
-        logoDataUrl: logoDataUrl,
-        title: title,
+        const jsonContent = this._parseHtmlToJson(htmlContent);
+        worker.postMessage({
+          reportContent: jsonContent,
+          logoDataUrl: logoDataUrl,
+          title: title,
+        });
       });
     };
 
-    logo.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = logo.width;
-      canvas.height = logo.height;
-      ctx!.drawImage(logo, 0, 0);
-      const logoDataUrl = canvas.toDataURL('image/png');
-      generateReport(logoDataUrl);
-    };
+    try {
+      return await new Promise<Blob>((resolve, reject) => {
+        logo.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = logo.width;
+          canvas.height = logo.height;
+          ctx!.drawImage(logo, 0, 0);
+          const logoDataUrl = canvas.toDataURL('image/png');
 
-    logo.onerror = () => {
-      console.warn('Could not load logo, proceeding without it.');
-      generateReport();
-    };
+          generateReport(logoDataUrl).then(resolve).catch(reject);
+        };
+
+        logo.onerror = () => {
+          console.warn('Could not load logo, proceeding without it.');
+          generateReport().then(resolve).catch(reject);
+        };
+      });
+    } catch (error) {
+      console.error('Failed to generate PDF blob:', error);
+      return null;
+    }
+  }
+
+  async generatePdfBlobFromMarkdown(
+    markdownContent: string,
+    title: string = 'Generated Report',
+  ): Promise<Blob | null> {
+    const html = await Promise.resolve(marked.parse(markdownContent) as string);
+    return this.generatePdfBlobFromHtml(html, title);
   }
 
   async downloadEnvironmentalReport(jobId: string): Promise<void> {
@@ -693,7 +875,12 @@ export class ReportService {
 
     elements.forEach((el) => {
       switch (el.tagName) {
+        case 'H1':
+        case 'H2':
         case 'H3':
+        case 'H4':
+        case 'H5':
+        case 'H6':
           json.push({ type: 'h3', text: el.textContent || '' });
           break;
         case 'P':
@@ -739,6 +926,12 @@ export class ReportService {
         return null;
       }
       const fullResponse = results[0].fullResponse;
+
+      const parseCurrency = (raw: string): number => {
+        const cleaned = String(raw || '').replace(/\*\*/g, '');
+        const match = cleaned.match(/-?\$?\s*([\d,]+(?:\.\d+)?)/);
+        return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+      };
 
       const extractValue = (regex: RegExp) => {
         const match = fullResponse.match(regex);
@@ -794,18 +987,164 @@ export class ReportService {
         marketHigh = parseFloat(rangeMatch[2].replace(/,/g, ''));
       }
 
+      // Phase 26 table parser (authoritative source for bid proposal values)
+      const phase26SectionMatch = fullResponse.match(
+        /###\s*Phase\s*26:[\s\S]*?(?=\n###\s*Phase\s*27:|\n\s*Ready for the next prompt|$)/i,
+      );
+
+      let phase26Direct = 0;
+      let phase26Overhead = 0;
+      let phase26OverheadPct = 0;
+      let phase26Contingency = 0;
+      let phase26ContingencyPct = 0;
+      let phase26Escalation = 0;
+      let phase26Taxes = 0;
+      let phase26Bid = 0;
+      let phase26MarketBid = 0;
+      let phase26CostPerSqFt = 0;
+      let phase26RangeLow = 0;
+      let phase26RangeHigh = 0;
+
+      if (phase26SectionMatch && phase26SectionMatch[0]) {
+        const tableLines = phase26SectionMatch[0]
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('|'));
+
+        tableLines.forEach((line) => {
+          if (line.includes(':---')) return;
+
+          const cols = line
+            .split('|')
+            .map((p) => p.trim().replace(/\*\*/g, ''))
+            .filter((p) => p !== '');
+
+          if (cols.length < 2) return;
+
+          const label = String(cols[0] || '').toLowerCase();
+          const amountCol = String(cols[1] || '');
+          const pctCol = String(cols[2] || '');
+          const valueCols = cols.slice(1).map((c) => String(c || ''));
+
+          if (label.includes('cost range')) {
+            const rangeText = `${amountCol} ${pctCol}`;
+            const values = rangeText.match(/[\d,]+(?:\.\d+)?/g) || [];
+            const lowRaw = values[0];
+            const highRaw = values[1];
+            if (lowRaw && highRaw) {
+              phase26RangeLow = parseFloat(lowRaw.replace(/,/g, '')) || phase26RangeLow;
+              phase26RangeHigh = parseFloat(highRaw.replace(/,/g, '')) || phase26RangeHigh;
+            }
+            return;
+          }
+
+          // Some report variants swap amount/% columns. Resolve by semantic token.
+          const moneyToken = valueCols.find((v) => /\$/.test(v)) || amountCol;
+          const percentToken = valueCols.find((v) => /%/.test(v)) || pctCol;
+          const amount = parseCurrency(moneyToken);
+          const pct = parseCurrency(percentToken);
+
+          if (label.includes('subtotal (direct')) {
+            phase26Direct = amount;
+            return;
+          }
+
+          if (label.includes('gc overhead') || label.includes('general conditions')) {
+            phase26Overhead = amount;
+            phase26OverheadPct = pct;
+            return;
+          }
+
+          if (label.includes('contingency')) {
+            phase26Contingency = amount;
+            phase26ContingencyPct = pct;
+            return;
+          }
+
+          if (label.includes('cost escalation')) {
+            phase26Escalation = amount;
+            return;
+          }
+
+          if (label.includes('sales tax') || label === 'taxes') {
+            phase26Taxes = amount;
+            return;
+          }
+
+          if (label.includes('calculated gc bid price')) {
+            phase26Bid = amount;
+            return;
+          }
+
+          if (label.includes('suggested market bid price')) {
+            phase26MarketBid = amount;
+            return;
+          }
+
+          if (label.includes('calculated cost per conditioned area')) {
+            phase26CostPerSqFt = amount;
+          }
+        });
+      }
+
+      const finalDirectSubtotal = phase26Direct > 0 ? phase26Direct : directSubtotal;
+      const finalOverhead = phase26Overhead > 0 ? phase26Overhead : overhead;
+      const finalOverheadPct = phase26OverheadPct > 0 ? phase26OverheadPct : overheadPct;
+      const finalContingency =
+        phase26Contingency > 0 ? phase26Contingency : contingency;
+      const finalContingencyPct =
+        phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
+      const escalation = phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
+      const finalTaxes = phase26Taxes > 0 ? phase26Taxes : taxes;
+      const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
+      let finalSuggestedMarketBid =
+        phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;
+      const finalCostPerSqFt =
+        phase26CostPerSqFt > 0 ? phase26CostPerSqFt : costPerSqFt;
+
+      marketLow = phase26RangeLow > 0 ? phase26RangeLow : marketLow;
+      marketHigh = phase26RangeHigh > 0 ? phase26RangeHigh : marketHigh;
+
+      const derivedBidBasis =
+        finalSuggestedMarketBid ||
+        finalSuggestedBid ||
+        (finalDirectSubtotal +
+          finalOverhead +
+          finalContingency +
+          escalation +
+          finalTaxes);
+
+      // Sensible fallback range if low/high are absent in the source report.
+      if (derivedBidBasis > 0) {
+        if (marketLow <= 0) {
+          marketLow = Math.round(derivedBidBasis * 0.93 * 100) / 100;
+        }
+        if (marketHigh <= 0) {
+          marketHigh = Math.round(derivedBidBasis * 1.08 * 100) / 100;
+        }
+      }
+
+      if (marketHigh > 0 && marketLow > marketHigh) {
+        marketHigh = Math.round(marketLow * 1.05 * 100) / 100;
+      }
+
+      if (finalSuggestedMarketBid <= 0 && marketLow > 0 && marketHigh > 0) {
+        finalSuggestedMarketBid = Math.round(((marketLow + marketHigh) / 2) * 100) / 100;
+      }
+
       return {
         materialCost,
         laborCost,
-        directSubtotal, // Cost to Build
-        overhead,
-        overheadPct,
-        contingency,
-        contingencyPct,
-        taxes,
-        suggestedBid,
-        suggestedMarketBid,
-        costPerSqFt,
+        directSubtotal: finalDirectSubtotal, // Cost to Build
+        overhead: finalOverhead,
+        overheadPct: finalOverheadPct,
+        contingency: finalContingency,
+        contingencyPct: finalContingencyPct,
+        escalation,
+        taxes: finalTaxes,
+        suggestedBid: finalSuggestedBid,
+        suggestedMarketBid: finalSuggestedMarketBid,
+        costPerSqFt: finalCostPerSqFt,
         marketLow,
         marketHigh,
       };
@@ -968,6 +1307,126 @@ export class ReportService {
     } catch (err) {
       console.error('Failed to get procurement schedule:', err);
       return [];
+    }
+  }
+
+  async getMaxProcurementLeadTimeWeeks(jobId: string): Promise<number | null> {
+    try {
+      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+
+      const fullResponse = results[0].fullResponse;
+      const startMarkerRegex = /###\s*Phase\s*24:\s*Procurement\s*&\s*Submittal\s*Schedule/i;
+      const endMarkerRegex = /Ready for the next prompt/i;
+
+      const startMatch = fullResponse.match(startMarkerRegex);
+      if (!startMatch || startMatch.index === undefined) return null;
+
+      let sectionContent = fullResponse.substring(startMatch.index);
+      const endMatch = sectionContent.match(endMarkerRegex);
+      if (endMatch && endMatch.index !== undefined) {
+        sectionContent = sectionContent.substring(0, endMatch.index);
+      }
+
+      const lines = sectionContent
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('|'));
+
+      if (!lines.length) return null;
+
+      const headerLine = lines.find((line) =>
+        /estimated\s*lead\s*time\s*\(weeks\)/i.test(line),
+      );
+      if (!headerLine) return null;
+
+      const headerParts = headerLine
+        .split('|')
+        .map((p) => p.trim())
+        .filter((p) => p !== '');
+
+      const leadTimeIndex = headerParts.findIndex((part) =>
+        /estimated\s*lead\s*time\s*\(weeks\)/i.test(part),
+      );
+      if (leadTimeIndex === -1) return null;
+
+      let maxWeeks = 0;
+
+      for (const line of lines) {
+        if (line.includes(':---')) continue;
+
+        const parts = line
+          .split('|')
+          .map((p) => p.trim())
+          .filter((p) => p !== '');
+
+        if (!parts.length) continue;
+        if (/^item$/i.test(parts[0])) continue;
+        if (parts.length <= leadTimeIndex) continue;
+
+        const raw = String(parts[leadTimeIndex] || '');
+        const match = raw.match(/(\d+(?:\.\d+)?)/);
+        if (!match) continue;
+
+        const weeks = Number(match[1]);
+        if (Number.isFinite(weeks) && weeks > maxWeeks) {
+          maxWeeks = weeks;
+        }
+      }
+
+      return maxWeeks > 0 ? Math.round(maxWeeks) : null;
+    } catch (err) {
+      console.error('Failed to parse max procurement lead time weeks:', err);
+      return null;
+    }
+  }
+
+  async getPermittingLeadTimeWeeks(jobId: string): Promise<number | null> {
+    try {
+      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      if (!results || results.length === 0 || !results[0].fullResponse) {
+        return null;
+      }
+
+      const fullResponse = results[0].fullResponse;
+
+      const directMatch = fullResponse.match(
+        /\|\s*Pre[-\s]*Construction\s*(?:&|and)\s*Permitting\s*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+      );
+      if (directMatch && directMatch[1]) {
+        const weeks = Number(directMatch[1]);
+        return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+      }
+
+      const timelineSectionMatch = fullResponse.match(
+        /\*{0,2}#{0,5}\s*6\.2\s*Timeline\s*Table\*{0,2}([\s\S]*?)(?=\n\s*\*{0,2}#{1,6}\s*\d+\.\d+|\n\s*###|\n\s*Ready for the next prompt|$)/i,
+      );
+      if (timelineSectionMatch && timelineSectionMatch[1]) {
+        const fallbackMatch = timelineSectionMatch[1].match(
+          /Pre[-\s]*Construction\s*(?:&|and)\s*Permitting[^\n|]*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+        );
+
+        if (fallbackMatch && fallbackMatch[1]) {
+          const weeks = Number(fallbackMatch[1]);
+          return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+        }
+      }
+
+      // Last-resort fallback: any permitting row in the full report table text
+      const globalFallbackMatch = fullResponse.match(
+        /Pre[-\s]*Construction\s*(?:&|and)\s*Permitting[\s\S]{0,80}?\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+      );
+      if (globalFallbackMatch && globalFallbackMatch[1]) {
+        const weeks = Number(globalFallbackMatch[1]);
+        return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('Failed to parse permitting lead time weeks:', err);
+      return null;
     }
   }
 

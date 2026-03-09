@@ -222,7 +222,7 @@
         <div class="job-actions-col">
           <button
             class="custom-btn yellow-btn"
-            (click)="openBid.emit({ jobId: job.jobId, event: $event })"
+            (click)="openBid.emit({ jobId: job.jobId, tradePackageId: job.tradePackageId, event: $event })"
           >
             <mat-icon>upload</mat-icon> Submit Bid
           </button>

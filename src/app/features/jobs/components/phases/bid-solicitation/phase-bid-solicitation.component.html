@@ -1,0 +1,29 @@
+<div class="stage-with-live-toggle">
+  <app-phase-navigation-header
+    stageLabel="Subcontractor Bid Solicitation"
+    backLabel="Back to Pre-Construction &amp; Compliance"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Subcontract Award"
+    [projectName]="projectDetails?.projectName || 'HERNANDEZ RESIDENCE'"
+    [clientName]="clientName || 'Jacques Barnard'"
+    [projectAddress]="projectAddress || 'Belicia Ln, Round Rock, TX'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+
+  <app-job-inbound-bidding
+    *ngIf="stageDisplayMode === 'stage'"
+    [projectDetails]="projectDetails"
+    (back)="back.emit()"
+    (goLive)="onInboundProceed()"
+  ></app-job-inbound-bidding>
+</div>
+

@@ -23,7 +23,7 @@
                 ? (s.annualAmount | currency : "USD" : "symbol" : "1.2-2")
                 : (s.amount | currency : "USD" : "symbol" : "1.2-2")
             }}
-            <span *ngIf="s.value === data.currentValue"> — current</span>
+            <span *ngIf="s.value === data.currentValue"> - current</span>
           </mat-option>
         </mat-select>
       </mat-form-field>

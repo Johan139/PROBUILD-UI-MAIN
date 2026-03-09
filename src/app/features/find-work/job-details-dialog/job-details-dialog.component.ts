@@ -576,6 +576,9 @@ export class JobDetailsDialogComponent implements OnInit, OnDestroy {
       sourceType: jobAny.tradePackageSourceType || null,
       isInHouse: !!jobAny.tradePackageIsInHouse,
       postedToMarketplace: jobAny.tradePackagePostedToMarketplace ?? true,
+      notes: jobAny.tradePackageNotes || null,
+      laborBudgetVisible: jobAny.tradePackageLaborBudgetVisible !== false,
+      materialBudgetVisible: jobAny.tradePackageMaterialBudgetVisible !== false,
       createdAt: jobAny.tradePackageCreatedAt || this.data.job.createdAt || new Date().toISOString(),
     };
   }

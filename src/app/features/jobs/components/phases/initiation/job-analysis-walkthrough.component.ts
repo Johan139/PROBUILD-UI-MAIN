@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FileText, Home, MapPin, ClipboardList, AlertTriangle, Truck, Shield, CheckCircle2, Loader2, ChevronUp, ChevronDown, Info, ArrowRight, Calculator } from 'lucide-angular';
-import { SignalrService, AnalysisProgressUpdate } from '../../services/signalr.service';
+import { SignalrService, AnalysisProgressUpdate } from '../../../services/signalr.service';
 import { Subscription } from 'rxjs';
 import { interval } from 'rxjs';
 import { startWith } from 'rxjs/operators';

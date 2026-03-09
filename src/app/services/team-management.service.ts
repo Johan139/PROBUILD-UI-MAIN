@@ -3,6 +3,19 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface SendSubcontractorInviteRequest {
+  email: string;
+  contactName?: string | null;
+  phoneNumber?: string | null;
+  jobId?: number | null;
+  tradePackageId?: number | null;
+  tradeName?: string | null;
+  category?: string | null;
+  scopeOfWork?: string | null;
+  budget?: number | null;
+  alsoMarketplace?: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -59,5 +72,9 @@ export class TeamManagementService {
     return this.http.put(`${this.apiUrl}/members/${teamMemberId}/permissions`, {
       Permissions: permissions,
     });
+  }
+
+  sendSubcontractorInvite(payload: SendSubcontractorInviteRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/subcontractor-invite`, payload);
   }
 }

@@ -599,7 +599,7 @@
                   *ngFor="let sub of subscriptionPackages"
                   [value]="sub.value"
                 >
-                  {{ sub.display }} —
+                  {{ sub.display }} -
                   {{
                     registrationForm.value.billingCycle === "yearly"
                       ? (sub.annualAmount
