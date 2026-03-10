@@ -7,9 +7,11 @@ import { BiddingService } from '../../../../../services/bidding.service';
 import { UserService } from '../../../../../services/user.service';
 import { RatingService } from '../../../../../services/rating.service';
 import { TeamManagementService, SendSubcontractorInviteRequest } from '../../../../../services/team-management.service';
+import { ExternalDataService } from '../../../../../services/external-data.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { ExternalCompanyWithContacts } from '../../../../../models/external-data';
 
   interface Bid {
       id: number;
@@ -129,6 +131,10 @@ export class JobInboundBiddingComponent implements OnInit {
   directInviteAlsoMarketplace = false;
   directInviteSelected = new Set<number>();
 
+  recommendedCompanies: ExternalCompanyWithContacts[] = [];
+  recommendedCompaniesLoading = false;
+  recommendedCompaniesError = '';
+
   marketplaceConfirmOpen = false;
   marketplaceConfirmPkg: TradePackage | null = null;
   marketplaceConfirmSelected = new Set<number>();
@@ -146,6 +152,7 @@ export class JobInboundBiddingComponent implements OnInit {
     private userService: UserService,
     private ratingService: RatingService,
     private teamManagementService: TeamManagementService,
+    private externalDataService: ExternalDataService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -414,25 +421,83 @@ export class JobInboundBiddingComponent implements OnInit {
     this.directInvitePhone = '';
     this.directInviteAlsoMarketplace = false;
     this.directInviteSelected = new Set<number>();
+
+    this.loadRecommendedCompanies(pkg);
   }
 
   closeDirectInvite(): void {
     this.directInviteOpen = false;
     this.directInvitePkg = null;
+
+    this.recommendedCompanies = [];
+    this.recommendedCompaniesLoading = false;
+    this.recommendedCompaniesError = '';
   }
 
-  toggleDirectInviteCandidate(index: number): void {
-    const next = new Set(this.directInviteSelected);
-    if (next.has(index)) {
-      next.delete(index);
-    } else {
-      next.add(index);
+  toggleDirectInviteCandidate(companyId: number): void {
+      const next = new Set(this.directInviteSelected);
+      if (next.has(companyId)) {
+        next.delete(companyId);
+      } else {
+        next.add(companyId);
+      }
+      this.directInviteSelected = next;
     }
-    this.directInviteSelected = next;
+
+  private loadRecommendedCompanies(pkg: TradePackage): void {
+    const tradeName = (pkg.trade || '').trim();
+    if (!tradeName) {
+      this.recommendedCompanies = [];
+      this.recommendedCompaniesLoading = false;
+      this.recommendedCompaniesError = '';
+      return;
+    }
+
+    const jobId = Number(this.projectDetails?.jobId || pkg.jobId);
+    const tradePackageId = Number(pkg.id);
+
+    const city = (this.projectDetails?.city || this.projectDetails?.jobCity || this.projectDetails?.addressCity || '').toString().trim();
+    const state = (this.projectDetails?.state || this.projectDetails?.jobState || this.projectDetails?.addressState || '').toString().trim();
+
+    this.recommendedCompaniesLoading = true;
+    this.recommendedCompaniesError = '';
+    this.recommendedCompanies = [];
+
+    this.externalDataService
+      .discoverSubcontractors({
+        tradePackageId: Number.isFinite(tradePackageId) ? tradePackageId : undefined,
+        jobId: Number.isFinite(jobId) ? jobId : undefined,
+        tradeName,
+        city: city || undefined,
+        state: state || undefined,
+        radiusMiles: 25,
+        limit: 20,
+      })
+      .subscribe({
+        next: (results) => {
+          this.recommendedCompanies = Array.isArray(results) ? results : [];
+          this.recommendedCompaniesLoading = false;
+        },
+        error: () => {
+          this.recommendedCompanies = [];
+          this.recommendedCompaniesLoading = false;
+          this.recommendedCompaniesError = 'Unable to load recommended contractors right now.';
+        },
+      });
+  }
+
+  getRecommendedCompanyEmail(row: ExternalCompanyWithContacts): string {
+    const contacts = row?.contacts || [];
+    if (!contacts.length) {
+      return '';
+    }
+
+    const withEmail = contacts.find((c) => !!c.email?.trim());
+    return (withEmail?.email || contacts[0]?.email || '').trim();
   }
 
   get directInviteCount(): number {
-    const typedInvite = this.directInviteName.trim() && this.directInviteEmail.trim() ? 1 : 0;
+    const typedInvite = this.directInviteEmail.trim() ? 1 : 0;
     return typedInvite + this.directInviteSelected.size;
   }
 
@@ -449,39 +514,76 @@ export class JobInboundBiddingComponent implements OnInit {
     const contactName = this.directInviteName.trim();
     const phoneNumber = this.directInvitePhone.trim();
 
-    if (!email) {
-      this.snackBar.open('Direct invite email is required. Recommended contractor sending is coming soon.', 'Close', {
-        duration: 3200,
-      });
-      return;
-    }
-
     const parsedJobId = Number(this.projectDetails?.jobId || pkg.jobId);
     const parsedTradePackageId = Number(pkg.id);
 
-    const invitePayload: SendSubcontractorInviteRequest = {
-      email,
-      contactName: contactName || null,
-      phoneNumber: phoneNumber || null,
-      jobId: Number.isFinite(parsedJobId) ? parsedJobId : null,
-      tradePackageId: Number.isFinite(parsedTradePackageId) ? parsedTradePackageId : null,
-      tradeName: pkg.trade,
-      category: pkg.category,
-      scopeOfWork: pkg.scopeOfWork || null,
-      budget: Number(pkg.effectiveBudget || pkg.totalBudget || pkg.budget || 0),
-      alsoMarketplace: postAfterInvite,
-    };
+    const inviteRequests: SendSubcontractorInviteRequest[] = [];
+    if (email) {
+      inviteRequests.push({
+        email,
+        contactName: contactName || null,
+        phoneNumber: phoneNumber || null,
+        jobId: Number.isFinite(parsedJobId) ? parsedJobId : null,
+        tradePackageId: Number.isFinite(parsedTradePackageId) ? parsedTradePackageId : null,
+        tradeName: pkg.trade,
+        category: pkg.category,
+        scopeOfWork: pkg.scopeOfWork || null,
+        budget: Number(pkg.effectiveBudget || pkg.totalBudget || pkg.budget || 0),
+        alsoMarketplace: postAfterInvite,
+      });
+    }
 
-    this.teamManagementService.sendSubcontractorInvite(invitePayload).subscribe({
-      next: () => {
+    const selectedCompanies = this.recommendedCompanies.filter((row) =>
+      this.directInviteSelected.has(Number(row.company?.id || 0)),
+    );
+    selectedCompanies.forEach((row) => {
+      const contact = (row.contacts || []).find((c) => !!c.email?.trim()) || (row.contacts || [])[0];
+      const cEmail = contact?.email?.trim();
+      if (!cEmail) {
+        return;
+      }
+
+      inviteRequests.push({
+        email: cEmail,
+        contactName: contact?.fullName || row.company?.name || null,
+        phoneNumber: contact?.phone || row.company?.phone || null,
+        jobId: Number.isFinite(parsedJobId) ? parsedJobId : null,
+        tradePackageId: Number.isFinite(parsedTradePackageId) ? parsedTradePackageId : null,
+        tradeName: pkg.trade,
+        category: pkg.category,
+        scopeOfWork: pkg.scopeOfWork || null,
+        budget: Number(pkg.effectiveBudget || pkg.totalBudget || pkg.budget || 0),
+        alsoMarketplace: postAfterInvite,
+      });
+    });
+
+    if (inviteRequests.length === 0) {
+      this.snackBar.open('No email addresses found for the selected contractors.', 'Close', { duration: 3200 });
+      return;
+    }
+
+    const inviteCalls = inviteRequests.map((req) =>
+      this.teamManagementService.sendSubcontractorInvite(req).pipe(
+        map(() => ({ success: true })),
+        catchError((err) => {
+          console.error('Failed to send subcontractor invite', err);
+          return of({ success: false });
+        }),
+      ),
+    );
+
+    forkJoin(inviteCalls).subscribe((results) => {
+      const failed = results.filter((r) => !r.success).length;
+      const sent = results.length - failed;
+      if (sent > 0) {
         pkg.status = postAfterInvite ? 'Posted' : 'Invited';
         pkg.postedToMarketplace = postAfterInvite;
 
         this.persistPackageEdits(
           pkg,
-          postAfterInvite
-            ? `${pkg.trade} invited directly and pushed to marketplace.`
-            : `${pkg.trade} direct invite sent.`,
+          failed > 0
+            ? `${sent} invite(s) sent, ${failed} failed.`
+            : `${sent} invite(s) sent.`,
           () => {
             if (postAfterInvite) {
               this.postPackageToMarketplace(pkg);
@@ -490,13 +592,12 @@ export class JobInboundBiddingComponent implements OnInit {
         );
 
         this.closeDirectInvite();
-      },
-      error: (err) => {
-        console.error('Failed to send subcontractor invite', err);
-        this.snackBar.open('Unable to send direct invite right now. Please try again.', 'Close', {
-          duration: 3200,
-        });
-      },
+        return;
+      }
+
+      this.snackBar.open('Unable to send invites right now. Please try again.', 'Close', {
+        duration: 3200,
+      });
     });
   }
 

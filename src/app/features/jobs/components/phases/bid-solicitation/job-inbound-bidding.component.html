@@ -472,8 +472,37 @@
             <span class="selected-count" *ngIf="directInviteSelected.size > 0">{{ directInviteSelected.size }} selected</span>
           </div>
 
-          <div class="invite-empty-recommended">
-            Recommended contractor cards are WIP - need Apollo/Google
+          <div class="invite-empty-recommended" *ngIf="recommendedCompaniesLoading">
+            Loading recommended contractors...
+          </div>
+
+          <div class="invite-empty-recommended" *ngIf="!recommendedCompaniesLoading && recommendedCompaniesError">
+            {{ recommendedCompaniesError }}
+          </div>
+
+          <div class="invite-empty-recommended" *ngIf="!recommendedCompaniesLoading && !recommendedCompaniesError && recommendedCompanies.length === 0">
+            No recommended contractors found for this trade yet.
+          </div>
+
+          <div class="recommended-list" *ngIf="!recommendedCompaniesLoading && !recommendedCompaniesError && recommendedCompanies.length > 0">
+            <button
+              class="candidate-item"
+              *ngFor="let row of recommendedCompanies"
+              [class.selected]="directInviteSelected.has(row.company.id)"
+              (click)="toggleDirectInviteCandidate(row.company.id)"
+              type="button"
+            >
+              <div>
+                <strong>{{ row.company.name }}</strong>
+                <span>
+                  {{ (row.company.city || '') + (row.company.state ? ', ' + row.company.state : '') }}
+                </span>
+                <small *ngIf="row.contacts?.length">
+                  {{ getRecommendedCompanyEmail(row) }}
+                </small>
+              </div>
+              <span class="candidate-meta" *ngIf="row.company.domain">{{ row.company.domain }}</span>
+            </button>
           </div>
         </div>
       </div>

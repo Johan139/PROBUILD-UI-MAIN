@@ -28,7 +28,7 @@
 // Primary button
 .btn-primary {
   background-color: var(--brand-yellow-primary);
-  color: var(--white);
+  color: var(--color-text-inverse);
 
   &:hover:not(:disabled) {
     background-color: var(--brand-yellow-accent);
@@ -50,7 +50,7 @@
 // Danger button
 .btn-danger {
   background-color: var(--color-danger);
-  color: var(--white);
+  color: var(--color-text-inverse);
 
   &:hover:not(:disabled) {
     background-color: hsl(0, 70%, 45%);
