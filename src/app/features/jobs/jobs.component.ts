@@ -1971,7 +1971,24 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   onAnalysisComplete() {
       // Refresh job details to get new status (which should be PRELIMINARY)
-      this.jobDataService.fetchJobData(this.projectDetails);
+      this.jobDataService.fetchJobData(this.projectDetails).subscribe({
+        next: () => {
+          const refreshedProjectDetails = (this.store.getState() as any)
+            ?.projectDetails as any;
+          const refreshedStatus =
+            refreshedProjectDetails?.status ?? refreshedProjectDetails?.Status;
+
+          if (refreshedStatus) {
+            this.determineProjectStage(String(refreshedStatus));
+          }
+        },
+        error: (err) => {
+          console.error('Failed to refresh job details after analysis', err);
+          this.snackBar.open('Failed to refresh project status.', 'Close', {
+            duration: 3000,
+          });
+        },
+      });
   }
 
   onJobGranted() {

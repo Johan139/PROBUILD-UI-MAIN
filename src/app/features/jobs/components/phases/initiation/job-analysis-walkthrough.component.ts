@@ -133,14 +133,21 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
             return;
           }
 
+          const statusMessage = state.statusMessage ?? state.StatusMessage ?? this.statusMessage;
+          const currentStep = state.currentStep ?? state.CurrentStep ?? 0;
+          const totalSteps = state.totalSteps ?? state.TotalSteps ?? 0;
+          const isComplete = !!(state.isComplete ?? state.IsComplete);
+          const hasFailed = !!(state.hasFailed ?? state.HasFailed);
+          const errorMessage = state.errorMessage ?? state.ErrorMessage ?? '';
+
           const mappedUpdate: AnalysisProgressUpdate = {
             jobId: this.jobId,
-            statusMessage: state.statusMessage || this.statusMessage,
-            currentStep: state.currentStep || 0,
-            totalSteps: state.totalSteps || 0,
-            isComplete: !!state.isComplete,
-            hasFailed: !!state.hasFailed,
-            errorMessage: state.errorMessage || '',
+            statusMessage,
+            currentStep,
+            totalSteps,
+            isComplete,
+            hasFailed,
+            errorMessage,
           };
 
           this.handleProgressUpdate(mappedUpdate);
@@ -149,23 +156,31 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   }
 
   restoreState(state: any) {
-    if (state.currentStep > 0) {
-      this.statusMessage = state.statusMessage;
-      if (state.totalSteps > 0) {
-        this.analysisProgress = (state.currentStep / state.totalSteps) * 100;
+    const statusMessage = state.statusMessage ?? state.StatusMessage ?? '';
+    const currentStep = state.currentStep ?? state.CurrentStep ?? 0;
+    const totalSteps = state.totalSteps ?? state.TotalSteps ?? 0;
+    const isComplete = !!(state.isComplete ?? state.IsComplete);
+    const extractedDataJson = state.extractedDataJson ?? state.ExtractedDataJson;
+
+    const derivedComplete = !isComplete && totalSteps > 0 && currentStep >= totalSteps;
+
+    if (currentStep > 0) {
+      this.statusMessage = statusMessage;
+      if (totalSteps > 0) {
+        this.analysisProgress = (currentStep / totalSteps) * 100;
       }
-      this.mapStatusToStep(state.statusMessage, state.currentStep);
+      this.mapStatusToStep(statusMessage, currentStep);
     }
 
-    if (state.isComplete) {
+    if (isComplete || derivedComplete) {
       this.currentStep = 'complete';
       this.analysisProgress = 100;
       this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
     }
 
-    if (state.extractedDataJson) {
+    if (extractedDataJson) {
       try {
-        const data = JSON.parse(state.extractedDataJson);
+        const data = JSON.parse(extractedDataJson);
         if (data.metadata) this.metadata = data.metadata;
         if (data.rooms) this.rooms = data.rooms;
         if (data.zoning) this.zoningData = data.zoning;
@@ -230,7 +245,10 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       this.analysisProgress = (update.currentStep / update.totalSteps) * 100;
     }
 
-    if (update.isComplete) {
+    const derivedComplete =
+      !update.isComplete && update.totalSteps > 0 && update.currentStep >= update.totalSteps;
+
+    if (update.isComplete || derivedComplete) {
       this.currentStep = 'complete';
       this.analysisProgress = 100;
       this.completedSteps = this.analysisSteps.map(s => s.id as AnalysisStep);

@@ -108,9 +108,7 @@ export class ProjectCardComponent {
   isActivationStage(status: string | undefined): boolean {
     return (
       status === 'DRAFT' ||
-      status === 'NEW' ||
-      status === 'PRELIMINARY' ||
-      status === 'PRELIMINARY_SCOPE'
+      status === 'NEW'
     );
   }
 

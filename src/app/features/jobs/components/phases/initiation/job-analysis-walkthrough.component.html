@@ -28,6 +28,17 @@
         </p>
       </div>
     </div>
+
+    <button
+      *ngIf="currentStep === 'complete'"
+      type="button"
+      class="continue-btn"
+      (click)="onContinue()"
+    >
+      Continue to Preliminary
+      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
+    </button>
+
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" [style.width.%]="analysisProgress"></div>
     </div>
