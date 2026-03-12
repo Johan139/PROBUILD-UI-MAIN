@@ -76,10 +76,12 @@ export class PermitsDialogComponent implements OnInit {
     this.isLoading = true;
     this.permitsService.getPermits(this.jobId).subscribe({
       next: (permits) => {
-        if (permits.length === 0) {
+        const uniquePermits = this.getUniquePermits(permits || []);
+
+        if (uniquePermits.length === 0) {
           this.loadAiSuggestions();
         } else {
-          this.permits = permits;
+          this.permits = uniquePermits;
           this.isLoading = false;
         }
       },
@@ -98,12 +100,12 @@ export class PermitsDialogComponent implements OnInit {
           // Auto-save AI suggestions so they persist
           this.permitsService.savePermitsBatch(aiPermits).subscribe({
             next: (savedPermits) => {
-              this.permits = savedPermits;
+              this.permits = this.getUniquePermits(savedPermits || aiPermits || []);
               this.isLoading = false;
             },
             error: (err) => {
               console.error('Error saving AI permits', err);
-              this.permits = aiPermits; // Show them anyway, even if save failed
+              this.permits = this.getUniquePermits(aiPermits || []); // Show them anyway, even if save failed
               this.isLoading = false;
             },
           });
@@ -174,8 +176,7 @@ export class PermitsDialogComponent implements OnInit {
   }
 
   finaliseSave(permit: Permit): void {
-    this.permits.push(permit);
-    this.permits = [...this.permits];
+    this.permits = this.getUniquePermits([permit, ...this.permits]);
     this.newPermit = null;
     this.newPermitFile = null;
     this.isLoading = false;
@@ -274,5 +275,27 @@ export class PermitsDialogComponent implements OnInit {
 
   onClose(): void {
     this.dialogRef.close();
+  }
+
+  private getUniquePermits(permits: Permit[]): Permit[] {
+    const byKey = new Map<string, Permit>();
+
+    for (const permit of permits) {
+      const key = `${(permit.name || '').trim().toLowerCase()}|${(permit.issuingAgency || '').trim().toLowerCase()}`;
+      const existing = byKey.get(key);
+
+      if (!existing) {
+        byKey.set(key, permit);
+        continue;
+      }
+
+      const existingHasDoc = !!existing.documentId;
+      const currentHasDoc = !!permit.documentId;
+      if (!existingHasDoc && currentHasDoc) {
+        byKey.set(key, permit);
+      }
+    }
+
+    return Array.from(byKey.values());
   }
 }

@@ -556,6 +556,29 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   private validateContractOptions(): boolean {
+    const missingRequired: string[] = [];
+
+    if (!this.insuranceLimits.trim()) {
+      missingRequired.push('Insurance Limits');
+    }
+
+    if (!this.markups.trim()) {
+      missingRequired.push('Markups');
+    }
+
+    if (!this.curePeriods.trim()) {
+      missingRequired.push('Cure Periods');
+    }
+
+    if (!this.ldCap.trim()) {
+      missingRequired.push('LD Cap');
+    }
+
+    if (missingRequired.length > 0) {
+      window.alert(`Please complete all required contract fields before continuing: ${missingRequired.join(', ')}.`);
+      return false;
+    }
+
     if (!this.liabilityCapEnabled) {
       return true;
     }

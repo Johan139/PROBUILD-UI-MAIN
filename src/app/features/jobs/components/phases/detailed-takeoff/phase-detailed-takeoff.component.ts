@@ -73,6 +73,7 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   valueEngineering: any[] = [];
 
   isLoading = true;
+  activeTab: 'estimation' | 'overview' | 'timeline' | 'blueprints' = 'estimation';
 
   veOpen = true;
   appliedVE = new Set<string>();
@@ -203,6 +204,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
 
   get canProceed(): boolean {
     return this.allPhasesConfirmed;
+  }
+
+  setActiveTab(tab: 'estimation' | 'overview' | 'timeline' | 'blueprints'): void {
+    this.activeTab = tab;
   }
 
   objectKeys(value: Record<string, unknown>): string[] {
@@ -342,8 +347,29 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     } else {
       next.add(key);
       this.persistBomConfirmation(key);
+      this.advanceToNextBomSection(key);
     }
     this.confirmedBomSections = next;
+  }
+
+  private advanceToNextBomSection(currentKey: string): void {
+    const keys = this.bomKeys;
+    const currentIndex = keys.indexOf(currentKey);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextKey = keys[currentIndex + 1];
+    this.expandedBomSections = nextKey ? [nextKey] : [];
+
+    if (!nextKey) {
+      return;
+    }
+
+    setTimeout(() => {
+      const element = document.querySelector(`[data-bom-key="${nextKey}"]`) as HTMLElement | null;
+      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   }
 
   confirmAllPhases(): void {

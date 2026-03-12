@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   OnInit,
   Output,
   SimpleChanges,
@@ -39,7 +40,7 @@ interface PreConstructionTask {
   templateUrl: './phase-pre-construction.component.html',
   styleUrl: './phase-pre-construction.component.scss',
 })
-export class PhasePreConstructionComponent implements OnInit, OnChanges {
+export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestroy {
   constructor(
     private readonly dialog: MatDialog,
     private readonly permitsService: PermitsService,
@@ -64,6 +65,9 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges {
   isPermitLoading = false;
   busyPermitIds = new Set<number>();
   addingPermit = false;
+  viewingPermit: Permit | null = null;
+  viewingPermitUrl: string | null = null;
+  loadingPermitPreview = false;
   newPermitDraft: Pick<Permit, 'name' | 'issuingAgency' | 'requirements'> = {
     name: '',
     issuingAgency: '',
@@ -92,6 +96,10 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges {
     if (changes['projectDetails']) {
       this.refreshPermits();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.releasePermitPreviewUrl();
   }
 
   get clientName(): string {
@@ -347,15 +355,50 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges {
       return;
     }
 
+    this.loadingPermitPreview = true;
+    this.viewingPermit = permit;
+    this.releasePermitPreviewUrl();
+
     this.fileUploadService.getFile(permit.document.blobUrl).subscribe({
       next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        this.viewingPermitUrl = window.URL.createObjectURL(blob);
+        this.loadingPermitPreview = false;
       },
       error: () => {
+        this.loadingPermitPreview = false;
+        this.viewingPermit = null;
         this.snackBar.open('Failed to open permit document', 'Close', { duration: 2500 });
       },
     });
+  }
+
+  closePermitPreview(): void {
+    this.viewingPermit = null;
+    this.loadingPermitPreview = false;
+    this.releasePermitPreviewUrl();
+  }
+
+  onReplaceFromPreview(fileInput: HTMLInputElement): void {
+    fileInput.click();
+  }
+
+  onPreviewFileSelected(event: Event): void {
+    if (!this.viewingPermit) {
+      const input = event.target as HTMLInputElement;
+      input.value = '';
+      return;
+    }
+
+    this.onPermitFileSelected(this.viewingPermit, event);
+    this.closePermitPreview();
+  }
+
+  openPermitPreviewInNewTab(): void {
+    if (!this.viewingPermitUrl) {
+      return;
+    }
+
+    window.open(this.viewingPermitUrl, '_blank', 'noopener,noreferrer');
   }
 
   isPermitBusy(permit: Permit): boolean {
@@ -510,6 +553,15 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges {
     }
 
     return Array.from(byKey.values());
+  }
+
+  private releasePermitPreviewUrl(): void {
+    if (!this.viewingPermitUrl) {
+      return;
+    }
+
+    window.URL.revokeObjectURL(this.viewingPermitUrl);
+    this.viewingPermitUrl = null;
   }
 
   toggleAddScheduleTask(): void {
