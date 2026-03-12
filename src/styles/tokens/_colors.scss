@@ -79,13 +79,13 @@
   --color-trade-chip-license-text: #60a5fa;
   --color-trade-chip-bondable-bg: #a855f7;
   --color-trade-chip-bondable-text: #c084fc;
-  --color-trade-text-soft: #cbd5e1;
-  --color-trade-dialog-border: var(--gray-700);
-  --color-trade-dialog-surface: var(--gray-800);
-  --color-trade-dialog-surface-alt: var(--gray-900);
-  --color-trade-dialog-text: #f8fafc;
-  --color-trade-dialog-label: #94a3b8;
-  --color-overlay-strong: rgb(0 0 0 / 72%);
+  --color-trade-text-soft: var(--color-text-muted);
+  --color-trade-dialog-border: var(--color-border);
+  --color-trade-dialog-surface: var(--color-surface);
+  --color-trade-dialog-surface-alt: var(--color-surface-hover);
+  --color-trade-dialog-text: var(--color-text);
+  --color-trade-dialog-label: var(--color-text-muted);
+  --color-overlay-strong: rgb(0 0 0 / 48%);
 
   /* Mobilization accents */
   --color-mobilization-cyan: #22c1dc;

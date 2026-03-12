@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, NgZone, OnInit } from '@angular/core';
 import {
   MatDialogRef,
   MAT_DIALOG_DATA,
@@ -52,21 +52,42 @@ export class SubmitBidDialogComponent implements OnInit {
   isUploading = false;
   uploadProgress = 0;
   uploadedFileUrl: string | null = null;
+  uploadedQuoteId: string | null = null;
   uploadComplete = false;
+  bidAmount: number | null = null;
+  bidInclusions = '';
+  bidExclusions = '';
   availableTradePackages: BidTargetTradePackage[] = [];
   selectedTradePackageId: number | null = null;
   loadingTradePackages = false;
 
   constructor(
     public dialogRef: MatDialogRef<SubmitBidDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { jobId: number; tradePackageId?: number },
+    @Inject(MAT_DIALOG_DATA)
+    public data: {
+      jobId: number;
+      tradePackageId?: number;
+      preUploadedFileUrl?: string | null;
+      preUploadedQuoteId?: string | null;
+    },
     private fileUploadService: FileUploadService,
     private bomService: BomService,
     private bidsService: BidsService,
     private snackBar: MatSnackBar,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    if (this.data.preUploadedFileUrl) {
+      this.selection = 'upload';
+      this.uploadedFileUrl = this.data.preUploadedFileUrl;
+      this.uploadedQuoteId = this.data.preUploadedQuoteId ?? null;
+      this.uploadComplete = true;
+      this.isUploading = false;
+      this.uploadProgress = 100;
+    }
+
     const inputTradePackageId = Number(this.data.tradePackageId || 0);
     if (inputTradePackageId > 0) {
       this.selectedTradePackageId = inputTradePackageId;
@@ -98,6 +119,19 @@ export class SubmitBidDialogComponent implements OnInit {
         }
 
         this.loadingTradePackages = false;
+
+        if (this.uploadComplete) {
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            this.zone.run(() => {
+              if (this.stepper) {
+                this.stepper.next();
+              }
+              this.currentStep = 2;
+              this.cdr.detectChanges();
+            });
+          }, 0);
+        }
       },
       error: () => {
         this.loadingTradePackages = false;
@@ -135,7 +169,16 @@ export class SubmitBidDialogComponent implements OnInit {
             this.uploadedFileUrl = event.url;
             this.isUploading = false;
             this.uploadComplete = true;
-            this.stepper.next();
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.zone.run(() => {
+                if (this.stepper) {
+                  this.stepper.next();
+                }
+                this.currentStep = 2;
+                this.cdr.detectChanges();
+              });
+            }, 0);
             this.snackBar.open('File uploaded successfully', 'Close', {
               duration: 3000,
             });
@@ -143,7 +186,7 @@ export class SubmitBidDialogComponent implements OnInit {
         },
         error: () => {
           this.isUploading = false;
-          // Handle error
+          this.snackBar.open('Failed to upload file. Please try again.', 'Close', { duration: 4000 });
         },
       });
   }
@@ -172,7 +215,12 @@ export class SubmitBidDialogComponent implements OnInit {
     }
 
     this.bidsService
-      .uploadBidPdf(this.data.jobId, this.uploadedFileUrl, tradePackageId)
+      .uploadBidPdf(this.data.jobId, this.uploadedFileUrl, tradePackageId, {
+        amount: this.bidAmount,
+        inclusions: this.bidInclusions,
+        exclusions: this.bidExclusions,
+        quoteId: this.uploadedQuoteId,
+      })
       .subscribe({
         next: () => {
           this.dialogRef.close(true);
@@ -181,7 +229,7 @@ export class SubmitBidDialogComponent implements OnInit {
           });
         },
         error: () => {
-          // Handle error
+          this.snackBar.open('Failed to submit bid. Please try again.', 'Close', { duration: 4000 });
         },
       });
   }

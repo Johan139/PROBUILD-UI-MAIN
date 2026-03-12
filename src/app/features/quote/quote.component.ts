@@ -34,6 +34,7 @@ import { SubtasksState } from '../../state/subtasks.state';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { LogoService } from '../../services/logo.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -50,6 +51,7 @@ import { environment } from '../../../environments/environment';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { FileUploadService } from '../../services/file-upload.service';
 import {
   mapMaterialsToQuoteRows,
   mapMaterialsToQuoteRowsByPhase,
@@ -172,6 +174,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
   generationMode: 'PROJECT' | 'PHASE' = 'PROJECT';
   selectedPhases: string[] = [];
   isInboundQuote = false;
+  isBidMode = false;
+  returnTo: string | null = null;
+  returnJobId: number | null = null;
+  returnTradePackageId: number | null = null;
   get isQuote(): boolean {
     return this.documentType === 'QUOTE';
   }
@@ -256,6 +262,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
     private bidsService: BidsService,
     private measurementService: MeasurementService,
     private archiveService: ArchiveService,
+    private fileUploadService: FileUploadService,
+    private snackBar: MatSnackBar,
   ) {
     this.quoteForm = this.fb.group({
       header: [''],
@@ -327,6 +335,98 @@ export class QuoteComponent implements OnInit, OnDestroy {
         this.hasAmountPaid = +v > 0;
       });
   }
+
+  generateForBid(): void {
+    if (!this.isBidMode) {
+      return;
+    }
+
+    const jobId = this.returnJobId || (this.jobId ? Number(this.jobId) : 0);
+    if (!jobId) {
+      this.snackBar.open('Job ID is missing. Cannot generate bid quote.', 'Close', { duration: 4000 });
+      return;
+    }
+
+    const ensureSaved = (): void => {
+      if (this.quoteId) {
+        this.downloadAndUploadBidPdf(jobId);
+        return;
+      }
+
+      this.saveToDatabase();
+      const checkInterval = setInterval(() => {
+        if (this.quoteId && !this.isSaving) {
+          clearInterval(checkInterval);
+          this.downloadAndUploadBidPdf(jobId);
+        }
+      }, 400);
+
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 20000);
+    };
+
+    ensureSaved();
+  }
+
+  private downloadAndUploadBidPdf(jobId: number): void {
+    if (!this.quoteId) {
+      this.snackBar.open('Quote must be saved before generating a bid PDF.', 'Close', { duration: 4000 });
+      return;
+    }
+
+    this.isSaving = true;
+    this.cdr.markForCheck();
+
+    this.quoteService.downloadPdf(this.quoteId).subscribe({
+      next: (blob: Blob) => {
+        const filename = `${this.quoteForm.get('number')?.value || 'Quote'}.pdf`;
+        const file = new File([blob], filename, { type: 'application/pdf' });
+
+        this.fileUploadService.uploadQuotePdf(file, jobId).subscribe({
+          next: (event) => {
+            if (typeof event === 'number') {
+              return;
+            }
+
+            if (!event?.url) {
+              this.isSaving = false;
+              this.cdr.markForCheck();
+              this.snackBar.open('PDF upload completed but no URL was returned.', 'Close', { duration: 4000 });
+              return;
+            }
+
+            const tradePackageId = this.returnTradePackageId && this.returnTradePackageId > 0
+              ? this.returnTradePackageId
+              : null;
+
+            this.isSaving = false;
+            this.cdr.markForCheck();
+
+            this.router.navigate(['/find-work'], {
+              queryParams: {
+                reopenBid: 1,
+                jobId,
+                tradePackageId,
+                quoteId: this.quoteId,
+                pdfUrl: event.url,
+              },
+            });
+          },
+          error: () => {
+            this.isSaving = false;
+            this.cdr.markForCheck();
+            this.snackBar.open('Failed to upload generated PDF.', 'Close', { duration: 4000 });
+          },
+        });
+      },
+      error: () => {
+        this.isSaving = false;
+        this.cdr.markForCheck();
+        this.snackBar.open('Failed to generate PDF for bid.', 'Close', { duration: 4000 });
+      },
+    });
+  }
   ngOnInit(): void {
     this.units = this.measurementService.getUnits();
     this.loadCompanyDetails();
@@ -339,6 +439,15 @@ export class QuoteComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => {
         this.jobId = params['jobId'] ?? undefined;
+
+        const bidModeRaw = String(params['bidMode'] ?? '').toLowerCase();
+        this.isBidMode = bidModeRaw === '1' || bidModeRaw === 'true';
+        this.returnTo = params['returnTo'] ? String(params['returnTo']) : null;
+        this.returnJobId = params['jobId'] ? Number(params['jobId']) : null;
+        this.returnTradePackageId = params['tradePackageId']
+          ? Number(params['tradePackageId'])
+          : null;
+
         this.quoteId = params['quoteId'] ?? null;
 
         if (this.jobId) {
@@ -457,7 +566,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        console.log('No default logo found for user');
       },
     });
   }
@@ -579,7 +687,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Failed to load quote', err);
-        alert('Failed to load quote. Please try again.');
+        this.snackBar.open('Failed to load quote. Please try again.', 'Close', {
+          duration: 4000,
+        });
         this.router.navigate(['/quotes']);
         this.isSaving = false;
       },
@@ -628,6 +738,14 @@ export class QuoteComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (job) => {
           this.jobDetails = job;
+
+          const isNewQuote = !this.quoteId;
+          const shouldPrefill = this.isBidMode || isNewQuote;
+
+          if (shouldPrefill) {
+            this.prefillFromJobIfEmpty(job);
+          }
+
           this.jobDetailsLoading = false;
           this.cdr.markForCheck();
         },
@@ -636,6 +754,68 @@ export class QuoteComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  private prefillFromJobIfEmpty(job: any): void {
+    const projectName = String(job?.projectName ?? '').trim();
+    const address =
+      String(job?.address ?? '').trim() ||
+      String(job?.jobAddress?.formattedAddress ?? '').trim();
+
+    const email = String(
+      job?.clientEmail ?? job?.ClientEmail ?? job?.email ?? job?.Email ?? '',
+    ).trim();
+    const phone = String(
+      job?.clientPhone ?? job?.ClientPhone ?? job?.phone ?? job?.Phone ?? '',
+    ).trim();
+
+    const currentTo = String(this.quoteForm.get('to')?.value ?? '').trim();
+    const currentClientAddress = String(
+      this.quoteForm.get('clientAddress')?.value ?? '',
+    ).trim();
+    const currentProjectName = String(
+      this.quoteForm.get('projectName')?.value ?? '',
+    ).trim();
+    const currentProjectAddress = String(
+      this.quoteForm.get('projectAddress')?.value ?? '',
+    ).trim();
+
+    const currentClientEmail = String(
+      this.quoteForm.get('clientEmail')?.value ?? '',
+    ).trim();
+    const currentClientPhone = String(
+      this.quoteForm.get('clientPhone')?.value ?? '',
+    ).trim();
+
+    const patch: any = {};
+
+    if (!currentTo && projectName) {
+      patch.to = projectName;
+    }
+
+    if (!currentClientAddress && address) {
+      patch.clientAddress = address;
+    }
+
+    if (!currentProjectName && projectName) {
+      patch.projectName = projectName;
+    }
+
+    if (!currentProjectAddress && address) {
+      patch.projectAddress = address;
+    }
+
+    if (!currentClientEmail && email) {
+      patch.clientEmail = email;
+    }
+
+    if (!currentClientPhone && phone) {
+      patch.clientPhone = phone;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      this.quoteForm.patchValue(patch, { emitEvent: false });
+    }
   }
 
   updateQuoteRows(items: any[]) {
@@ -825,7 +1005,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             console.error('Failed to approve quote:', err);
-            alert('Failed to approve quote. Please try again.');
+            this.snackBar.open('Failed to approve quote. Please try again.', 'Close', {
+              duration: 4000,
+            });
             this.cdr.markForCheck();
           },
         });
@@ -923,7 +1105,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     if (!file.type.startsWith('image/')) {
       this.isLogoSupported = false;
-      alert('Please select a valid image file (PNG, JPG, etc.)');
+      this.snackBar.open('Please select a valid image file (PNG, JPG, etc.)', 'Close', {
+        duration: 4000,
+      });
       return;
     }
 
@@ -953,7 +1137,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Logo upload failed', err);
-        alert('Failed to upload logo. Please try again.');
+        this.snackBar.open('Failed to upload logo. Please try again.', 'Close', {
+          duration: 4000,
+        });
         this.logoUrl = null;
         this.isLogoSupported = false;
         this.isSaving = false;
@@ -1050,7 +1236,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
     this.quoteService.saveDraft(dto).subscribe({
       next: (res) => {
         this.quoteId = res.quoteId;
-        console.log('Quote saved successfully');
 
         // Show success message briefly
         this.showSuccessToast(
@@ -1062,7 +1247,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Failed to save quote', err);
-        alert('Failed to save quote. Please try again.');
+        this.snackBar.open('Failed to save quote. Please try again.', 'Close', {
+          duration: 4000,
+        });
         this.isSaving = false;
         this.cdr.markForCheck();
       },
@@ -1165,7 +1352,11 @@ export class QuoteComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         clearInterval(checkInterval);
         if (!this.quoteId) {
-          alert('Please save the quote first before sending to client.');
+          this.snackBar.open(
+            'Please save the quote first before sending to client.',
+            'Close',
+            { duration: 4000 },
+          );
         }
       }, 10000);
       return;
@@ -1265,7 +1456,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
             error: (err) => {
               this.isSaving = false;
               console.error(err);
-              alert('Failed to send quote');
+              this.snackBar.open('Failed to send quote.', 'Close', {
+                duration: 4000,
+              });
             },
           });
       });
@@ -1273,7 +1466,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
   resendQuote(): void {
     if (!this.quoteId) {
-      alert('Cannot resend: Quote not found');
+      this.snackBar.open('Cannot resend: Quote not found.', 'Close', {
+        duration: 4000,
+      });
       return;
     }
 
@@ -1315,7 +1510,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
             },
             error: (err) => {
               console.error('Failed to resend:', err);
-              alert(`Failed to resend. ${err.message || 'Please try again.'}`);
+              const message = `Failed to resend. ${err?.message || 'Please try again.'}`;
+              this.snackBar.open(message, 'Close', {
+                duration: 5000,
+              });
               this.isSaving = false;
               this.cdr.markForCheck();
             },
@@ -1343,7 +1541,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
   onLogoLoadError(event: Event): void {
     console.error('Failed to load logo from URL:', this.logoUrl);
     this.logoUrl = null;
-    alert('Failed to load logo image. Please re-upload.');
+    this.snackBar.open('Failed to load logo image. Please re-upload.', 'Close', {
+      duration: 4000,
+    });
   }
   async downloadPDF(): Promise<void> {
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -1721,7 +1921,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('PDF download failed', err);
-        alert('Failed to download PDF');
+        this.snackBar.open('Failed to download PDF.', 'Close', {
+          duration: 4000,
+        });
         this.isSaving = false;
         this.cdr.markForCheck();
       },
@@ -1879,7 +2081,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((confirmed) => {
       if (confirmed) {
-        console.log('Preview confirmed');
       }
     });
   }
@@ -1934,7 +2135,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
   openGenerateQuoteDialog(job: any): void {
     const jobId = job.jobId?.toString() || job.id?.toString();
     if (!jobId) {
-      alert('Cannot generate quote: Job ID is missing');
+      this.snackBar.open('Cannot generate quote: Job ID is missing.', 'Close', {
+        duration: 4000,
+      });
       return;
     }
 
@@ -1955,7 +2158,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
         timeout(10000), // 10 second timeout
         catchError((err) => {
           this.jobsLoading = false;
-          alert('Failed to load job materials');
+          this.snackBar.open('Failed to load job materials.', 'Close', {
+            duration: 4000,
+          });
           return EMPTY;
         }),
       )
@@ -1991,7 +2196,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
       this.generationMode === 'PHASE' &&
       (!this.selectedPhases || this.selectedPhases.length === 0)
     ) {
-      alert('Please select at least one phase.');
+      this.snackBar.open('Please select at least one phase.', 'Close', {
+        duration: 4000,
+      });
       return;
     }
 
@@ -2000,7 +2207,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
     if (!jobId) {
       console.error('❌ Job ID is missing:', job);
-      alert('Cannot generate quote: Job ID is missing');
+      this.snackBar.open('Cannot generate quote: Job ID is missing.', 'Close', {
+        duration: 4000,
+      });
       return;
     }
 
@@ -2063,6 +2272,27 @@ export class QuoteComponent implements OnInit, OnDestroy {
     this.router.navigate(['/quotes']);
   }
 
+  cancelBidMode(): void {
+    if (this.isBidMode && (this.returnTo || '').toLowerCase() === 'find-work') {
+      const jobId = this.returnJobId || (this.jobId ? Number(this.jobId) : null);
+      const tradePackageId =
+        this.returnTradePackageId && this.returnTradePackageId > 0
+          ? this.returnTradePackageId
+          : null;
+
+      this.router.navigate(['/find-work'], {
+        queryParams: {
+          jobId,
+          tradePackageId,
+        },
+        queryParamsHandling: 'merge',
+      });
+      return;
+    }
+
+    this.goBackToQuotes();
+  }
+
   switchTab(tab: 'company' | 'jobs'): void {
     this.activeTab = tab;
     this.cdr.markForCheck();
@@ -2093,7 +2323,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Failed to duplicate quote', err);
-        alert(err?.error ?? 'Failed to duplicate quote');
+        const message = String(err?.error ?? 'Failed to duplicate quote');
+        this.snackBar.open(message, 'Close', { duration: 5000 });
       },
     });
   }
@@ -2121,7 +2352,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
             },
             error: (err) => {
               console.error('Failed to delete quote', err);
-              alert(err?.error ?? 'Failed to delete quote');
+              const message = String(err?.error ?? 'Failed to delete quote');
+              this.snackBar.open(message, 'Close', { duration: 5000 });
             },
           });
         }
@@ -2144,14 +2376,14 @@ export class QuoteComponent implements OnInit, OnDestroy {
       .afterClosed()
       .subscribe((confirmed) => {
         if (confirmed) {
-          console.log(quoteId);
           this.archiveService.archiveQuoteInvoice(quoteId).subscribe({
             next: () => {
               this.router.navigate(['/quotes']);
             },
             error: (err) => {
               console.error('Failed to archive quote', err);
-              alert(err?.error ?? 'Failed to archive quote');
+              const message = String(err?.error ?? 'Failed to archive quote');
+              this.snackBar.open(message, 'Close', { duration: 5000 });
             },
           });
         }
@@ -2177,7 +2409,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
       const userId = this.authService.currentUserSubject.value?.id;
       if (!userId) {
-        alert('User not authenticated');
+        this.snackBar.open('User not authenticated.', 'Close', {
+          duration: 4000,
+        });
         return;
       }
 
@@ -2202,7 +2436,9 @@ export class QuoteComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             console.error('Company update failed', err);
-            alert('Failed to update company details');
+            this.snackBar.open('Failed to update company details.', 'Close', {
+              duration: 4000,
+            });
           },
         });
     });
