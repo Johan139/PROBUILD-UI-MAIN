@@ -99,7 +99,7 @@
       <button
         type="button"
         class="phase-action-btn primary"
-        [disabled]="proceedDisabled"
+        [class.is-disabled]="proceedDisabled"
         (click)="proceed.emit()"
       >
         <span>{{ proceedLabel }}</span>

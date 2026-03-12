@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Permit } from '../../../../../models/permit';
 import { PermitsDialogComponent } from '../../../permits-dialog/permits-dialog.component';
 import { FileUploadService } from '../../../../../services/file-upload.service';
@@ -36,7 +36,13 @@ interface PreConstructionTask {
 @Component({
   selector: 'app-phase-pre-construction',
   standalone: true,
-  imports: [CommonModule, FormsModule, PhaseNavigationHeaderComponent, LucideIconsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PhaseNavigationHeaderComponent,
+    LucideIconsModule,
+    MatSnackBarModule,
+  ],
   templateUrl: './phase-pre-construction.component.html',
   styleUrl: './phase-pre-construction.component.scss',
 })
@@ -148,6 +154,23 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
 
   get canProceed(): boolean {
     return this.totalPermitCount > 0 && this.completedCount === this.totalPermitCount;
+  }
+
+  onProceedRequested(): void {
+    if (this.canProceed) {
+      this.proceed.emit();
+      return;
+    }
+
+    this.snackBar.open(
+      'Please upload a document or mark as N/A for each compliance item before proceeding.',
+      'OK',
+      {
+        duration: 5000,
+        horizontalPosition: 'center',
+        verticalPosition: 'top',
+      },
+    );
   }
 
   get completedScheduleCount(): number {

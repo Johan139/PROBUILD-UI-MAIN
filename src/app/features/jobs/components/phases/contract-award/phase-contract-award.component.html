@@ -11,10 +11,10 @@
     [projectSizeSqFt]="projectSizeSqFt"
     [isReportLoading]="isReportLoading"
     [showEnvironmentalReport]="showEnvironmentalReport"
-    [proceedDisabled]="!canProceed"
     (back)="back.emit()"
     (discard)="discard.emit()"
-    (proceed)="proceed.emit()"
+    (proceed)="onProceedRequested()"
+    (devProceed)="proceed.emit()"
     (documentsRequested)="documentsRequested.emit()"
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
@@ -48,7 +48,7 @@
       </button>
     </div>
 
-    <button type="button" class="skip-card skip-card-copy" (click)="proceed.emit()">
+    <button type="button" class="skip-card skip-card-copy" (click)="onSkipRequested()">
       <div class="skip-left">
         <span class="icon-badge"><lucide-icon name="arrow-right"></lucide-icon></span>
         <div>

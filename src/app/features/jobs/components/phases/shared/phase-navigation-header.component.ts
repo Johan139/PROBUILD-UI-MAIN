@@ -34,6 +34,7 @@ export class PhaseNavigationHeaderComponent {
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
   @Output() proceed = new EventEmitter<void>();
+  @Output() devProceed = new EventEmitter<void>();
 
   @Output() documentsRequested = new EventEmitter<void>();
   @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
@@ -49,7 +50,7 @@ export class PhaseNavigationHeaderComponent {
   }
 
   forceProceed(): void {
-    this.proceed.emit();
+    this.devProceed.emit();
   }
 
   toggleExportMenu(): void {

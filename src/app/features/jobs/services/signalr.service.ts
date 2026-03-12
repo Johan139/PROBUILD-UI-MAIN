@@ -69,9 +69,13 @@ export class SignalrService {
               console.warn('SignalR Ping failed:', err);
             });
           }
-        }, 60000); // Ping every 60 seconds TODO: Need to add a Pong handler to stop warnings on front end console
+        }, 60000);
       })
       .catch((err) => console.error('SignalR Connection Error:', err));
+
+    this.hubConnection.on('Pong', () => {
+      // No-op: keep-alive response from server
+    });
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
       this.progress.next(progress);
@@ -87,6 +91,65 @@ export class SignalrService {
         this.analysisProgress.next(data);
       },
     );
+
+    this.hubConnection.on('AnalysisComplete', (jobId: number, message?: string) => {
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: message || 'Analysis complete.',
+        currentStep: 1,
+        totalSteps: 1,
+        isComplete: true,
+        hasFailed: false,
+        errorMessage: '',
+      });
+    });
+
+    this.hubConnection.on('AnalysisFailed', (jobId: number, message?: string) => {
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: message || 'Analysis failed.',
+        currentStep: 0,
+        totalSteps: 0,
+        isComplete: false,
+        hasFailed: true,
+        errorMessage: message || 'Analysis failed.',
+      });
+    });
+
+    this.hubConnection.on('JobProcessingComplete', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: payload?.message || payload?.Message || 'Document processing complete.',
+        currentStep: 1,
+        totalSteps: 1,
+        isComplete: true,
+        hasFailed: false,
+        errorMessage: '',
+      });
+    });
+
+    this.hubConnection.on('JobProcessingFailed', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+
+      const error = payload?.error || payload?.Error || 'Document processing failed.';
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: 'Document processing failed.',
+        currentStep: 0,
+        totalSteps: 0,
+        isComplete: false,
+        hasFailed: true,
+        errorMessage: String(error),
+      });
+    });
 
     this.hubConnection.on('ReceiveAnalysisData', (data: any) => {
       console.log('SignalR: ReceiveAnalysisData event received', data);

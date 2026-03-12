@@ -30,6 +30,7 @@ import {
 import { ReportService } from '../../../services/report.service';
 import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
 import { PhaseReportRequestType } from '../shared/phase-navigation-header.component';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-phase-contract-award',
@@ -40,6 +41,7 @@ import { PhaseReportRequestType } from '../shared/phase-navigation-header.compon
     PhaseNavigationHeaderComponent,
     LucideIconsModule,
     DragAndDropDirective,
+    MatSnackBarModule,
   ],
   templateUrl: './phase-contract-award.component.html',
   styleUrl: './phase-contract-award.component.scss',
@@ -48,6 +50,7 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   constructor(
     private contractService: ContractService,
     private reportService: ReportService,
+    private snackBar: MatSnackBar,
   ) {}
 
   @Input() projectDetails: any;
@@ -186,6 +189,31 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
 
   get canProceed(): boolean {
     return !!this.contractMethod;
+  }
+
+  private get isStepCompleteForProceed(): boolean {
+    return this.completedItems >= 2;
+  }
+
+  onProceedRequested(): void {
+    if (this.isStepCompleteForProceed) {
+      this.proceed.emit();
+      return;
+    }
+
+    const message = this.contractMethod
+      ? 'Finish the contract step before proceeding to Pre-Construction.'
+      : 'Select a contract method before proceeding to Pre-Construction.';
+
+    this.snackBar.open(message, 'OK', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+    });
+  }
+
+  onSkipRequested(): void {
+    this.proceed.emit();
   }
 
   selectMethod(method: 'ai' | 'upload'): void {
@@ -386,10 +414,6 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return;
     }
 
-    if (!this.validateContractOptions()) {
-      return;
-    }
-
     this.isUploading = true;
     this.contractMethod = 'upload';
 
@@ -556,6 +580,10 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   private validateContractOptions(): boolean {
+    if (this.contractMethod !== 'ai') {
+      return true;
+    }
+
     const missingRequired: string[] = [];
 
     if (!this.insuranceLimits.trim()) {
@@ -575,7 +603,15 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     }
 
     if (missingRequired.length > 0) {
-      window.alert(`Please complete all required contract fields before continuing: ${missingRequired.join(', ')}.`);
+      this.snackBar.open(
+        `Please complete all required contract fields before continuing: ${missingRequired.join(', ')}.`,
+        'OK',
+        {
+          duration: 6000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        },
+      );
       return false;
     }
 

@@ -11,10 +11,10 @@
     [projectSizeSqFt]="projectSizeSqFt"
     [isReportLoading]="isReportLoading"
     [showEnvironmentalReport]="showEnvironmentalReport"
-    [proceedDisabled]="!canProceed"
     (back)="back.emit()"
     (discard)="discard.emit()"
-    (proceed)="proceed.emit()"
+    (proceed)="onProceedRequested()"
+    (devProceed)="proceed.emit()"
     (documentsRequested)="documentsRequested.emit()"
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
