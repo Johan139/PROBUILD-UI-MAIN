@@ -5,7 +5,6 @@
     discardLabel="Discard Project"
     exportLabel="Export Reports"
     proceedLabel="Proceed to Contract Award"
-    proceedLabel="Proceed to Contract Award"
     [projectName]="projectDetails?.projectName"
     [clientName]="projectDetails?.clientName"
     [projectAddress]="projectDetails?.address"
@@ -20,6 +19,42 @@
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
+  <section class="takeoff-tabs-wrap" aria-label="Detailed estimating tabs">
+    <button
+      type="button"
+      class="takeoff-tab"
+      [class.active]="activeTab === 'estimation'"
+      (click)="setActiveTab('estimation')"
+    >
+      Estimation
+    </button>
+    <button
+      type="button"
+      class="takeoff-tab"
+      [class.active]="activeTab === 'overview'"
+      (click)="setActiveTab('overview')"
+    >
+      Overview
+    </button>
+    <button
+      type="button"
+      class="takeoff-tab"
+      [class.active]="activeTab === 'timeline'"
+      (click)="setActiveTab('timeline')"
+    >
+      Timeline &amp; Tasks
+    </button>
+    <button
+      type="button"
+      class="takeoff-tab"
+      [class.active]="activeTab === 'blueprints'"
+      (click)="setActiveTab('blueprints')"
+    >
+      Blueprint Viewer
+    </button>
+  </section>
+
+  <ng-container *ngIf="activeTab === 'estimation'; else nonEstimationTabs">
   <section class="takeoff-card">
     <div class="takeoff-head">
       <h3>Bills of Materials by Phase</h3>
@@ -40,7 +75,7 @@
     </div>
 
     <div class="phase-list" *ngIf="!isLoading; else loadingBomBlock">
-      <article class="phase-item" *ngFor="let key of objectKeys(billsOfMaterials)">
+      <article class="phase-item" *ngFor="let key of objectKeys(billsOfMaterials)" [attr.data-bom-key]="key">
         <button type="button" class="phase-item-header" (click)="toggleBomSection(key)">
           <div class="phase-left">
             <span class="phase-icon" [class.is-confirmed]="confirmedBomSections.has(key)">
@@ -404,6 +439,24 @@
           Revise &amp; Regenerate
         </button>
       </div>
+    </section>
+  </ng-template>
+  </ng-container>
+
+  <ng-template #nonEstimationTabs>
+    <section class="tab-pane-card" *ngIf="activeTab === 'overview'">
+      <h3>Project Overview Dashboard</h3>
+      <p>Comprehensive overview of detailed estimate metrics and project details.</p>
+    </section>
+
+    <section class="tab-pane-card" *ngIf="activeTab === 'timeline'">
+      <h3>Timeline &amp; Tasks</h3>
+      <p>Timeline task view aligns with the client demo navigation model.</p>
+    </section>
+
+    <section class="tab-pane-card" *ngIf="activeTab === 'blueprints'">
+      <h3>Blueprint Viewer</h3>
+      <p>Blueprint viewer panel placeholder aligned to demo tab structure.</p>
     </section>
   </ng-template>
 </section>

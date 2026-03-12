@@ -1,4 +1,4 @@
-<section class="phase-section">
+<section class="phase-section contract-award-copy">
   <app-phase-navigation-header
     stageLabel="Contract Award &amp; Execution"
     backLabel="Back to Detailed Estimating"
@@ -20,12 +20,17 @@
   ></app-phase-navigation-header>
 
   <section class="contract-main">
-    <div class="method-grid">
-      <button type="button" class="method-card ai" [class.active]="contractMethod === 'ai'" (click)="selectMethod('ai')">
+    <div class="method-grid method-grid-copy">
+      <button
+        type="button"
+        class="method-card ai"
+        [class.active]="contractMethod === 'ai'"
+        (click)="selectMethod('ai')"
+      >
         <span class="icon-badge"><lucide-icon name="sparkles"></lucide-icon></span>
         <div>
           <h4>Generate Contract with AI</h4>
-          <p>AI will draft a construction agreement from approved quotation and project details.</p>
+          <p>AI will draft a construction agreement using the approved quotation and project details.</p>
         </div>
       </button>
 
@@ -43,7 +48,7 @@
       </button>
     </div>
 
-    <button type="button" class="skip-card" (click)="proceed.emit()">
+    <button type="button" class="skip-card skip-card-copy" (click)="proceed.emit()">
       <div class="skip-left">
         <span class="icon-badge"><lucide-icon name="arrow-right"></lucide-icon></span>
         <div>
@@ -54,7 +59,7 @@
       <lucide-icon name="chevron-right" class="skip-arrow"></lucide-icon>
     </button>
 
-    <section *ngIf="contractMethod === 'ai'" class="detail-card">
+    <section *ngIf="contractMethod === 'ai'" class="detail-card detail-card-copy">
       <div class="contract-options-card">
         <h4>Contract Risk Settings</h4>
         <p>Configure clause defaults and required legal input placeholders before generation</p>
@@ -68,14 +73,14 @@
         <div class="contract-options-grid">
           <label class="contract-option-field">
             <span>Project Type <em class="option-badge required">Required</em></span>
-            <select
-              [ngModel]="projectType"
-              (ngModelChange)="onProjectTypeChanged($event)"
-            >
+            <select [ngModel]="projectType" (ngModelChange)="onProjectTypeChanged($event)">
               <option value="residential">Residential</option>
               <option value="commercial">Commercial</option>
             </select>
-            <small class="contract-field-help">Used to set default risk posture. Liability cap defaults ON for commercial projects and OFF for residential.</small>
+            <small class="contract-field-help"
+              >Used to set default risk posture. Liability cap defaults ON for commercial projects and OFF for
+              residential.</small
+            >
           </label>
 
           <label class="contract-option-field">
@@ -108,7 +113,9 @@
                 placeholder="e.g. 250000"
               />
             </div>
-            <small class="contract-field-help">Provide a positive amount for fixed-cap contracts. This is validated before generation.</small>
+            <small class="contract-field-help"
+              >Provide a positive amount for fixed-cap contracts. This is validated before generation.</small
+            >
           </label>
 
           <label class="contract-option-field">
@@ -117,7 +124,9 @@
               <option value="arbitration">Arbitration</option>
               <option value="litigation">Litigation</option>
             </select>
-            <small class="contract-field-help">Controls whether the disputes article is drafted for arbitration-first or court litigation.</small>
+            <small class="contract-field-help"
+              >Controls whether the disputes article is drafted for arbitration-first or court litigation.</small
+            >
           </label>
 
           <label class="contract-option-field">
@@ -127,25 +136,33 @@
               [(ngModel)]="insuranceLimits"
               placeholder="e.g. CGL $2M / Builder's Risk full replacement"
             />
-            <small class="contract-field-help">Required structured input used in the contract data table and insurance article.</small>
+            <small class="contract-field-help"
+              >Required structured input used in the contract data table and insurance article.</small
+            >
           </label>
 
           <label class="contract-option-field">
             <span>Markups <em class="option-badge required">Required</em></span>
-            <input type="text" [(ngModel)]="markups" placeholder="e.g. OH&P 10%" />
-            <small class="contract-field-help">Defines agreed overhead/profit or pricing uplift assumptions for changes and allowances.</small>
+            <input type="text" [(ngModel)]="markups" placeholder="e.g. OH&amp;P 10%" />
+            <small class="contract-field-help"
+              >Defines agreed overhead/profit or pricing uplift assumptions for changes and allowances.</small
+            >
           </label>
 
           <label class="contract-option-field">
             <span>Cure Periods <em class="option-badge required">Required</em></span>
             <input type="text" [(ngModel)]="curePeriods" placeholder="e.g. 7/10 days" />
-            <small class="contract-field-help">Specifies notice-and-cure timelines before remedies like suspension or termination are triggered.</small>
+            <small class="contract-field-help"
+              >Specifies notice-and-cure timelines before remedies like suspension or termination are triggered.</small
+            >
           </label>
 
           <label class="contract-option-field">
             <span>LD Cap <em class="option-badge required">Required</em></span>
             <input type="text" [(ngModel)]="ldCap" placeholder="e.g. 10% of Contract Sum" />
-            <small class="contract-field-help">Sets the maximum liquidated damages exposure and supports enforceability framing.</small>
+            <small class="contract-field-help"
+              >Sets the maximum liquidated damages exposure and supports enforceability framing.</small
+            >
           </label>
         </div>
 
@@ -154,21 +171,27 @@
             <input type="checkbox" [(ngModel)]="consequentialDamagesWaiverEnabled" />
             <span>
               Consequential damages waiver (default ON) <em class="option-badge optional">Optional</em>
-              <small class="contract-field-help">Mutual waiver of indirect losses such as lost profits, financing costs, and business interruption.</small>
+              <small class="contract-field-help"
+                >Mutual waiver of indirect losses such as lost profits, financing costs, and business interruption.</small
+              >
             </span>
           </label>
           <label class="contract-option-check">
             <input type="checkbox" [(ngModel)]="liabilityCapEnabled" />
             <span>
               Limitation of liability cap <em class="option-badge optional">Optional</em>
-              <small class="contract-field-help">Limits total liability exposure. If enabled, cap type and (if fixed) amount are enforced.</small>
+              <small class="contract-field-help"
+                >Limits total liability exposure. If enabled, cap type and (if fixed) amount are enforced.</small
+              >
             </span>
           </label>
           <label class="contract-option-check">
             <input type="checkbox" [(ngModel)]="rightToRepairReviewRequired" />
             <span>
               Flag right-to-repair review <em class="option-badge optional">Optional</em>
-              <small class="contract-field-help">Prompts jurisdictional review for state right-to-repair requirements without auto-inserting statutes.</small>
+              <small class="contract-field-help"
+                >Prompts jurisdictional review for state right-to-repair requirements without auto-inserting statutes.</small
+              >
             </span>
           </label>
           <label class="contract-option-check">
@@ -182,7 +205,9 @@
             <input type="checkbox" [(ngModel)]="antiIndemnityReviewRequired" />
             <span>
               Flag anti-indemnity review <em class="option-badge optional">Optional</em>
-              <small class="contract-field-help">Prompts legal review of indemnity language for anti-indemnity law compliance.</small>
+              <small class="contract-field-help"
+                >Prompts legal review of indemnity language for anti-indemnity law compliance.</small
+              >
             </span>
           </label>
         </div>
@@ -257,7 +282,7 @@
       </div>
     </section>
 
-    <section class="progress-card">
+    <section class="progress-card progress-card-copy">
       <div class="progress-row">
         <span>Items Completed</span>
         <strong>{{ completedItems }} / 2</strong>
@@ -273,5 +298,29 @@
       </ng-template>
     </section>
   </section>
-</section>
 
+  <div class="spinner-overlay" *ngIf="contractGenerating">
+    <div class="spinner-backdrop"></div>
+    <section class="spinner-dialog" role="dialog" aria-modal="true" aria-label="Generating contract">
+      <div class="spinner-dialog-body">
+        <div class="spinner-ring-wrap">
+          <span class="spinner-ring-base"></span>
+          <span class="spinner-ring-top"></span>
+          <span class="spinner-sparkles"><lucide-icon name="sparkles"></lucide-icon></span>
+        </div>
+
+        <h3>Generating Contract</h3>
+        <p>
+          AI is drafting your construction agreement using the approved quotation and project details. This will only
+          take a moment.
+        </p>
+
+        <div class="spinner-dots" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
