@@ -1033,12 +1033,16 @@ button mat-spinner {
 .quote-main.inbound-view {
   // Optional: add a subtle indicator that this is read-only
   .dark-input[readonly] {
-    background: #f5f5f5;
+    background: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
     cursor: not-allowed;
   }
 
   select:disabled {
-    background: #f5f5f5;
+    background: var(--color-surface-subtle);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
     cursor: not-allowed;
   }
 }

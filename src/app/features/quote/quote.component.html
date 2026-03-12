@@ -709,7 +709,7 @@
         </ng-container>
 
         <!-- OUTBOUND DRAFT: Full editing buttons -->
-        <ng-container *ngIf="!isInboundQuote && !readOnly">
+        <ng-container *ngIf="!isInboundQuote && !readOnly && !isBidMode">
           <button
             mat-button
             matTooltip="Preview the document"
@@ -774,6 +774,21 @@
             <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
 
             <span *ngIf="!isSaving">Send to Client</span>
+          </button>
+        </ng-container>
+
+        <ng-container *ngIf="!isInboundQuote && !readOnly && isBidMode">
+          <span class="spacer"></span>
+
+          <button mat-stroked-button (click)="cancelBidMode()">Cancel</button>
+          <button
+            mat-raised-button
+            class="btn-primary"
+            [disabled]="isSaving"
+            (click)="generateForBid()"
+          >
+            <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+            <span *ngIf="!isSaving">Generate for Bid</span>
           </button>
         </ng-container>
       </footer>

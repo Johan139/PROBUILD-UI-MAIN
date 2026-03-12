@@ -17,7 +17,7 @@ import { Job } from '../../models/job';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
-import { forkJoin, Subject, takeUntil } from 'rxjs';
+import { catchError, finalize, forkJoin, of, Subject, takeUntil, timeout } from 'rxjs';
 import { UserService } from '../../services/user.service';
 import { ProfileService } from '../../authentication/profile/profile.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -36,7 +36,7 @@ import { Bid } from '../../models/bid';
 import { BiddingService } from '../../services/bidding.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { JobDetailsDialogComponent } from './job-details-dialog/job-details-dialog.component';
@@ -185,6 +185,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private themeService: ThemeService,
     private cdr: ChangeDetectorRef,
     private bomService: BomService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
@@ -193,16 +194,48 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.selectedAddressId = parseInt(savedId, 10);
     }
     this.loadUserAddresses();
-    this.loadJobs();
-    if (this.userAddresses.length === 0) {
-      this.centerOnBrowserLocation();
-    }
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe((user) => {
         this.userTrade = user?.trade;
       });
     this.determineDistanceUnit();
+
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const reopenBid = String(params['reopenBid'] || '').toLowerCase();
+      if (reopenBid !== '1' && reopenBid !== 'true') {
+        return;
+      }
+
+      const jobId = Number(params['jobId'] || 0);
+      if (!jobId) {
+        return;
+      }
+
+      const tradePackageIdRaw = Number(params['tradePackageId'] || 0);
+      const tradePackageId = tradePackageIdRaw > 0 ? tradePackageIdRaw : undefined;
+
+      const pdfUrl = params['pdfUrl'] ? String(params['pdfUrl']) : null;
+      if (!pdfUrl) {
+        return;
+      }
+
+      const quoteId = params['quoteId'] ? String(params['quoteId']) : null;
+
+      setTimeout(() => {
+        this.openBidDialog(jobId, tradePackageId, undefined, pdfUrl, quoteId);
+        this.router.navigate([], {
+          queryParams: {
+            reopenBid: null,
+            jobId: null,
+            tradePackageId: null,
+            quoteId: null,
+            pdfUrl: null,
+          },
+          queryParamsHandling: 'merge',
+        });
+      }, 0);
+    });
   }
 
   ngOnDestroy(): void {
@@ -216,16 +249,18 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.userAddresses.length === 0) {
       const userId = this.authService.getUserId();
       if (userId) {
-        this.profileService.getUserAddresses(userId).subscribe({
-          next: (addresses) => {
-            this.userAddresses = addresses;
-            this.addressStore.setAddresses(addresses);
+        this.profileService
+          .getUserAddresses(userId)
+          .pipe(
+            takeUntil(this.destroy$),
+            timeout(15000),
+            catchError(() => of([] as UserAddress[])),
+          )
+          .subscribe((addresses) => {
+            this.userAddresses = Array.isArray(addresses) ? addresses : [];
+            this.addressStore.setAddresses(this.userAddresses);
             this.afterAddressesLoaded();
-          },
-          error: () => {
-            this.afterAddressesLoaded();
-          },
-        });
+          });
         return;
       }
     }
@@ -238,18 +273,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     if (this.selectedAddressId) {
       this.applySelectedAddress();
+      this.loadJobs();
       return;
     }
 
     if (this.userAddresses.length === 1) {
       this.selectedAddressId = this.userAddresses[0].id;
       this.applySelectedAddress();
+      this.loadJobs();
       return;
     }
 
     if (this.userAddresses.length === 0) {
       this.filteredJobs = [...this.jobs];
+      this.centerOnBrowserLocation();
+      this.loadJobs();
+      return;
     }
+
+    // Multiple addresses but none selected yet: still load jobs so the screen doesn't
+    // get stuck on the spinner. Map will use browser location until the user picks
+    // an address.
+    this.centerOnBrowserLocation();
+    this.loadJobs();
   }
 
   onAddressSelected(): void {
@@ -272,10 +318,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     );
     if (!address) return;
 
+    this.selectedAddress = address;
+
     const userLat = address.latitude;
     const userLng = address.longitude;
 
-    if (!userLat || !userLng) return;
+    if (!userLat || !userLng) {
+      this.centerOnBrowserLocation();
+      return;
+    }
 
     this.center = { lat: userLat, lng: userLng };
     this.zoom = 10;
@@ -344,6 +395,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     const userId = this.authService.getUserId();
 
     if (!userId) {
+      this.jobsLoading = false;
       this.filtersLoading = false;
       return;
     }
@@ -351,11 +403,19 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.jobsLoading = true;
 
     forkJoin({
-      jobs: this.jobsService.getAllJobs(),
-      myPostings: this.bomService.getMyMarketplacePostings(userId),
-      quotes: this.quoteService.getUserQuotes(userId),
+      jobs: this.jobsService.getAllJobs().pipe(catchError(() => of([]))),
+      myPostings: this.bomService
+        .getMyMarketplacePostings(userId)
+        .pipe(catchError(() => of([]))),
+      quotes: this.quoteService.getUserQuotes(userId).pipe(catchError(() => of([]))),
     })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.jobsLoading = false;
+          this.filtersLoading = false;
+        }),
+      )
       .subscribe({
         next: ({ jobs, myPostings, quotes }) => {
           const parseCoord = (val: any) =>
@@ -363,11 +423,26 @@ export class FindWorkComponent implements OnInit, OnDestroy {
               ? parseFloat(val.replace(',', '.'))
               : Number(val);
 
-          this.jobs = jobs.map((job) => ({
-            ...job,
-            latitude: parseCoord(job.latitude),
-            longitude: parseCoord(job.longitude),
-          }));
+          const myPostingTradePackageIds = new Set<number>(
+            (Array.isArray(myPostings) ? myPostings : [])
+              .map((p: any) => Number(p?.id ?? p?.tradePackageId ?? 0))
+              .filter((id: number) => Number.isFinite(id) && id > 0),
+          );
+
+          this.jobs = jobs
+            .filter((job: any) => {
+              const tpId = Number(job?.tradePackageId ?? 0);
+              if (tpId > 0 && myPostingTradePackageIds.has(tpId)) return false;
+
+              const sameTrade = job?.trades?.[0] && (Array.isArray(myPostings) ? myPostings : []).some((p: any) => p?.tradeName === job?.trades?.[0]);
+              const sameJob = (Array.isArray(myPostings) ? myPostings : []).some((p: any) => Number(p?.jobId ?? 0) === Number(job?.jobId ?? 0));
+              return !(sameTrade && sameJob);
+            })
+            .map((job) => ({
+              ...job,
+              latitude: parseCoord(job.latitude),
+              longitude: parseCoord(job.longitude),
+            }));
 
           if (Array.isArray(myPostings)) {
             this.myPostings = myPostings
@@ -463,12 +538,9 @@ export class FindWorkComponent implements OnInit, OnDestroy {
           this.getUserLocationAndCalculateDistances();
           this.filteredJobs = [...this.jobs];
 
-          this.jobsLoading = false;
-          this.filtersLoading = false;
         },
         error: (err) => {
-          this.jobsLoading = false;
-          this.filtersLoading = false;
+          console.error('[FindWork] loadJobs: error', err);
         },
       });
   }
@@ -634,22 +706,36 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        console.log('New Job Posted:', result);
       }
     });
   }
 
-  openBidDialog(jobId: number, tradePackageId: number | undefined, event: MouseEvent): void {
-    event.stopPropagation();
+  openBidDialog(
+    jobId: number,
+    tradePackageId: number | undefined,
+    event?: MouseEvent,
+    preUploadedFileUrl?: string | null,
+    preUploadedQuoteId?: string | null,
+  ): void {
+    if (event) {
+      event.stopPropagation();
+    }
 
     const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
       width: '800px',
-      data: { jobId: jobId, tradePackageId },
+      data: { jobId: jobId, tradePackageId, preUploadedFileUrl, preUploadedQuoteId },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result === 'create') {
-        this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
+        this.router.navigate(['/quote'], {
+          queryParams: {
+            jobId: jobId,
+            tradePackageId: tradePackageId ?? null,
+            bidMode: 1,
+            returnTo: 'find-work',
+          },
+        });
       } else if (result) {
         this.loadJobs();
       }
@@ -673,10 +759,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   onViewMoreInfo(job: Job | null): void {
     if (!job) return;
 
-    const canEdit = this.myPostings.some((posting: any) => {
-      const sameTrade = posting.trades?.[0] === job.trades?.[0];
-      return posting.jobId === job.jobId && sameTrade;
-    });
+    const canEdit =
+      this.activeTab === 'postings'
+      && this.myPostings.some((posting: any) => {
+        const sameTrade = posting.trades?.[0] === job.trades?.[0];
+        return posting.jobId === job.jobId && sameTrade;
+      });
 
     const dialogRef = this.dialog.open(JobDetailsDialogComponent, {
       width: '720px',

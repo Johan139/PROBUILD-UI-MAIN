@@ -1,10 +1,18 @@
 <div class="inbound-container">
   <div class="header">
     <div class="header-actions">
-      <button class="btn-outline" (click)="collapseAllVisible()" [disabled]="allVisibleCollapsed">
+      <button
+        class="btn-outline"
+        (click)="collapseAllVisible()"
+        [disabled]="allVisibleCollapsed"
+      >
         Collapse All
       </button>
-      <button class="btn-outline" (click)="expandAllVisible()" [disabled]="allVisibleExpanded">
+      <button
+        class="btn-outline"
+        (click)="expandAllVisible()"
+        [disabled]="allVisibleExpanded"
+      >
         Expand All
       </button>
     </div>
@@ -21,15 +29,22 @@
     </div>
   </div>
 
-  <div *ngIf="showAllInHouseConfirm" class="confirm-overlay" (click)="cancelAllInHouse()">
+  <div
+    *ngIf="showAllInHouseConfirm"
+    class="confirm-overlay"
+    (click)="cancelAllInHouse()"
+  >
     <div class="confirm-dialog" (click)="$event.stopPropagation()">
       <h4>Mark all packages as In House?</h4>
       <p>
-        This will mark {{ pendingAllInHouseCount }} package(s) as In House and prevent them from being posted to the marketplace.
+        This will mark {{ pendingAllInHouseCount }} package(s) as In House and
+        prevent them from being posted to the marketplace.
       </p>
       <div class="confirm-actions">
         <button class="btn-outline" (click)="cancelAllInHouse()">Cancel</button>
-        <button class="btn-primary" (click)="confirmAllInHouse()">Confirm</button>
+        <button class="btn-primary" (click)="confirmAllInHouse()">
+          Confirm
+        </button>
       </div>
     </div>
   </div>
@@ -74,15 +89,25 @@
       <button class="pkg-header" (click)="toggleExpanded(pkg.id)">
         <div class="pkg-header-left">
           <div class="pkg-icon-wrapper">
-            <lucide-angular [img]="getCategoryIcon(pkg)" class="icon"></lucide-angular>
+            <lucide-angular
+              [img]="getCategoryIcon(pkg)"
+              class="icon"
+            ></lucide-angular>
           </div>
           <div class="pkg-info">
             <h4>{{ pkg.trade }}</h4>
             <div class="badges">
               <span class="badge dark">{{ pkg.csiCode }}</span>
               <span class="badge muted">{{ getCategoryLabel(pkg) }}</span>
-              <span *ngIf="pkg.bidType === 'labor-only'" class="badge blue">Labor Only</span>
-              <span *ngIf="pkg.postedToMarketplace" class="badge success">Posted</span>
+              <span *ngIf="getInvitedCount(pkg) > 0" class="badge invited-count">
+                +{{ getInvitedCount(pkg) }} invited
+              </span>
+              <span *ngIf="pkg.bidType === 'labor-only'" class="badge blue"
+                >Labor Only</span
+              >
+              <span *ngIf="pkg.postedToMarketplace" class="badge success"
+                >Posted</span
+              >
               <span *ngIf="pkg.isInHouse" class="badge success">In-House</span>
             </div>
           </div>
@@ -92,14 +117,21 @@
             <span class="budget-value">${{ pkg.budget | number }}</span>
             <span class="budget-mode">{{ getEffectiveModeLabel(pkg) }}</span>
           </div>
-          <lucide-angular [img]="ChevronDown" class="chevron" [class.expanded]="isExpanded(pkg.id)"></lucide-angular>
+          <lucide-angular
+            [img]="ChevronDown"
+            class="chevron"
+            [class.expanded]="isExpanded(pkg.id)"
+          ></lucide-angular>
         </div>
       </button>
 
       <div *ngIf="isExpanded(pkg.id)" class="card-content">
         <div class="scope-section">
           <p class="label">
-            <lucide-angular [img]="ClipboardList" class="icon-xs"></lucide-angular>
+            <lucide-angular
+              [img]="ClipboardList"
+              class="icon-xs"
+            ></lucide-angular>
             Scope of Work
           </p>
           <p class="scope-text">{{ pkg.scopeOfWork }}</p>
@@ -113,11 +145,36 @@
           <div class="budget-grid">
             <div class="budget-block">
               <p>Labor Estimate</p>
-              <strong>${{ getAiLaborEstimate(pkg) | number }}</strong>
+              <div class="budget-edit-row">
+                <span class="budget-prefix">$</span>
+                <input
+                  type="number"
+                  class="budget-inline-input"
+                  [value]="getAiLaborEstimate(pkg)"
+                  (input)="onLaborBudgetChanged(pkg, $any($event.target).value)"
+                  [disabled]="pkg.postedToMarketplace"
+                  min="0"
+                  step="1"
+                />
+              </div>
             </div>
-            <div class="budget-block materials" *ngIf="showMaterialsVisibility(pkg)">
+            <div
+              class="budget-block materials"
+              *ngIf="showMaterialsVisibility(pkg)"
+            >
               <p>Materials Estimate</p>
-              <strong>${{ (getAiTotalEstimate(pkg) - getAiLaborEstimate(pkg)) | number }}</strong>
+              <div class="budget-edit-row">
+                <span class="budget-prefix">$</span>
+                <input
+                  type="number"
+                  class="budget-inline-input"
+                  [value]="getAiMaterialsEstimate(pkg)"
+                  (input)="onMaterialBudgetChanged(pkg, $any($event.target).value)"
+                  [disabled]="pkg.postedToMarketplace"
+                  min="0"
+                  step="1"
+                />
+              </div>
             </div>
             <div class="budget-block current">
               <p>Current Budget</p>
@@ -125,11 +182,15 @@
             </div>
           </div>
           <div class="budget-input-wrapper">
-            <lucide-angular [img]="DollarSign" class="input-icon"></lucide-angular>
+            <lucide-angular
+              [img]="DollarSign"
+              class="input-icon"
+            ></lucide-angular>
             <input
               type="number"
               [value]="pkg.budget"
               (input)="onBudgetChanged(pkg, $any($event.target).value)"
+              [disabled]="pkg.postedToMarketplace"
               class="budget-input"
             />
           </div>
@@ -138,13 +199,18 @@
         <div class="marketplace-config-section">
           <div class="field-grid">
             <div class="field-block">
-              <label class="field-label">Estimated Man Hours (AI estimate)</label>
+              <label class="field-label"
+                >Estimated Man Hours (AI estimate)</label
+              >
               <input
                 class="field-input"
                 type="number"
                 min="0"
                 [value]="pkg.estimatedManHours"
-                (input)="onEstimatedManHoursChanged(pkg, $any($event.target).value)"
+                (input)="
+                  onEstimatedManHoursChanged(pkg, $any($event.target).value)
+                "
+                [disabled]="pkg.postedToMarketplace"
               />
             </div>
 
@@ -156,9 +222,11 @@
                 min="1"
                 [value]="pkg.durationDays || ''"
                 (input)="onDurationDaysChanged(pkg, $any($event.target).value)"
+                [disabled]="pkg.postedToMarketplace"
               />
               <div class="field-help">
-                Auto-calculated using an 8-hour day. Editing either field updates the other.
+                Auto-calculated using an 8-hour day. Editing either field
+                updates the other.
               </div>
             </div>
 
@@ -167,13 +235,19 @@
               <input
                 class="field-input"
                 type="date"
-                [value]="pkg.startDate ? (pkg.startDate | date:'yyyy-MM-dd') : ''"
+                [value]="
+                  pkg.startDate ? (pkg.startDate | date: 'yyyy-MM-dd') : ''
+                "
                 (input)="onStartDateChanged(pkg, $any($event.target).value)"
+                [disabled]="pkg.postedToMarketplace"
               />
             </div>
           </div>
 
-          <div class="field-block labor-type-block" *ngIf="pkg.category === 'trade'">
+          <div
+            class="field-block labor-type-block"
+            *ngIf="pkg.category === 'trade'"
+          >
             <label class="field-label notes-label">
               <lucide-angular [img]="HardHat" class="icon-xs"></lucide-angular>
               Bid Type
@@ -184,8 +258,12 @@
                 class="bid-type-btn"
                 [class.active]="!isLaborOnly(pkg)"
                 (click)="onLaborTypeChanged(pkg, 'Labor and Materials')"
+                [disabled]="pkg.postedToMarketplace"
               >
-                <lucide-angular [img]="Package" class="icon-xs"></lucide-angular>
+                <lucide-angular
+                  [img]="Package"
+                  class="icon-xs"
+                ></lucide-angular>
                 Labor + Materials
               </button>
               <button
@@ -193,8 +271,12 @@
                 class="bid-type-btn"
                 [class.active]="isLaborOnly(pkg)"
                 (click)="onLaborTypeChanged(pkg, 'Labor')"
+                [disabled]="pkg.postedToMarketplace"
               >
-                <lucide-angular [img]="HardHat" class="icon-xs"></lucide-angular>
+                <lucide-angular
+                  [img]="HardHat"
+                  class="icon-xs"
+                ></lucide-angular>
                 Just Labor
               </button>
             </div>
@@ -202,28 +284,50 @@
 
           <div class="field-block notes-block">
             <label class="field-label notes-label">
-              <lucide-angular [img]="MessageSquare" class="icon-xs"></lucide-angular>
+              <lucide-angular
+                [img]="MessageSquare"
+                class="icon-xs"
+              ></lucide-angular>
               Notes
             </label>
             <textarea
               class="field-textarea"
               [ngModel]="getNotes(pkg)"
               (ngModelChange)="setNotes(pkg, $event)"
+              [disabled]="pkg.postedToMarketplace"
               placeholder="Add any notes, special instructions, or comments for this trade"
             ></textarea>
             <div class="notes-actions">
-              <button class="btn-outline" (click)="saveNotes(pkg)" [disabled]="isSavingPackage">
-                <lucide-angular [img]="CheckCircle2" class="btn-icon"></lucide-angular>
+              <button
+                class="btn-outline"
+                (click)="saveNotes(pkg)"
+                [disabled]="isSavingPackage || pkg.postedToMarketplace"
+              >
+                <lucide-angular
+                  [img]="CheckCircle2"
+                  class="btn-icon"
+                ></lucide-angular>
                 Save Notes
               </button>
             </div>
           </div>
 
-          <div class="visibility-row" *ngIf="!pkg.postedToMarketplace && !pkg.isInHouse">
+          <div
+            class="visibility-row"
+            *ngIf="!pkg.postedToMarketplace && !pkg.isInHouse"
+          >
             <span class="visibility-label">Visibility:</span>
-            <button class="visibility-btn" [class.hidden]="isVisibilityHidden(pkg, 'labor')" (click)="toggleVisibility(pkg, 'labor')">
-              <lucide-angular [img]="isVisibilityHidden(pkg, 'labor') ? EyeOff : Eye" class="icon-xs"></lucide-angular>
-              Labor {{ isVisibilityHidden(pkg, 'labor') ? 'Hidden' : 'Visible' }}
+            <button
+              class="visibility-btn"
+              [class.hidden]="isVisibilityHidden(pkg, 'labor')"
+              (click)="toggleVisibility(pkg, 'labor')"
+            >
+              <lucide-angular
+                [img]="isVisibilityHidden(pkg, 'labor') ? EyeOff : Eye"
+                class="icon-xs"
+              ></lucide-angular>
+              Labor
+              {{ isVisibilityHidden(pkg, "labor") ? "Hidden" : "Visible" }}
             </button>
             <button
               *ngIf="showMaterialsVisibility(pkg)"
@@ -231,29 +335,44 @@
               [class.hidden]="isVisibilityHidden(pkg, 'materials')"
               (click)="toggleVisibility(pkg, 'materials')"
             >
-              <lucide-angular [img]="isVisibilityHidden(pkg, 'materials') ? EyeOff : Eye" class="icon-xs"></lucide-angular>
-              Materials {{ isVisibilityHidden(pkg, 'materials') ? 'Hidden' : 'Visible' }}
+              <lucide-angular
+                [img]="isVisibilityHidden(pkg, 'materials') ? EyeOff : Eye"
+                class="icon-xs"
+              ></lucide-angular>
+              Materials
+              {{ isVisibilityHidden(pkg, "materials") ? "Hidden" : "Visible" }}
             </button>
           </div>
 
-          <section class="materials-section" *ngIf="shouldShowMaterialsToProcure(pkg)">
+          <section
+            class="materials-section"
+            *ngIf="shouldShowMaterialsToProcure(pkg)"
+          >
             <p class="materials-title">
               <lucide-angular [img]="Truck" class="icon-xs"></lucide-angular>
               Materials to Procure from Vendors
             </p>
             <div class="materials-list">
-              <div class="materials-item" *ngFor="let mat of getMaterialsToProcure(pkg)">
+              <div
+                class="materials-item"
+                *ngFor="let mat of getMaterialsToProcure(pkg)"
+              >
                 <div class="materials-copy">
                   <strong>{{ mat.item }}</strong>
                   <span>{{ mat.vendor }}</span>
                 </div>
-                <span class="materials-estimate">${{ mat.estimate | number }}</span>
+                <span class="materials-estimate"
+                  >${{ mat.estimate | number }}</span
+                >
               </div>
             </div>
           </section>
         </div>
 
-        <div class="action-buttons-stack" *ngIf="!pkg.postedToMarketplace && !pkg.isInHouse">
+        <div
+          class="action-buttons-stack"
+          *ngIf="!pkg.postedToMarketplace && !pkg.isInHouse"
+        >
           <button
             class="btn-primary full-width"
             (click)="handlePostToMarketplace(pkg)"
@@ -267,14 +386,21 @@
           >
             <lucide-angular [img]="UserPlus" class="btn-icon"></lucide-angular>
             Direct Invite
+            <span class="badge invited-count" *ngIf="getInvitedCount(pkg) > 0">
+              +{{ getInvitedCount(pkg) }} invited
+            </span>
           </button>
 
-          <button
-            class="btn-outline full-width"
-            (click)="markInHouse(pkg)"
-          >
+          <button class="btn-outline full-width" (click)="markInHouse(pkg)">
             <lucide-angular [img]="Building2" class="btn-icon"></lucide-angular>
             In House
+          </button>
+        </div>
+
+        <div class="action-buttons-stack" *ngIf="pkg.isInHouse">
+          <button class="btn-outline full-width" (click)="revertInHouse(pkg)">
+            <lucide-angular [img]="RotateCcw" class="btn-icon"></lucide-angular>
+            Revert In-House
           </button>
         </div>
 
@@ -282,7 +408,10 @@
           <lucide-angular [img]="Check" class="icon"></lucide-angular> In House
         </div>
 
-        <div class="posted-badge" *ngIf="pkg.postedToMarketplace && !pkg.isInHouse">
+        <div
+          class="posted-badge"
+          *ngIf="pkg.postedToMarketplace && !pkg.isInHouse"
+        >
           <lucide-angular [img]="Check" class="icon"></lucide-angular> Posted to
           Marketplace
         </div>
@@ -297,10 +426,18 @@
               <div>
                 <div class="bid-company">
                   {{ bid.companyName }}
-                  <span *ngIf="bid.verified" class="badge blue-light">Verified</span>
+                  <span *ngIf="bid.verified" class="badge blue-light"
+                    >Verified</span
+                  >
                 </div>
                 <div class="bid-meta">
-                  <span class="rating"><lucide-angular [img]="Star" class="icon-xs filled"></lucide-angular>{{ bid.rating }}</span>
+                  <span class="rating"
+                    ><lucide-angular
+                      [img]="Star"
+                      class="icon-xs filled"
+                    ></lucide-angular
+                    >{{ bid.rating }}</span
+                  >
                   <span>{{ bid.location }}</span>
                 </div>
               </div>
@@ -322,29 +459,58 @@
     </div>
 
     <div class="progress-track">
-      <div class="progress-fill" [style.width.%]="checklistCompletionPercent"></div>
+      <div
+        class="progress-fill"
+        [style.width.%]="checklistCompletionPercent"
+      ></div>
     </div>
 
-    <p class="progress-copy" *ngIf="allChecklistItemsComplete; else itemsPending">
+    <p
+      class="progress-copy"
+      *ngIf="allChecklistItemsComplete; else itemsPending"
+    >
       All trades, vendors, and suppliers addressed. You may proceed.
     </p>
     <ng-template #itemsPending>
-      <p class="progress-copy">Post each item to marketplace or mark as in-house to continue.</p>
+      <p class="progress-copy">
+        Post each item to marketplace or mark as in-house to continue.
+      </p>
     </ng-template>
   </section>
 
-  <div class="modal-overlay" *ngIf="directInviteOpen" (click)="closeDirectInvite()">
-    <section class="modal-card invite-modal invite-modal-copy" (click)="$event.stopPropagation()">
+  <div
+    class="modal-overlay"
+    *ngIf="directInviteOpen"
+    (click)="closeDirectInvite()"
+  >
+    <section
+      class="modal-card invite-modal invite-modal-copy"
+      (click)="$event.stopPropagation()"
+    >
       <div class="invite-modal-header-wrap">
         <div class="modal-header invite-modal-header">
           <div class="invite-header-left">
-            <div class="invite-header-icon-wrap" [class.supplier]="directInvitePkg?.category === 'supplier'" [class.vendor]="directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment'">
+            <div
+              class="invite-header-icon-wrap"
+              [class.supplier]="directInvitePkg?.category === 'supplier'"
+              [class.vendor]="
+                directInvitePkg?.category === 'vendor' ||
+                directInvitePkg?.category === 'equipment'
+              "
+            >
               <lucide-angular [img]="UserPlus" class="icon"></lucide-angular>
             </div>
             <div>
               <h3 class="invite-title">Direct Invite</h3>
               <p class="invite-subtitle">
-                {{ directInvitePkg?.category === 'supplier' ? 'Send a quote request for' : (directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment') ? 'Send a material quote request for' : 'Send a bid request for' }}
+                {{
+                  directInvitePkg?.category === "supplier"
+                    ? "Send a quote request for"
+                    : directInvitePkg?.category === "vendor" ||
+                        directInvitePkg?.category === "equipment"
+                      ? "Send a material quote request for"
+                      : "Send a bid request for"
+                }}
                 <span>{{ directInvitePkg?.trade }}</span>
               </p>
             </div>
@@ -359,13 +525,18 @@
             {{ directInvitePkg?.scopeOfWork }}
           </p>
 
-          <div class="invite-bid-type" *ngIf="directInvitePkg?.category === 'trade'">
+          <div
+            class="invite-bid-type"
+            *ngIf="directInvitePkg?.category === 'trade'"
+          >
             <span>Bid Type</span>
             <div class="invite-bid-type-toggle">
               <button
                 type="button"
                 [class.active]="!isLaborOnly(directInvitePkg!)"
-                (click)="onLaborTypeChanged(directInvitePkg!, 'Labor and Materials')"
+                (click)="
+                  onLaborTypeChanged(directInvitePkg!, 'Labor and Materials')
+                "
               >
                 Labour + Materials
               </button>
@@ -382,22 +553,51 @@
 
           <div class="invite-budget-grid" *ngIf="directInvitePkg as pkg">
             <div class="invite-budget-item">
-              <p>{{ pkg.category === 'trade' ? 'Total Budget' : 'Material Budget' }}</p>
-              <strong>${{ (pkg.category === 'trade' ? getAiTotalEstimate(pkg) : pkg.budget) | number }}</strong>
+              <p>
+                {{
+                  pkg.category === "trade" ? "Total Budget" : "Material Budget"
+                }}
+              </p>
+              <strong
+                >${{
+                  (pkg.category === "trade"
+                    ? getAiTotalEstimate(pkg)
+                    : pkg.budget
+                  ) | number
+                }}</strong
+              >
             </div>
             <div class="invite-budget-item">
               <p>Labour</p>
-              <strong [class.na]="pkg.category !== 'trade'">{{ pkg.category === 'trade' ? ('$' + (getAiLaborEstimate(pkg) | number)) : 'N/A' }}</strong>
+              <strong [class.na]="pkg.category !== 'trade'">{{
+                pkg.category === "trade"
+                  ? "$" + (getAiLaborEstimate(pkg) | number)
+                  : "N/A"
+              }}</strong>
             </div>
-            <div class="invite-budget-item" *ngIf="pkg.category !== 'trade' || !isLaborOnly(pkg)">
+            <div
+              class="invite-budget-item"
+              *ngIf="pkg.category !== 'trade' || !isLaborOnly(pkg)"
+            >
               <p>Materials</p>
-              <strong class="materials">${{ (pkg.category === 'trade' ? (getAiTotalEstimate(pkg) - getAiLaborEstimate(pkg)) : pkg.budget) | number }}</strong>
+              <strong class="materials"
+                >${{
+                  (pkg.category === "trade"
+                    ? getAiTotalEstimate(pkg) - getAiLaborEstimate(pkg)
+                    : pkg.budget
+                  ) | number
+                }}</strong
+              >
             </div>
           </div>
 
           <div class="invite-meta-row" *ngIf="directInvitePkg as pkg">
-            <span *ngIf="pkg.estimatedManHours > 0">Est. {{ pkg.estimatedManHours }} man-hours</span>
-            <span *ngIf="pkg.durationDays">Duration ~{{ pkg.durationDays }} days</span>
+            <span *ngIf="pkg.estimatedManHours > 0"
+              >Est. {{ pkg.estimatedManHours }} man-hours</span
+            >
+            <span *ngIf="pkg.durationDays"
+              >Duration ~{{ pkg.durationDays }} days</span
+            >
             <span *ngIf="pkg.csiCode">{{ pkg.csiCode }}</span>
           </div>
         </div>
@@ -427,35 +627,71 @@
                 />
               </div>
             </div>
-            <p>They will receive the full scope and budget details via email.</p>
+            <p>
+              They will receive the full scope and budget details via email.
+            </p>
           </div>
         </div>
 
         <div class="invite-section-block">
           <span class="invite-section-label">Marketplace</span>
-          <button class="invite-marketplace-toggle" (click)="directInviteAlsoMarketplace = !directInviteAlsoMarketplace">
-            <div class="invite-marketplace-check" [class.checked]="directInviteAlsoMarketplace">
-              <lucide-angular [img]="Check" class="icon-xs" *ngIf="directInviteAlsoMarketplace"></lucide-angular>
+          <button
+            class="invite-marketplace-toggle"
+            (click)="directInviteAlsoMarketplace = !directInviteAlsoMarketplace"
+          >
+            <div
+              class="invite-marketplace-check"
+              [class.checked]="directInviteAlsoMarketplace"
+            >
+              <lucide-angular
+                [img]="Check"
+                class="icon-xs"
+                *ngIf="directInviteAlsoMarketplace"
+              ></lucide-angular>
             </div>
             <div class="invite-marketplace-copy">
               <div>
                 <p>
-                  {{ directInvitePkg?.category === 'supplier' ? 'Also push to supplier marketplace' : (directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment') ? 'Also push to vendor marketplace' : 'Also push to marketplace' }}
+                  {{
+                    directInvitePkg?.category === "supplier"
+                      ? "Also push to supplier marketplace"
+                      : directInvitePkg?.category === "vendor" ||
+                          directInvitePkg?.category === "equipment"
+                        ? "Also push to vendor marketplace"
+                        : "Also push to marketplace"
+                  }}
                 </p>
                 <span>More Quotes</span>
               </div>
               <small>
-                {{ directInvitePkg?.category === 'supplier' ? 'Publish this material request to the supplier network so verified suppliers can discover and submit quotes.' : (directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment') ? 'Publish this material package to the vendor marketplace so verified vendors can discover and submit pricing.' : 'Publish this scope to the open marketplace so verified contractors in your area can discover and bid on it.' }}
+                {{
+                  directInvitePkg?.category === "supplier"
+                    ? "Publish this material request to the supplier network so verified suppliers can discover and submit quotes."
+                    : directInvitePkg?.category === "vendor" ||
+                        directInvitePkg?.category === "equipment"
+                      ? "Publish this material package to the vendor marketplace so verified vendors can discover and submit pricing."
+                      : "Publish this scope to the open marketplace so verified contractors in your area can discover and bid on it."
+                }}
               </small>
             </div>
-            <lucide-angular [img]="Send" class="icon-xs trailing"></lucide-angular>
+            <lucide-angular
+              [img]="Send"
+              class="icon-xs trailing"
+            ></lucide-angular>
           </button>
         </div>
 
         <div class="invite-tip-row">
           <lucide-angular [img]="Zap" class="icon-xs"></lucide-angular>
           <p>
-            {{ directInvitePkg?.category === 'supplier' ? 'By inviting suppliers directly, you receive quotes faster. Direct invites typically respond 3x faster than open marketplace listings.' : (directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment') ? 'By inviting vendors directly, you receive material pricing faster. Direct invites typically respond 3x faster than open marketplace listings.' : 'By inviting contractors directly, you have a faster chance of receiving quotations. Direct invites typically respond 3x faster than open marketplace listings.' }}
+            {{
+              directInvitePkg?.category === "supplier"
+                ? "By inviting suppliers directly, you receive quotes faster. Direct invites typically respond 3x faster than open marketplace listings."
+                : directInvitePkg?.category === "vendor" ||
+                    directInvitePkg?.category === "equipment"
+                  ? "By inviting vendors directly, you receive material pricing faster. Direct invites typically respond 3x faster than open marketplace listings."
+                  : "By inviting contractors directly, you have a faster chance of receiving quotations. Direct invites typically respond 3x faster than open marketplace listings."
+            }}
           </p>
         </div>
 
@@ -463,28 +699,63 @@
           <div class="invite-recommended-head">
             <div>
               <span class="invite-section-label">
-                Recommended {{ directInvitePkg?.category === 'supplier' ? 'suppliers' : (directInvitePkg?.category === 'vendor' || directInvitePkg?.category === 'equipment') ? 'vendors' : 'contractors' }}
+                Recommended
+                {{
+                  directInvitePkg?.category === "supplier"
+                    ? "suppliers"
+                    : directInvitePkg?.category === "vendor" ||
+                        directInvitePkg?.category === "equipment"
+                      ? "vendors"
+                      : "contractors"
+                }}
               </span>
               <small>
-                Based on {{ directInvitePkg?.category === 'supplier' ? 'material category' : 'trade' }}, location, and past performance
+                Based on
+                {{
+                  directInvitePkg?.category === "supplier"
+                    ? "material category"
+                    : "trade"
+                }}, location, and past performance
               </small>
             </div>
-            <span class="selected-count" *ngIf="directInviteSelected.size > 0">{{ directInviteSelected.size }} selected</span>
+            <span class="selected-count" *ngIf="directInviteSelected.size > 0"
+              >{{ directInviteSelected.size }} selected</span
+            >
           </div>
 
-          <div class="invite-empty-recommended" *ngIf="recommendedCompaniesLoading">
+          <div
+            class="invite-empty-recommended"
+            *ngIf="recommendedCompaniesLoading"
+          >
             Loading recommended contractors...
           </div>
 
-          <div class="invite-empty-recommended" *ngIf="!recommendedCompaniesLoading && recommendedCompaniesError">
+          <div
+            class="invite-empty-recommended"
+            *ngIf="!recommendedCompaniesLoading && recommendedCompaniesError"
+          >
             {{ recommendedCompaniesError }}
           </div>
 
-          <div class="invite-empty-recommended" *ngIf="!recommendedCompaniesLoading && !recommendedCompaniesError && recommendedCompanies.length === 0">
+          <div
+            class="invite-empty-recommended"
+            *ngIf="
+              !recommendedCompaniesLoading &&
+              !recommendedCompaniesError &&
+              recommendedCompanies.length === 0
+            "
+          >
             No recommended contractors found for this trade yet.
           </div>
 
-          <div class="recommended-list" *ngIf="!recommendedCompaniesLoading && !recommendedCompaniesError && recommendedCompanies.length > 0">
+          <div
+            class="recommended-list"
+            *ngIf="
+              !recommendedCompaniesLoading &&
+              !recommendedCompaniesError &&
+              recommendedCompanies.length > 0
+            "
+          >
             <button
               class="candidate-item"
               *ngFor="let row of recommendedCompanies"
@@ -495,40 +766,87 @@
               <div>
                 <strong>{{ row.company.name }}</strong>
                 <span>
-                  {{ (row.company.city || '') + (row.company.state ? ', ' + row.company.state : '') }}
+                  {{ getRecommendedCompanyLocation(row) }}
+                </span>
+                <span class="candidate-rating">
+                  {{ getRecommendedGoogleRatingLabel(row) }}
                 </span>
                 <small *ngIf="row.contacts?.length">
                   {{ getRecommendedCompanyEmail(row) }}
                 </small>
               </div>
-              <span class="candidate-meta" *ngIf="row.company.domain">{{ row.company.domain }}</span>
+              <span class="candidate-meta" *ngIf="row.company.email">{{
+                row.company.email
+              }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <footer class="modal-actions invite-modal-footer-copy">
-        <button class="invite-cancel" (click)="closeDirectInvite()">Cancel</button>
+        <button type="button" class="invite-cancel" (click)="closeDirectInvite()">
+          Cancel
+        </button>
         <div class="invite-send-wrap">
-          <span class="invite-plus-marketplace" *ngIf="directInviteAlsoMarketplace">
+          <span
+            class="invite-plus-marketplace"
+            *ngIf="directInviteAlsoMarketplace"
+          >
             <lucide-angular [img]="Send" class="icon-xs"></lucide-angular>
             + Marketplace
           </span>
-          <button class="btn-primary" (click)="sendDirectInvites()">
+          <button type="button" class="btn-primary" (click)="requestSendDirectInvites()">
             <lucide-angular [img]="Send" class="btn-icon"></lucide-angular>
-            Send {{ directInviteCount || '' }} Invite{{ directInviteCount !== 1 ? 's' : '' }}
+            Send {{ directInviteCount || "" }} Invite{{
+              directInviteCount === 1 ? "" : "s"
+            }}
           </button>
         </div>
       </footer>
     </section>
   </div>
 
-  <div class="modal-overlay" *ngIf="marketplaceConfirmOpen" (click)="closeMarketplaceConfirm()">
-    <section class="modal-card marketplace-modal" (click)="$event.stopPropagation()">
+  <div
+    class="confirm-overlay"
+    *ngIf="directInviteSendConfirmOpen"
+    (click)="cancelDirectInviteSendConfirm()"
+  >
+    <section class="confirm-dialog" (click)="$event.stopPropagation()">
+      <h4>Send invites?</h4>
+      <p>
+        Once you send these direct invites, they will go out immediately and
+        cannot be reverted.
+      </p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-outline" (click)="cancelDirectInviteSendConfirm()">
+          Cancel
+        </button>
+        <button type="button" class="btn-primary" (click)="confirmDirectInviteSend()">
+          Confirm &amp; Send
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div
+    class="modal-overlay"
+    *ngIf="marketplaceConfirmOpen"
+    (click)="closeMarketplaceConfirm()"
+  >
+    <section
+      class="modal-card marketplace-modal"
+      (click)="$event.stopPropagation()"
+    >
       <header class="modal-header">
         <div>
           <p class="modal-kicker">Marketplace Confirmation</p>
-          <h3>{{ marketplaceConfirmPkg ? getPostActionLabel(marketplaceConfirmPkg) : 'Post to Marketplace' }}</h3>
+          <h3>
+            {{
+              marketplaceConfirmPkg
+                ? getPostActionLabel(marketplaceConfirmPkg)
+                : "Post to Marketplace"
+            }}
+          </h3>
           <p class="modal-subcopy">{{ marketplaceConfirmPkg?.trade }}</p>
         </div>
         <button class="icon-btn" (click)="closeMarketplaceConfirm()">
@@ -539,10 +857,16 @@
       <div class="modal-body">
         <div class="confirm-row">
           <lucide-angular [img]="Shield" class="icon-xs"></lucide-angular>
-          <span>Posting will make this package visible in Find Work based on your labor/material visibility settings.</span>
+          <span
+            >Posting will make this package visible in Find Work based on your
+            labor/material visibility settings.</span
+          >
         </div>
 
-        <div class="recommended-list" *ngIf="marketplaceConfirmPkg?.category === 'trade'">
+        <div
+          class="recommended-list"
+          *ngIf="marketplaceConfirmPkg?.category === 'trade'"
+        >
           <p class="recommended-title">
             <lucide-angular [img]="UserPlus" class="icon-xs"></lucide-angular>
             Invite recommended contractors as well (optional)
@@ -563,7 +887,9 @@
       </div>
 
       <footer class="modal-actions">
-        <button class="btn-outline" (click)="closeMarketplaceConfirm()">Cancel</button>
+        <button class="btn-outline" (click)="closeMarketplaceConfirm()">
+          Cancel
+        </button>
         <button class="btn-primary" (click)="confirmMarketplacePost()">
           <lucide-angular [img]="Rocket" class="btn-icon"></lucide-angular>
           Confirm & Post

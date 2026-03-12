@@ -8,6 +8,11 @@ lucide-angular {
   }
 }
 
+:host-context(.theme-dark) .budget-inline-input {
+  color: var(--white);
+  caret-color: var(--white);
+}
+
 .inbound-container {
   padding: 1.5rem;
   max-width: 96rem;
@@ -37,7 +42,7 @@ lucide-angular {
   background: color-mix(in srgb, var(--gray-900), transparent 28%);
   display: grid;
   place-items: center;
-  z-index: 1200;
+  z-index: 1400;
   padding: 1rem;
 }
 
@@ -221,6 +226,11 @@ lucide-angular {
       color: var(--gray-400);
     }
 
+    &.invited-count {
+      background: color-mix(in srgb, var(--color-success), transparent 88%);
+      color: var(--color-success);
+    }
+
     &.blue {
       background: color-mix(in srgb, var(--color-focus), transparent 84%);
       color: var(--color-focus);
@@ -331,7 +341,7 @@ lucide-angular {
   border-radius: 0.5rem;
   border: 1px solid var(--gray-700);
   background: var(--gray-900);
-  padding: 0.45rem 0.55rem;
+  padding: 0.65rem 0.75rem;
 
   p {
     margin: 0 0 0.2rem;
@@ -340,20 +350,39 @@ lucide-angular {
   }
 
   strong {
-    color: var(--white);
-    font-size: 0.84rem;
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 700;
   }
+}
 
-  &.materials {
-    border-color: color-mix(in srgb, var(--color-warning), var(--gray-700) 70%);
+.budget-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
 
-    strong {
-      color: color-mix(in srgb, var(--color-warning), var(--white) 10%);
-    }
-  }
+.budget-prefix {
+  color: var(--gray-400);
+  font-weight: 700;
+}
 
-  &.current strong {
-    color: var(--brand-yellow-primary);
+.budget-inline-input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid var(--gray-700);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  color: var(--color-text);
+  caret-color: var(--color-text);
+  font-weight: 700;
+
+  &:focus {
+    outline: none;
+    border-color: var(--brand-yellow-primary);
   }
 }
 

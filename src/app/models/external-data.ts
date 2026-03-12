@@ -14,6 +14,7 @@ export interface ExternalCompany {
   industry?: string;
   employeeCount?: number;
   foundedYear?: number;
+  email?: string;
 }
 
 export interface ExternalContact {
@@ -51,4 +52,3 @@ export interface GeneralContractorEnrichRequest {
   domain?: string;
   jobId?: number;
 }
-

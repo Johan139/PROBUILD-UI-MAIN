@@ -21,11 +21,21 @@ export class BidsService {
     jobId: number,
     documentUrl: string,
     tradePackageId?: number,
+    details?: {
+      amount?: number | null;
+      inclusions?: string;
+      exclusions?: string;
+      quoteId?: string | null;
+    },
   ): Observable<any> {
     return this.http.post(`${this.apiUrl}/upload`, {
       jobId,
       documentUrl,
       tradePackageId: tradePackageId ?? null,
+      amount: details?.amount ?? null,
+      inclusions: details?.inclusions ?? null,
+      exclusions: details?.exclusions ?? null,
+      quoteId: details?.quoteId ?? null,
     });
   }
 

@@ -8,6 +8,25 @@ import { environment } from '../../../../environments/environment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+export interface SaveTradePackageBidInviteRow {
+  email: string;
+  contactName?: string | null;
+  companyName?: string | null;
+  externalCompanyId?: number | null;
+  externalContactId?: number | null;
+}
+
+export interface SaveTradePackageBidInvitesRequest {
+  jobId: number;
+  tradePackageId: number;
+  invitees: SaveTradePackageBidInviteRow[];
+}
+
+export interface TradePackageBidInviteCount {
+  tradePackageId: number;
+  invitedCount: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -51,9 +70,26 @@ export class BomService {
       {},
     );
   }
+
+  saveTradePackageBidInvites(
+    tradePackageId: number,
+    payload: SaveTradePackageBidInvitesRequest,
+  ): Observable<any[]> {
+    return this.http.post<any[]>(
+      `${this.apiUrl}/${tradePackageId}/bid-invites`,
+      payload,
+    );
+  }
+
+  getBidInviteCountsForJob(jobId: string | number): Observable<TradePackageBidInviteCount[]> {
+    return this.http.get<TradePackageBidInviteCount[]>(
+      `${this.apiUrl}/job/${jobId}/bid-invites/counts`,
+    );
+  }
+
   parseReport(fullResponse: string): any {
     if (!fullResponse) {
-      return { sections: [] };
+      return { message: 'Full response is empty.' };
     }
 
     //console.log('Parsing AI Response:', fullResponse);

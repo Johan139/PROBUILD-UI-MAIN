@@ -49,6 +49,18 @@
   margin-top: 0.75rem;
 }
 
+.full-width {
+  width: 100%;
+}
+
+::ng-deep .upload-shell .mat-mdc-form-field {
+  margin-bottom: 0.5rem;
+}
+
+::ng-deep .upload-shell .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
 .step-title {
   margin: 0 0 0.4rem 0;
   color: var(--color-text);

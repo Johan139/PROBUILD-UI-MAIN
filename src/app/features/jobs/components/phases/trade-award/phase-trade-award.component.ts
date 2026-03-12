@@ -39,7 +39,6 @@ interface TradePackageVm {
   isInactive?: boolean;
   isHidden?: boolean;
   sourceType?: string | null;
-  isMock?: boolean;
 }
 
 interface PackageBidVm {
@@ -124,231 +123,8 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   analysisByPackageId: Record<number, BidAnalysisVm> = {};
   detailDialog: BidDetailDialogState | null = null;
-  private readonly showDemoBids =
-    typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
-  private readonly mockTradePackages: TradePackageVm[] = [
-    {
-      id: 91001,
-      jobId: 0,
-      trade: 'Demo Framing & Carpentry',
-      category: 'trade',
-      scopeOfWork: 'Supply and install framing package for demo styling validation.',
-      csiCode: '06 10 00',
-      budget: 85000,
-      laborBudget: 61200,
-      materialBudget: 23800,
-      totalBudget: 85000,
-      laborType: 'Labor and Materials',
-      status: 'Posted',
-      postedToMarketplace: true,
-      isInHouse: false,
-      linkedTradePackageId: null,
-      isInactive: false,
-      isHidden: false,
-      isMock: true,
-    },
-    {
-      id: 91002,
-      jobId: 0,
-      trade: 'Demo HVAC Installation (Labor)',
-      category: 'trade',
-      scopeOfWork: 'Labor-only install package to test vendor-tab styling and AI flow.',
-      csiCode: '23 00 00',
-      budget: 11800,
-      laborBudget: 8600,
-      materialBudget: 3200,
-      totalBudget: 11800,
-      laborType: 'Labor',
-      status: 'Posted',
-      postedToMarketplace: true,
-      isInHouse: false,
-      linkedTradePackageId: 91002,
-      isInactive: false,
-      isHidden: false,
-      isMock: true,
-    },
-    {
-      id: 91003,
-      jobId: 0,
-      trade: 'Demo Structural Steel Supplier',
-      category: 'supplier',
-      scopeOfWork: 'Supply steel package for supplier lane styling and quote comparison.',
-      csiCode: '05 12 00',
-      budget: 16400,
-      laborBudget: 0,
-      materialBudget: 16400,
-      totalBudget: 16400,
-      laborType: 'Labor and Materials',
-      status: 'Posted',
-      postedToMarketplace: true,
-      isInHouse: false,
-      linkedTradePackageId: null,
-      isInactive: false,
-      isHidden: false,
-      isMock: true,
-    },
-  ];
-
-  private readonly mockBidsByPackageId: Record<number, PackageBidVm[]> = {
-    91001: [
-      {
-        id: 910011,
-        bidId: 910011,
-        tradePackageId: 91001,
-        bidderName: 'Framing Pro Services',
-        rating: 4.8,
-        googleRating: 4.7,
-        googleReviews: 218,
-        proBuildRating: 4.8,
-        proBuildReviews: 23,
-        location: 'Austin, TX',
-        amount: 78200,
-        leadTime: '3-5 days',
-        status: 'Submitted',
-        specialty: 'Framing Specialist',
-        insurance: true,
-        licenseNo: 'TX-BLD-48291',
-        bondable: true,
-        completedJobs: 67,
-        yearsInBusiness: 14,
-        quoteRef: 'QR-061000-001',
-        submittedLabel: 'Feb 18, 2026',
-        validUntil: 'Mar 20, 2026',
-        contact: 'James Rodriguez',
-        phone: '(512) 555-0142',
-        email: 'james@framingpro.com',
-        insuranceCoverage: '$2M General Liability',
-        warranty: '2 Year Workmanship',
-        quotedScope:
-          'Erect all wood framing for walls and ceilings; install all specified LVL beams and headers; install all wall and roof sheathing; set pre-engineered roof trusses; install all specified structural hardware and connectors.',
-        inclusions: [
-          'All labor per scope',
-          'Cleanup & debris removal',
-          'Job-site safety measures',
-          'Project management & coordination',
-        ],
-        exclusions: ['Material procurement (if labor-only)', 'Permit fees', 'Engineering or design changes'],
-      },
-      {
-        id: 910012,
-        bidId: 910012,
-        tradePackageId: 91001,
-        bidderName: 'BluePeak Contractors',
-        rating: 4.6,
-        googleRating: 4.5,
-        googleReviews: 88,
-        proBuildRating: 4.6,
-        proBuildReviews: 26,
-        location: 'Round Rock, TX',
-        amount: 18320,
-        leadTime: '14 days',
-        status: 'Submitted',
-        specialty: 'Structural Carpentry',
-        insurance: true,
-        licenseNo: 'LIC-TX-BP-149',
-        bondable: true,
-        completedJobs: 42,
-        yearsInBusiness: 9,
-        quoteRef: 'BPEAK-91001-B',
-        submittedLabel: '1d ago',
-        validUntil: '21 days',
-        contact: 'Jordan Lee',
-        phone: '(737) 555-0141',
-        email: 'estimating@bluepeak.co',
-        inclusions: ['Framing crew', 'Fasteners', 'Waste removal'],
-        exclusions: ['Design revisions'],
-      },
-      {
-        id: 910013,
-        bidId: 910013,
-        tradePackageId: 91001,
-        bidderName: 'Cedar Ridge Framing',
-        rating: 4.3,
-        googleRating: 4.2,
-        googleReviews: 51,
-        proBuildRating: 4.3,
-        proBuildReviews: 19,
-        location: 'Georgetown, TX',
-        amount: 17190,
-        leadTime: '21 days',
-        status: 'Submitted',
-        specialty: 'Timber Framing',
-        insurance: true,
-        licenseNo: 'LIC-TX-CR-309',
-        bondable: false,
-        completedJobs: 27,
-        yearsInBusiness: 6,
-        quoteRef: 'CEDAR-91001-C',
-        submittedLabel: '3d ago',
-        validUntil: '14 days',
-        contact: 'Nolan Price',
-        phone: '(512) 555-0173',
-        email: 'quotes@cedarridge.com',
-        inclusions: ['Labor only', 'Basic supervision'],
-        exclusions: ['Material wastage >3%', 'Scaffolding'],
-      },
-    ],
-    91002: [
-      {
-        id: 910021,
-        bidId: 910021,
-        tradePackageId: 91002,
-        bidderName: 'Prime Air Installers',
-        rating: 4.7,
-        location: 'Austin, TX',
-        amount: 11200,
-        leadTime: '12 days',
-        status: 'Submitted',
-      },
-      {
-        id: 910022,
-        bidId: 910022,
-        tradePackageId: 91002,
-        bidderName: 'NorthStar Mechanical',
-        rating: 4.4,
-        location: 'Pflugerville, TX',
-        amount: 10990,
-        leadTime: '15 days',
-        status: 'Submitted',
-      },
-    ],
-    91003: [
-      {
-        id: 910031,
-        bidId: 910031,
-        tradePackageId: 91003,
-        bidderName: 'SteelDirect Supply',
-        rating: 4.9,
-        location: 'San Antonio, TX',
-        amount: 15820,
-        leadTime: '9 days',
-        status: 'Submitted',
-      },
-      {
-        id: 910032,
-        bidId: 910032,
-        tradePackageId: 91003,
-        bidderName: 'Lone Star Metals',
-        rating: 4.5,
-        location: 'Austin, TX',
-        amount: 15290,
-        leadTime: '13 days',
-        status: 'Submitted',
-      },
-      {
-        id: 910033,
-        bidId: 910033,
-        tradePackageId: 91003,
-        bidderName: 'Texas Fabrication Hub',
-        rating: 4.2,
-        location: 'Temple, TX',
-        amount: 14950,
-        leadTime: '18 days',
-        status: 'Submitted',
-      },
-    ],
-  };
+  private lastLoadedJobId: number | null = null;
 
   constructor(
     private readonly bomService: BomService,
@@ -359,7 +135,29 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    this.loadTradeAwardData();
+    this.triggerLoadIfNeeded();
+  }
+
+  licenseDisplay(value: unknown): string | null {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+
+    const normalized = raw.toLowerCase();
+    if (normalized === 'n/a' || normalized === 'na' || normalized === 'none') return null;
+    if (normalized === '0' || normalized === '1') return null;
+
+    return raw;
+  }
+
+  private specialtyDisplay(value: unknown): string | null {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+
+    const normalized = raw.toLowerCase();
+    if (normalized === 'n/a' || normalized === 'na' || normalized === 'none') return null;
+    if (normalized === '0' || normalized === '1') return null;
+
+    return raw;
   }
 
   bidKey(item: TradePackageVm, bid: PackageBidVm): string {
@@ -383,6 +181,18 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   openBidDialog(item: TradePackageVm, bid: PackageBidVm): void {
     this.detailDialog = { item, bid };
+  }
+
+  private getRelativeSubmittedLabel(submittedAt: any): string {
+    const dt = submittedAt ? new Date(submittedAt) : null;
+    if (!dt || Number.isNaN(dt.getTime())) return 'recently';
+    const minutes = Math.floor((Date.now() - dt.getTime()) / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
   }
 
   closeBidDialog(): void {
@@ -430,8 +240,28 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['projectDetails'] && !changes['projectDetails'].firstChange) {
-      this.loadTradeAwardData();
+      this.triggerLoadIfNeeded();
     }
+  }
+
+  private triggerLoadIfNeeded(): void {
+    const currentJobId = this.jobId;
+
+    if (!currentJobId) {
+      this.lastLoadedJobId = null;
+      this.tradePackages = [];
+      this.bidsByPackageId = {};
+      this.expandedIds = new Set<number>();
+      this.isLoading = false;
+      return;
+    }
+
+    if (this.lastLoadedJobId === currentJobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = currentJobId;
+    this.loadTradeAwardData();
   }
 
   get jobId(): number {
@@ -480,6 +310,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
         p.category === 'trade' &&
         !p.isInactive &&
         !p.isHidden &&
+        (p.postedToMarketplace || p.isInHouse) &&
         this.isLaborOnly(p) &&
         p.materialBudget > 0,
     );
@@ -487,7 +318,11 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   get supplierItems(): TradePackageVm[] {
     return this.tradePackages.filter(
-      (p) => p.category === 'supplier' && !p.isInactive && !p.isHidden,
+      (p) =>
+        p.category === 'supplier' &&
+        !p.isInactive &&
+        !p.isHidden &&
+        (p.postedToMarketplace || p.isInHouse),
     );
   }
 
@@ -619,51 +454,11 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       return;
     }
 
-    if (!item.isMock && !this.jobId) {
+    if (!this.jobId) {
       return;
     }
 
     this.analyzingPackageIds.add(item.id);
-
-    if (item.isMock) {
-      const packageComparisonType =
-        this.cardType(item) === 'supplier'
-          ? 'Supplier'
-          : this.cardType(item) === 'vendor'
-            ? 'Vendor'
-            : 'Subcontractor';
-
-      const previewBids = this.bidsForPackage(item).map((bid) => ({
-        bidId: bid.bidId,
-        amount: Number(bid.amount || 0),
-        status: bid.status || 'Submitted',
-        probuildRating: Number(bid.rating || 0),
-        googleRating: Number(bid.rating || 0),
-      }));
-
-      this.biddingService
-        .analyzePreviewBids(packageComparisonType, previewBids, {
-          id: item.id,
-          tradeName: item.trade,
-          category: item.category,
-          scopeOfWork: item.scopeOfWork,
-          csiCode: item.csiCode,
-          budget: Number(item.budget || 0),
-          laborBudget: Number(item.laborBudget || 0),
-          materialBudget: Number(item.materialBudget || 0),
-          laborType: item.laborType,
-        })
-        .subscribe({
-        next: (result) => {
-          this.applyAnalysisResult(item.id, result);
-        },
-        error: () => {
-          this.analyzingPackageIds.delete(item.id);
-          this.snackBar.open('AI analysis failed for this package.', 'Close', { duration: 3000 });
-        },
-      });
-      return;
-    }
 
     this.biddingService.analyzeTradePackage(this.jobId, item.id).subscribe({
       next: (result) => {
@@ -774,10 +569,8 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
 
   private loadTradeAwardData(): void {
     if (!this.jobId) {
-      this.tradePackages = this.showDemoBids ? [...this.mockTradePackages] : [];
-      this.expandedIds = this.showDemoBids
-        ? new Set(this.mockTradePackages.map((pkg) => pkg.id))
-        : new Set<number>();
+      this.tradePackages = [];
+      this.expandedIds = new Set<number>();
       this.loadBids();
       return;
     }
@@ -830,31 +623,17 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
             .map((pkg) => pkg.id),
         );
 
-        if (this.showDemoBids) {
-          this.tradePackages = [...this.tradePackages, ...this.mockTradePackages];
-          this.expandedIds = new Set(this.mockTradePackages.map((pkg) => pkg.id));
-        } else {
-          this.expandedIds = new Set<number>();
-        }
+        this.expandedIds = new Set<number>();
 
         this.loadBids();
       },
       error: () => {
-        this.tradePackages = this.showDemoBids ? [...this.mockTradePackages] : [];
-        this.expandedIds = this.showDemoBids
-          ? new Set(this.mockTradePackages.map((pkg) => pkg.id))
-          : new Set<number>();
+        this.tradePackages = [];
+        this.expandedIds = new Set<number>();
         this.loadBids();
-
-        if (this.showDemoBids) {
-          this.snackBar.open('Unable to load trade packages. Showing demo packages only.', 'Close', {
-            duration: 3000,
-          });
-        } else {
-          this.snackBar.open('Unable to load trade packages.', 'Close', {
-            duration: 3000,
-          });
-        }
+        this.snackBar.open('Unable to load trade packages.', 'Close', {
+          duration: 3000,
+        });
       },
     });
   }
@@ -862,13 +641,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   private loadBids(): void {
     this.bidsByPackageId = {};
 
-    if (this.showDemoBids) {
-      Object.entries(this.mockBidsByPackageId).forEach(([key, bids]) => {
-        this.bidsByPackageId[Number(key)] = [...bids].sort((a, b) => a.amount - b.amount);
-      });
-    }
-
-    if (!this.jobId && !this.showDemoBids) {
+    if (!this.jobId) {
       this.isLoading = false;
       return;
     }
@@ -897,28 +670,28 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
             tradePackageId: packageId,
             bidderName: bid.companyName || `Bidder #${bid.id}`,
             rating: Number(bid.rating || 0),
-            googleRating: Number(bid.googleRating || bid.rating || 0),
+            googleRating: Number(bid.googleRating || 0),
             googleReviews: Number(bid.googleReviews || 0),
-            proBuildRating: Number(bid.proBuildRating || bid.rating || 0),
-            proBuildReviews: Number(bid.proBuildReviews || bid.reviews || 0),
+            proBuildRating: Number(bid.proBuildRating || 0),
+            proBuildReviews: Number(bid.proBuildReviews || 0),
             location: bid.location || 'N/A',
             amount: Number(bid.amount || 0),
-            leadTime: bid.duration ? `${bid.duration} days` : 'N/A',
+            leadTime: Number(bid.duration || 0) > 0 ? `${Number(bid.duration)} days` : 'N/A',
             status: bid.status || 'Submitted',
-            specialty: bid.specialty || 'General Trade',
-            insurance: bid.insurance ?? true,
-            licenseNo: bid.licenseNo || 'Licensed',
-            bondable: bid.bondable ?? true,
+            specialty: this.specialtyDisplay(bid.specialty) ?? undefined,
+            insurance: bid.insurance ?? false,
+            licenseNo: bid.licenseNo || 'N/A',
+            bondable: bid.bondable ?? false,
             completedJobs: Number(bid.completedJobs || 0),
             yearsInBusiness: Number(bid.yearsInBusiness || 0),
             quoteRef: bid.quoteRef || `Q-${bid.id}`,
-            submittedLabel: bid.submittedLabel || 'recently',
+            submittedLabel: bid.submittedLabel || this.getRelativeSubmittedLabel(bid.submittedAt),
             validUntil: bid.validUntil || 'TBC',
-            contact: bid.contact || 'Estimator Team',
+            contact: bid.contact || 'N/A',
             phone: bid.phone || 'N/A',
             email: bid.email || 'N/A',
-            inclusions: Array.isArray(bid.inclusions) ? bid.inclusions : ['Quoted scope as submitted'],
-            exclusions: Array.isArray(bid.exclusions) ? bid.exclusions : ['No exclusions specified'],
+            inclusions: this.normalizeBidList(bid.inclusions, ['Quoted scope as submitted']),
+            exclusions: this.normalizeBidList(bid.exclusions, ['No exclusions specified']),
             submittedAt: bid.submittedAt,
             documentUrl: bid.documentUrl,
           });
@@ -955,15 +728,9 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       },
       error: () => {
         this.isLoading = false;
-        if (this.showDemoBids) {
-          this.snackBar.open('Unable to load live bids. Showing demo bids only.', 'Close', {
-            duration: 2500,
-          });
-        } else {
-          this.snackBar.open('Unable to load bids right now.', 'Close', {
-            duration: 2500,
-          });
-        }
+        this.snackBar.open('Unable to load bids right now.', 'Close', {
+          duration: 2500,
+        });
       },
     });
   }
@@ -971,6 +738,45 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   private isLaborOnly(pkg: TradePackageVm): boolean {
     const normalized = String(pkg.laborType || '').trim().toLowerCase();
     return normalized === 'labor' || normalized === 'labor only';
+  }
+
+  private normalizeBidList(value: unknown, fallback: string[]): string[] {
+    if (Array.isArray(value)) {
+      const cleaned = value
+        .map((x) => String(x ?? '').trim())
+        .filter((x) => !!x);
+      return cleaned.length ? cleaned : fallback;
+    }
+
+    if (typeof value === 'string') {
+      const raw = value.trim();
+      if (!raw) {
+        return fallback;
+      }
+
+      if (raw.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed
+              .map((x) => String(x ?? '').trim())
+              .filter((x) => !!x);
+            return cleaned.length ? cleaned : fallback;
+          }
+        } catch {
+          // fall through
+        }
+      }
+
+      const parts = raw
+        .split(/\r?\n|,/g)
+        .map((x) => x.trim())
+        .filter((x) => !!x);
+
+      return parts.length ? parts : fallback;
+    }
+
+    return fallback;
   }
 
   private uploadInHouseFile(item: TradePackageVm, file: File): void {
@@ -1013,7 +819,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   }
 
   private persistTradePackageStatus(item: TradePackageVm, status: string): void {
-    if (!this.jobId || item.isMock) {
+    if (!this.jobId) {
       item.status = status;
       return;
     }
@@ -1033,7 +839,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
       laborType: item.laborType || null,
       csiCode: item.csiCode || null,
       linkedTradePackageId: item.linkedTradePackageId || null,
-      isAutoGenerated: !!item.isMock,
+      isAutoGenerated: false,
       isInactive: !!item.isInactive,
       isHidden: !!item.isHidden,
       sourceType: item.sourceType || null,
@@ -1062,7 +868,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
   }
 
   private persistAwardForPackage(item: TradePackageVm, bidId: number | null): void {
-    if (!this.jobId || item.isMock) {
+    if (!this.jobId) {
       if (bidId) {
         this.awardedBidByPackageId[item.id] = bidId;
         this.naPackageIds.delete(item.id);
@@ -1106,6 +912,27 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
     } catch {
       return 'Uploaded quote.pdf';
     }
+  }
+
+  openBidDocument(url: string | null | undefined, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    const link = (url ?? '').trim();
+    if (!link) {
+      return;
+    }
+
+    const normalized =
+      link.startsWith('http://') || link.startsWith('https://')
+        ? link
+        : link.startsWith('/')
+          ? link
+          : `/${link}`;
+
+    window.open(normalized, '_blank', 'noopener');
   }
 
   private applyAnalysisResult(packageId: number, result: any): void {

@@ -98,6 +98,21 @@
             </mat-select>
           </mat-form-field>
         </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Amount</mat-label>
+          <input matInput type="number" min="0" [(ngModel)]="bidAmount" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Inclusions</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="bidInclusions"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Exclusions</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="bidExclusions"></textarea>
+        </mat-form-field>
       </div>
     </mat-step>
   </mat-stepper>

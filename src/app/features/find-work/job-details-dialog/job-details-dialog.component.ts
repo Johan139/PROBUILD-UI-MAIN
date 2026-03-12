@@ -452,7 +452,23 @@ export class JobDetailsDialogComponent implements OnInit, OnDestroy {
       null;
     this.editable.estimatedManHours = Number(jobAny.tradePackageEstimatedManHours || 0) || null;
     this.editable.startDate = this.toDateInputValue(jobAny.tradePackageStartDate || this.data.job.potentialStartDate);
-    this.editable.durationInDays = this.data.job.durationInDays ?? null;
+
+    const durationText = String(jobAny.tradePackageEstimatedDuration || '').trim();
+    const parsedDurationDays = durationText ? Number.parseFloat(durationText) : NaN;
+    const durationFromText = Number.isFinite(parsedDurationDays) && parsedDurationDays > 0
+      ? Math.ceil(parsedDurationDays)
+      : null;
+    const durationFromManHours = this.editable.estimatedManHours && this.editable.estimatedManHours > 0
+      ? Math.max(1, Math.ceil(this.editable.estimatedManHours / 8))
+      : null;
+    const durationFromJob = this.data.job.durationInDays ?? null;
+
+    const resolvedDuration = durationFromJob ?? durationFromText ?? durationFromManHours;
+    this.editable.durationInDays = resolvedDuration;
+
+    if (this.data.job.durationInDays == null && resolvedDuration != null) {
+      this.data.job.durationInDays = resolvedDuration;
+    }
     this.editable.laborType = this.normalizeLaborType(jobAny.tradePackageLaborType || this.data.job.biddingType || 'Labor and Materials');
     this.editable.bidDeadline = this.toDateInputValue(jobAny.tradePackageBidDeadline || this.data.job.biddingStartDate);
   }
