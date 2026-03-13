@@ -33,6 +33,9 @@ export interface TradePackageBidInviteCount {
 export class BomService {
   private apiUrl = environment.BACKEND_URL + '/tradepackages';
 
+  private readonly bomCacheTtlMs = 2 * 60 * 1000;
+  private bomCache = new Map<string, { cachedAt: number; value: any }>();
+
   constructor(
     private jobsService: JobsService,
     private http: HttpClient,
@@ -40,10 +43,18 @@ export class BomService {
   ) {}
 
   getBillOfMaterials(jobId: string): Observable<any> {
+    const key = String(jobId);
+    const cached = this.bomCache.get(key);
+    const now = Date.now();
+    if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {
+      return of(cached.value);
+    }
+
     return this.jobsService.GetBillOfMaterials(jobId).pipe(
       map((status: any) => {
-        if (status.length > 0) {
-          return status.map((doc: any) => ({
+        const normalized = Array.isArray(status) ? status : [];
+        if (normalized.length > 0) {
+          const mapped = normalized.map((doc: any) => ({
             id: doc.id,
             jobId: doc.jobId,
             documentId: doc.DocumentId,
@@ -53,11 +64,17 @@ export class BomService {
             createdAt: doc.createdAt,
             parsedReport: this.parseReport(doc.fullResponse),
           }));
+
+          this.bomCache.set(key, { cachedAt: now, value: mapped });
+          return mapped;
         }
 
-        return { message: status.message, isProcessingComplete: false };
+        const empty = { message: (status as any)?.message, isProcessingComplete: false };
+        this.bomCache.set(key, { cachedAt: now, value: empty });
+        return empty;
       }),
       catchError((error) => {
+        this.bomCache.delete(key);
         return of({
           error: error.error?.error || 'Failed to check AI processing status.',
         });

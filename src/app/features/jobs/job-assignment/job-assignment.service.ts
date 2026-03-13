@@ -69,7 +69,12 @@ export class JobAssignmentService {
       .pipe(
         catchError((error) => {
           console.error('Error creating job assignment:', error);
-          return throwError(() => new Error('Failed to create job assignment'));
+          const message =
+            (error as any)?.error?.message ||
+            (error as any)?.error?.Message ||
+            (error as any)?.message ||
+            'Failed to assign team member.';
+          return throwError(() => new Error(String(message)));
         }),
       );
   }
@@ -81,9 +86,12 @@ export class JobAssignmentService {
       .pipe(
         catchError((error) => {
           console.error('Error deleting user assignment:', error);
-          return throwError(
-            () => new Error('Failed to delete user assignment'),
-          );
+          const message =
+            (error as any)?.error?.message ||
+            (error as any)?.error?.Message ||
+            (error as any)?.message ||
+            'Failed to remove team member assignment.';
+          return throwError(() => new Error(String(message)));
         }),
       );
   }

@@ -1,6 +1,16 @@
 <div class="analysis-container">
   <!-- Progress Header -->
   <div class="progress-card">
+    <button
+      *ngIf="currentStep === 'complete'"
+      type="button"
+      class="continue-btn proceed-top-right"
+      (click)="onContinue()"
+    >
+      Proceed to Scope Review
+      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
+    </button>
+
     <div class="progress-header">
       <div class="progress-icon-wrapper">
         <lucide-angular
@@ -28,16 +38,6 @@
         </p>
       </div>
     </div>
-
-    <button
-      *ngIf="currentStep === 'complete'"
-      type="button"
-      class="continue-btn"
-      (click)="onContinue()"
-    >
-      Continue to Preliminary
-      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
-    </button>
 
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" [style.width.%]="analysisProgress"></div>
@@ -350,10 +350,4 @@
   </div>
 
   <!-- Continue Button -->
-  <div *ngIf="currentStep === 'complete'" class="actions-footer">
-    <button class="continue-btn" (click)="onContinue()">
-      Continue to Preliminary
-      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
-    </button>
-  </div>
 </div>

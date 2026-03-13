@@ -323,7 +323,21 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
   }
 
   openGoLiveDialog(): void {
-    if (!this.canGoLive) {
+    if (!this.hasAssignedMembers) {
+      this.snackBar.open(
+        'Assign at least one team member before starting construction.',
+        'Close',
+        { duration: 3500, horizontalPosition: 'center', verticalPosition: 'top' },
+      );
+      return;
+    }
+
+    if (!this.isStartDateSet) {
+      this.snackBar.open(
+        'Set a project start date before starting construction.',
+        'Close',
+        { duration: 3500, horizontalPosition: 'center', verticalPosition: 'top' },
+      );
       return;
     }
 
@@ -340,6 +354,15 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
   }
 
   confirmGoLive(): void {
+    if (!this.hasAssignedMembers) {
+      this.snackBar.open(
+        'Assign at least one team member before starting construction.',
+        'Close',
+        { duration: 3500, horizontalPosition: 'center', verticalPosition: 'top' },
+      );
+      return;
+    }
+
     const selectedDate = this.goLiveSelectedDate;
     if (!selectedDate) {
       return;
@@ -658,9 +681,29 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
 
     this.jobAssignmentService.createJobAssignment(link).subscribe({
       next: () => this.setMemberAssigned(memberId, true),
-      error: () => {
-        this.snackBar.open('Failed to assign team member to this project.', 'Close', {
-          duration: 3000,
+      error: (err: any) => {
+        const rawMessage = String(err?.message || '').trim();
+        const message = rawMessage || 'Failed to assign team member to this project.';
+
+        const normalized = message.toLowerCase();
+        const indicatesAlreadyAssigned =
+          normalized.includes('already assigned') ||
+          normalized.includes('already') && normalized.includes('assigned');
+
+        if (indicatesAlreadyAssigned) {
+          this.setMemberAssigned(memberId, true);
+          this.snackBar.open('Team member is already assigned to this project.', 'Close', {
+            duration: 3500,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+          return;
+        }
+
+        this.snackBar.open(message, 'Close', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
         });
       },
     });

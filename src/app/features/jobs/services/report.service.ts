@@ -8,16 +8,39 @@ import { Permit } from '../../../models/permit';
   providedIn: 'root',
 })
 export class ReportService {
+  private readonly bomResultsCacheTtlMs = 2 * 60 * 1000;
+  private bomResultsCache = new Map<
+    string,
+    { cachedAt: number; results: any[] | null }
+  >();
+
   constructor(
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
   ) {}
 
+  private async getBomResults(jobId: string): Promise<any[] | null> {
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.bomResultsCache.get(key);
+    if (cached && now - cached.cachedAt < this.bomResultsCacheTtlMs) {
+      return cached.results;
+    }
+
+    try {
+      const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
+      const normalized = Array.isArray(results) ? results : null;
+      this.bomResultsCache.set(key, { cachedAt: now, results: normalized });
+      return normalized;
+    } catch (err) {
+      this.bomResultsCache.delete(key);
+      throw err;
+    }
+  }
+
   async getPermitsAndApprovalsReport(jobId: string): Promise<Permit[]> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return [];
       }
@@ -101,9 +124,7 @@ export class ReportService {
 
   async getEnvironmentalReportContent(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -195,9 +216,7 @@ export class ReportService {
 
   async getFullReportContent(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -275,9 +294,7 @@ export class ReportService {
 
   async getExecutiveSummary(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -323,9 +340,7 @@ export class ReportService {
 
   async getExecutiveSummaryData(jobId: string): Promise<any> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -485,9 +500,7 @@ export class ReportService {
 
   async getProcurementSchedule(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -518,9 +531,7 @@ export class ReportService {
 
   async getDailyConstructionPlan(jobId: string): Promise<string | null> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return null;
       }
@@ -560,9 +571,7 @@ export class ReportService {
     readability?: number;
   }> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
+      const results = await this.getBomResults(jobId);
       if (!results || results.length === 0 || !results[0].fullResponse) {
         return { confidenceScore: 0, sheetCount: 0, roomCount: 0, rooms: [] };
       }

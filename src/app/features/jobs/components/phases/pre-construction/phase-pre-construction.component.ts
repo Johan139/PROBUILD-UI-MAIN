@@ -93,15 +93,25 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
     status: 'Pending' as PreConstructionTask['status'],
   };
   private nextTaskId = 4;
+  private lastLoadedJobId: number | null = null;
 
   ngOnInit(): void {
+    this.lastLoadedJobId = this.jobId;
     this.refreshPermits();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['projectDetails']) {
-      this.refreshPermits();
+    if (!changes['projectDetails']) {
+      return;
     }
+
+    const nextJobId = this.jobId;
+    if (!nextJobId || this.lastLoadedJobId === nextJobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = nextJobId;
+    this.refreshPermits();
   }
 
   ngOnDestroy(): void {

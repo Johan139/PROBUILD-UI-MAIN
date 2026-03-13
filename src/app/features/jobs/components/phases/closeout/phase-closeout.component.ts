@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpEventType } from '@angular/common/http';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 import { DocumentService } from '../../../services/document.service';
 import { JobsService } from '../../../../../services/jobs.service';
@@ -33,7 +33,7 @@ interface CloseoutUpload {
   templateUrl: './phase-closeout.component.html',
   styleUrl: './phase-closeout.component.scss',
 })
-export class PhaseCloseoutComponent implements OnInit {
+export class PhaseCloseoutComponent implements OnInit, OnChanges {
   constructor(
     private readonly documentService: DocumentService,
     private readonly jobsService: JobsService,
@@ -53,7 +53,23 @@ export class PhaseCloseoutComponent implements OnInit {
   readonly completedItemKeys = new Set<string>();
   readonly closeoutUploads: Record<string, CloseoutUpload> = {};
 
+  private lastLoadedJobId: string | null = null;
+
   ngOnInit(): void {
+    this.loadExistingUploads();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['projectDetails']) {
+      return;
+    }
+
+    const nextJobId = this.projectDetails?.jobId || this.projectDetails?.id;
+    const normalized = nextJobId ? String(nextJobId) : null;
+    if (!normalized || normalized === this.lastLoadedJobId) {
+      return;
+    }
+
     this.loadExistingUploads();
   }
 
@@ -298,6 +314,8 @@ export class PhaseCloseoutComponent implements OnInit {
     if (!jobId) {
       return;
     }
+
+    this.lastLoadedJobId = String(jobId);
 
     this.jobsService.getJobDocuments(String(jobId)).subscribe({
       next: (docs) => {

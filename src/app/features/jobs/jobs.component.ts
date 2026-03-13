@@ -267,6 +267,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private destroyRef = inject(DestroyRef);
   private readonly uiCacheVersion = 1 as const;
 
+  private lastAuxLoadedJobId: number | null = null;
+
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
   selectedTimelineParentGroup: TimelineGroup | null = null;
@@ -929,23 +931,33 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         if (this.projectDetails?.jobId) {
-          this.loadScopeInsightData(this.projectDetails.jobId);
-          this.loadBlueprints();
-          this.loadAssignedTeam();
-          this.authService.currentUser$
-            .pipe(
-              filter((user) => !!user),
-              take(1),
-            )
-            .subscribe((user) => {
-              if (user) {
-                this.currentUserId = user.id;
-                this.checkProjectOwnerStatus(
-                  this.projectDetails.jobId,
-                  user.id,
-                );
-              }
-            });
+          const jobId = Number(this.projectDetails.jobId);
+
+          if (this.lastAuxLoadedJobId !== jobId) {
+            this.lastAuxLoadedJobId = jobId;
+
+            this.loadBlueprints();
+            this.loadAssignedTeam();
+
+            if (this.projectStage !== 'INITIATION') {
+              this.loadScopeInsightData(this.projectDetails.jobId);
+            }
+
+            this.authService.currentUser$
+              .pipe(
+                filter((user) => !!user),
+                take(1),
+              )
+              .subscribe((user) => {
+                if (user) {
+                  this.currentUserId = user.id;
+                  this.checkProjectOwnerStatus(
+                    this.projectDetails.jobId,
+                    user.id,
+                  );
+                }
+              });
+          }
         }
       });
 
@@ -1931,8 +1943,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private determineProjectStage(status: string) {
       if (!status) {
-          this.projectStage = 'CONSTRUCTION_LIVE'; // Default
-          this.stageDisplayMode = 'live';
           return;
       }
 
@@ -1970,25 +1980,9 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onAnalysisComplete() {
-      // Refresh job details to get new status (which should be PRELIMINARY)
-      this.jobDataService.fetchJobData(this.projectDetails).subscribe({
-        next: () => {
-          const refreshedProjectDetails = (this.store.getState() as any)
-            ?.projectDetails as any;
-          const refreshedStatus =
-            refreshedProjectDetails?.status ?? refreshedProjectDetails?.Status;
-
-          if (refreshedStatus) {
-            this.determineProjectStage(String(refreshedStatus));
-          }
-        },
-        error: (err) => {
-          console.error('Failed to refresh job details after analysis', err);
-          this.snackBar.open('Failed to refresh project status.', 'Close', {
-            duration: 3000,
-          });
-        },
-      });
+      // After initiation analysis, the next intended screen is always Scope Review.
+      // Update status first; updateJobStatus will refresh job details and set stage from backend.
+      this.updateJobStatus('PRELIMINARY_SCOPE');
   }
 
   onJobGranted() {
@@ -2020,10 +2014,22 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       .updateJobStatus(this.projectDetails.jobId, status)
       .subscribe({
         next: () => {
-          this.determineProjectStage(status);
-          // this.snackBar.open(`Project status updated to ${status}`, 'Close', {
-          //   duration: 3000,
-          // });
+          // Avoid optimistic stage flipping. Refresh from backend and derive stage from persisted status.
+          this.jobsService.getSpecificJob(this.projectDetails.jobId).subscribe({
+            next: (jobDetails) => {
+              this.projectDetails = { ...(this.projectDetails || {}), ...(jobDetails || {}) };
+              this.store.setState({ projectDetails: this.projectDetails } as any);
+
+              const refreshedStatus =
+                (jobDetails as any)?.status ?? (jobDetails as any)?.Status ?? status;
+              this.determineProjectStage(String(refreshedStatus));
+            },
+            error: (err) => {
+              console.error('Failed to refresh job details after status update', err);
+              // Fallback to requested status to keep UI usable.
+              this.determineProjectStage(status);
+            },
+          });
         },
         error: (err) => {
           console.error('Failed to update status', err);

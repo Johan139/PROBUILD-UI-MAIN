@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -19,10 +19,12 @@ import { QuoteDto, QuoteRowDto } from '../../../../../features/quote/quote.model
   templateUrl: './job-preliminary-view.component.html',
   styleUrls: ['./job-preliminary-view.component.scss']
 })
-export class JobPreliminaryViewComponent implements OnInit {
+export class JobPreliminaryViewComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
   @Output() jobGranted = new EventEmitter<void>();
   @Output() fullReportRequested = new EventEmitter<void>();
+
+  private lastLoadedJobId: string | null = null;
 
   // State
   activeTab: 'budget' | 'procurement' | 'value-engineering' = 'budget';
@@ -85,7 +87,25 @@ export class JobPreliminaryViewComponent implements OnInit {
     }
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['projectDetails']) {
+      return;
+    }
+
+    const jobId = String(this.projectDetails?.jobId || '').trim();
+    if (!jobId || jobId === this.lastLoadedJobId) {
+      return;
+    }
+
+    this.loadData(jobId);
+  }
+
   loadData(jobId: string) {
+    if (jobId === this.lastLoadedJobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = jobId;
     this.isLoading = true;
     this.checkExistingQuote(jobId);
 

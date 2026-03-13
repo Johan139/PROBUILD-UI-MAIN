@@ -88,6 +88,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   generatedQuote: QuoteDto | null = null;
   isSending = false;
   isGeneratingQuote = false;
+  reportError: string | null = null;
+
+  private lastLoadedJobId: string | null = null;
 
   costAnalysis: any = null;
   editingCell:
@@ -120,6 +123,19 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     }
 
     this.loadData(this.projectDetails.jobId);
+  }
+
+  ngOnChanges(changes: any): void {
+    if (!changes['projectDetails']) {
+      return;
+    }
+
+    const jobId = String(this.projectDetails?.jobId || '').trim();
+    if (!jobId || jobId === this.lastLoadedJobId) {
+      return;
+    }
+
+    this.loadData(jobId);
   }
 
   get projectSizeSqFt(): string {
@@ -215,6 +231,11 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   }
 
   loadData(jobId: string): void {
+    if (jobId === this.lastLoadedJobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = jobId;
     this.isLoading = true;
     this.checkExistingQuote(jobId);
 

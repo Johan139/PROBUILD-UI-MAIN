@@ -252,6 +252,11 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       this.currentStep = 'complete';
       this.analysisProgress = 100;
       this.completedSteps = this.analysisSteps.map(s => s.id as AnalysisStep);
+
+      if (this.analysisStatePollingSubscription) {
+        this.analysisStatePollingSubscription.unsubscribe();
+        this.analysisStatePollingSubscription = null;
+      }
     } else {
       this.mapStatusToStep(update.statusMessage, update.currentStep);
     }
@@ -309,7 +314,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       if (!this.completedSteps.includes(newStep)) {
          // Current step is not complete
       }
-      if (!this.expandedSections.includes(newStep)) {
+      if (this.expandedSections.length === 0) {
         this.expandedSections = [newStep];
       }
     }

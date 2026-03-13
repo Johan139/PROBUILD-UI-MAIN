@@ -71,8 +71,6 @@ export class JobDataService {
 
   private loadJobDataFlow(projectDetails: any) {
     return this.getJobDetails(projectDetails.jobId, projectDetails).pipe(
-      switchMap(() => this.loadWeatherFromStore()),
-
       tap(() => this.loadCache(projectDetails.jobId)),
 
       switchMap(() => this.loadSubtasksOrBom(projectDetails.jobId)),
