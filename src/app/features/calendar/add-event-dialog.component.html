@@ -77,8 +77,8 @@
   <mat-divider></mat-divider>
 
   <mat-dialog-actions class="dialog-actions" align="end">
-    <button mat-stroked-button color="primary" class="btn btn-ghost" (click)="onCancel()">Cancel</button>
-    <button mat-flat-button color="primary" class="btn btn-primary" [disabled]="eventForm.invalid" (click)="onSave()">
+    <button mat-button class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+    <button mat-button class="btn btn-primary" [disabled]="eventForm.invalid" (click)="onSave()">
       <mat-icon fontIcon="save" class="btn-icon"></mat-icon>
       Save
     </button>

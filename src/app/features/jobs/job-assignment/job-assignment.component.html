@@ -58,7 +58,7 @@
       </form>
 
       <div class="button-container">
-        <button mat-button class="submit-btn" *ngIf="authService.hasPermission('AddTeamMembers')" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser || !newAssignment.jobRole">
+        <button mat-button class="btn btn-primary" type="button" *ngIf="authService.hasPermission('AddTeamMembers')" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser || !newAssignment.jobRole">
           {{ isSaving ? 'Saving...' : 'Assign' }}
         </button>
       </div>
@@ -112,7 +112,7 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let element">
-            <button mat-button class="submit-btn" color="accent"
+            <button mat-button class="btn btn-danger" type="button"
                     *ngIf="authService.hasPermission('deleteTeamMembers')"
                     (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">

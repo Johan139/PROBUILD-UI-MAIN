@@ -12,12 +12,13 @@
     </div>
   </div>
   <div class="prompt-actions">
-    <button mat-button (click)="onboardingService.skipOnboarding()">
+    <button mat-button class="btn btn-ghost" type="button" (click)="onboardingService.skipOnboarding()">
       No, thanks
     </button>
     <button
-      mat-raised-button
-      color="primary"
+      mat-button
+      class="btn btn-primary"
+      type="button"
       (click)="onboardingService.startTour()"
     >
       Start Tour

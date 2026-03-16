@@ -11,16 +11,7 @@
     ⚠ {{ warningMessage }}
   </p>
 </div>
-<mat-dialog-actions align="end">
-  <button mat-button class="dialog-btn return-btn" (click)="onCancel()">
-    Cancel
-  </button>
-  <button
-    mat-button
-    class="dialog-btn confirm-btn"
-    [disabled]="disableConfirm"
-    (click)="onConfirm()"
-  >
-    Confirm
-  </button>
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+  <button mat-button class="btn btn-primary" [disabled]="disableConfirm" (click)="onConfirm()">Confirm</button>
 </mat-dialog-actions>

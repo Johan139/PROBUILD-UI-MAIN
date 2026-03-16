@@ -3,13 +3,13 @@
         <mat-icon>bookmark_border</mat-icon>
         <h3>No Saved Jobs</h3>
         <p>Save jobs you're interested in to review and bid on later.</p>
-        <button mat-flat-button color="primary" (click)="browseJobs.emit()">Browse Available Jobs</button>
+        <button mat-button type="button" class="btn btn-primary" (click)="browseJobs.emit()">Browse Available Jobs</button>
     </div>
 
     <div *ngIf="savedJobIds.length > 0">
         <div class="section-header">
             <h3>Saved Jobs ({{ savedJobsList.length }})</h3>
-            <button mat-stroked-button (click)="clearAll.emit()">Clear All</button>
+            <button mat-button type="button" class="btn btn-ghost" (click)="clearAll.emit()">Clear All</button>
         </div>
 
         <ul class="job-list">

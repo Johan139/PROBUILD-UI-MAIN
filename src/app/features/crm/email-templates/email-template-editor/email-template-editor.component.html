@@ -3,8 +3,8 @@
   <div class="topbar">
     <div class="topbar-left">
       <a
-        mat-stroked-button
-        class="btn-ghost btn-back"
+        mat-button
+        class="btn btn-ghost btn-back"
         [routerLink]="['/crm/email-templates']"
       >
         <mat-icon>arrow_back</mat-icon>
@@ -17,14 +17,15 @@
     </div>
 
     <div class="topbar-right">
-      <button mat-stroked-button class="btn-ghost" [disabled]="savingTemplate || sendingTest" (click)="sendTest()">
+      <button mat-button class="btn btn-ghost" type="button" [disabled]="savingTemplate || sendingTest" (click)="sendTest()">
         <mat-icon>send</mat-icon>
         Send Test
       </button>
 
       <button
-        mat-stroked-button
-        class="btn-ghost"
+        mat-button
+        class="btn btn-ghost"
+        type="button"
         (click)="openPreview()"
         [disabled]="savingTemplate"
       >
@@ -33,8 +34,9 @@
       </button>
 
       <button
-        mat-flat-button
-        class="btn-primary"
+        mat-button
+        class="btn btn-primary"
+        type="button"
         (click)="save()"
         [disabled]="savingTemplate"
       >
@@ -90,8 +92,8 @@
           ></mat-progress-spinner>
 
           <button
-            mat-stroked-button
-            class="btn-ghost"
+            mat-button
+            class="btn btn-ghost"
             type="button"
             (click)="headerUploadInput.click()"
             [disabled]="uploadingHeader"
@@ -155,8 +157,8 @@
           ></mat-progress-spinner>
 
           <button
-            mat-stroked-button
-            class="btn-ghost"
+            mat-button
+            class="btn btn-ghost"
             type="button"
             (click)="footerUploadInput.click()"
             [disabled]="uploadingFooter"

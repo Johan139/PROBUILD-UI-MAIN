@@ -18,6 +18,8 @@
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
+  min-height: 40px;
+  line-height: 1;
 
   &:disabled {
     cursor: not-allowed;
@@ -25,34 +27,141 @@
   }
 }
 
+// Ensure Angular Material (MDC) buttons respect our utility styles
+button.btn,
+.mat-mdc-button.btn,
+.mat-mdc-unelevated-button.btn,
+.mat-mdc-raised-button.btn {
+  border-radius: var(--radius-md) !important;
+  text-decoration: none;
+  min-height: 40px;
+  padding: var(--space-3) var(--space-6) !important;
+  font-weight: var(--fw-semibold) !important;
+}
+
 // Primary button
 .btn-primary {
-  background-color: var(--brand-yellow-primary);
-  color: var(--color-text-inverse);
+  background-color: var(--action-primary) !important;
+  color: var(--gray-900) !important;
+  border-color: transparent !important;
+  --mdc-text-button-label-text-color: var(--gray-900);
+  --mdc-text-button-container-color: var(--action-primary);
+  --mdc-filled-button-container-color: var(--action-primary);
+  --mdc-filled-button-label-text-color: var(--gray-900);
+  --mdc-protected-button-container-color: var(--action-primary);
+  --mdc-protected-button-label-text-color: var(--gray-900);
 
   &:hover:not(:disabled) {
-    background-color: var(--brand-yellow-accent);
+    background-color: var(--action-primary-hover);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
   }
 }
 
 // Secondary button
 .btn-secondary {
-  background-color: transparent;
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+  --mdc-text-button-label-text-color: var(--color-text);
+  --mdc-text-button-container-color: var(--color-surface-hover);
 
   &:hover:not(:disabled) {
     background-color: var(--color-surface-hover);
     border-color: var(--color-primary);
   }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
 }
 
 // Danger button
 .btn-danger {
-  background-color: var(--color-danger);
-  color: var(--color-text-inverse);
+  background-color: var(--color-danger) !important;
+  color: var(--color-text-inverse) !important;
+  border-color: transparent !important;
+  --mdc-text-button-label-text-color: var(--color-text-inverse);
+  --mdc-text-button-container-color: var(--color-danger);
 
   &:hover:not(:disabled) {
     background-color: hsl(0, 70%, 45%);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.btn-success {
+  background-color: var(--color-success) !important;
+  color: var(--color-text-white) !important;
+  border-color: transparent !important;
+  --mdc-text-button-label-text-color: var(--color-text-white);
+  --mdc-text-button-container-color: var(--color-success);
+  --mdc-filled-button-container-color: var(--color-success);
+  --mdc-filled-button-label-text-color: var(--color-text-white);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--color-success) 88%, black);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.btn-warning {
+  background-color: var(--color-warning) !important;
+  color: var(--gray-900) !important;
+  border-color: transparent !important;
+  --mdc-text-button-label-text-color: var(--gray-900);
+  --mdc-text-button-container-color: var(--color-warning);
+  --mdc-filled-button-container-color: var(--color-warning);
+  --mdc-filled-button-label-text-color: var(--gray-900);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--color-warning) 88%, black);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.btn-info {
+  background-color: var(--color-focus) !important;
+  color: var(--color-text-white) !important;
+  border-color: transparent !important;
+  --mdc-text-button-label-text-color: var(--color-text-white);
+  --mdc-text-button-container-color: var(--color-focus);
+  --mdc-filled-button-container-color: var(--color-focus);
+  --mdc-filled-button-label-text-color: var(--color-text-white);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--color-focus) 88%, black);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+}
+
+.btn-ghost {
+  background-color: transparent !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+  --mdc-text-button-label-text-color: var(--color-text);
+  --mdc-text-button-container-color: transparent;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-surface-hover) !important;
+    border-color: var(--color-primary) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
   }
 }

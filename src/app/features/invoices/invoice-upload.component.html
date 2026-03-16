@@ -17,7 +17,7 @@
         <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
         <span>{{ progress }}%</span>
       </div>
-      <button class="submit-btn" mat-raised-button type="submit" [disabled]="!uploadForm.valid || isUploading">Upload</button>
+      <button mat-button class="btn btn-primary" type="submit" [disabled]="!uploadForm.valid || isUploading">Upload</button>
     </form>
   </div>
   <div class="preview-pane" *ngIf="filePreviewUrl">

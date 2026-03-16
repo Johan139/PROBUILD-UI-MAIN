@@ -19,8 +19,8 @@
   <div mat-dialog-content>
     <p>Please confirm that you have reviewed the documents before generating the job.</p>
   </div>
-  <mat-dialog-actions>
-    <button class="submit-btn-document" mat-raised-button (click)="onCancel()">Confirm</button>
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button class="btn btn-primary" (click)="onCancel()">Confirm</button>
     <!-- <button class="submit-btn-document" mat-flat-button color="primary" (click)="onConfirm()" [disabled]="!documents || documents.length === 0">Confirm</button> -->
   </mat-dialog-actions>
 </div>

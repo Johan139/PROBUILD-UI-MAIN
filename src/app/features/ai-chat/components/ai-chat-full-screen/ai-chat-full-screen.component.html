@@ -2,7 +2,7 @@
   <!-- Left Column: Conversation List -->
   <div class="conversations-list">
     <div class="conversation-list-header">
-      <button mat-raised-button color="primary" class="new-chat-btn submit-btn publish-btn" (click)="startNewConversation()">+ New Chat</button>
+      <button mat-button class="btn btn-primary new-chat-btn" type="button" (click)="startNewConversation()">+ New Chat</button>
       <button (click)="sortConversations()" class="action-btn" aria-label="Sort conversations">
         <span class="material-icons">{{ sortIcon }}</span>
       </button>
@@ -111,9 +111,9 @@
         <span class="button-wrapper"
               [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
               [class.disabled-wrapper]="isSendDisabled">
-       <button mat-raised-button color="primary"
+       <button mat-button
         type="submit"
-        class="submit-btn publish-btn send-button"
+        class="btn btn-primary send-button"
         [disabled]="isSendDisabled || (isResponding$ | async)">
   Send
 </button>
@@ -121,14 +121,14 @@
         <span class="button-wrapper"
               [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach blueprints'"
               [class.disabled-wrapper]="hasDocuments$ | async">
-          <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
+          <button mat-button type="button" class="btn btn-secondary action-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
             <mat-icon>attach_file</mat-icon>
           </button>
         </span>
         <span class="button-wrapper"
               [matTooltip]="!(hasDocuments$ | async) ? 'No files uploaded' : ''"
               [class.disabled-wrapper]="!(hasDocuments$ | async)">
-          <button mat-raised-button type="button" class="action-btn submit-btn publish-btn icon-button" (click)="viewUploadedFiles()" [disabled]="!(hasDocuments$ | async)">
+          <button mat-button type="button" class="btn btn-secondary action-btn icon-button" (click)="viewUploadedFiles()" [disabled]="!(hasDocuments$ | async)">
             <mat-icon>folder</mat-icon>
           </button>
         </span>
@@ -138,7 +138,7 @@
     </div>
     <div class="prompts-popup" *ngIf="isPromptsPopupVisible" #promptsPopup>
 
-      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-raised-button color="warn" class="clear-btn submit-btn">Clear</button>
+      <button *ngIf="((selectedPrompts$ | async) ?? []).length > 0" (click)="clearPrompts()" mat-button type="button" class="btn btn-danger clear-btn">Clear</button>
       <div *ngFor="let prompt of prompts$ | async"
            class="prompt-item"
            [class.disabled]="(selectedPrompts$ | async)?.includes(fullBlueprintAnalysisPromptId!) && prompt.id !== fullBlueprintAnalysisPromptId"

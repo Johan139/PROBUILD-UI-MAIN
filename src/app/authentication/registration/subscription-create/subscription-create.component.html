@@ -57,14 +57,13 @@
       <!-- team logic removed -->
       <mat-hint *ngIf="false" style="color: #c62828"></mat-hint>
 
-      <mat-dialog-actions align="end">
-        <button mat-button (click)="cancel()" class="submit-btn">Cancel</button>
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button class="btn btn-secondary" (click)="cancel()">Cancel</button>
 
         <button
-          mat-raised-button
-          color="primary"
+          mat-button
+          class="btn btn-primary"
           (click)="save()"
-          class="submit-btn"
           [disabled]="form.invalid || hasActiveFor(data.userId)"
         >
           Confirm

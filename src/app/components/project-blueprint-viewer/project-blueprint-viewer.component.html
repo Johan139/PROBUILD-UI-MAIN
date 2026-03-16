@@ -79,7 +79,7 @@
         #fileInput
         multiple
       />
-      <button mat-flat-button class="btn-primary" (click)="openUploadDialog()" matTooltip="Choose the blueprints you want to upload to ProBuild" [matTooltipShowDelay]="500">
+      <button mat-button class="btn btn-secondary" type="button" (click)="openUploadDialog()" matTooltip="Choose the blueprints you want to upload to ProBuild" [matTooltipShowDelay]="500">
         Choose File
       </button>
     </div>
@@ -155,10 +155,10 @@
           />
           <div>Weather & region pricing will use this location.</div>
           <div class="address-modal-actions">
-            <button class="btn-primary" (click)="confirmAddressAction()">
+            <button mat-button class="btn btn-primary" type="button" (click)="confirmAddressAction()">
               Confirm Address
             </button>
-            <button class="btn-ghost" (click)="editAddressAction()">
+            <button mat-button class="btn btn-ghost" type="button" (click)="editAddressAction()">
               Back
             </button>
           </div>

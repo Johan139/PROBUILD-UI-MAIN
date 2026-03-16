@@ -65,9 +65,9 @@ import { userTypes } from '../../../../../../data/user-types';
         </mat-form-field>
         </form>
       </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close>Cancel</button>
-        <button mat-flat-button color="primary" [disabled]="form.invalid || isSubmitting" (click)="onSubmit()">
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button class="btn btn-secondary" type="button" mat-dialog-close>Cancel</button>
+        <button mat-button class="btn btn-primary" type="button" [disabled]="form.invalid || isSubmitting" (click)="onSubmit()">
           {{ isSubmitting ? 'Inviting...' : 'Invite & Assign' }}
         </button>
       </mat-dialog-actions>

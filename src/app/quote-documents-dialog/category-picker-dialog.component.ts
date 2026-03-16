@@ -50,11 +50,11 @@ import { MatButtonModule } from '@angular/material/button';
       </mat-form-field>
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="cancel()">Cancel</button>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button class="btn btn-secondary" (click)="cancel()">Cancel</button>
       <button
-        mat-raised-button
-        color="primary"
+        mat-button
+        class="btn btn-primary"
         (click)="confirm()"
         [disabled]="mode === 'PHASE' && selectedPhases.length === 0"
       >

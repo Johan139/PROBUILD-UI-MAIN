@@ -18,14 +18,14 @@
     </div>
 
     <div class="tooltip-actions">
-      <button mat-button (click)="onboardingService.stopTour()">Skip</button>
+      <button mat-button class="btn btn-ghost" type="button" (click)="onboardingService.stopTour()">Skip</button>
       <div class="nav-buttons">
-        <button mat-stroked-button
+        <button mat-button class="btn btn-secondary" type="button"
                 [disabled]="onboardingService.currentStepIndex() === 0"
                 (click)="onboardingService.prevStep()">
           Prev
         </button>
-        <button mat-raised-button color="primary"
+        <button mat-button class="btn btn-primary" type="button"
                 (click)="onboardingService.nextStep()">
           {{ onboardingService.currentStepIndex() === onboardingService.currentTour().length - 1 ? 'Finish' : 'Next' }}
         </button>

@@ -14,36 +14,10 @@ p {
   margin-bottom: var(--space-4);
 }
 
-mat-dialog-actions {
+.dialog-actions {
   display: flex;
   gap: var(--space-3);
   padding-top: var(--space-4);
-}
-
-.dialog-btn {
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  font-weight: var(--fw-semibold);
-  transition: background-color 0.3s ease;
-  border: 0;
-  cursor: pointer;
-  @include u.interactive-states;
-}
-
-.return-btn, .confirm-btn {
-  background-color: var(--brand-yellow-primary);
-  color: var(--gray-900);
-
-  &:hover:not(:disabled) {
-    background-color: var(--brand-yellow-accent);
-  }
-
-  &:disabled {
-    background-color: var(--color-surface-subtle) !important;
-    color: var(--color-text-muted) !important;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
 }
 
 .warning-message {

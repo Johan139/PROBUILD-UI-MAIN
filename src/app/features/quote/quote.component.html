@@ -200,7 +200,7 @@
       <div *ngIf="!jobsLoading && successJobs.length === 0" class="jobs-empty">
         <mat-icon>work_off</mat-icon>
         <p>No jobs found</p>
-        <button mat-stroked-button routerLink="/jobs">Browse Jobs</button>
+        <button mat-button class="btn btn-secondary" type="button" routerLink="/jobs">Browse Jobs</button>
       </div>
 
       <!-- Jobs List - Simple -->
@@ -223,8 +223,8 @@
           </div>
 
           <button
-            mat-raised-button
-            class="generate-btn"
+            mat-button
+            class="btn btn-primary generate-btn"
             (click)="openGenerateQuoteDialog(job)"
             matTooltip="Generate a quote from this job"
           >
@@ -499,8 +499,8 @@
 
         <!-- Hide Add button when read-only -->
         <button
-          mat-stroked-button
-          class="add-line-btn"
+          mat-button
+          class="btn btn-secondary add-line-btn"
           (click)="addRow()"
           matTooltip="Add a new line item to the quote"
           *ngIf="!readOnly"
@@ -667,7 +667,8 @@
           <span class="spacer"></span>
 
           <button
-            mat-stroked-button
+            mat-button
+            class="btn btn-secondary"
             matTooltip="Download a PDF copy for your records"
             (click)="exportPdf()"
             *ngIf="quoteId"
@@ -676,8 +677,8 @@
           </button>
 
           <button
-            mat-stroked-button
-            color="warn"
+            mat-button
+            class="btn btn-danger"
             (click)="rejectQuote()"
             [disabled]="isAlreadyActioned"
           >
@@ -685,8 +686,8 @@
           </button>
 
           <button
-            mat-raised-button
-            class="btn-primary"
+            mat-button
+            class="btn btn-primary"
             (click)="approveQuote()"
             [disabled]="isAlreadyActioned"
           >
@@ -699,7 +700,8 @@
           <span class="spacer"></span>
 
           <button
-            mat-stroked-button
+            mat-button
+            class="btn btn-secondary"
             matTooltip="Download a PDF copy for your records"
             (click)="exportPdf()"
             *ngIf="quoteId"
@@ -712,6 +714,7 @@
         <ng-container *ngIf="!isInboundQuote && !readOnly && !isBidMode">
           <button
             mat-button
+            class="btn btn-ghost"
             matTooltip="Preview the document"
             (click)="openPreview()"
           >
@@ -720,6 +723,7 @@
 
           <button
             mat-button
+            class="btn btn-ghost"
             matTooltip="Create a copy of this quote"
             (click)="duplicateQuote()"
             *ngIf="quoteId"
@@ -728,6 +732,7 @@
           </button>
           <button
             mat-button
+            class="btn btn-ghost"
             matTooltip="Archive this quote"
             (click)="archiveItem()"
             *ngIf="quoteId"
@@ -737,7 +742,7 @@
 
           <button
             mat-button
-            color="warn"
+            class="btn btn-danger"
             matTooltip="Permanently delete this draft"
             (click)="deleteQuote()"
             *ngIf="quoteId"
@@ -748,7 +753,8 @@
           <span class="spacer"></span>
 
           <button
-            mat-stroked-button
+            mat-button
+            class="btn btn-secondary"
             matTooltip="Save without sending to the client"
             (click)="saveToDatabase()"
           >
@@ -756,7 +762,8 @@
           </button>
 
           <button
-            mat-stroked-button
+            mat-button
+            class="btn btn-secondary"
             matTooltip="Download a PDF copy and submit manually"
             (click)="onSubmit()"
             *ngIf="quoteId"
@@ -765,8 +772,8 @@
           </button>
 
           <button
-            mat-raised-button
-            class="btn-primary"
+            mat-button
+            class="btn btn-primary"
             [disabled]="isSaving"
             matTooltip="Submit and email this quote to the client"
             (click)="submitQuote()"
@@ -780,10 +787,10 @@
         <ng-container *ngIf="!isInboundQuote && !readOnly && isBidMode">
           <span class="spacer"></span>
 
-          <button mat-stroked-button (click)="cancelBidMode()">Cancel</button>
+          <button mat-button class="btn btn-secondary" type="button" (click)="cancelBidMode()">Cancel</button>
           <button
-            mat-raised-button
-            class="btn-primary"
+            mat-button
+            class="btn btn-primary"
             [disabled]="isSaving"
             (click)="generateForBid()"
           >

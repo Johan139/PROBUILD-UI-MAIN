@@ -193,9 +193,9 @@
                     <!-- Submit Button -->
                     <div class="form-row">
                       <button
-                        mat-raised-button
+                        mat-button
                         type="submit"
-                        class="submit-btn"
+                        class="btn btn-primary"
                       >
                         {{ isSaving ? "Saving..." : "Save Profile" }}
                       </button>
@@ -541,9 +541,9 @@
                     </div>
                     <div class="form-row">
                       <button
-                        mat-raised-button
+                        mat-button
                         type="submit"
-                        class="submit-btn"
+                        class="btn btn-primary"
                       >
                         {{ isSaving ? "Saving..." : "Save Profile" }}
                       </button>
@@ -742,9 +742,9 @@
                             </mat-error>
                           </mat-form-field>
                           <button
-                            mat-raised-button
+                            mat-button
                             type="submit"
-                            class="submit-btn"
+                            class="btn btn-primary"
                             [disabled]="teamForm.invalid || isSendingInvite"
                           >
                             {{
@@ -1080,9 +1080,9 @@
                       <h3>Your Subscriptions</h3>
                       <div class="address-footer">
                         <button
-                          mat-raised-button
+                          mat-button
                           type="button"
-                          class="submit-btn"
+                          class="btn btn-primary"
                           (click)="openSubscriptionCreateDialog()"
                           *ngIf="!authService.isTeamMember()"
                         >
@@ -1192,14 +1192,13 @@
                                 class="actions-cell"
                               >
                                 <button
-                                  mat-raised-button
-                                  color="primary"
+                                  mat-button
                                   (click)="upgradeSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s.subscriptionId) ||
                                     !canManageRow(s)
                                   "
-                                  class="submit-btn"
+                                  class="btn btn-secondary"
                                   type="button"
                                   *ngIf="!authService.isTeamMember()"
                                 >
@@ -1208,14 +1207,13 @@
                                 <!-- If NOT cancelled → show Cancel button -->
                                 <button
                                   *ngIf="!s.cancelAtPeriodEnd"
-                                  mat-raised-button
-                                  color="warn"
+                                  mat-button
                                   (click)="cancelSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s.subscriptionId) ||
                                     !canManageRow(s)
                                   "
-                                  class="submit-btn"
+                                  class="btn btn-danger"
                                   type="button"
                                 >
                                   Cancel
@@ -1224,11 +1222,10 @@
                                 <!-- If already cancelled-at-end → show Undo button -->
                                 <button
                                   *ngIf="s.cancelAtPeriodEnd"
-                                  mat-raised-button
-                                  color="primary"
+                                  mat-button
                                   (click)="undoCancellation(s)"
                                   [disabled]="!canManageRow(s)"
-                                  class="submit-btn"
+                                  class="btn btn-secondary"
                                   type="button"
                                 >
                                   Undo Cancel
@@ -1352,26 +1349,24 @@
                                 class="actions-cell"
                               >
                                 <button
-                                  mat-raised-button
-                                  color="primary"
+                                  mat-button
                                   (click)="upgradeSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s) || !canManageRow(s)
                                   "
-                                  class="submit-btn"
+                                  class="btn btn-secondary"
                                   type="button"
                                 >
                                   Change
                                 </button>
                                 <button
-                                  mat-raised-button
-                                  color="warn"
+                                  mat-button
                                   (click)="cancelSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s.subscriptionId) ||
                                     !canManageRow(s)
                                   "
-                                  class="submit-btn"
+                                  class="btn btn-danger"
                                   type="button"
                                 >
                                   Cancel
@@ -1494,26 +1489,26 @@
                                 class="actions-cell"
                               >
                                 <button
-                                  mat-raised-button
-                                  color="primary"
+                                  mat-button
                                   (click)="upgradeSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s.subscriptionId) ||
                                     isInactiveRow(s)
                                   "
                                   type="button"
+                                  class="btn btn-secondary"
                                 >
                                   Change
                                 </button>
                                 <button
-                                  mat-raised-button
-                                  color="warn"
+                                  mat-button
                                   (click)="cancelSubscription(s)"
                                   [disabled]="
                                     rowBusy.has(s.subscriptionId) ||
                                     isInactiveRow(s)
                                   "
                                   type="button"
+                                  class="btn btn-danger"
                                 >
                                   Cancel
                                 </button>

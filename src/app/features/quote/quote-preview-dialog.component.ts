@@ -321,14 +321,14 @@ export interface QuotePreviewData {
 
       <!-- Dialog Actions -->
       <div class="dialog-actions">
-        <button mat-button (click)="close()">Close</button>
-        <button mat-stroked-button (click)="printPreview()">
+        <button mat-button class="btn btn-secondary" (click)="close()">Close</button>
+        <button mat-button class="btn btn-ghost" (click)="printPreview()">
           <mat-icon>print</mat-icon>
           Print
         </button>
         <button
-          mat-raised-button
-          class="btn-primary"
+          mat-button
+          class="btn btn-primary"
           (click)="confirmAndClose()"
         >
           Looks Good

@@ -82,3 +82,15 @@ $spaces: (
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+// --------------------------------------------------------------------------
+// DIALOGS
+// --------------------------------------------------------------------------
+
+.dialog-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
