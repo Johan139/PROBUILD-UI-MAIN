@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { shareReplay } from 'rxjs/operators';
 
 const BASE_URL = environment.BACKEND_URL;
 
@@ -47,6 +48,12 @@ export interface GenerateGeneralClientContractRequest {
 export class ContractService {
   constructor(private http: HttpClient) {}
 
+  private readonly contractsByJobCacheTtlMs = 30 * 1000;
+  private contractsByJobCache = new Map<
+    number,
+    { cachedAt: number; request$: Observable<ContractRecord[]> }
+  >();
+
   generateContract(jobId: number): Observable<any> {
     return this.http.post(`${BASE_URL}/contracts/${jobId}/generate`, {});
   }
@@ -56,7 +63,20 @@ export class ContractService {
   }
 
   getContractsByJobId(jobId: number): Observable<ContractRecord[]> {
-    return this.http.get<ContractRecord[]>(`${BASE_URL}/contracts/job/${jobId}`);
+    const key = Number(jobId);
+    const now = Date.now();
+    const cached = this.contractsByJobCache.get(key);
+
+    if (cached && now - cached.cachedAt < this.contractsByJobCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.http
+      .get<ContractRecord[]>(`${BASE_URL}/contracts/job/${jobId}`)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+
+    this.contractsByJobCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   generateGeneralClientContract(

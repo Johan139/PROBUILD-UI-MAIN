@@ -5,8 +5,6 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 export interface SaveTradePackageBidInviteRow {
   email: string;
@@ -405,82 +403,93 @@ export class BomService {
       return;
     }
 
-    const doc = new jsPDF();
-    const logo = new Image();
-    logo.src = 'assets/logo.png';
+    (async () => {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
 
-    const parsedReport = processingResults[0].parsedReport;
+      const doc = new jsPDF();
+      const logo = new Image();
+      logo.src = 'assets/logo.png';
 
-    const drawContent = (withLogo: boolean) => {
-      const addPageHeader = () => {
-        if (withLogo) {
-          doc.addImage(logo, 'PNG', 10, 10, 50, 15);
-          doc.setFontSize(8);
+      const parsedReport = processingResults[0].parsedReport;
+
+      const drawContent = (withLogo: boolean) => {
+        const addPageHeader = () => {
+          if (withLogo) {
+            doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+            doc.setFontSize(8);
+            doc.text(
+              'This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.',
+              10,
+              28,
+            );
+            doc.text(
+              'Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.',
+              10,
+              32,
+            );
+          }
+          doc.setFontSize(18);
           doc.text(
-            'This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.',
+            `Bill of Materials for: ${projectName}`,
             10,
-            28,
+            withLogo ? 45 : 15,
           );
-          doc.text(
-            'Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.',
-            10,
-            32,
-          );
-        }
-        doc.setFontSize(18);
-        doc.text(
-          `Bill of Materials for: ${projectName}`,
-          10,
-          withLogo ? 45 : 15,
-        );
+        };
+
+        parsedReport.sections.forEach((section: any, index: number) => {
+          if (index > 0) {
+            doc.addPage();
+          }
+          addPageHeader();
+
+          doc.setFontSize(14);
+          doc.text(section.title, 10, withLogo ? 55 : 25);
+
+          autoTable(doc, {
+            head: [section.headers],
+            body: section.content,
+            startY: withLogo ? 60 : 30,
+            theme: 'grid',
+            headStyles: {
+              fillColor: '#FFC107',
+              textColor: '#000000',
+            },
+          });
+        });
+
+        const date = new Date().toISOString().slice(0, 10);
+        doc.setProperties({
+          title: `${projectName} Bill of Materials`,
+          subject: 'AI-Generated Estimate',
+          author: 'ProBuild AI',
+          keywords: 'BOM, estimate, AI, construction',
+          creator: 'ProBuild AI',
+        });
+        doc.save(`${projectName}_BOM_${date}.pdf`);
       };
 
-      parsedReport.sections.forEach((section: any, index: number) => {
-        if (index > 0) {
-          doc.addPage();
-        }
-        addPageHeader();
+      logo.onload = () => {
+        drawContent(true);
+      };
 
-        doc.setFontSize(14);
-        doc.text(section.title, 10, withLogo ? 55 : 25);
-
-        autoTable(doc, {
-          head: [section.headers],
-          body: section.content,
-          startY: withLogo ? 60 : 30,
-          theme: 'grid',
-          headStyles: {
-            fillColor: '#FFC107',
-            textColor: '#000000',
+      logo.onerror = () => {
+        this.snackBar.open(
+          'Could not load logo, proceeding without it.',
+          'Close',
+          {
+            duration: 3000,
           },
-        });
+        );
+        drawContent(false);
+      };
+    })().catch(() => {
+      this.snackBar.open('Failed to generate PDF.', 'Close', {
+        duration: 3000,
       });
-
-      const date = new Date().toISOString().slice(0, 10);
-      doc.setProperties({
-        title: `${projectName} Bill of Materials`,
-        subject: 'AI-Generated Estimate',
-        author: 'ProBuild AI',
-        keywords: 'BOM, estimate, AI, construction',
-        creator: 'ProBuild AI',
-      });
-      doc.save(`${projectName}_BOM_${date}.pdf`);
-    };
-
-    logo.onload = () => {
-      drawContent(true);
-    };
-
-    logo.onerror = () => {
-      this.snackBar.open(
-        'Could not load logo, proceeding without it.',
-        'Close',
-        {
-          duration: 3000,
-        },
-      );
-      drawContent(false);
-    };
+    });
   }
 
   public extractTotalCost(fullResponse: string): string | null {

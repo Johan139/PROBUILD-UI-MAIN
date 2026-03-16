@@ -130,7 +130,9 @@ $probuild-dark-theme: mat.define-theme(
 :root {
   @include mat.all-component-themes($probuild-light-theme);
 
-  --page-title-color: var(--color-text);
+  & {
+    --page-title-color: var(--color-text);
+  }
 
   .mat-mdc-card {
     --mdc-elevated-card-container-color: var(--color-surface);

@@ -1,4 +1,6 @@
 /* Variables from Projects/Jobs theme */
+@use "sass:color";
+
 $primary-yellow: #fbd008;
 $secondary-yellow: #fcd02d;
 $darker-yellow: #e6bf00;
@@ -72,7 +74,7 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     box-shadow: $shadow;
 
     &:hover {
-      background-color: darken($light-gray, 10%);
+      background-color: color.adjust($light-gray, $lightness: -10%);
     }
   }
 }

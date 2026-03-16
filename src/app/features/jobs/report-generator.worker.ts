@@ -1,8 +1,5 @@
 /// <reference lib="webworker" />
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 // Helper function to format project information
 const formatProjectInfo = (text: string): string => {
   // Handle the concatenated project info
@@ -67,6 +64,11 @@ addEventListener('message', async ({ data }) => {
   const { reportContent, logoDataUrl, title } = data;
 
   try {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+
     const doc = new jsPDF('p', 'mm', 'a4');
 
     const pageWidth = doc.internal.pageSize.getWidth();

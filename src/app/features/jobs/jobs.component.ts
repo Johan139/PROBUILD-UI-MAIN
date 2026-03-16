@@ -212,7 +212,7 @@ interface JobUiStateCache {
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
 })
-export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
+export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
   @ViewChild('billOfMaterialsDialog') billOfMaterialsDialog!: TemplateRef<any>;
   @ViewChild('reportDialog') reportDialog!: TemplateRef<any>;
@@ -335,6 +335,8 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   teamForm: FormGroup;
   availableRoles: { value: string; display: string }[] = [];
   isSendingInvite: boolean = false;
+
+  private tradePackageRefreshTriggeredForJobIds = new Set<number>();
 
   constructor(
     private route: ActivatedRoute,
@@ -1956,6 +1958,7 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
         s === 'PRELIMINARY_SCOPE'
       ) {
           this.projectStage = 'PRELIMINARY_SCOPE';
+          this.triggerTradePackageRefreshIfNeeded();
       } else if (s === 'DETAILED-TAKEOFF' || s === 'DETAILED_TAKEOFF') {
           this.projectStage = 'DETAILED_TAKEOFF';
       } else if (s === 'CONTRACT-AWARD' || s === 'CONTRACT_AWARD') {
@@ -1977,6 +1980,38 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
       }
 
       this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
+  }
+
+  private triggerTradePackageRefreshIfNeeded(): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+
+    if (this.tradePackageRefreshTriggeredForJobIds.has(jobId)) {
+      return;
+    }
+
+    this.tradePackageRefreshTriggeredForJobIds.add(jobId);
+    console.info('[tradepackages] Refresh requested (Scope Review)', { jobId });
+    this.bomService.refreshTradePackages(jobId).subscribe({
+      next: () => {
+        console.info('[tradepackages] Refresh completed', { jobId });
+        this.bomService.getTradePackages(String(jobId)).subscribe({
+          next: (packages) => {
+            const count = Array.isArray(packages) ? packages.length : 0;
+            console.info('[tradepackages] Packages after refresh', { jobId, count });
+          },
+          error: (err) => {
+            console.error('[tradepackages] Failed to load packages after refresh', { jobId, err });
+          },
+        });
+      },
+      error: (err) => {
+        console.error('[tradepackages] Refresh failed', { jobId, err });
+        this.tradePackageRefreshTriggeredForJobIds.delete(jobId);
+      },
+    });
   }
 
   onAnalysisComplete() {
@@ -2010,12 +2045,22 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
   private updateJobStatus(status: string) {
     if (!this.projectDetails?.jobId) return;
 
+    const jobId = this.projectDetails.jobId;
+
     this.jobsService
-      .updateJobStatus(this.projectDetails.jobId, status)
+      .updateJobStatus(jobId, status)
       .subscribe({
         next: () => {
-          // Avoid optimistic stage flipping. Refresh from backend and derive stage from persisted status.
-          this.jobsService.getSpecificJob(this.projectDetails.jobId).subscribe({
+          this.projectDetails = {
+            ...(this.projectDetails || {}),
+            status,
+            Status: status,
+          };
+          this.store.setState({ projectDetails: this.projectDetails } as any);
+          this.determineProjectStage(status);
+          this.prefetchPhaseData(status, String(jobId));
+
+          this.jobsService.getSpecificJob(jobId).subscribe({
             next: (jobDetails) => {
               this.projectDetails = { ...(this.projectDetails || {}), ...(jobDetails || {}) };
               this.store.setState({ projectDetails: this.projectDetails } as any);
@@ -2026,8 +2071,6 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             error: (err) => {
               console.error('Failed to refresh job details after status update', err);
-              // Fallback to requested status to keep UI usable.
-              this.determineProjectStage(status);
             },
           });
         },
@@ -2038,5 +2081,28 @@ export class JobsComponent implements OnInit, OnDestroy, AfterViewInit {
           });
         },
       });
+  }
+
+  private prefetchPhaseData(status: string, jobId: string): void {
+    if (!jobId) {
+      return;
+    }
+
+    const phase = String(status || '').toUpperCase();
+
+    if (phase === 'DETAILED_TAKEOFF') {
+      this.bomService.getBillOfMaterials(jobId).subscribe({ error: () => {} });
+      this.budgetService.getBudget(Number(jobId)).subscribe({ error: () => {} });
+      this.reportService.getDetailedCostSummary(jobId).catch(() => null);
+      this.reportService.getValueEngineeringReport(jobId).catch(() => []);
+      return;
+    }
+
+    if (phase === 'PRELIMINARY_SCOPE' || phase === 'PRELIMINARY') {
+      this.triggerTradePackageRefreshIfNeeded();
+      this.bomService.getBillOfMaterials(jobId).subscribe({ error: () => {} });
+      this.reportService.getDetailedCostSummary(jobId).catch(() => null);
+      return;
+    }
   }
 }
