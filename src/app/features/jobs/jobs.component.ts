@@ -916,7 +916,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       )
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
-        this.determineProjectStage(this.projectDetails?.status);
+        const resolvedStatus =
+          (this.projectDetails as any)?.status ?? (this.projectDetails as any)?.Status ?? '';
+        this.determineProjectStage(String(resolvedStatus));
         this.hydrateJobUiStateFromCache(this.projectDetails?.jobId);
         this.syncScopeReviewDrafts();
         this.isStageResolved = true;

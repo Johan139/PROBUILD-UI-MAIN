@@ -40,6 +40,13 @@ export class JobDataService {
     return this.jobsService.getSpecificJob(jobId).pipe(
       tap((jobDetails) => {
         const updatedProjectDetails = { ...projectDetails, ...jobDetails };
+
+        const resolvedStatus =
+          (jobDetails as any)?.status ?? (jobDetails as any)?.Status ?? updatedProjectDetails?.status ?? updatedProjectDetails?.Status;
+        if (resolvedStatus) {
+          (updatedProjectDetails as any).status = resolvedStatus;
+          (updatedProjectDetails as any).Status = resolvedStatus;
+        }
         if (jobDetails.address) {
           updatedProjectDetails.address = jobDetails.address;
           updatedProjectDetails.latitude = jobDetails.latitude;

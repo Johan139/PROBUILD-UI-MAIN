@@ -994,10 +994,23 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
           return;
         }
 
+        const preservedStatus =
+          (this.projectDetails as any)?.status ??
+          (this.projectDetails as any)?.Status ??
+          (job as any)?.status ??
+          (job as any)?.Status ??
+          undefined;
+
         const payload = {
           ...job,
           desiredStartDate: isoDate,
           DesiredStartDate: isoDate,
+          ...(preservedStatus
+            ? {
+                status: preservedStatus,
+                Status: preservedStatus,
+              }
+            : {}),
         };
 
         this.jobsService.updateJob(payload, jobId).subscribe({

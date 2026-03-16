@@ -30,6 +30,7 @@ import { BudgetService } from '../services/budget.service';
 import { BomService } from '../services/bom.service';
 import { ReportService } from '../services/report.service';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { QuoteService } from '../../quote/quote.service';
 
 @Component({
   selector: 'app-project-budget-tracking',
@@ -49,6 +50,7 @@ import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmatio
   ],
   templateUrl: './project-budget-tracking.component.html',
   styleUrl: './project-budget-tracking.component.scss',
+  providers: [QuoteService],
 })
 export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
@@ -64,6 +66,9 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   private budgetLoaded = false;
   private summaryLoaded = false;
   private currentLoadToken = 0;
+
+  jobInvoices: any[] = [];
+  isLoadingInvoices = false;
 
   // Budget UI State
   isAddingLineItem: boolean = false;
@@ -83,6 +88,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     private budgetService: BudgetService,
     private bomService: BomService,
     private reportService: ReportService,
+    private quoteService: QuoteService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -115,6 +121,51 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
 
     this.loadBudget(loadToken);
     this.loadCostSummary(loadToken);
+    this.loadInvoices(loadToken);
+  }
+
+  private loadInvoices(loadToken: number): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId) || jobId <= 0) {
+      this.jobInvoices = [];
+      return;
+    }
+
+    this.isLoadingInvoices = true;
+    this.quoteService.getJobInvoices(jobId).subscribe({
+      next: (invoices) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        this.jobInvoices = Array.isArray(invoices) ? invoices : [];
+        this.isLoadingInvoices = false;
+      },
+      error: (err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        console.error('Failed to load job invoices', err);
+        this.jobInvoices = [];
+        this.isLoadingInvoices = false;
+      },
+    });
+  }
+
+  get pendingInvoices(): any[] {
+    return (this.jobInvoices || []).filter(
+      (inv) => String(inv?.status || '') === 'Approved',
+    );
+  }
+
+  get pendingInvoicesCount(): number {
+    return this.pendingInvoices.length;
+  }
+
+  get pendingInvoicesAmount(): number {
+    return this.pendingInvoices.reduce(
+      (sum, inv) => sum + (Number(inv?.total) || 0),
+      0,
+    );
   }
 
   private loadCostSummary(loadToken: number): void {

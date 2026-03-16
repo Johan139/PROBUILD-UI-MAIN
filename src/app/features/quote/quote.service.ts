@@ -56,6 +56,10 @@ export class QuoteService {
   getUserQuotes(userId: string) {
     return this.http.get<any[]>(`${this.apiUrl}/user/${userId}`);
   }
+
+  getJobInvoices(jobId: number) {
+    return this.http.get<any[]>(`${this.apiUrl}/job/${jobId}/invoices`);
+  }
   duplicateQuote(quoteId: string) {
     return this.http.post<{ quoteId: string; number: string }>(
       `${this.apiUrl}/${quoteId}/duplicate`,

@@ -78,8 +78,8 @@
       </div>
       <div class="metric-details">
         <p class="label">Pending Invoices</p>
-        <p class="value">HARDCODED $45K</p>
-        <p class="subtext">3 invoices awaiting payment</p>
+        <p class="value">{{ pendingInvoicesAmount | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+        <p class="subtext">{{ pendingInvoicesCount }} invoices awaiting payment</p>
       </div>
     </div>
   </div>
