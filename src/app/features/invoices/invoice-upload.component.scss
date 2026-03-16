@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $primary-yellow: #fbd008;
 $dark-gray: #333;
 $light-gray: #d9d9d9;
@@ -71,7 +73,7 @@ mat-progress-bar {
   }
 
   &:hover:not(:disabled) {
-    background-color: darken($primary-yellow, 10%);
+    background-color: color.adjust($primary-yellow, $lightness: -10%);
   }
 }
 

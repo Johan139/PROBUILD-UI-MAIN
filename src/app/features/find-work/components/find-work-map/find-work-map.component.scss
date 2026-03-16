@@ -1,5 +1,5 @@
 @use "styles/util/mixins" as u;
-@import '../find-work.shared.scss';
+@use '../find-work.shared' as *;
 
 // Map Section
 .map-section {

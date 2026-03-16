@@ -1,4 +1,5 @@
 // Dark Theme Colors
+@use "sass:color";
 $dark-bg: #1c2128; // Dark card background
 $dark-text: #ffffff;
 $accent-yellow: #ffd700;
@@ -206,7 +207,7 @@ $info-box-bg: #2d333b;
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 
   &:hover {
-    background-color: lighten($accent-yellow, 5%);
+    background-color: color.adjust($accent-yellow, $lightness: 5%);
     transform: translateY(-1px);
   }
 

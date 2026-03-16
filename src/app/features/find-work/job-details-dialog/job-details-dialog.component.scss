@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use 'styles/util/mixins' as u;
 
 $color-yellow: #FCD109;
@@ -903,7 +904,7 @@ $color-text-muted: var(--color-text-muted);
           &.blue-btn {
               background: $color-blue;
               color: white;
-              &:hover { background: darken($color-blue, 10%); }
+              &:hover { background: color.adjust($color-blue, $lightness: -10%); }
           }
       }
   }

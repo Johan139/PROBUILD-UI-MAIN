@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 
 const BASE_URL = `${environment.BACKEND_URL}/Jobs`;
 
@@ -14,6 +15,15 @@ export interface UploadThumbnailResponse {
 })
 export class JobsService {
   private jobQuote: any;
+
+  private readonly bomCacheTtlMs = 15 * 1000;
+  private bomCache = new Map<string, { cachedAt: number; request$: Observable<any> }>();
+
+  private readonly bomStatusCacheTtlMs = 5 * 1000;
+  private bomStatusCache = new Map<
+    string,
+    { cachedAt: number; request$: Observable<any> }
+  >();
 
   constructor(private httpClient: HttpClient) {}
 
@@ -102,11 +112,33 @@ export class JobsService {
   }
 
   GetBillOfMaterials(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + '/processing-results/' + jobId);
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.bomCache.get(key);
+    if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/processing-results/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.bomCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   GetBillOfMaterialsStatus(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + 'processing-results/' + jobId);
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.bomStatusCache.get(key);
+    if (cached && now - cached.cachedAt < this.bomStatusCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/processing-status/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.bomStatusCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   setJobCard(jobForm: any) {

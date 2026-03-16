@@ -1,5 +1,5 @@
 @use "styles/util/mixins" as u;
-@import './components/find-work.shared.scss';
+@use './components/find-work.shared' as *;
 
 :host {
   display: block;

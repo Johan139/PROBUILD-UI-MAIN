@@ -7,7 +7,6 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import Quill from 'quill';
 import { OnChanges, SimpleChanges } from '@angular/core';
 
 @Component({
@@ -22,9 +21,11 @@ export class RichTextEditorComponent implements AfterViewInit, OnChanges {
   @Input() initialContent!: string;
   @Output() contentChanged = new EventEmitter<string>();
 
-  private quill!: Quill;
+  private quill!: any;
 
-  ngAfterViewInit(): void {
+  async ngAfterViewInit(): Promise<void> {
+    const { default: Quill } = await import('quill');
+
     this.quill = new Quill(this.editorElement.nativeElement, {
       theme: 'snow',
       modules: {

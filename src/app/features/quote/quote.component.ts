@@ -26,7 +26,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { CommonModule, NgIf } from '@angular/common';
-import { jsPDF } from 'jspdf';
 import { MatRadioModule } from '@angular/material/radio';
 import { AuthService } from '../../authentication/auth.service';
 import { Store } from '../../store/store.service';
@@ -1546,6 +1545,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
     });
   }
   async downloadPDF(): Promise<void> {
+    const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 10;

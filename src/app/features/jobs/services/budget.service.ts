@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+import { shareReplay } from 'rxjs/operators';
 import { BudgetLineItem } from '../../../models/budget-line-item.model';
 
 @Injectable({
@@ -10,10 +11,27 @@ import { BudgetLineItem } from '../../../models/budget-line-item.model';
 export class BudgetService {
   private apiUrl = `${environment.BACKEND_URL}/budget`;
 
+  private readonly budgetByJobCacheTtlMs = 15 * 1000;
+  private budgetByJobCache = new Map<
+    number,
+    { cachedAt: number; request$: Observable<BudgetLineItem[]> }
+  >();
+
   constructor(private http: HttpClient) {}
 
   getBudget(jobId: number): Observable<BudgetLineItem[]> {
-    return this.http.get<BudgetLineItem[]>(`${this.apiUrl}/${jobId}`);
+    const key = Number(jobId);
+    const now = Date.now();
+    const cached = this.budgetByJobCache.get(key);
+    if (cached && now - cached.cachedAt < this.budgetByJobCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.http
+      .get<BudgetLineItem[]>(`${this.apiUrl}/${jobId}`)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.budgetByJobCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   addBudgetItem(item: BudgetLineItem): Observable<BudgetLineItem> {
