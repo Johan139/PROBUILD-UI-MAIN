@@ -94,11 +94,22 @@
       [liveStageTemplate]="liveStageView"
       [isReportLoading]="isReportLoading"
       [showEnvironmentalReport]="!projectDetails?.isSelected"
+      [timelineGroups]="displayedTimelineGroups"
+      [constructionPhaseGroups]="store.getState().subtaskGroups"
+      [blueprintFiles]="blueprintFiles"
+      [selectedBlueprint]="selectedBlueprint"
+      [blueprintPdfSrc]="blueprintPdfSrc"
+      [isLoadingBlueprints]="isLoadingBlueprints"
+      [isProjectOwner]="isProjectOwner"
+      (overallBudgetClick)="openOverallBudgetDialog()"
+      (overallTimelineClick)="openOverallTimelineDialog()"
+      (bidPriceClick)="openBidPriceDialog()"
       (back)="onBackToPreliminary()"
       (discard)="confirmDiscardProject()"
       (proceed)="navigateTo('CONTRACT_AWARD')"
       (documentsRequested)="openDocumentsDialog()"
       (reportRequested)="onPhaseReportRequested($event)"
+      (blueprintSelected)="handleBlueprintSelected($event)"
     ></app-phase-detailed-takeoff>
 
     <!-- 4. CONTRACT AWARD -->

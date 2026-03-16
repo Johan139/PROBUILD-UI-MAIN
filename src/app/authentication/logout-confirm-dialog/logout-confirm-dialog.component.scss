@@ -38,7 +38,7 @@ mat-dialog-actions {
 .return-btn,
 .confirm-btn {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-text-inverse) !important;
   @include u.interactive-states;
 }
 

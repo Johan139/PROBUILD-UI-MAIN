@@ -258,6 +258,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   sessionId: string = '';
   public isGeneratingReport = false;
   public isReportLoading = false;
+
+  get constructionPhaseGroups(): any[] {
+    return this.store.getState().subtaskGroups;
+  }
   public reportHtml: string | null = null;
   public reportTitle: string = 'Full Project Analysis Report';
   public reportError: string | null = null;
