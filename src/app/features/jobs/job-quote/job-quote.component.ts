@@ -68,7 +68,6 @@ import { JobDocument } from '../../../models/JobDocument';
 import { JOB_TYPES } from '../../../data/job-types';
 import { BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { OverlayStateService } from '../../../services/overlay-state.service';
-import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 const BASE_URL = environment.BACKEND_URL;
@@ -109,7 +108,6 @@ const Google_API = environment.Google_API;
     // Custom Components and Pipes
     LoaderComponent,
     SubscriptionWarningComponent,
-    PdfViewerComponent,
     MatToolbarModule,
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
@@ -850,9 +848,8 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isUploading = false;
           console.error('Upload error:', error);
           this.progress = 0;
-          //this.deleteTemporaryFiles();
         },
-        complete: () => console.log('Client-to-API upload complete'),
+        complete: () => {},
       });
   }
 

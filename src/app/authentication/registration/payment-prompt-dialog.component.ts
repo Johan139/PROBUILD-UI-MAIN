@@ -53,10 +53,8 @@ export class PaymentPromptDialogComponent {
     }
   ) {}
   ngOnInit() {
-    console.log(this.data.billingCycle);
   }
   continueToPayment() {
-    console.log(this.data.billingCycle);
     this.stripeService
       .createCheckoutSession({
         userId: this.data.userId,
@@ -69,7 +67,6 @@ export class PaymentPromptDialogComponent {
       })
       .subscribe({
         next: (res) => {
-          console.log(res);
           this.dialogRef.close();
           window.location.href = res.url;
         },

@@ -193,7 +193,7 @@
           </p>
         </div>
         <div class="trade-right">
-          <span class="trade-budget">${{ (getTradeContact(trade)?.amount ?? trade.totalBudget ?? trade.budget) | number }}</span>
+          <span class="trade-budget">${{ getTradeContractValue(trade) | number }}</span>
           <span class="state-pill" [class.is-confirmed]="getTradeMobilizationStatus(trade) === 'confirmed'" [class.is-pending]="getTradeMobilizationStatus(trade) === 'pending'">{{ getTradeMobilizationStatus(trade) }}</span>
           <lucide-icon name="chevron-down" class="chev" [class.open]="expandedTradeIds.has(trade.id)"></lucide-icon>
         </div>

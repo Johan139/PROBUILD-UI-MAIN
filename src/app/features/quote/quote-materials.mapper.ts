@@ -11,7 +11,6 @@ export function mapMaterialsToQuoteRows(
   materialGroups: PhaseMaterials[],
 ): any[] {
   const rows: any[] = [];
-  console.log('🔍 Sample material item:', materialGroups[0]?.materials?.[0]);
   materialGroups.forEach((phase) => {
     // Add each material as a separate row
     phase.materials.forEach((material) => {

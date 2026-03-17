@@ -8,10 +8,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { marked } from 'marked';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import {
-  PdfViewerComponent,
-  BlueprintDocument,
-} from '../../../components/pdf-viewer/pdf-viewer.component';
+import { BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { BlueprintOverlayComponent } from '../../../components/blueprint-overlay/blueprint-overlay.component';
 import { SubscriptionWarningComponent } from '../../../shared/dialogs/subscription-warning/subscription-warning.component';
 import { RichTextEditorComponent } from '../../../components/rich-text-editor/rich-text-editor.component';
@@ -32,7 +29,6 @@ import { AuthService } from '../../../authentication/auth.service';
     CommonModule,
     FormsModule,
     RouterLink,
-    PdfViewerComponent,
     SubscriptionWarningComponent,
     RichTextEditorComponent,
     MatTabsModule,

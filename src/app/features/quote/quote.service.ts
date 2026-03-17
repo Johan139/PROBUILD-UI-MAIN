@@ -24,7 +24,6 @@ export class QuoteService {
   constructor(private http: HttpClient) {}
 
   saveDraft(dto: QuoteDto) {
-    console.log(dto);
     return this.http.post<{ quoteId: string; version: number }>(
       `${this.apiUrl}/draft`,
       dto,

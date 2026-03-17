@@ -237,12 +237,12 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
 
   deleteProject(jobId: number): void {
     // TODO: Should be archiving instead of deleting
-    console.log('Delete project:', jobId);
+    void jobId;
   }
 
   activateProject(jobId: number): void {
     // TODO: Implement activate logic, start the bidding process
-    console.log('Activate project:', jobId);
+    void jobId;
   }
 
   archiveProject(jobId: number): void {

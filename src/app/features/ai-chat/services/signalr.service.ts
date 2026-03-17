@@ -44,7 +44,6 @@ export class SignalrService {
 
       this.hubConnection.on('ReceiveMessage', (message: ChatMessage) => {
         this.aiChatStateService.addMessage(message);
-        console.debug('SignalR: message received');
       });
 
       this.hubConnection.onreconnecting((err) => {
@@ -94,7 +93,6 @@ export class SignalrService {
     await this.startConnection();
     try {
       await this.hubConnection!.invoke('JoinConversationGroup', conversationId);
-      console.debug('SignalR: joined group', conversationId);
     } catch (err) {
       console.error(`SignalR: error joining group ${conversationId}:`, err);
     }
@@ -104,7 +102,6 @@ export class SignalrService {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
       try {
         await this.hubConnection!.invoke('LeaveConversation', conversationId);
-        console.debug('SignalR: left group', conversationId);
       } catch (err) {
         console.error(`SignalR: error leaving group ${conversationId}:`, err);
       }

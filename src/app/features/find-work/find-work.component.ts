@@ -38,7 +38,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
-import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { JobDetailsDialogComponent } from './job-details-dialog/job-details-dialog.component';
 import { PostJobDialogComponent } from './post-job-dialog/post-job-dialog.component';
 import { QuoteService } from '../../features/quote/quote.service';
@@ -83,7 +82,6 @@ interface JobMarker {
     MatProgressSpinnerModule,
     MatAutocompleteModule,
     ReactiveFormsModule,
-    JobCardComponent,
     MatButtonModule,
     RouterModule,
     MyJobPostingsComponent,

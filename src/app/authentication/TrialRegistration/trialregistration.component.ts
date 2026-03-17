@@ -87,7 +87,6 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatFormFieldModule,
     MatButton,
     LoaderComponent,
-    MatDivider,
     MatAutocompleteModule,
     AsyncPipe,
     MatCheckboxModule,

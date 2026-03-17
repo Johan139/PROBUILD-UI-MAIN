@@ -171,9 +171,9 @@ export class AuthService {
     );
   }
 
-  resendverificationemail(userid: string): Observable<any> {
+  resendverificationemail(email: string): Observable<any> {
     return this.http.get<any>(
-      `${this.apiUrl}/resend-email-verification/${userid}`,
+      `${this.apiUrl}/resend-email-verification/${email}`,
       { headers: { 'Content-Type': 'application/json' } },
     );
   }

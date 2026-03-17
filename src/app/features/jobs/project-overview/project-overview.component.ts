@@ -1095,15 +1095,15 @@ export class ProjectOverviewComponent {
   }
 
   onEditClick(id: string) {
-    console.log('Edit project:', id);
+    void id;
   }
 
   onDeleteClick(id: string) {
-    console.log('Delete project:', id);
+    void id;
   }
 
   onActivateClick(id: string) {
-    console.log('Activate project:', id);
+    void id;
   }
 
   // Carousel Logic
@@ -1152,13 +1152,6 @@ export class ProjectOverviewComponent {
   }
 
   archiveJob(jobId: number): void {
-    console.log('=== ARCHIVE DEBUG ===');
-    console.log('Received jobId:', jobId, 'Type:', typeof jobId);
-    console.log(
-      'Projects before filter:',
-      this.projects.map((p) => ({ jobId: p.jobId, type: typeof p.jobId })),
-    );
-
     this.archiveService.archiveJob(jobId).subscribe({
       next: () => {
         // Immediately remove from local array for instant UI update
@@ -1166,14 +1159,8 @@ export class ProjectOverviewComponent {
 
         this.projects = this.projects.filter((p) => {
           const projectJobId = Number(p.jobId);
-          const matches = projectJobId !== jobId;
-          console.log(`Comparing ${projectJobId} !== ${jobId} = ${matches}`);
-          return matches;
+          return projectJobId !== jobId;
         });
-
-        console.log(
-          `Projects filtered: ${beforeLength} -> ${this.projects.length}`,
-        );
 
         // Reset carousel index if needed to prevent empty view
         if (this.currentIndex >= this.projects.length - 2) {

@@ -28,7 +28,7 @@ export class JobsService {
   constructor(private httpClient: HttpClient) {}
 
   createJob(jobForm: any, addressModel: any) {
-    this.httpClient.post(`${BASE_URL}/Jobs`, {
+    return this.httpClient.post(`${BASE_URL}/Jobs`, {
       job: jobForm,
       address: addressModel,
     });

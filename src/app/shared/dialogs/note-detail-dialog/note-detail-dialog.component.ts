@@ -59,8 +59,6 @@ export class NoteDetailDialogComponent implements OnInit {
     }
 
     // Debug log (remove after testing)
-    console.log('Dialog initialized with data:', this.data);
-    console.log('User name cache:', Array.from(this.userNameCache.entries()));
   }
 
   getUserName(userId: string): string {
