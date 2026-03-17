@@ -83,8 +83,6 @@ const BASE_URL = environment.BACKEND_URL;
     MatIconModule,
     MatTableModule,
     DragDropModule,
-    ProjectCardComponent,
-    ProjectsTableComponent,
     MatTooltipModule,
     ActionPointsWidgetComponent,
     RecentProjectsWidgetComponent,

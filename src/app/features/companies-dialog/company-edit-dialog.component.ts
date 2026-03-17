@@ -277,16 +277,17 @@ export class CompanyEditDialogComponent {
   displayAddress = (option: any): string => {
     return option?.description || '';
   };
+
   save(): void {
-    if (this.form.invalid) return;
+    this.submit();
+  }
+  submit(): void {
+    if (this.form.invalid) {
+      return;
+    }
 
     const formValue = this.form.value;
 
-    console.log('🔍 DIALOG FORM VALUE:', formValue);
-    console.log('🔍 ADDRESS VALUE:', formValue.address);
-    console.log('🔍 ADDRESS TYPE:', typeof formValue.address);
-
-    // ✅ Just close with the raw form value
     this.dialogRef.close(formValue);
   }
   cancel(): void {

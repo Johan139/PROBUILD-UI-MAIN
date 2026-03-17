@@ -186,7 +186,7 @@ export class QuotesListComponent implements OnInit {
   }
 
   sendReminder(id: string): void {
-    console.log('Reminder sent for', id);
+    void id;
   }
 
   // Helper methods

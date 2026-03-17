@@ -129,13 +129,18 @@ export interface SendToClientDialogResult {
         </div>
       </mat-dialog-content>
 
-      <mat-dialog-actions align="end">
-        <button mat-button (click)="onCancel()" [disabled]="isSending">
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button
+          mat-button
+          class="btn btn-secondary"
+          (click)="onCancel()"
+          [disabled]="isSending"
+        >
           Cancel
         </button>
         <button
-          mat-raised-button
-          class="send-btn"
+          mat-button
+          class="btn btn-primary"
           (click)="onSend()"
           [disabled]="form.invalid || isSending"
         >
@@ -248,27 +253,17 @@ export interface SendToClientDialogResult {
         gap: 8px;
       }
 
-      .send-btn {
-        background-color: #fbd008 !important;
-        color: black !important;
+      .btn {
         display: flex;
         align-items: center;
         gap: 8px;
       }
 
-      .send-btn:hover:not([disabled]) {
-        background-color: #e6bf00 !important;
-      }
-
-      .send-btn:disabled {
-        opacity: 0.6;
-      }
-
-      .send-btn mat-spinner {
+      .btn mat-spinner {
         display: inline-block;
       }
 
-      .send-btn mat-icon {
+      .btn mat-icon {
         font-size: 20px;
         width: 20px;
         height: 20px;

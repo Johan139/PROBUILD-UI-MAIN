@@ -152,7 +152,6 @@ export class SignalrService {
     });
 
     this.hubConnection.on('ReceiveAnalysisData', (data: any) => {
-      console.log('SignalR: ReceiveAnalysisData event received', data);
       this.analysisData.next(data);
     });
   }

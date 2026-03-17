@@ -76,7 +76,6 @@ export class NotificationsComponent implements OnInit {
       .getAllNotifications(this.currentPage, this.pageSize)
       .subscribe((response) => {
         this.paginatedNotifications = response?.notifications || [];
-        console.log(response);
         this.totalNotifications = response?.totalCount ?? 0;
         this.totalPages = this.totalNotifications
           ? Math.ceil(this.totalNotifications / this.pageSize)
@@ -135,7 +134,6 @@ export class NotificationsComponent implements OnInit {
         break;
 
       default:
-        console.log(notification.type);
         console.warn('Unknown notification type:', notification);
     }
   }

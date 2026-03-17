@@ -106,7 +106,7 @@
                       <td>{{subtask.endDate}}</td>
                       <td>{{subtask.status || 'Pending'}}</td>
                       <td>
-                        <button class="submit-btn quote-btn" (click)="createQuoteForSubtask(subtask)">
+                        <button mat-button type="button" class="btn btn-secondary" (click)="createQuoteForSubtask(subtask)">
                           Quote
                         </button>
                       </td>
@@ -118,13 +118,13 @@
  
             <!-- Action Buttons -->
             <div class="action-buttons">
-              <button class="submit-btn save-btn" mat-raised-button (click)="openDocumentsDialog()">
+              <button mat-button type="button" class="btn btn-secondary" (click)="openDocumentsDialog()">
                 View Documents
               </button>
-              <button class="submit-btn save-btn" mat-raised-button (click)="openBillOfMaterialsDialog()">
+              <button mat-button type="button" class="btn btn-secondary" (click)="openBillOfMaterialsDialog()">
                 View Bill of Materials
               </button>
-              <button class="submit-btn save-btn" mat-raised-button (click)="createQuoteForSelectedSubtasks()">
+              <button mat-button type="button" class="btn btn-primary" (click)="createQuoteForSelectedSubtasks()">
                 Quote On Selection(s)
               </button>
             </div>
@@ -156,15 +156,15 @@
                 <span class="document-name">{{doc.name}}</span>
                 <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
               </div>
-              <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
+              <button mat-button type="button" class="btn btn-ghost view-btn" (click)="viewDocument(doc)">
                 View
               </button>
             </div>
           </div>
         </div>
       </mat-dialog-content>
-      <mat-dialog-actions>
-        <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button type="button" class="btn btn-secondary" (click)="closeDocumentsDialog()">Close</button>
       </mat-dialog-actions>
     </div>
   </ng-template>
@@ -215,8 +215,8 @@
           </div>
         </div>
       </mat-dialog-content>
-      <mat-dialog-actions>
-        <button class="submit-btn" mat-raised-button (click)="closeBillOfMaterialsDialog()">Close</button>
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button type="button" class="btn btn-secondary" (click)="closeBillOfMaterialsDialog()">Close</button>
       </mat-dialog-actions>
     </div>
   </ng-template>
@@ -225,7 +225,7 @@
   <div *ngIf="showAlert" class="alert-overlay">
     <div class="alert-modal">
       <p>{{alertMessage}}</p>
-      <button class="alert-button submit-btn" mat-raised-button (click)="closeAlert()">OK</button>
+      <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
     </div>
   </div>
 </div>

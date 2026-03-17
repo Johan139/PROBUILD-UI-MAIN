@@ -20,17 +20,19 @@ import { MatDialogModule } from '@angular/material/dialog';
         </mat-checkbox>
       </mat-dialog-content>
 
-      <mat-dialog-actions align="end">
+      <mat-dialog-actions align="end" class="dialog-actions">
         <button
           mat-button
-          class="dialog-btn cancel-btn"
+          class="btn btn-secondary"
+          type="button"
           (click)="dialogRef.close(false)"
         >
           Cancel
         </button>
         <button
           mat-button
-          class="dialog-btn confirm-btn"
+          class="btn btn-primary"
+          type="button"
           [disabled]="!confirmed"
           (click)="dialogRef.close(true)"
         >
@@ -39,42 +41,7 @@ import { MatDialogModule } from '@angular/material/dialog';
       </mat-dialog-actions>
     </div>
   `,
-  styles: [
-    `
-      .dialog-btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: background-color 0.3s ease;
-      }
-
-      .cancel-btn {
-        background-color: transparent;
-        color: #aaaaaa;
-        border: 1px solid #555555;
-      }
-
-      .cancel-btn:hover {
-        background-color: rgba(255, 255, 255, 0.08);
-        color: #ffffff;
-      }
-
-      .confirm-btn {
-        background-color: #fbd008;
-        color: #000000;
-      }
-
-      .confirm-btn:hover:not([disabled]) {
-        background-color: #e0bb00;
-      }
-
-      .confirm-btn[disabled] {
-        background-color: #555;
-        color: #888;
-        cursor: not-allowed;
-      }
-    `,
-  ],
+  styles: [],
 })
 export class ConfirmationDialogComponent {
   confirmed = false;

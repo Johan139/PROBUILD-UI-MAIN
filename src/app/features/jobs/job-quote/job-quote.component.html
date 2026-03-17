@@ -35,7 +35,7 @@
                   <td>{{ job.status }}</td>
                   <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
                   <td>
-                    <button class="View-btn views-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
+                    <button mat-button class="btn btn-ghost" type="button" (click)="loadJob(job.id)">View</button>
                   </td>
                 </tr>
               </tbody>
@@ -72,7 +72,7 @@
                     <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
                     <td>${{ quote.total.toFixed(2) }}</td>
                     <td>
-                      <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
+                      <button mat-button class="btn btn-ghost" type="button" (click)="openQuote(quote.id)">
                         View
                       </button>
                     </td>
@@ -98,8 +98,8 @@
           <mat-divider class="mat-primary"></mat-divider>
 
         <div class="house-options d-flex justify-content-center">
-          <button mat-raised-button (click)="populateHouse('wood')">Basic Wood House</button>
-          <button mat-raised-button (click)="populateHouse('brick')">Basic Brick House</button>
+          <button mat-button class="btn btn-secondary" type="button" (click)="populateHouse('wood')">Basic Wood House</button>
+          <button mat-button class="btn btn-secondary" type="button" (click)="populateHouse('brick')">Basic Brick House</button>
         </div>
         <br>
         <form [formGroup]="jobCardForm" (ngSubmit)="onSubmit()">
@@ -322,7 +322,7 @@
               </div>
               <div class="form-row">
                 <label for="userContextFile" class="custom-file-upload-label">
-                  <button mat-raised-button type="button" (click)="userContextFileInput.click()" class="submit-btn">
+                  <button mat-button class="btn btn-secondary" type="button" (click)="userContextFileInput.click()">
                     <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
                     Upload Context File
                   </button>
@@ -362,9 +362,9 @@
               <span class="button-wrapper"
                     [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing' : ''"
                     [class.disabled-wrapper]="jobCardForm.invalid || uploadedFileInfos.length === 0">
-                <button mat-raised-button type="submit"
+                <button mat-button type="submit"
                         [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0 || jobCardForm.invalid"
-                        class="submit-btn">
+                        class="btn btn-primary">
                   <span *ngIf="!isAnalyzing">Analyze</span>
                   <span *ngIf="isAnalyzing">Analyzing...</span>
                 </button>
@@ -372,11 +372,11 @@
                 <span class="button-wrapper"
                       [matTooltip]="uploadedFileInfos.length === 0 ? 'Blueprints need to be added before they can be viewed' : ''"
                       [class.disabled-wrapper]="uploadedFileInfos.length === 0">
-                  <button mat-raised-button type="button" class="submit-btn" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
+                  <button mat-button class="btn btn-secondary" type="button" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
                     View Uploaded Files
                   </button>
                 </span>
-              <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
+              <button mat-button class="btn btn-ghost" type="button" (click)="onCancel()">Cancel</button>
             </div>
             <div class="upload-container">
               <div *ngIf="isUploading" class="upload-progress">
@@ -389,7 +389,7 @@
                     {{ uploadedFileInfos.length }} file(s) uploaded successfully
                   </p>
                 </div>
-                <button type="button" (click)="openUploadDialog()" mat-raised-button class="submit-btn">
+                <button mat-button class="btn btn-secondary" type="button" (click)="openUploadDialog()">
                   <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
                   Upload Blueprints
                 </button>
@@ -401,7 +401,7 @@
               <mat-toolbar>
                 <span>Document Viewer</span>
                 <span class="toolbar-spacer"></span>
-                <button *ngIf="activeBlueprints.length > 0" mat-raised-button color="accent" (click)="overlayState.toggleOverlayVisibility()">
+                <button *ngIf="activeBlueprints.length > 0" mat-button class="btn btn-secondary" type="button" (click)="overlayState.toggleOverlayVisibility()">
                   Toggle Overlay
                 </button>
               </mat-toolbar>
@@ -417,7 +417,7 @@
 <div *ngIf="showAlert" class="alert-overlay">
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button mat-raised-button (click)="closeAlert()">OK</button>
+    <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
   </div>
 </div>
 

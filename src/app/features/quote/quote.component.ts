@@ -39,8 +39,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Job } from '../../models/job';
 import { JobsService } from '../../services/jobs.service';
-import { JobCardComponent } from '../../components/job-card/job-card.component';
-import { PdfViewerComponent } from '../../components/pdf-viewer/pdf-viewer.component';
 import { BidsService } from '../../services/bids.service';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -116,9 +114,7 @@ interface CompanyAddressDTO {
 
     MatDialogModule,
     MatCheckboxModule,
-    JobCardComponent,
     MatProgressSpinnerModule,
-    PdfViewerComponent,
     CommonModule,
     MatDatepickerModule,
     MatNativeDateModule,

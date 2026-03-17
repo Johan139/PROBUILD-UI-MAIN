@@ -12,11 +12,11 @@
     <ng-container *ngIf="user$ | async as user; else loadingTpl">
       <ng-container *ngIf="address$ | async"></ng-container>
       <div class="actions">
-        <button mat-raised-button color="primary" (click)="save(user)" [disabled]="saving">
+        <button mat-button type="button" class="btn btn-primary" (click)="save(user)" [disabled]="saving">
           Save
         </button>
 
-        <button mat-stroked-button color="primary" (click)="sendPasswordReset(user)">
+        <button mat-button type="button" class="btn btn-secondary" (click)="sendPasswordReset(user)">
           Send password reset
         </button>
       </div>

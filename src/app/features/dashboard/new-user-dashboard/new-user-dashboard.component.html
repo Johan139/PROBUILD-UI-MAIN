@@ -26,8 +26,8 @@
       <!-- LEFT SIDE -->
       <div class="quick-actions-left">
         <button
-          mat-flat-button
-          class="btn-primary quick-action-btn"
+          mat-button
+          class="btn btn-primary quick-action-btn"
           (click)="navigateToJobs()"
           matTooltip="This will bring you to the New Project page where you can create a new project"
           [matTooltipShowDelay]="500"
@@ -37,7 +37,8 @@
         </button>
 
         <button
-          class="btn-outline quick-action-btn"
+          mat-button
+          class="btn btn-secondary quick-action-btn"
           (click)="navigateToProjects()"
           matTooltip="This will bring you to the My Projects page where you can view all of your projects"
           [matTooltipShowDelay]="500"
@@ -47,7 +48,8 @@
         </button>
 
         <button
-          class="btn-outline quick-action-btn"
+          mat-button
+          class="btn btn-secondary quick-action-btn"
           (click)="navigateToCalendar()"
           matTooltip="This will bring you to the Calendar page where you can view your schedule and events"
           [matTooltipShowDelay]="500"
@@ -264,8 +266,9 @@
                 </span>
               </div>
               <button
-                class="view-btn"
-                mat-raised-button
+                mat-button
+                type="button"
+                class="btn btn-ghost view-btn"
                 (click)="viewDocument(doc)"
               >
                 View
@@ -275,10 +278,11 @@
         </div>
       </mat-dialog-content>
 
-      <mat-dialog-actions>
+      <mat-dialog-actions align="end" class="dialog-actions">
         <button
-          class="submit-btn"
-          mat-raised-button
+          mat-button
+          type="button"
+          class="btn btn-secondary"
           (click)="closeDocumentsDialog()"
         >
           Close
@@ -301,19 +305,19 @@
         ></div>
       </mat-dialog-content>
 
-      <mat-dialog-actions align="end">
+      <mat-dialog-actions align="end" class="dialog-actions">
         <button
-          mat-raised-button
-          color="primary"
-          class="submit-btn delete-btn"
+          mat-button
+          type="button"
+          class="btn btn-primary"
           (click)="submitApproval()"
         >
           Submit
         </button>
         <button
-          mat-raised-button
-          color="warn"
-          class="submit-btn delete-btn"
+          mat-button
+          type="button"
+          class="btn btn-secondary"
           (click)="cancelApproval()"
         >
           Cancel

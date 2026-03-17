@@ -25,13 +25,21 @@ mat-dialog-actions {
 
 /* Buttons */
 
+// Keep local class for backwards compatibility if used elsewhere
 .dialog-btn {
-  padding: 8px 16px;
-  border-radius: var(--radius-sm, 6px);
-  font-weight: 500;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.02s ease;
-  border: none;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-5);
+  font-weight: var(--fw-semibold);
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  border: 1px solid transparent;
   cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }
 
 /* Primary actions (confirm, return, etc.) */

@@ -83,8 +83,9 @@
     <!-- View / Edit Quote -->
     <button
       *ngIf="quote"
-      mat-raised-button
-      color="primary"
+      mat-button
+      type="button"
+      class="btn btn-primary"
       (click)="onViewQuoteClick($event)"
     >
       View & Edit Quote
@@ -93,8 +94,9 @@
     <!-- Withdraw Quote -->
     <button
       *ngIf="quote?.status === 'Submitted'"
-      mat-raised-button
-      color="warn"
+      mat-button
+      type="button"
+      class="btn btn-danger"
       (click)="onWithdrawQuoteClick($event)"
     >
       Withdraw Quote
@@ -102,8 +104,9 @@
 
     <!-- Job info -->
     <button
-      mat-raised-button
-      color="primary"
+      mat-button
+      type="button"
+      class="btn btn-secondary"
       (click)="onViewMoreInfoClick($event)"
     >
       More Information

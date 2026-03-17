@@ -13,7 +13,7 @@
             <form [formGroup]="confirmEmailForm" (ngSubmit)="onConfirmEmail()">
               <div style="margin-top: 1.5rem;">
                 <mat-card-actions>
-                  <button class="w-100" mat-raised-button (click)="onConfirmEmail()">Confirm Email</button>
+                  <button mat-button class="w-100 btn btn-primary" type="submit">Confirm Email</button>
                 </mat-card-actions>
               </div>
             </form>
@@ -26,7 +26,6 @@
   <div *ngIf="showAlert" class="alert-overlay">
     <div class="alert-modal">
       <p>{{ alertMessage }}</p>
-      <button mat-raised-button (click)="closeAlert()">OK</button>
+      <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
     </div>
   </div>
-  

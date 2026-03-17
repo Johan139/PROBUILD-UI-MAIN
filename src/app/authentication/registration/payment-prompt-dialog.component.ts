@@ -17,17 +17,9 @@ export type BillingCycle = 'monthly' | 'yearly';
     <mat-dialog-content>
       <p>Your account was created. Please complete payment to continue.</p>
     </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button class="dialog-btn skip-btn" (click)="skip()">
-        Pay Later
-      </button>
-      <button
-        mat-button
-        class="dialog-btn pay-btn"
-        (click)="continueToPayment()"
-      >
-        Pay Now
-      </button>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button class="btn btn-secondary" (click)="skip()">Pay Later</button>
+      <button mat-button class="btn btn-primary" (click)="continueToPayment()">Pay Now</button>
     </mat-dialog-actions>
   `,
   styles: [
@@ -35,39 +27,14 @@ export type BillingCycle = 'monthly' | 'yearly';
       h2 {
         font-size: 1.5rem;
         font-weight: 600;
-        color: #333;
+        color: var(--color-text);
         margin-bottom: 16px;
       }
       p {
         font-size: 1rem;
-        color: #555;
+        color: var(--color-text-muted);
         line-height: 1.5;
         margin-bottom: 16px;
-      }
-      mat-dialog-actions {
-        display: flex;
-        gap: 12px;
-        padding-top: 16px;
-      }
-      .dialog-btn {
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: background-color 0.3s ease;
-      }
-      .skip-btn {
-        background-color: #fbd008;
-        color: #333;
-      }
-      .skip-btn:hover {
-        background-colorwater: #e6bf00;
-      }
-      .pay-btn {
-        background-color: #fbd008;
-        color: #333;
-      }
-      .pay-btn:hover {
-        background-color: #e6bf00;
       }
     `,
   ],
@@ -86,10 +53,8 @@ export class PaymentPromptDialogComponent {
     }
   ) {}
   ngOnInit() {
-    console.log(this.data.billingCycle);
   }
   continueToPayment() {
-    console.log(this.data.billingCycle);
     this.stripeService
       .createCheckoutSession({
         userId: this.data.userId,
@@ -102,7 +67,6 @@ export class PaymentPromptDialogComponent {
       })
       .subscribe({
         next: (res) => {
-          console.log(res);
           this.dialogRef.close();
           window.location.href = res.url;
         },

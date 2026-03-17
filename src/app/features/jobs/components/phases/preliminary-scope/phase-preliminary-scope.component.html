@@ -110,8 +110,8 @@
             Project Details
           </h4>
           <div class="header-actions" *ngIf="isEditingProject">
-            <button class="action-btn save-btn" (click)="saveProject()">Save</button>
-            <button class="action-btn cancel-btn" (click)="toggleEditProject()">Cancel</button>
+            <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveProject()">Save</button>
+            <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditProject()">Cancel</button>
           </div>
           <button class="edit-btn" (click)="toggleEditProject()" *ngIf="!isEditingProject">
             <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
@@ -161,8 +161,8 @@
             Client Details
           </h4>
           <div class="header-actions" *ngIf="isEditingClient">
-            <button class="action-btn save-btn" (click)="saveClient()">Save</button>
-            <button class="action-btn cancel-btn" (click)="toggleEditClient()">Cancel</button>
+            <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveClient()">Save</button>
+            <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditClient()">Cancel</button>
           </div>
           <button class="edit-btn" (click)="toggleEditClient()" *ngIf="!isEditingClient">
             <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>

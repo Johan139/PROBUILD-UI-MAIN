@@ -192,10 +192,10 @@
               </div>
               <div class="form-row">
                 <button
-                  mat-raised-button
+                  mat-button
                   type="button"
                   (click)="userContextFileInput.click()"
-                  class="submit-btn save-btn"
+                  class="btn btn-secondary"
                   matTooltip="Upload a document containing specifications, notes, or requirements to help the AI understand your project better"
                 >
                   <img
@@ -248,7 +248,8 @@
           "
         >
           <button
-            class="btn-primary"
+            mat-button
+            class="btn btn-primary"
             (click)="startStandardAnalysis()"
             [disabled]="!selectedFile || isLoading"
           >
@@ -289,7 +290,7 @@
                 <p>{{ progress.errorMessage }}</p>
               </mat-card-content>
               <mat-card-actions>
-                <button mat-button (click)="isLoading = false">Dismiss</button>
+                <button mat-button class="btn btn-secondary" type="button" (click)="isLoading = false">Dismiss</button>
               </mat-card-actions>
             </mat-card>
           </div>
@@ -371,14 +372,16 @@
                 placeholder="Add general comments here..."
               ></textarea>
               <button
-                class="btn-secondary"
+                mat-button
+                class="btn btn-secondary"
                 (click)="undo()"
                 matTooltip="Revert your last change"
               >
                 Undo
               </button>
               <button
-                class="btn-secondary"
+                mat-button
+                class="btn btn-secondary"
                 (click)="redo()"
                 matTooltip="Reapply the change you undid"
               >
@@ -388,7 +391,8 @@
                 >Apply Cost Optimisation and Efficiency</mat-checkbox
               >
               <button
-                class="btn-primary"
+                mat-button
+                class="btn btn-primary"
                 (click)="rerunCurrentStep()"
                 matTooltip="Rerun the analysis for this step with your changes."
               >
@@ -406,14 +410,16 @@
         <!-- Navigation Buttons -->
         <div class="walkthrough-navigation">
           <button
-            class="btn-ghost"
+            mat-button
+            class="btn btn-ghost"
             (click)="goToPreviousStep()"
             matTooltip="Go back to the previous step."
           >
             Back
           </button>
           <button
-            class="btn-primary"
+            mat-button
+            class="btn btn-primary"
             (click)="goToNextStep()"
             [disabled]="!hasScrolledToBottom"
             matTooltip="Proceed to the next step in the walkthrough."
@@ -442,14 +448,16 @@
           <p>We’ll parse sheets, title blocks, scales, and more.</p>
           <div class="info-block-actions">
             <button
-              class="btn-primary"
+              mat-button
+              class="btn btn-primary"
               (click)="beginExtraction()"
               matTooltip="Start processing the blueprint to extract project details and requirements"
             >
               Begin Extraction
             </button>
             <button
-              class="btn-primary"
+              mat-button
+              class="btn btn-secondary"
               (click)="cancel()"
               [disabled]="flow.step === 'idle'"
               matTooltip="Upload a different blueprint file instead"
@@ -475,7 +483,8 @@
           </div>
           <div class="info-block-actions">
             <button
-              class="btn-primary"
+              mat-button
+              class="btn btn-primary"
               (click)="confirmAddress()"
               [disabled]="isLoading"
               matTooltip="Confirm this location to retrieve accurate weather data and local pricing adjustments"
@@ -483,7 +492,8 @@
               <span *ngIf="!isLoading">Confirm & Continue</span>
             </button>
             <button
-              class="btn-ghost"
+              mat-button
+              class="btn btn-ghost"
               (click)="setFlow('extracting', { pct: 85 })"
               matTooltip="Manually correct the address if the extracted one is inaccurate"
             >
@@ -527,7 +537,7 @@
           </div>
           <div class="walkthrough-actions">
             <div>Your input updates the BoM at the end.</div>
-            <button class="btn-primary" (click)="nextStep()">
+            <button mat-button class="btn btn-primary" (click)="nextStep()">
               <span *ngIf="isWalkthrough(flow)">{{
                 flow.index === SECTION_ORDER.length - 1 ? "Finish" : "Next"
               }}</span>
@@ -552,19 +562,22 @@
           <p>Your edits have been applied. Download your outputs below.</p>
           <div class="info-block-actions">
             <button
-              class="btn-primary"
+              mat-button
+              class="btn btn-primary"
               matTooltip="Open the detailed Bill of Materials generated from the analysis"
             >
               View Final Bill of Materials
             </button>
             <button
-              class="btn-primary"
+              mat-button
+              class="btn btn-secondary"
               matTooltip="Download a comprehensive report of the project analysis"
             >
               Download Project Summary
             </button>
             <button
-              class="btn-ghost"
+              mat-button
+              class="btn btn-ghost"
               matTooltip="Start the bidding process to find contractors and suppliers"
             >
               Launch Bidding Phase
@@ -572,7 +585,8 @@
           </div>
           <div class="info-block-actions">
             <button
-              class="btn-ghost"
+              mat-button
+              class="btn btn-ghost"
               (click)="setFlow('idle')"
               matTooltip="Clear current results and start a new project analysis"
             >

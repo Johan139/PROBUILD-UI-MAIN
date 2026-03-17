@@ -516,14 +516,13 @@
             *ngFor="let doc of documents; let i = index"
           >
             <div class="document-info">
-              <span class="document-name">{{ doc.fileName }}</span>
-              <span class="document-meta"
-                >{{ doc.type }} - {{ doc.size | filesize }}</span
-              >
+              <span class="document-name">{{ doc.name }}</span>
+              <span class="document-meta">{{ doc.type }} - {{ doc.size | filesize }}</span>
             </div>
             <button
-              class="view-btn"
-              mat-raised-button
+              mat-button
+              type="button"
+              class="btn btn-ghost view-btn"
               (click)="viewDocument(doc)"
             >
               View
@@ -532,10 +531,10 @@
         </div>
       </div>
     </mat-dialog-content>
-    <mat-dialog-actions>
+    <mat-dialog-actions align="end" class="dialog-actions">
       <button
-        class="submit-btn"
-        mat-raised-button
+        mat-button
+        class="btn btn-secondary"
         (click)="closeDocumentsDialog()"
       >
         Close
@@ -611,13 +610,13 @@
         </div>
       </div>
     </mat-dialog-content>
-    <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="generateBOMPDF()">
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button class="btn btn-primary" (click)="generateBOMPDF()">
         Download PDF
       </button>
       <button
-        class="submit-btn"
-        mat-raised-button
+        mat-button
+        class="btn btn-secondary"
         [matMenuTriggerFor]="spreadsheetMenu"
       >
         Download as Spreadsheet
@@ -631,8 +630,8 @@
         </button>
       </mat-menu>
       <button
-        class="submit-btn"
-        mat-raised-button
+        mat-button
+        class="btn btn-ghost"
         (click)="closeBillOfMaterialsDialog()"
       >
         Close
@@ -657,19 +656,19 @@
       </mat-form-field>
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end" class="note-actions">
+    <mat-dialog-actions align="end" class="dialog-actions">
       <div class="form-row button-row">
         <div class="button-group">
           <button
-            class="submit-btn save-btn"
-            mat-raised-button
+            mat-button
+            class="btn btn-secondary"
             (click)="closeNoteDialog()"
           >
             Cancel
           </button>
           <button
-            class="submit-btn save-btn"
-            mat-raised-button
+            mat-button
+            class="btn btn-primary"
             (click)="saveNoteDialog()"
           >
             Save
@@ -695,7 +694,7 @@
             </p>
           </div>
           <div class="custom-file-upload">
-            <label for="file-upload" class="upload-label submit-btn">
+            <label for="file-upload" class="upload-label btn btn-secondary">
               <img
                 src="assets/custom-svg/upload-folder-svgrepo-com.svg"
                 alt="Upload Icon"
@@ -729,10 +728,10 @@
         [innerHTML]="reportHtml"
       ></div>
     </mat-dialog-content>
-    <mat-dialog-actions>
+    <mat-dialog-actions align="end" class="dialog-actions">
       <button
-        class="submit-btn"
-        mat-raised-button
+        mat-button
+        class="btn btn-primary"
         (click)="downloadFullReport()"
         [disabled]="isGeneratingReport"
       >
@@ -740,8 +739,8 @@
         <span *ngIf="isGeneratingReport">Generating...</span>
       </button>
       <button
-        class="submit-btn"
-        mat-raised-button
+        mat-button
+        class="btn btn-secondary"
         (click)="closeReportDialog()"
       >
         Close
@@ -755,8 +754,9 @@
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
     <button
-      class="alert-button submit-btn"
-      mat-raised-button
+      mat-button
+      class="btn btn-primary"
+      type="button"
       (click)="closeAlert()"
     >
       OK

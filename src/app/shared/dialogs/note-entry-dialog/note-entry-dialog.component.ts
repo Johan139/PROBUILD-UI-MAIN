@@ -36,7 +36,7 @@ export interface NoteEntryDialogResult {
   template: `
     <h2 mat-dialog-title>{{ data.title || 'Add Note' }}</h2>
     <mat-dialog-content>
-      <p style="margin: 0 0 10px; font-size: 12px; color: #64748b;">Default visibility: Private</p>
+      <p style="margin: 0 0 10px; font-size: 12px; color: var(--color-text-muted);">Default visibility: Private</p>
       <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 8px;">
         <mat-label>Note</mat-label>
         <textarea
@@ -58,13 +58,13 @@ export interface NoteEntryDialogResult {
           </mat-select>
         </mat-form-field>
 
-        <span style="font-size: 12px; color: #64748b;">{{ remaining }} characters remaining</span>
+        <span style="font-size: 12px; color: var(--color-text-muted);">{{ remaining }} characters remaining</span>
       </div>
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-flat-button color="primary" (click)="onSave()" [disabled]="!canSave()">Save</button>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+      <button mat-button class="btn btn-primary" (click)="onSave()" [disabled]="!canSave()">Save</button>
     </mat-dialog-actions>
   `,
 })

@@ -9,15 +9,17 @@
 
     <div class="option-buttons">
       <button
-        mat-raised-button
-        class="btn-primary"
+        mat-button
+        type="button"
+        class="btn btn-primary"
         (click)="selectOption('create')"
       >
         Create Quote with Probuild
       </button>
       <button
-        mat-stroked-button
-        class="btn-secondary"
+        mat-button
+        type="button"
+        class="btn btn-secondary"
         (click)="selectOption('upload')"
       >
         Upload PDF Quote
@@ -46,8 +48,9 @@
             #fileInput
           />
           <button
-            mat-raised-button
-            class="btn-primary"
+            mat-button
+            type="button"
+            class="btn btn-primary"
             (click)="onUpload()"
             [disabled]="!selectedFile || isUploading"
           >
@@ -118,18 +121,18 @@
   </mat-stepper>
 
   <mat-dialog-actions align="end" class="dialog-actions">
-    <button mat-button class="btn-text" (click)="onNoClick()">Cancel</button>
+    <button mat-button class="btn btn-secondary" (click)="onNoClick()">Cancel</button>
     <button
-      mat-raised-button
-      class="btn-primary"
+      mat-button
+      class="btn btn-primary"
       (click)="stepper.next()"
       *ngIf="stepper.selectedIndex === 1 && uploadComplete"
     >
       Next
     </button>
     <button
-      mat-raised-button
-      class="btn-primary"
+      mat-button
+      class="btn btn-primary"
       (click)="submitBid()"
       *ngIf="stepper.selectedIndex === 2"
     >
@@ -139,5 +142,5 @@
 </div>
 
 <mat-dialog-actions align="end" class="dialog-actions" *ngIf="!selection">
-  <button mat-button class="btn-text" (click)="onNoClick()">Cancel</button>
+  <button mat-button class="btn btn-secondary" (click)="onNoClick()">Cancel</button>
 </mat-dialog-actions>

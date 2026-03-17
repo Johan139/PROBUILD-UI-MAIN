@@ -28,7 +28,6 @@ import {
   MapPin,
   CheckCircle,
 } from 'lucide-angular';
-import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -102,7 +101,6 @@ type FlowState =
     FormsModule,
     ReactiveFormsModule,
     LucideAngularModule,
-    DragAndDropDirective,
     PdfJsViewerModule,
     MatFormFieldModule,
     MatSelectModule,

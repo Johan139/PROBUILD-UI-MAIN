@@ -53,8 +53,8 @@
           <mat-divider></mat-divider>
           <app-sorted-bar-chart [data]="chartData1"></app-sorted-bar-chart>
           <div>
-            <button class="submit-btn" (click)="sortByFrequency()">Sort by Frequency</button>
-            <button class="submit-btn" (click)="sortByLetter()">Sort Alphabetically</button>
+            <button mat-button type="button" class="btn btn-secondary" (click)="sortByFrequency()">Sort by Frequency</button>
+            <button mat-button type="button" class="btn btn-secondary" (click)="sortByLetter()">Sort Alphabetically</button>
           </div>
         </mat-card-content>
       </mat-card>

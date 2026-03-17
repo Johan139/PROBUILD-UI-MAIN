@@ -149,7 +149,8 @@
 
       <!-- Submit -->
       <button
-        class="submit-btn"
+        mat-button
+        class="btn btn-primary"
         type="submit"
         [disabled]="loginForm.invalid || isLoading"
       >
@@ -188,7 +189,7 @@
         Resend Verification Email
       </button>
     </div>
-    <button class="submit-btn" type="button" (click)="closeAlert()">
+    <button mat-button class="btn btn-secondary" type="button" (click)="closeAlert()">
       Close
     </button>
   </div>

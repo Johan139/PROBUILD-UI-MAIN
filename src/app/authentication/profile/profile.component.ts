@@ -480,7 +480,6 @@ export class ProfileComponent implements OnInit {
         this.isLoading = false;
       }
     });
-    console.log(this.subscriptionPackages);
     this.route.queryParamMap.pipe(take(1)).subscribe((params) => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', {
@@ -507,7 +506,6 @@ export class ProfileComponent implements OnInit {
       this.isUploading = false;
       this.loadDocuments(); // reload automatically after upload
       this.resetFileInput();
-      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
   }
   private _filterCountries(value: string | null): any[] {
@@ -799,18 +797,6 @@ export class ProfileComponent implements OnInit {
 
           this.profileForm.patchValue(patch);
 
-          console.log('company.countryNumberCode:', company.countryNumberCode);
-          console.log(
-            'countryNumberCode array length:',
-            this.countryNumberCode.length,
-          );
-          console.log(
-            'matched:',
-            this.countryNumberCode.find(
-              (c) => c.id === company.countryNumberCode,
-            ),
-          );
-
           if (this.countryNumberCode.length > 0) {
             const matched = company.countryNumberCode
               ? this.countryNumberCode.find(
@@ -841,7 +827,6 @@ export class ProfileComponent implements OnInit {
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
-        console.log(subscriptions);
         this.subscriptionPackages = subscriptions.map((s) => ({
           value: s.subscription,
           display: `${s.subscription}`,
@@ -882,7 +867,6 @@ export class ProfileComponent implements OnInit {
 
     this.stripeService.getStripeSubscriptions(userId).subscribe({
       next: (res) => {
-        console.log(res);
         const raw = Array.isArray(res) ? res : (res ?? []);
 
         const normalized: SubscriptionRow[] = (raw || []).map((x: any) => {
@@ -913,14 +897,6 @@ export class ProfileComponent implements OnInit {
             }
           }
 
-          // Debug logging
-          console.log('Processing subscription:', {
-            pkg,
-            validUntilRaw,
-            validUntil,
-            cancelAtPeriodEnd: x.cancel_at_period_end ?? x.cancelAtPeriodEnd,
-            status: x.status,
-          });
           const amountRaw =
             x.amount ??
             x.amount_total ??
@@ -955,7 +931,6 @@ export class ProfileComponent implements OnInit {
           let status = String(x.status ?? '').toLowerCase();
           if (!status && isTrial) status = 'trialing';
 
-          // ✅ FIX: Map cancel_at_period_end to cancelAtPeriodEnd (camelCase)
           const cancelAtPeriodEnd =
             x.cancel_at_period_end ?? x.cancelAtPeriodEnd ?? false;
 
@@ -967,11 +942,10 @@ export class ProfileComponent implements OnInit {
             assignedUserName,
             status,
             subscriptionId,
-            cancelAtPeriodEnd, // ✅ Now correctly mapped
+            cancelAtPeriodEnd,
           };
         });
 
-        // viewer-aware bucketing
         const meId = (
           this.authService.currentUserSubject.value?.id ??
           String(localStorage.getItem('userId') || '')
@@ -1042,20 +1016,6 @@ export class ProfileComponent implements OnInit {
           this.subscriptionsData.data = [...this.subscriptionsData.data];
         });
 
-        // ✅ Debug: Log the first active subscription to verify data structure
-        if (mine.length > 0) {
-          console.log('First active subscription data:', {
-            subscription: mine[0],
-            validUntilType: typeof mine[0].validUntil,
-            validUntilValue: mine[0].validUntil,
-            cancelAtPeriodEnd: mine[0].cancelAtPeriodEnd,
-            status: mine[0].status,
-            isBeforeToday: mine[0].validUntil
-              ? mine[0].validUntil < this.today
-              : 'N/A',
-          });
-        }
-
         this.isLoadingSubscriptions = false;
       },
       error: (err) => {
@@ -1078,7 +1038,6 @@ export class ProfileComponent implements OnInit {
 
         const activeCode = this.subscriptionuserPackages?.[0]?.value ?? null;
         if (activeCode) {
-          // Prefer direct code match in your known packages
           const match = this.subscriptionPackages.find(
             (p) =>
               p.value.toLowerCase() === activeCode.toLowerCase() ||
@@ -1133,7 +1092,6 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
 
-        // 🔄 Refresh the grid
         this.loadDocuments();
       },
       error: (err) => {
@@ -1179,7 +1137,7 @@ export class ProfileComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe((result) => {
-      if (!result) return; // user clicked NO
+      if (!result) return;
 
       this.profileService.deleteUserDocument(doc.id).subscribe({
         next: () => {
@@ -1201,7 +1159,6 @@ export class ProfileComponent implements OnInit {
   viewDocument(document: any): void {
     this.profileService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
-        // Infer MIME type based on extension
         const extension = document.name?.split('.').pop()?.toLowerCase();
         let mimeType = 'application/octet-stream'; // fallback
 
@@ -1223,7 +1180,6 @@ export class ProfileComponent implements OnInit {
           this.showAlert = true;
         }
 
-        // Cleanup after 10 seconds
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       },
       error: (err) => {
@@ -1233,100 +1189,6 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
-
-  // ---------- ADDRESS MANAGEMENT ----------
-
-  // openAddressDialog(address?: UserAddress): void {
-  //   const dialogRef = this.dialog.open(AddressDialogComponent, {
-  //     width: '600px',
-  //     data: address ?? null,
-  //   });
-
-  //   dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
-  //     if (!result) return;
-
-  //     // -----------------------------------
-  //     // 🔥 CRITICAL FIX:
-  //     // When editing, force the ID to remain
-  //     // -----------------------------------
-  //     if (address) {
-  //       result.id = address.id; // ensure update always has correct ID
-  //       this.updateAddress(result);
-  //     } else {
-  //       this.saveNewAddress(result);
-  //     }
-  //   });
-  // }
-
-  // editAddress(address: UserAddress): void {
-  //   this.openAddressDialog(address);
-  // }
-
-  // deleteAddress(address: UserAddress): void {
-  //   if (!address?.id) return;
-
-  //   const confirmed = confirm('Are you sure you want to delete this address?');
-  //   if (!confirmed) return;
-
-  //   this.profileService.deleteUserAddress(address.id).subscribe({
-  //     next: () => {
-  //       this.snackBar.open('Address deleted successfully.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //       // ✅ use the actual array name
-  //       this.addresses = this.addresses.filter((a) => a.id !== address.id);
-  //       this.addressDataSource.data = this.addresses;
-  //     },
-  //     error: (err) => {
-  //       console.error('Error deleting address', err);
-  //       this.snackBar.open('Failed to delete address.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //     },
-  //   });
-  // }
-
-  // saveNewAddress(address: UserAddress): void {
-  //   const payload = {
-  //     ...address,
-  //     userId: String(localStorage.getItem('userId') ?? ''), // <-- make sure this is set!
-  //   };
-
-  //   this.profileService.addUserAddress(payload).subscribe({
-  //     next: (saved) => {
-  //       this.snackBar.open('Address added successfully.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //       this.addresses.push(saved);
-  //       this.addressDataSource.data = [...this.addresses];
-  //     },
-  //     error: (err) => {
-  //       console.error('Error saving address', err);
-  //       this.snackBar.open('Failed to save address.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //     },
-  //   });
-  // }
-
-  // updateAddress(address: UserAddress): void {
-  //   this.profileService.updateUserAddress(address.id!, address).subscribe({
-  //     next: (updated) => {
-  //       this.snackBar.open('Address updated successfully.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //       const idx = this.addresses.findIndex((a) => a.id === updated.id);
-  //       if (idx !== -1) this.addresses[idx] = updated;
-  //       this.addressDataSource.data = [...this.addresses];
-  //     },
-  //     error: (err) => {
-  //       console.error('Error updating address', err);
-  //       this.snackBar.open('Failed to update address.', 'Close', {
-  //         duration: 3000,
-  //       });
-  //     },
-  //   });
-  // }
 
   onSubmit(): void {
     if (this.profileForm.valid && !this.isSaving) {
@@ -1379,8 +1241,6 @@ export class ProfileComponent implements OnInit {
         billingAddress: this.profileForm.value.billingAddress,
         physicalAddress: this.profileForm.value.physicalAddress,
       };
-
-      console.log('Company payload', companyPayload);
       forkJoin({
         profile: this.profileService.updateProfile(updatedProfile),
         company: this.companyService.updateCompanyProfile(
@@ -1508,12 +1368,11 @@ export class ProfileComponent implements OnInit {
             email: null,
           });
 
-          // Reset every control state manually
           Object.keys(this.teamForm.controls).forEach((key) => {
             const control = this.teamForm.get(key);
             control?.markAsPristine();
             control?.markAsUntouched();
-            control?.setErrors(null); // <-- THIS IS THE MISSING PIECE
+            control?.setErrors(null);
           });
 
           this.teamForm.updateValueAndValidity();
@@ -1547,11 +1406,10 @@ export class ProfileComponent implements OnInit {
 
   resetFileInput(): void {
     const fileInput = document.getElementById(
-      'file-upload',
+      'fileInput',
     ) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      console.log('File input reset');
     }
   }
 
@@ -1588,7 +1446,6 @@ export class ProfileComponent implements OnInit {
       .toLowerCase();
   }
 
-  /** True if this row’s seat is assigned to the current viewer (id or email match) */
   private isAssignedToMe(row: SubscriptionRow): boolean {
     const meId = this.lc(
       this.authService.currentUserSubject.value?.id ??
@@ -1602,11 +1459,9 @@ export class ProfileComponent implements OnInit {
     const a = this.lc(row.assignedUser);
     const an = this.lc((row as any).assignedUserName);
 
-    // assignedUser may carry id or email; assignedUserName often carries email
     return (!!a && (a === meId || a === meEmail)) || (!!an && an === meEmail);
   }
 
-  /** Only allow manage if the seat is NOT assigned to me (i.e., I’m the payer/owner view) */
   canManageRow(row: SubscriptionRow): boolean {
     return !this.isAssignedToMe(row);
   }
@@ -1627,7 +1482,7 @@ export class ProfileComponent implements OnInit {
         this.snackBar.open('Subscription cancelled.', 'Close', {
           duration: 3000,
         });
-        this.manageSubscriptions(); // refresh table
+        this.manageSubscriptions();
       },
       error: (err) => {
         console.error('cancelSubscriptionById failed', err);
@@ -1635,7 +1490,6 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
       },
-      //complete: () => this.rowBusy.delete(id),
     });
   }
   canceltrailSubscription(row: string): void {
@@ -1652,7 +1506,7 @@ export class ProfileComponent implements OnInit {
         this.snackBar.open('Subscription cancelled.', 'Close', {
           duration: 3000,
         });
-        this.manageSubscriptions(); // refresh table
+        this.manageSubscriptions();
       },
       error: (err) => {
         console.error('cancelSubscriptionById failed', err);
@@ -1660,7 +1514,6 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
       },
-      //complete: () => this.rowBusy.delete(id),
     });
   }
   upgradeSubscription(row: SubscriptionRow) {
@@ -1672,8 +1525,6 @@ export class ProfileComponent implements OnInit {
     this.openSubscriptionCreateDialog();
   }
 
-  /** Try to resolve the active plan's *code* (the same value you use in subscriptionPackages[].value). */
-  /** Resolve the active plan *code* (matches subscriptionPackages[].value). */
   private getActivePlanCode(): string | null {
     const normalize = (s: string) =>
       (s || '')
@@ -1684,10 +1535,9 @@ export class ProfileComponent implements OnInit {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // 1) Prefer the row that is Active AND has no assigned user
     const allRows = (this.subscriptionsData?.data ?? []).concat(
       this.activeSubscriptionsData?.data ?? [],
-    ); // safe union
+    );
 
     const selfActive = allRows.find(
       (r) =>
@@ -1701,19 +1551,16 @@ export class ProfileComponent implements OnInit {
         (p) =>
           normalize(p.value) === rowName || normalize(p.display) === rowName,
       );
-      if (match) return match.value; // ✅ the code your mat-options use
+      if (match) return match.value;
     }
 
-    // 2) Fallback: first entry from getUserSubscription() (if you kept that)
     const codeFromUserList = this.subscriptionuserPackages?.[0]?.value ?? null;
     if (codeFromUserList) return codeFromUserList;
 
-    // 3) Last resort: whatever is in the form
     return this.profileForm.get('subscriptionPackage')?.value ?? null;
   }
 
   private getRowPlanCode(row: SubscriptionRow): string | null {
-    // If your row already carries a code, use it directly
     const direct =
       (row as any).packageCode ??
       (row as any).planCode ??
@@ -1772,7 +1619,7 @@ export class ProfileComponent implements OnInit {
           billingCycle === 'yearly'
             ? (pkgMeta.annualAmount ?? pkgMeta.amount)
             : pkgMeta.amount,
-        source: 'profile', // 👈 makes intent explicit on backend
+        source: 'profile',
         assignedUser: assignedUser ?? userId,
         billingCycle,
         SubscriptionId: subscriptionId,
@@ -1780,7 +1627,6 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: (res) => {
           window.location.assign(res.url);
-          //this.canceltrailSubscription(subscriptionId);
         },
         error: (err) => {
           console.error('Checkout session error', err);
@@ -1798,7 +1644,6 @@ export class ProfileComponent implements OnInit {
       (subscription as any)['assignedUser'] ??
       null;
 
-    // Determine current plan code for preselect
     const currentValueFromRow = this.getRowPlanCode(subscription);
     const currentValue =
       currentValueFromRow ??
@@ -1816,12 +1661,11 @@ export class ProfileComponent implements OnInit {
         }),
         currentValue,
         isTeamMember: this.authService.isTeamMember(),
-        subscriptionId, // MAY be null for trial
+        subscriptionId,
         userId: String(localStorage.getItem('userId') || ''),
       },
     });
 
-    // Expect either a string (pkgCode) or an object with pkgCode & billingCycle
     dialogRef.afterClosed().subscribe(
       (
         result?:
@@ -1839,12 +1683,9 @@ export class ProfileComponent implements OnInit {
           typeof result === 'string'
             ? 'monthly'
             : (result.billingCycle ?? 'monthly');
-        console.log(pkgCode);
-        // reflect selection
         this.profileForm.patchValue({ subscriptionPackage: pkgCode });
         this.profileForm.get('subscriptionPackage')?.markAsDirty();
 
-        // 🔀 Branch: trial (no subscription) → Checkout; normal (has subscription) → API upgrade
         if (subscriptionId.includes('trial')) {
           this.startCheckoutForUpgrade(
             pkgCode,
@@ -1897,7 +1738,6 @@ export class ProfileComponent implements OnInit {
       const email = String(r.assignedUserName ?? '')
         .trim()
         .toLowerCase();
-      console.log(email);
       if (email && ACTIVE.has(status)) emails.add(email);
     }
     return emails;
@@ -2269,13 +2109,6 @@ export class ProfileComponent implements OnInit {
     // this.snackBar.open(`Switched to ${newRole} role`, 'Close', {
     //   duration: 3000,
     // });
-    console.log('Role switched to:', newRole);
-    console.log('Visibility - Personal:', this.canViewPersonalInfo());
-    console.log('Visibility - Company:', this.canViewCompanyDetails());
-    console.log('Visibility - Certification:', this.canViewCertification());
-    console.log('Visibility - Trade:', this.canViewTradeSupplier());
-    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
-    console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
   // TODO: Implement these methods based on user roles once development complete

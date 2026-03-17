@@ -252,7 +252,8 @@
 
         <!-- ── REGISTER BUTTON ─────────────────────────────────── -->
         <button
-          class="submit-btn"
+          mat-button
+          class="btn btn-primary"
           type="submit"
           [disabled]="registrationForm.invalid || isLoading"
         >
@@ -296,6 +297,6 @@
 >
   <div class="alert-modal">
     <p>{{ alertMessage }}</p>
-    <button class="submit-btn" type="button" (click)="closeAlert()">OK</button>
+    <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
   </div>
 </div>

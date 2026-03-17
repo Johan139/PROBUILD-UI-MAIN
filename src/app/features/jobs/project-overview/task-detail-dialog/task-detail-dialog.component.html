@@ -130,13 +130,13 @@
       </span>
     </div>
     <div class="footer-right">
-      <button mat-stroked-button (click)="toggleEdit()" *ngIf="data.isOwner">
+      <button mat-button class="btn btn-secondary" type="button" (click)="toggleEdit()" *ngIf="data.isOwner">
         {{ editMode ? 'Cancel' : 'Edit' }}
       </button>
-      <button mat-flat-button color="primary" class="save-btn" (click)="save()" *ngIf="editMode">
+      <button mat-button class="btn btn-primary" type="button" (click)="save()" *ngIf="editMode">
         Save Changes
       </button>
-      <button mat-stroked-button (click)="close()" *ngIf="!editMode">
+      <button mat-button class="btn btn-secondary" type="button" (click)="close()" *ngIf="!editMode">
         Close
       </button>
     </div>

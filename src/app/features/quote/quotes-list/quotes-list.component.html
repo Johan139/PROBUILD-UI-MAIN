@@ -15,8 +15,8 @@
 
   <button
     *ngIf="!isInboundView"
-    mat-raised-button
-    class="btn-primary"
+    mat-button
+    class="btn btn-primary"
     (click)="redirectToQuote()"
   >
     <mat-icon>add</mat-icon>
@@ -184,8 +184,8 @@
 
           <button
             *ngIf="!isInboundView"
-            mat-stroked-button
-            class="reminder"
+            mat-button
+            class="btn btn-ghost reminder"
             (click)="sendReminder(q.id); $event.stopPropagation()"
           >
             Send Reminder
@@ -289,8 +289,8 @@
 
       <button
         *ngIf="!isInboundView"
-        mat-raised-button
-        color="primary"
+        mat-button
+        class="btn btn-primary"
         (click)="isInvoiceView ? redirectToInvoice() : redirectToQuote()"
       >
         <mat-icon>add</mat-icon>

@@ -12,7 +12,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { ViewChild } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -39,7 +38,6 @@ interface BidTargetTradePackage {
     MatButtonModule,
     MatProgressBarModule,
     MatSelectModule,
-    PdfViewerComponent,
     MatDialogModule,
   ],
 })

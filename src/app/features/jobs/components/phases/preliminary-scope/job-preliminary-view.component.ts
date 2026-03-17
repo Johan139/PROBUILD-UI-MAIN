@@ -297,7 +297,7 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
   }
 
   handleDownloadPdf(type: string) {
-    console.log(`Download ${type}`);
+    void type;
   }
 
   openReportDialog(): void {
@@ -525,7 +525,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
 
     this.quoteService.saveDraft(quoteDto).subscribe({
     next: (res: any) => {
-      console.log('Quote generated response:', res);
       this.quoteGenerated = true;
       // Handle PascalCase or camelCase
       this.generatedQuoteId = res.quoteId || res.QuoteId;
@@ -547,7 +546,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
   }
 
   viewQuote() {
-    console.log('Viewing quote ID:', this.generatedQuoteId);
     if (this.generatedQuoteId) {
       const url = this.router.serializeUrl(
         this.router.createUrlTree(['/quote'], {

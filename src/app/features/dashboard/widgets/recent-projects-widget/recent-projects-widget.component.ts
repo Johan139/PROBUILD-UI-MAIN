@@ -99,14 +99,8 @@ export class RecentProjectsWidgetComponent {
 
         this.projects = this.projects.filter((p) => {
           const projectJobId = Number(p.jobId);
-          const matches = projectJobId !== jobId;
-          console.log(`Comparing ${projectJobId} !== ${jobId} = ${matches}`);
-          return matches;
+          return projectJobId !== jobId;
         });
-
-        console.log(
-          `Projects filtered: ${beforeLength} -> ${this.projects.length}`,
-        );
 
         // Reset carousel index if needed to prevent empty view
         if (this.currentIndex >= this.projects.length - 2) {

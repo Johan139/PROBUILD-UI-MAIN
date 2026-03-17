@@ -38,62 +38,21 @@ import { JobsService } from '../services/jobs.service';
                   {{ doc.type }} - {{ doc.size | filesize }}
                 </span>
               </div>
-              <button class="view-btn" mat-button (click)="viewDocument(doc)">
+              <button mat-button class="btn btn-ghost" type="button" (click)="viewDocument(doc)">
                 View
               </button>
             </div>
           </div>
         </div>
       </mat-dialog-content>
-      <mat-dialog-actions>
-        <button class="submit-btn" mat-raised-button (click)="close()">
-          Cancel
-        </button>
-        <button
-          class="submit-btn"
-          mat-flat-button
-          color="primary"
-          (click)="close()"
-        >
-          Continue
-        </button>
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button class="btn btn-secondary" type="button" (click)="close()">Cancel</button>
+        <button mat-button class="btn btn-primary" type="button" (click)="close()">Continue</button>
       </mat-dialog-actions>
     </div>
   `,
   styles: [
     `
-      .submit-btn {
-        background: #fbd008;
-        border-radius: 10px;
-        padding: 0 16px;
-        font-weight: 500;
-        color: #000000;
-        margin: 0 0.5rem;
-      }
-
-      .submit-btn:hover {
-        background: #e6bf00;
-      }
-
-      .view-btn {
-        background-color: #fbd008;
-        color: #000000;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        padding: 0;
-        line-height: 40px;
-        text-align: center;
-        margin-left: 1rem;
-        box-shadow: none;
-        border: none;
-      }
-
-      .view-btn:hover {
-        background-color: #e6bf00;
-      }
-
       .document-meta {
         font-size: 0.85rem;
         color: #333333;

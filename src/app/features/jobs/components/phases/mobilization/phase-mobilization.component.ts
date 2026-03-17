@@ -1286,6 +1286,16 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
     return String(trade.estimatedDuration || '').trim() || 'TBD';
   }
 
+  getTradeContractValue(trade: TradePackage): number {
+    const contact = this.getTradeContact(trade);
+    if (contact) {
+      return Number(contact.amount || 0);
+    }
+
+    const fallback = (trade.totalBudget ?? trade.budget) ?? 0;
+    return Number(fallback || 0);
+  }
+
   getTradeContact(trade: TradePackage): {
     company: string;
     contact: string;
