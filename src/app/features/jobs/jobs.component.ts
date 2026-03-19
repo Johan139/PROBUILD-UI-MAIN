@@ -2021,8 +2021,17 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onAnalysisComplete() {
-      // After initiation analysis, the next intended screen is always Scope Review.
-      // Update status first; updateJobStatus will refresh job details and set stage from backend.
+      const jobId = Number(this.projectDetails?.jobId);
+      if (!Number.isFinite(jobId)) {
+        this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
+          duration: 3000,
+        });
+        return;
+      }
+
+      this.projectStage = 'PRELIMINARY_SCOPE';
+      this.stageDisplayMode = 'stage';
+
       this.updateJobStatus('PRELIMINARY_SCOPE');
   }
 

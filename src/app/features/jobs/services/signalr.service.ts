@@ -28,6 +28,7 @@ export class SignalrService {
   public uploadComplete = new Subject<number>();
   public analysisProgress = new Subject<AnalysisProgressUpdate>();
   public analysisData = new Subject<any>();
+  public analysisEmailSent = new Subject<number>();
   private pingInterval: any;
 
   constructor(private authService: AuthService, private http: HttpClient) {}
@@ -153,6 +154,14 @@ export class SignalrService {
 
     this.hubConnection.on('ReceiveAnalysisData', (data: any) => {
       this.analysisData.next(data);
+    });
+
+    this.hubConnection.on('AnalysisEmailSent', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+      this.analysisEmailSent.next(jobId);
     });
   }
 
