@@ -624,6 +624,13 @@ export class ProjectOverviewComponent {
       this.spentToDate = Number(
         this.projectDetails?.actualCost || this.projectDetails?.spentToDate || 0,
       );
+      // If no detailed budget line-items exist yet, use the best-known overall budget.
+      // Keep activeValue in sync so the hero card doesn't drop to $0.
+      const fallbackBudget = this.overallBudgetValue;
+      if (fallbackBudget > 0) {
+        this.activeValue = fallbackBudget;
+      }
+
       this.remainingBudget = this.overallBudgetValue - this.spentToDate;
       this.calculateProfitMetrics();
       return;
@@ -717,7 +724,28 @@ export class ProjectOverviewComponent {
   }
 
   get overallBudgetValue(): number {
-    return this.totalProjectCost > 0 ? this.totalProjectCost : this.activeValue;
+    const directTotal = Number(this.totalProjectCost || 0);
+    if (directTotal > 0) return directTotal;
+
+    const fromActive = Number(this.activeValue || 0);
+    if (fromActive > 0) return fromActive;
+
+    const details: any = this.projectDetails as any;
+    const fromProjectDetails = Number(
+      details?.budget ||
+        details?.projectBudget ||
+        details?.totalProjectCost ||
+        details?.suggestedBid ||
+        details?.suggestedMarketBid ||
+        details?.costAnalysis?.suggestedBid ||
+        details?.costAnalysis?.suggestedMarketBid ||
+        0,
+    );
+    if (fromProjectDetails > 0) return fromProjectDetails;
+
+    // As a last resort, use the bid price if we have it.
+    const fromBid = Number(this.bidPrice || 0);
+    return fromBid > 0 ? fromBid : 0;
   }
 
   get overallRemainingBudget(): number {

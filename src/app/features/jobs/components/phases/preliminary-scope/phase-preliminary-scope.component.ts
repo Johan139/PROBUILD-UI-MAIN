@@ -54,6 +54,8 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   @Input() stageDisplayMode: 'stage' | 'live' = 'stage';
   @Input() canUseLiveStageView = true;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
+  @Input() scopeCostSummary: any = null;
+  @Input() scopeTotalProjectCost: number | null = null;
   @Input() timelineGroups: TimelineGroup[] = [];
   @Input() constructionPhaseGroups: any[] = [];
   @Input() blueprintFiles: UploadedFileInfo[] = [];
@@ -183,7 +185,6 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     if (!jobId || jobId === this.lastLoadedJobId) return;
 
     this.isSummaryLoading = true;
-    this.lastLoadedJobId = jobId;
 
     try {
       const [summary, cost, blueprint, job, client] = await Promise.all([
@@ -199,12 +200,15 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
       this.loadedBlueprintIntelligence = blueprint;
       this.loadedJob = job;
       this.loadedClient = client;
+      this.lastLoadedJobId = jobId;
     } catch {
       this.loadedExecutiveSummary = null;
       this.loadedCostSummary = null;
       this.loadedBlueprintIntelligence = null;
       this.loadedJob = null;
       this.loadedClient = null;
+      // Allow retry on the next change detection / re-entry.
+      this.lastLoadedJobId = null;
     } finally {
       this.isSummaryLoading = false;
     }
@@ -267,9 +271,28 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   }
 
   get overallBudgetValue(): number {
-    const totalProjectCost = Number(this.loadedCostSummary?.suggestedBid || 0);
+    const fromParent = Number(this.scopeTotalProjectCost || 0);
+    if (fromParent > 0) return fromParent;
+
+    const totalProjectCost = Number(
+      this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0,
+    );
     if (totalProjectCost > 0) return totalProjectCost;
-    return Number(this.projectDetails?.budget || this.projectDetails?.projectBudget || 0);
+
+    const details: any = this.projectDetails as any;
+    const fromProjectDetails = Number(
+      details?.budget ||
+        details?.projectBudget ||
+        details?.totalProjectCost ||
+        details?.totalBudget ||
+        details?.estimatedBudget ||
+        details?.suggestedBid ||
+        details?.suggestedMarketBid ||
+        details?.costAnalysis?.suggestedBid ||
+        details?.costAnalysis?.suggestedMarketBid ||
+        0,
+    );
+    return fromProjectDetails > 0 ? fromProjectDetails : 0;
   }
 
   get spentToDate(): number {

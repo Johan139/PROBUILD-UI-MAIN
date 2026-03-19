@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  TemplateRef,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PhaseNavigationHeaderComponent, PhaseReportRequestType } from '../shared/phase-navigation-header.component';
 import { BomService } from '../../../services/bom.service';
@@ -72,8 +81,10 @@ interface BomSection {
   templateUrl: './phase-detailed-takeoff.component.html',
   styleUrl: './phase-detailed-takeoff.component.scss',
 })
-export class PhaseDetailedTakeoffComponent implements OnInit {
+export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestroy {
   @Input() projectDetails: any;
+  @Input() scopeCostSummary: any = null;
+  @Input() scopeTotalProjectCost: number | null = null;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
   @Input() isReportLoading = false;
   @Input() showEnvironmentalReport = true;
@@ -167,6 +178,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     private router: Router,
     private snackBar: MatSnackBar,
   ) {}
+
+  ngOnDestroy(): void {
+    // No-op
+  }
 
   ngOnInit(): void {
     if (!this.projectDetails?.jobId) {
@@ -399,9 +414,28 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   }
 
   get overallBudgetValue(): number {
-    const totalProjectCost = Number(this.loadedCostSummary?.suggestedBid || 0);
+    const fromParent = Number(this.scopeTotalProjectCost || 0);
+    if (fromParent > 0) return fromParent;
+
+    const totalProjectCost = Number(
+      this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0,
+    );
     if (totalProjectCost > 0) return totalProjectCost;
-    return Number(this.projectDetails?.budget || this.projectDetails?.projectBudget || 0);
+
+    const details: any = this.projectDetails as any;
+    const fromProjectDetails = Number(
+      details?.budget ||
+        details?.projectBudget ||
+        details?.totalProjectCost ||
+        details?.totalBudget ||
+        details?.estimatedBudget ||
+        details?.suggestedBid ||
+        details?.suggestedMarketBid ||
+        details?.costAnalysis?.suggestedBid ||
+        details?.costAnalysis?.suggestedMarketBid ||
+        0,
+    );
+    return fromProjectDetails > 0 ? fromProjectDetails : 0;
   }
 
   get spentToDate(): number {
@@ -599,10 +633,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
 
   private async loadOverviewData(): Promise<void> {
     const jobId = String(this.projectDetails?.jobId || this.projectDetails?.id || '').trim();
-    if (!jobId || jobId === this.lastLoadedOverviewJobId) return;
+    if (!jobId || jobId === this.lastLoadedJobId) return;
 
     this.isSummaryLoading = true;
-    this.lastLoadedOverviewJobId = jobId;
 
     try {
       const [summary, cost, blueprint, job, client] = await Promise.all([
@@ -618,12 +651,14 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
       this.loadedBlueprintIntelligence = blueprint;
       this.loadedJob = job;
       this.loadedClient = client;
+      this.lastLoadedJobId = jobId;
     } catch {
       this.loadedExecutiveSummary = null;
       this.loadedCostSummary = null;
       this.loadedBlueprintIntelligence = null;
       this.loadedJob = null;
       this.loadedClient = null;
+      this.lastLoadedJobId = null;
     } finally {
       this.isSummaryLoading = false;
     }
