@@ -116,9 +116,43 @@ export class JobParserService {
       const lines = report.split('\n');
       let tableStarted = false;
       let currentPhase = '';
+      let inTimelineSection = false;
+      let timelinePromptNumber: number | null = null;
 
       for (const line of lines) {
         const trimmedLine = line.trim();
+
+        if (!inTimelineSection) {
+          const timelineHeadingMatch = trimmedLine.match(
+            /^###\s*Phase\s+(\d+)\s*:\s*Timeline\b/i,
+          );
+          if (timelineHeadingMatch) {
+            inTimelineSection = true;
+            timelinePromptNumber = Number(timelineHeadingMatch[1]);
+          }
+        }
+
+        if (!inTimelineSection) {
+          continue;
+        }
+
+        if (
+          trimmedLine.toLowerCase().startsWith('ready for the next prompt') &&
+          (timelinePromptNumber === null ||
+            trimmedLine.includes(String(timelinePromptNumber)))
+        ) {
+          break;
+        }
+
+        // If a new phase section starts after we began parsing the timeline table, stop.
+        if (tableStarted && /^###\s*Phase\s+\d+\s*:/i.test(trimmedLine)) {
+          break;
+        }
+
+        // Hard stop if we hit the next output section after timeline
+        if (tableStarted && /^###\s*\*{0,2}Output\b/i.test(trimmedLine)) {
+          break;
+        }
 
         if (trimmedLine.startsWith('| Phase | Task |')) {
           tableStarted = true;
@@ -162,7 +196,10 @@ export class JobParserService {
           continue;
         }
 
-        const duration = parseInt(durationStr, 10) || 0;
+        const duration = this.parseDurationDays(durationStr);
+        if (duration === null) {
+          continue;
+        }
 
         let endDate = this.parseDate(endDateStr);
         let startDate = this.parseDate(startDateStr);
@@ -172,6 +209,10 @@ export class JobParserService {
           startDate.setDate(endDate.getDate() - duration);
         } else if (!startDate && endDate) {
           startDate = endDate;
+        }
+
+        if (!startDate || !endDate) {
+          continue;
         }
 
         if (!taskGroupMap.has(currentPhase)) {
@@ -198,20 +239,43 @@ export class JobParserService {
       const lines = report.split('\n');
       let tableStarted = false;
       const headerRegex =
-        /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration \(Workdays\)\s*\|/;
+        /\|\s*Phase\s*\|\s*Task\s*\|\s*Duration(?:\s*\((?:Workdays|Days)\))?\s*\|/i;
       let currentPhase = '';
       let inTimelineSection = false;
+      let timelinePromptNumber: number | null = null;
 
       for (const line of lines) {
         const trimmedLine = line.trim();
 
-        if (trimmedLine.includes('### Phase 22: Timeline')) {
-          inTimelineSection = true;
+        if (!inTimelineSection) {
+          const timelineHeadingMatch = trimmedLine.match(
+            /^###\s*Phase\s+(\d+)\s*:\s*Timeline\b/i,
+          );
+          if (timelineHeadingMatch) {
+            inTimelineSection = true;
+            timelinePromptNumber = Number(timelineHeadingMatch[1]);
+          }
         }
 
         if (!inTimelineSection) continue;
 
-        if (trimmedLine.startsWith('Ready for the next prompt 22')) break;
+        if (
+          trimmedLine.toLowerCase().startsWith('ready for the next prompt') &&
+          (timelinePromptNumber === null ||
+            trimmedLine.includes(String(timelinePromptNumber)))
+        ) {
+          break;
+        }
+
+        // If a new section starts after we began parsing the timeline table, stop.
+        if (tableStarted && /^###\s*Phase\s+\d+\s*:/i.test(trimmedLine)) {
+          break;
+        }
+
+        // Hard stop if we hit the next output section after timeline
+        if (tableStarted && /^###\s*\*{0,2}Output\b/i.test(trimmedLine)) {
+          break;
+        }
 
         if (!tableStarted && headerRegex.test(trimmedLine)) {
           tableStarted = true;
@@ -265,11 +329,22 @@ export class JobParserService {
           return date.toISOString().split('T')[0];
         };
 
+        const parsedDuration = this.parseDurationDays(duration);
+        if (parsedDuration === null) {
+          continue;
+        }
+
+        const formattedStart = formatDateString(startDate);
+        const formattedEnd = formatDateString(endDate);
+        if (!formattedStart || !formattedEnd) {
+          continue;
+        }
+
         taskGroupMap.get(currentPhase)?.push({
           task: this.cleanTaskName(taskName),
-          days: parseInt(duration, 10) || 0,
-          startDate: formatDateString(startDate),
-          endDate: formatDateString(endDate),
+          days: parsedDuration,
+          startDate: formattedStart,
+          endDate: formattedEnd,
           status: 'Pending',
           cost,
           deleted: false,
@@ -278,7 +353,11 @@ export class JobParserService {
       }
     }
 
-    return Array.from(taskGroupMap.entries()).map(([title, subtasks]) => {
+    if (taskGroupMap.size === 0) {
+      return [];
+    }
+
+    const groups = Array.from(taskGroupMap.entries()).map(([title, subtasks]) => {
       const completedCount = subtasks.filter(
         (s) => s.status && s.status.toLowerCase() === 'completed',
       ).length;
@@ -294,6 +373,8 @@ export class JobParserService {
         progress,
       };
     });
+
+    return this.enrichConstructionPhaseSubtasks(groups);
   }
 
   // ================================
@@ -389,6 +470,60 @@ export class JobParserService {
 
   private formatDateToYYYYMMDD(date: Date): string {
     return date.toISOString().split('T')[0];
+  }
+
+  private enrichConstructionPhaseSubtasks(groups: GroupedSubtask[]): GroupedSubtask[] {
+    if (!Array.isArray(groups) || groups.length === 0) {
+      return groups;
+    }
+
+    const isInvalidGroupTitle = (title: string) => {
+      const t = (title || '').trim().toLowerCase();
+      if (!t) return true;
+
+      // day buckets from daily plan / prompt artifacts
+      if (t === 'project day') return true;
+      if (/^day\s*\d+\b/.test(t)) return true;
+      if (/^days\s*\d+\s*-\s*\d+\b/.test(t)) return true;
+      if (/\bready for the next prompt\b/.test(t)) return true;
+
+      // common non-phase item names that should never become "phase" groups
+      const looksLikeMaterialItem =
+        t.includes('cabinet') ||
+        t.includes('tile') ||
+        t.includes('quartz') ||
+        t.includes('shower') ||
+        t.includes('door') ||
+        t.includes('vinyl');
+      if (looksLikeMaterialItem) return true;
+
+      return false;
+    };
+
+    return groups.filter((g) => !isInvalidGroupTitle(g?.title));
+  }
+
+  private parseDurationDays(durationStr: string | undefined | null): number | null {
+    const raw = String(durationStr ?? '').trim();
+    if (!raw) {
+      return null;
+    }
+
+    const match = raw.match(/\d{1,4}/);
+    if (!match) {
+      return null;
+    }
+
+    const value = Number(match[0]);
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+
+    if (value <= 0 || value > 365) {
+      return null;
+    }
+
+    return value;
   }
 
   private cleanTaskName(name: string): string {

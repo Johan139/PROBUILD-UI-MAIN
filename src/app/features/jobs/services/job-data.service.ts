@@ -72,6 +72,28 @@ export class JobDataService {
     );
   }
 
+  private isCorruptSubtasksPayload(data: RawSubtask[]): boolean {
+    if (!Array.isArray(data) || data.length === 0) {
+      return true;
+    }
+
+    const normalize = (v: any) => String(v ?? '').trim().toLowerCase();
+    const isBadTitle = (title: string) => {
+      const t = normalize(title);
+      if (!t) return true;
+      if (t === 'project day') return true;
+      if (/^day\s*\d+\b/.test(t)) return true;
+      if (/^days\s*\d+\s*-\s*\d+\b/.test(t)) return true;
+      return false;
+    };
+
+    const badTitleCount = data.filter((s) => isBadTitle((s as any)?.groupTitle)).length;
+    const hugeDaysCount = data.filter((s) => Number((s as any)?.days) > 365).length;
+
+    // If most tasks look like day buckets OR many tasks have impossible durations, treat as corrupt.
+    return badTitleCount / data.length > 0.25 || hugeDaysCount / data.length > 0.1;
+  }
+
   fetchJobData(projectDetails: any) {
     return this.loadJobDataFlow(projectDetails);
   }
@@ -111,8 +133,16 @@ export class JobDataService {
         result.markdown,
       );
 
-      this.store.setState({ subtaskGroups: parsedGroups });
-      this.jobCache.set(subtasksStorageKey, parsedGroups);
+      const hasParsedSubtasks =
+        Array.isArray(parsedGroups) &&
+        parsedGroups.some(
+          (g: any) => Array.isArray(g?.subtasks) && g.subtasks.length > 0,
+        );
+
+      if (hasParsedSubtasks) {
+        this.store.setState({ subtaskGroups: parsedGroups });
+        this.jobCache.set(subtasksStorageKey, parsedGroups);
+      }
 
       const materialGroups = this.jobParser.extractMaterialGroups(
         result.markdown,
@@ -218,7 +248,7 @@ export class JobDataService {
   private loadSubtasksOrBom(jobId: number): Observable<JobLoadResult> {
     return this.jobsService.getJobSubtasks(jobId).pipe(
       switchMap((data: RawSubtask[]) => {
-        if (!data || data.length === 0) {
+        if (!data || data.length === 0 || this.isCorruptSubtasksPayload(data)) {
           return this.fetchBom(jobId.toString());
         }
 
