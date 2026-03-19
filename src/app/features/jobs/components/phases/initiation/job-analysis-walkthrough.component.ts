@@ -25,10 +25,12 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   completedSteps: AnalysisStep[] = [];
   expandedSections: string[] = ['metadata'];
   statusMessage: string = 'Initializing analysis...';
+  emailSent: boolean = false;
 
   private signalRSubscription: Subscription | null = null;
   private analysisDataSubscription: Subscription | null = null;
   private analysisStatePollingSubscription: Subscription | null = null;
+  private analysisEmailSentSubscription: Subscription | null = null;
 
   FileText = FileText;
   Home = Home;
@@ -118,6 +120,13 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.analysisEmailSentSubscription = this.signalrService.analysisEmailSent.subscribe((jobId: number) => {
+      if (jobId === this.jobId) {
+        this.emailSent = true;
+        this.cdr.detectChanges();
+      }
+    });
+
     this.analysisDataSubscription = this.signalrService.analysisData.subscribe((update: any) => {
       if (update && update.jobId === this.jobId) {
         this.updateData(update.dataType, update.data);
@@ -131,6 +140,18 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
         this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
           if (!state) {
             return;
+          }
+
+          const extractedDataJson = state.extractedDataJson ?? state.ExtractedDataJson;
+          if (!this.emailSent && extractedDataJson) {
+            try {
+              const data = JSON.parse(extractedDataJson);
+              if (data?.emailSent === true) {
+                this.emailSent = true;
+              }
+            } catch {
+              // ignore parse errors; keep polling
+            }
           }
 
           const statusMessage = state.statusMessage ?? state.StatusMessage ?? this.statusMessage;
@@ -181,6 +202,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     if (extractedDataJson) {
       try {
         const data = JSON.parse(extractedDataJson);
+        if (data.emailSent === true) {
+          this.emailSent = true;
+        }
         if (data.metadata) this.metadata = data.metadata;
         if (data.rooms) this.rooms = data.rooms;
         if (data.zoning) this.zoningData = data.zoning;
@@ -236,6 +260,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     if (this.analysisStatePollingSubscription) {
       this.analysisStatePollingSubscription.unsubscribe();
     }
+    if (this.analysisEmailSentSubscription) {
+      this.analysisEmailSentSubscription.unsubscribe();
+    }
   }
 
   handleProgressUpdate(update: AnalysisProgressUpdate) {
@@ -253,7 +280,11 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       this.analysisProgress = 100;
       this.completedSteps = this.analysisSteps.map(s => s.id as AnalysisStep);
 
-      if (this.analysisStatePollingSubscription) {
+      // Do NOT stop polling immediately on completion.
+      // The completion email can be sent slightly later, and if the SignalR
+      // AnalysisEmailSent event is missed, polling is the fallback that sets
+      // emailSent from persisted ExtractedDataJson.
+      if (this.emailSent && this.analysisStatePollingSubscription) {
         this.analysisStatePollingSubscription.unsubscribe();
         this.analysisStatePollingSubscription = null;
       }

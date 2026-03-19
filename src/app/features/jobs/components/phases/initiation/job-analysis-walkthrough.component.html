@@ -2,7 +2,7 @@
   <!-- Progress Header -->
   <div class="progress-card">
     <button
-      *ngIf="currentStep === 'complete'"
+      *ngIf="currentStep === 'complete' && emailSent"
       type="button"
       class="continue-btn proceed-top-right"
       (click)="onContinue()"

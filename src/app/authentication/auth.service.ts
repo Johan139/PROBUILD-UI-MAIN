@@ -141,7 +141,12 @@ export class AuthService {
     if (expiration < Date.now()) {
       // console.log('Access token expired, attempting to refresh...');
       try {
-        await firstValueFrom(this.refreshToken());
+        await Promise.race([
+          firstValueFrom(this.refreshToken()),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Refresh token timeout')), 1500),
+          ),
+        ]);
         const newToken = localStorage.getItem('accessToken');
         if (newToken) this.loadUserFromToken(newToken);
       } catch (err) {
