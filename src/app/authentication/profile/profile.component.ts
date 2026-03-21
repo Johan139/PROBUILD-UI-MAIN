@@ -1,6 +1,5 @@
 import {
   Component,
-  ElementRef,
   Inject,
   OnInit,
   PLATFORM_ID,
@@ -20,7 +19,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ProfileService } from './profile.service';
 import { AuthService } from '../../authentication/auth.service';
-import { Profile, TeamMember, Document, UserAddress } from './profile.model';
+import { Profile, TeamMember, UserAddress } from './profile.model';
 import { userTypes } from '../../data/user-types';
 import { TeamManagementService } from '../../services/team-management.service';
 import {
@@ -48,7 +47,6 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import {
-  PaymentIntentRequest,
   StripeService,
 } from '../../services/StripeService';
 import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
@@ -61,8 +59,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { JobsService } from '../../services/jobs.service';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { PaymentPromptDialogComponent } from '../registration/payment-prompt-dialog.component';
 import { SharedModule } from '../../shared/shared.module';
+import { LucideIconsModule } from '../../shared/lucide-icons.module';
 import { ManagePermissionsDialogComponent } from '../../shared/dialogs/manage-permissions-dialog/manage-permissions-dialog.component';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -73,7 +71,6 @@ import { combineLatest, Observable, of } from 'rxjs';
 import { startWith, map, switchMap } from 'rxjs/operators';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
-import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 import { UserAddressStoreService } from '../../services/UserAddressStoreService';
 import { CompanyService } from '../../services/company.service';
 import { GooglePlacesService } from '../../services/google-places.service';
@@ -110,6 +107,41 @@ export type ActiveMap = Record<
   string,
   { subscriptionId: string; packageLabel?: string }
 >;
+
+type SettingsTab =
+  | 'profile'
+  | 'company'
+  | 'team'
+  | 'documents'
+  | 'subscriptions'
+  | 'appearance'
+  | 'measurements'
+  | 'construction'
+  | 'notifications'
+  | 'language'
+  | 'advanced';
+
+interface SettingsNavItem {
+  id: SettingsTab;
+  label: string;
+  group: 'Account' | 'Preferences' | 'Premium';
+  icon: string;
+}
+
+interface CertDocumentItem {
+  id: number;
+  name: string;
+  type: 'License' | 'Certification' | 'Insurance' | 'Bond' | 'Permit' | 'Other';
+  issuer: string;
+  number: string;
+  expirationDate: string;
+  status: 'Active' | 'Expiring' | 'Expired';
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -139,11 +171,751 @@ export type ActiveMap = Record<
     NgForOf,
     NgIf,
     SharedModule,
+    LucideIconsModule,
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })
 export class ProfileComponent implements OnInit {
+  activeTab: SettingsTab = 'profile';
+  saveToast = false;
+  hasSettingsChanges = false;
+  settingsGroups: Array<'Account' | 'Preferences' | 'Premium'> = [
+    'Account',
+    'Preferences',
+    'Premium',
+  ];
+  settingsNavItems: SettingsNavItem[] = [
+    { id: 'profile', label: 'Profile', group: 'Account', icon: 'user' },
+    { id: 'company', label: 'Company Profile', group: 'Account', icon: 'building-2' },
+    { id: 'team', label: 'Team Members', group: 'Account', icon: 'users' },
+    {
+      id: 'documents',
+      label: 'Certifications & Licenses',
+      group: 'Account',
+      icon: 'shield',
+    },
+    { id: 'subscriptions', label: 'Subscription', group: 'Account', icon: 'briefcase' },
+    { id: 'appearance', label: 'Appearance', group: 'Preferences', icon: 'sun' },
+    { id: 'measurements', label: 'Measurements', group: 'Preferences', icon: 'ruler' },
+    { id: 'construction', label: 'Construction', group: 'Preferences', icon: 'hard-hat' },
+    { id: 'notifications', label: 'Notifications', group: 'Preferences', icon: 'bell' },
+    { id: 'language', label: 'Language', group: 'Preferences', icon: 'map-pin' },
+    { id: 'advanced', label: 'Advanced', group: 'Premium', icon: 'zap' },
+  ];
+
+  // Demo parity state (front-end placeholders where backend does not exist yet)
+  demoUserType = 'General Contractor';
+  demoTrade = '';
+  demoSupplierType = '';
+  demoProductsOffered = 'Other';
+  demoDevelopmentType = '';
+  demoOperatingRegion = '';
+  demoJobPreferences = '';
+  demoNotificationRadius = '100';
+  openTeamMenuId: string | null = null;
+  subBilling: 'monthly' | 'annually' = 'monthly';
+  selectedPlan: 'starter' | 'professional' | 'enterprise' = 'professional';
+  themeMode: 'light' | 'dark' | 'auto' = 'dark';
+  uiDensity: 'compact' | 'comfortable' | 'expanded' = 'comfortable';
+  measurementSystem: 'imperial' | 'metric' = 'imperial';
+  temperatureUnit: 'fahrenheit' | 'celsius' = 'fahrenheit';
+  areaUnit: 'ft²' | 'm²' = 'ft²';
+  volumeUnit: 'ft³' | 'm³' = 'ft³';
+  blueprintZoom = 'fit';
+  autoSave = true;
+  defaultLanding = 'projects';
+  emailNotif = true;
+  inAppNotif = true;
+  smsNotif = false;
+  pushNotif = true;
+  bidAlerts = true;
+  timelineAlerts = true;
+  budgetAlerts = true;
+  connectionAlerts = true;
+  inviteAlerts = true;
+  appLanguage = 'en';
+  dateLocale = 'en-US';
+  docCurrency = 'USD';
+  docOutputMode: 'single' | 'dual' = 'single';
+  docOutputLanguage = 'en';
+  dualPrimaryLang = 'en';
+  dualSecondaryLang = 'es';
+  defaultMarkup = '15';
+  laborBurden = '35';
+  pricingCountry = 'us';
+  pricingRegion = 'texas';
+  docHeaderStyle: 'solid' | 'gradient' = 'solid';
+  docPrimaryColor = '#FCD109';
+  docSecondaryColor = '#1E2329';
+  docTextColor = '#FFFFFF';
+  docGradientStart = '#FCD109';
+  docGradientEnd = '#F59E0B';
+  docGradientDir: 'to right' | 'to bottom' | 'to bottom right' = 'to right';
+  docLogoUploaded = false;
+  docLogoFileName = '';
+  docShowBank = false;
+  docCompanyName = 'ProBuild Construction LLC';
+  docCompanyAddress = '1234 Main St, Austin, TX 78701';
+  docCompanyPhone = '+1 (555) 123-4567';
+  docCompanyEmail = 'billing@probuildai.com';
+  docTaxId = '';
+  docNumberPrefix = 'QUO-';
+  docInvoicePrefix = 'INV-';
+  docPaymentTerms = 'net-30';
+  docFooterNote =
+    'Thank you for your business. This quote is valid for 30 days from issue date.';
+  docBankName = '';
+  docBankAccount = '';
+  docBankRouting = '';
+
+  showUploadForm = false;
+  uploadDocCategory = '';
+  uploadDocSubType = '';
+  uploadDocName = '';
+  uploadIssuer = '';
+  uploadNumber = '';
+  uploadIssueDate = '';
+  uploadExpDate = '';
+  certDocuments: CertDocumentItem[] = [
+    {
+      id: 1,
+      name: 'General Contractor License',
+      type: 'License',
+      issuer: 'Texas Dept. of Licensing & Regulation',
+      number: 'TSCL #44210',
+      expirationDate: 'Aug 12, 2027',
+      status: 'Active',
+    },
+    {
+      id: 2,
+      name: 'General Liability Insurance',
+      type: 'Insurance',
+      issuer: 'Hartford Financial Services',
+      number: 'GL-2025-88432',
+      expirationDate: 'Jan 5, 2027',
+      status: 'Active',
+    },
+    {
+      id: 3,
+      name: 'EPA Lead-Safe Certification',
+      type: 'Certification',
+      issuer: 'U.S. Environmental Protection Agency',
+      number: 'NAT-F219856-1',
+      expirationDate: 'Jun 10, 2026',
+      status: 'Expiring',
+    },
+  ];
+
+  tradeOptions: SelectOption[] = [
+    { value: 'electrician', label: 'Electrician' },
+    { value: 'plumber', label: 'Plumber' },
+    { value: 'hvac', label: 'HVAC Technician' },
+    { value: 'carpenter', label: 'Carpenter' },
+    { value: 'roofer', label: 'Roofer' },
+    { value: 'painter', label: 'Painter' },
+    { value: 'mason', label: 'Mason / Bricklayer' },
+    { value: 'concrete', label: 'Concrete Contractor' },
+    { value: 'framer', label: 'Framer' },
+    { value: 'drywall', label: 'Drywall / Insulation' },
+    { value: 'flooring', label: 'Flooring Installer' },
+    { value: 'tile', label: 'Tile Installer' },
+    { value: 'ironworker', label: 'Ironworker' },
+    { value: 'welder', label: 'Welder' },
+    { value: 'glazier', label: 'Glazier' },
+    { value: 'landscaper', label: 'Landscaper' },
+    { value: 'excavation', label: 'Excavation Contractor' },
+    { value: 'demolition', label: 'Demolition Contractor' },
+    { value: 'fire-protection', label: 'Fire Protection Specialist' },
+    { value: 'solar', label: 'Solar Installer' },
+    { value: 'low-voltage', label: 'Low Voltage / Data' },
+    { value: 'elevator', label: 'Elevator Contractor' },
+    { value: 'waterproofing', label: 'Waterproofing Specialist' },
+    { value: 'stucco', label: 'Stucco Contractor' },
+    { value: 'siding', label: 'Siding Installer' },
+    { value: 'fencing', label: 'Fencing Contractor' },
+    { value: 'pool', label: 'Pool Contractor' },
+    { value: 'septic', label: 'Septic Systems Specialist' },
+    { value: 'paving', label: 'Paving Contractor' },
+    { value: 'cabinet', label: 'Cabinet Installer' },
+    { value: 'countertop', label: 'Countertop Installer' },
+    { value: 'window-door', label: 'Window & Door Installer' },
+    { value: 'insulation', label: 'Insulation Specialist' },
+    { value: 'acoustical', label: 'Acoustical Ceiling Specialist' },
+    { value: 'scaffolding', label: 'Scaffolding Contractor' },
+    { value: 'environmental', label: 'Environmental Remediation' },
+    { value: 'surveyor', label: 'Surveyor' },
+    { value: 'other-trade', label: 'Other Trade' },
+  ];
+
+  supplierTypeOptions: SelectOption[] = [
+    { value: 'lumber', label: 'Lumber & Building Materials' },
+    { value: 'electrical-supply', label: 'Electrical Supply' },
+    { value: 'plumbing-supply', label: 'Plumbing Supply' },
+    { value: 'hvac-supply', label: 'HVAC Supply' },
+    { value: 'concrete-supply', label: 'Concrete / Ready-Mix' },
+    { value: 'steel-metals', label: 'Steel & Metals' },
+    { value: 'roofing-supply', label: 'Roofing Supply' },
+    { value: 'insulation-supply', label: 'Insulation Supply' },
+    { value: 'flooring-supply', label: 'Flooring & Tile Supply' },
+    { value: 'doors-windows', label: 'Doors & Windows' },
+    { value: 'paint-coatings', label: 'Paint & Coatings' },
+    { value: 'aggregates', label: 'Aggregates & Bulk Materials' },
+    { value: 'safety-ppe', label: 'Safety & PPE Supplier' },
+    { value: 'tooling-fasteners', label: 'Tools & Fasteners' },
+    { value: 'equipment-rental', label: 'Equipment Rental Supplier' },
+    { value: 'other-supplier', label: 'Other Supplier' },
+  ];
+
+  productsOfferedOptions: SelectOption[] = [
+    { value: 'Materials', label: 'Materials' },
+    { value: 'Equipment', label: 'Equipment' },
+    { value: 'Tools', label: 'Tools' },
+    { value: 'Rental Equipment', label: 'Rental Equipment' },
+    { value: 'Safety Gear', label: 'Safety Gear / PPE' },
+    { value: 'Services', label: 'Services' },
+    { value: 'Other', label: 'Other' },
+  ];
+
+  developmentTypeOptions: SelectOption[] = [
+    { value: 'residential', label: 'Residential Development' },
+    { value: 'commercial', label: 'Commercial Development' },
+    { value: 'industrial', label: 'Industrial Development' },
+    { value: 'mixed', label: 'Mixed-Use Development' },
+    { value: 'land', label: 'Land Development' },
+    { value: 'infrastructure', label: 'Infrastructure' },
+  ];
+
+  serviceAreaOptions: SelectOption[] = [
+    { value: 'local', label: 'Local (50 miles)' },
+    { value: 'regional', label: 'Regional (200 miles)' },
+    { value: 'statewide', label: 'Statewide' },
+    { value: 'national', label: 'National' },
+    { value: 'international', label: 'International' },
+  ];
+
+  availabilityLeadTimeOptions: SelectOption[] = [
+    { value: 'immediate', label: 'Immediately Available' },
+    { value: '1-week', label: 'Starting in 1 Week' },
+    { value: '2-weeks', label: 'Starting in 2 Weeks' },
+    { value: '1-month', label: 'Starting in 1 Month+' },
+  ];
+
+  languageOptions: SelectOption[] = [
+    { value: 'af', label: 'Afrikaans' },
+    { value: 'sq', label: 'Shqip (Albanian)' },
+    { value: 'am', label: 'አማርኛ (Amharic)' },
+    { value: 'ar', label: 'العربية (Arabic)' },
+    { value: 'hy', label: 'Հայերեն (Armenian)' },
+    { value: 'az', label: 'Azərbaycanca (Azerbaijani)' },
+    { value: 'eu', label: 'Euskara (Basque)' },
+    { value: 'be', label: 'Беларуская (Belarusian)' },
+    { value: 'bn', label: 'বাংলা (Bengali)' },
+    { value: 'bs', label: 'Bosanski (Bosnian)' },
+    { value: 'bg', label: 'Български (Bulgarian)' },
+    { value: 'my', label: 'မြန်မာဘာသာ (Burmese)' },
+    { value: 'ca', label: 'Català (Catalan)' },
+    { value: 'zh', label: '中文 (Chinese - Simplified)' },
+    { value: 'zh-tw', label: '中文繁體 (Chinese - Traditional)' },
+    { value: 'hr', label: 'Hrvatski (Croatian)' },
+    { value: 'cs', label: 'Čeština (Czech)' },
+    { value: 'da', label: 'Dansk (Danish)' },
+    { value: 'nl', label: 'Nederlands (Dutch)' },
+    { value: 'en', label: 'English' },
+    { value: 'et', label: 'Eesti (Estonian)' },
+    { value: 'tl', label: 'Filipino (Tagalog)' },
+    { value: 'fi', label: 'Suomi (Finnish)' },
+    { value: 'fr', label: 'Français (French)' },
+    { value: 'gl', label: 'Galego (Galician)' },
+    { value: 'ka', label: 'ქართული (Georgian)' },
+    { value: 'de', label: 'Deutsch (German)' },
+    { value: 'el', label: 'Ελληνικά (Greek)' },
+    { value: 'gu', label: 'ગુજરાતી (Gujarati)' },
+    { value: 'ha', label: 'Hausa' },
+    { value: 'he', label: 'עברית (Hebrew)' },
+    { value: 'hi', label: 'हिन्दी (Hindi)' },
+    { value: 'hu', label: 'Magyar (Hungarian)' },
+    { value: 'is', label: 'Íslenska (Icelandic)' },
+    { value: 'ig', label: 'Igbo' },
+    { value: 'id', label: 'Bahasa Indonesia (Indonesian)' },
+    { value: 'it', label: 'Italiano (Italian)' },
+    { value: 'ja', label: '日本語 (Japanese)' },
+    { value: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+    { value: 'kk', label: 'Қазақ (Kazakh)' },
+    { value: 'km', label: 'ខ្មែរ (Khmer)' },
+    { value: 'ko', label: '한국어 (Korean)' },
+    { value: 'lv', label: 'Latviešu (Latvian)' },
+    { value: 'lt', label: 'Lietuvių (Lithuanian)' },
+    { value: 'mk', label: 'Македонски (Macedonian)' },
+    { value: 'ms', label: 'Bahasa Melayu (Malay)' },
+    { value: 'ml', label: 'മലയാളം (Malayalam)' },
+    { value: 'mt', label: 'Malti (Maltese)' },
+    { value: 'mr', label: 'मराठी (Marathi)' },
+    { value: 'mn', label: 'Монгол (Mongolian)' },
+    { value: 'ne', label: 'नेपाली (Nepali)' },
+    { value: 'no', label: 'Norsk (Norwegian)' },
+    { value: 'ps', label: 'پښتو (Pashto)' },
+    { value: 'fa', label: 'فارسی (Persian / Farsi)' },
+    { value: 'pl', label: 'Polski (Polish)' },
+    { value: 'pt', label: 'Português (Portuguese)' },
+    { value: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
+    { value: 'ro', label: 'Română (Romanian)' },
+    { value: 'ru', label: 'Русский (Russian)' },
+    { value: 'sr', label: 'Српски (Serbian)' },
+    { value: 'si', label: 'සිංහල (Sinhala)' },
+    { value: 'sk', label: 'Slovenčina (Slovak)' },
+    { value: 'sl', label: 'Slovenščina (Slovenian)' },
+    { value: 'so', label: 'Soomaali (Somali)' },
+    { value: 'es', label: 'Español (Spanish)' },
+    { value: 'sw', label: 'Kiswahili (Swahili)' },
+    { value: 'sv', label: 'Svenska (Swedish)' },
+    { value: 'ta', label: 'தமிழ் (Tamil)' },
+    { value: 'te', label: 'తెలుగు (Telugu)' },
+    { value: 'th', label: 'ภาษาไทย (Thai)' },
+    { value: 'tr', label: 'Türkçe (Turkish)' },
+    { value: 'uk', label: 'Українська (Ukrainian)' },
+    { value: 'ur', label: 'اردو (Urdu)' },
+    { value: 'uz', label: 'Oʻzbek (Uzbek)' },
+    { value: 'vi', label: 'Tiếng Việt (Vietnamese)' },
+    { value: 'xh', label: 'isiXhosa (Xhosa)' },
+    { value: 'yo', label: 'Yorùbá (Yoruba)' },
+    { value: 'zu', label: 'isiZulu (Zulu)' },
+  ];
+
+  dateLocaleOptions: SelectOption[] = [
+    { value: 'en-US', label: 'US (MM/DD/YYYY - 1,000.00)' },
+    { value: 'en-GB', label: 'UK (DD/MM/YYYY - 1,000.00)' },
+    { value: 'en-ZA', label: 'South Africa (YYYY/MM/DD - 1 000,00)' },
+    { value: 'de-DE', label: 'German (DD.MM.YYYY - 1.000,00)' },
+    { value: 'fr-FR', label: 'French (DD/MM/YYYY - 1 000,00)' },
+    { value: 'es-ES', label: 'Spanish (DD/MM/YYYY - 1.000,00)' },
+    { value: 'pt-BR', label: 'Brazilian (DD/MM/YYYY - 1.000,00)' },
+    { value: 'ar-SA', label: 'Arabic (DD/MM/YYYY - 1,000.00)' },
+    { value: 'hi-IN', label: 'Hindi (DD-MM-YYYY - 1,00,000.00)' },
+    { value: 'ja-JP', label: 'Japanese (YYYY/MM/DD - 1,000)' },
+    { value: 'zh-CN', label: 'Chinese (YYYY-MM-DD - 1,000.00)' },
+    { value: 'ko-KR', label: 'Korean (YYYY.MM.DD - 1,000)' },
+    { value: 'ru-RU', label: 'Russian (DD.MM.YYYY - 1 000,00)' },
+    { value: 'tr-TR', label: 'Turkish (DD.MM.YYYY - 1.000,00)' },
+    { value: 'nl-NL', label: 'Dutch (DD-MM-YYYY - 1.000,00)' },
+    { value: 'sv-SE', label: 'Swedish (YYYY-MM-DD - 1 000,00)' },
+    { value: 'pl-PL', label: 'Polish (DD.MM.YYYY - 1 000,00)' },
+  ];
+
+  currencyOptions: SelectOption[] = [
+    { value: 'USD', label: 'USD ($) - US Dollar' },
+    { value: 'CAD', label: 'CAD ($) - Canadian Dollar' },
+    { value: 'GBP', label: 'GBP (£) - British Pound' },
+    { value: 'EUR', label: 'EUR (€) - Euro' },
+    { value: 'AUD', label: 'AUD ($) - Australian Dollar' },
+    { value: 'NZD', label: 'NZD ($) - New Zealand Dollar' },
+    { value: 'ZAR', label: 'ZAR (R) - South African Rand' },
+    { value: 'NGN', label: 'NGN - Nigerian Naira' },
+    { value: 'KES', label: 'KES - Kenyan Shilling' },
+    { value: 'GHS', label: 'GHS - Ghanaian Cedi' },
+    { value: 'TZS', label: 'TZS - Tanzanian Shilling' },
+    { value: 'UGX', label: 'UGX - Ugandan Shilling' },
+    { value: 'ETB', label: 'ETB - Ethiopian Birr' },
+    { value: 'EGP', label: 'EGP - Egyptian Pound' },
+    { value: 'MAD', label: 'MAD - Moroccan Dirham' },
+    { value: 'XOF', label: 'XOF - West African CFA Franc' },
+    { value: 'XAF', label: 'XAF - Central African CFA Franc' },
+    { value: 'AED', label: 'AED - UAE Dirham' },
+    { value: 'SAR', label: 'SAR - Saudi Riyal' },
+    { value: 'QAR', label: 'QAR - Qatari Riyal' },
+    { value: 'KWD', label: 'KWD - Kuwaiti Dinar' },
+    { value: 'BHD', label: 'BHD - Bahraini Dinar' },
+    { value: 'OMR', label: 'OMR - Omani Rial' },
+    { value: 'JOD', label: 'JOD - Jordanian Dinar' },
+    { value: 'ILS', label: 'ILS - Israeli Shekel' },
+    { value: 'TRY', label: 'TRY - Turkish Lira' },
+    { value: 'INR', label: 'INR - Indian Rupee' },
+    { value: 'PKR', label: 'PKR - Pakistani Rupee' },
+    { value: 'LKR', label: 'LKR - Sri Lankan Rupee' },
+    { value: 'BDT', label: 'BDT - Bangladeshi Taka' },
+    { value: 'NPR', label: 'NPR - Nepalese Rupee' },
+    { value: 'CNY', label: 'CNY - Chinese Yuan' },
+    { value: 'JPY', label: 'JPY - Japanese Yen' },
+    { value: 'KRW', label: 'KRW - South Korean Won' },
+    { value: 'TWD', label: 'TWD - Taiwan Dollar' },
+    { value: 'HKD', label: 'HKD ($) - Hong Kong Dollar' },
+    { value: 'SGD', label: 'SGD ($) - Singapore Dollar' },
+    { value: 'MYR', label: 'MYR - Malaysian Ringgit' },
+    { value: 'THB', label: 'THB - Thai Baht' },
+    { value: 'IDR', label: 'IDR - Indonesian Rupiah' },
+    { value: 'PHP', label: 'PHP - Philippine Peso' },
+    { value: 'VND', label: 'VND - Vietnamese Dong' },
+    { value: 'KHR', label: 'KHR - Cambodian Riel' },
+    { value: 'MMK', label: 'MMK - Myanmar Kyat' },
+    { value: 'BRL', label: 'BRL (R$) - Brazilian Real' },
+    { value: 'MXN', label: 'MXN ($) - Mexican Peso' },
+    { value: 'ARS', label: 'ARS ($) - Argentine Peso' },
+    { value: 'CLP', label: 'CLP ($) - Chilean Peso' },
+    { value: 'COP', label: 'COP ($) - Colombian Peso' },
+    { value: 'PEN', label: 'PEN - Peruvian Sol' },
+    { value: 'UYU', label: 'UYU ($) - Uruguayan Peso' },
+    { value: 'BOB', label: 'BOB - Bolivian Boliviano' },
+    { value: 'PYG', label: 'PYG - Paraguayan Guarani' },
+    { value: 'VES', label: 'VES - Venezuelan Bolivar' },
+    { value: 'DOP', label: 'DOP ($) - Dominican Peso' },
+    { value: 'GTQ', label: 'GTQ - Guatemalan Quetzal' },
+    { value: 'CRC', label: 'CRC - Costa Rican Colon' },
+    { value: 'PAB', label: 'PAB - Panamanian Balboa' },
+    { value: 'JMD', label: 'JMD ($) - Jamaican Dollar' },
+    { value: 'TTD', label: 'TTD ($) - Trinidad Dollar' },
+    { value: 'CHF', label: 'CHF - Swiss Franc' },
+    { value: 'SEK', label: 'SEK - Swedish Krona' },
+    { value: 'NOK', label: 'NOK - Norwegian Krone' },
+    { value: 'DKK', label: 'DKK - Danish Krone' },
+    { value: 'ISK', label: 'ISK - Icelandic Krona' },
+    { value: 'PLN', label: 'PLN - Polish Zloty' },
+    { value: 'CZK', label: 'CZK - Czech Koruna' },
+    { value: 'HUF', label: 'HUF - Hungarian Forint' },
+    { value: 'RON', label: 'RON - Romanian Leu' },
+    { value: 'BGN', label: 'BGN - Bulgarian Lev' },
+    { value: 'HRK', label: 'HRK - Croatian Kuna' },
+    { value: 'RSD', label: 'RSD - Serbian Dinar' },
+    { value: 'UAH', label: 'UAH - Ukrainian Hryvnia' },
+    { value: 'RUB', label: 'RUB - Russian Ruble' },
+    { value: 'GEL', label: 'GEL - Georgian Lari' },
+    { value: 'AMD', label: 'AMD - Armenian Dram' },
+    { value: 'AZN', label: 'AZN - Azerbaijani Manat' },
+    { value: 'KZT', label: 'KZT - Kazakh Tenge' },
+    { value: 'UZS', label: 'UZS - Uzbek Som' },
+    { value: 'FJD', label: 'FJD ($) - Fijian Dollar' },
+    { value: 'PGK', label: 'PGK - Papua New Guinean Kina' },
+    { value: 'WST', label: 'WST - Samoan Tala' },
+    { value: 'TOP', label: "TOP - Tongan Pa'anga" },
+  ];
+
+  pricingCountryOptions: SelectOption[] = [
+    { value: 'us', label: 'United States' },
+    { value: 'ca', label: 'Canada' },
+    { value: 'uk', label: 'United Kingdom' },
+    { value: 'au', label: 'Australia' },
+    { value: 'nz', label: 'New Zealand' },
+    { value: 'za', label: 'South Africa' },
+    { value: 'ng', label: 'Nigeria' },
+    { value: 'gh', label: 'Ghana' },
+    { value: 'ke', label: 'Kenya' },
+    { value: 'ae', label: 'United Arab Emirates' },
+    { value: 'sa', label: 'Saudi Arabia' },
+    { value: 'qa', label: 'Qatar' },
+    { value: 'in', label: 'India' },
+    { value: 'de', label: 'Germany' },
+    { value: 'fr', label: 'France' },
+    { value: 'es', label: 'Spain' },
+    { value: 'it', label: 'Italy' },
+    { value: 'nl', label: 'Netherlands' },
+    { value: 'ie', label: 'Ireland' },
+    { value: 'br', label: 'Brazil' },
+    { value: 'mx', label: 'Mexico' },
+    { value: 'co', label: 'Colombia' },
+    { value: 'cl', label: 'Chile' },
+    { value: 'ar', label: 'Argentina' },
+    { value: 'jp', label: 'Japan' },
+    { value: 'kr', label: 'South Korea' },
+    { value: 'sg', label: 'Singapore' },
+    { value: 'my', label: 'Malaysia' },
+    { value: 'ph', label: 'Philippines' },
+    { value: 'id', label: 'Indonesia' },
+    { value: 'th', label: 'Thailand' },
+    { value: 'vn', label: 'Vietnam' },
+    { value: 'se', label: 'Sweden' },
+    { value: 'no', label: 'Norway' },
+    { value: 'dk', label: 'Denmark' },
+    { value: 'fi', label: 'Finland' },
+    { value: 'pl', label: 'Poland' },
+    { value: 'ch', label: 'Switzerland' },
+    { value: 'at', label: 'Austria' },
+    { value: 'pt', label: 'Portugal' },
+    { value: 'eg', label: 'Egypt' },
+    { value: 'tz', label: 'Tanzania' },
+    { value: 'et', label: 'Ethiopia' },
+    { value: 'rw', label: 'Rwanda' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  pricingRegionOptionsByCountry: Record<string, SelectOption[]> = {
+    us: [
+      { value: 'alabama', label: 'Alabama' },
+      { value: 'alaska', label: 'Alaska' },
+      { value: 'arizona', label: 'Arizona' },
+      { value: 'arkansas', label: 'Arkansas' },
+      { value: 'california', label: 'California' },
+      { value: 'colorado', label: 'Colorado' },
+      { value: 'connecticut', label: 'Connecticut' },
+      { value: 'delaware', label: 'Delaware' },
+      { value: 'florida', label: 'Florida' },
+      { value: 'georgia', label: 'Georgia' },
+      { value: 'hawaii', label: 'Hawaii' },
+      { value: 'idaho', label: 'Idaho' },
+      { value: 'illinois', label: 'Illinois' },
+      { value: 'indiana', label: 'Indiana' },
+      { value: 'iowa', label: 'Iowa' },
+      { value: 'kansas', label: 'Kansas' },
+      { value: 'kentucky', label: 'Kentucky' },
+      { value: 'louisiana', label: 'Louisiana' },
+      { value: 'maine', label: 'Maine' },
+      { value: 'maryland', label: 'Maryland' },
+      { value: 'massachusetts', label: 'Massachusetts' },
+      { value: 'michigan', label: 'Michigan' },
+      { value: 'minnesota', label: 'Minnesota' },
+      { value: 'mississippi', label: 'Mississippi' },
+      { value: 'missouri', label: 'Missouri' },
+      { value: 'montana', label: 'Montana' },
+      { value: 'nebraska', label: 'Nebraska' },
+      { value: 'nevada', label: 'Nevada' },
+      { value: 'new-hampshire', label: 'New Hampshire' },
+      { value: 'new-jersey', label: 'New Jersey' },
+      { value: 'new-mexico', label: 'New Mexico' },
+      { value: 'new-york', label: 'New York' },
+      { value: 'north-carolina', label: 'North Carolina' },
+      { value: 'north-dakota', label: 'North Dakota' },
+      { value: 'ohio', label: 'Ohio' },
+      { value: 'oklahoma', label: 'Oklahoma' },
+      { value: 'oregon', label: 'Oregon' },
+      { value: 'pennsylvania', label: 'Pennsylvania' },
+      { value: 'rhode-island', label: 'Rhode Island' },
+      { value: 'south-carolina', label: 'South Carolina' },
+      { value: 'south-dakota', label: 'South Dakota' },
+      { value: 'tennessee', label: 'Tennessee' },
+      { value: 'texas', label: 'Texas' },
+      { value: 'utah', label: 'Utah' },
+      { value: 'vermont', label: 'Vermont' },
+      { value: 'virginia', label: 'Virginia' },
+      { value: 'washington', label: 'Washington' },
+      { value: 'west-virginia', label: 'West Virginia' },
+      { value: 'wisconsin', label: 'Wisconsin' },
+      { value: 'wyoming', label: 'Wyoming' },
+    ],
+    ca: [
+      { value: 'alberta', label: 'Alberta' },
+      { value: 'british-columbia', label: 'British Columbia' },
+      { value: 'manitoba', label: 'Manitoba' },
+      { value: 'new-brunswick', label: 'New Brunswick' },
+      { value: 'newfoundland', label: 'Newfoundland & Labrador' },
+      { value: 'nova-scotia', label: 'Nova Scotia' },
+      { value: 'ontario', label: 'Ontario' },
+      { value: 'pei', label: 'Prince Edward Island' },
+      { value: 'quebec', label: 'Quebec' },
+      { value: 'saskatchewan', label: 'Saskatchewan' },
+      { value: 'northwest', label: 'Northwest Territories' },
+      { value: 'nunavut', label: 'Nunavut' },
+      { value: 'yukon', label: 'Yukon' },
+    ],
+    uk: [
+      { value: 'london', label: 'London' },
+      { value: 'south-east', label: 'South East' },
+      { value: 'south-west', label: 'South West' },
+      { value: 'east-anglia', label: 'East Anglia' },
+      { value: 'east-midlands', label: 'East Midlands' },
+      { value: 'west-midlands', label: 'West Midlands' },
+      { value: 'north-west', label: 'North West' },
+      { value: 'north-east', label: 'North East' },
+      { value: 'yorkshire', label: 'Yorkshire & Humber' },
+      { value: 'wales', label: 'Wales' },
+      { value: 'scotland', label: 'Scotland' },
+      { value: 'northern-ireland', label: 'Northern Ireland' },
+    ],
+    au: [
+      { value: 'nsw', label: 'New South Wales' },
+      { value: 'vic', label: 'Victoria' },
+      { value: 'qld', label: 'Queensland' },
+      { value: 'wa', label: 'Western Australia' },
+      { value: 'sa-au', label: 'South Australia' },
+      { value: 'tas', label: 'Tasmania' },
+      { value: 'act', label: 'Australian Capital Territory' },
+      { value: 'nt', label: 'Northern Territory' },
+    ],
+    za: [
+      { value: 'gauteng', label: 'Gauteng' },
+      { value: 'western-cape', label: 'Western Cape' },
+      { value: 'kwazulu-natal', label: 'KwaZulu-Natal' },
+      { value: 'eastern-cape', label: 'Eastern Cape' },
+      { value: 'free-state', label: 'Free State' },
+      { value: 'limpopo', label: 'Limpopo' },
+      { value: 'mpumalanga', label: 'Mpumalanga' },
+      { value: 'north-west', label: 'North West' },
+      { value: 'northern-cape', label: 'Northern Cape' },
+    ],
+    ae: [
+      { value: 'abu-dhabi', label: 'Abu Dhabi' },
+      { value: 'dubai', label: 'Dubai' },
+      { value: 'sharjah', label: 'Sharjah' },
+      { value: 'ajman', label: 'Ajman' },
+      { value: 'fujairah', label: 'Fujairah' },
+      { value: 'ras-al-khaimah', label: 'Ras Al Khaimah' },
+      { value: 'umm-al-quwain', label: 'Umm Al Quwain' },
+    ],
+    in: [
+      { value: 'maharashtra', label: 'Maharashtra' },
+      { value: 'karnataka', label: 'Karnataka' },
+      { value: 'tamil-nadu', label: 'Tamil Nadu' },
+      { value: 'delhi', label: 'Delhi NCR' },
+      { value: 'telangana', label: 'Telangana' },
+      { value: 'gujarat', label: 'Gujarat' },
+      { value: 'uttar-pradesh', label: 'Uttar Pradesh' },
+      { value: 'rajasthan', label: 'Rajasthan' },
+      { value: 'west-bengal', label: 'West Bengal' },
+      { value: 'kerala', label: 'Kerala' },
+      { value: 'punjab', label: 'Punjab' },
+      { value: 'other-in', label: 'Other' },
+    ],
+    ng: [
+      { value: 'lagos', label: 'Lagos' },
+      { value: 'abuja', label: 'Abuja (FCT)' },
+      { value: 'rivers', label: 'Rivers' },
+      { value: 'oyo', label: 'Oyo' },
+      { value: 'kano', label: 'Kano' },
+      { value: 'enugu', label: 'Enugu' },
+      { value: 'delta', label: 'Delta' },
+      { value: 'kaduna', label: 'Kaduna' },
+      { value: 'other-ng', label: 'Other' },
+    ],
+    mx: [
+      { value: 'cdmx', label: 'Ciudad de Mexico' },
+      { value: 'jalisco', label: 'Jalisco' },
+      { value: 'nuevo-leon', label: 'Nuevo Leon' },
+      { value: 'estado-de-mexico', label: 'Estado de Mexico' },
+      { value: 'quintana-roo', label: 'Quintana Roo' },
+      { value: 'puebla', label: 'Puebla' },
+      { value: 'guanajuato', label: 'Guanajuato' },
+      { value: 'other-mx', label: 'Other' },
+    ],
+    de: [
+      { value: 'bayern', label: 'Bayern (Bavaria)' },
+      { value: 'berlin', label: 'Berlin' },
+      { value: 'hamburg', label: 'Hamburg' },
+      { value: 'hessen', label: 'Hessen' },
+      { value: 'nrw', label: 'Nordrhein-Westfalen' },
+      { value: 'bw', label: 'Baden-Wurttemberg' },
+      { value: 'sachsen', label: 'Sachsen' },
+      { value: 'niedersachsen', label: 'Niedersachsen' },
+      { value: 'other-de', label: 'Other' },
+    ],
+    br: [
+      { value: 'sao-paulo', label: 'Sao Paulo' },
+      { value: 'rio', label: 'Rio de Janeiro' },
+      { value: 'minas-gerais', label: 'Minas Gerais' },
+      { value: 'bahia', label: 'Bahia' },
+      { value: 'parana', label: 'Parana' },
+      { value: 'rs', label: 'Rio Grande do Sul' },
+      { value: 'other-br', label: 'Other' },
+    ],
+  };
+
+  teamRoleOptions: SelectOption[] = [
+    { value: 'Laborer', label: 'Laborer' },
+    { value: 'Apprentice', label: 'Apprentice' },
+    { value: 'Foreman', label: 'Foreman' },
+    { value: 'Superintendent', label: 'Superintendent' },
+    { value: 'Project Manager', label: 'Project Manager' },
+    { value: 'Operations Manager', label: 'Operations Manager' },
+    { value: 'Admin', label: 'Admin' },
+  ];
+
+  docCategoryOptions: SelectOption[] = [
+    { value: 'License', label: 'License' },
+    { value: 'Certification', label: 'Certification' },
+    { value: 'Insurance', label: 'Insurance' },
+    { value: 'Bond', label: 'Bond' },
+    { value: 'Permit', label: 'Permit' },
+    { value: 'Safety', label: 'Safety Document' },
+    { value: 'Tax', label: 'Tax / Business Registration' },
+    { value: 'Other', label: 'Other' },
+  ];
+
+  docSubTypesByCategory: Record<string, SelectOption[]> = {
+    License: [
+      { value: 'General Contractor License', label: 'General Contractor License' },
+      { value: 'Electrical Contractor License', label: 'Electrical Contractor License' },
+      { value: 'Plumbing Contractor License', label: 'Plumbing Contractor License' },
+      { value: 'HVAC Contractor License', label: 'HVAC Contractor License' },
+      { value: 'Roofing Contractor License', label: 'Roofing Contractor License' },
+      { value: 'Excavation Contractor License', label: 'Excavation Contractor License' },
+      { value: 'Demolition Contractor License', label: 'Demolition Contractor License' },
+      { value: 'Specialty Trade License', label: 'Specialty Trade License' },
+      { value: 'Other License', label: 'Other License' },
+    ],
+    Certification: [
+      { value: 'OSHA 10-Hour', label: 'OSHA 10-Hour' },
+      { value: 'OSHA 30-Hour', label: 'OSHA 30-Hour' },
+      { value: 'EPA Lead-Safe Certification', label: 'EPA Lead-Safe Certification' },
+      { value: 'NCCER Certification', label: 'NCCER Certification' },
+      { value: 'LEED Accreditation', label: 'LEED Accreditation' },
+      { value: 'First Aid / CPR', label: 'First Aid / CPR' },
+      { value: 'Other Certification', label: 'Other Certification' },
+    ],
+    Insurance: [
+      { value: 'General Liability Insurance', label: 'General Liability Insurance' },
+      { value: 'Workers Compensation Insurance', label: 'Workers Compensation Insurance' },
+      { value: 'Commercial Auto Insurance', label: 'Commercial Auto Insurance' },
+      { value: 'Professional Liability Insurance', label: 'Professional Liability Insurance' },
+      { value: 'Umbrella Liability Insurance', label: 'Umbrella Liability Insurance' },
+      { value: 'Other Insurance', label: 'Other Insurance' },
+    ],
+    Bond: [
+      { value: 'Surety Bond', label: 'Surety Bond' },
+      { value: 'Bid Bond', label: 'Bid Bond' },
+      { value: 'Performance Bond', label: 'Performance Bond' },
+      { value: 'Payment Bond', label: 'Payment Bond' },
+      { value: 'Maintenance Bond', label: 'Maintenance Bond' },
+      { value: 'Other Bond', label: 'Other Bond' },
+    ],
+    Permit: [
+      { value: 'Building Permit', label: 'Building Permit' },
+      { value: 'Electrical Permit', label: 'Electrical Permit' },
+      { value: 'Plumbing Permit', label: 'Plumbing Permit' },
+      { value: 'Mechanical Permit', label: 'Mechanical Permit' },
+      { value: 'Demolition Permit', label: 'Demolition Permit' },
+      { value: 'Other Permit', label: 'Other Permit' },
+    ],
+    Safety: [
+      { value: 'Site Safety Plan', label: 'Site Safety Plan' },
+      { value: 'Job Hazard Analysis', label: 'Job Hazard Analysis' },
+      { value: 'Incident Report', label: 'Incident Report' },
+      { value: 'Safety Training Record', label: 'Safety Training Record' },
+      { value: 'Toolbox Talk Log', label: 'Toolbox Talk Log' },
+      { value: 'Other Safety Document', label: 'Other Safety Document' },
+    ],
+    Tax: [
+      { value: 'W-9 Form', label: 'W-9 Form' },
+      { value: 'Tax ID / EIN Letter', label: 'Tax ID / EIN Letter' },
+      { value: 'Business Registration', label: 'Business Registration' },
+      { value: 'Other Tax / Business Document', label: 'Other Tax / Business Document' },
+    ],
+    Other: [{ value: 'Other', label: 'Other' }],
+  };
+
+  starterPlanFeatures = [
+    'Up to 3 Projects',
+    'Basic AI Estimating',
+    'Marketplace Access',
+    'Email Support',
+    '1 Team Member',
+  ];
+
+  professionalPlanFeatures = [
+    'Unlimited Projects',
+    'Advanced AI Estimating',
+    'Priority Marketplace Access',
+    'Phone & Chat Support',
+    'Up to 10 Team Members',
+    'Blueprint AI',
+    'Budget Tracking',
+  ];
+
+  enterprisePlanFeatures = [
+    'Everything in Professional',
+    'Unlimited Team Members',
+    'Dedicated Success Manager',
+    'Custom Integrations',
+    'Advanced Analytics',
+    'White Label Options',
+    'SLA Guarantee',
+    'On-Site Training',
+  ];
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
 
@@ -298,7 +1070,7 @@ export class ProfileComponent implements OnInit {
       companyRegNo: [null],
       companyCountryNumberCode: [''],
       vatNo: [null],
-      constructionType: [[]],
+      constructionType: [null],
       nrEmployees: [null],
       yearsOfOperation: [null],
       certificationStatus: [null],
@@ -309,7 +1081,7 @@ export class ProfileComponent implements OnInit {
       supplierType: [null],
       productsOffered: [[]],
       projectPreferences: [[]],
-      deliveryArea: [[]],
+      deliveryArea: [null],
       deliveryTime: [null],
       country: [null],
       countryCode: [''],
@@ -509,6 +1281,288 @@ export class ProfileComponent implements OnInit {
       this.resetFileInput();
       console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
+
+    if (!this.profileForm.get('subscriptionPackage')?.value) {
+      this.profileForm.patchValue({ subscriptionPackage: 'professional' });
+    }
+  }
+
+  setActiveTab(tab: SettingsTab): void {
+    this.activeTab = tab;
+  }
+
+  onDemoUserTypeChanged(nextValue: string): void {
+    this.demoUserType = nextValue;
+    this.profileForm.patchValue({ userType: this.mapDemoUserTypeToBackend(nextValue) });
+    this.markSettingsChanged();
+  }
+
+  private mapDemoUserTypeToBackend(demo: string): string {
+    if (demo === 'General Contractor') return 'GENERAL_CONTRACTOR';
+    if (demo === 'Subcontractor / Tradesman') return 'SUBCONTRACTOR';
+    if (demo === 'Vendor / Supplier') return 'VENDOR';
+    return 'PROJECT_MANAGER';
+  }
+
+  private mapBackendUserTypeToDemo(backend: string | null | undefined): string {
+    if (backend === 'GENERAL_CONTRACTOR') return 'General Contractor';
+    if (backend === 'SUBCONTRACTOR') return 'Subcontractor / Tradesman';
+    if (backend === 'VENDOR') return 'Vendor / Supplier';
+    return 'Owner / Developer';
+  }
+
+  onTeamRoleChanged(member: TeamMember, nextRole: string): void {
+    member.role = nextRole;
+    this.markSettingsChanged();
+  }
+
+  toggleTeamActionMenu(member: TeamMember): void {
+    this.openTeamMenuId = this.openTeamMenuId === member.id ? null : member.id;
+  }
+
+  isTeamActionMenuOpen(member: TeamMember): boolean {
+    return this.openTeamMenuId === member.id;
+  }
+
+  resendInvite(member: TeamMember): void {
+    member.status = 'Invited';
+    this.snackBar.open(`Invite re-sent to ${member.email}`, 'Close', {
+      duration: 2500,
+    });
+    this.markSettingsChanged();
+  }
+
+  removeMember(member: TeamMember): void {
+    this.openTeamMenuId = null;
+    this.openConfirmationDialog(member.id, 'delete');
+  }
+
+  sanitizeNumericInput(
+    event: Event,
+    formControlName?: string,
+    modelProp?: 'demoNotificationRadius',
+  ): void {
+    const input = event.target as HTMLInputElement;
+    const cleaned = (input.value || '').replace(/\D+/g, '');
+    input.value = cleaned;
+
+    if (formControlName) {
+      this.profileForm.get(formControlName)?.setValue(cleaned, { emitEvent: false });
+    }
+
+    if (modelProp) {
+      this[modelProp] = cleaned;
+    }
+  }
+
+  onUploadDocCategoryChanged(nextValue: string): void {
+    this.uploadDocCategory = nextValue;
+    this.uploadDocSubType = '';
+    this.markSettingsChanged();
+  }
+
+  onUploadDocSubTypeChanged(nextValue: string): void {
+    this.uploadDocSubType = nextValue;
+    if (!this.uploadDocName) {
+      this.uploadDocName = nextValue;
+    }
+    this.markSettingsChanged();
+  }
+
+  getUploadSubTypeOptions(): SelectOption[] {
+    return this.docSubTypesByCategory[this.uploadDocCategory] ?? [];
+  }
+
+  planActionLabel(plan: 'starter' | 'professional' | 'enterprise'): string {
+    const order: Array<'starter' | 'professional' | 'enterprise'> = [
+      'starter',
+      'professional',
+      'enterprise',
+    ];
+    const currentIdx = order.indexOf(this.selectedPlan);
+    const planIdx = order.indexOf(plan);
+    if (plan === this.selectedPlan) return 'Current Plan';
+    return planIdx > currentIdx ? 'Upgrade' : 'Downgrade';
+  }
+
+  navItemsByGroup(group: 'Account' | 'Preferences' | 'Premium'): SettingsNavItem[] {
+    return this.settingsNavItems.filter((item) => item.group === group);
+  }
+
+  markSettingsChanged(): void {
+    this.hasSettingsChanges = true;
+  }
+
+  saveSettingsPreferences(): void {
+    this.hasSettingsChanges = false;
+    this.saveToast = true;
+    this.snackBar.open('Preferences updated successfully.', 'Close', {
+      duration: 2500,
+    });
+    setTimeout(() => {
+      this.saveToast = false;
+    }, 2500);
+  }
+
+  resetSettingsPreferences(): void {
+    this.themeMode = 'dark';
+    this.uiDensity = 'comfortable';
+    this.measurementSystem = 'imperial';
+    this.temperatureUnit = 'fahrenheit';
+    this.areaUnit = 'ft²';
+    this.volumeUnit = 'ft³';
+    this.blueprintZoom = 'fit';
+    this.autoSave = true;
+    this.defaultLanding = 'projects';
+    this.emailNotif = true;
+    this.inAppNotif = true;
+    this.smsNotif = false;
+    this.pushNotif = true;
+    this.bidAlerts = true;
+    this.timelineAlerts = true;
+    this.budgetAlerts = true;
+    this.connectionAlerts = true;
+    this.inviteAlerts = true;
+    this.appLanguage = 'en';
+    this.dateLocale = 'en-US';
+    this.docCurrency = 'USD';
+    this.docOutputMode = 'single';
+    this.docOutputLanguage = 'en';
+    this.dualPrimaryLang = 'en';
+    this.dualSecondaryLang = 'es';
+    this.defaultMarkup = '15';
+    this.laborBurden = '35';
+    this.pricingCountry = 'us';
+    this.pricingRegion = 'texas';
+    this.docGradientStart = '#FCD109';
+    this.docGradientEnd = '#F59E0B';
+    this.docGradientDir = 'to right';
+    this.docLogoUploaded = false;
+    this.docLogoFileName = '';
+    this.hasSettingsChanges = false;
+  }
+
+  getPlanPrice(plan: 'starter' | 'professional' | 'enterprise'): string {
+    if (plan === 'starter') return this.subBilling === 'monthly' ? '$179/mo' : '$1,790/yr';
+    if (plan === 'professional') return this.subBilling === 'monthly' ? '$280/mo' : '$2,800/yr';
+    return this.subBilling === 'monthly' ? '$440/mo' : '$4,400/yr';
+  }
+
+  choosePlan(plan: 'starter' | 'professional' | 'enterprise'): void {
+    this.selectedPlan = plan;
+    this.profileForm.patchValue({ subscriptionPackage: plan });
+    this.markSettingsChanged();
+  }
+
+  setBillingCycle(cycle: 'monthly' | 'annually'): void {
+    this.subBilling = cycle;
+    this.markSettingsChanged();
+  }
+
+  onPricingCountryChanged(nextValue: string): void {
+    this.pricingCountry = nextValue;
+    this.pricingRegion = '';
+    this.markSettingsChanged();
+  }
+
+  getPricingRegionOptions(): SelectOption[] {
+    return this.pricingRegionOptionsByCountry[this.pricingCountry] ?? [];
+  }
+
+  hasPricingRegionOptions(): boolean {
+    return this.getPricingRegionOptions().length > 0;
+  }
+
+  getPricingRegionLabel(): string {
+    if (this.pricingCountry === 'us' || this.pricingCountry === 'au') return 'State';
+    if (this.pricingCountry === 'ca' || this.pricingCountry === 'za') return 'Province';
+    if (this.pricingCountry === 'ae') return 'Emirate';
+    return 'State / Province / Region';
+  }
+
+  getDocHeaderBackground(): string {
+    if (this.docHeaderStyle === 'gradient') {
+      return `linear-gradient(${this.docGradientDir}, ${this.docGradientStart}, ${this.docGradientEnd})`;
+    }
+    return this.docPrimaryColor;
+  }
+
+  onDocLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.docLogoUploaded = true;
+    this.docLogoFileName = file.name;
+    this.markSettingsChanged();
+  }
+
+  clearDocLogo(event?: Event): void {
+    event?.stopPropagation();
+    this.docLogoUploaded = false;
+    this.docLogoFileName = '';
+    this.markSettingsChanged();
+  }
+
+  getPreferenceFooterVisible(): boolean {
+    return (
+      this.activeTab === 'appearance' ||
+      this.activeTab === 'measurements' ||
+      this.activeTab === 'construction' ||
+      this.activeTab === 'notifications' ||
+      this.activeTab === 'language' ||
+      this.activeTab === 'advanced'
+    );
+  }
+
+  get totalCertDocs(): number {
+    return this.certDocuments.length;
+  }
+
+  get activeCertDocs(): number {
+    return this.certDocuments.filter((d) => d.status === 'Active').length;
+  }
+
+  get expiringCertDocs(): number {
+    return this.certDocuments.filter((d) => d.status === 'Expiring').length;
+  }
+
+  get expiredCertDocs(): number {
+    return this.certDocuments.filter((d) => d.status === 'Expired').length;
+  }
+
+  addCertDocumentPlaceholder(): void {
+    if (!this.uploadDocCategory || !this.uploadDocName) {
+      this.snackBar.open('Please select a category and document name.', 'Close', {
+        duration: 2500,
+      });
+      return;
+    }
+
+    this.certDocuments = [
+      {
+        id: Date.now(),
+        name: this.uploadDocName,
+        type: (this.uploadDocCategory as CertDocumentItem['type']) || 'Other',
+        issuer: this.uploadIssuer || '—',
+        number: this.uploadNumber || '—',
+        expirationDate: this.uploadExpDate || 'N/A',
+        status: 'Active',
+      },
+      ...this.certDocuments,
+    ];
+
+    this.uploadDocCategory = '';
+    this.uploadDocName = '';
+    this.uploadIssuer = '';
+    this.uploadNumber = '';
+    this.uploadExpDate = '';
+    this.showUploadForm = false;
+    this.markSettingsChanged();
+  }
+
+  removeCertDocument(id: number): void {
+    this.certDocuments = this.certDocuments.filter((d) => d.id !== id);
+    this.markSettingsChanged();
   }
   private _filterCountries(value: string | null): any[] {
     const filterValue = (value ?? '').toLowerCase();
@@ -586,18 +1640,18 @@ export class ProfileComponent implements OnInit {
           const rawCT: any = profileData.constructionType;
           profileData.constructionType =
             typeof rawCT === 'string'
-              ? rawCT.split(',').map((s) => s.trim())
+              ? rawCT.split(',').map((s) => s.trim())[0] ?? null
               : Array.isArray(rawCT)
-                ? rawCT
-                : [];
+                ? (rawCT[0] ?? null)
+                : rawCT ?? null;
 
           const rawDA: any = profileData.deliveryArea;
           profileData.deliveryArea =
             typeof rawDA === 'string'
-              ? rawDA.split(',').map((s) => s.trim())
+              ? rawDA.split(',').map((s) => s.trim())[0] ?? null
               : Array.isArray(rawDA)
-                ? rawDA
-                : [];
+                ? (rawDA[0] ?? null)
+                : rawDA ?? null;
 
           const rawPO: any = profileData.productsOffered;
           profileData.productsOffered =
@@ -771,11 +1825,17 @@ export class ProfileComponent implements OnInit {
                 ? v
                 : [];
 
+          const normalizeSingle = (v: any) => {
+            const arr = normalizeArray(v);
+            if (arr.length > 0) return arr[0];
+            return v ?? null;
+          };
+
           const patch = {
             companyName: company.name ?? null,
             companyRegNo: company.companyRegNo ?? null,
             vatNo: company.vatNo ?? null,
-            constructionType: normalizeArray(company.constructionType),
+            constructionType: normalizeSingle(company.constructionType),
             nrEmployees: company.nrEmployees ?? null,
             yearsOfOperation: company.yearsOfOperation ?? null,
             certificationStatus: company.certificationStatus ?? null,
@@ -785,7 +1845,7 @@ export class ProfileComponent implements OnInit {
             supplierType: company.supplierType ?? null,
             productsOffered: normalizeArray(company.productsOffered),
             jobPreferences: normalizeArray(company.jobPreferences),
-            deliveryArea: normalizeArray(company.deliveryArea),
+            deliveryArea: normalizeSingle(company.deliveryArea),
             deliveryTime: company.deliveryTime ?? null,
             companyPhone: company.phoneNumber ?? null,
             companyEmail: company.email ?? null,
@@ -1355,6 +2415,9 @@ export class ProfileComponent implements OnInit {
       const e164CompanyPhone = companyParsed
         ? companyParsed.format('E.164')
         : companyPhone;
+      const selectedConstructionType = this.profileForm.value.constructionType;
+      const selectedDeliveryArea = this.profileForm.value.deliveryArea;
+
       const companyPayload = {
         name: this.profileForm.value.companyName,
         companyRegNo: this.profileForm.value.companyRegNo,
@@ -1362,7 +2425,9 @@ export class ProfileComponent implements OnInit {
         email: this.profileForm.value.companyEmail,
         phoneNumber: e164CompanyPhone,
         countryNumberCode: this.profileForm.value.companyCountryNumberCode,
-        constructionType: this.profileForm.value.constructionType,
+        constructionType: selectedConstructionType
+          ? [selectedConstructionType]
+          : [],
         nrEmployees: this.profileForm.value.nrEmployees,
         yearsOfOperation: this.profileForm.value.yearsOfOperation,
         certificationStatus: this.profileForm.value.certificationStatus,
@@ -1373,7 +2438,7 @@ export class ProfileComponent implements OnInit {
         supplierType: this.profileForm.value.supplierType,
         productsOffered: this.profileForm.value.productsOffered,
         jobPreferences: this.profileForm.value.jobPreferences,
-        deliveryArea: this.profileForm.value.deliveryArea,
+        deliveryArea: selectedDeliveryArea ? [selectedDeliveryArea] : [],
         deliveryTime: this.profileForm.value.deliveryTime,
 
         billingAddress: this.profileForm.value.billingAddress,

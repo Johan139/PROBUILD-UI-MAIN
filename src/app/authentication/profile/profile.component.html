@@ -1,1556 +1,793 @@
-<div class="page-center">
-  <div class="container">
-    <div class="row">
-      <div class="fullcolumn">
-        <mat-card class="profile-card">
-          <mat-card-header>
-            <mat-card-title>User Profile</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <mat-divider></mat-divider>
-            <div class="profile-content">
-              <form
-                [formGroup]="profileForm"
-                (ngSubmit)="onSubmit()"
-                *ngIf="profileForm.controls"
-              >
-                <mat-tab-group #profileTabs>
-                  <!-- Profile Tab -->
-                  <mat-tab label="Profile">
-                    <!-- Role Switcher Dropdown (For Dev Testing) -->
-                    <!-- <div class="form-row role-switcher" *ngIf="profileForm"><mat-form-field appearance="fill"><mat-label>Switch Role (Dev Mode)</mat-label><mat-select [value]="userRole" (selectionChange)="changeUserRole($event.value)" panelClass="custom-select-panel"><mat-option *ngFor="let role of availableRoles" [value]="role">
-                          {{ role }}
-                        </mat-option></mat-select></mat-form-field></div> -->
-                    <!-- Personal Information -->
-                    <div class="section" *ngIf="canViewPersonalInfo()">
-                      <h3>Personal Information</h3>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>First Name</mat-label>
-                          <input
-                            matInput
-                            formControlName="firstName"
-                            placeholder=" "
-                            [readonly]="authService.isTeamMember()"
-                          />
-                          <mat-error
-                            *ngIf="
-                              profileForm.get('firstName')?.hasError('required')
-                            "
-                          >
-                            Mandatory Field: Input Required.
-                          </mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Last Name</mat-label>
-                          <input
-                            matInput
-                            formControlName="lastName"
-                            placeholder=" "
-                          />
-                          <mat-error
-                            *ngIf="
-                              profileForm.get('lastName')?.hasError('required')
-                            "
-                          >
-                            Mandatory Field: Input Required.
-                          </mat-error>
-                        </mat-form-field>
-                        <div class="phone-field-container">
-                          <!-- Country Code Select -->
-                          <mat-form-field
-                            appearance="fill"
-                            class="country-code-field"
-                          >
-                            <mat-label>Prefix</mat-label>
-                            <mat-select
-                              [(value)]="selectedCountryCode"
-                              (selectionChange)="onCountryChanged()"
-                            >
-                              <mat-option>
-                                <input
-                                  matInput
-                                  placeholder="Search..."
-                                  [formControl]="countryFilterCtrl"
-                                  (keydown)="$event.stopPropagation()"
-                                />
-                              </mat-option>
-                              <mat-option
-                                *ngFor="let c of filteredCountryCodes | async"
-                                [value]="c"
-                              >
-                                {{ c.countryCode }} ({{
-                                  c.countryPhoneNumberCode
-                                }})
-                              </mat-option>
-                            </mat-select>
-                          </mat-form-field>
+<div class="settings-shell">
+  <div class="save-toast" *ngIf="saveToast">Preferences updated</div>
 
-                          <!-- Actual Mobile Input -->
-                          <mat-form-field
-                            appearance="fill"
-                            class="mobile-number-field"
-                          >
-                            <mat-label>Mobile Number</mat-label>
-                            <input
-                              matInput
-                              type="tel"
-                              formControlName="phoneNumber"
-                              placeholder="Enter mobile number"
-                              required
-                              (input)="onPhoneInput($event)"
-                              (paste)="onPhonePaste($event)"
-                              (blur)="onPhoneBlur()"
-                            />
+  <header class="settings-header">
+    <h1>Settings</h1>
+    <div class="header-line"></div>
+  </header>
 
-                            <mat-error
-                              *ngIf="
-                                profileForm
-                                  .get('phoneNumber')
-                                  ?.hasError('required')
-                              "
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                            <mat-error
-                              *ngIf="
-                                profileForm
-                                  .get('phoneNumber')
-                                  ?.hasError('invalidPhone')
-                              "
-                            >
-                              Please enter a valid phone number for the selected
-                              country.
-                            </mat-error>
-                          </mat-form-field>
-                        </div>
-                        <mat-form-field appearance="fill">
-                          <mat-label>User Type</mat-label>
-                          <mat-select
-                            formControlName="userType"
-                            panelClass="custom-select-panel"
-                            (selectionChange)="changeUserRole($event.value)"
-                          >
-                            <mat-option value="GENERAL_CONTRACTOR"
-                              >General Contractor</mat-option
-                            >
-                            <mat-option value="PROJECT_MANAGER"
-                              >Project Manager</mat-option
-                            >
-                            <mat-option value="CHIEF_ESTIMATOR"
-                              >Chief Estimator</mat-option
-                            >
-                            <mat-option value="GENERAL_SUPERINTENDANT"
-                              >General Superintendant</mat-option
-                            >
-                            <mat-option value="SUPERINTENDANT"
-                              >Superintendant</mat-option
-                            >
-                            <mat-option value="ASSISTANT_SUPERINTENDANT"
-                              >Assistant Superintendant</mat-option
-                            >
-                            <mat-option value="FOREMAN">Foreman</mat-option>
-                            <mat-option value="SUBCONTRACTOR"
-                              >Subcontractor</mat-option
-                            >
-                            <mat-option value="VENDOR">Vendor</mat-option>
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                    </div>
-                    <!-- Certification & Availability -->
-                    <div class="section" *ngIf="canViewCertification()">
-                      <h3>Certification & Availability</h3>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Availability</mat-label>
-                          <mat-select
-                            formControlName="availability"
-                            panelClass="custom-select-panel"
-                          >
-                            <mat-option value=""></mat-option>
-                            <mat-option value="Full-time">Full-time</mat-option>
-                            <mat-option value="Part-time">Part-time</mat-option>
-                            <mat-option value="On-demand">On-demand</mat-option>
-                          </mat-select>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Certification Status</mat-label>
-                          <mat-select
-                            formControlName="certificationStatus"
-                            panelClass="custom-select-panel"
-                          >
-                            <mat-option value=""></mat-option>
-                            <mat-option value="Certified">Certified</mat-option>
-                            <mat-option value="Pending">Pending</mat-option>
-                            <mat-option value="Not Certified"
-                              >Not Certified</mat-option
-                            >
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                    </div>
-                    <!-- Submit Button -->
-                    <div class="form-row">
-                      <button
-                        mat-raised-button
-                        type="submit"
-                        class="submit-btn"
-                      >
-                        {{ isSaving ? "Saving..." : "Save Profile" }}
-                      </button>
-                    </div>
-                  </mat-tab>
-                  <!-- Company Profile Tab -->
-                  <mat-tab
-                    *ngIf="!authService.isTeamMember()"
-                    label="Company Profile"
-                  >
-                    <!-- Company Details -->
-                    <div class="section">
-                      <h3>Company Details</h3>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Company Name</mat-label>
-                          <input
-                            matInput
-                            formControlName="companyName"
-                            placeholder=" "
-                          />
-                          <mat-error
-                            *ngIf="
-                              profileForm
-                                .get('companyName')
-                                ?.hasError('required')
-                            "
-                          >
-                            Mandatory Field: Input Required.
-                          </mat-error>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Company Email</mat-label>
-                          <input
-                            matInput
-                            formControlName="companyEmail"
-                            placeholder=" "
-                          />
-                          <mat-error
-                            *ngIf="
-                              profileForm
-                                .get('companyEmail')
-                                ?.hasError('required')
-                            "
-                          >
-                            Mandatory Field: Input Required.
-                          </mat-error>
-                        </mat-form-field>
-                        <div class="phone-field-container">
-                          <!-- Country Code Select -->
-                          <mat-form-field
-                            appearance="fill"
-                            class="country-code-field"
-                          >
-                            <mat-label>Prefix</mat-label>
-                            <mat-select
-                              [(value)]="selectedCompanyCountryCode"
-                              (selectionChange)="onCountryChanged(true)"
-                              [compareWith]="compareCountryCodes"
-                            >
-                              <mat-option
-                                *ngFor="let c of countryNumberCode"
-                                [value]="c"
-                              >
-                                {{ c.countryCode }} ({{
-                                  c.countryPhoneNumberCode
-                                }})
-                              </mat-option>
-                            </mat-select>
-                          </mat-form-field>
+  <div class="settings-layout">
+    <aside class="settings-sidebar">
+      <ng-container *ngFor="let group of settingsGroups">
+        <div class="group-label">{{ group }}</div>
+        <button
+          type="button"
+          class="nav-item"
+          *ngFor="let item of navItemsByGroup(group)"
+          [class.active]="activeTab === item.id"
+          (click)="setActiveTab(item.id)"
+        >
+          <lucide-icon [name]="item.icon" class="nav-icon"></lucide-icon>
+          {{ item.label }}
+        </button>
+      </ng-container>
+    </aside>
 
-                          <!-- Actual Mobile Input -->
-                          <mat-form-field
-                            appearance="fill"
-                            class="mobile-number-field"
-                          >
-                            <mat-label>Mobile Number</mat-label>
-                            <input
-                              matInput
-                              type="tel"
-                              formControlName="companyPhone"
-                              placeholder="Enter mobile number"
-                              required
-                              (input)="onPhoneInput($event, true)"
-                              (paste)="onPhonePaste($event, true)"
-                              (blur)="onPhoneBlur(true)"
-                            />
+    <main class="settings-main" [formGroup]="profileForm">
+      <section class="settings-card" *ngIf="activeTab === 'profile'">
+        <h2>Personal Information</h2>
+        <div class="grid two">
+          <div class="field">
+            <label>First Name</label>
+            <input type="text" formControlName="firstName" (input)="markSettingsChanged()" />
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" formControlName="lastName" (input)="markSettingsChanged()" />
+          </div>
+        </div>
 
-                            <mat-error
-                              *ngIf="
-                                profileForm
-                                  .get('companyPhone')
-                                  ?.hasError('required')
-                              "
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                            <mat-error
-                              *ngIf="
-                                profileForm
-                                  .get('companyPhone')
-                                  ?.hasError('invalidPhone')
-                              "
-                            >
-                              Please enter a valid phone number for the selected
-                              country.
-                            </mat-error>
-                          </mat-form-field>
-                        </div>
-                        <mat-form-field appearance="fill">
-                          <mat-label>No. of Employees</mat-label>
-                          <input
-                            matInput
-                            formControlName="nrEmployees"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Years of Operation</mat-label>
-                          <input
-                            matInput
-                            formControlName="yearsOfOperation"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Construction Type</mat-label>
-                          <mat-select
-                            formControlName="constructionType"
-                            multiple
-                          >
-                            <mat-option
-                              *ngFor="let type of constructionTypes"
-                              [value]="type.value"
-                              >{{ type.display }}
-                            </mat-option>
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Company Registration No</mat-label>
-                          <input
-                            matInput
-                            formControlName="companyRegNo"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>VAT Number</mat-label>
-                          <input
-                            matInput
-                            formControlName="vatNo"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                      </div>
-                    </div>
-                    <!-- Trade & Supplier Info -->
-                    <div class="section" *ngIf="canViewTradeSupplier()">
-                      <h3>Trade & Supplier Info</h3>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Trade</mat-label>
-                          <input
-                            matInput
-                            formControlName="trade"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Supplier Type</mat-label>
-                          <input
-                            matInput
-                            formControlName="supplierType"
-                            placeholder=" "
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Products Offered</mat-label>
-                          <mat-select
-                            formControlName="productsOffered"
-                            multiple
-                          >
-                            <mat-option
-                              *ngFor="let product of supplierProducts"
-                              [value]="product.value"
-                            >
-                              {{ product.display }}</mat-option
-                            >
-                          </mat-select>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill" hidden>
-                          <mat-label>Project Preferences</mat-label>
-                          <mat-select
-                            formControlName="projectPreferences"
-                            multiple
-                          >
-                            <mat-option
-                              *ngFor="let preference of preferenceOptions"
-                              [value]="preference.value"
-                            >
-                              {{ preference.display }}</mat-option
-                            >
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                    </div>
-                    <!-- Delivery & Location -->
-                    <div class="section" *ngIf="canViewDeliveryLocation()">
-                      <h3>Operating area</h3>
-                      <div class="form-row">
-                        <!-- ✅ New Address Field -->
-                        <mat-form-field appearance="fill">
-                          <mat-label>Delivery Area</mat-label>
-                          <mat-select formControlName="deliveryArea" multiple>
-                            <mat-option
-                              *ngFor="let area of deliveryAreas"
-                              [value]="area.value"
-                              >{{ area.display }}
-                            </mat-option>
-                          </mat-select>
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Lead Time</mat-label>
-                          <mat-select formControlName="deliveryTime">
-                            <mat-option
-                              *ngFor="let time of leadTimeDelivery"
-                              [value]="time.value"
-                              >{{ time.display }}
-                            </mat-option>
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                      <div class="form-row">
-                        <!-- Billing Address -->
-                        <mat-form-field>
-                          <mat-label>Billing Address</mat-label>
-                          <input
-                            matInput
-                            formControlName="billingAddressInput"
-                            [matAutocomplete]="billingAuto"
-                            placeholder="Search address..."
-                          />
-                          <mat-autocomplete
-                            #billingAuto="matAutocomplete"
-                            (optionSelected)="
-                              onAddressSelected($event, 'billing')
-                            "
-                          >
-                            <mat-option
-                              *ngFor="let option of billingAddressOptions"
-                              [value]="option"
-                            >
-                              {{ option.description }}
-                            </mat-option>
-                          </mat-autocomplete>
-                        </mat-form-field>
-
-                        <!-- Physical Address -->
-                        <mat-form-field>
-                          <mat-label>Physical Address</mat-label>
-                          <input
-                            matInput
-                            formControlName="physicalAddressInput"
-                            [matAutocomplete]="physicalAuto"
-                            placeholder="Search address..."
-                          />
-                          <mat-autocomplete
-                            #physicalAuto="matAutocomplete"
-                            (optionSelected)="
-                              onAddressSelected($event, 'physical')
-                            "
-                          >
-                            <mat-option
-                              *ngFor="let option of physicalAddressOptions"
-                              [value]="option"
-                            >
-                              {{ option.description }}
-                            </mat-option>
-                          </mat-autocomplete>
-                        </mat-form-field>
-                      </div>
-
-                      <!-- REMOVED THIS SECTION AS WE ARE MAKING USE OF THE GOOGLE MAPS API ADDRESS 
-                      <div class="form-row">
-<mat-form-field appearance="fill">
-  <mat-label>Country</mat-label>
-  <input matInput formControlName="country"
-         [matAutocomplete]="autoCountry"
-         (focus)="openCountryPanel()"
-         #countryAutoTrigger="matAutocompleteTrigger">
-  <mat-autocomplete #autoCountry="matAutocomplete" [displayWith]="countryDisplayFn">
-    <mat-option *ngFor="let country of filteredCountries | async" [value]="country.id">
-      {{ country.countryName }}
-    </mat-option>
-  </mat-autocomplete>
-</mat-form-field>
-
-<mat-form-field appearance="fill">
-  <mat-label>State</mat-label>
-  <input matInput formControlName="state"
-         [matAutocomplete]="autoState"
-         (focus)="openStatePanel()"
-         #stateAutoTrigger="matAutocompleteTrigger">
-  <mat-autocomplete #autoState="matAutocomplete" [displayWith]="stateDisplayFn">
-    <mat-option *ngFor="let state of filteredStates | async" [value]="state.id">
-      {{ state.stateName }}
-    </mat-option>
-  </mat-autocomplete>
-</mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>City</mat-label>
-                          <input matInput formControlName="city" placeholder=" " />
-                        </mat-form-field>
-                      </div> -->
-                    </div>
-                    <!-- Job Preferences -->
-                    <div class="section" *ngIf="canViewTradeSupplier()">
-                      <h3>Job Preferences</h3>
-                      <div class="form-row">
-                        <mat-form-field appearance="fill">
-                          <mat-label>Notification Radius (Miles)</mat-label>
-                          <input
-                            matInput
-                            type="number"
-                            formControlName="notificationRadius"
-                            placeholder="100"
-                          />
-                        </mat-form-field>
-                        <mat-form-field appearance="fill">
-                          <mat-label>Job Preferences</mat-label>
-                          <mat-select formControlName="jobPreferences" multiple>
-                            <mat-option
-                              *ngFor="let preference of preferenceOptions"
-                              [value]="preference.value"
-                            >
-                              {{ preference.display }}</mat-option
-                            >
-                          </mat-select>
-                        </mat-form-field>
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <button
-                        mat-raised-button
-                        type="submit"
-                        class="submit-btn"
-                      >
-                        {{ isSaving ? "Saving..." : "Save Profile" }}
-                      </button>
-                    </div>
-                  </mat-tab>
-                  <!-- Addresses Tab -->
-                  <!-- <mat-tab label="Addresses">
-                    <div class="section addresses-section">
-                      <h3>Address Details</h3>
-                      <div class="address-footer">
-                        <button
-                          mat-raised-button
-                          color="primary"
-                          type="button"
-                          class="submit-btn"
-                          (click)="openAddressDialog()"
-                        >
-                          Add New Address
-                        </button>
-                      </div>
-    
-                      <div class="address-table-scroll">
-                        <mat-table
-                          [dataSource]="addressDataSource"
-                          class="mat-elevation-z8"
-                        >
-                          <ng-container matColumnDef="formattedAddress">
-                            <mat-header-cell *matHeaderCellDef
-                              >Address</mat-header-cell
-                            >
-                            <mat-cell *matCellDef="let addr">{{
-                              addr.formattedAddress
-                            }}</mat-cell>
-                          </ng-container>
-
-                          <ng-container matColumnDef="city">
-                            <mat-header-cell *matHeaderCellDef
-                              >City</mat-header-cell
-                            >
-                            <mat-cell *matCellDef="let addr">{{
-                              addr.city
-                            }}</mat-cell>
-                          </ng-container>
-
-                          <ng-container matColumnDef="state">
-                            <mat-header-cell *matHeaderCellDef
-                              >State</mat-header-cell
-                            >
-                            <mat-cell *matCellDef="let addr">{{
-                              addr.state
-                            }}</mat-cell>
-                          </ng-container>
-
-                          <ng-container matColumnDef="country">
-                            <mat-header-cell *matHeaderCellDef
-                              >Country</mat-header-cell
-                            >
-                            <mat-cell *matCellDef="let addr">{{
-                              addr.country
-                            }}</mat-cell>
-                          </ng-container>
-
-                          <ng-container matColumnDef="actions">
-                            <mat-header-cell *matHeaderCellDef
-                              >Actions</mat-header-cell
-                            >
-                            <mat-cell *matCellDef="let addr">
-                              <button
-                                mat-icon-button
-                                color="primary"
-                                type="button"
-                                (click)="editAddress(addr)"
-                              >
-                                <mat-icon>edit</mat-icon>
-                              </button>
-                              <button
-                                mat-icon-button
-                                color="warn"
-                                type="button"
-                                (click)="deleteAddress(addr)"
-                              >
-                                <mat-icon>delete</mat-icon>
-                              </button>
-                            </mat-cell>
-                          </ng-container>
-
-                          <mat-header-row
-                            *matHeaderRowDef="[
-                              'formattedAddress',
-                              'city',
-                              'state',
-                              'country',
-                              'actions',
-                            ]"
-                          ></mat-header-row>
-                          <mat-row
-                            *matRowDef="
-                              let row;
-                              columns: [
-                                'formattedAddress',
-                                'city',
-                                'state',
-                                'country',
-                                'actions',
-                              ]
-                            "
-                          ></mat-row>
-                        </mat-table>
-                      </div>
-                    </div>
-                  </mat-tab> -->
-
-                  <!-- Team Management Tab -->
-                  <mat-tab
-                    label="Team Management"
-                    *ngIf="
-                      authService.hasPermission('addTeamMembers') ||
-                      authService.hasPermission('deleteTeamMembers') ||
-                      authService.hasPermission('editTeamMembers')
-                    "
-                  >
-                    <div
-                      class="section"
-                      *ngIf="authService.hasPermission('addTeamMembers')"
-                    >
-                      <h3>Add Team Member</h3>
-                      <form [formGroup]="teamForm" (ngSubmit)="addTeamMember()">
-                        <div class="form-row">
-                          <mat-form-field appearance="fill">
-                            <mat-label>First Name</mat-label>
-                            <input
-                              matInput
-                              formControlName="firstName"
-                              placeholder=" "
-                            />
-                            <mat-error
-                              *ngIf="
-                                teamForm.get('firstName')?.hasError('required')
-                              "
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                          </mat-form-field>
-                          <mat-form-field appearance="fill">
-                            <mat-label>Last Name</mat-label>
-                            <input
-                              matInput
-                              formControlName="lastName"
-                              placeholder=" "
-                            />
-                            <mat-error
-                              *ngIf="
-                                teamForm.get('lastName')?.hasError('required')
-                              "
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                          </mat-form-field>
-                          <mat-form-field appearance="fill">
-                            <mat-label>Role</mat-label>
-                            <mat-select
-                              formControlName="role"
-                              panelClass="custom-select-panel"
-                            >
-                              <mat-option
-                                *ngFor="let role of availableRoles"
-                                [value]="role.value"
-                              >
-                                {{ role.display }}
-                              </mat-option>
-                            </mat-select>
-                            <mat-error
-                              *ngIf="teamForm.get('role')?.hasError('required')"
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                          </mat-form-field>
-                          <mat-form-field appearance="fill">
-                            <mat-label>Email</mat-label>
-                            <input
-                              matInput
-                              formControlName="email"
-                              placeholder=" "
-                            />
-                            <mat-error
-                              *ngIf="
-                                teamForm.get('email')?.hasError('required')
-                              "
-                            >
-                              Mandatory Field: Input Required.
-                            </mat-error>
-                            <mat-error
-                              *ngIf="teamForm.get('email')?.hasError('email')"
-                            >
-                              Invalid email format.
-                            </mat-error>
-                          </mat-form-field>
-                          <button
-                            mat-raised-button
-                            type="submit"
-                            class="submit-btn"
-                            [disabled]="teamForm.invalid || isSendingInvite"
-                          >
-                            {{
-                              isSendingInvite
-                                ? "Sending Invite..."
-                                : "Add Member"
-                            }}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                    <div class="section">
-                      <h3>Team Members</h3>
-                      <mat-tab-group>
-                        <mat-tab label="Active">
-                          <mat-table
-                            [dataSource]="activeTeamMembers"
-                            class="mat-elevation-z8"
-                          >
-                            <ng-container matColumnDef="name">
-                              <mat-header-cell *matHeaderCellDef
-                                >Name</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member"
-                                >{{ member.firstName }}
-                                {{ member.lastName }}</mat-cell
-                              >
-                            </ng-container>
-                            <ng-container matColumnDef="role">
-                              <mat-header-cell *matHeaderCellDef
-                                >Role</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.role | roleDisplay
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="email">
-                              <mat-header-cell *matHeaderCellDef
-                                >Email</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.email
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef
-                                >Status</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.status
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef
-                                >Actions</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">
-                                <button
-                                  type="button"
-                                  mat-icon-button
-                                  [matMenuTriggerFor]="activeMenu"
-                                >
-                                  <mat-icon>more_vert</mat-icon>
-                                </button>
-                                <mat-menu #activeMenu="matMenu">
-                                  <button
-                                    mat-menu-item
-                                    (click)="
-                                      openPermissionsDialog(
-                                        member.id,
-                                        member.firstName,
-                                        member.lastName
-                                      )
-                                    "
-                                    *ngIf="
-                                      authService.hasPermission(
-                                        'editTeamMembers'
-                                      )
-                                    "
-                                  >
-                                    <mat-icon>manage_accounts</mat-icon>
-                                    <span>Manage Permissions</span>
-                                  </button>
-                                  <button
-                                    mat-menu-item
-                                    (click)="
-                                      openConfirmationDialog(
-                                        member.id,
-                                        'deactivate'
-                                      )
-                                    "
-                                    *ngIf="
-                                      authService.hasPermission(
-                                        'editTeamMembers'
-                                      )
-                                    "
-                                  >
-                                    <mat-icon>person_remove</mat-icon>
-                                    <span>Deactivate</span>
-                                  </button>
-                                  <button
-                                    mat-menu-item
-                                    (click)="
-                                      openConfirmationDialog(
-                                        member.id,
-                                        'delete'
-                                      )
-                                    "
-                                    *ngIf="
-                                      authService.hasPermission(
-                                        'deleteTeamMembers'
-                                      )
-                                    "
-                                  >
-                                    <mat-icon>delete</mat-icon>
-                                    <span>Delete</span>
-                                  </button>
-                                </mat-menu>
-                              </mat-cell>
-                            </ng-container>
-                            <mat-header-row
-                              *matHeaderRowDef="displayedColumns"
-                            ></mat-header-row>
-                            <mat-row
-                              *matRowDef="let row; columns: displayedColumns"
-                            ></mat-row>
-                          </mat-table>
-                        </mat-tab>
-                        <mat-tab
-                          label="Deactivated"
-                          *ngIf="deactivatedTeamMembers.length > 0"
-                        >
-                          <mat-table
-                            [dataSource]="deactivatedTeamMembers"
-                            class="mat-elevation-z8"
-                          >
-                            <ng-container matColumnDef="name">
-                              <mat-header-cell *matHeaderCellDef
-                                >Name</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member"
-                                >{{ member.firstName }}
-                                {{ member.lastName }}</mat-cell
-                              >
-                            </ng-container>
-                            <ng-container matColumnDef="role">
-                              <mat-header-cell *matHeaderCellDef
-                                >Role</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.role | roleDisplay
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="email">
-                              <mat-header-cell *matHeaderCellDef
-                                >Email</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.email
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef
-                                >Status</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">{{
-                                member.status
-                              }}</mat-cell>
-                            </ng-container>
-                            <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef
-                                >Actions</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let member">
-                                <button
-                                  type="button"
-                                  mat-icon-button
-                                  [matMenuTriggerFor]="deactivatedMenu"
-                                >
-                                  <mat-icon>more_vert</mat-icon>
-                                </button>
-                                <mat-menu #deactivatedMenu="matMenu">
-                                  <button
-                                    mat-menu-item
-                                    (click)="
-                                      openConfirmationDialog(
-                                        member.id,
-                                        'reactivate'
-                                      )
-                                    "
-                                  >
-                                    <mat-icon>person_add</mat-icon>
-                                    <span>Reactivate</span>
-                                  </button>
-                                  <button
-                                    mat-menu-item
-                                    (click)="
-                                      openConfirmationDialog(
-                                        member.id,
-                                        'delete'
-                                      )
-                                    "
-                                  >
-                                    <mat-icon>delete</mat-icon>
-                                    <span>Delete Permanently</span>
-                                  </button>
-                                </mat-menu>
-                              </mat-cell>
-                            </ng-container>
-                            <mat-header-row
-                              *matHeaderRowDef="displayedColumns"
-                            ></mat-header-row>
-                            <mat-row
-                              *matRowDef="let row; columns: displayedColumns"
-                            ></mat-row>
-                          </mat-table>
-                        </mat-tab>
-                      </mat-tab-group>
-                    </div>
-                  </mat-tab>
-                  <!-- Documents Tab -->
-                  <mat-tab label="Documents">
-                    <div class="section">
-                      <h3>Profile Documents</h3>
-                      <div class="upload-container">
-                        <div *ngIf="isUploading" class="upload-progress">
-                          <p>Upload Progress: {{ progress }}%</p>
-                          <mat-progress-bar
-                            mode="determinate"
-                            [value]="progress"
-                          ></mat-progress-bar>
-                        </div>
-                        <div
-                          *ngIf="!isUploading && uploadedFilesCount > 0"
-                          class="upload-complete"
-                        >
-                          <p
-                            [matTooltip]="uploadedFileNames.join(', ')"
-                            matTooltipPosition="above"
-                          >
-                            {{ uploadedFilesCount }} file(s) uploaded
-                            successfully
-                          </p>
-                        </div>
-                        <div class="custom-file-upload">
-                          <label for="file-upload" class="upload-label">
-                            <img
-                              src="assets/custom-svg/upload-folder-svgrepo-com.svg"
-                              alt="Upload Icon"
-                              class="upload-icon"
-                            />
-                            Upload File
-                          </label>
-                          <input
-                            id="file-upload"
-                            type="file"
-                            (change)="onFileSelected($event)"
-                          />
-                        </div>
-                      </div>
-                      <mat-table
-                        [dataSource]="documents"
-                        class="mat-elevation-z8"
-                      >
-                        <ng-container matColumnDef="name">
-                          <mat-header-cell *matHeaderCellDef
-                            >Document Name</mat-header-cell
-                          >
-                          <mat-cell *matCellDef="let doc">{{
-                            doc.name
-                          }}</mat-cell>
-                        </ng-container>
-                        <ng-container matColumnDef="type">
-                          <mat-header-cell *matHeaderCellDef
-                            >Type</mat-header-cell
-                          >
-                          <mat-cell *matCellDef="let doc">{{
-                            doc.type
-                          }}</mat-cell>
-                        </ng-container>
-                        <ng-container matColumnDef="uploadedDate">
-                          <mat-header-cell *matHeaderCellDef
-                            >Uploaded Date</mat-header-cell
-                          >
-                          <mat-cell *matCellDef="let doc">{{
-                            doc.uploadedDate
-                          }}</mat-cell>
-                        </ng-container>
-                        <ng-container matColumnDef="actions">
-                          <mat-header-cell *matHeaderCellDef
-                            >Actions</mat-header-cell
-                          >
-                          <mat-cell *matCellDef="let doc">
-                            <button
-                              mat-icon-button
-                              type="button"
-                              (click)="viewDocument(doc)"
-                              matTooltip="View Document"
-                            >
-                              <mat-icon>visibility</mat-icon>
-                            </button>
-
-                            <button
-                              mat-icon-button
-                              type="button"
-                              (click)="deleteDocument(doc)"
-                              matTooltip="Delete Document"
-                            >
-                              <mat-icon>delete</mat-icon>
-                            </button>
-                            <button
-                              mat-icon-button
-                              type="button"
-                              (click)="archiveDocument(doc)"
-                              matTooltip="Archive Document"
-                            >
-                              <mat-icon>archive</mat-icon>
-                            </button>
-                          </mat-cell>
-                        </ng-container>
-                        <mat-header-row
-                          *matHeaderRowDef="documentColumns"
-                        ></mat-header-row>
-                        <mat-row
-                          *matRowDef="let row; columns: documentColumns"
-                        ></mat-row>
-                      </mat-table>
-                    </div>
-                  </mat-tab>
-                  <!-- Subscriptions Tab -->
-                  <mat-tab label="Subscriptions">
-                    <div class="section">
-                      <h3>Your Subscriptions</h3>
-                      <div class="address-footer">
-                        <button
-                          mat-raised-button
-                          type="button"
-                          class="submit-btn"
-                          (click)="openSubscriptionCreateDialog()"
-                          *ngIf="!authService.isTeamMember()"
-                        >
-                          Add Subscription
-                        </button>
-                      </div>
-                      <div *ngIf="isLoadingSubscriptions" class="form-row">
-                        <mat-progress-bar
-                          mode="indeterminate"
-                        ></mat-progress-bar>
-                      </div>
-
-                      <div *ngIf="subscriptionsError" class="form-row">
-                        <mat-icon color="warn">error</mat-icon>
-                        <span>{{ subscriptionsError }}</span>
-                      </div>
-
-                      <mat-tab-group *ngIf="!isLoadingSubscriptions">
-                        <!-- Active (mine) -->
-                        <mat-tab label="Active">
-                          <mat-table
-                            [dataSource]="activeSubscriptionsData"
-                            matSort
-                            #activeSort="matSort"
-                            class="mat-elevation-z8"
-                          >
-                            <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Package</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.package
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="validUntil">
-                              <mat-header-cell
-                                *matHeaderCellDef
-                                mat-sort-header
-                              >
-                                Valid Until
-                              </mat-header-cell>
-
-                              <mat-cell *matCellDef="let s">
-                                <!-- ✅ Simplified logic with clear debug output -->
-                                <span *ngIf="s.validUntil">
-                                  <span *ngIf="s.cancelAtPeriodEnd">
-                                    Cancels on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      !s.cancelAtPeriodEnd &&
-                                      s.status === 'active'
-                                    "
-                                  >
-                                    Renews on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      s.validUntil < today &&
-                                      s.status !== 'active'
-                                    "
-                                  >
-                                    Expired on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                </span>
-                                <span *ngIf="!s.validUntil">—</span>
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Amount</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.amount | currency
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Assigned User</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">
-                                {{ s.assignedUser || "—" }}</mat-cell
-                              >
-                            </ng-container>
-
-                            <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Status</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s"
-                                >{{ s.status || "—" }}
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef
-                                >Actions</mat-header-cell
-                              >
-                              <mat-cell
-                                *matCellDef="let s"
-                                class="actions-cell"
-                              >
-                                <button
-                                  mat-raised-button
-                                  color="primary"
-                                  (click)="upgradeSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s.subscriptionId) ||
-                                    !canManageRow(s)
-                                  "
-                                  class="submit-btn"
-                                  type="button"
-                                  *ngIf="!authService.isTeamMember()"
-                                >
-                                  Change
-                                </button>
-                                <!-- If NOT cancelled → show Cancel button -->
-                                <button
-                                  *ngIf="!s.cancelAtPeriodEnd"
-                                  mat-raised-button
-                                  color="warn"
-                                  (click)="cancelSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s.subscriptionId) ||
-                                    !canManageRow(s)
-                                  "
-                                  class="submit-btn"
-                                  type="button"
-                                >
-                                  Cancel
-                                </button>
-
-                                <!-- If already cancelled-at-end → show Undo button -->
-                                <button
-                                  *ngIf="s.cancelAtPeriodEnd"
-                                  mat-raised-button
-                                  color="primary"
-                                  (click)="undoCancellation(s)"
-                                  [disabled]="!canManageRow(s)"
-                                  class="submit-btn"
-                                  type="button"
-                                >
-                                  Undo Cancel
-                                </button>
-                              </mat-cell>
-                            </ng-container>
-
-                            <mat-header-row
-                              *matHeaderRowDef="subscriptionColumns"
-                            ></mat-header-row>
-                            <mat-row
-                              *matRowDef="let row; columns: subscriptionColumns"
-                            ></mat-row>
-                          </mat-table>
-
-                          <mat-paginator
-                            #activePaginator
-                            [pageSize]="10"
-                            [pageSizeOptions]="[5, 10, 25]"
-                            showFirstLastButtons
-                          ></mat-paginator>
-
-                          <div
-                            *ngIf="activeSubscriptionsData.data.length === 0"
-                            class="form-row"
-                          >
-                            <em>No active subscriptions.</em>
-                          </div>
-                          <br />
-                        </mat-tab>
-
-                        <!-- Team -->
-                        <mat-tab label="Team">
-                          <mat-table
-                            [dataSource]="teamSubscriptionsData"
-                            matSort
-                            #teamSort="matSort"
-                            class="mat-elevation-z8"
-                          >
-                            <!-- reuse same columns -->
-                            <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Package</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.package
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="validUntil">
-                              <mat-header-cell
-                                *matHeaderCellDef
-                                mat-sort-header
-                              >
-                                Valid Until
-                              </mat-header-cell>
-
-                              <mat-cell *matCellDef="let s">
-                                <!-- ✅ Simplified logic with clear debug output -->
-                                <span *ngIf="s.validUntil">
-                                  <span *ngIf="s.cancelAtPeriodEnd">
-                                    Cancels on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      !s.cancelAtPeriodEnd &&
-                                      s.status === 'active'
-                                    "
-                                  >
-                                    Renews on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      s.validUntil < today &&
-                                      s.status !== 'active'
-                                    "
-                                  >
-                                    Expired on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                </span>
-                                <span *ngIf="!s.validUntil">—</span>
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Amount</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.amount | currency
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Assigned User</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">
-                                {{ s.assignedUserName || "—" }}</mat-cell
-                              >
-                            </ng-container>
-
-                            <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Status</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s"
-                                >{{ s.status || "—" }}
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef
-                                >Actions</mat-header-cell
-                              >
-                              <mat-cell
-                                *matCellDef="let s"
-                                class="actions-cell"
-                              >
-                                <button
-                                  mat-raised-button
-                                  color="primary"
-                                  (click)="upgradeSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s) || !canManageRow(s)
-                                  "
-                                  class="submit-btn"
-                                  type="button"
-                                >
-                                  Change
-                                </button>
-                                <button
-                                  mat-raised-button
-                                  color="warn"
-                                  (click)="cancelSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s.subscriptionId) ||
-                                    !canManageRow(s)
-                                  "
-                                  class="submit-btn"
-                                  type="button"
-                                >
-                                  Cancel
-                                </button>
-                              </mat-cell>
-                            </ng-container>
-
-                            <mat-header-row
-                              *matHeaderRowDef="subscriptionColumns"
-                            ></mat-header-row>
-                            <mat-row
-                              *matRowDef="let row; columns: subscriptionColumns"
-                            ></mat-row>
-                          </mat-table>
-
-                          <mat-paginator
-                            #teamPaginator
-                            [pageSize]="10"
-                            [pageSizeOptions]="[5, 10, 25]"
-                            showFirstLastButtons
-                          ></mat-paginator>
-
-                          <div
-                            *ngIf="teamSubscriptionsData.data.length === 0"
-                            class="form-row"
-                          >
-                            <em>No team subscriptions.</em>
-                          </div>
-                        </mat-tab>
-
-                        <!-- Inactive -->
-                        <mat-tab label="Inactive">
-                          <mat-table
-                            [dataSource]="inactiveSubscriptionsData"
-                            matSort
-                            #inactiveSort="matSort"
-                            class="mat-elevation-z8"
-                          >
-                            <!-- reuse columns -->
-                            <ng-container matColumnDef="package">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Package</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.package
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="validUntil">
-                              <mat-header-cell
-                                *matHeaderCellDef
-                                mat-sort-header
-                              >
-                                Valid Until
-                              </mat-header-cell>
-
-                              <mat-cell *matCellDef="let s">
-                                <!-- ✅ Simplified logic with clear debug output -->
-                                <span *ngIf="s.validUntil">
-                                  <span *ngIf="s.cancelAtPeriodEnd">
-                                    Cancels on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      !s.cancelAtPeriodEnd &&
-                                      s.status === 'active'
-                                    "
-                                  >
-                                    Renews on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                  <span
-                                    *ngIf="
-                                      s.validUntil < today &&
-                                      s.status !== 'active'
-                                    "
-                                  >
-                                    Expired on
-                                    {{ s.validUntil | date: "mediumDate" }}
-                                  </span>
-                                </span>
-                                <span *ngIf="!s.validUntil">—</span>
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="amount">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Amount</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">{{
-                                s.amount | currency
-                              }}</mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="assignedUser">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Assigned User</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s">
-                                {{ s.assignedUserName || "—" }}</mat-cell
-                              >
-                            </ng-container>
-
-                            <ng-container matColumnDef="status">
-                              <mat-header-cell *matHeaderCellDef mat-sort-header
-                                >Status</mat-header-cell
-                              >
-                              <mat-cell *matCellDef="let s"
-                                >{{ s.status || "—" }}
-                              </mat-cell>
-                            </ng-container>
-
-                            <ng-container matColumnDef="actions">
-                              <mat-header-cell *matHeaderCellDef
-                                >Actions</mat-header-cell
-                              >
-                              <mat-cell
-                                *matCellDef="let s"
-                                class="actions-cell"
-                              >
-                                <button
-                                  mat-raised-button
-                                  color="primary"
-                                  (click)="upgradeSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s.subscriptionId) ||
-                                    isInactiveRow(s)
-                                  "
-                                  type="button"
-                                >
-                                  Change
-                                </button>
-                                <button
-                                  mat-raised-button
-                                  color="warn"
-                                  (click)="cancelSubscription(s)"
-                                  [disabled]="
-                                    rowBusy.has(s.subscriptionId) ||
-                                    isInactiveRow(s)
-                                  "
-                                  type="button"
-                                >
-                                  Cancel
-                                </button>
-                              </mat-cell>
-                            </ng-container>
-
-                            <mat-header-row
-                              *matHeaderRowDef="subscriptionColumns"
-                            ></mat-header-row>
-                            <mat-row
-                              *matRowDef="let row; columns: subscriptionColumns"
-                            ></mat-row>
-                          </mat-table>
-
-                          <mat-paginator
-                            #inactivePaginator
-                            [pageSize]="10"
-                            [pageSizeOptions]="[5, 10, 25]"
-                            showFirstLastButtons
-                          ></mat-paginator>
-
-                          <div
-                            *ngIf="inactiveSubscriptionsData.data.length === 0"
-                            class="form-row"
-                          >
-                            <em>No inactive subscriptions.</em>
-                          </div>
-                        </mat-tab>
-                      </mat-tab-group>
-                    </div>
-                  </mat-tab>
-                </mat-tab-group>
-              </form>
+        <div class="grid two">
+          <div class="phone-grid">
+            <div class="field">
+              <label>Prefix</label>
+              <select [(ngModel)]="selectedCountryCode" [ngModelOptions]="{standalone: true}" (change)="onCountryChanged(); markSettingsChanged()">
+                <option *ngFor="let c of countryNumberCode" [ngValue]="c">
+                  {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+                </option>
+              </select>
             </div>
-          </mat-card-content>
-        </mat-card>
+            <div class="field">
+              <label>Mobile Number</label>
+              <input
+                type="text"
+                formControlName="phoneNumber"
+                (input)="onPhoneInput($event); markSettingsChanged()"
+                (blur)="onPhoneBlur()"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>User Type</label>
+            <select [(ngModel)]="demoUserType" [ngModelOptions]="{standalone: true}" (change)="onDemoUserTypeChanged($any($event.target).value)">
+              <option value="General Contractor">General Contractor</option>
+              <option value="Subcontractor / Tradesman">Subcontractor / Tradesman</option>
+              <option value="Vendor / Supplier">Vendor / Supplier</option>
+              <option value="Owner / Developer">Owner / Developer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid two" *ngIf="demoUserType === 'Subcontractor / Tradesman'">
+          <div class="field">
+            <label>Your Trade</label>
+            <select [(ngModel)]="demoTrade" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+              <option value="">Select your trade</option>
+              <option *ngFor="let option of tradeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+          <div class="helper-note">Select your primary construction trade to personalize available work and recommendations.</div>
+        </div>
+
+        <h2>Certification & Availability</h2>
+        <div class="grid two">
+          <div class="field">
+            <label>Availability</label>
+            <select formControlName="availability" (change)="markSettingsChanged()">
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Certification Status</label>
+            <select formControlName="certificationStatus" (change)="markSettingsChanged()">
+              <option value="Certified">Certified</option>
+              <option value="Pending">Pending</option>
+              <option value="Not Certified">Not Certified</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-primary" type="button" (click)="onSubmit()">Save Profile</button>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'company'">
+        <h2>Company Details</h2>
+        <div class="grid two">
+          <div class="field">
+            <label>Company Name</label>
+            <input type="text" formControlName="companyName" (input)="markSettingsChanged()" />
+          </div>
+          <div class="field">
+            <label>Company Email</label>
+            <input type="text" formControlName="companyEmail" (input)="markSettingsChanged()" />
+          </div>
+        </div>
+
+        <div class="context-badge-row">
+          <span class="context-badge">{{ demoUserType }} Profile</span>
+          <span class="muted">Fields below are tailored to your selected user type.</span>
+        </div>
+
+        <ng-container *ngIf="demoUserType === 'General Contractor' || demoUserType === ''">
+          <h2>Trade Info</h2>
+          <div class="grid two">
+            <div class="field">
+              <label>Primary Trade</label>
+              <select [(ngModel)]="demoTrade" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option value="general-contractor">General Contractor</option>
+                <option value="design-build">Design-Build</option>
+                <option value="construction-manager">Construction Manager</option>
+                <option value="other-trade">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Specialization</label>
+              <select formControlName="constructionType" (change)="markSettingsChanged()">
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+                <option value="industrial">Industrial</option>
+                <option value="infrastructure">Infrastructure / Civil</option>
+                <option value="mixed">Mixed Use</option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="demoUserType === 'Subcontractor / Tradesman'">
+          <h2>Trade Info</h2>
+          <div class="grid two">
+            <div class="field">
+              <label>Your Trade</label>
+              <select [(ngModel)]="demoTrade" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option value="">Select your trade</option>
+                <option *ngFor="let option of tradeOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Construction Type</label>
+              <select formControlName="constructionType" (change)="markSettingsChanged()">
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+                <option value="industrial">Industrial</option>
+                <option value="mixed">Mixed Use</option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="demoUserType === 'Vendor / Supplier'">
+          <h2>Supplier Info</h2>
+          <div class="grid two">
+            <div class="field">
+              <label>Supplier Type</label>
+              <select [(ngModel)]="demoSupplierType" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option value="">Select supplier type</option>
+                <option *ngFor="let option of supplierTypeOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Products Offered</label>
+              <select [(ngModel)]="demoProductsOffered" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option *ngFor="let option of productsOfferedOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="demoUserType === 'Owner / Developer'">
+          <h2>Development Focus</h2>
+          <div class="grid two">
+            <div class="field">
+              <label>Development Type</label>
+              <select [(ngModel)]="demoDevelopmentType" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option value="">Select type</option>
+                <option *ngFor="let option of developmentTypeOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Operating Region</label>
+              <select [(ngModel)]="demoOperatingRegion" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+                <option value="">Select region</option>
+                <option *ngFor="let option of serviceAreaOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="grid two">
+          <div class="phone-grid">
+            <div class="field">
+              <label>Prefix</label>
+              <select [(ngModel)]="selectedCompanyCountryCode" [ngModelOptions]="{standalone: true}" (change)="onCountryChanged(true); markSettingsChanged()">
+                <option *ngFor="let c of countryNumberCode" [ngValue]="c">
+                  {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+                </option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Mobile Number</label>
+              <input
+                type="text"
+                formControlName="companyPhone"
+                (input)="onPhoneInput($event, true); markSettingsChanged()"
+                (blur)="onPhoneBlur(true)"
+              />
+            </div>
+          </div>
+          <div class="field">
+            <label>No. of Employees</label>
+            <input
+              type="text"
+              inputmode="numeric"
+              formControlName="nrEmployees"
+              (input)="sanitizeNumericInput($event, 'nrEmployees'); markSettingsChanged()"
+            />
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="field">
+            <label>Years of Operation</label>
+            <input
+              type="text"
+              inputmode="numeric"
+              formControlName="yearsOfOperation"
+              (input)="sanitizeNumericInput($event, 'yearsOfOperation'); markSettingsChanged()"
+            />
+          </div>
+          <div class="field">
+            <label>Construction Type</label>
+            <select formControlName="constructionType" (change)="markSettingsChanged()">
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+              <option value="industrial">Industrial</option>
+              <option value="mixed">Mixed Use</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="field">
+            <label>Company Registration No</label>
+            <input type="text" formControlName="companyRegNo" (input)="markSettingsChanged()" />
+          </div>
+          <div class="field">
+            <label>Tax/VAT Number</label>
+            <input type="text" formControlName="vatNo" (input)="markSettingsChanged()" />
+          </div>
+        </div>
+
+        <h2>Operating Area</h2>
+        <div class="grid two">
+          <div class="field">
+            <label>Service Area</label>
+            <select formControlName="deliveryArea" (change)="markSettingsChanged()">
+              <option *ngFor="let option of serviceAreaOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Availability</label>
+            <select formControlName="deliveryTime" (change)="markSettingsChanged()">
+              <option *ngFor="let option of availabilityLeadTimeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="field">
+            <label>Billing Address</label>
+            <input type="text" formControlName="billingAddressInput" (input)="markSettingsChanged()" />
+          </div>
+          <div class="field">
+            <label>Physical Address</label>
+            <input type="text" formControlName="physicalAddressInput" (input)="markSettingsChanged()" />
+          </div>
+        </div>
+
+        <h2 *ngIf="demoUserType !== 'Owner / Developer'">Job Preferences</h2>
+        <div class="grid two" *ngIf="demoUserType !== 'Owner / Developer'">
+          <div class="field">
+            <label>Notification Radius</label>
+            <input type="text" inputmode="numeric" [(ngModel)]="demoNotificationRadius" [ngModelOptions]="{standalone: true}" (input)="sanitizeNumericInput($event, undefined, 'demoNotificationRadius'); markSettingsChanged()" />
+          </div>
+          <div class="field">
+            <label>Job Preferences</label>
+            <select [(ngModel)]="demoJobPreferences" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+              <option value="industrial">Industrial</option>
+              <option value="all">All Types</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-primary" type="button" (click)="onSubmit()">Save Profile</button>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'team'">
+        <h2>Add Team Member</h2>
+        <form [formGroup]="teamForm" class="grid two">
+          <div class="field"><label>First Name</label><input type="text" formControlName="firstName" /></div>
+          <div class="field"><label>Last Name</label><input type="text" formControlName="lastName" /></div>
+          <div class="field">
+            <label>Role</label>
+            <select formControlName="role">
+              <option *ngFor="let role of availableRoles" [value]="role.value">{{ role.display }}</option>
+            </select>
+          </div>
+          <div class="field"><label>Email</label><input type="text" formControlName="email" /></div>
+        </form>
+        <button class="btn-primary" type="button" (click)="addTeamMember()">Add Member</button>
+
+        <h2>Team Members</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let member of teamMembers">
+                <td>{{ member.firstName }} {{ member.lastName }}</td>
+                <td>{{ member.role | roleDisplay }}</td>
+                <td>{{ member.email }}</td>
+                <td><span class="status-pill">{{ member.status }}</span></td>
+                <td class="actions">
+                  <div class="menu-wrap">
+                    <button type="button" class="action-btn" (click)="toggleTeamActionMenu(member)">Actions ▾</button>
+                    <div class="menu-panel" *ngIf="isTeamActionMenuOpen(member)">
+                      <label class="menu-label">Change Role</label>
+                      <select class="inline-select" [ngModel]="member.role" [ngModelOptions]="{standalone: true}" (change)="onTeamRoleChanged(member, $any($event.target).value)">
+                        <option *ngFor="let role of teamRoleOptions" [value]="role.value">{{ role.label }}</option>
+                      </select>
+                      <button type="button" class="action-btn" (click)="resendInvite(member)">Resend Invite</button>
+                      <button type="button" class="action-btn danger" (click)="removeMember(member)">Remove Member</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'documents'">
+        <div class="card-head-row">
+          <div>
+            <h2>Certifications & Licenses</h2>
+            <p class="muted">Upload and manage licenses, insurance, and compliance documents.</p>
+          </div>
+          <button class="btn-primary" type="button" (click)="showUploadForm = !showUploadForm">Upload Document</button>
+        </div>
+
+        <div class="upload-panel" *ngIf="showUploadForm">
+          <div class="grid two">
+            <div class="field">
+              <label>Category</label>
+              <select [(ngModel)]="uploadDocCategory" [ngModelOptions]="{standalone: true}" (change)="onUploadDocCategoryChanged($any($event.target).value)">
+                <option value="">Select category</option>
+                <option *ngFor="let option of docCategoryOptions" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Specific Document</label>
+              <select [(ngModel)]="uploadDocSubType" [ngModelOptions]="{standalone: true}" (change)="onUploadDocSubTypeChanged($any($event.target).value)">
+                <option value="">Select document type</option>
+                <option *ngFor="let option of getUploadSubTypeOptions()" [value]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="field"><label>Document Name</label><input type="text" [(ngModel)]="uploadDocName" [ngModelOptions]="{standalone: true}" /></div>
+            <div class="field"><label>Issuer</label><input type="text" [(ngModel)]="uploadIssuer" [ngModelOptions]="{standalone: true}" /></div>
+            <div class="field"><label>Number</label><input type="text" [(ngModel)]="uploadNumber" [ngModelOptions]="{standalone: true}" /></div>
+            <div class="field"><label>Issue Date</label><input type="date" [(ngModel)]="uploadIssueDate" [ngModelOptions]="{standalone: true}" /></div>
+            <div class="field"><label>Expiration Date</label><input type="date" [(ngModel)]="uploadExpDate" [ngModelOptions]="{standalone: true}" /></div>
+            <div class="field" *ngIf="uploadDocCategory === 'Insurance' || uploadDocCategory === 'Bond'">
+              <label>Coverage / Bond Amount</label>
+              <input type="text" placeholder="e.g. $1,000,000" />
+            </div>
+            <div class="field" *ngIf="uploadDocCategory === 'Insurance'">
+              <label>Aggregate Limit</label>
+              <input type="text" placeholder="e.g. $2,000,000" />
+            </div>
+          </div>
+          <div class="drop-zone">
+            <lucide-icon name="upload"></lucide-icon>
+            <div>
+              <p>Drop file here or click to upload</p>
+              <span>PDF, JPG, PNG up to 10MB</span>
+            </div>
+          </div>
+          <button type="button" class="btn-primary" (click)="addCertDocumentPlaceholder()">Upload and Save</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-value">{{ totalCertDocs }}</span>
+            <span class="stat-label">Total Documents</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value">{{ activeCertDocs }}</span>
+            <span class="stat-label">Active</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value">{{ expiringCertDocs }}</span>
+            <span class="stat-label">Expiring</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value">{{ expiredCertDocs }}</span>
+            <span class="stat-label">Expired</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Number</th>
+                <th>Expiration</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of certDocuments">
+                <td>{{ doc.name }}<div class="cell-sub">{{ doc.issuer }}</div></td>
+                <td>{{ doc.type }}</td>
+                <td>{{ doc.number }}</td>
+                <td>{{ doc.expirationDate }}</td>
+                <td><span class="status-pill">{{ doc.status }}</span></td>
+                <td class="actions">
+                  <button type="button" class="action-btn">View</button>
+                  <button type="button" class="action-btn">Download</button>
+                  <button type="button" class="action-btn danger" (click)="removeCertDocument(doc.id)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="warn-note" *ngIf="expiringCertDocs > 0">
+          <lucide-icon name="alert-circle"></lucide-icon>
+          <span>{{ expiringCertDocs }} document(s) are expiring soon. Renew and re-upload to maintain verified status.</span>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'subscriptions'">
+        <div class="card-head-row">
+          <div>
+            <h2>Choose Your Plan</h2>
+            <p class="muted">Select the package that fits your business best.</p>
+          </div>
+          <div class="billing-toggle" role="tablist" aria-label="Billing cycle">
+            <button type="button" [class.active]="subBilling === 'monthly'" (click)="setBillingCycle('monthly')">Monthly</button>
+            <button type="button" [class.active]="subBilling === 'annually'" (click)="setBillingCycle('annually')">Annually</button>
+          </div>
+        </div>
+
+        <div class="plan-grid">
+          <div class="plan-card" [class.active]="selectedPlan==='starter'">
+            <h3>Starter</h3>
+            <p class="price">{{ getPlanPrice('starter') }}</p>
+            <ul class="plan-features">
+              <li *ngFor="let f of starterPlanFeatures">{{ f }}</li>
+            </ul>
+            <button type="button" class="btn-primary" (click)="choosePlan('starter')">{{ planActionLabel('starter') }}</button>
+          </div>
+          <div class="plan-card" [class.active]="selectedPlan==='professional'">
+            <h3>Professional</h3>
+            <p class="price">{{ getPlanPrice('professional') }}</p>
+            <ul class="plan-features">
+              <li *ngFor="let f of professionalPlanFeatures">{{ f }}</li>
+            </ul>
+            <button type="button" class="btn-primary" (click)="choosePlan('professional')">{{ planActionLabel('professional') }}</button>
+          </div>
+          <div class="plan-card" [class.active]="selectedPlan==='enterprise'">
+            <h3>Enterprise</h3>
+            <p class="price">{{ getPlanPrice('enterprise') }}</p>
+            <ul class="plan-features">
+              <li *ngFor="let f of enterprisePlanFeatures">{{ f }}</li>
+            </ul>
+            <button type="button" class="btn-primary" (click)="choosePlan('enterprise')">{{ planActionLabel('enterprise') }}</button>
+          </div>
+        </div>
+
+        <h2>Current Subscription</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Package</th>
+                <th>Billing</th>
+                <th>Amount</th>
+                <th>Next Renewal</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ selectedPlan }}</td>
+                <td>{{ subBilling }}</td>
+                <td>{{ getPlanPrice(selectedPlan) }}</td>
+                <td>Mar 21, 2026</td>
+                <td><span class="status-pill">Active</span></td>
+                <td class="actions">
+                  <select class="inline-select" [ngModel]="selectedPlan" [ngModelOptions]="{standalone: true}" (change)="choosePlan($any($event.target).value)">
+                    <option value="starter">Starter</option>
+                    <option value="professional">Professional</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                  <button type="button" class="action-btn danger">Cancel Subscription</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'appearance'">
+        <h2>Theme Mode</h2>
+        <div class="field field-inline">
+          <label>Theme Mode</label>
+          <select [(ngModel)]="themeMode" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+
+        <h2>UI Density</h2>
+        <div class="field field-inline">
+          <label>UI Density</label>
+          <select [(ngModel)]="uiDensity" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option value="compact">Compact</option>
+            <option value="comfortable">Comfortable</option>
+            <option value="expanded">Expanded</option>
+          </select>
+        </div>
+
+        <h2>PDF Document Branding</h2>
+        <div class="grid three">
+          <div class="field"><label>Header Primary Color</label><input type="color" [(ngModel)]="docPrimaryColor" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Background Secondary</label><input type="color" [(ngModel)]="docSecondaryColor" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Header Text Color</label><input type="color" [(ngModel)]="docTextColor" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+        </div>
+
+        <div class="field field-inline">
+          <label>Header Style</label>
+          <select [(ngModel)]="docHeaderStyle" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option value="solid">Solid Color</option>
+            <option value="gradient">Gradient Style</option>
+          </select>
+        </div>
+
+        <div class="grid three" *ngIf="docHeaderStyle==='gradient'">
+          <div class="field"><label>Gradient Start</label><input type="color" [(ngModel)]="docGradientStart" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Gradient End</label><input type="color" [(ngModel)]="docGradientEnd" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Gradient Direction</label><select [(ngModel)]="docGradientDir" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="to right">Left → Right</option><option value="to bottom">Top → Bottom</option><option value="to bottom right">Diagonal</option></select></div>
+        </div>
+
+        <div class="gradient-strip" *ngIf="docHeaderStyle==='gradient'" [style.background]="getDocHeaderBackground()"></div>
+
+        <div class="preview-card">
+          <div class="preview-head" [style.background]="getDocHeaderBackground()" [style.color]="docTextColor">
+            <div>
+              <span class="logo-chip" *ngIf="docLogoUploaded">🏢</span>
+              <strong>{{ docCompanyName }}</strong>
+              <small>{{ docCompanyPhone }} | {{ docCompanyEmail }}</small>
+            </div>
+            <div>QUOTATION {{ docNumberPrefix }}000142</div>
+          </div>
+          <div class="preview-body" [style.background]="docSecondaryColor" [style.color]="docTextColor">
+            <div>Foundation Work - $12,400</div>
+            <div>Framing - $8,200</div>
+            <div>Electrical - $4,900</div>
+            <div class="preview-total">Total: $25,500</div>
+          </div>
+        </div>
+
+        <h2>Company Logo</h2>
+        <label class="drop-zone logo-zone">
+          <input type="file" accept=".png,.jpg,.jpeg,.svg" (change)="onDocLogoSelected($event)" hidden />
+          <div *ngIf="!docLogoUploaded">
+            <p>Upload company logo</p>
+            <span>PNG, JPG, SVG</span>
+          </div>
+          <div *ngIf="docLogoUploaded" class="logo-loaded">
+            <p>{{ docLogoFileName || 'company-logo.png' }}</p>
+            <span>Click to replace</span>
+            <button type="button" class="action-btn danger" (click)="clearDocLogo($event)">Remove</button>
+          </div>
+        </label>
+
+        <h2>Company Details on Documents</h2>
+        <div class="grid two">
+          <div class="field"><label>Company Name</label><input type="text" [(ngModel)]="docCompanyName" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Company Address</label><input type="text" [(ngModel)]="docCompanyAddress" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Phone</label><input type="text" [(ngModel)]="docCompanyPhone" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Email</label><input type="text" [(ngModel)]="docCompanyEmail" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Tax ID / VAT</label><input type="text" [(ngModel)]="docTaxId" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Currency</label><select [(ngModel)]="docCurrency" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let c of currencyOptions" [value]="c.value">{{ c.label }}</option></select></div>
+        </div>
+
+        <h2>Numbering & Payment Terms</h2>
+        <div class="grid three">
+          <div class="field"><label>Quote Number Prefix</label><input type="text" [(ngModel)]="docNumberPrefix" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Invoice Number Prefix</label><input type="text" [(ngModel)]="docInvoicePrefix" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Default Payment Terms</label><select [(ngModel)]="docPaymentTerms" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="due-on-receipt">Due on Receipt</option><option value="net-7">Net 7</option><option value="net-14">Net 14</option><option value="net-30">Net 30</option><option value="net-45">Net 45</option><option value="net-60">Net 60</option><option value="net-90">Net 90</option></select></div>
+        </div>
+
+        <div class="field">
+          <label>Default Footer Note</label>
+          <textarea rows="3" [(ngModel)]="docFooterNote" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()"></textarea>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <strong>Banking Details</strong>
+            <p class="muted">Show bank account details on PDFs</p>
+          </div>
+          <button type="button" class="switch" [class.on]="docShowBank" (click)="docShowBank=!docShowBank; markSettingsChanged()"><span></span></button>
+        </div>
+        <div class="grid three" *ngIf="docShowBank">
+          <div class="field"><label>Bank Name</label><input type="text" [(ngModel)]="docBankName" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Account Number</label><input type="text" [(ngModel)]="docBankAccount" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Routing / Swift</label><input type="text" [(ngModel)]="docBankRouting" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+        </div>
+
+        <div class="integration-note">Applies to all downloadable PDFs: quotations, invoices, estimates, change orders, and reports.</div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'measurements'">
+        <h2>Measurement System</h2>
+        <div class="field field-inline">
+          <label>Measurement System</label>
+          <select [(ngModel)]="measurementSystem" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option value="imperial">Imperial</option>
+            <option value="metric">Metric</option>
+          </select>
+        </div>
+
+        <div class="grid three">
+          <div class="field"><label>Temperature</label><select [(ngModel)]="temperatureUnit" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="fahrenheit">Fahrenheit</option><option value="celsius">Celsius</option></select></div>
+          <div class="field"><label>Area</label><select [(ngModel)]="areaUnit" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="ft²">ft²</option><option value="m²">m²</option></select></div>
+          <div class="field"><label>Volume</label><select [(ngModel)]="volumeUnit" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="ft³">ft³</option><option value="m³">m³</option></select></div>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'construction'">
+        <h2>Construction Preferences</h2>
+        <div class="grid three">
+          <div class="field"><label>Blueprint Zoom</label><select [(ngModel)]="blueprintZoom" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="fit">Fit to Screen</option><option value="100">100%</option><option value="remember">Remember Last Position</option></select></div>
+          <div class="field"><label>Default Landing</label><select [(ngModel)]="defaultLanding" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="projects">Projects</option><option value="estimating">Estimating</option><option value="bidding">Bidding</option><option value="analytics">Analytics</option></select></div>
+          <div class="field">
+            <label>Auto Save</label>
+            <div class="toggle-inline">
+              <button type="button" class="switch" [class.on]="autoSave" (click)="autoSave=!autoSave; markSettingsChanged()"><span></span></button>
+              <span>{{ autoSave ? 'Enabled' : 'Disabled' }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'notifications'">
+        <h2>Delivery Channels</h2>
+        <div class="toggle-list">
+          <label><input type="checkbox" [(ngModel)]="emailNotif" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Email notifications</label>
+          <label><input type="checkbox" [(ngModel)]="inAppNotif" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> In-app notifications</label>
+          <label><input type="checkbox" [(ngModel)]="smsNotif" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> SMS notifications</label>
+          <label><input type="checkbox" [(ngModel)]="pushNotif" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Push notifications</label>
+        </div>
+
+        <h2>Alert Types</h2>
+        <div class="toggle-list">
+          <label><input type="checkbox" [(ngModel)]="bidAlerts" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Subcontractor bid alerts</label>
+          <label><input type="checkbox" [(ngModel)]="timelineAlerts" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Timeline alerts</label>
+          <label><input type="checkbox" [(ngModel)]="budgetAlerts" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Budget alerts</label>
+          <label><input type="checkbox" [(ngModel)]="connectionAlerts" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Connection requests</label>
+          <label><input type="checkbox" [(ngModel)]="inviteAlerts" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()" /> Invite accepted alerts</label>
+        </div>
+
+        <div class="integration-note hooks-card">
+          <strong>Email & Notification Integration</strong>
+          <p class="muted">Notification channels are ready for backend integrations: SendGrid/Resend/Postmark (email), Twilio/MessageBird (SMS), Firebase/OneSignal (push).</p>
+          <div class="hooks-list">
+            <span>POST /api/notifications/send</span>
+            <span>POST /api/notifications/preferences</span>
+            <span>POST /api/invites/send</span>
+            <span>WebSocket /ws/notifications</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'language'">
+        <h2>Interface Language</h2>
+        <div class="grid three">
+          <div class="field"><label>App Language</label><select [(ngModel)]="appLanguage" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let option of languageOptions" [value]="option.value">{{ option.label }}</option></select></div>
+          <div class="field"><label>Date Format</label><select [(ngModel)]="dateLocale" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let option of dateLocaleOptions" [value]="option.value">{{ option.label }}</option></select></div>
+          <div class="field"><label>Currency</label><select [(ngModel)]="docCurrency" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let c of currencyOptions" [value]="c.value">{{ c.label }}</option></select></div>
+        </div>
+
+        <div class="format-preview">
+          <div><strong>Date:</strong> {{ today | date:'shortDate' }}</div>
+          <div><strong>Number:</strong> {{ 1234567.89 | number:'1.2-2' }}</div>
+          <div><strong>Currency:</strong> {{ 45250 | currency:docCurrency }}</div>
+        </div>
+
+        <h2>Document Output Language</h2>
+        <div class="field field-inline">
+          <label>Output Mode</label>
+          <select [(ngModel)]="docOutputMode" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option value="single">Single Language</option>
+            <option value="dual">Dual Language</option>
+          </select>
+        </div>
+
+        <div class="field field-inline" *ngIf="docOutputMode==='single'">
+          <label>Document Language</label>
+          <select [(ngModel)]="docOutputLanguage" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()">
+            <option *ngFor="let option of languageOptions" [value]="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+
+        <div class="grid two" *ngIf="docOutputMode==='dual'">
+          <div class="field"><label>Primary</label><select [(ngModel)]="dualPrimaryLang" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let option of languageOptions" [value]="option.value">{{ option.label }}</option></select></div>
+          <div class="field"><label>Secondary</label><select [(ngModel)]="dualSecondaryLang" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option *ngFor="let option of languageOptions" [value]="option.value">{{ option.label }}</option></select></div>
+        </div>
+
+        <div class="applies-grid">
+          <span>Quotation</span><span>Invoice</span><span>Bill of Materials</span><span>Executive Summary</span><span>Cost Estimate</span><span>Change Order</span><span>Purchase Order</span><span>Progress Report</span><span>Scope of Work</span><span>Project Proposal</span>
+        </div>
+
+        <div class="dual-preview" *ngIf="docOutputMode==='dual'">
+          <div>
+            <h4>{{ dualPrimaryLang | uppercase }}</h4>
+            <p>Quotation</p>
+            <small>Description: Foundation Work</small>
+          </div>
+          <div>
+            <h4>{{ dualSecondaryLang | uppercase }}</h4>
+            <p>Quotation</p>
+            <small>Description: Foundation Work</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card" *ngIf="activeTab === 'advanced'">
+        <h2>Advanced Personalization</h2>
+        <div class="grid two">
+          <div class="field"><label>Default Cost Markup (%)</label><input type="text" [(ngModel)]="defaultMarkup" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Default Labor Burden (%)</label><input type="text" [(ngModel)]="laborBurden" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+          <div class="field"><label>Country</label><select [(ngModel)]="pricingCountry" [ngModelOptions]="{standalone: true}" (change)="onPricingCountryChanged($any($event.target).value)"><option *ngFor="let option of pricingCountryOptions" [value]="option.value">{{ option.label }}</option></select></div>
+          <div class="field" *ngIf="hasPricingRegionOptions()"><label>{{ getPricingRegionLabel() }}</label><select [(ngModel)]="pricingRegion" [ngModelOptions]="{standalone: true}" (change)="markSettingsChanged()"><option value="">Select {{ getPricingRegionLabel().toLowerCase() }}</option><option *ngFor="let option of getPricingRegionOptions()" [value]="option.value">{{ option.label }}</option></select></div>
+          <div class="field" *ngIf="!hasPricingRegionOptions()"><label>{{ getPricingRegionLabel() }}</label><input type="text" [(ngModel)]="pricingRegion" [ngModelOptions]="{standalone: true}" (input)="markSettingsChanged()" /></div>
+        </div>
+      </section>
+
+      <div class="footer-actions" *ngIf="getPreferenceFooterVisible()">
+        <button type="button" class="btn-secondary" (click)="resetSettingsPreferences()">Reset</button>
+        <button type="button" class="btn-primary" [disabled]="!hasSettingsChanges" (click)="saveSettingsPreferences()">Save</button>
       </div>
-    </div>
+    </main>
   </div>
 </div>
