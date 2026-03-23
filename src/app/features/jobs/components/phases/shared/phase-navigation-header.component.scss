@@ -49,6 +49,18 @@
   border-color: color-mix(in srgb, var(--brand-yellow-primary) 65%, var(--color-border));
   background: var(--brand-yellow-primary);
   color: var(--color-surface);
+
+  &.is-disabled {
+    background: var(--color-border);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    filter: none;
+
+    &:hover {
+      filter: none;
+    }
+  }
 }
 
 .mini-icon {

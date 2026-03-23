@@ -71,6 +71,7 @@ import {
   Truck,
   Rocket,
   CalendarDays,
+  AlertTriangle,
 } from 'lucide-angular';
 
 @NgModule({
@@ -146,6 +147,7 @@ import {
       Truck,
       Rocket,
       CalendarDays,
+      AlertTriangle
     }),
   ],
   exports: [LucideAngularModule],

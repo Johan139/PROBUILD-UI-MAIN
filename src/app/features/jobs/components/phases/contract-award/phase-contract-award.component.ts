@@ -188,6 +188,26 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     return !!this.contractMethod;
   }
 
+  get proceedValidationCompleted(): string[] {
+    if (!this.contractMethod) {
+      return [];
+    }
+
+    return [
+      `Contract method selected: ${this.contractMethod === 'ai' ? 'Generate with AI' : 'Upload signed contract'}`,
+    ];
+  }
+
+  get proceedValidationMissing(): string[] {
+    if (this.contractMethod) {
+      return [];
+    }
+
+    return [
+      'Select a contract method (Generate with AI or Upload signed contract) - or use Skip This Step to proceed without a contract',
+    ];
+  }
+
   selectMethod(method: 'ai' | 'upload'): void {
     this.contractMethod = method;
     if (method === 'ai') {

@@ -206,6 +206,18 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     return this.allPhasesConfirmed;
   }
 
+  get proceedValidationCompleted(): string[] {
+    return this.bomKeys
+      .filter((key) => this.confirmedBomSections.has(key))
+      .map((key) => this.billsOfMaterials[key]?.name || key);
+  }
+
+  get proceedValidationMissing(): string[] {
+    return this.bomKeys
+      .filter((key) => !this.confirmedBomSections.has(key))
+      .map((key) => this.billsOfMaterials[key]?.name || key);
+  }
+
   setActiveTab(tab: 'estimation' | 'overview' | 'timeline' | 'blueprints'): void {
     this.activeTab = tab;
   }
@@ -404,7 +416,14 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     currentValue: string | number,
   ): void {
     this.editingCell = { key, rowType, rowIndex, field };
-    this.editBuffer = String(currentValue ?? '');
+    const raw = String(currentValue ?? '').trim();
+    if (!raw.length) {
+      this.editBuffer = '';
+      return;
+    }
+
+    // Normalize values (e.g. "1,200" or "$45.00") so number inputs always render them.
+    this.editBuffer = /\d/.test(raw) ? String(this.asNumber(raw)) : raw;
   }
 
   commitCellEdit(): void {

@@ -99,8 +99,9 @@
       <button
         type="button"
         class="phase-action-btn primary"
-        [disabled]="proceedDisabled"
-        (click)="proceed.emit()"
+        [class.is-disabled]="proceedDisabled"
+        [attr.aria-disabled]="proceedDisabled"
+        (click)="onProceedClick()"
       >
         <span>{{ proceedLabel }}</span>
         <lucide-icon name="chevron-right" class="mini-icon trailing"></lucide-icon>

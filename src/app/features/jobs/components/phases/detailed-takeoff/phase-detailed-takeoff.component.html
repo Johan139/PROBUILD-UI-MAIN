@@ -12,6 +12,9 @@
     [isReportLoading]="isReportLoading"
     [showEnvironmentalReport]="showEnvironmentalReport"
     [proceedDisabled]="!canProceed"
+    [proceedValidationTitle]="'Detailed Estimating & Takeoff'"
+    [proceedValidationCompleted]="proceedValidationCompleted"
+    [proceedValidationMissing]="proceedValidationMissing"
     (back)="back.emit()"
     (discard)="discard.emit()"
     (proceed)="proceed.emit()"
@@ -234,6 +237,12 @@
             {{ confirmedBomSections.has(key)
               ? 'Remove Confirmation'
               : 'I have reviewed and confirm this phase' }}
+            <input
+              type="checkbox"
+              [checked]="confirmedBomSections.has(key)"
+              tabindex="-1"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </article>

@@ -326,12 +326,51 @@
 
 .confirm-btn {
   width: 100%;
+  display: inline-flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+
+  input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid color-mix(in oklab, var(--color-border) 85%, transparent);
+    border-radius: 4px;
+    background: var(--color-surface-subtle);
+    display: inline-grid;
+    place-items: center;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--color-primary);
+      transform: scale(0);
+      transition: transform 0.12s ease;
+    }
+
+    &:checked::after {
+      transform: scale(1);
+    }
+  }
 
   &.is-confirmed {
     border-color: color-mix(in oklab, var(--color-success) 42%, var(--color-border));
     background: color-mix(in oklab, var(--color-success) 13%, transparent);
     color: var(--color-success);
+
+    input[type='checkbox'] {
+      border-color: color-mix(in oklab, var(--color-success) 45%, var(--color-border));
+      background: color-mix(in oklab, var(--color-success) 10%, var(--color-surface));
+
+      &::after {
+        background: var(--color-success);
+      }
+    }
   }
 }
 
@@ -382,8 +421,8 @@
 
 .ve-caret,
 .ve-row-caret {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
