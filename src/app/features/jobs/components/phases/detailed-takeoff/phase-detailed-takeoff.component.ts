@@ -68,6 +68,7 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
   @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   billsOfMaterials: Record<string, BomSection> = {};
+  originalBillsOfMaterials: Record<string, BomSection> = {};
   expandedBomSections: string[] = [];
   confirmedBomSections = new Set<string>();
   valueEngineering: any[] = [];
@@ -333,6 +334,72 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     });
 
     this.billsOfMaterials = next;
+    this.originalBillsOfMaterials = this.cloneBomSections(next);
+  }
+
+  isBomRowModified(key: string, rowType: 'materials' | 'labor', rowIndex: number): boolean {
+    const section = this.billsOfMaterials[key];
+    const originalSection = this.originalBillsOfMaterials[key];
+    if (!section || !originalSection) {
+      return false;
+    }
+
+    if (rowType === 'materials') {
+      const row = section.materials[rowIndex];
+      const originalRow = originalSection.materials[rowIndex];
+      if (!row || !originalRow) {
+        return false;
+      }
+
+      return (
+        this.asNumber(row.qty) !== this.asNumber(originalRow.qty) ||
+        this.asNumber(row.unitCost) !== this.asNumber(originalRow.unitCost)
+      );
+    }
+
+    const row = section.labor[rowIndex];
+    const originalRow = originalSection.labor[rowIndex];
+    if (!row || !originalRow) {
+      return false;
+    }
+
+    return (
+      this.asNumber(row.hours) !== this.asNumber(originalRow.hours) ||
+      this.asNumber(row.rate) !== this.asNumber(originalRow.rate)
+    );
+  }
+
+  revertBomRow(key: string, rowType: 'materials' | 'labor', rowIndex: number): void {
+    const section = this.billsOfMaterials[key];
+    const originalSection = this.originalBillsOfMaterials[key];
+    if (!section || !originalSection) {
+      return;
+    }
+
+    if (rowType === 'materials') {
+      const row = section.materials[rowIndex];
+      const originalRow = originalSection.materials[rowIndex];
+      if (!row || !originalRow) {
+        return;
+      }
+
+      row.qty = originalRow.qty;
+      row.unitCost = originalRow.unitCost;
+      row.total = this.asNumber(row.qty) * this.asNumber(row.unitCost);
+    } else {
+      const row = section.labor[rowIndex];
+      const originalRow = originalSection.labor[rowIndex];
+      if (!row || !originalRow) {
+        return;
+      }
+
+      row.hours = originalRow.hours;
+      row.rate = originalRow.rate;
+      row.total = this.asNumber(row.hours) * this.asNumber(row.rate);
+    }
+
+    this.recalculateSectionTotals(section);
+    this.persistBomRowEdit(key, rowType, rowIndex);
   }
 
   toggleBomSection(key: string): void {
@@ -853,6 +920,21 @@ export class PhaseDetailedTakeoffComponent implements OnInit {
     }
 
     return { key: parts[1], rowType, rowIndex };
+  }
+
+  private cloneBomSections(source: Record<string, BomSection>): Record<string, BomSection> {
+    const clone: Record<string, BomSection> = {};
+
+    Object.keys(source).forEach((key) => {
+      const section = source[key];
+      clone[key] = {
+        ...section,
+        materials: section.materials.map((item) => ({ ...item })),
+        labor: section.labor.map((item) => ({ ...item })),
+      };
+    });
+
+    return clone;
   }
 
   private toBomBudgetItem(

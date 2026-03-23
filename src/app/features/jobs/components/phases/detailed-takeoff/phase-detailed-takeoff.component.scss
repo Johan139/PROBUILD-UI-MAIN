@@ -302,6 +302,35 @@
   .num {
     text-align: right;
   }
+
+  .actions-col {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .actions-cell {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.revert-btn {
+  border: 1px solid color-mix(in oklab, var(--color-bidding) 25%, transparent);
+  background: color-mix(in oklab, var(--color-bidding) 10%, transparent);
+  color: color-mix(in oklab, var(--color-bidding) 78%, var(--color-text-white));
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-bidding) 40%, transparent);
+    background: color-mix(in oklab, var(--color-bidding) 15%, transparent);
+    color: color-mix(in oklab, var(--color-bidding) 88%, var(--color-text-white));
+  }
 }
 
 .phase-footer {

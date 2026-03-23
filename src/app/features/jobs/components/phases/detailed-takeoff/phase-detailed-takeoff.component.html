@@ -109,6 +109,7 @@
                 <th class="num">Unit</th>
                 <th class="num">Unit Cost</th>
                 <th class="num">Total</th>
+                <th class="actions-col"></th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +156,17 @@
                   />
                 </td>
                 <td class="num">${{ mat.total | number : '1.2-2' }}</td>
+                <td class="actions-cell">
+                  <button
+                    *ngIf="isBomRowModified(key, 'materials', i)"
+                    type="button"
+                    class="revert-btn"
+                    title="Revert this item to its original AI-generated values"
+                    (click)="revertBomRow(key, 'materials', i)"
+                  >
+                    Revert
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -167,6 +179,7 @@
                 <th class="num">Hours</th>
                 <th class="num">Rate</th>
                 <th class="num">Total</th>
+                <th class="actions-col"></th>
               </tr>
             </thead>
             <tbody>
@@ -212,6 +225,17 @@
                   />
                 </td>
                 <td class="num">${{ labor.total | number : '1.2-2' }}</td>
+                <td class="actions-cell">
+                  <button
+                    *ngIf="isBomRowModified(key, 'labor', i)"
+                    type="button"
+                    class="revert-btn"
+                    title="Revert this item to its original AI-generated values"
+                    (click)="revertBomRow(key, 'labor', i)"
+                  >
+                    Revert
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
