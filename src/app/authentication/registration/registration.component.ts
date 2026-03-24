@@ -380,6 +380,23 @@ export class RegistrationComponent implements OnInit {
         this.registrationForm.get('firstName')?.enable();
         this.registrationForm.get('lastName')?.enable();
         this.registrationForm.get('email')?.enable();
+
+        if (this.isBrowser) {
+          const raw = sessionStorage.getItem('googleData');
+          if (raw) {
+            try {
+              const googleData = JSON.parse(raw);
+              this.registrationForm.patchValue({
+                email: googleData?.email ?? '',
+                firstName: googleData?.firstName ?? '',
+                lastName: googleData?.lastName ?? '',
+              });
+            } catch {
+            } finally {
+              sessionStorage.removeItem('googleData');
+            }
+          }
+        }
       }
     });
 

@@ -130,7 +130,10 @@
             >Password is required.</span
           >
           <span *ngIf="loginForm.get('password')?.hasError('minlength')"
-            >Password must be at least 10 characters.</span
+            >Password must be at least 10 characters. </span
+          >
+          <span *ngIf="loginForm.get('password')?.hasError('pattern')"
+            >Password does not meet the required complexity.</span
           >
         </span>
       </div>

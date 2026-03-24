@@ -319,7 +319,7 @@ export class NewUserDashboardComponent implements OnInit {
   }
 
   loadJob(id: any): void {
-    this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');
+    this.jobDataService.navigateToJob({ jobId: id });
   }
 
   onApprovalReasonChanged(event: any) {

@@ -68,7 +68,7 @@ export class RecentProjectsWidgetComponent {
   }
 
   loadJob(id: number) {
-    this.jobDataService.navigateToJob({ jobId: id }, 'MM/dd/yyyy');
+    this.jobDataService.navigateToJob({ jobId: id });
   }
 
   uploadThumbnail(event: { jobId: number; file: File }): void {
