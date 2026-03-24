@@ -211,7 +211,7 @@ $probuild-dark-theme: mat.define-theme(
 // 9. TOOLTIP
 // --------------------------------------------------------------------------
 .validation-dialog-backdrop {
-  background: color-mix(in oklab, var(--gray-900) 72%, transparent) !important;
+  background: color-mix(in oklab, var(--color-text) 72%, transparent) !important;
   backdrop-filter: blur(2px);
 }
 
@@ -221,6 +221,23 @@ $probuild-dark-theme: mat.define-theme(
     background: transparent !important;
     box-shadow: none !important;
     overflow: visible;
+  }
+}
+
+.cdk-overlay-pane.custom-dialog-container,
+.cdk-overlay-pane.custom-modal,
+.cdk-overlay-pane.full-screen-dialog,
+.cdk-overlay-pane.scope-insight-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+}
+
+.cdk-overlay-pane.scope-insight-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    padding: 0 !important;
   }
 }
 .mdc-tooltip {

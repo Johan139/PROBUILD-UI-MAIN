@@ -479,7 +479,14 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent);
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Cancel project creation?',
+        message: 'Your uploaded blueprint and entered details will be cleared.',
+        cancelButtonText: 'No, keep working',
+        confirmButtonText: 'Yes, cancel',
+      },
+    });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {

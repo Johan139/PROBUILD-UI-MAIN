@@ -334,8 +334,7 @@ export class JobDataService {
 
   public navigateToJob(
     notification: any,
-    dateFormat: string = 'dd/MM/yyyy',
   ): void {
-    this.jobNavigation.navigateToJob(notification, dateFormat);
+    this.jobNavigation.navigateToJob(notification);
   }
 }

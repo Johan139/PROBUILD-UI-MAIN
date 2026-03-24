@@ -823,22 +823,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               if (callback) {
                 callback(res);
               } else {
-                const responseParams = {
-                  jobId: res.id,
-                  operatingArea: res.operatingArea,
-                  address: res.address,
-                  documents: res.documents,
-                  latitude: res.latitude,
-                  longitude: res.longitude,
-                  ...this.jobCardForm.value,
-                };
                 this.alertMessage = 'Job Quote Creation Successful';
                 this.showAlert = true;
                 this.uploadedFileInfos = [];
                 this.dialog.closeAll();
-                this.router.navigate(['view-quote'], {
-                  queryParams: responseParams,
-                });
+                this.router.navigate(['view-quote'], { queryParams: { jobId: res.id } });
               }
             }
           }
@@ -855,29 +844,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadJob(id: any): void {
     this.jobService.getSpecificJob(id).subscribe((res) => {
-      const parsedDate = new Date(res.desiredStartDate);
-      const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-
-      const responseParams = {
-        jobId: res.jobId,
-        operatingArea: res.operatingArea,
-        address: res.address,
-        projectName: res.projectName,
-        jobType: res.jobType,
-        buildingSize: res.buildingSize,
-        wallStructure: res.wallStructure,
-        wallInsulation: res.wallInsulation,
-        roofStructure: res.roofStructure,
-        roofInsulation: res.roofInsulation,
-        electricalSupply: res.electricalSupply,
-        finishes: res.finishes,
-        foundation: res.foundation,
-        date: formattedDate,
-        documents: res.documents,
-        latitude: res.latitude,
-        longitude: res.longitude,
-      };
-      this.router.navigate(['view-quote'], { queryParams: responseParams });
+      this.router.navigate(['view-quote'], { queryParams: { jobId: res.jobId } });
     });
   }
 

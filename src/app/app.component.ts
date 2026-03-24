@@ -195,10 +195,6 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {
     effect(() => {
       this.themeService.isDarkMode();
-      if (this.isBrowser) {
-        this.isRouterOutletVisible = false;
-        setTimeout(() => (this.isRouterOutletVisible = true), 0);
-      }
     });
 
     this.router.events

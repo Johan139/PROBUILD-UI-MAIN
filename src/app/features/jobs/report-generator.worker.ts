@@ -60,6 +60,45 @@ const cleanTableData = (data: any): any => {
   return data;
 };
 
+const buildColumnStyles = (head: any, body: any, usableWidth: number) => {
+  const headRow = Array.isArray(head) && Array.isArray(head[0]) ? head[0] : [];
+  const colCount = headRow.length;
+  if (!colCount) return undefined;
+
+  const maxLens = new Array<number>(colCount).fill(0);
+
+  for (let c = 0; c < colCount; c++) {
+    const headerText = headRow[c] == null ? '' : String(headRow[c]);
+    maxLens[c] = Math.max(maxLens[c], headerText.length);
+  }
+
+  const bodyRows = Array.isArray(body) ? body.slice(0, 15) : [];
+  for (const row of bodyRows) {
+    if (!Array.isArray(row)) continue;
+    for (let c = 0; c < colCount; c++) {
+      const cell = row[c];
+      const cellText = cell == null ? '' : String(cell);
+      maxLens[c] = Math.max(maxLens[c], cellText.length);
+    }
+  }
+
+  // Convert text lengths to width weights (clamped) so no column gets starved.
+  const weights = maxLens.map((len) => Math.min(30, Math.max(6, len)));
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+
+  const columnStyles: Record<number, any> = {};
+  for (let c = 0; c < colCount; c++) {
+    // Slight bias to keep the first column readable (often "Item")
+    const bias = c === 0 ? 1.15 : 1;
+    const width = (usableWidth * (weights[c] * bias)) / sum;
+    columnStyles[c] = {
+      cellWidth: Math.max(10, Math.floor(width)),
+    };
+  }
+
+  return columnStyles;
+};
+
 addEventListener('message', async ({ data }) => {
   const { reportContent, logoDataUrl, title } = data;
 
@@ -69,7 +108,17 @@ addEventListener('message', async ({ data }) => {
       import('jspdf-autotable'),
     ]);
 
-    const doc = new jsPDF('p', 'mm', 'a4');
+    const maxTableColumns = Array.isArray(reportContent)
+      ? reportContent.reduce((max: number, el: any) => {
+          if (el?.type !== 'table') return max;
+          const headRow = Array.isArray(el?.head) ? el.head[0] : null;
+          const colCount = Array.isArray(headRow) ? headRow.length : 0;
+          return Math.max(max, colCount);
+        }, 0)
+      : 0;
+
+    const orientation = maxTableColumns >= 9 ? 'l' : 'p';
+    const doc = new jsPDF(orientation, 'mm', 'a4');
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -239,15 +288,33 @@ addEventListener('message', async ({ data }) => {
           // Clean the table data of problematic Unicode characters
           const cleanElement = cleanTableData(element);
 
+          const columnStyles = buildColumnStyles(
+            cleanElement.head,
+            cleanElement.body,
+            usableWidth,
+          );
+
           autoTable(doc, {
             head: cleanElement.head,
             body: cleanElement.body,
             startY: currentY,
             theme: 'grid',
             margin: { left: margin, right: margin },
+            tableWidth: usableWidth,
+            columnStyles,
+            styles: {
+              font: 'helvetica',
+              fontSize: 7,
+              cellPadding: 2,
+              overflow: 'linebreak',
+              valign: 'middle',
+            },
             headStyles: {
               fillColor: '#FFC107',
               textColor: '#000000',
+              fontStyle: 'bold',
+              halign: 'center',
+              valign: 'middle',
             },
             didDrawPage: (data) => {
               currentY = data.cursor?.y ?? currentY;
