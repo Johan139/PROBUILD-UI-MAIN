@@ -36,19 +36,43 @@
 }
 
 .phase-action-btn.danger {
-  border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
+  border-color: color-mix(
+    in srgb,
+    var(--color-danger) 45%,
+    var(--color-border)
+  );
   color: var(--color-danger);
 }
 
 .phase-action-btn.warning {
-  border-color: color-mix(in srgb, var(--brand-yellow-primary) 45%, var(--color-border));
+  border-color: color-mix(
+    in srgb,
+    var(--brand-yellow-primary) 45%,
+    var(--color-border)
+  );
   color: var(--brand-yellow-primary);
 }
 
 .phase-action-btn.primary {
-  border-color: color-mix(in srgb, var(--brand-yellow-primary) 65%, var(--color-border));
+  border-color: color-mix(
+    in srgb,
+    var(--brand-yellow-primary) 65%,
+    var(--color-border)
+  );
   background: var(--brand-yellow-primary);
   color: var(--color-text-inverse);
+
+  &.is-disabled {
+    background: var(--color-border);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    filter: none;
+
+    &:hover {
+      filter: none;
+    }
+  }
 }
 
 .mini-icon {
@@ -125,7 +149,7 @@
   .export-item-icon {
     width: 1.65rem;
     height: 1.65rem;
-    border-radius: .35rem;
+    border-radius: 0.35rem;
     background: #3b4046;
     display: inline-flex;
     align-items: center;

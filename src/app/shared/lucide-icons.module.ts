@@ -69,6 +69,7 @@ import {
   FlagTriangleRight,
   Package,
   Truck,
+  AlertTriangle,
   Rocket,
   CalendarDays,
 } from 'lucide-angular';
@@ -145,6 +146,7 @@ import {
       Package,
       Truck,
       Rocket,
+      AlertTriangle,
       CalendarDays,
     }),
   ],

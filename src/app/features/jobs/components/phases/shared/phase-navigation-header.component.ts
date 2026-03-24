@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
-
+import { MatDialog } from '@angular/material/dialog';
+import { ValidationDialogComponent } from '../../../../../shared/dialogs/validation-dialog/validation-dialog.component';
 export type PhaseReportRequestType =
   | 'fullReport'
   | 'billOfMaterials'
@@ -30,6 +31,9 @@ export class PhaseNavigationHeaderComponent {
   @Input() isReportLoading = false;
   @Input() showEnvironmentalReport = true;
   @Input() proceedDisabled = false;
+  @Input() proceedValidationTitle = 'this phase';
+  @Input() proceedValidationCompleted: string[] = [];
+  @Input() proceedValidationMissing: string[] = [];
 
   @Output() back = new EventEmitter<void>();
   @Output() discard = new EventEmitter<void>();
@@ -40,7 +44,7 @@ export class PhaseNavigationHeaderComponent {
   @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
 
   showExportMenu = false;
-
+  constructor(private dialog: MatDialog) {}
   get showDevProceedButton(): boolean {
     if (typeof window === 'undefined') {
       return false;
@@ -48,7 +52,25 @@ export class PhaseNavigationHeaderComponent {
 
     return window.location.href.startsWith('http://localhost:4200/');
   }
+  onProceedClick(): void {
+    if (!this.proceedDisabled) {
+      this.proceed.emit();
+      return;
+    }
 
+    this.dialog.open(ValidationDialogComponent, {
+      data: {
+        title: this.proceedValidationTitle,
+        completed: this.proceedValidationCompleted,
+        missing: this.proceedValidationMissing,
+      },
+      width: '100%',
+      maxWidth: '448px',
+      panelClass: 'validation-dialog-panel',
+      backdropClass: 'validation-dialog-backdrop',
+      autoFocus: false,
+    });
+  }
   forceProceed(): void {
     this.devProceed.emit();
   }
@@ -71,4 +93,3 @@ export class PhaseNavigationHeaderComponent {
     this.reportRequested.emit(reportType);
   }
 }
-

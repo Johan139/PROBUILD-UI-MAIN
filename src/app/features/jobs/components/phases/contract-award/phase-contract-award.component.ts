@@ -122,7 +122,11 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   get projectSizeSqFt(): string {
-    return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
+    return (
+      this.projectDetails?.buildingSize ||
+      this.projectDetails?.projectSize ||
+      '2,450'
+    );
   }
 
   get clientName(): string {
@@ -137,7 +141,11 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   get projectAddress(): string {
-    return this.projectDetails?.address || this.projectDetails?.projectAddress || 'Belicia Ln, Round Rock, TX';
+    return (
+      this.projectDetails?.address ||
+      this.projectDetails?.projectAddress ||
+      'Belicia Ln, Round Rock, TX'
+    );
   }
 
   get projectSizeSqM(): string {
@@ -152,7 +160,9 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   get generatedContractName(): string {
     if (this.contractMethod === 'ai') {
       const projectName = this.projectDetails?.projectName || 'Project';
-      const normalized = this.generatedContractFileName || `${projectName}_GC_Client_Contract.docx`;
+      const normalized =
+        this.generatedContractFileName ||
+        `${projectName}_GC_Client_Contract.docx`;
       return normalized.toLowerCase().endsWith('.pdf')
         ? normalized.replace(/\.pdf$/i, '.docx')
         : normalized;
@@ -256,7 +266,9 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
 
     this.getExecutiveSummaryContext(jobId)
       .then((executiveSummaryContext) => {
-        const request = this.buildGenerateContractRequest(executiveSummaryContext);
+        const request = this.buildGenerateContractRequest(
+          executiveSummaryContext,
+        );
         this.contractService
           .generateGeneralClientContract(jobId, request)
           .subscribe({
@@ -273,25 +285,32 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
           });
       })
       .catch((summaryErr) => {
-        console.warn('Failed to fetch executive summary context; continuing without it', summaryErr);
+        console.warn(
+          'Failed to fetch executive summary context; continuing without it',
+          summaryErr,
+        );
         const request = this.buildGenerateContractRequest('');
-        this.contractService.generateGeneralClientContract(jobId, request).subscribe({
-          next: (contract) => {
-            this.hydrateContractState(contract);
-            this.contractMethod = 'ai';
-            this.contractGenerated = true;
-            this.contractGenerating = false;
-          },
-          error: (err) => {
-            console.error('Failed to generate client contract', err);
-            this.contractGenerating = false;
-          },
-        });
+        this.contractService
+          .generateGeneralClientContract(jobId, request)
+          .subscribe({
+            next: (contract) => {
+              this.hydrateContractState(contract);
+              this.contractMethod = 'ai';
+              this.contractGenerated = true;
+              this.contractGenerating = false;
+            },
+            error: (err) => {
+              console.error('Failed to generate client contract', err);
+              this.contractGenerating = false;
+            },
+          });
       });
   }
 
   private async getExecutiveSummaryContext(jobId: number): Promise<string> {
-    const summaryHtml = await this.reportService.getExecutiveSummary(String(jobId));
+    const summaryHtml = await this.reportService.getExecutiveSummary(
+      String(jobId),
+    );
     if (!summaryHtml) {
       return '';
     }
@@ -313,7 +332,8 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   onLiabilityCapTypeChanged(value: string): void {
-    this.liabilityCapType = value === 'fixed_amount' ? 'fixed_amount' : 'contract_sum';
+    this.liabilityCapType =
+      value === 'fixed_amount' ? 'fixed_amount' : 'contract_sum';
 
     if (this.liabilityCapType !== 'fixed_amount') {
       this.liabilityCapFixedAmount = null;
@@ -359,14 +379,20 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
 
       (openInNewTab
         ? this.buildContractHtml(markdown).then((html) => {
-            const previewBlob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const previewBlob = new Blob([html], {
+              type: 'text/html;charset=utf-8',
+            });
             const previewUrl = URL.createObjectURL(previewBlob);
             window.open(previewUrl, '_blank', 'noopener');
             setTimeout(() => URL.revokeObjectURL(previewUrl), 12000);
           })
-        : this.downloadAsDocx(markdown))
+        : this.downloadAsDocx(markdown)
+      )
         .catch((err) => {
-          console.error('Failed to generate client contract word document on client', err);
+          console.error(
+            'Failed to generate client contract word document on client',
+            err,
+          );
         })
         .finally(() => {
           this.isDownloading = false;
@@ -379,28 +405,30 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     }
 
     this.isDownloading = true;
-    this.contractService.downloadClientContractPdf(this.activeContractId).subscribe({
-      next: (blob) => {
-        const blobUrl = URL.createObjectURL(blob);
+    this.contractService
+      .downloadClientContractPdf(this.activeContractId)
+      .subscribe({
+        next: (blob) => {
+          const blobUrl = URL.createObjectURL(blob);
 
-        if (openInNewTab) {
-          window.open(blobUrl, '_blank', 'noopener');
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 12000);
-        } else {
-          const anchor = document.createElement('a');
-          anchor.href = blobUrl;
-          anchor.download = this.generatedContractName;
-          anchor.click();
-          URL.revokeObjectURL(blobUrl);
-        }
+          if (openInNewTab) {
+            window.open(blobUrl, '_blank', 'noopener');
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 12000);
+          } else {
+            const anchor = document.createElement('a');
+            anchor.href = blobUrl;
+            anchor.download = this.generatedContractName;
+            anchor.click();
+            URL.revokeObjectURL(blobUrl);
+          }
 
-        this.isDownloading = false;
-      },
-      error: (err) => {
-        console.error('Failed to download contract pdf', err);
-        this.isDownloading = false;
-      },
-    });
+          this.isDownloading = false;
+        },
+        error: (err) => {
+          console.error('Failed to download contract pdf', err);
+          this.isDownloading = false;
+        },
+      });
   }
 
   private uploadExistingContract(file: File): void {
@@ -439,31 +467,35 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     }
 
     const request = this.buildGenerateContractRequest('');
-    this.contractService.generateGeneralClientContract(jobId, request).subscribe({
-      next: (contract) => {
-        this.hydrateContractState(contract);
-        if (!this.activeContractId) {
+    this.contractService
+      .generateGeneralClientContract(jobId, request)
+      .subscribe({
+        next: (contract) => {
+          this.hydrateContractState(contract);
+          if (!this.activeContractId) {
+            this.isUploading = false;
+            return;
+          }
+          runUpload(this.activeContractId);
+        },
+        error: (err) => {
+          console.error('Failed to initialize contract before upload', err);
           this.isUploading = false;
-          return;
-        }
-        runUpload(this.activeContractId);
-      },
-      error: (err) => {
-        console.error('Failed to initialize contract before upload', err);
-        this.isUploading = false;
-      },
-    });
+        },
+      });
   }
 
   private hydrateContractState(contract: ContractRecord): void {
     this.activeContractId = contract.id || this.activeContractId;
-    this.generatedContractFileName = contract.fileName || this.generatedContractFileName;
+    this.generatedContractFileName =
+      contract.fileName || this.generatedContractFileName;
     this.generatedContractMarkdown =
       contract.contractText || this.generatedContractMarkdown;
 
     if (contract.status === 'UPLOADED') {
       this.contractMethod = 'upload';
-      this.uploadedContractName = contract.fileName || this.uploadedContractName;
+      this.uploadedContractName =
+        contract.fileName || this.uploadedContractName;
     } else {
       this.contractMethod = 'ai';
       this.uploadedContractName = '';
@@ -473,7 +505,9 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   private loadExistingContract(jobId: number): void {
     this.contractService.getContractsByJobId(jobId).subscribe({
       next: (contracts) => {
-        const existing = this.resolveExistingGeneralClientContract(contracts || []);
+        const existing = this.resolveExistingGeneralClientContract(
+          contracts || [],
+        );
         if (!existing) {
           return;
         }
@@ -520,7 +554,9 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   private syncContractDefaultsFromProject(): void {
-    const candidate = String(this.projectDetails?.jobType || this.projectDetails?.projectType || '').toLowerCase();
+    const candidate = String(
+      this.projectDetails?.jobType || this.projectDetails?.projectType || '',
+    ).toLowerCase();
     if (candidate.includes('commercial')) {
       this.projectType = 'commercial';
       this.liabilityCapEnabled = true;
@@ -562,7 +598,11 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
           ? 'Contract Sum'
           : normalize(
               `${normalizedCurrency || 'USD'} ${
-                fixedAmount != null ? fixedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }) : ''
+                fixedAmount != null
+                  ? fixedAmount.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })
+                  : ''
               }`.trim(),
             ),
       liabilityCapType: this.liabilityCapType,
@@ -625,13 +665,17 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
 
     const amount = this.parsePositiveNumber(this.liabilityCapFixedAmount);
     if (amount == null) {
-      window.alert('Please enter a valid fixed liability cap amount greater than 0.');
+      window.alert(
+        'Please enter a valid fixed liability cap amount greater than 0.',
+      );
       return false;
     }
 
     const currency = (this.liabilityCapCurrency || '').trim().toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) {
-      window.alert('Please enter a valid 3-letter ISO currency code for the fixed liability cap (for example USD, GBP, EUR).');
+      window.alert(
+        'Please enter a valid 3-letter ISO currency code for the fixed liability cap (for example USD, GBP, EUR).',
+      );
       return false;
     }
 
@@ -639,7 +683,8 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   private parsePositiveNumber(value: unknown): number | undefined {
-    const parsed = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+    const parsed =
+      typeof value === 'number' ? value : Number(String(value ?? '').trim());
     if (!Number.isFinite(parsed) || parsed <= 0) {
       return undefined;
     }
@@ -777,17 +822,20 @@ ${parsed}
   private stripMarkdownInline(value: string): string {
     return this.sanitizeForOpenXml(
       value
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
-      .replace(/~~([^~]+)~~/g, '$1'),
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        .replace(/~~([^~]+)~~/g, '$1'),
     );
   }
 
-  private ensureExtension(fileName: string, extension: '.docx' | '.doc'): string {
+  private ensureExtension(
+    fileName: string,
+    extension: '.docx' | '.doc',
+  ): string {
     if (fileName.toLowerCase().endsWith(extension)) {
       return fileName;
     }
@@ -820,5 +868,23 @@ ${parsed}
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
-}
+  get proceedValidationCompleted(): string[] {
+    if (!this.contractMethod) {
+      return [];
+    }
 
+    return [
+      `Contract method selected: ${this.contractMethod === 'ai' ? 'Generate with AI' : 'Upload signed contract'}`,
+    ];
+  }
+
+  get proceedValidationMissing(): string[] {
+    if (this.contractMethod) {
+      return [];
+    }
+
+    return [
+      'Select a contract method (Generate with AI or Upload signed contract) - or use Skip This Step to proceed without a contract',
+    ];
+  }
+}

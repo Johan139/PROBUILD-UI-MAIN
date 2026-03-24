@@ -210,7 +210,19 @@ $probuild-dark-theme: mat.define-theme(
 // --------------------------------------------------------------------------
 // 9. TOOLTIP
 // --------------------------------------------------------------------------
+.validation-dialog-backdrop {
+  background: color-mix(in oklab, var(--gray-900) 72%, transparent) !important;
+  backdrop-filter: blur(2px);
+}
 
+.validation-dialog-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible;
+  }
+}
 .mdc-tooltip {
   .mdc-tooltip__surface {
     background-color: var(--color-accent) !important;
