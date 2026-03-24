@@ -10,7 +10,10 @@ import {
   TemplateRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PhaseNavigationHeaderComponent, PhaseReportRequestType } from '../shared/phase-navigation-header.component';
+import {
+  PhaseNavigationHeaderComponent,
+  PhaseReportRequestType,
+} from '../shared/phase-navigation-header.component';
 import { BomService } from '../../../services/bom.service';
 import { ReportService } from '../../../services/report.service';
 import { BudgetService } from '../../../services/budget.service';
@@ -22,7 +25,10 @@ import { JobsService } from '../../../../../services/jobs.service';
 import { QuoteService } from '../../../../../features/quote/quote.service';
 import { AuthService } from '../../../../../authentication/auth.service';
 import { LocalStorageService } from '../../../../../services/local-storage.service';
-import { QuoteDto, QuoteRowDto } from '../../../../../features/quote/quote.model';
+import {
+  QuoteDto,
+  QuoteRowDto,
+} from '../../../../../features/quote/quote.model';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
@@ -81,7 +87,9 @@ interface BomSection {
   templateUrl: './phase-detailed-takeoff.component.html',
   styleUrl: './phase-detailed-takeoff.component.scss',
 })
-export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestroy {
+export class PhaseDetailedTakeoffComponent
+  implements OnInit, OnChanges, OnDestroy
+{
   @Input() projectDetails: any;
   @Input() scopeCostSummary: any = null;
   @Input() scopeTotalProjectCost: number | null = null;
@@ -110,9 +118,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   expandedBomSections: string[] = [];
   confirmedBomSections = new Set<string>();
   valueEngineering: any[] = [];
-
+  originalBillsOfMaterials: Record<string, BomSection> = {};
   isLoading = true;
-  activeTab: 'estimation' | 'overview' | 'timeline' | 'blueprints' = 'estimation';
+  activeTab: 'estimation' | 'overview' | 'timeline' | 'blueprints' =
+    'estimation';
 
   isEditingProject = false;
   isEditingClient = false;
@@ -156,14 +165,12 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   private loadedClient: any = null;
 
   costAnalysis: any = null;
-  editingCell:
-    | {
-        key: string;
-        rowType: 'materials' | 'labor';
-        rowIndex: number;
-        field: 'qty' | 'unitCost' | 'hours' | 'rate';
-      }
-    | null = null;
+  editingCell: {
+    key: string;
+    rowType: 'materials' | 'labor';
+    rowIndex: number;
+    field: 'qty' | 'unitCost' | 'hours' | 'rate';
+  } | null = null;
   editBuffer = '';
 
   constructor(
@@ -209,7 +216,11 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   get projectSizeSqFt(): string {
-    return this.projectDetails?.buildingSize || this.projectDetails?.projectSize || '2,450';
+    return (
+      this.projectDetails?.buildingSize ||
+      this.projectDetails?.projectSize ||
+      '2,450'
+    );
   }
 
   get projectSizeSqM(): string {
@@ -226,7 +237,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   get allPhasesConfirmed(): boolean {
-    return this.bomKeys.length > 0 && this.confirmedBomSections.size === this.bomKeys.length;
+    return (
+      this.bomKeys.length > 0 &&
+      this.confirmedBomSections.size === this.bomKeys.length
+    );
   }
 
   get directCosts(): number {
@@ -236,7 +250,8 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     }
 
     const fromAnalysis =
-      (Number(this.costAnalysis?.materialCost) || 0) + (Number(this.costAnalysis?.laborCost) || 0);
+      (Number(this.costAnalysis?.materialCost) || 0) +
+      (Number(this.costAnalysis?.laborCost) || 0);
 
     if (fromAnalysis > 0) {
       return fromAnalysis;
@@ -264,7 +279,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       return suggestedBid;
     }
 
-    const fromProject = Number(this.projectDetails?.budget || this.projectDetails?.projectBudget || 0);
+    const fromProject = Number(
+      this.projectDetails?.budget || this.projectDetails?.projectBudget || 0,
+    );
     if (fromProject > 0) {
       return fromProject;
     }
@@ -292,7 +309,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     return this.allPhasesConfirmed;
   }
 
-  setActiveTab(tab: 'estimation' | 'overview' | 'timeline' | 'blueprints'): void {
+  setActiveTab(
+    tab: 'estimation' | 'overview' | 'timeline' | 'blueprints',
+  ): void {
     this.activeTab = tab;
   }
 
@@ -341,7 +360,8 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   saveClient(): void {
     this.projectDetails = {
       ...this.projectDetails,
-      clientName: `${this.tempClientDetails.firstName} ${this.tempClientDetails.lastName}`.trim(),
+      clientName:
+        `${this.tempClientDetails.firstName} ${this.tempClientDetails.lastName}`.trim(),
       clientEmail: this.tempClientDetails.email,
       clientPhone: this.tempClientDetails.phone,
     };
@@ -352,8 +372,16 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     overview: string;
     blueprintConfidence: { overallConfidence: number };
     keyHighlights: Array<{ label: string; value: string; note: string }>;
-    riskFactors: Array<{ risk: string; description: string; severity: 'high' | 'medium' }>;
-    strategicAnalysis: { opportunities: string[]; risks: string[]; implications: string[] };
+    riskFactors: Array<{
+      risk: string;
+      description: string;
+      severity: 'high' | 'medium';
+    }>;
+    strategicAnalysis: {
+      opportunities: string[];
+      risks: string[];
+      implications: string[];
+    };
     topPriorities: string[];
     executiveRecommendation: string;
   } {
@@ -377,7 +405,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
           .map((item: any) => ({
             risk: String(item?.risk || ''),
             description: String(item?.description || ''),
-            severity: String(item?.severity || '').toLowerCase() === 'high' ? 'high' : 'medium',
+            severity:
+              String(item?.severity || '').toLowerCase() === 'high'
+                ? 'high'
+                : 'medium',
           }))
           .filter((item: any) => item.risk || item.description)
       : [];
@@ -385,7 +416,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     return {
       overview: String(summary?.overview || ''),
       blueprintConfidence: {
-        overallConfidence: Number(summary?.blueprintConfidence?.overallConfidence || 0),
+        overallConfidence: Number(
+          summary?.blueprintConfidence?.overallConfidence || 0,
+        ),
       },
       keyHighlights,
       riskFactors,
@@ -407,7 +440,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
           : [],
       },
       topPriorities: Array.isArray(summary?.topPriorities)
-        ? summary.topPriorities.map((item: any) => String(item || '').trim()).filter(Boolean)
+        ? summary.topPriorities
+            .map((item: any) => String(item || '').trim())
+            .filter(Boolean)
         : [],
       executiveRecommendation: String(summary?.executiveRecommendation || ''),
     };
@@ -418,7 +453,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     if (fromParent > 0) return fromParent;
 
     const totalProjectCost = Number(
-      this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0,
+      this.scopeCostSummary?.suggestedBid ||
+        this.loadedCostSummary?.suggestedBid ||
+        0,
     );
     if (totalProjectCost > 0) return totalProjectCost;
 
@@ -448,7 +485,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
   get overallBudgetProgressPercent(): number {
     if (this.overallBudgetValue <= 0) return 0;
-    return Math.max(0, Math.min(100, (this.spentToDate / this.overallBudgetValue) * 100));
+    return Math.max(
+      0,
+      Math.min(100, (this.spentToDate / this.overallBudgetValue) * 100),
+    );
   }
 
   get bidPriceValue(): number {
@@ -488,7 +528,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
   get bidExposureValue(): number {
     const contingency = Number(this.loadedCostSummary?.contingency || 0);
-    return contingency > 0 ? contingency : Math.max(0, this.overallBudgetValue * 0.08);
+    return contingency > 0
+      ? contingency
+      : Math.max(0, this.overallBudgetValue * 0.08);
   }
 
   get totalDurationWeeks(): number {
@@ -505,7 +547,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
     const days = Math.max(
       7,
-      Math.ceil((range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60 * 24)),
+      Math.ceil(
+        (range.end.getTime() - range.start.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
     return Math.max(1, Math.ceil(days / 7));
   }
@@ -516,7 +560,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
   get timelineProgressPercent(): number {
     if (this.totalDurationWeeks <= 0) return 0;
-    return Math.max(0, Math.min(100, (this.currentWeek / this.totalDurationWeeks) * 100));
+    return Math.max(
+      0,
+      Math.min(100, (this.currentWeek / this.totalDurationWeeks) * 100),
+    );
   }
 
   get estimatedCompletionDate(): Date {
@@ -530,9 +577,13 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       this.getTimelineDateRange()?.start ||
       (fallbackStartRaw ? new Date(fallbackStartRaw) : null);
     if (!start || isNaN(start.getTime())) {
-      return new Date(Date.now() + this.totalDurationWeeks * 7 * 24 * 60 * 60 * 1000);
+      return new Date(
+        Date.now() + this.totalDurationWeeks * 7 * 24 * 60 * 60 * 1000,
+      );
     }
-    return new Date(start.getTime() + this.totalDurationWeeks * 7 * 24 * 60 * 60 * 1000);
+    return new Date(
+      start.getTime() + this.totalDurationWeeks * 7 * 24 * 60 * 60 * 1000,
+    );
   }
 
   private getTimelineDateRange(): { start: Date; end: Date } | null {
@@ -540,8 +591,16 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
     const ranges = this.timelineGroups.flatMap((group) => {
       const subtaskRanges = (group.subtasks || []).flatMap((task) => {
-        const start = task.start ? new Date(task.start) : task.startDate ? new Date(task.startDate) : null;
-        const end = task.end ? new Date(task.end) : task.endDate ? new Date(task.endDate) : null;
+        const start = task.start
+          ? new Date(task.start)
+          : task.startDate
+            ? new Date(task.startDate)
+            : null;
+        const end = task.end
+          ? new Date(task.end)
+          : task.endDate
+            ? new Date(task.endDate)
+            : null;
         return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())
           ? [{ start, end }]
           : [];
@@ -551,7 +610,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
       const start = group.startDate ? new Date(group.startDate) : null;
       const end = group.endDate ? new Date(group.endDate) : null;
-      return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime()) ? [{ start, end }] : [];
+      return start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())
+        ? [{ start, end }]
+        : [];
     });
 
     if (!ranges.length) return null;
@@ -566,16 +627,25 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   get projectTotalArea(): number {
-    const intelligenceArea = Number(this.loadedBlueprintIntelligence?.underRoofArea || 0);
+    const intelligenceArea = Number(
+      this.loadedBlueprintIntelligence?.underRoofArea || 0,
+    );
     if (intelligenceArea > 0) return intelligenceArea;
-    const parsed = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
+    const parsed = Number(
+      this.projectDetails?.buildingSize ||
+        this.projectDetails?.projectSize ||
+        0,
+    );
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
   get clientName(): string {
     if (this.loadedClient?.firstName || this.loadedClient?.lastName) {
-      const fullName = `${this.loadedClient?.firstName || ''} ${this.loadedClient?.lastName || ''}`.trim();
-      return this.loadedClient?.companyName ? `${fullName} (${this.loadedClient.companyName})` : fullName;
+      const fullName =
+        `${this.loadedClient?.firstName || ''} ${this.loadedClient?.lastName || ''}`.trim();
+      return this.loadedClient?.companyName
+        ? `${fullName} (${this.loadedClient.companyName})`
+        : fullName;
     }
     return this.projectDetails?.clientName || 'N/A';
   }
@@ -592,47 +662,67 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
   get contractStatus(): string {
     if (this.loadedJob?.contractStatus) return this.loadedJob.contractStatus;
-    return this.projectDetails?.contractStatus || this.projectDetails?.status || 'N/A';
+    return (
+      this.projectDetails?.contractStatus ||
+      this.projectDetails?.status ||
+      'N/A'
+    );
   }
 
   get blueprintConfidenceScore(): number {
-    const intelligence = Number(this.loadedBlueprintIntelligence?.confidenceScore || 0);
+    const intelligence = Number(
+      this.loadedBlueprintIntelligence?.confidenceScore || 0,
+    );
     if (intelligence > 0) return Math.min(100, Math.round(intelligence));
     const score = Number(
-      this.projectDetails?.blueprintConfidenceScore || this.projectDetails?.blueprintConfidence || 0,
+      this.projectDetails?.blueprintConfidenceScore ||
+        this.projectDetails?.blueprintConfidence ||
+        0,
     );
     if (score > 0) return Math.min(100, Math.round(score));
     const summaryScore = Number(
       this.loadedExecutiveSummary?.blueprintConfidence?.overallConfidence ||
-        this.projectDetails?.executiveSummary?.blueprintConfidence?.overallConfidence ||
+        this.projectDetails?.executiveSummary?.blueprintConfidence
+          ?.overallConfidence ||
         0,
     );
     return summaryScore > 0 ? Math.min(100, Math.round(summaryScore)) : 0;
   }
 
   get dimensionalAccuracy(): number {
-    const intelligenceScore = Number(this.loadedBlueprintIntelligence?.dimensionalAccuracy || 0);
-    if (intelligenceScore > 0) return Math.min(100, Math.round(intelligenceScore));
+    const intelligenceScore = Number(
+      this.loadedBlueprintIntelligence?.dimensionalAccuracy || 0,
+    );
+    if (intelligenceScore > 0)
+      return Math.min(100, Math.round(intelligenceScore));
     const score = Number(this.projectDetails?.dimensionalAccuracy || 0);
     return score > 0 ? Math.min(100, Math.round(score)) : 0;
   }
 
   get completeness(): number {
-    const intelligenceScore = Number(this.loadedBlueprintIntelligence?.completeness || 0);
-    if (intelligenceScore > 0) return Math.min(100, Math.round(intelligenceScore));
+    const intelligenceScore = Number(
+      this.loadedBlueprintIntelligence?.completeness || 0,
+    );
+    if (intelligenceScore > 0)
+      return Math.min(100, Math.round(intelligenceScore));
     const score = Number(this.projectDetails?.completeness || 0);
     return score > 0 ? Math.min(100, Math.round(score)) : 0;
   }
 
   get readability(): number {
-    const intelligenceScore = Number(this.loadedBlueprintIntelligence?.readability || 0);
-    if (intelligenceScore > 0) return Math.min(100, Math.round(intelligenceScore));
+    const intelligenceScore = Number(
+      this.loadedBlueprintIntelligence?.readability || 0,
+    );
+    if (intelligenceScore > 0)
+      return Math.min(100, Math.round(intelligenceScore));
     const score = Number(this.projectDetails?.readability || 0);
     return score > 0 ? Math.min(100, Math.round(score)) : 0;
   }
 
   private async loadOverviewData(): Promise<void> {
-    const jobId = String(this.projectDetails?.jobId || this.projectDetails?.id || '').trim();
+    const jobId = String(
+      this.projectDetails?.jobId || this.projectDetails?.id || '',
+    ).trim();
     if (!jobId || jobId === this.lastLoadedJobId) return;
 
     this.isSummaryLoading = true;
@@ -688,7 +778,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       firstValueFrom(this.budgetService.getBudget(Number(jobId))),
     ])
       .then(([boms, costSummary, veReport, budgetItems]) => {
-        const persistedBudgetItems = Array.isArray(budgetItems) ? budgetItems : [];
+        const persistedBudgetItems = Array.isArray(budgetItems)
+          ? budgetItems
+          : [];
         this.costAnalysis = costSummary || null;
         this.valueEngineering = Array.isArray(veReport) ? veReport : [];
         this.hydratePersistedVeSelections(persistedBudgetItems);
@@ -708,13 +800,18 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     const next: Record<string, BomSection> = {};
     (report?.sections || []).forEach((section: any) => {
       if (section.title && section.title.includes('Bill of Materials')) {
-        const key = section.title.split(' - ')[0].replace(/\s+/g, '').toLowerCase();
+        const key = section.title
+          .split(' - ')[0]
+          .replace(/\s+/g, '')
+          .toLowerCase();
         let totalMat = 0;
 
         const materials = (section.content || [])
           .filter(
             (row: any[]) =>
-              row[0] && !String(row[0]).toLowerCase().includes('total') && row.length > 1,
+              row[0] &&
+              !String(row[0]).toLowerCase().includes('total') &&
+              row.length > 1,
           )
           .map((row: any[]) => {
             const cost = this.asNumber(row[5]);
@@ -744,14 +841,22 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
           next[key].materials = materials;
           next[key].totalMaterialCost = totalMat;
         }
-      } else if (section.title && section.title.includes('Subcontractor Cost Breakdown')) {
-        const key = section.title.split(' - ')[0].replace(/\s+/g, '').toLowerCase();
+      } else if (
+        section.title &&
+        section.title.includes('Subcontractor Cost Breakdown')
+      ) {
+        const key = section.title
+          .split(' - ')[0]
+          .replace(/\s+/g, '')
+          .toLowerCase();
         let totalLab = 0;
 
         const labor = (section.content || [])
           .filter(
             (row: any[]) =>
-              row[0] && !String(row[0]).toLowerCase().includes('total') && row.length > 1,
+              row[0] &&
+              !String(row[0]).toLowerCase().includes('total') &&
+              row.length > 1,
           )
           .map((row: any[]) => {
             const cost = this.asNumber(row[4]);
@@ -784,16 +889,105 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     });
 
     this.billsOfMaterials = next;
+    this.originalBillsOfMaterials = this.cloneBomSections(next);
   }
 
   toggleBomSection(key: string): void {
     if (this.expandedBomSections.includes(key)) {
-      this.expandedBomSections = this.expandedBomSections.filter((k) => k !== key);
+      this.expandedBomSections = this.expandedBomSections.filter(
+        (k) => k !== key,
+      );
     } else {
       this.expandedBomSections = [...this.expandedBomSections, key];
     }
   }
+  isBomRowModified(
+    key: string,
+    rowType: 'materials' | 'labor',
+    rowIndex: number,
+  ): boolean {
+    const section = this.billsOfMaterials[key];
+    const originalSection = this.originalBillsOfMaterials[key];
+    if (!section || !originalSection) {
+      return false;
+    }
 
+    if (rowType === 'materials') {
+      const row = section.materials[rowIndex];
+      const originalRow = originalSection.materials[rowIndex];
+      if (!row || !originalRow) {
+        return false;
+      }
+
+      return (
+        this.asNumber(row.qty) !== this.asNumber(originalRow.qty) ||
+        this.asNumber(row.unitCost) !== this.asNumber(originalRow.unitCost)
+      );
+    }
+
+    const row = section.labor[rowIndex];
+    const originalRow = originalSection.labor[rowIndex];
+    if (!row || !originalRow) {
+      return false;
+    }
+
+    return (
+      this.asNumber(row.hours) !== this.asNumber(originalRow.hours) ||
+      this.asNumber(row.rate) !== this.asNumber(originalRow.rate)
+    );
+  }
+  private cloneBomSections(
+    source: Record<string, BomSection>,
+  ): Record<string, BomSection> {
+    const clone: Record<string, BomSection> = {};
+
+    Object.keys(source).forEach((key) => {
+      const section = source[key];
+      clone[key] = {
+        ...section,
+        materials: section.materials.map((item) => ({ ...item })),
+        labor: section.labor.map((item) => ({ ...item })),
+      };
+    });
+
+    return clone;
+  }
+  revertBomRow(
+    key: string,
+    rowType: 'materials' | 'labor',
+    rowIndex: number,
+  ): void {
+    const section = this.billsOfMaterials[key];
+    const originalSection = this.originalBillsOfMaterials[key];
+    if (!section || !originalSection) {
+      return;
+    }
+
+    if (rowType === 'materials') {
+      const row = section.materials[rowIndex];
+      const originalRow = originalSection.materials[rowIndex];
+      if (!row || !originalRow) {
+        return;
+      }
+
+      row.qty = originalRow.qty;
+      row.unitCost = originalRow.unitCost;
+      row.total = this.asNumber(row.qty) * this.asNumber(row.unitCost);
+    } else {
+      const row = section.labor[rowIndex];
+      const originalRow = originalSection.labor[rowIndex];
+      if (!row || !originalRow) {
+        return;
+      }
+
+      row.hours = originalRow.hours;
+      row.rate = originalRow.rate;
+      row.total = this.asNumber(row.hours) * this.asNumber(row.rate);
+    }
+
+    this.recalculateSectionTotals(section);
+    this.persistBomRowEdit(key, rowType, rowIndex);
+  }
   expandAll(): void {
     this.expandedBomSections = [...this.bomKeys];
   }
@@ -830,7 +1024,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     }
 
     setTimeout(() => {
-      const element = document.querySelector(`[data-bom-key="${nextKey}"]`) as HTMLElement | null;
+      const element = document.querySelector(
+        `[data-bom-key="${nextKey}"]`,
+      ) as HTMLElement | null;
       element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
   }
@@ -867,7 +1063,14 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     currentValue: string | number,
   ): void {
     this.editingCell = { key, rowType, rowIndex, field };
-    this.editBuffer = String(currentValue ?? '');
+    const raw = String(currentValue ?? '').trim();
+    if (!raw.length) {
+      this.editBuffer = '';
+      return;
+    }
+
+    // Normalize values (e.g. "1,200" or "$45.00") so number inputs always render them.
+    this.editBuffer = /\d/.test(raw) ? String(this.asNumber(raw)) : raw;
   }
 
   commitCellEdit(): void {
@@ -929,11 +1132,13 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     rowIndex: number,
     field: 'qty' | 'unitCost' | 'hours' | 'rate',
   ): boolean {
-    return !!this.editingCell &&
+    return (
+      !!this.editingCell &&
       this.editingCell.key === key &&
       this.editingCell.rowType === rowType &&
       this.editingCell.rowIndex === rowIndex &&
-      this.editingCell.field === field;
+      this.editingCell.field === field
+    );
   }
 
   private cancelCellEdit(): void {
@@ -942,8 +1147,14 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   private recalculateSectionTotals(section: BomSection): void {
-    section.totalMaterialCost = section.materials.reduce((sum, item) => sum + this.asNumber(item.total), 0);
-    section.totalLaborCost = section.labor.reduce((sum, item) => sum + this.asNumber(item.total), 0);
+    section.totalMaterialCost = section.materials.reduce(
+      (sum, item) => sum + this.asNumber(item.total),
+      0,
+    );
+    section.totalLaborCost = section.labor.reduce(
+      (sum, item) => sum + this.asNumber(item.total),
+      0,
+    );
   }
 
   toggleVeOpen(): void {
@@ -967,7 +1178,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   getVeOriginalCost(ve: any): number {
-    const direct = this.asNumber(ve?.originalCost ?? ve?.baselineCost ?? ve?.currentCost);
+    const direct = this.asNumber(
+      ve?.originalCost ?? ve?.baselineCost ?? ve?.currentCost,
+    );
     if (direct > 0) {
       return direct;
     }
@@ -975,7 +1188,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   getVeAlternativeCost(ve: any): number {
-    const direct = this.asNumber(ve?.alternativeCost ?? ve?.proposedCost ?? ve?.newCost);
+    const direct = this.asNumber(
+      ve?.alternativeCost ?? ve?.proposedCost ?? ve?.newCost,
+    );
     if (direct > 0) {
       return direct;
     }
@@ -1067,7 +1282,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   private hydratePersistedVeSelections(items: BudgetLineItem[]): void {
-    const veItems = items.filter((item) => String(item.source || '').toUpperCase() === 'VE');
+    const veItems = items.filter(
+      (item) => String(item.source || '').toUpperCase() === 'VE',
+    );
 
     this.appliedVE = new Set(
       veItems
@@ -1225,7 +1442,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
         this.persistedBomConfirmationItemIds.delete(key);
       },
       error: (err) => {
-        console.error('Failed to remove BOM phase confirmation persistence', err);
+        console.error(
+          'Failed to remove BOM phase confirmation persistence',
+          err,
+        );
       },
     });
   }
@@ -1243,7 +1463,14 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
     const sourceId = this.bomSourceId(key, rowType, rowIndex);
     const existingId = this.persistedBomBudgetItemIds.get(sourceId);
-    const payload = this.toBomBudgetItem(section, rowType, rowIndex, sourceId, jobId, existingId);
+    const payload = this.toBomBudgetItem(
+      section,
+      rowType,
+      rowIndex,
+      sourceId,
+      jobId,
+      existingId,
+    );
     if (!payload) {
       return;
     }
@@ -1292,7 +1519,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
     const rowType = parts[2] as 'materials' | 'labor';
     const rowIndex = Number(parts[3]);
-    if ((rowType !== 'materials' && rowType !== 'labor') || Number.isNaN(rowIndex)) {
+    if (
+      (rowType !== 'materials' && rowType !== 'labor') ||
+      Number.isNaN(rowIndex)
+    ) {
       return null;
     }
 
@@ -1399,16 +1629,21 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     const currentUser = this.authService.currentUserSubject.value;
     const job = this.projectDetails;
     if (!currentUser || !job?.jobId) {
-      this.snackBar.open('Missing user/job context. Unable to generate quote.', 'Close', {
-        duration: 3000,
-      });
+      this.snackBar.open(
+        'Missing user/job context. Unable to generate quote.',
+        'Close',
+        {
+          duration: 3000,
+        },
+      );
       return;
     }
 
     this.isGeneratingQuote = true;
 
     this.jobsService.getClientDetails(Number(job.jobId)).subscribe({
-      next: (clientDetails) => this.createQuote(currentUser, job, clientDetails),
+      next: (clientDetails) =>
+        this.createQuote(currentUser, job, clientDetails),
       error: () => this.createQuote(currentUser, job, null),
     });
   }
@@ -1419,7 +1654,8 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     let clientPhone = '';
 
     if (clientDetails) {
-      clientName = `${clientDetails.firstName} ${clientDetails.lastName}`.trim();
+      clientName =
+        `${clientDetails.firstName} ${clientDetails.lastName}`.trim();
       if (clientDetails.companyName) {
         clientName += ` (${clientDetails.companyName})`;
       }
@@ -1433,7 +1669,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
         const phase = this.billsOfMaterials[key];
         if (!phase) return null;
 
-        const phaseCost = Number(phase.totalMaterialCost || 0) + Number(phase.totalLaborCost || 0);
+        const phaseCost =
+          Number(phase.totalMaterialCost || 0) +
+          Number(phase.totalLaborCost || 0);
         if (phaseCost <= 0) return null;
 
         return {
@@ -1447,7 +1685,10 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       .filter((row): row is QuoteRowDto => row !== null);
 
     const rows: QuoteRowDto[] = [...phaseRows];
-    const directSubtotal = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+    const directSubtotal = rows.reduce(
+      (sum, row) => sum + Number(row.total || 0),
+      0,
+    );
     const adjustment = Number((totalCost - directSubtotal).toFixed(2));
 
     if (Math.abs(adjustment) > 0.01) {
@@ -1466,7 +1707,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       companyId: currentUser.companyId || 0,
       number: '',
       documentType: 'QUOTE',
-      from: currentUser.companyName || `${currentUser.firstName} ${currentUser.lastName}`,
+      from:
+        currentUser.companyName ||
+        `${currentUser.firstName} ${currentUser.lastName}`,
       to: clientName,
       clientAddress: job.address || '',
       clientEmail,
@@ -1491,16 +1734,23 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
         this.generatedQuote = { ...quoteDto, quoteId: this.generatedQuoteId };
 
         if (this.generatedQuoteId) {
-          this.localStorageService.setItem('quote_job_' + job.jobId, this.generatedQuoteId);
+          this.localStorageService.setItem(
+            'quote_job_' + job.jobId,
+            this.generatedQuoteId,
+          );
         }
 
         this.isGeneratingQuote = false;
-        this.snackBar.open('Quotation generated successfully.', 'Close', { duration: 3000 });
+        this.snackBar.open('Quotation generated successfully.', 'Close', {
+          duration: 3000,
+        });
       },
       error: (err) => {
         console.error('Failed to generate quote', err);
         this.isGeneratingQuote = false;
-        this.snackBar.open('Failed to generate quote.', 'Close', { duration: 3000 });
+        this.snackBar.open('Failed to generate quote.', 'Close', {
+          duration: 3000,
+        });
       },
     });
   }
@@ -1520,9 +1770,13 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
 
   sendToClient(): void {
     if (!this.generatedQuote?.clientEmail) {
-      this.snackBar.open('Client email is missing. Unable to send quote.', 'Close', {
-        duration: 3000,
-      });
+      this.snackBar.open(
+        'Client email is missing. Unable to send quote.',
+        'Close',
+        {
+          duration: 3000,
+        },
+      );
       return;
     }
 
@@ -1539,12 +1793,16 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       .subscribe({
         next: () => {
           this.isSending = false;
-          this.snackBar.open('Quote sent to client successfully.', 'Close', { duration: 3000 });
+          this.snackBar.open('Quote sent to client successfully.', 'Close', {
+            duration: 3000,
+          });
         },
         error: (err) => {
           console.error('Failed to send quote', err);
           this.isSending = false;
-          this.snackBar.open('Failed to send quote.', 'Close', { duration: 3000 });
+          this.snackBar.open('Failed to send quote.', 'Close', {
+            duration: 3000,
+          });
         },
       });
   }
@@ -1563,7 +1821,8 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     }
 
     const existingQuoteId =
-      this.generatedQuoteId || this.localStorageService.getItem('quote_job_' + jobId);
+      this.generatedQuoteId ||
+      this.localStorageService.getItem('quote_job_' + jobId);
 
     const resetAndGenerate = () => {
       this.quoteGenerated = false;
@@ -1587,9 +1846,13 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
       error: (err) => {
         console.error('Failed to delete quote before regeneration', err);
         this.isGeneratingQuote = false;
-        this.snackBar.open('Could not delete existing quote. Regeneration cancelled.', 'Close', {
-          duration: 4000,
-        });
+        this.snackBar.open(
+          'Could not delete existing quote. Regeneration cancelled.',
+          'Close',
+          {
+            duration: 4000,
+          },
+        );
       },
     });
   }
@@ -1606,7 +1869,9 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
   }
 
   private checkExistingQuote(jobId: string): void {
-    const existingQuoteId = this.localStorageService.getItem('quote_job_' + jobId);
+    const existingQuoteId = this.localStorageService.getItem(
+      'quote_job_' + jobId,
+    );
     if (!existingQuoteId) {
       return;
     }
@@ -1659,5 +1924,15 @@ export class PhaseDetailedTakeoffComponent implements OnInit, OnChanges, OnDestr
     const match = text.match(/\$\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/);
     return match ? this.asNumber(match[1]) : 0;
   }
-}
+  get proceedValidationCompleted(): string[] {
+    return this.bomKeys
+      .filter((key) => this.confirmedBomSections.has(key))
+      .map((key) => this.billsOfMaterials[key]?.name || key);
+  }
 
+  get proceedValidationMissing(): string[] {
+    return this.bomKeys
+      .filter((key) => !this.confirmedBomSections.has(key))
+      .map((key) => this.billsOfMaterials[key]?.name || key);
+  }
+}
