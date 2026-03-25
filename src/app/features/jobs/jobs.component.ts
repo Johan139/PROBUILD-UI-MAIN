@@ -78,6 +78,7 @@ import { JobAssignmentService } from './job-assignment/job-assignment.service';
 import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
+import { formatMoney } from '../../shared/pipes/money.pipe';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 import {
   MeasurementService,
@@ -224,6 +225,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   projectDetails: any;
   projectStage: ProjectPhase = 'CONSTRUCTION_LIVE';
+  private manualProjectStageOverride: ProjectPhase | null = null;
   isStageResolved: boolean = false;
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
@@ -1602,7 +1604,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       marketRangeLow: this.marketRangeLow,
       marketRangeHigh: this.marketRangeHigh,
       costPerSqFt: this.costPerSqFt,
-      bidPerSqFtText: size > 0 ? `$${(this.suggestedBid / size).toFixed(2)}` : 'N/A',
+      bidPerSqFtText: size > 0 ? formatMoney(this.suggestedBid / size, true, 2) : 'N/A',
     };
 
     this.dialog.open(BidPriceDialogComponent, {
@@ -1954,6 +1956,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
       }
 
+      if (this.manualProjectStageOverride) {
+          this.projectStage = this.manualProjectStageOverride as any;
+          this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
+          return;
+      }
+
       const s = status.toUpperCase();
       if (s === 'ANALYZING' || s === 'INITIATION') {
           this.projectStage = 'INITIATION';
@@ -2041,6 +2049,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onBackToPreliminary() {
+      this.manualProjectStageOverride = 'PRELIMINARY_SCOPE';
       this.projectStage = 'PRELIMINARY_SCOPE';
       this.stageDisplayMode = 'stage';
   }
@@ -2059,6 +2068,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private updateJobStatus(status: string) {
     if (!this.projectDetails?.jobId) return;
+
+    this.manualProjectStageOverride = null;
 
     const jobId = this.projectDetails.jobId;
 

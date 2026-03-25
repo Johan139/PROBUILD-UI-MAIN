@@ -1,6 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+import { MoneyPipe, MoneyInTextPipe } from '../../../../../shared/pipes/money.pipe';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { LucideAngularModule, DollarSign, Package, Sparkles, FileText, CheckCircle2, ChevronUp, ChevronDown, Download, Calculator, TrendingUp, RefreshCw, UploadIcon, X, Mail, Eye, FileCheck, Loader } from 'lucide-angular';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -15,7 +19,7 @@ import { QuoteDto, QuoteRowDto } from '../../../../../features/quote/quote.model
 @Component({
   selector: 'app-job-preliminary-view',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, MatTabsModule, MatSnackBarModule],
+  imports: [CommonModule, LucideAngularModule, MatTabsModule, MatSnackBarModule, MoneyPipe, MoneyInTextPipe],
   templateUrl: './job-preliminary-view.component.html',
   styleUrls: ['./job-preliminary-view.component.scss']
 })
@@ -132,6 +136,7 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
       );
 
       this.hydrateExecutiveSummaryHighlights();
+      this.cdr.detectChanges();
 
       if (boms && boms.length > 0 && boms[0].parsedReport) {
         this.processBoms(boms[0].parsedReport);
@@ -154,7 +159,9 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
     this.executiveSummary.keyHighlights = this.executiveSummary.keyHighlights.map(
       (item: any) => {
         const label = (item?.label || '').toLowerCase();
+        const valueRaw = String(item?.value || '');
 
+        // Handle Total Project Cost from cost analysis
         if (label.includes('total project cost')) {
           const totalProjectCost =
             this.costAnalysis?.suggestedBid ||
@@ -164,25 +171,72 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
 
           return {
             ...item,
-            value: totalProjectCost > 0 ? `$${Number(totalProjectCost).toLocaleString()}` : 'N/A',
+            value: totalProjectCost > 0 ? formatMoney(totalProjectCost, true, 2) : 'N/A',
           };
         }
 
+        // Handle Project Duration - strip markdown
         if (label.includes('project duration')) {
           return {
             ...item,
-            value: this.stripMarkdown(item?.value || 'N/A'),
+            value: this.stripMarkdown(valueRaw || 'N/A'),
           };
         }
 
+        // Handle Value Engineering Potential
         if (label.includes('value engineering')) {
           return {
             ...item,
             value:
               this.totalVePotentialSavings > 0
-                ? `$${this.totalVePotentialSavings.toLocaleString()}`
+                ? formatMoney(this.totalVePotentialSavings, true, 2)
                 : 'N/A',
           };
+        }
+
+        // Handle Total Estimated Bid Price
+        if (label.includes('total estimated bid')) {
+          const bidPrice =
+            this.costAnalysis?.suggestedMarketBid ||
+            this.costAnalysis?.suggestedBid ||
+            0;
+          return {
+            ...item,
+            value: bidPrice > 0 ? formatMoney(bidPrice, true, 2) : valueRaw,
+          };
+        }
+
+        // Handle Cost Per Conditioned Sq Ft and similar cost metrics
+        if (label.includes('cost per') || label.includes('per sq ft') || label.includes('per square foot')) {
+          const costPerSqFt = this.costAnalysis?.costPerSqFt || 0;
+          return {
+            ...item,
+            value: costPerSqFt > 0 ? formatMoney(costPerSqFt, true, 2) : valueRaw,
+          };
+        }
+
+        // Generic: Detect and reformat any money value that has commas (API format)
+        // Matches patterns like $936,940.59 or $12,345.67 with optional whitespace
+        const moneyMatch = valueRaw.match(/^\s*\$([\d,]+(?:\.\d{2})?)\s*$/);
+        if (moneyMatch) {
+          const numericValue = parseFloat(moneyMatch[1].replace(/,/g, ''));
+          if (!isNaN(numericValue) && numericValue > 0) {
+            return {
+              ...item,
+              value: formatMoney(numericValue, true, 2),
+            };
+          }
+        }
+
+        // Also check and format money values in the note field
+        if (item.note) {
+          const noteFormatted = this.formatMoneyInText(String(item.note));
+          if (noteFormatted !== item.note) {
+            return {
+              ...item,
+              note: noteFormatted,
+            };
+          }
         }
 
         return item;
@@ -202,6 +256,23 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
       .replace(/^>\s?/gm, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  /**
+   * Find and reformat all money values in a text string.
+   * Converts comma-separated dollar amounts (e.g., $1,234.56) to space-separated (e.g., $1 234.56).
+   */
+  private formatMoneyInText(text: string): string {
+    if (!text) return text;
+
+    // Match dollar amounts with commas: $1,234.56 or $12,345.67
+    return text.replace(/\$([\d,]+(?:\.\d{2})?)/g, (match, amountStr) => {
+      const numericValue = parseFloat(amountStr.replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue > 0) {
+        return formatMoney(numericValue, true, 2);
+      }
+      return match; // Return original if can't parse
+    });
   }
 
   processBoms(report: any) {

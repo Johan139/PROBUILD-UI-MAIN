@@ -27,6 +27,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   statusMessage: string = 'Initializing analysis...';
   emailSent: boolean = false;
 
+  private didAutoContinue = false;
+  private analysisFinished = false;
+
   private signalRSubscription: Subscription | null = null;
   private analysisDataSubscription: Subscription | null = null;
   private analysisStatePollingSubscription: Subscription | null = null;
@@ -123,6 +126,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     this.analysisEmailSentSubscription = this.signalrService.analysisEmailSent.subscribe((jobId: number) => {
       if (jobId === this.jobId) {
         this.emailSent = true;
+        this.applyCompletionGate();
         this.cdr.detectChanges();
       }
     });
@@ -194,9 +198,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     }
 
     if (isComplete || derivedComplete) {
-      this.currentStep = 'complete';
-      this.analysisProgress = 100;
-      this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
+      this.analysisFinished = true;
     }
 
     if (extractedDataJson) {
@@ -219,7 +221,33 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       }
     }
 
+    this.applyCompletionGate();
+
     this.cdr.detectChanges();
+  }
+
+  private applyCompletionGate(): void {
+    if (!this.analysisFinished) {
+      return;
+    }
+
+    // Email is treated as the final step.
+    if (!this.emailSent) {
+      this.analysisProgress = Math.min(this.analysisProgress || 99, 99);
+      this.statusMessage = 'Sending completion email...';
+      this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
+      return;
+    }
+
+    this.currentStep = 'complete';
+    this.analysisProgress = 100;
+    this.statusMessage = 'Analysis complete - Review results below';
+    this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
+
+    if (!this.didAutoContinue) {
+      this.didAutoContinue = true;
+      queueMicrotask(() => this.continue.emit());
+    }
   }
 
   updateData(dataType: string, data: any) {
@@ -276,9 +304,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       !update.isComplete && update.totalSteps > 0 && update.currentStep >= update.totalSteps;
 
     if (update.isComplete || derivedComplete) {
-      this.currentStep = 'complete';
-      this.analysisProgress = 100;
-      this.completedSteps = this.analysisSteps.map(s => s.id as AnalysisStep);
+      this.analysisFinished = true;
+      this.applyCompletionGate();
 
       // Do NOT stop polling immediately on completion.
       // The completion email can be sent slightly later, and if the SignalR

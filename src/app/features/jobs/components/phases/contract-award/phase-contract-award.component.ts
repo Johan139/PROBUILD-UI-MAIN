@@ -31,6 +31,7 @@ import { ReportService } from '../../../services/report.service';
 import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
 import { PhaseReportRequestType } from '../shared/phase-navigation-header.component';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-phase-contract-award',
@@ -154,7 +155,7 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get generatedContractName(): string {
@@ -599,9 +600,7 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
           : normalize(
               `${normalizedCurrency || 'USD'} ${
                 fixedAmount != null
-                  ? fixedAmount.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })
+                  ? formatMoney(fixedAmount, false, 2)
                   : ''
               }`.trim(),
             ),

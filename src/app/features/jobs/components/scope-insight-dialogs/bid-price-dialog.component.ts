@@ -6,6 +6,7 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MoneyPipe } from '../../../../shared/pipes/money.pipe';
 
 export interface BidPriceDialogData {
   suggestedBid: number;
@@ -31,7 +32,7 @@ export interface BidPriceDialogData {
 @Component({
   selector: 'app-bid-price-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MoneyPipe],
   template: `
     <div class="scope-modal">
       <header class="scope-modal-header">
@@ -53,33 +54,33 @@ export interface BidPriceDialogData {
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Bid Summary</p>
           <div class="scope-stat-list">
-            <div class="scope-stat-row"><span>Recommended Bid Price</span><strong class="accent">{{ data.suggestedBid | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Direct Cost (Base)</span><strong>{{ data.costToBuild | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Total Project Cost</span><strong>{{ data.totalProjectCost | currency: 'USD' : 'symbol' : '1.0-0' }}</strong></div>
+            <div class="scope-stat-row"><span>Recommended Bid Price</span><strong class="accent">{{ data.suggestedBid | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Direct Cost (Base)</span><strong>{{ data.costToBuild | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Total Project Cost</span><strong>{{ data.totalProjectCost | money : true : 0 }}</strong></div>
           </div>
         </section>
 
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Profitability Analysis</p>
           <div class="scope-stat-list">
-            <div class="scope-stat-row"><span>Gross Margin</span><strong>{{ data.grossMargin | currency: 'USD' : 'symbol' : '1.0-0' }}</strong></div>
+            <div class="scope-stat-row"><span>Gross Margin</span><strong>{{ data.grossMargin | money : true : 0 }}</strong></div>
             <div class="scope-stat-row"><span>Gross Margin %</span><strong>{{ data.grossMarginPercent | number: '1.1-1' }}%</strong></div>
             <div class="scope-stat-row"><span>Markup on Cost</span><strong>{{ data.markupOnCostPercent | number: '1.1-1' }}%</strong></div>
-            <div class="scope-stat-row"><span>Risk Exposure (Net of Contingency)</span><strong>{{ data.riskExposure | currency: 'USD' : 'symbol' : '1.0-0' }}</strong></div>
+            <div class="scope-stat-row"><span>Risk Exposure (Net of Contingency)</span><strong>{{ data.riskExposure | money : true : 0 }}</strong></div>
           </div>
         </section>
 
         <section class="scope-modal-profit-card">
           <p class="scope-modal-section-title success">Contractor Profit Calculation</p>
           <div class="scope-stat-list">
-            <div class="scope-stat-row"><span>Bid Price to Client</span><strong>{{ data.suggestedBid | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Less: Direct Costs</span><strong>-{{ data.costToBuild | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Less: General Conditions</span><strong>-{{ data.overheadProfit | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Less: Contingency</span><strong>-{{ data.contingencyAllowance | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Less: Escalation</span><strong>-{{ data.escalationAllowance | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Less: Taxes</span><strong>-{{ data.taxesAllowance | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
+            <div class="scope-stat-row"><span>Bid Price to Client</span><strong>{{ data.suggestedBid | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: Direct Costs</span><strong>-{{ data.costToBuild | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: General Conditions</span><strong>-{{ data.overheadProfit | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: Contingency</span><strong>-{{ data.contingencyAllowance | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: Escalation</span><strong>-{{ data.escalationAllowance | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: Taxes</span><strong>-{{ data.taxesAllowance | money : true : 2 }}</strong></div>
             <div class="scope-divider"></div>
-            <div class="scope-stat-row total"><span>Net Contractor Profit</span><strong class="success">{{ data.netContractorProfit | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
+            <div class="scope-stat-row total"><span>Net Contractor Profit</span><strong class="success">{{ data.netContractorProfit | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Net Profit Margin</span><strong class="success">{{ data.netProfitMarginPercent | number: '1.1-1' }}%</strong></div>
             <div class="scope-stat-row"><span>Return on Cost</span><strong class="success">{{ data.returnOnCostPercent | number: '1.1-1' }}%</strong></div>
           </div>
@@ -88,9 +89,9 @@ export interface BidPriceDialogData {
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Market Comparison</p>
           <div class="scope-stat-list">
-            <div class="scope-stat-row"><span>Market Range (Low)</span><strong>{{ data.marketRangeLow | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Market Range (High)</span><strong>{{ data.marketRangeHigh | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
-            <div class="scope-stat-row"><span>Cost per Sq Ft</span><strong>{{ data.costPerSqFt | currency: 'USD' : 'symbol' : '1.2-2' }}</strong></div>
+            <div class="scope-stat-row"><span>Market Range (Low)</span><strong>{{ data.marketRangeLow | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Market Range (High)</span><strong>{{ data.marketRangeHigh | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Cost per Sq Ft</span><strong>{{ data.costPerSqFt | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Bid per Sq Ft</span><strong>{{ data.bidPerSqFtText }}</strong></div>
           </div>
         </section>

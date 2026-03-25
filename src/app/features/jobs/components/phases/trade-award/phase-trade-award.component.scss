@@ -19,7 +19,7 @@
 
   h3 {
     margin: 0;
-    font-size: var(--fs-lg);
+    font-size: var(--fs-3);
   }
 
   p {
@@ -107,13 +107,13 @@
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-6);
   }
 
   strong {
     display: block;
     margin-top: var(--space-1);
-    font-size: var(--fs-xl);
+    font-size: var(--fs-2);
   }
 }
 
@@ -135,7 +135,7 @@
     gap: 6px;
 
     span {
-      font-size: 10px;
+      font-size: var(--fs-6);
       border-radius: 999px;
       padding: 2px 8px;
       background: var(--color-surface-subtle);
@@ -233,13 +233,13 @@
 
   h4 {
     margin: 0;
-    font-size: var(--fs-md);
+    font-size: var(--fs-4);
   }
 
   p {
     margin: 4px 0 0;
     color: var(--color-text-muted);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-6);
   }
 
   .lucide-icon {
@@ -290,7 +290,7 @@
 .mode-pill {
   margin-left: 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
   padding: 2px 8px;
 
@@ -308,7 +308,7 @@
 .work-type-chip {
   margin-left: 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
   padding: 2px 8px;
 
@@ -331,7 +331,7 @@
 .budget-chip {
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
   border: 1px solid color-mix(in oklab, var(--color-primary) 35%, var(--color-border));
   background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface));
@@ -347,7 +347,7 @@
 .pill {
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: 11px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
 
   &.awarded {
@@ -376,7 +376,7 @@
   background: #ffd400;
   color: #0b0b0c;
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: var(--fs-5);
   font-weight: var(--fw-semibold);
   cursor: pointer;
   display: inline-flex;
@@ -464,13 +464,13 @@
 
   h5 {
     margin: 0;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-5);
   }
 
   p {
     margin: 2px 0 0;
     color: var(--color-text-muted);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-6);
   }
 
   .bid-main {
@@ -510,7 +510,7 @@
     span {
       border-radius: 999px;
       padding: 2px 8px;
-      font-size: 10px;
+      font-size: var(--fs-6);
       color: var(--color-text-muted);
       background: color-mix(in oklab, var(--color-primary) 10%, transparent);
     }
@@ -546,7 +546,7 @@
       align-items: center;
       gap: 4px;
       color: var(--color-text-muted);
-      font-size: 10px;
+      font-size: var(--fs-6);
     }
   }
 
@@ -562,7 +562,7 @@
     gap: 10px;
 
     small {
-      font-size: 10px;
+      font-size: var(--fs-6);
       color: var(--color-text-muted);
     }
   }
@@ -572,11 +572,11 @@
 
     .price {
       font-weight: var(--fw-bold);
-      font-size: var(--fs-md);
+      font-size: var(--fs-4);
     }
 
     small {
-      font-size: 10px;
+      font-size: var(--fs-6);
 
       &.good {
         color: var(--color-success);
@@ -602,7 +602,7 @@
 
     .ref {
       color: var(--color-text-muted);
-      font-size: 10px;
+      font-size: var(--fs-6);
     }
   }
 
@@ -621,15 +621,15 @@
 
       p {
         margin: 0;
-        font-size: 12px;
+        font-size: var(--fs-5);
       }
     }
 
     .quoted-scope {
       margin: 0;
-      font-size: 12px;
+      font-size: var(--fs-5);
       color: var(--color-text-muted);
-      line-height: 1.45;
+      line-height: var(--lh-normal);
 
       strong {
         color: var(--color-text);
@@ -644,7 +644,7 @@
 
       h6 {
         margin: 0 0 4px;
-        font-size: 11px;
+        font-size: var(--fs-6);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: var(--color-text-muted);
@@ -656,7 +656,7 @@
       }
 
       li {
-        font-size: 12px;
+        font-size: var(--fs-5);
         color: var(--color-text);
         margin-bottom: 2px;
       }
@@ -680,7 +680,7 @@
 .chip-location {
   border-radius: 999px;
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
 }
 
@@ -753,13 +753,13 @@
 
   h3 {
     margin: 0;
-    font-size: 20px;
+    font-size: var(--fs-3);
   }
 
   p {
     margin: 2px 0 0;
     color: var(--color-text-muted);
-    font-size: 13px;
+    font-size: var(--fs-5);
   }
 }
 
@@ -785,12 +785,12 @@
   gap: 4px;
 
   strong {
-    font-size: 26px;
-    line-height: 1;
+    font-size: var(--fs-2);
+    line-height: var(--lh-tight);
   }
 
   small {
-    font-size: 11px;
+    font-size: var(--fs-6);
     color: var(--color-text-muted);
   }
 
@@ -808,7 +808,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-5);
   color: var(--color-text-muted);
 
   .lucide-icon {
@@ -828,7 +828,7 @@
     border-radius: 10px;
     background: var(--color-trade-dialog-surface-alt);
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-trade-text-soft);
   }
 }
@@ -840,7 +840,7 @@
 
   p {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-text-muted);
   }
 }
@@ -853,7 +853,7 @@
 
   h6 {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--fs-6);
     color: var(--color-trade-dialog-text);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -861,9 +861,9 @@
 
   p {
     margin: 0 0 6px;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-trade-text-soft);
-    line-height: 1.45;
+    line-height: var(--lh-normal);
   }
 
   ul {
@@ -873,7 +873,7 @@
 
   li {
     margin-bottom: 4px;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-trade-text-soft);
   }
 }
@@ -892,7 +892,7 @@
 
   h6 {
     margin: 0 0 10px;
-    font-size: 12px;
+    font-size: var(--fs-6);
     color: var(--color-trade-dialog-text);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -904,7 +904,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-trade-text-soft);
 
     span {
@@ -938,13 +938,13 @@
 
     h5 {
       margin: 0;
-      font-size: var(--fs-sm);
+      font-size: var(--fs-5);
     }
 
     p {
       margin: 2px 0 0;
       color: var(--color-text-muted);
-      font-size: var(--fs-xs);
+      font-size: var(--fs-6);
     }
   }
 
@@ -988,7 +988,7 @@
     color: var(--color-status-trade-award);
     padding: 7px 12px;
     font-weight: var(--fw-semibold);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-6);
     cursor: pointer;
   }
 
@@ -1046,7 +1046,7 @@
   p {
     margin: var(--space-2) 0 0;
     color: var(--color-text-muted);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-6);
   }
 }
 

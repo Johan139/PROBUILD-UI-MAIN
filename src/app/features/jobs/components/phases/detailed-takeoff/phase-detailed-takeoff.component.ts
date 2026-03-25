@@ -41,6 +41,8 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDividerModule } from '@angular/material/divider';
 import { ProjectBlueprintViewerComponent } from '../../../../../components/project-blueprint-viewer/project-blueprint-viewer.component';
 import { UploadedFileInfo } from '../../../../../services/file-upload.service';
+import { MoneyPipe, MoneyInTextPipe } from '../../../../../shared/pipes/money.pipe';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 interface BomMaterialRow {
   item: string;
@@ -83,6 +85,8 @@ interface BomSection {
     MatExpansionModule,
     MatDividerModule,
     ProjectBlueprintViewerComponent,
+    MoneyPipe,
+    MoneyInTextPipe,
   ],
   templateUrl: './phase-detailed-takeoff.component.html',
   styleUrl: './phase-detailed-takeoff.component.scss',
@@ -229,7 +233,7 @@ export class PhaseDetailedTakeoffComponent
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get bomKeys(): string[] {

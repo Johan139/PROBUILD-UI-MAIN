@@ -1132,9 +1132,15 @@
 }
 
 .member-modal-actions {
-  padding: 0 16px 16px;
-  display: grid;
-  gap: 8px;
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .conflict-modal {
@@ -1219,10 +1225,47 @@
   color: var(--color-text-muted);
 }
 
-.btn-danger {
-  border-color: color-mix(in oklab, var(--color-mobilization-danger) 35%, var(--color-border));
-  background: color-mix(in oklab, var(--color-mobilization-danger) 12%, transparent);
+.btn-danger-highlight {
+  background: color-mix(in oklab, var(--color-mobilization-danger) 18%, transparent);
+  border-color: color-mix(in oklab, var(--color-mobilization-danger) 50%, var(--color-border));
   color: var(--color-mobilization-danger);
+  font-weight: 600;
+  height: 44px;
+
+  &:hover {
+    background: color-mix(in oklab, var(--color-mobilization-danger) 28%, transparent);
+    border-color: color-mix(in oklab, var(--color-mobilization-danger) 70%, var(--color-border));
+  }
+
+  lucide-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.btn-outline-full {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  height: 44px;
+  width: 100%;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-mobilization-border-strong);
+    color: var(--color-text);
+  }
+}
+
+.btn-lg {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 13px;
+
+  lucide-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .btn-xs {

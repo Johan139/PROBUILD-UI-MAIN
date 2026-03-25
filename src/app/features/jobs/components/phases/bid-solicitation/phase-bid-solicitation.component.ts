@@ -5,6 +5,7 @@ import {
   PhaseNavigationHeaderComponent,
   PhaseReportRequestType,
 } from '../shared/phase-navigation-header.component';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 interface SolicitationPacket {
   id: string;
@@ -187,7 +188,7 @@ export class PhaseBidSolicitationComponent {
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   selectPacket(packetId: string): void {

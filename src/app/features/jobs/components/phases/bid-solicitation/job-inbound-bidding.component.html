@@ -114,7 +114,7 @@
         </div>
         <div class="pkg-header-right">
           <div class="budget-chip">
-            <span class="budget-value">${{ pkg.budget | number }}</span>
+            <span class="budget-value">{{ pkg.budget | money : true : 2 }}</span>
             <span class="budget-mode">{{ getEffectiveModeLabel(pkg) }}</span>
           </div>
           <lucide-angular
@@ -178,7 +178,7 @@
             </div>
             <div class="budget-block current">
               <p>Current Budget</p>
-              <strong>${{ pkg.budget | number }}</strong>
+              <strong>{{ pkg.budget | money : true : 2 }}</strong>
             </div>
           </div>
           <div class="budget-input-wrapper">
@@ -362,7 +362,7 @@
                   <span>{{ mat.vendor }}</span>
                 </div>
                 <span class="materials-estimate"
-                  >${{ mat.estimate | number }}</span
+                  >{{ mat.estimate | money : true : 2 }}</span
                 >
               </div>
             </div>
@@ -442,7 +442,7 @@
                 </div>
               </div>
               <div class="bid-price-col">
-                <span class="price">${{ bid.price | number }}</span>
+                <span class="price">{{ bid.price | money : true : 2 }}</span>
                 <span class="lead-time">{{ bid.leadTime }}</span>
               </div>
             </div>
@@ -559,19 +559,14 @@
                 }}
               </p>
               <strong
-                >${{
-                  (pkg.category === "trade"
-                    ? getAiTotalEstimate(pkg)
-                    : pkg.budget
-                  ) | number
-                }}</strong
+                >{{ (pkg.category === "trade" ? getAiTotalEstimate(pkg) : pkg.budget) | money : true : 2 }}</strong
               >
             </div>
             <div class="invite-budget-item">
               <p>Labour</p>
               <strong [class.na]="pkg.category !== 'trade'">{{
                 pkg.category === "trade"
-                  ? "$" + (getAiLaborEstimate(pkg) | number)
+                  ? (getAiLaborEstimate(pkg) | money : true : 2)
                   : "N/A"
               }}</strong>
             </div>
@@ -581,11 +576,13 @@
             >
               <p>Materials</p>
               <strong class="materials"
-                >${{
+                >{{
                   (pkg.category === "trade"
                     ? getAiTotalEstimate(pkg) - getAiLaborEstimate(pkg)
-                    : pkg.budget
-                  ) | number
+                    : pkg.budget)
+                    | money
+                    : true
+                    : 2
                 }}</strong
               >
             </div>

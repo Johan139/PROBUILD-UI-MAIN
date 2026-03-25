@@ -12,6 +12,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { ExternalCompanyWithContacts } from '../../../../../models/external-data';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+import { MoneyPipe } from '../../../../../shared/pipes/money.pipe';
 
   interface Bid {
       id: number;
@@ -72,7 +74,7 @@ import { ExternalCompanyWithContacts } from '../../../../../models/external-data
 @Component({
   selector: 'app-job-inbound-bidding',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, MoneyPipe],
   templateUrl: './job-inbound-bidding.component.html',
   styleUrls: ['./job-inbound-bidding.component.scss']
 })
@@ -1166,10 +1168,10 @@ export class JobInboundBiddingComponent implements OnInit {
 
   getEstimateLabel(pkg: TradePackage): string {
     if (pkg.category === 'supplier') {
-      return `AI Materials: $${Number(this.getAiTotalEstimate(pkg) || 0).toLocaleString()}`;
+      return `AI Materials: ${formatMoney(this.getAiTotalEstimate(pkg) || 0, true, 2)}`;
     }
 
-    return `AI Labor: $${Number(this.getAiLaborEstimate(pkg) || 0).toLocaleString()} | AI Total: $${Number(this.getAiTotalEstimate(pkg) || 0).toLocaleString()}`;
+    return `AI Labor: ${formatMoney(this.getAiLaborEstimate(pkg) || 0, true, 2)} | AI Total: ${formatMoney(this.getAiTotalEstimate(pkg) || 0, true, 2)}`;
   }
 
   getEffectiveModeLabel(pkg: TradePackage): string {

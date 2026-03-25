@@ -103,7 +103,7 @@
               <p class="role" *ngIf="sub.csiCode">{{ sub.csiCode }}</p>
             </div>
             <div class="member-meta desktop-only">
-              <p class="contract-value">${{ sub.totalBudget | number }}</p>
+              <p class="contract-value">{{ sub.totalBudget | money : true : 2 }}</p>
             </div>
           </button>
         </div>
@@ -150,7 +150,7 @@
               <p class="role" *ngIf="vendor.csiCode">{{ vendor.csiCode }}</p>
             </div>
             <div class="member-meta desktop-only">
-              <p class="contract-value">${{ vendor.totalBudget | number }}</p>
+              <p class="contract-value">{{ vendor.totalBudget | money : true : 2 }}</p>
             </div>
           </button>
         </div>
@@ -197,7 +197,7 @@
               <p class="role" *ngIf="supplier.csiCode">{{ supplier.csiCode }}</p>
             </div>
             <div class="member-meta desktop-only">
-              <p class="contract-value">${{ supplier.totalBudget | number }}</p>
+              <p class="contract-value">{{ supplier.totalBudget | money : true : 2 }}</p>
             </div>
           </button>
         </div>

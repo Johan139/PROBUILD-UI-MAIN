@@ -2,6 +2,7 @@
   <app-phase-navigation-header
     *ngIf="stageDisplayMode === 'stage'"
     [stageLabel]="'Preliminary Scope Review'"
+    [showBack]="false"
     [backLabel]="'Back to Setup'"
     [proceedLabel]="'Proceed to Detailed Estimating'"
     [projectName]="projectDetails?.projectName || 'N/A'"
@@ -37,19 +38,19 @@
             <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
           </div>
           <p class="card-label">Overall Budget</p>
-          <p class="card-value">{{ overallBudgetValue | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+          <p class="card-value">{{ overallBudgetValue | money : true : 2 }}</p>
         </div>
         <div class="card-bottom">
           <div class="progress-row">
             <span>Spent to Date</span>
-            <strong>{{ spentToDate | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            <strong>{{ spentToDate | money : true : 2 }}</strong>
           </div>
           <div class="progress-track" aria-hidden="true">
             <div class="progress-fill budget" [style.width.%]="overallBudgetProgressPercent"></div>
           </div>
           <div class="progress-row">
             <span>Remaining</span>
-            <strong>{{ overallRemainingBudget | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            <strong>{{ overallRemainingBudget | money : true : 2 }}</strong>
           </div>
         </div>
       </button>
@@ -83,12 +84,12 @@
             <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
           </div>
           <p class="card-label">Bid Price (Client)</p>
-          <p class="card-value">{{ bidPriceValue | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+          <p class="card-value">{{ bidPriceValue | money : true : 2 }}</p>
         </div>
         <div class="card-bottom">
           <div class="progress-row">
             <span>Gross Profit</span>
-            <strong>{{ bidGrossProfit | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            <strong>{{ bidGrossProfit | money : true : 2 }}</strong>
           </div>
           <div class="progress-row">
             <span>Profit Margin</span>
@@ -96,7 +97,7 @@
           </div>
           <div class="progress-row">
             <span>Exposure</span>
-            <strong>{{ bidExposureValue | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            <strong>{{ bidExposureValue | money : true : 2 }}</strong>
           </div>
         </div>
       </button>
@@ -283,8 +284,8 @@
           <div class="grid-3">
             <div *ngFor="let item of executiveSummary.keyHighlights" class="highlight-box">
               <span class="label">{{ item.label }}</span>
-              <span class="value">{{ item.value }}</span>
-              <span class="note">{{ item.note }}</span>
+              <span class="value">{{ item.value | money : true : 2 }}</span>
+              <span class="note">{{ item.note | moneyInText : true : 2 }}</span>
             </div>
           </div>
         </div>

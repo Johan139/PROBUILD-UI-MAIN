@@ -702,7 +702,7 @@ mat-expansion-panel-header {
   gap: var(--space-2);
 }
 
-.btn {
+.phase-actions .btn {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
@@ -711,12 +711,17 @@ mat-expansion-panel-header {
   color: var(--color-text);
 }
 
-.btn-primary {
+.phase-actions .btn-primary {
   background: var(--color-primary);
-  color: var(--color-text) !important;
+  color: #000 !important;
+
+  lucide-icon,
+  mat-icon {
+    color: #000 !important;
+  }
 }
 
-.btn-danger {
+.phase-actions .btn-danger {
   background: color-mix(in oklab, var(--color-danger) 12%, transparent);
   color: var(--color-danger);
 }
@@ -787,6 +792,26 @@ mat-expansion-panel-header {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.takeoff-controls .btn.btn-primary,
+.quote-actions .btn.btn-primary {
+  color: #000 !important;
+
+  * {
+    color: #000 !important;
+  }
+
+  lucide-icon,
+  mat-icon {
+    color: #000 !important;
+  }
+}
+
+.takeoff-controls .btn {
+  height: 44px;
+  font-size: 0.85rem;
+  font-weight: var(--fw-semibold);
 }
 
 .alert-card {
@@ -1283,16 +1308,15 @@ mat-expansion-panel-header {
 
 .ve-detail-label {
   display: inline-block;
-  margin-bottom: 6px;
-  padding: 3px 8px;
-  border-radius: 999px;
+  margin-bottom: var(--space-1);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
   border: 1px solid
-    color-mix(in oklab, var(--color-primary) 28%, var(--color-border));
-  // background: color-mix(in oklab, var(--color-primary) 10%, var(--color-surface));
+    color-mix(in oklab, var(--color-primary) 30%, var(--color-border));
   color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
 }
 
 .ve-cost-summary {
@@ -1333,6 +1357,11 @@ mat-expansion-panel-header {
 .ve-actions {
   display: flex;
   justify-content: flex-end;
+
+  .btn.btn-primary,
+  .btn.btn-primary * {
+    color: #000 !important;
+  }
 }
 
 .ve-description {
@@ -1354,10 +1383,12 @@ mat-expansion-panel-header {
 }
 
 .mini-label {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-1);
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .quote-card {

@@ -25,7 +25,7 @@
 
   p {
     margin: 0;
-    font-size: 10px;
+    font-size: var(--fs-6);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-text-muted);
@@ -34,7 +34,7 @@
 
   span {
     margin: 0;
-    font-size: 10px;
+    font-size: var(--fs-6);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-primary);
@@ -78,15 +78,15 @@
 }
 
 .detail-label {
-  font-size: 10px;
+  font-size: var(--fs-6);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .detail-value {
   margin: 2px 0 0;
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: var(--fs-5);
+  line-height: var(--lh-tight);
   font-weight: var(--fw-semibold);
   color: var(--color-text);
   word-break: break-word;
@@ -94,7 +94,7 @@
 
 .detail-sub {
   margin-top: 2px;
-  font-size: 11px;
+  font-size: var(--fs-6);
 }
 
 .intro-card-copy {
@@ -124,7 +124,7 @@
   p {
     margin: var(--space-1) 0 0;
     color: var(--color-text-muted);
-    line-height: 1.55;
+    line-height: var(--lh-normal);
   }
 }
 
@@ -199,7 +199,7 @@
 
 .permit-copy h4 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-4);
   color: var(--color-text);
 }
 
@@ -209,7 +209,7 @@
 }
 
 .permit-accepts {
-  font-size: 12px;
+  font-size: var(--fs-5);
 }
 
 .permit-complete-icon {
@@ -219,8 +219,8 @@
 }
 
 .na-pill {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--fs-6);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 2px 6px;
@@ -248,7 +248,7 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--fs-6);
   font-weight: var(--fw-semibold);
 
   &.is-approved {
@@ -284,7 +284,7 @@
   }
 
   span {
-    font-size: 11px;
+    font-size: var(--fs-6);
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--color-text-muted);
@@ -334,7 +334,7 @@
     gap: 2px;
 
     span {
-      font-size: 11px;
+      font-size: var(--fs-6);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--color-text-muted);
@@ -368,7 +368,7 @@
 
 .progress-copy {
   margin: var(--space-2) 0 0;
-  font-size: 11px;
+  font-size: var(--fs-6);
   color: var(--color-text-muted);
 }
 
@@ -381,7 +381,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-5);
   font-weight: var(--fw-semibold);
   color: var(--color-text);
   background: transparent;
@@ -476,13 +476,13 @@
 
   h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: var(--fs-4);
     color: var(--color-text);
   }
 
   p {
     margin: 2px 0 0;
-    font-size: 12px;
+    font-size: var(--fs-5);
     color: var(--color-text-muted);
   }
 }
@@ -546,7 +546,7 @@
 
   p {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--fs-5);
   }
 }
 
@@ -561,7 +561,7 @@
 
   p {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--fs-6);
     color: var(--color-text-muted);
   }
 }

@@ -8,6 +8,7 @@ import {
   PhaseNavigationHeaderComponent,
   PhaseReportRequestType,
 } from '../shared/phase-navigation-header.component';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 interface CloseoutItem {
   key: string;
@@ -130,7 +131,7 @@ export class PhaseCloseoutComponent implements OnInit, OnChanges {
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get projectName(): string {
@@ -160,7 +161,7 @@ export class PhaseCloseoutComponent implements OnInit, OnChanges {
       return '$0';
     }
 
-    return `$${Math.round(budget * 0.05).toLocaleString()}`;
+    return formatMoney(Math.round(budget * 0.05), true, 2);
   }
 
   get completedCount(): number {

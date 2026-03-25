@@ -20,6 +20,7 @@ export type PhaseReportRequestType =
 })
 export class PhaseNavigationHeaderComponent {
   @Input() stageLabel = 'Preliminary Scope Review';
+  @Input() showBack = true;
   @Input() backLabel = 'Back';
   @Input() discardLabel = 'Discard Project';
   @Input() exportLabel = 'Export Reports';
