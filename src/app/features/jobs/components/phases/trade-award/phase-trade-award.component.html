@@ -102,7 +102,7 @@
             </div>
 
             <div class="toggle-right">
-              <span class="budget-chip">Budget ${{ itemBudget(item) | number : '1.0-0' }}</span>
+              <span class="budget-chip">Budget {{ itemBudget(item) | money : true : 2 }}</span>
               <lucide-icon name="chevron-down" [class.open]="isExpanded(item.id)"></lucide-icon>
             </div>
           </button>
@@ -183,7 +183,7 @@
                   </div>
 
                   <div class="bid-price-wrap">
-                    <div class="price">${{ bid.amount | number : '1.0-0' }}</div>
+                    <div class="price">{{ bid.amount | money : true : 2 }}</div>
                     <small [ngClass]="budgetVarianceClass(item, bid)">
                       {{ budgetVarianceLabel(item, bid) }}
                     </small>
@@ -339,7 +339,7 @@
         <p><strong>{{ detail.bid.completedJobs || 0 }}</strong> jobs completed</p>
         <p><strong>{{ detail.bid.yearsInBusiness || 0 }}</strong> yrs in business</p>
         <p><strong>Lead:</strong> {{ detail.bid.leadTime }}</p>
-        <p><strong>${{ detail.bid.amount | number : '1.0-0' }}</strong></p>
+        <p><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
         <p [ngClass]="budgetVarianceClass(detail.item, detail.bid)">{{ budgetVarianceLabel(detail.item, detail.bid) }}</p>
       </section>
 
@@ -391,12 +391,12 @@
 
       <section class="detail-cost-summary">
         <h6>Cost Summary</h6>
-        <p><span>Quoted Amount</span><strong>${{ detail.bid.amount | number : '1.0-0' }}</strong></p>
-        <p><span>Your Budget</span><strong>${{ itemBudget(detail.item) | number : '1.0-0' }}</strong></p>
+        <p><span>Quoted Amount</span><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
+        <p><span>Your Budget</span><strong>{{ itemBudget(detail.item) | money : true : 2 }}</strong></p>
         <p>
           <span>Variance</span>
           <strong [ngClass]="budgetVarianceClass(detail.item, detail.bid)">
-            {{ budgetVarianceAmount(detail.item, detail.bid) | currency : 'USD' : 'symbol' : '1.0-0' }}
+            {{ budgetVarianceAmount(detail.item, detail.bid) | money : true : 2 }}
           </strong>
         </p>
         <p><span>Lead Time</span><strong>{{ detail.bid.leadTime }}</strong></p>

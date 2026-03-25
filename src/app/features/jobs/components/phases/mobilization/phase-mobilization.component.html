@@ -193,7 +193,7 @@
           </p>
         </div>
         <div class="trade-right">
-          <span class="trade-budget">${{ getTradeContractValue(trade) | number }}</span>
+          <span class="trade-budget">{{ getTradeContractValue(trade) | money : true : 2 }}</span>
           <span class="state-pill" [class.is-confirmed]="getTradeMobilizationStatus(trade) === 'confirmed'" [class.is-pending]="getTradeMobilizationStatus(trade) === 'pending'">{{ getTradeMobilizationStatus(trade) }}</span>
           <lucide-icon name="chevron-down" class="chev" [class.open]="expandedTradeIds.has(trade.id)"></lucide-icon>
         </div>
@@ -212,7 +212,7 @@
         </div>
 
         <div class="trade-kpis" *ngIf="getTradeMobilizationStatus(trade) === 'confirmed'">
-          <div class="trade-cell compact"><small>Contract Value</small><strong>${{ getTradeContact(trade)?.amount || trade.budget | number }}</strong></div>
+          <div class="trade-cell compact"><small>Contract Value</small><strong>{{ (getTradeContact(trade)?.amount || trade.budget) | money : true : 2 }}</strong></div>
           <div class="trade-cell compact"><small>Start Date</small><strong>{{ startDate ? (startDate | date: 'MMM d, y') : 'TBD' }}</strong></div>
           <div class="trade-cell compact"><small>Duration</small><strong>{{ tradeDurationLabel(trade) }}</strong></div>
           <div class="trade-cell compact"><small>Man Hours</small><strong>{{ getTradeContact(trade)?.manHours ?? 'TBD' }}</strong></div>
@@ -244,7 +244,7 @@
         </div>
       </div>
       <div class="partner-right">
-        <span class="trade-budget">${{ vendor.value | number }}</span>
+        <span class="trade-budget">{{ vendor.value | money : true : 2 }}</span>
         <span class="state-pill" [class.is-confirmed]="vendor.status === 'confirmed'" [class.is-pending]="vendor.status === 'pending'">{{ vendor.status }}</span>
         <small>Lead: {{ vendor.lead }}</small>
       </div>
@@ -269,7 +269,7 @@
         </div>
       </div>
       <div class="partner-right">
-        <span class="trade-budget">${{ supplier.value | number }}</span>
+        <span class="trade-budget">{{ supplier.value | money : true : 2 }}</span>
         <span class="state-pill" [class.is-confirmed]="supplier.status === 'confirmed'" [class.is-pending]="supplier.status === 'pending'">{{ supplier.status }}</span>
         <small>Lead: {{ supplier.lead }}</small>
       </div>
@@ -481,9 +481,9 @@
 
       <section class="member-modal-info">
         <p><lucide-icon name="phone"></lucide-icon><span>Phone:</span><strong>{{ member.phone }}</strong></p>
-        <p><lucide-icon name="dollar-sign"></lucide-icon><span>Rate:</span><strong>{{ member.rate || '' }}</strong></p>
+        <p><lucide-icon name="dollar-sign"></lucide-icon><span>Rate:</span><strong>{{ member.rate || 'Not listed' }}</strong></p>
         <p><lucide-icon name="mail"></lucide-icon><span>Email:</span><strong>{{ member.email || 'Not listed' }}</strong></p>
-        <p><lucide-icon name="clock"></lucide-icon><span>Experience:</span><strong>{{ member.experience || '' }}</strong></p>
+        <p><lucide-icon name="clock"></lucide-icon><span>Experience:</span><strong>{{ member.experience || 'Not listed' }}</strong></p>
         <p class="wide"><lucide-icon name="shield-check"></lucide-icon><span>Certifications:</span><strong>{{ member.certifications || '' }}</strong></p>
         <p class="wide modal-current-job" *ngIf="member.currentProject && member.currentProject !== 'None'">
           <lucide-icon name="briefcase"></lucide-icon><span>Current Project:</span><strong>{{ member.currentProject }}</strong>
@@ -491,15 +491,15 @@
       </section>
 
       <div class="member-modal-actions">
-        <button type="button" class="btn btn-primary" *ngIf="!assignedMembers.has(member.id)" (click)="assignSelectedTeamMember()">
-          <lucide-icon name="check"></lucide-icon>
+        <button type="button" class="btn btn-primary btn-lg" *ngIf="!assignedMembers.has(member.id)" (click)="assignSelectedTeamMember()">
+          <lucide-icon name="user-plus"></lucide-icon>
           Assign to Project
         </button>
-        <button type="button" class="btn btn-danger" *ngIf="assignedMembers.has(member.id)" (click)="removeSelectedTeamMember()">
-          <lucide-icon name="x"></lucide-icon>
+        <button type="button" class="btn btn-danger-highlight" *ngIf="assignedMembers.has(member.id)" (click)="removeSelectedTeamMember()">
+          <lucide-icon name="user-minus"></lucide-icon>
           Remove from Project
         </button>
-        <button type="button" class="btn btn-outline" (click)="closeTeamMemberDetail()">Close</button>
+        <button type="button" class="btn btn-outline-full" (click)="closeTeamMemberDetail()">Close</button>
       </div>
     </article>
   </div>
@@ -531,8 +531,8 @@
 
       <div class="member-modal-actions">
         <button type="button" class="btn btn-primary" (click)="keepMemberOnBothProjects()">Keep on existing projects + assign here</button>
-        <button type="button" class="btn btn-danger" (click)="moveMemberToThisProjectOnly()">Remove from selected projects + assign here</button>
-        <button type="button" class="btn btn-outline" (click)="cancelAssignmentConflict()">Cancel</button>
+        <button type="button" class="btn btn-danger-highlight" (click)="moveMemberToThisProjectOnly()">Remove from selected projects + assign here</button>
+        <button type="button" class="btn btn-outline-full" (click)="cancelAssignmentConflict()">Cancel</button>
       </div>
     </article>
   </div>

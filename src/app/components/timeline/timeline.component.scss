@@ -30,8 +30,8 @@
 .zoom-level {
   min-width: 3.25rem;
   text-align: center;
-  font-size: .8rem;
-  font-weight: 700;
+  font-size: var(--fs-6);
+  font-weight: var(--fw-bold);
   color: var(--color-text);
 }
 .nav-btn {
@@ -59,10 +59,10 @@
 .timeline-legend {
   display: flex; flex-wrap: wrap; align-items: center;
   gap: clamp(.4rem, 1.2cqi, 1.2rem);
-  font-size: clamp(.85rem, .6cqi + .7rem, 1rem);
+  font-size: var(--fs-6);
   color: var(--color-text);
 }
-.legend-item { display: inline-flex; align-items: center; gap: .5rem; font-size: .875rem; }
+.legend-item { display: inline-flex; align-items: center; gap: .5rem; font-size: var(--fs-6); }
 .legend-color {
   width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--color-border);
 }
@@ -118,7 +118,7 @@
 .week-days { display: flex; }
 .day-cell {
   flex: 1; min-width: 20px; padding: .25rem 0; text-align: center;
-  font-size: .8rem; color: var(--color-text-inverse);
+  font-size: var(--fs-6); color: var(--color-text-inverse);
   border-right: 1px solid color-mix(in oklab, var(--color-border) 40%, transparent);
 }
 .day-cell.weekend {
@@ -241,22 +241,22 @@
   display: inline-flex; align-items: center; gap: 8px; z-index: 3;
 }
 .weather-warning-icon {
-  font-size: 1.1rem; cursor: help; color: var(--color-warning);
+  font-size: var(--fs-5); cursor: help; color: var(--color-warning);
   text-shadow: 0 1px 2px rgba(0,0,0,.2);
 }
 .progress-pill {
   background: rgba(0,0,0,.22);
   color: var(--color-text-inverse);
-  padding: 2px 8px; border-radius: 12px; font-size: .75rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 12px; font-size: var(--fs-6); font-weight: var(--fw-semibold);
   text-shadow: 0 1px 1px rgba(0,0,0,.4);
 }
 .task-name {
-  font-weight: 700; font-size: .875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; color: var(--color-text-inverse);
+  font-weight: var(--fw-bold); font-size: var(--fs-6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: var(--lh-tight); color: var(--color-text-inverse);
   text-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
 .task-duration,
 .task-count {
-  font-size: .8rem; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-inverse);
+  font-size: var(--fs-6); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-inverse);
   text-shadow: 0 1px 2px rgba(0,0,0,.25);
 }
 
@@ -295,10 +295,10 @@
   background: var(--color-surface-subtle);
 }
 .modal-header h2 {
-  margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--color-text);
+  margin: 0; font-size: var(--fs-3); font-weight: var(--fw-bold); color: var(--color-text);
 }
 .close-btn {
-  background: none; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted);
+  background: none; border: 0; font-size: var(--fs-2); cursor: pointer; color: var(--color-text-muted);
   border-radius: 4px; width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0 0 6px 0;
   &:hover { background: var(--color-surface-hover); color: var(--color-text); }
@@ -306,7 +306,7 @@
 .modal-content {
   padding: 1.5rem; overflow-y: auto; flex: 1;
   h3 {
-    margin: 0 0 1rem 0; font-size: 1.125rem; font-weight: 700; color: var(--color-text);
+    margin: 0 0 1rem 0; font-size: var(--fs-4); font-weight: var(--fw-bold); color: var(--color-text);
     display: inline-flex; align-items: center; gap: .5rem;
   }
 }
@@ -316,7 +316,7 @@
   border: 1px solid var(--color-border); box-shadow: var(--shadow-1);
 
   .info-item {
-    margin-bottom: .75rem; font-size: .875rem; display: inline-flex; align-items: center; gap: .5rem;
+    margin-bottom: .75rem; font-size: var(--fs-6); display: inline-flex; align-items: center; gap: .5rem;
     &:last-child { margin-bottom: 0; }
     strong { min-width: 80px; color: var(--color-text); }
   }
@@ -325,7 +325,7 @@
 .status-behind   { color: var(--color-danger);   font-weight: 600; }
 .status-ahead    { color: var(--color-focus);    font-weight: 600; }
 
-.subtasks-list { /* wrapper hook */ }
+.subtasks-list { display: block; }
 .subtask-item {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -342,10 +342,10 @@
 .subtask-status {
   background: var(--color-surface-subtle);
   color: var(--color-text);
-  padding: .25rem .5rem; border-radius: 4px; font-size: .75rem; text-transform: capitalize; border: 1px solid var(--color-border);
+  padding: .25rem .5rem; border-radius: 4px; font-size: var(--fs-6); text-transform: capitalize; border: 1px solid var(--color-border);
 }
 .subtask-details {
-  display: flex; gap: 1rem; margin-bottom: .5rem; font-size: .875rem; color: var(--color-text-muted); align-items: center;
+  display: flex; gap: 1rem; margin-bottom: .5rem; font-size: var(--fs-6); color: var(--color-text-muted); align-items: center;
   .duration, .dates { display: inline-flex; align-items: center; gap: .25rem; }
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
 }
@@ -361,7 +361,7 @@
   padding: 1.5rem; border-top: 1px solid var(--color-border); background: var(--color-surface-subtle);
 }
 .btn {
-  padding: .5rem 1rem; border-radius: 6px; font-weight: 600; font-size: .875rem; cursor: pointer;
+  padding: .5rem 1rem; border-radius: 6px; font-weight: var(--fw-semibold); font-size: var(--fs-6); cursor: pointer;
   transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
   border: 1px solid transparent;
 }
@@ -393,7 +393,7 @@
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px; background: color-mix(in oklab, var(--color-warning) 15%, transparent);
   border: 1px solid color-mix(in oklab, var(--color-warning) 45%, var(--color-border));
-  border-radius: 4px; margin-top: 8px; font-size: .875rem; color: color-mix(in oklab, var(--color-warning) 60%, var(--color-text));
+  border-radius: 4px; margin-top: 8px; font-size: var(--fs-6); color: color-mix(in oklab, var(--color-warning) 60%, var(--color-text));
 }
 .weather-icon { width: 24px; height: 24px; }
 

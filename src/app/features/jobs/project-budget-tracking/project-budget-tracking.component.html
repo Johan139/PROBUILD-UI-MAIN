@@ -6,7 +6,7 @@
       <span>Total Budget</span>
       <mat-icon class="text-yellow">attach_money</mat-icon>
     </div>
-    <p class="metric-value">${{ displayTotalBudget / 1000 | number: "1.0-0" }}K</p>
+    <p class="metric-value">{{ displayTotalBudget / 1000 | money : true : 0 }}K</p>
     <p class="metric-subtext">
       {{ totalProjectCost > 0 ? "AI total project cost" : "Original estimate" }}
     </p>
@@ -17,7 +17,7 @@
       <span>Actual Spent</span>
       <mat-icon class="text-blue">trending_up</mat-icon>
     </div>
-    <p class="metric-value">${{ totalActual / 1000 | number: "1.0-0" }}K</p>
+    <p class="metric-value">{{ totalActual / 1000 | money : true : 0 }}K</p>
     <p class="metric-subtext">
       {{
         (displayTotalBudget > 0 ? totalActual / displayTotalBudget : 0)
@@ -31,7 +31,7 @@
       <span>Forecast at Completion</span>
       <mat-icon class="text-purple">trending_down</mat-icon>
     </div>
-    <p class="metric-value">${{ totalForecast / 1000 | number: "1.0-0" }}K</p>
+    <p class="metric-value">{{ totalForecast / 1000 | money : true : 0 }}K</p>
     <p class="metric-subtext">Projected final cost</p>
   </div>
 
@@ -46,7 +46,7 @@
       class="metric-value"
       [ngClass]="budgetVariance >= 0 ? 'text-green' : 'text-red'"
     >
-      {{ budgetVariance >= 0 ? "+" : "" }}${{ budgetVariance / 1000 | number: "1.0-0" }}K
+      {{ budgetVariance >= 0 ? "+" : "" }}{{ budgetVariance / 1000 | money : true : 0 }}K
     </p>
     <p class="metric-subtext">
       {{ budgetVariance >= 0 ? "Under" : "Over" }} budget by {{ budgetVariancePercent }}%
@@ -78,7 +78,7 @@
       </div>
       <div class="metric-details">
         <p class="label">Pending Invoices</p>
-        <p class="value">{{ pendingInvoicesAmount | currency: 'USD' : 'symbol' : '1.0-0' }}</p>
+        <p class="value">{{ pendingInvoicesAmount | money : true : 0 }}</p>
         <p class="subtext">{{ pendingInvoicesCount }} invoices awaiting payment</p>
       </div>
     </div>
@@ -92,7 +92,7 @@
       <div class="metric-details">
         <p class="label">Procurement Commitments</p>
         <p class="value">
-          ${{ procurementCommitments / 1000 | number: "1.0-0" }}K
+          {{ procurementCommitments / 1000 | money : true : 0 }}K
         </p>
         <p class="subtext">Materials ordered</p>
       </div>
@@ -124,7 +124,7 @@
           <span>All Divisions (Total)</span>
           <div class="division-stats">
             <span class="pct">100%</span>
-            <span class="amount">{{ displayTotalBudget | currency: "USD" : "symbol" : "1.0-0" }}</span>
+            <span class="amount">{{ displayTotalBudget | money : true : 0 }}</span>
           </div>
         </button>
         <button
@@ -136,7 +136,7 @@
           <span class="phase-name">{{ phase.name }}</span>
           <div class="division-stats">
             <span class="pct">{{ (displayTotalBudget > 0 ? phase.value / displayTotalBudget : 0) | percent: "1.0-0" }}</span>
-            <span class="amount">{{ phase.value | currency: "USD" : "symbol" : "1.0-0" }}</span>
+            <span class="amount">{{ phase.value | money : true : 0 }}</span>
           </div>
         </button>
       </div>
@@ -159,7 +159,7 @@
               ></div>
             </div>
             <p class="split-amount">
-              {{ currentDivisionStats.amount * (currentDivisionStats.materials / 100) | currency: "USD" : "symbol" : "1.0-0" }}
+              {{ currentDivisionStats.amount * (currentDivisionStats.materials / 100) | money : true : 0 }}
             </p>
           </div>
 
@@ -175,7 +175,7 @@
               ></div>
             </div>
             <p class="split-amount">
-              {{ currentDivisionStats.amount * (currentDivisionStats.labor / 100) | currency: "USD" : "symbol" : "1.0-0" }}
+              {{ currentDivisionStats.amount * (currentDivisionStats.labor / 100) | money : true : 0 }}
             </p>
           </div>
         </div>
@@ -547,19 +547,19 @@
             >
               <td class="text-right">{{ ticket.quantity }}</td>
               <td class="text-muted">{{ ticket.unit }}</td>
-              <td class="text-right">${{ ticket.unitCost }}</td>
+              <td class="text-right">{{ ticket.unitCost | money : true : 2 }}</td>
             </ng-container>
 
             <ng-container *ngIf="budgetTableTab === 'Subcontractor'">
               <td class="text-right">{{ ticket.quantity }}</td>
-              <td class="text-right">${{ ticket.unitCost }}</td>
+              <td class="text-right">{{ ticket.unitCost | money : true : 2 }}</td>
             </ng-container>
 
             <td class="text-right font-medium">
-              ${{ ticket.estimatedCost | number: "1.0-0" }}
+              {{ ticket.estimatedCost | money : true : 0 }}
             </td>
             <td class="text-right">
-              ${{ ticket.actualCost | number: "1.0-0" }}
+              {{ ticket.actualCost | money : true : 0 }}
             </td>
             <td
               class="text-right font-medium"
@@ -567,9 +567,7 @@
                 getStatusColor(ticket.estimatedCost, ticket.forecastToComplete)
               "
             >
-              {{ getVariance(ticket) >= 0 ? "+" : "" }}${{
-                getVariance(ticket) | number: "1.0-0"
-              }}
+              {{ getVariance(ticket) >= 0 ? "+" : "" }}{{ getVariance(ticket) | money : true : 0 }}
               <span style="font-size: 0.75rem; margin-left: 4px"
                 >({{ getVariancePercent(ticket) }}%)</span
               >
@@ -587,7 +585,7 @@
             </td>
             <td class="text-right font-medium">
               <!-- Non-editable view (when not editing row) -->
-              ${{ ticket?.forecastToComplete ?? 0 | number: "1.0-0" }}
+              {{ ticket?.forecastToComplete ?? 0 | money : true : 0 }}
             </td>
             <td
               class="text-muted"
@@ -793,22 +791,20 @@
             <td></td>
           </ng-container>
           <td class="text-right">
-            ${{ totalEstimated / 1000 | number: "1.0-0" }}K
+            {{ totalEstimated / 1000 | money : true : 0 }}K
           </td>
           <td class="text-right">
-            ${{ totalActual / 1000 | number: "1.0-0" }}K
+            {{ totalActual / 1000 | money : true : 0 }}K
           </td>
           <td
             class="text-right"
             [ngClass]="variance >= 0 ? 'text-green' : 'text-red'"
           >
-            {{ variance >= 0 ? "+" : "" }}${{
-              variance / 1000 | number: "1.0-0"
-            }}K
+            {{ variance >= 0 ? "+" : "" }}{{ variance / 1000 | money : true : 0 }}K
           </td>
           <td></td>
           <td class="text-right">
-            ${{ totalForecast / 1000 | number: "1.0-0" }}K
+            {{ totalForecast / 1000 | money : true : 0 }}K
           </td>
           <td></td>
           <td></td>
@@ -863,7 +859,7 @@
             <p class="draws">{{ sub.trade }}</p>
           </div>
           <div style="text-align: right">
-            <p class="amount">${{ sub.actualCost | number: "1.0-0" }}</p>
+            <p class="amount">{{ sub.actualCost | money : true : 0 }}</p>
             <p
               class="status"
               [ngClass]="

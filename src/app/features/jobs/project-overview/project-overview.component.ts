@@ -45,6 +45,8 @@ import { TimelineService } from '../services/timeline.service';
 import { LucideIconsModule } from '../../../shared/lucide-icons.module';
 import { ArchiveService } from '../../archive/archive-service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MoneyPipe, MoneyInTextPipe } from '../../../shared/pipes/money.pipe';
+import { formatMoney } from '../../../shared/pipes/money.pipe';
 @Component({
   selector: 'app-project-overview',
   standalone: true,
@@ -59,6 +61,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     MatTooltipModule,
     MatExpansionModule,
     LucideIconsModule,
+    MoneyPipe,
+    MoneyInTextPipe,
     ProjectCardComponent,
     ProjectsTableComponent,
     WeatherImpactModalComponent,
@@ -756,22 +760,22 @@ export class ProjectOverviewComponent {
     const parts: string[] = [];
     if (this.overheadAndProfit > 0) {
       parts.push(
-        `Net Profit: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.overheadAndProfit)}`,
+        `Net Profit: ${formatMoney(this.overheadAndProfit, true, 0)}`,
       );
     }
     if (this.taxes > 0) {
       parts.push(
-        `Tax: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.taxes)}`,
+        `Tax: ${formatMoney(this.taxes, true, 0)}`,
       );
     }
     if (this.contingency > 0) {
       parts.push(
-        `Contingency: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.contingency)}`,
+        `Contingency: ${formatMoney(this.contingency, true, 0)}`,
       );
     }
     if (this.escalation > 0) {
       parts.push(
-        `Escalation: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(this.escalation)}`,
+        `Escalation: ${formatMoney(this.escalation, true, 0)}`,
       );
     }
     if (parts.length > 0) {

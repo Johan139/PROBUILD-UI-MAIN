@@ -28,6 +28,7 @@ import { ReportService } from '../../../services/report.service';
 import { JobTeamComponent } from '../../job-team/job-team.component';
 import { JobUser } from '../../../job-assignment/job-assignment.model';
 import { firstValueFrom } from 'rxjs';
+import { MoneyPipe, MoneyInTextPipe, formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 type ScopeTab = 'overview' | 'timeline' | 'blueprints';
 
@@ -45,6 +46,8 @@ type ScopeTab = 'overview' | 'timeline' | 'blueprints';
     MatDividerModule,
     ProjectBlueprintViewerComponent,
     JobTeamComponent,
+    MoneyPipe,
+    MoneyInTextPipe,
   ],
   templateUrl: './phase-preliminary-scope.component.html',
   styleUrl: './phase-preliminary-scope.component.scss',
@@ -138,11 +141,17 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
       null;
 
     const keyHighlights = Array.isArray(summary?.keyHighlights)
-      ? summary.keyHighlights.map((item: any) => ({
-          label: String(item?.label || ''),
-          value: String(item?.value || ''),
-          note: String(item?.note || ''),
-        }))
+      ? summary.keyHighlights.map((item: any) => {
+          const label = String(item?.label || '');
+          let value = String(item?.value || '');
+          let note = String(item?.note || '');
+
+          // Format money values - convert comma-separated to space-separated
+          value = this.formatMoneyInText(value);
+          note = this.formatMoneyInText(note);
+
+          return { label, value, note };
+        })
       : [];
 
     const riskFactors = Array.isArray(summary?.riskFactors)
@@ -220,6 +229,23 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
 
   toggleExecutiveSummary(): void {
     this.executiveSummaryExpanded = !this.executiveSummaryExpanded;
+  }
+
+  /**
+   * Find and reformat all money values in a text string.
+   * Converts comma-separated dollar amounts (e.g., $1,234.56) to space-separated (e.g., $1 234.56).
+   */
+  private formatMoneyInText(text: string): string {
+    if (!text) return text;
+
+    // Match dollar amounts with commas: $1,234.56 or $12,345.67
+    return text.replace(/\$([\d,]+(?:\.\d{2})?)/g, (match, amountStr) => {
+      const numericValue = parseFloat(amountStr.replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue > 0) {
+        return formatMoney(numericValue, true, 2);
+      }
+      return match; // Return original if can't parse
+    });
   }
 
   toggleEditProject(): void {

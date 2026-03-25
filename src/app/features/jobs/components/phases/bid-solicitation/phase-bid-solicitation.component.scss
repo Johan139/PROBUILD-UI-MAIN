@@ -64,7 +64,7 @@
 .label {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-6);
   text-transform: uppercase;
 }
 
@@ -76,7 +76,7 @@
 .sub-value {
   margin: 2px 0 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-6);
 }
 
 .summary-strip {
@@ -88,7 +88,7 @@
 .mini-label {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-6);
   text-transform: uppercase;
 
   & + strong {
@@ -146,12 +146,12 @@
 .packet-meta {
   margin: 2px 0 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-6);
 }
 
 .status-chip {
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--fs-6);
   padding: 3px 8px;
   color: var(--color-text-muted);
   background: color-mix(in oklab, var(--color-border) 35%, transparent);
@@ -221,7 +221,7 @@
 .progress-copy {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-6);
 }
 
 .stage-view-toggle {
@@ -239,7 +239,7 @@
     border-radius: var(--radius-md);
     background: transparent;
     color: var(--color-text-muted);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-5);
     font-weight: var(--fw-medium);
     cursor: pointer;
     transition: all 0.2s ease;

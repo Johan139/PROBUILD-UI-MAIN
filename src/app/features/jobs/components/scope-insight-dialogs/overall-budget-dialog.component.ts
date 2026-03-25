@@ -7,6 +7,7 @@ import {
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MoneyPipe } from '../../../../shared/pipes/money.pipe';
 
 export interface OverallBudgetDialogData {
   materialsCost: number;
@@ -23,7 +24,7 @@ export interface OverallBudgetDialogData {
 @Component({
   selector: 'app-overall-budget-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MoneyPipe],
   template: `
     <div class="scope-modal">
       <header class="scope-modal-header">
@@ -47,15 +48,15 @@ export interface OverallBudgetDialogData {
           <div class="scope-stat-list">
             <div class="scope-stat-row">
               <span>Material Costs</span>
-              <strong>{{ data.materialsCost | currency: 'USD' : 'symbol' : '1.2-2' }}</strong>
+              <strong>{{ data.materialsCost | money : true : 2 }}</strong>
             </div>
             <div class="scope-stat-row">
               <span>Labor Costs</span>
-              <strong>{{ data.laborCost | currency: 'USD' : 'symbol' : '1.2-2' }}</strong>
+              <strong>{{ data.laborCost | money : true : 2 }}</strong>
             </div>
             <div class="scope-stat-row total">
               <span>Direct Cost Subtotal</span>
-              <strong>{{ data.costToBuild | currency: 'USD' : 'symbol' : '1.2-2' }}</strong>
+              <strong>{{ data.costToBuild | money : true : 2 }}</strong>
             </div>
           </div>
         </section>
@@ -65,11 +66,11 @@ export interface OverallBudgetDialogData {
           <div class="scope-stat-list">
             <div class="scope-stat-row">
               <span>General Conditions & Overhead (18%)</span>
-              <strong>{{ data.overheadProfit | currency: 'USD' : 'symbol' : '1.2-2' }}</strong>
+              <strong>{{ data.overheadProfit | money : true : 2 }}</strong>
             </div>
             <div class="scope-stat-row">
               <span>Contingency Allowance (10%)</span>
-              <strong>{{ data.contingencyAllowance | currency: 'USD' : 'symbol' : '1.2-2' }}</strong>
+              <strong>{{ data.contingencyAllowance | money : true : 2 }}</strong>
             </div>
           </div>
         </section>
@@ -77,12 +78,12 @@ export interface OverallBudgetDialogData {
         <section class="scope-modal-highlight">
           <div class="scope-highlight-top-row">
             <span>Total Project Budget</span>
-            <strong>{{ data.totalProjectCost | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+            <strong>{{ data.totalProjectCost | money : true : 0 }}</strong>
           </div>
           <div class="scope-highlight-grid">
             <div>
               <p>Cost / Sq Ft</p>
-              <span>{{ data.costPerSqFt | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+              <span>{{ data.costPerSqFt | money : true : 2 }}</span>
             </div>
             <div>
               <p>Material Ratio</p>

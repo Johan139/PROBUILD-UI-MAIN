@@ -9,6 +9,7 @@ import {
   TemplateRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 import {
   PhaseNavigationHeaderComponent,
   PhaseReportRequestType,
@@ -165,7 +166,7 @@ export class PhaseConstructionLiveComponent {
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get canProceed(): boolean {

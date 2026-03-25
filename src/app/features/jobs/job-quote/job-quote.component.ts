@@ -69,6 +69,7 @@ import { JOB_TYPES } from '../../../data/job-types';
 import { BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { OverlayStateService } from '../../../services/overlay-state.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
@@ -109,6 +110,7 @@ const Google_API = environment.Google_API;
     LoaderComponent,
     SubscriptionWarningComponent,
     MatToolbarModule,
+    MoneyPipe,
   ],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',

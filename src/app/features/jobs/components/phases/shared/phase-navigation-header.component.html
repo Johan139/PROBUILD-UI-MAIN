@@ -1,6 +1,11 @@
 <div class="phase-nav-shell">
-  <div class="phase-nav-row">
-    <button type="button" class="phase-link-btn" (click)="back.emit()">
+  <div class="phase-nav-row" [class.no-back]="!showBack">
+    <button
+      *ngIf="showBack"
+      type="button"
+      class="phase-link-btn"
+      (click)="back.emit()"
+    >
       <lucide-icon name="chevron-left" class="mini-icon"></lucide-icon>
       <span>{{ backLabel }}</span>
     </button>

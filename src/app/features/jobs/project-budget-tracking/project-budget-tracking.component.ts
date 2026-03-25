@@ -13,7 +13,6 @@ import {
   NgIf,
   NgForOf,
   DecimalPipe,
-  CurrencyPipe,
   isPlatformBrowser,
 } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,6 +30,7 @@ import { BomService } from '../services/bom.service';
 import { ReportService } from '../services/report.service';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
 import { QuoteService } from '../../quote/quote.service';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-project-budget-tracking',
@@ -46,7 +46,7 @@ import { QuoteService } from '../../quote/quote.service';
     NgIf,
     NgForOf,
     DecimalPipe,
-    CurrencyPipe,
+    MoneyPipe,
   ],
   templateUrl: './project-budget-tracking.component.html',
   styleUrl: './project-budget-tracking.component.scss',

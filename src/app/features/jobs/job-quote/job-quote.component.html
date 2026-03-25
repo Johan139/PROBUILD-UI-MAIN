@@ -70,7 +70,7 @@
                     <td>{{ quote.number || 'N/A' }}</td>
                     <td>{{ quote.createdBy || 'Unknown' }}</td>
                     <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
-                    <td>${{ quote.total.toFixed(2) }}</td>
+                    <td>{{ quote.total | money : true : 2 }}</td>
                     <td>
                       <button mat-button class="btn btn-ghost" type="button" (click)="openQuote(quote.id)">
                         View

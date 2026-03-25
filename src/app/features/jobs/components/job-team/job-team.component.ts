@@ -27,6 +27,7 @@ import { BomService } from '../../services/bom.service';
 import { BidsService } from '../../../../services/bids.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { MoneyPipe } from '../../../../shared/pipes/money.pipe';
 
 interface TradePackageVm {
   id: number;
@@ -56,7 +57,8 @@ interface TradeBidVm {
     MatIconModule,
     MatDialogModule,
     MatTooltipModule,
-    SharedModule
+    SharedModule,
+    MoneyPipe
   ],
   templateUrl: './job-team.component.html',
   styleUrls: ['./job-team.component.scss'],

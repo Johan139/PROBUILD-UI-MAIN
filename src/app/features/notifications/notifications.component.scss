@@ -331,6 +331,18 @@
   font-size: var(--fs-sm);
 }
 
+:host ::ng-deep .mat-mdc-slide-toggle.mat-mdc-slide-toggle-checked {
+  --mdc-switch-selected-handle-color: var(--color-surface);
+  --mdc-switch-selected-focus-handle-color: var(--color-surface);
+  --mdc-switch-selected-hover-handle-color: var(--color-surface);
+  --mdc-switch-selected-pressed-handle-color: var(--color-surface);
+  --mdc-switch-selected-track-color: var(--brand-yellow-primary);
+  --mdc-switch-selected-focus-track-color: var(--brand-yellow-primary);
+  --mdc-switch-selected-hover-track-color: var(--brand-yellow-primary);
+  --mdc-switch-selected-pressed-track-color: var(--brand-yellow-primary);
+  --mdc-switch-selected-icon-color: #000;
+}
+
 .status {
   font-weight: var(--fw-semibold);
 

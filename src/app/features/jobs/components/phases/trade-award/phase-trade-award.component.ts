@@ -11,6 +11,8 @@ import { BiddingService } from '../../../../../services/bidding.service';
 import { BidsService } from '../../../../../services/bids.service';
 import { FileUploadService } from '../../../../../services/file-upload.service';
 import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
+import { MoneyPipe } from '../../../../../shared/pipes/money.pipe';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 type AwardTab = 'trades' | 'vendors' | 'suppliers';
 
@@ -91,7 +93,7 @@ interface BidAnalysisVm {
 @Component({
   selector: 'app-phase-trade-award',
   standalone: true,
-  imports: [CommonModule, LucideIconsModule, PhaseNavigationHeaderComponent, DragAndDropDirective],
+  imports: [CommonModule, LucideIconsModule, PhaseNavigationHeaderComponent, DragAndDropDirective, MoneyPipe],
   templateUrl: './phase-trade-award.component.html',
   styleUrl: './phase-trade-award.component.scss',
 })
@@ -291,7 +293,7 @@ export class PhaseTradeAwardComponent implements OnInit, OnChanges {
     if (Number.isNaN(numeric) || numeric <= 0) {
       return '228';
     }
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get tradeItems(): TradePackageVm[] {

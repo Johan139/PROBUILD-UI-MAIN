@@ -34,7 +34,7 @@
         <div>
           <p class="card-label">Overall Budget</p>
           <p class="card-value">
-            {{ overallBudgetValue | currency: "USD" : "symbol" : "1.0-0" }}
+            {{ overallBudgetValue | money : true : 2 }}
           </p>
         </div>
       </div>
@@ -42,10 +42,11 @@
         <div class="progress-row">
           <span class="text-muted">Spent to Date</span>
           <span class="font-medium">
-            {{ spentToDate | currency: "USD" : "symbol" : "1.0-0" }} ({{
-              (overallBudgetValue > 0 ? spentToDate / overallBudgetValue : 0)
-                | percent: "1.0-0"
-            }})
+            {{ spentToDate | money : true : 2 }} (
+              {{
+                (overallBudgetValue > 0 ? spentToDate / overallBudgetValue : 0)
+                  | percent: "1.0-0"
+              }})
           </span>
         </div>
         <div class="progress-bar-bg">
@@ -54,7 +55,7 @@
         <div class="remaining-row">
           <span class="text-muted">Remaining</span>
           <span class="font-medium text-success">
-            {{ overallRemainingBudget | currency: "USD" : "symbol" : "1.0-0" }}
+            {{ overallRemainingBudget | money : true : 2 }}
           </span>
         </div>
       </div>
@@ -100,7 +101,7 @@
         <div>
           <p class="card-label">Bid Price (Client)</p>
           <p class="card-value">
-            {{ bidPrice | currency: "USD" : "symbol" : "1.0-0" }}
+            {{ bidPrice | money : true : 2 }}
           </p>
         </div>
       </div>
@@ -110,7 +111,7 @@
           <span
             class="font-medium text-success"
             [matTooltip]="profitBreakdownTooltip"
-            >{{ grossProfit | currency: "USD" : "symbol" : "1.0-0" }}</span
+            >{{ grossProfit | money : true : 2 }}</span
           >
         </div>
         <div class="progress-row">
@@ -122,7 +123,7 @@
         <div class="risk-row">
           <span class="text-muted">Profit at Risk</span>
           <span class="font-medium text-warning">{{
-            profitAtRisk | currency: "USD" : "symbol" : "1.0-0"
+            profitAtRisk | money : true : 2
           }}</span>
         </div>
       </div>
@@ -402,8 +403,8 @@
               class="highlight-box"
             >
               <span class="label">{{ item.label }}</span>
-              <span class="value">{{ item.value }}</span>
-              <span class="note">{{ item.note }}</span>
+              <span class="value">{{ item.value | money : true : 2 }}</span>
+              <span class="note">{{ item.note | moneyInText : true : 2 }}</span>
             </div>
           </div>
         </div>
@@ -718,7 +719,7 @@
               <td class="text-right">{{ item.quantity || "-" }}</td>
               <td class="text-right text-muted">{{ item.unit || "-" }}</td>
               <td class="text-right font-medium">
-                {{ item.estimatedCost | currency: "USD" : "symbol" : "1.0-0" }}
+                {{ item.estimatedCost | money : true : 2 }}
               </td>
               <td class="text-right">
                 <span
@@ -1134,7 +1135,7 @@
           <div class="highlight-panel">
             <p class="stat-label">Total Project Cost</p>
             <p class="stat-value-large">
-              {{ overallBudgetValue | currency: "USD" : "symbol" : "1.0-0" }}
+              {{ overallBudgetValue | money : true : 2 }}
             </p>
           </div>
           <div class="cost-breakdown">
@@ -1142,7 +1143,7 @@
             <div *ngFor="let phase of costByPhase" class="cost-item">
               <span>{{ phase.name }}</span>
               <span class="cost-value">{{
-                phase.value | currency: "USD" : "symbol" : "1.0-0"
+                phase.value | money : true : 2
               }}</span>
             </div>
             <div *ngIf="costByPhase.length === 0" class="cost-item">

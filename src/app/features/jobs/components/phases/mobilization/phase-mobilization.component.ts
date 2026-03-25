@@ -16,6 +16,8 @@ import { JobAssignmentService } from '../../../job-assignment/job-assignment.ser
 import { BomService } from '../../../services/bom.service';
 import { Permit } from '../../../../../models/permit';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+import { MoneyPipe } from '../../../../../shared/pipes/money.pipe';
 import {
   PhaseNavigationHeaderComponent,
   PhaseReportRequestType,
@@ -118,7 +120,7 @@ interface TradeBid {
 @Component({
   selector: 'app-phase-mobilization',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideIconsModule, PhaseNavigationHeaderComponent],
+  imports: [CommonModule, FormsModule, LucideIconsModule, PhaseNavigationHeaderComponent, MoneyPipe],
   templateUrl: './phase-mobilization.component.html',
   styleUrl: './phase-mobilization.component.scss',
 })
@@ -243,7 +245,7 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
       return '';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get officeTeam(): TeamMember[] {

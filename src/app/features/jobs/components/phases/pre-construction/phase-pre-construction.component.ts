@@ -22,6 +22,7 @@ import {
   PhaseReportRequestType,
 } from '../shared/phase-navigation-header.component';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
 
 interface PreConstructionTask {
   id: number;
@@ -143,7 +144,7 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
       return '228';
     }
 
-    return Math.round(numeric * 0.0929).toLocaleString();
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
   }
 
   get completedCount(): number {

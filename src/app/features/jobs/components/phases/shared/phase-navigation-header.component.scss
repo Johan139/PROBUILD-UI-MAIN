@@ -11,6 +11,10 @@
   margin-bottom: var(--space-4);
 }
 
+.phase-nav-row.no-back {
+  justify-content: flex-end;
+}
+
 .phase-nav-actions {
   display: flex;
   align-items: center;
@@ -41,7 +45,20 @@
     var(--color-danger) 45%,
     var(--color-border)
   );
+  background: color-mix(
+    in srgb,
+    var(--color-danger) 10%,
+    var(--color-surface-subtle)
+  );
   color: var(--color-danger);
+
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--color-danger) 14%,
+      var(--color-surface-subtle)
+    );
+  }
 }
 
 .phase-action-btn.warning {
@@ -50,7 +67,20 @@
     var(--brand-yellow-primary) 45%,
     var(--color-border)
   );
+  background: color-mix(
+    in srgb,
+    var(--brand-yellow-primary) 12%,
+    var(--color-surface-subtle)
+  );
   color: var(--brand-yellow-primary);
+
+  &:hover {
+    background: color-mix(
+      in srgb,
+      var(--brand-yellow-primary) 18%,
+      var(--color-surface-subtle)
+    );
+  }
 }
 
 .phase-action-btn.primary {
@@ -211,6 +241,17 @@
   margin-left: 0.1rem;
 }
 
+:host-context(.theme-dark) {
+  .phase-action-btn.primary {
+    color: #000;
+  }
+
+  .phase-action-btn.primary .mini-icon,
+  .phase-action-btn.primary .chevron {
+    color: #000;
+  }
+}
+
 @media (max-width: 900px) {
   .phase-nav-row {
     align-items: flex-start;
@@ -360,7 +401,7 @@
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  background: color-mix(in oklab, var(--brand-yellow-primary) 12%, transparent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -370,7 +411,7 @@
   lucide-icon {
     width: 24px;
     height: 24px;
-    color: color-mix(in oklab, var(--color-primary) 78%, var(--color-text));
+    color: var(--brand-yellow-primary);
     margin-bottom: 2px;
   }
 }
