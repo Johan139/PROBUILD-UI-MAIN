@@ -25,6 +25,10 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return token$.pipe(
     switchMap((token) => {
+      if (token) {
+        authService.resetInactivityTimer();
+      }
+
       const authedReq = token
         ? req.clone({
             setHeaders: {

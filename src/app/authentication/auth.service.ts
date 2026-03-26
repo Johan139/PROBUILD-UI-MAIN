@@ -12,6 +12,7 @@ import {
   switchMap,
   filter,
   take,
+  finalize,
 } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
@@ -36,7 +37,10 @@ export class AuthService {
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private isRefreshing = false;
-  private refreshTokenSubject = new BehaviorSubject<any>(null);
+  private refreshTokenSubject = new BehaviorSubject<{
+    token: string;
+    refreshToken: string;
+  } | null>(null);
 
   constructor(
     private router: Router,
@@ -339,7 +343,7 @@ export class AuthService {
   refreshToken(): Observable<any> {
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
-        filter((token) => token != null),
+        filter((tokenResponse) => tokenResponse != null),
         take(1),
       );
     }
@@ -361,7 +365,7 @@ export class AuthService {
             localStorage.setItem('accessToken', response.token);
             localStorage.setItem('refreshToken', response.refreshToken);
             this.loadUserFromToken(response.token);
-            this.refreshTokenSubject.next(response.token);
+            this.refreshTokenSubject.next(response);
           } else {
             this.logout();
             throw new Error('Invalid refresh token response');
@@ -370,6 +374,9 @@ export class AuthService {
         catchError((err) => {
           this.logout();
           return throwError(() => err);
+        }),
+        finalize(() => {
+          this.isRefreshing = false;
         }),
       );
   }
