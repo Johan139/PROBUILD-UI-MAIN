@@ -81,6 +81,16 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
       this.projects = projects;
       this.updateCounts();
       this.setProjectFilter(this.projectFilter);
+
+      // Immediately fetch analysis state for any analyzing projects
+      const analyzingProjects = projects.filter(
+        (project) =>
+          project.status === 'ANALYZING' &&
+          (project.progress === undefined || project.progress === 0),
+      );
+      analyzingProjects.forEach((project) => {
+        this.fetchAnalysisState(project.jobId);
+      });
     });
     this.projectService.isLoading.subscribe(
       (isLoading) => (this.isLoading = isLoading),
@@ -103,6 +113,28 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.analysisProgressSubscription?.unsubscribe();
     this.analysisStatePollingSubscription?.unsubscribe();
+  }
+
+  private fetchAnalysisState(jobId: number): void {
+    this.signalrService
+      .getAnalysisState(Number(jobId))
+      .subscribe((state) => {
+        if (!state) {
+          return;
+        }
+
+        this.ngZone.run(() => {
+          this.applyAnalysisUpdate(jobId, {
+            jobId: Number(jobId),
+            statusMessage: state.statusMessage || '',
+            currentStep: state.currentStep || 0,
+            totalSteps: state.totalSteps || 0,
+            isComplete: !!state.isComplete,
+            hasFailed: !!state.hasFailed,
+            errorMessage: state.errorMessage || '',
+          });
+        });
+      });
   }
 
   private startAnalysisStatePolling(): void {
@@ -141,46 +173,41 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
     jobId: number,
     update: AnalysisProgressUpdate,
   ): void {
-    const projectIndex = this.projects.findIndex(
+    const currentProject = this.projects.find(
       (p) => Number(p.jobId) === Number(jobId),
     );
 
-    if (projectIndex === -1) {
+    if (!currentProject) {
       return;
     }
 
-    const currentProject = this.projects[projectIndex];
-    const updatedProject = { ...currentProject };
+    const patch: Partial<Project> = {};
 
     if (update.totalSteps > 0) {
-      updatedProject.progress = Math.round(
-        (update.currentStep / update.totalSteps) * 100,
-      );
+      patch.progress = Math.round((update.currentStep / update.totalSteps) * 100);
     }
 
     if (update.isComplete) {
       const wasComplete = currentProject.status === 'PRELIMINARY';
-      updatedProject.status = 'PRELIMINARY';
-      updatedProject.progress = 100;
+      patch.status = 'PRELIMINARY';
+      patch.progress = 100;
 
       if (!wasComplete) {
         this.snackBar
-          .open(`Analysis complete for ${updatedProject.projectName}`, 'View', {
+          .open(`Analysis complete for ${currentProject.projectName}`, 'View', {
             duration: 5000,
           })
           .onAction()
           .subscribe(() => {
-            this.viewProject(updatedProject.jobId);
+            this.viewProject(currentProject.jobId);
           });
       }
     }
 
-    this.projects = this.projects.map((project, index) =>
-      index === projectIndex ? updatedProject : project,
-    );
+    if (Object.keys(patch).length > 0) {
+      this.projectService.patchProject(jobId, patch);
+    }
 
-    this.updateCounts();
-    this.setProjectFilter(this.projectFilter);
     this.cdr.detectChanges();
   }
 
