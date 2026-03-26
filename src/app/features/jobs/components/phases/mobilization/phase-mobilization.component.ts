@@ -375,9 +375,8 @@ export class PhaseMobilizationComponent implements OnInit, OnChanges {
       this.onStartDateChanged(selectedDate);
     }
 
-    this.goLiveDialogOpen = false;
-    this.goLiveStep = 0;
-    this.goLiveStartDate = '';
+    // Don't close dialog here - let parent navigate which will destroy this component
+    // The navigation to CONSTRUCTION_LIVE will naturally close the dialog
     this.goLive.emit();
   }
 

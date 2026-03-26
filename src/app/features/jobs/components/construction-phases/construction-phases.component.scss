@@ -463,23 +463,28 @@ $text-muted: var(--color-text-muted);
 .btn-xs-outline {
   font-size: 0.75rem;
   padding: 2px 8px;
-  background: transparent;
-  border: 1px solid $border-color;
+  background: $primary-yellow;
+  border: 1px solid $primary-yellow;
   border-radius: 4px;
   cursor: pointer;
-  color: $text-main;
-  &:hover { background: $bg-hover; }
+  color: black;
+  font-weight: 500;
+  &:hover { background: color.adjust($primary-yellow, $lightness: -5%); }
 }
 
 .btn-xs-yellow {
   font-size: 0.75rem;
   padding: 2px 8px;
-  background: $primary-yellow;
-  color: black;
-  border: none;
+  background: color-mix(in oklab, var(--color-mobilization-danger) 18%, transparent);
+  color: var(--color-mobilization-danger);
+  border: 1px solid color-mix(in oklab, var(--color-mobilization-danger) 50%, var(--color-border));
   border-radius: 4px;
   cursor: pointer;
-  &:hover { background: color.adjust($primary-yellow, $lightness: -5%); }
+  font-weight: 600;
+  &:hover { 
+    background: color-mix(in oklab, var(--color-mobilization-danger) 28%, transparent);
+    border-color: color-mix(in oklab, var(--color-mobilization-danger) 70%, var(--color-border));
+  }
 }
 
 /* Footer */

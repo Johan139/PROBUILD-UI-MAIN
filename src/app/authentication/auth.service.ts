@@ -130,6 +130,9 @@ export class AuthService {
     // Use the token as the source of truth to populate the user
     this.loadUserFromToken(token);
 
+    // Start inactivity timer for already logged-in users
+    this.startInactivityTimer();
+
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');

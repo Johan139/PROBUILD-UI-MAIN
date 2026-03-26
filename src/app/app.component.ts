@@ -255,15 +255,17 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  private inactivityEventHandler = () => {
+    this.authService.resetInactivityTimer();
+  };
+
   ngOnInit() {
     if (this.isBrowser) {
       setTimeout(() => this.onboardingService.checkOnboardingStatus(), 2000);
 
       const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
       for (const event of events) {
-        window.addEventListener(event, () => {
-          this.authService.resetInactivityTimer();
-        });
+        window.addEventListener(event, this.inactivityEventHandler);
       }
 
       this.authService.currentUser$.subscribe((user) => {
@@ -302,7 +304,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.isBrowser) {
-      window.removeEventListener('beforeunload', this.onBrowserClose);
+      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      for (const event of events) {
+        window.removeEventListener(event, this.inactivityEventHandler);
+      }
     }
   }
 

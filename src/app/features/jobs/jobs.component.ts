@@ -2090,10 +2090,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
             next: (jobDetails) => {
               this.projectDetails = { ...(this.projectDetails || {}), ...(jobDetails || {}) };
               this.store.setState({ projectDetails: this.projectDetails } as any);
-
-              const refreshedStatus =
-                (jobDetails as any)?.status ?? (jobDetails as any)?.Status ?? status;
-              this.determineProjectStage(String(refreshedStatus));
+              // Don't re-determine stage here - backend may return stale status
+              // The initial determineProjectStage(status) call already set correct stage
             },
             error: (err) => {
               console.error('Failed to refresh job details after status update', err);
