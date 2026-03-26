@@ -17,8 +17,12 @@
 
 .btn-primary {
   background: var(--brand-yellow-primary);
-  color: var(--color-text-inverse);
+  color: #000 !important;
   border-color: color-mix(in srgb, var(--brand-yellow-primary) 70%, transparent);
+
+  lucide-icon {
+    color: #000 !important;
+  }
 
   &:disabled {
     background: var(--color-surface-hover);
