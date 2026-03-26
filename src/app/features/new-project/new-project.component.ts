@@ -217,7 +217,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       phone: ['', Validators.required],
       companyName: [''],
       position: [''],
-      startDate: ['', Validators.required],
+      startDate: [''],
       budgetLevel: ['medium', Validators.required],
       userContextText: [''],
     });
@@ -565,7 +565,9 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('phone', this.clientForm.value.phone);
     formData.append('company', this.clientForm.value.companyName);
     formData.append('position', this.clientForm.value.position);
-    formData.append('startDate', this.clientForm.value.startDate);
+    if (this.clientForm.value.startDate) {
+  formData.append('startDate', this.clientForm.value.startDate);
+}
 
     formData.append('address', this.addressForm.value.formattedAddress);
 
