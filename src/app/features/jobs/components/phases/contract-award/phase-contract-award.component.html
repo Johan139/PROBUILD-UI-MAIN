@@ -17,6 +17,7 @@
     [proceedValidationTitle]="'Contract Award & Execution'"
     [proceedValidationCompleted]="proceedValidationCompleted"
     [proceedValidationMissing]="proceedValidationMissing"
+    (proceed)="proceed.emit()"
     (devProceed)="proceed.emit()"
     (documentsRequested)="documentsRequested.emit()"
     (reportRequested)="reportRequested.emit($event)"

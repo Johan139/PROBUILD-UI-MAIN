@@ -199,7 +199,7 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   get canProceed(): boolean {
-    return !!this.contractMethod;
+    return this.isStepCompleteForProceed;
   }
 
   private get isStepCompleteForProceed(): boolean {
@@ -447,6 +447,11 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
     this.contractMethod = 'upload';
 
     const runUpload = (contractId: string) => {
+      this.snackBar.open('Uploading contract PDF...', undefined, {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      });
       this.contractService.uploadClientContractPdf(contractId, file).subscribe({
         next: (updated) => {
           this.hydrateContractState(updated);
@@ -454,9 +459,19 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
           this.generatedContractMarkdown = '';
           this.contractGenerated = true;
           this.isUploading = false;
+          this.snackBar.open('Contract uploaded successfully!', undefined, {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
         },
         error: (err) => {
           console.error('Failed to upload client contract pdf', err);
+          this.snackBar.open('Failed to upload contract. Please try again.', 'OK', {
+            duration: 5000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
           this.isUploading = false;
         },
       });
@@ -467,23 +482,38 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
       return;
     }
 
-    const request = this.buildGenerateContractRequest('');
-    this.contractService
-      .generateGeneralClientContract(jobId, request)
-      .subscribe({
-        next: (contract) => {
-          this.hydrateContractState(contract);
-          if (!this.activeContractId) {
-            this.isUploading = false;
-            return;
-          }
-          runUpload(this.activeContractId);
-        },
-        error: (err) => {
-          console.error('Failed to initialize contract before upload', err);
-          this.isUploading = false;
-        },
+    if (!this.activeContractId) {
+      // Show initialization message since we need to create contract record first
+      this.snackBar.open('Initializing contract record...', undefined, {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
       });
+
+      const request = this.buildGenerateContractRequest('');
+      this.contractService
+        .generateGeneralClientContract(jobId, request)
+        .subscribe({
+          next: (contract) => {
+            this.hydrateContractState(contract);
+            if (!this.activeContractId) {
+              this.isUploading = false;
+              return;
+            }
+            runUpload(this.activeContractId);
+          },
+          error: (err) => {
+            console.error('Failed to initialize contract before upload', err);
+            this.snackBar.open('Failed to initialize contract. Please try again.', 'OK', {
+              duration: 5000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+            });
+            this.isUploading = false;
+          },
+        });
+      return;
+    }
   }
 
   private hydrateContractState(contract: ContractRecord): void {
@@ -868,22 +898,42 @@ ${parsed}
       .replace(/'/g, '&#39;');
   }
   get proceedValidationCompleted(): string[] {
-    if (!this.contractMethod) {
+    if (!this.isStepCompleteForProceed) {
       return [];
     }
 
-    return [
+    const items: string[] = [
       `Contract method selected: ${this.contractMethod === 'ai' ? 'Generate with AI' : 'Upload signed contract'}`,
     ];
+
+    if (this.contractMethod === 'ai' && this.contractGenerated) {
+      items.push('Contract generated successfully');
+    }
+
+    if (this.contractMethod === 'upload' && this.uploadedContractName) {
+      items.push(`Contract uploaded: ${this.uploadedContractName}`);
+    }
+
+    return items;
   }
 
   get proceedValidationMissing(): string[] {
-    if (this.contractMethod) {
+    if (this.isStepCompleteForProceed) {
       return [];
     }
 
-    return [
-      'Select a contract method (Generate with AI or Upload signed contract) - or use Skip This Step to proceed without a contract',
-    ];
+    const items: string[] = [];
+
+    if (!this.contractMethod) {
+      items.push('Select a contract method (Generate with AI or Upload signed contract)');
+    } else if (this.contractMethod === 'ai' && !this.contractGenerated) {
+      items.push('Generate the contract using AI before proceeding');
+    } else if (this.contractMethod === 'upload' && !this.uploadedContractName) {
+      items.push('Upload a signed contract PDF before proceeding');
+    }
+
+    items.push('Or use Skip This Step to proceed without a contract');
+
+    return items;
   }
 }
