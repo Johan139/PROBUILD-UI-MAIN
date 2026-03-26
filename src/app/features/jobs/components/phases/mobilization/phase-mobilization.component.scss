@@ -694,15 +694,16 @@
 }
 
 .go-live-note {
-  border: 1px solid color-mix(in oklab, var(--color-primary) 18%, var(--color-border));
-  border-radius: 8px;
-  background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface));
-  padding: 12px;
+  margin: 12px 24px 16px;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 20%, var(--color-border));
+  border-radius: 10px;
+  padding: 14px;
+  background: color-mix(in oklab, var(--color-primary) 8%, var(--color-surface));
 
   p {
     margin: 0;
     font-size: 12px;
-    color: var(--color-mobilization-text-soft);
+    color: var(--color-text);
     line-height: 1.45;
   }
 
@@ -790,9 +791,9 @@
 
   h6 {
     margin: 0;
-    color: var(--color-mobilization-text-strong);
+    color: var(--color-text);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   p {
@@ -966,7 +967,6 @@
     color: var(--color-text);
     height: 44px;
     padding: 0 14px;
-    color-scheme: dark;
   }
 }
 
@@ -1278,7 +1278,25 @@
 .btn.is-selected {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  background: color-mix(in oklab, var(--color-primary) 20%, transparent);
+  font-weight: 600;
+}
+
+.go-live-actions {
+  .btn.btn-primary,
+  .btn.btn-primary * {
+    color: #000 !important;
+  }
+}
+
+.permit-actions {
+  .btn.is-selected {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 25%, transparent);
+    font-weight: 600;
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
 }
 
 .empty-copy {
