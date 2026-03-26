@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, NgZone, OnDestroy, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ProjectCardComponent } from '../../../my-projects/project-card/project-card.component';
@@ -13,6 +13,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { ArchiveService } from '../../../archive/archive-service';
+import { SignalrService, AnalysisProgressUpdate } from '../../../jobs/services/signalr.service';
+import { interval, Subscription } from 'rxjs';
+import { startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-recent-projects-widget',
@@ -31,20 +34,120 @@ import { ArchiveService } from '../../../archive/archive-service';
     ProjectsTableComponent,
   ],
 })
-export class RecentProjectsWidgetComponent {
+export class RecentProjectsWidgetComponent implements OnDestroy {
   projects: Project[] = [];
   currentIndex = 0;
   projectView: 'grid' | 'list' = 'grid';
   @Output() jobArchived = new EventEmitter<number>();
+
+  private analysisProgressSubscription?: Subscription;
+  private analysisStatePollingSubscription?: Subscription;
+
   constructor(
     private projectService: ProjectService,
     private jobDataService: JobDataService,
     private snackBar: MatSnackBar,
     private archiveService: ArchiveService,
+    private signalrService: SignalrService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {
-    this.projectService.projects$.subscribe(
-      (projects) => (this.projects = projects),
+    this.projectService.projects$.subscribe((projects) => {
+      this.projects = projects;
+
+      // Immediately fetch analysis state for any analyzing projects
+      const analyzingProjects = projects.filter(
+        (project) =>
+          project.status === 'ANALYZING' &&
+          (project.progress === undefined || project.progress === 0),
+      );
+      analyzingProjects.forEach((project) => {
+        this.fetchAnalysisState(project.jobId);
+      });
+    });
+
+    // SignalR Integration for Auto-Updates
+    this.signalrService.startConnection();
+    this.analysisProgressSubscription = this.signalrService.analysisProgress.subscribe(
+      (update: AnalysisProgressUpdate) => {
+        this.ngZone.run(() => {
+          this.applyAnalysisUpdate(update.jobId, update);
+        });
+      },
     );
+
+    this.startAnalysisStatePolling();
+  }
+
+  ngOnDestroy(): void {
+    this.analysisProgressSubscription?.unsubscribe();
+    this.analysisStatePollingSubscription?.unsubscribe();
+  }
+
+  private startAnalysisStatePolling(): void {
+    this.analysisStatePollingSubscription = interval(5000)
+      .pipe(startWith(0))
+      .subscribe(() => {
+        const analyzingProjects = this.projects.filter(
+          (project) => project.status === 'ANALYZING',
+        );
+
+        analyzingProjects.forEach((project) => {
+          this.fetchAnalysisState(project.jobId);
+        });
+      });
+  }
+
+  private fetchAnalysisState(jobId: number): void {
+    this.signalrService
+      .getAnalysisState(Number(jobId))
+      .subscribe((state) => {
+        if (!state) {
+          return;
+        }
+
+        this.ngZone.run(() => {
+          this.applyAnalysisUpdate(jobId, {
+            jobId: Number(jobId),
+            statusMessage: state.statusMessage || '',
+            currentStep: state.currentStep || 0,
+            totalSteps: state.totalSteps || 0,
+            isComplete: !!state.isComplete,
+            hasFailed: !!state.hasFailed,
+            errorMessage: state.errorMessage || '',
+          });
+        });
+      });
+  }
+
+  private applyAnalysisUpdate(
+    jobId: number,
+    update: AnalysisProgressUpdate,
+  ): void {
+    const currentProject = this.projects.find(
+      (p) => Number(p.jobId) === Number(jobId),
+    );
+
+    if (!currentProject) {
+      return;
+    }
+
+    const patch: Partial<Project> = {};
+
+    if (update.totalSteps > 0) {
+      patch.progress = Math.round((update.currentStep / update.totalSteps) * 100);
+    }
+
+    if (update.isComplete) {
+      patch.status = 'PRELIMINARY';
+      patch.progress = 100;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      this.projectService.patchProject(jobId, patch);
+    }
+
+    this.cdr.detectChanges();
   }
 
   get visibleProjects() {

@@ -31,6 +31,30 @@ export class ProjectService {
     private archiveService: ArchiveService,
   ) {}
 
+  patchProject(jobId: number, patch: Partial<Project>): void {
+    const currentProjects = this.projects.getValue();
+    const projectIndex = currentProjects.findIndex(
+      (p) => Number(p.jobId) === Number(jobId),
+    );
+
+    if (projectIndex === -1) {
+      return;
+    }
+
+    const updatedProjects = [...currentProjects];
+    updatedProjects[projectIndex] = {
+      ...updatedProjects[projectIndex],
+      ...patch,
+    };
+
+    this.projects.next(updatedProjects);
+
+    const userId = this.authService.getUserId();
+    if (userId) {
+      localStorage.setItem(`projects_${userId}`, JSON.stringify(updatedProjects));
+    }
+  }
+
   loadProjects(): void {
     this.isLoading.next(true);
     const userId = this.authService.getUserId();
@@ -54,10 +78,28 @@ export class ProjectService {
       )
       .subscribe({
         next: (projects: any[]) => {
-          const mappedProjects = projects.map((p) => ({
-            ...p,
-            thumbnailUrl: p.thumbnailUrl || this.getImageForJob(p.jobId),
-          }));
+          const existingProjects = this.projects.getValue();
+
+          const mappedProjects = projects.map((p) => {
+            const existing = existingProjects.find(
+              (ep) => Number(ep.jobId) === Number(p.jobId),
+            );
+
+            const shouldPreserveExistingProgress =
+              p.status === 'ANALYZING' &&
+              existing?.progress !== undefined &&
+              (p.progress === undefined || p.progress === 0);
+
+            return {
+              ...p,
+              // Preserve locally-maintained fields so UI doesn't flicker between refreshes
+              progress: shouldPreserveExistingProgress
+                ? existing?.progress
+                : (p.progress ?? existing?.progress),
+              thumbnailUrl:
+                p.thumbnailUrl || existing?.thumbnailUrl || this.getImageForJob(p.jobId),
+            };
+          });
 
           this.projects.next(mappedProjects);
           // console.log('Loaded projects:', mappedProjects);
