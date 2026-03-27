@@ -362,6 +362,42 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
     });
   }
 
+  private getBomPhaseTotals(): { material: number; labor: number } {
+    const phases = Object.values(this.billsOfMaterials || {}) as any[];
+    if (!phases.length) {
+      return { material: 0, labor: 0 };
+    }
+
+    return phases.reduce(
+      (acc, phase) => {
+        acc.material += Number(phase?.totalMaterialCost || 0);
+        acc.labor += Number(phase?.totalLaborCost || 0);
+        return acc;
+      },
+      { material: 0, labor: 0 },
+    );
+  }
+
+  get displayedMaterialCost(): number {
+    const totals = this.getBomPhaseTotals();
+    if (totals.material > 0) {
+      return totals.material;
+    }
+    return Number(this.costAnalysis?.materialCost || 0);
+  }
+
+  get displayedLaborCost(): number {
+    const totals = this.getBomPhaseTotals();
+    if (totals.labor > 0) {
+      return totals.labor;
+    }
+    return Number(this.costAnalysis?.laborCost || 0);
+  }
+
+  get displayedCostToBuild(): number {
+    return this.displayedMaterialCost + this.displayedLaborCost;
+  }
+
   // Helpers
   toggleExecutiveSummary() {
     this.executiveSummaryExpanded = !this.executiveSummaryExpanded;

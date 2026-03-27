@@ -13,8 +13,18 @@ export interface OverallBudgetDialogData {
   materialsCost: number;
   laborCost: number;
   costToBuild: number;
+  generalConditionsSiteServices: number;
+  permitsAdminFees: number;
+  insuranceBonds: number;
+  directAndInsurableSubtotal: number;
   overheadProfit: number;
+  overheadPct: number;
   contingencyAllowance: number;
+  contingencyPct: number;
+  escalationAllowance: number;
+  preTaxSubtotal: number;
+  taxesAllowance: number;
+  salesTaxPct: number;
   totalProjectCost: number;
   costPerSqFt: number;
   materialRatio: number;
@@ -24,7 +34,13 @@ export interface OverallBudgetDialogData {
 @Component({
   selector: 'app-overall-budget-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, MoneyPipe],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MoneyPipe,
+  ],
   template: `
     <div class="scope-modal">
       <header class="scope-modal-header">
@@ -37,7 +53,11 @@ export interface OverallBudgetDialogData {
             <p>Detailed cost analysis for this project</p>
           </div>
         </div>
-        <button type="button" class="scope-close-btn" (click)="dialogRef.close()">
+        <button
+          type="button"
+          class="scope-close-btn"
+          (click)="dialogRef.close()"
+        >
           <mat-icon>close</mat-icon>
         </button>
       </header>
@@ -48,29 +68,81 @@ export interface OverallBudgetDialogData {
           <div class="scope-stat-list">
             <div class="scope-stat-row">
               <span>Material Costs</span>
-              <strong>{{ data.materialsCost | money : true : 2 }}</strong>
+              <strong>{{ data.materialsCost | money: true : 2 }}</strong>
             </div>
             <div class="scope-stat-row">
               <span>Labor Costs</span>
-              <strong>{{ data.laborCost | money : true : 2 }}</strong>
-            </div>
-            <div class="scope-stat-row total">
-              <span>Direct Cost Subtotal</span>
-              <strong>{{ data.costToBuild | money : true : 2 }}</strong>
+              <strong>{{ data.laborCost | money: true : 2 }}</strong>
             </div>
           </div>
         </section>
 
         <section class="scope-modal-section">
-          <p class="scope-modal-section-title">Indirect Costs & Allowances</p>
+          <p class="scope-modal-section-title">Indirect & Soft Costs</p>
           <div class="scope-stat-list">
             <div class="scope-stat-row">
-              <span>General Conditions & Overhead (18%)</span>
-              <strong>{{ data.overheadProfit | money : true : 2 }}</strong>
+              <span>General Conditions & Site Services</span>
+              <strong>{{
+                data.generalConditionsSiteServices | money: true : 2
+              }}</strong>
             </div>
             <div class="scope-stat-row">
-              <span>Contingency Allowance (10%)</span>
-              <strong>{{ data.contingencyAllowance | money : true : 2 }}</strong>
+              <span>Permits & Admin Fees</span>
+              <strong>{{ data.permitsAdminFees | money: true : 2 }}</strong>
+            </div>
+            <div class="scope-stat-row">
+              <span>Insurance & Bonds</span>
+              <strong>{{ data.insuranceBonds | money: true : 2 }}</strong>
+            </div>
+            <div class="scope-stat-row total">
+              <span>Subtotal (Direct & Insurable Costs)</span>
+              <strong>{{
+                data.directAndInsurableSubtotal | money: true : 2
+              }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="scope-modal-section">
+          <p class="scope-modal-section-title">Markups & Contingencies</p>
+          <div class="scope-stat-list">
+            <div class="scope-stat-row">
+              <span
+                >GC Overhead & Profit ({{
+                  data.overheadPct | number: '1.0-2'
+                }}%)</span
+              >
+              <strong>{{ data.overheadProfit | money: true : 2 }}</strong>
+            </div>
+            <div class="scope-stat-row">
+              <span
+                >Contingency Allowance ({{
+                  data.contingencyPct | number: '1.0-2'
+                }}%)</span
+              >
+              <strong>{{ data.contingencyAllowance | money: true : 2 }}</strong>
+            </div>
+            <div class="scope-stat-row">
+              <span>Cost Escalation Allowance</span>
+              <strong>{{ data.escalationAllowance | money: true : 2 }}</strong>
+            </div>
+            <div class="scope-stat-row total">
+              <span>Subtotal (Pre-Tax Cost)</span>
+              <strong>{{ data.preTaxSubtotal | money: true : 2 }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="scope-modal-section">
+          <p class="scope-modal-section-title">Taxes</p>
+          <div class="scope-stat-list">
+            <div class="scope-stat-row">
+              <span
+                >Sales Tax ({{
+                  data.salesTaxPct | number: '1.0-2'
+                }}% on materials)</span
+              >
+              <strong>{{ data.taxesAllowance | money: true : 2 }}</strong>
             </div>
           </div>
         </section>
@@ -78,12 +150,12 @@ export interface OverallBudgetDialogData {
         <section class="scope-modal-highlight">
           <div class="scope-highlight-top-row">
             <span>Total Project Budget</span>
-            <strong>{{ data.totalProjectCost | money : true : 0 }}</strong>
+            <strong>{{ data.totalProjectCost | money: true : 0 }}</strong>
           </div>
           <div class="scope-highlight-grid">
             <div>
               <p>Cost / Sq Ft</p>
-              <span>{{ data.costPerSqFt | money : true : 2 }}</span>
+              <span>{{ data.costPerSqFt | money: true : 2 }}</span>
             </div>
             <div>
               <p>Material Ratio</p>
@@ -149,7 +221,11 @@ export interface OverallBudgetDialogData {
         }
 
         &.budget {
-          background: color-mix(in oklab, var(--color-primary) 15%, transparent);
+          background: color-mix(
+            in oklab,
+            var(--color-primary) 15%,
+            transparent
+          );
 
           mat-icon {
             color: var(--color-primary);
@@ -169,7 +245,11 @@ export interface OverallBudgetDialogData {
         cursor: pointer;
 
         &:hover {
-          background: color-mix(in oklab, var(--color-border) 65%, var(--color-surface-hover));
+          background: color-mix(
+            in oklab,
+            var(--color-border) 65%,
+            var(--color-surface-hover)
+          );
         }
 
         mat-icon {
@@ -240,8 +320,13 @@ export interface OverallBudgetDialogData {
 
       .scope-modal-highlight {
         border-radius: var(--radius-md);
-        border: 1px solid color-mix(in oklab, var(--color-primary) 20%, transparent);
-        background: color-mix(in oklab, var(--color-primary) 6%, var(--color-surface-subtle));
+        border: 1px solid
+          color-mix(in oklab, var(--color-primary) 20%, transparent);
+        background: color-mix(
+          in oklab,
+          var(--color-primary) 6%,
+          var(--color-surface-subtle)
+        );
         padding: var(--space-4);
       }
 
@@ -292,4 +377,3 @@ export class OverallBudgetDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: OverallBudgetDialogData,
   ) {}
 }
-

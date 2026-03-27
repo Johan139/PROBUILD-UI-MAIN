@@ -444,9 +444,63 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private get hasBomDirectCosts(): boolean {
+    return Number(this.scopeBomTotals?.directSubtotal || 0) > 0;
+  }
+
+  private get summaryDirectAndInsurableBase(): number {
+    const explicit = Number(this.scopeCostSummary?.directAndInsurableSubtotal || 0);
+    if (explicit > 0) return explicit;
+
+    return (
+      Number(this.scopeCostSummary?.materialCost || 0) +
+      Number(this.scopeCostSummary?.laborCost || 0) +
+      Number(this.scopeCostSummary?.generalConditions || 0) +
+      Number(this.scopeCostSummary?.permitsAdminFees || 0) +
+      Number(this.scopeCostSummary?.insuranceBonds || 0)
+    );
+  }
+
+  private get resolvedOverheadPct(): number {
+    const explicit = Number(this.scopeCostSummary?.overheadPct || 0);
+    if (explicit > 0) return explicit;
+
+    const base = this.summaryDirectAndInsurableBase;
+    const amount = Number(this.scopeCostSummary?.overhead || 0);
+    return base > 0 && amount > 0 ? (amount / base) * 100 : 0;
+  }
+
+  private get resolvedContingencyPct(): number {
+    const explicit = Number(this.scopeCostSummary?.contingencyPct || 0);
+    if (explicit > 0) return explicit;
+
+    const base = this.summaryDirectAndInsurableBase;
+    const amount = Number(this.scopeCostSummary?.contingency || 0);
+    return base > 0 && amount > 0 ? (amount / base) * 100 : 0;
+  }
+
+  private get resolvedEscalationRate(): number {
+    const base = this.summaryDirectAndInsurableBase;
+    const amount = Number(this.scopeCostSummary?.escalation || 0);
+    return base > 0 && amount > 0 ? amount / base : 0;
+  }
+
+  private get resolvedSalesTaxRate(): number {
+    const explicitPct = Number(this.scopeCostSummary?.salesTaxPct || 0);
+    if (explicitPct > 0) return explicitPct / 100;
+
+    const summaryMaterial = Number(this.scopeCostSummary?.materialCost || 0);
+    const summaryTax = Number(this.scopeCostSummary?.taxes || 0);
+    return summaryMaterial > 0 && summaryTax > 0 ? summaryTax / summaryMaterial : 0;
+  }
+
   get totalProjectCost(): number {
+    const recomputed = this.preTaxSubtotal + this.taxesAllowance;
+    if (recomputed > 0) return recomputed;
+
     const fromSummary = Number(this.scopeCostSummary?.suggestedBid || 0);
     if (fromSummary > 0) return fromSummary;
+
     const raw =
       this.projectDetails?.budget ||
       this.projectDetails?.totalBudget ||
@@ -463,38 +517,126 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get costToBuild(): number {
-    const directSubtotal = Number(this.scopeCostSummary?.directSubtotal || 0);
-    if (directSubtotal > 0) return directSubtotal;
     const bomSubtotal = Number(this.scopeBomTotals?.directSubtotal || 0);
     if (bomSubtotal > 0) return bomSubtotal;
-    return 0;
+
+    const directSubtotal = Number(this.scopeCostSummary?.directSubtotal || 0);
+    if (directSubtotal > 0) return directSubtotal;
+
+    return this.materialsCost + this.laborCost;
   }
 
   get materialsCost(): number {
+    const bomValue = Number(this.scopeBomTotals?.materialCost || 0);
+    if (bomValue > 0) return bomValue;
+
     const summaryValue = Number(this.scopeCostSummary?.materialCost || 0);
     if (summaryValue > 0) return summaryValue;
-    return Number(this.scopeBomTotals?.materialCost || 0);
+
+    return 0;
   }
 
   get laborCost(): number {
+    const bomValue = Number(this.scopeBomTotals?.laborCost || 0);
+    if (bomValue > 0) return bomValue;
+
     const summaryValue = Number(this.scopeCostSummary?.laborCost || 0);
     if (summaryValue > 0) return summaryValue;
-    return Number(this.scopeBomTotals?.laborCost || 0);
+
+    return 0;
   }
 
   get overheadProfit(): number {
+    if (this.hasBomDirectCosts && this.directAndInsurableSubtotal > 0) {
+      return this.directAndInsurableSubtotal * (this.resolvedOverheadPct / 100);
+    }
     return Number(this.scopeCostSummary?.overhead || 0);
   }
 
   get contingencyAllowance(): number {
+    if (this.hasBomDirectCosts && this.directAndInsurableSubtotal > 0) {
+      return this.directAndInsurableSubtotal * (this.resolvedContingencyPct / 100);
+    }
     return Number(this.scopeCostSummary?.contingency || 0);
   }
 
+  get generalConditionsSiteServices(): number {
+    return Number(this.scopeCostSummary?.generalConditions || 0);
+  }
+
+  get permitsAdminFees(): number {
+    return Number(this.scopeCostSummary?.permitsAdminFees || 0);
+  }
+
+  get insuranceBonds(): number {
+    return Number(this.scopeCostSummary?.insuranceBonds || 0);
+  }
+
+  get directAndInsurableSubtotal(): number {
+    if (this.hasBomDirectCosts) {
+      return (
+        this.materialsCost +
+        this.laborCost +
+        this.generalConditionsSiteServices +
+        this.permitsAdminFees +
+        this.insuranceBonds
+      );
+    }
+
+    const fromSummary = Number(this.scopeCostSummary?.directAndInsurableSubtotal || 0);
+    if (fromSummary > 0) return fromSummary;
+    return (
+      this.materialsCost +
+      this.laborCost +
+      this.generalConditionsSiteServices +
+      this.permitsAdminFees +
+      this.insuranceBonds
+    );
+  }
+
   get escalationAllowance(): number {
+    if (this.hasBomDirectCosts && this.directAndInsurableSubtotal > 0) {
+      return this.directAndInsurableSubtotal * this.resolvedEscalationRate;
+    }
     return Number(this.scopeCostSummary?.escalation || 0);
   }
 
+  get overheadPct(): number {
+    return this.resolvedOverheadPct;
+  }
+
+  get contingencyPct(): number {
+    return this.resolvedContingencyPct;
+  }
+
+  get salesTaxPct(): number {
+    return this.resolvedSalesTaxRate * 100;
+  }
+
+  get preTaxSubtotal(): number {
+    if (this.hasBomDirectCosts) {
+      return (
+        this.directAndInsurableSubtotal +
+        this.overheadProfit +
+        this.contingencyAllowance +
+        this.escalationAllowance
+      );
+    }
+
+    const fromSummary = Number(this.scopeCostSummary?.preTaxSubtotal || 0);
+    if (fromSummary > 0) return fromSummary;
+    return (
+      this.directAndInsurableSubtotal +
+      this.overheadProfit +
+      this.contingencyAllowance +
+      this.escalationAllowance
+    );
+  }
+
   get taxesAllowance(): number {
+    if (this.hasBomDirectCosts && this.materialsCost > 0) {
+      return this.materialsCost * this.resolvedSalesTaxRate;
+    }
     return Number(this.scopeCostSummary?.taxes || 0);
   }
 
@@ -1444,15 +1586,28 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openOverallBudgetDialog(): void {
-    const materialRatio = this.costToBuild > 0 ? (this.materialsCost / this.costToBuild) * 100 : 0;
-    const laborRatio = this.costToBuild > 0 ? (this.laborCost / this.costToBuild) * 100 : 0;
+    const directCostBase = this.materialsCost + this.laborCost;
+    const materialRatio =
+      directCostBase > 0 ? (this.materialsCost / directCostBase) * 100 : 0;
+    const laborRatio =
+      directCostBase > 0 ? (this.laborCost / directCostBase) * 100 : 0;
 
     const data: OverallBudgetDialogData = {
       materialsCost: this.materialsCost,
       laborCost: this.laborCost,
       costToBuild: this.costToBuild,
+      generalConditionsSiteServices: this.generalConditionsSiteServices,
+      permitsAdminFees: this.permitsAdminFees,
+      insuranceBonds: this.insuranceBonds,
+      directAndInsurableSubtotal: this.directAndInsurableSubtotal,
       overheadProfit: this.overheadProfit,
+      overheadPct: this.overheadPct,
       contingencyAllowance: this.contingencyAllowance,
+      contingencyPct: this.contingencyPct,
+      escalationAllowance: this.escalationAllowance,
+      preTaxSubtotal: this.preTaxSubtotal,
+      taxesAllowance: this.taxesAllowance,
+      salesTaxPct: this.salesTaxPct,
       totalProjectCost: this.totalProjectCost,
       costPerSqFt: this.costPerSqFt,
       materialRatio,
