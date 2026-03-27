@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { marked } from 'marked';
 import { Permit } from '../../../models/permit';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -17,6 +19,7 @@ export class ReportService {
   constructor(
     private jobsService: JobsService,
     private snackBar: MatSnackBar,
+    private http: HttpClient,
   ) {}
 
   private async getBomResults(jobId: string): Promise<any[] | null> {
@@ -942,6 +945,12 @@ export class ReportService {
         return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
       };
 
+      const parsePercentage = (raw: string): number => {
+        const cleaned = String(raw || '').replace(/\*\*/g, '');
+        const match = cleaned.match(/(\d+(?:\.\d+)?)\s*%/);
+        return match ? parseFloat(match[1]) : 0;
+      };
+
       const extractValue = (regex: RegExp) => {
         const match = fullResponse.match(regex);
         return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
@@ -996,26 +1005,35 @@ export class ReportService {
         marketHigh = parseFloat(rangeMatch[2].replace(/,/g, ''));
       }
 
-      // Phase 26 table parser (authoritative source for bid proposal values)
-      const phase26SectionMatch = fullResponse.match(
-        /###\s*Phase\s*26:[\s\S]*?(?=\n###\s*Phase\s*27:|\n\s*Ready for the next prompt|$)/i,
+      // Cost breakdown table parser (authoritative source for bid proposal values)
+      // Supports legacy "Phase 26" and current "Phase 25" numbering.
+      const phaseCostSectionMatch = fullResponse.match(
+        /###\s*Phase\s*(?:25|26)\s*:\s*Cost\s*Breakdowns?[\s\S]*?(?=\n###\s*Phase\s*(?:26|27)\s*:|\n\s*Ready for the next prompt|$)/i,
       );
 
       let phase26Direct = 0;
+      let phase26Material = 0;
+      let phase26Labor = 0;
+      let phase26GeneralConditions = 0;
+      let phase26PermitsAdminFees = 0;
+      let phase26InsuranceBonds = 0;
+      let phase26DirectAndInsurableSubtotal = 0;
       let phase26Overhead = 0;
       let phase26OverheadPct = 0;
       let phase26Contingency = 0;
       let phase26ContingencyPct = 0;
       let phase26Escalation = 0;
+      let phase26PreTaxSubtotal = 0;
       let phase26Taxes = 0;
+      let phase26SalesTaxPct = 0;
       let phase26Bid = 0;
       let phase26MarketBid = 0;
       let phase26CostPerSqFt = 0;
       let phase26RangeLow = 0;
       let phase26RangeHigh = 0;
 
-      if (phase26SectionMatch && phase26SectionMatch[0]) {
-        const tableLines = phase26SectionMatch[0]
+      if (phaseCostSectionMatch && phaseCostSectionMatch[0]) {
+        const tableLines = phaseCostSectionMatch[0]
           .split('\n')
           .map((line) => line.trim())
           .filter((line) => line.startsWith('|'));
@@ -1030,7 +1048,8 @@ export class ReportService {
 
           if (cols.length < 2) return;
 
-          const label = String(cols[0] || '').toLowerCase();
+          const rawLabel = String(cols[0] || '');
+          const label = rawLabel.toLowerCase();
           const amountCol = String(cols[1] || '');
           const pctCol = String(cols[2] || '');
           const valueCols = cols.slice(1).map((c) => String(c || ''));
@@ -1049,12 +1068,53 @@ export class ReportService {
 
           // Some report variants swap amount/% columns. Resolve by semantic token.
           const moneyToken = valueCols.find((v) => /\$/.test(v)) || amountCol;
-          const percentToken = valueCols.find((v) => /%/.test(v)) || pctCol;
+          const percentToken = valueCols.find((v) => /%/.test(v)) || '';
           const amount = parseCurrency(moneyToken);
-          const pct = parseCurrency(percentToken);
+          const pctFromCols = parsePercentage(percentToken);
+          const pctFromLabel = parsePercentage(rawLabel);
+          const pct = pctFromCols > 0 ? pctFromCols : pctFromLabel;
 
-          if (label.includes('subtotal (direct')) {
+          if (
+            label.includes('subtotal (direct') ||
+            label.includes('subtotal (direct construction')
+          ) {
             phase26Direct = amount;
+            return;
+          }
+
+          if (label.includes('total material cost')) {
+            phase26Material = amount;
+            return;
+          }
+
+          if (label.includes('total labor cost')) {
+            phase26Labor = amount;
+            return;
+          }
+
+          if (
+            label.includes('general conditions') &&
+            (label.includes('site services') || !label.includes('overhead'))
+          ) {
+            phase26GeneralConditions = amount;
+            return;
+          }
+
+          if (label.includes('permits') || label.includes('admin fees')) {
+            phase26PermitsAdminFees = amount;
+            return;
+          }
+
+          if (label.includes('insurance') || label.includes('bond')) {
+            phase26InsuranceBonds = amount;
+            return;
+          }
+
+          if (
+            label.includes('subtotal') &&
+            (label.includes('insurable') || label.includes('direct & insurable'))
+          ) {
+            phase26DirectAndInsurableSubtotal = amount;
             return;
           }
 
@@ -1075,8 +1135,14 @@ export class ReportService {
             return;
           }
 
+          if (label.includes('subtotal (pre-tax') || label.includes('pre-tax project cost')) {
+            phase26PreTaxSubtotal = amount;
+            return;
+          }
+
           if (label.includes('sales tax') || label === 'taxes') {
             phase26Taxes = amount;
+            phase26SalesTaxPct = pct;
             return;
           }
 
@@ -1096,18 +1162,107 @@ export class ReportService {
         });
       }
 
-      const finalDirectSubtotal = phase26Direct > 0 ? phase26Direct : directSubtotal;
-      const finalOverhead = phase26Overhead > 0 ? phase26Overhead : overhead;
+      // If AI report has no cost data, try to get from BudgetLineItems
+      let budgetMaterialCost = 0;
+      let budgetLaborCost = 0;
+      let budgetGeneralConditions = 0;
+      let budgetOverhead = 0;
+      let budgetContingency = 0;
+
+      try {
+        const budgetItems = await this.http.get<any[]>(`${environment.BACKEND_URL}/budget/${jobId}`).toPromise();
+        if (budgetItems && budgetItems.length > 0) {
+          budgetItems.forEach((item: any) => {
+            const category = String(item.category || '').toLowerCase();
+            const trade = String(item.trade || '').toLowerCase();
+            const cost = Number(item.estimatedCost || 0);
+
+            if (category.includes('material') || trade.includes('material')) {
+              budgetMaterialCost += cost;
+            } else if (category.includes('labor') || trade.includes('labor')) {
+              budgetLaborCost += cost;
+            } else if (category.includes('general') || category.includes('conditions') || trade.includes('general')) {
+              budgetGeneralConditions += cost;
+            } else if (category.includes('overhead') || trade.includes('overhead')) {
+              budgetOverhead += cost;
+            } else if (category.includes('contingency') || trade.includes('contingency')) {
+              budgetContingency += cost;
+            }
+          });
+          console.log('[Budget] Loaded costs from BudgetLineItems:', {
+            material: budgetMaterialCost,
+            labor: budgetLaborCost,
+            generalConditions: budgetGeneralConditions,
+          });
+        }
+      } catch (budgetErr) {
+        console.log('[Budget] Could not load budget items:', budgetErr);
+      }
+
+      // Prefer authoritative values parsed from the AI report's cost breakdown table.
+      // Only fall back to BudgetLineItems when the report does not provide those fields.
+      const finalMaterialCost =
+        phase26Material > 0
+          ? phase26Material
+          : materialCost > 0
+            ? materialCost
+            : budgetMaterialCost > 0
+              ? budgetMaterialCost
+              : 0;
+      const finalLaborCost =
+        phase26Labor > 0
+          ? phase26Labor
+          : laborCost > 0
+            ? laborCost
+            : budgetLaborCost > 0
+              ? budgetLaborCost
+              : 0;
+      const finalGeneralConditions =
+        phase26GeneralConditions > 0
+          ? phase26GeneralConditions
+          : budgetGeneralConditions > 0
+            ? budgetGeneralConditions
+            : 0;
+      const finalDirectSubtotal =
+        phase26Direct > 0
+          ? phase26Direct
+          : directSubtotal > 0
+            ? directSubtotal
+            : finalMaterialCost + finalLaborCost + finalGeneralConditions > 0
+              ? finalMaterialCost + finalLaborCost + finalGeneralConditions
+              : 0;
+      const finalPermitsAdminFees = phase26PermitsAdminFees;
+      const finalInsuranceBonds = phase26InsuranceBonds;
+      const finalDirectAndInsurableSubtotal = phase26DirectAndInsurableSubtotal;
+      const finalOverhead =
+        phase26Overhead > 0
+          ? phase26Overhead
+          : overhead > 0
+            ? overhead
+            : budgetOverhead > 0
+              ? budgetOverhead
+              : 0;
       const finalOverheadPct = phase26OverheadPct > 0 ? phase26OverheadPct : overheadPct;
       const finalContingency =
-        phase26Contingency > 0 ? phase26Contingency : contingency;
-      const finalContingencyPct =
-        phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
+        phase26Contingency > 0
+          ? phase26Contingency
+          : contingency > 0
+            ? contingency
+            : budgetContingency > 0
+              ? budgetContingency
+              : 0;
+      const finalContingencyPct = phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
+
       const escalation = phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
       const finalTaxes = phase26Taxes > 0 ? phase26Taxes : taxes;
+      const finalSalesTaxPct = phase26SalesTaxPct;
       const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
       let finalSuggestedMarketBid =
         phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;
+      const finalPreTaxSubtotal =
+        phase26PreTaxSubtotal > 0
+          ? phase26PreTaxSubtotal
+          : finalDirectSubtotal + finalOverhead + finalContingency + escalation;
       const finalCostPerSqFt =
         phase26CostPerSqFt > 0 ? phase26CostPerSqFt : costPerSqFt;
 
@@ -1142,15 +1297,21 @@ export class ReportService {
       }
 
       return {
-        materialCost,
-        laborCost,
+        materialCost: finalMaterialCost,
+        laborCost: finalLaborCost,
         directSubtotal: finalDirectSubtotal, // Cost to Build
+        generalConditions: finalGeneralConditions,
+        permitsAdminFees: finalPermitsAdminFees,
+        insuranceBonds: finalInsuranceBonds,
+        directAndInsurableSubtotal: finalDirectAndInsurableSubtotal,
         overhead: finalOverhead,
         overheadPct: finalOverheadPct,
         contingency: finalContingency,
         contingencyPct: finalContingencyPct,
         escalation,
+        preTaxSubtotal: finalPreTaxSubtotal,
         taxes: finalTaxes,
+        salesTaxPct: finalSalesTaxPct,
         suggestedBid: finalSuggestedBid,
         suggestedMarketBid: finalSuggestedMarketBid,
         costPerSqFt: finalCostPerSqFt,

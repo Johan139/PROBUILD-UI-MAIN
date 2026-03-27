@@ -183,18 +183,18 @@
         <div>
           <p class="label">Cost to Build</p>
           <p class="value">
-            {{ (costAnalysis?.materialCost || 0) + (costAnalysis?.laborCost || 0) | money : true : 2 }}
+            {{ displayedCostToBuild | money : true : 2 }}
           </p>
         </div>
       </div>
       <div class="hero-details">
         <div class="row">
           <span>Materials</span>
-          <span class="val">{{ costAnalysis?.materialCost || 0 | money : true : 2 }}</span>
+          <span class="val">{{ displayedMaterialCost | money : true : 2 }}</span>
         </div>
         <div class="row">
           <span>Labor</span>
-          <span class="val">{{ costAnalysis?.laborCost || 0 | money : true : 2 }}</span>
+          <span class="val">{{ displayedLaborCost | money : true : 2 }}</span>
         </div>
       </div>
     </div>
@@ -519,7 +519,7 @@
       <div>
         <span>Cost to Build</span
         ><span class="val"
-          >{{ (costAnalysis?.materialCost || 0) + (costAnalysis?.laborCost || 0) | money : true : 2 }}</span
+          >{{ displayedCostToBuild | money : true : 2 }}</span
         >
       </div>
       <div>

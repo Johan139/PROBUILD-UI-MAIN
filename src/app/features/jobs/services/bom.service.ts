@@ -580,8 +580,10 @@ export class BomService {
 
   getTradePackages(jobId: string): Observable<any[]> {
     // Try fetching from API first
+
     return this.http.get<any[]>(`${this.apiUrl}/${jobId}`).pipe(
       map((apiPackages) => {
+              console.log("BOM Result first try", apiPackages)
         if (apiPackages && apiPackages.length > 0) {
           return apiPackages.map((pkg) => {
             const parsedDays = this.parseDurationDays(pkg.estimatedDuration);
@@ -651,6 +653,7 @@ export class BomService {
         // Fallback to report parsing if API fails or returns empty (e.g. migration not run)
         return this.getBillOfMaterials(jobId).pipe(
           map((results) => {
+            console.log("BOM Result" , results)
             if (!results || results.length === 0 || !results[0].parsedReport) {
               return [];
             }
