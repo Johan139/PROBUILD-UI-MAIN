@@ -96,6 +96,7 @@ export class PhaseDetailedTakeoffComponent
 {
   @Input() projectDetails: any;
   @Input() scopeCostSummary: any = null;
+  @Input() scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   @Input() scopeTotalProjectCost: number | null = null;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
   @Input() isReportLoading = false;
@@ -397,11 +398,57 @@ export class PhaseDetailedTakeoffComponent
       null;
 
     const keyHighlights = Array.isArray(summary?.keyHighlights)
-      ? summary.keyHighlights.map((item: any) => ({
-          label: String(item?.label || ''),
-          value: String(item?.value || ''),
-          note: String(item?.note || ''),
-        }))
+      ? summary.keyHighlights.map((item: any) => {
+          const label = String(item?.label || '');
+          let value = String(item?.value || '');
+          let note = String(item?.note || '');
+
+          const normalizedLabel = this.normalizeHighlightLabel(label);
+          if (
+            normalizedLabel.includes('totalestimatedprojectcost') ||
+            normalizedLabel.includes('totalprojectcost')
+          ) {
+            if (this.reconciledTotalProjectCost > 0) {
+              value = this.formatCurrency(this.reconciledTotalProjectCost);
+              note = this.replaceFirstCurrencyInText(note, this.reconciledTotalProjectCost);
+            }
+          } else if (
+            normalizedLabel.includes('suggestedbidprice') ||
+            normalizedLabel.includes('suggestedmarketbid') ||
+            normalizedLabel.includes('clientbidprice')
+          ) {
+            if (this.reconciledSuggestedBid > 0) {
+              value = this.formatCurrency(this.reconciledSuggestedBid);
+            }
+          } else if (
+            normalizedLabel.includes('costpersqft') ||
+            normalizedLabel.includes('costpersquarefoot')
+          ) {
+            if (this.reconciledCostPerSqFt > 0) {
+              value = this.formatCurrency(this.reconciledCostPerSqFt);
+              note = this.replaceFirstCurrencyInText(note, this.reconciledCostPerSqFt);
+            }
+          } else if (normalizedLabel.includes('valueengineering')) {
+            value = this.formatMoneyInText(value);
+            note = this.formatMoneyInText(note);
+          } else if (
+            normalizedLabel.includes('primarycostdrivers') ||
+            normalizedLabel.includes('costdrivers')
+          ) {
+            const labor = this.reconciledLaborCostForDrivers;
+            const material = this.reconciledMaterialCostForDrivers;
+            const generalAndMarkups = this.reconciledGeneralAndMarkupsForDrivers;
+            const combinedDrivers = labor + material + generalAndMarkups;
+            if (combinedDrivers > 0) {
+              value = this.formatCompactThousands(combinedDrivers);
+              note = `Combined key drivers: Subcontractor Labor (${this.formatCompactThousands(labor)}), Materials (${this.formatCompactThousands(material)}), and General Conditions/Markups (${this.formatCompactThousands(generalAndMarkups)}).`;
+            }
+          }
+
+          value = this.formatMoneyInText(value);
+          note = this.formatMoneyInText(note);
+          return { label, value, note };
+        })
       : [];
 
     const riskFactors = Array.isArray(summary?.riskFactors)
@@ -477,6 +524,88 @@ export class PhaseDetailedTakeoffComponent
         0,
     );
     return fromProjectDetails > 0 ? fromProjectDetails : 0;
+  }
+
+  private normalizeHighlightLabel(label: string): string {
+    return String(label || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  private formatCurrency(amount: number): string {
+    return formatMoney(Number(amount || 0), true, 2);
+  }
+
+  private replaceFirstCurrencyInText(text: string, amount: number): string {
+    const source = String(text || '');
+    if (!source) return source;
+    const replacement = this.formatCurrency(amount);
+    const currencyPattern = /\$\s*\d[\d,\s]*(?:\.\d{1,2})?/;
+    return currencyPattern.test(source)
+      ? source.replace(currencyPattern, replacement)
+      : source;
+  }
+
+  private formatCompactThousands(amount: number): string {
+    const safe = Number(amount || 0);
+    if (safe <= 0) return '$0';
+    return `$${Math.round(safe / 1000)}k`;
+  }
+
+  private formatMoneyInText(text: string): string {
+    if (!text) return text;
+    return text.replace(/\$((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/g, (match, amountStr) => {
+      const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue > 0) {
+        return formatMoney(numericValue, true, 2);
+      }
+      return match;
+    });
+  }
+
+  private get reconciledTotalProjectCost(): number {
+    const fromParent = Number(this.scopeTotalProjectCost || 0);
+    if (fromParent > 0) return fromParent;
+    return Number(this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0);
+  }
+
+  private get reconciledSuggestedBid(): number {
+    const marketBid = Number(this.scopeCostSummary?.suggestedMarketBid || this.loadedCostSummary?.suggestedMarketBid || 0);
+    return Math.max(this.reconciledTotalProjectCost, marketBid);
+  }
+
+  private get reconciledCostPerSqFt(): number {
+    const area = this.resolvedProjectAreaSqFt;
+    return area > 0 ? this.reconciledTotalProjectCost / area : 0;
+  }
+
+  private get resolvedProjectAreaSqFt(): number {
+    const rawArea = this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0;
+    const numericArea = Number(String(rawArea).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(numericArea) && numericArea > 0 ? numericArea : 0;
+  }
+
+  private get reconciledMaterialCostForDrivers(): number {
+    const fromBom = Number(this.scopeBomTotals?.materialCost || 0);
+    if (fromBom > 0) return fromBom;
+    return Number(this.scopeCostSummary?.materialCost || this.loadedCostSummary?.materialCost || 0);
+  }
+
+  private get reconciledLaborCostForDrivers(): number {
+    const fromBom = Number(this.scopeBomTotals?.laborCost || 0);
+    if (fromBom > 0) return fromBom;
+    return Number(this.scopeCostSummary?.laborCost || this.loadedCostSummary?.laborCost || 0);
+  }
+
+  private get reconciledGeneralAndMarkupsForDrivers(): number {
+    const source = this.scopeCostSummary || this.loadedCostSummary || {};
+    const generalConditions = Number(source?.generalConditions || 0);
+    const permits = Number(source?.permitsAdminFees || 0);
+    const insurance = Number(source?.insuranceBonds || 0);
+    const overhead = Number(source?.overhead || 0);
+    const contingency = Number(source?.contingency || 0);
+    const escalation = Number(source?.escalation || 0);
+    return generalConditions + permits + insurance + overhead + contingency + escalation;
   }
 
   get spentToDate(): number {
