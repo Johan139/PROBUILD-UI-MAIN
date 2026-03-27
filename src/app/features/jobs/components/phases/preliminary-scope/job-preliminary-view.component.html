@@ -137,8 +137,8 @@
             class="highlight-box"
           >
             <span class="label">{{ item.label }}</span>
-            <span class="value">{{ item.value | money : true : 2 }}</span>
-            <span class="note">{{ item.note | moneyInText : true : 2 }}</span>
+            <span class="value">{{ item.value }}</span>
+            <span class="note">{{ item.note }}</span>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@
         </div>
         <div>
           <p class="label">Total Project Cost</p>
-          <p class="value">{{ costAnalysis?.suggestedBid || 0 | money : true : 2 }}</p>
+          <p class="value">{{ displayedTotalProjectCost | money : true : 2 }}</p>
           <p *ngIf="totalVeSavings > 0" class="savings">
             -{{ totalVeSavings | money : true : 2 }} VE savings
           </p>
@@ -233,7 +233,7 @@
         </div>
         <div>
           <p class="label">Suggested Bid Price</p>
-          <p class="value">{{ costAnalysis?.suggestedMarketBid || costAnalysis?.suggestedBid || 0 | money : true : 2 }}</p>
+          <p class="value">{{ displayedSuggestedBid | money : true : 2 }}</p>
         </div>
       </div>
       <div class="hero-details">
@@ -247,7 +247,7 @@
         </div>
         <div class="row">
           <span>Cost per Sq Ft</span>
-          <span class="val green">{{ costAnalysis?.costPerSqFt || 0 | money : true : 2 }}</span>
+          <span class="val green">{{ displayedCostPerSqFt | money : true : 2 }}</span>
         </div>
       </div>
     </div>
@@ -525,13 +525,13 @@
       <div>
         <span>Total Project Cost</span
         ><span class="val"
-          >{{ costAnalysis?.suggestedBid || 0 | money : true : 2 }}</span
+          >{{ displayedTotalProjectCost | money : true : 2 }}</span
         >
       </div>
       <div>
         <span>Suggested Bid</span
         ><span class="val yellow"
-          >{{ costAnalysis?.suggestedMarketBid || costAnalysis?.suggestedBid || 0 | money : true : 2 }}</span
+          >{{ displayedSuggestedBid | money : true : 2 }}</span
         >
       </div>
     </div>

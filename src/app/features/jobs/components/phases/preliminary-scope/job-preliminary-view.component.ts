@@ -135,12 +135,13 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
         (item) => (this.veSelections[item.id] = false),
       );
 
-      this.hydrateExecutiveSummaryHighlights();
-      this.cdr.detectChanges();
-
       if (boms && boms.length > 0 && boms[0].parsedReport) {
         this.processBoms(boms[0].parsedReport);
       }
+
+      // Recompute highlights only after BOM parsing so totals are consistent everywhere.
+      this.hydrateExecutiveSummaryHighlights();
+      this.cdr.detectChanges();
 
       this.procurement = {
         longLeadItems: procurement || [],
@@ -158,25 +159,20 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
 
     this.executiveSummary.keyHighlights = this.executiveSummary.keyHighlights.map(
       (item: any) => {
-        const label = (item?.label || '').toLowerCase();
+        const label = this.normalizeHighlightLabel(item?.label || '');
         const valueRaw = String(item?.value || '');
 
         // Handle Total Project Cost from cost analysis
-        if (label.includes('total project cost')) {
-          const totalProjectCost =
-            this.costAnalysis?.suggestedBid ||
-            this.costAnalysis?.suggestedMarketBid ||
-            this.costAnalysis?.totalCost ||
-            0;
-
+        if (label.includes('total estimated project cost') || label.includes('total project cost')) {
           return {
             ...item,
-            value: totalProjectCost > 0 ? formatMoney(totalProjectCost, true, 2) : 'N/A',
+            value: this.displayedTotalProjectCost > 0 ? this.displayedTotalProjectCost : 0,
+            note: `${formatMoney(this.displayedTotalProjectCost, true, 2)}, reconciled from BOM-based direct costs and calculated rollups.`,
           };
         }
 
         // Handle Project Duration - strip markdown
-        if (label.includes('project duration')) {
+        if (label.includes('project duration') || label.includes('projected timeline')) {
           return {
             ...item,
             value: this.stripMarkdown(valueRaw || 'N/A'),
@@ -189,29 +185,42 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
             ...item,
             value:
               this.totalVePotentialSavings > 0
-                ? formatMoney(this.totalVePotentialSavings, true, 2)
+                ? this.totalVePotentialSavings
                 : 'N/A',
           };
         }
 
         // Handle Total Estimated Bid Price
-        if (label.includes('total estimated bid')) {
-          const bidPrice =
-            this.costAnalysis?.suggestedMarketBid ||
-            this.costAnalysis?.suggestedBid ||
-            0;
+        if (label.includes('total estimated bid') || label.includes('suggested bid')) {
           return {
             ...item,
-            value: bidPrice > 0 ? formatMoney(bidPrice, true, 2) : valueRaw,
+            value:
+              this.displayedSuggestedBid > 0
+                ? this.displayedSuggestedBid
+                : valueRaw,
           };
         }
 
         // Handle Cost Per Conditioned Sq Ft and similar cost metrics
         if (label.includes('cost per') || label.includes('per sq ft') || label.includes('per square foot')) {
-          const costPerSqFt = this.costAnalysis?.costPerSqFt || 0;
           return {
             ...item,
-            value: costPerSqFt > 0 ? formatMoney(costPerSqFt, true, 2) : valueRaw,
+            value:
+              this.displayedCostPerSqFt > 0
+                ? this.displayedCostPerSqFt
+                : valueRaw,
+          };
+        }
+
+        // Handle primary cost drivers summary so it aligns with reconciled totals
+        if (label.includes('primary cost drivers')) {
+          return {
+            ...item,
+            value:
+              this.displayedLaborCost > 0
+                ? this.displayedLaborCost
+                : valueRaw,
+            note: `Subcontractor Labor (${formatMoney(this.displayedLaborCost, true, 2)}), Materials (${formatMoney(this.displayedMaterialCost, true, 2)}), General Conditions/Markups (${formatMoney(Math.max(0, this.displayedTotalProjectCost - this.displayedCostToBuild), true, 2)}).`,
           };
         }
 
@@ -242,6 +251,14 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
         return item;
       },
     );
+  }
+
+  private normalizeHighlightLabel(label: string): string {
+    return String(label || '')
+      .toLowerCase()
+      .replace(/[*_`]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
 
   private stripMarkdown(text: string): string {
@@ -396,6 +413,125 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
 
   get displayedCostToBuild(): number {
     return this.displayedMaterialCost + this.displayedLaborCost;
+  }
+
+  private get displayedGeneralConditions(): number {
+    return Number(this.costAnalysis?.generalConditions || 0);
+  }
+
+  private get displayedPermitsAdminFees(): number {
+    return Number(this.costAnalysis?.permitsAdminFees || 0);
+  }
+
+  private get displayedInsuranceBonds(): number {
+    return Number(this.costAnalysis?.insuranceBonds || 0);
+  }
+
+  private get displayedDirectAndInsurableSubtotal(): number {
+    const explicit = Number(this.costAnalysis?.directAndInsurableSubtotal || 0);
+    if (explicit > 0 && this.displayedCostToBuild <= 0) return explicit;
+
+    return (
+      this.displayedMaterialCost +
+      this.displayedLaborCost +
+      this.displayedGeneralConditions +
+      this.displayedPermitsAdminFees +
+      this.displayedInsuranceBonds
+    );
+  }
+
+  private get displayedOverheadPct(): number {
+    const explicit = Number(this.costAnalysis?.overheadPct || 0);
+    if (explicit > 0) return explicit;
+    const base = Number(this.costAnalysis?.directAndInsurableSubtotal || 0);
+    const amount = Number(this.costAnalysis?.overhead || 0);
+    return base > 0 && amount > 0 ? (amount / base) * 100 : 0;
+  }
+
+  private get displayedContingencyPct(): number {
+    const explicit = Number(this.costAnalysis?.contingencyPct || 0);
+    if (explicit > 0) return explicit;
+    const base = Number(this.costAnalysis?.directAndInsurableSubtotal || 0);
+    const amount = Number(this.costAnalysis?.contingency || 0);
+    return base > 0 && amount > 0 ? (amount / base) * 100 : 0;
+  }
+
+  private get displayedEscalationRate(): number {
+    const base = Number(this.costAnalysis?.directAndInsurableSubtotal || 0);
+    const amount = Number(this.costAnalysis?.escalation || 0);
+    return base > 0 && amount > 0 ? amount / base : 0;
+  }
+
+  private get displayedOverheadProfit(): number {
+    if (this.displayedDirectAndInsurableSubtotal > 0 && this.displayedOverheadPct > 0) {
+      return this.displayedDirectAndInsurableSubtotal * (this.displayedOverheadPct / 100);
+    }
+    return Number(this.costAnalysis?.overhead || 0);
+  }
+
+  private get displayedContingencyAllowance(): number {
+    if (this.displayedDirectAndInsurableSubtotal > 0 && this.displayedContingencyPct > 0) {
+      return this.displayedDirectAndInsurableSubtotal * (this.displayedContingencyPct / 100);
+    }
+    return Number(this.costAnalysis?.contingency || 0);
+  }
+
+  private get displayedEscalationAllowance(): number {
+    if (this.displayedDirectAndInsurableSubtotal > 0 && this.displayedEscalationRate > 0) {
+      return this.displayedDirectAndInsurableSubtotal * this.displayedEscalationRate;
+    }
+    return Number(this.costAnalysis?.escalation || 0);
+  }
+
+  private get displayedSalesTaxRate(): number {
+    const pct = Number(this.costAnalysis?.salesTaxPct || 0);
+    if (pct > 0) return pct / 100;
+    const summaryMaterial = Number(this.costAnalysis?.materialCost || 0);
+    const summaryTax = Number(this.costAnalysis?.taxes || 0);
+    return summaryMaterial > 0 && summaryTax > 0 ? summaryTax / summaryMaterial : 0;
+  }
+
+  private get displayedTaxes(): number {
+    if (this.displayedMaterialCost > 0 && this.displayedSalesTaxRate > 0) {
+      return this.displayedMaterialCost * this.displayedSalesTaxRate;
+    }
+    return Number(this.costAnalysis?.taxes || 0);
+  }
+
+  get displayedPreTaxSubtotal(): number {
+    const explicit = Number(this.costAnalysis?.preTaxSubtotal || 0);
+    if (explicit > 0 && this.displayedCostToBuild <= 0) return explicit;
+
+    return (
+      this.displayedDirectAndInsurableSubtotal +
+      this.displayedOverheadProfit +
+      this.displayedContingencyAllowance +
+      this.displayedEscalationAllowance
+    );
+  }
+
+  get displayedTotalProjectCost(): number {
+    const recomputed = this.displayedPreTaxSubtotal + this.displayedTaxes;
+    if (recomputed > 0) return recomputed;
+    return Number(this.costAnalysis?.suggestedBid || 0);
+  }
+
+  get displayedSuggestedBid(): number {
+    const marketBid = Number(this.costAnalysis?.suggestedMarketBid || 0);
+    if (marketBid > 0) {
+      return Math.max(this.displayedTotalProjectCost, marketBid);
+    }
+    return this.displayedTotalProjectCost;
+  }
+
+  get displayedCostPerSqFt(): number {
+    const area = Number(
+      this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0,
+    );
+    if (area > 0 && this.displayedTotalProjectCost > 0) {
+      return this.displayedTotalProjectCost / area;
+    }
+    return Number(this.costAnalysis?.costPerSqFt || 0);
   }
 
   // Helpers
