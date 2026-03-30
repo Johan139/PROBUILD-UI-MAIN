@@ -267,6 +267,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly uiCacheVersion = 1 as const;
 
   private lastAuxLoadedJobId: number | null = null;
+  private lastCurrencySeededJobId: number | null = null;
 
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
@@ -1117,6 +1118,13 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       )
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
+        const currentJobId = Number(this.projectDetails?.jobId);
+        if (Number.isFinite(currentJobId) && this.lastCurrencySeededJobId !== currentJobId) {
+          // Seed a neutral default once per job switch to avoid stale symbol carry-over.
+          // The report parser result will replace this as soon as summary data loads.
+          setDefaultCurrencySymbol('$');
+          this.lastCurrencySeededJobId = currentJobId;
+        }
         const resolvedStatus =
           (this.projectDetails as any)?.status ?? (this.projectDetails as any)?.Status ?? '';
         this.determineProjectStage(String(resolvedStatus));

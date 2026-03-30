@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, HardHat, Store, Package, Users, ArrowLeft, Check, Edit, ClipboardList, DollarSign, UserCheck, UserPlus, TrendingUp, Star, Rocket, ArrowRight, RotateCcw, ChevronDown, Eye, EyeOff, MessageSquare, Building2, Truck, Send, X, Mail, Phone, Shield, CheckCircle2, Zap } from 'lucide-angular';
+import { LucideAngularModule, HardHat, Store, Package, Users, ArrowLeft, Check, Edit, ClipboardList, UserCheck, UserPlus, TrendingUp, Star, Rocket, ArrowRight, RotateCcw, ChevronDown, Eye, EyeOff, MessageSquare, Building2, Truck, Send, X, Mail, Phone, Shield, CheckCircle2, Zap } from 'lucide-angular';
 import { BomService, SaveTradePackageBidInvitesRequest } from '../../../services/bom.service';
 import { BiddingService } from '../../../../../services/bidding.service';
 import { UserService } from '../../../../../services/user.service';
@@ -12,8 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { ExternalCompanyWithContacts } from '../../../../../models/external-data';
-import { formatMoney } from '../../../../../shared/pipes/money.pipe';
-import { MoneyPipe } from '../../../../../shared/pipes/money.pipe';
+import { formatMoney, getDefaultCurrencySymbol, MoneyPipe } from '../../../../../shared/pipes/money.pipe';
 
   interface Bid {
       id: number;
@@ -94,7 +93,6 @@ export class JobInboundBiddingComponent implements OnInit {
   Check = Check;
   Edit = Edit;
   ClipboardList = ClipboardList;
-  DollarSign = DollarSign;
   UserCheck = UserCheck;
   UserPlus = UserPlus;
   TrendingUp = TrendingUp;
@@ -130,6 +128,10 @@ export class JobInboundBiddingComponent implements OnInit {
   private roundCurrency(value: number): number {
     if (!Number.isFinite(value)) return 0;
     return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  get displayCurrencySymbol(): string {
+    return getDefaultCurrencySymbol() || '$';
   }
 
   directInviteOpen = false;
