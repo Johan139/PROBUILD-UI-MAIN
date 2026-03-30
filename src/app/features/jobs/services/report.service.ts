@@ -953,9 +953,122 @@ export class ReportService {
         );
         if (!match || !match[1]) return null;
 
+        const rawPhase30 = String(match[1] || '').trim();
+
+        const extractLeadingJsonArray = (raw: string): string | null => {
+          const start = raw.indexOf('[');
+          if (start < 0) return null;
+          let depth = 0;
+          for (let i = start; i < raw.length; i++) {
+            const ch = raw[i];
+            if (ch === '[') depth++;
+            if (ch === ']') {
+              depth--;
+              if (depth === 0) {
+                return raw.slice(start, i + 1);
+              }
+            }
+          }
+          return null;
+        };
+
+        const extractMoneyFromJsonLine = (value: string): number => {
+          if (!value) return 0;
+          const m = String(value).match(/-?\d+(?:\.\d+)?/);
+          return m ? Number(m[0]) : 0;
+        };
+
+        // Fallback parser for when the phase 30 block isn't valid JSON.
+        // Some reports output: `[ ... ], "Terms_And_Conditions": ...` which breaks JSON.parse.
+        const parseLoosePhase30 = (): {
+          generalConditions: number;
+          permitsAdminFees: number;
+          insuranceBonds: number;
+          taxes: number;
+          suggestedBid: number;
+        } | null => {
+          const generalConditions = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Phase_Item"\s*:\s*"General\s*Conditions"[\s\S]*?"Amount"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Phase_Item"\s*:\s*"General\s*Conditions"[\s\S]*?"Amount"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const permitsAdminFees = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Permits\s*&\s*Admin\s*Fees[^\"]*"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Permits\s*&\s*Admin\s*Fees[^\"]*"[\s\S]*?"Total"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const insuranceBonds = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Insurance\s*&\s*Bonds"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Insurance\s*&\s*Bonds"[\s\S]*?"Total"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const taxes = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Category"\s*:\s*"Taxes"[\s\S]*?"Amount"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(/"VAT"[\s\S]*?"Total"\s*:\s*([\d.]+)/i)?.[1] ||
+              '',
+          );
+
+          // Not strictly required for the UI cards, but keep a best-effort.
+          const suggestedBid = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Grand\s*Total\s*Project\s*Bid\s*Price"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              '',
+          );
+
+          const any =
+            generalConditions > 0 ||
+            permitsAdminFees > 0 ||
+            insuranceBonds > 0 ||
+            taxes > 0 ||
+            suggestedBid > 0;
+
+          if (!any) {
+            return null;
+          }
+
+          const extracted = {
+            generalConditions,
+            permitsAdminFees,
+            insuranceBonds,
+            taxes,
+            suggestedBid,
+          };
+
+          console.info('[report][phase30] Loose extracted totals', extracted);
+
+          return extracted;
+        };
+
         try {
-          const parsed = JSON.parse(match[1]);
-          if (!Array.isArray(parsed)) return null;
+          // Many AI variants append extra fields after the array, making the block invalid JSON.
+          // Parse the leading array only.
+          const arrayJson = extractLeadingJsonArray(rawPhase30);
+          const parsed = JSON.parse(arrayJson || rawPhase30);
+          if (!Array.isArray(parsed)) {
+            const loose = parseLoosePhase30();
+            if (loose) {
+              return loose;
+            }
+            return null;
+          }
 
           const sumBy = (predicate: (row: any) => boolean): number =>
             parsed
@@ -966,28 +1079,80 @@ export class ReportService {
             (r) => String(r.Category || '').toLowerCase() === 'taxes',
           );
 
-          const generalConditions = sumBy(
-            (r) => String(r.Category || '').toLowerCase() === 'indirect costs',
+          // Phase 30 JSON uses Category = 'Indirect Costs' and can include nested
+          // Categorized_Materials for breakdowns.
+          const indirectRows = parsed.filter(
+            (r: any) => String(r?.Category || '').toLowerCase() === 'indirect costs',
           );
 
-          const feesAndInsurance = sumBy(
-            (r) => String(r.Category || '').toLowerCase() === 'fees & insurance',
-          );
+          const sumCategorizedMaterials = (
+            row: any,
+            predicate: (itemName: string) => boolean,
+          ): number => {
+            const materials = Array.isArray(row?.Categorized_Materials)
+              ? row.Categorized_Materials
+              : [];
+            return materials
+              .filter((m: any) => predicate(String(m?.Item || '').toLowerCase()))
+              .reduce((sum: number, m: any) => sum + Number(m?.Total || 0), 0);
+          };
+
+          let generalConditions = 0;
+          let permitsAdminFees = 0;
+          let insuranceBonds = 0;
+
+          indirectRows.forEach((row: any) => {
+            const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+
+            // General conditions variants: "General Conditions", "General Conditions & Site Services", etc.
+            if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+              generalConditions += Number(row?.Amount || 0);
+              return;
+            }
+
+            // Fees / permits / insurance often appear combined under one row. Classify by item keywords.
+            const looksLikePermitsOrInsurance =
+              phaseItem.includes('permit') ||
+              phaseItem.includes('admin') ||
+              phaseItem.includes('insurance') ||
+              phaseItem.includes('bond');
+
+            if (looksLikePermitsOrInsurance) {
+              const permits = sumCategorizedMaterials(row, (name) =>
+                name.includes('permit') || name.includes('admin'),
+              );
+              const insurance = sumCategorizedMaterials(row, (name) =>
+                name.includes('insurance') || name.includes('bond'),
+              );
+
+              if (permits > 0 || insurance > 0) {
+                permitsAdminFees += permits;
+                insuranceBonds += insurance;
+              } else {
+                // If we have no categorized breakdown, prefer to treat as permits/admin.
+                permitsAdminFees += Number(row?.Amount || 0);
+              }
+            }
+          });
 
           const total = parsed.reduce(
             (sum: number, row: any) => sum + Number(row?.Amount || 0),
             0,
           );
 
-          return {
+          const extracted = {
             generalConditions,
-            permitsAdminFees: feesAndInsurance,
-            insuranceBonds: 0,
+            permitsAdminFees,
+            insuranceBonds,
             taxes,
             suggestedBid: total,
           };
+
+          console.info('[report][phase30] JSON extracted totals', extracted);
+
+          return extracted;
         } catch {
-          return null;
+          return parseLoosePhase30();
         }
       };
 
@@ -995,7 +1160,7 @@ export class ReportService {
 
       const parseCurrency = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
-        const match = cleaned.match(/-?\$?\s*([\d,]+(?:\.\d+)?)/);
+        const match = cleaned.match(/-?(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)/i);
         return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
       };
 
@@ -1023,35 +1188,45 @@ export class ReportService {
 
       // Phase 30 formatted client quotation totals (authoritative for Bid Proposal Analysis popup)
       const reportTotalDirectIndirectCosts = extractValue(
-        /\|\s*\*\*Total\s*Direct\s*&\s*Indirect\s*Costs\*\*\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*\*\*Total\s*Direct\s*&\s*Indirect\s*Costs\*\*\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltTotalDirectIndirectCosts2 = extractValue(
+        /\|\s*Total\s*Direct\s*&\s*Indirect\s*Costs\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportOverheadProfit = extractValue(
-        /\|\s*GC\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*GC\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportContingency = extractValue(
-        /\|\s*Contingency\s*Reserve\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Contingency\s*Reserve\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportEscalation = extractValue(
-        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportPreTaxProjectCost = extractValue(
-        /\|\s*\*\*Total\s*Pre-?Tax\s*Project\s*Cost\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*Total\s*Pre-?Tax\s*Project\s*Cost\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
       const reportVatAmount = extractValue(
-        /\|\s*Value\s*Added\s*Tax\s*\(VAT\s*@\s*\d+(?:\.\d+)?%\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Value\s*Added\s*Tax\s*\(VAT\s*@\s*\d+(?:\.\d+)?%\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportGrandTotalBidPrice = extractValue(
-        /\|\s*\*\*GRAND\s*TOTAL\s*BID\s*PRICE\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*GRAND\s*TOTAL\s*BID\s*PRICE\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
 
       const reportAltSubtotalDirectIndirectCosts = extractValue(
-        /\|\s*Subtotal\s*\(Direct\s*Costs,[^\n]*?\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Subtotal\s*\(Direct\s*Costs,[^\n]*?\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltOverheadProfit = extractValue(
-        /\|\s*General\s*Contractor\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*General\s*Contractor\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltContingencyEscalation = extractValue(
-        /\|\s*Contingency\s*&\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Contingency\s*&\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltContingencyEscalation2 = extractValue(
+        /\|\s*Contingency\s*&\s*Escalation\s*Allowances\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+
+      const reportAltSubtotalPreTax = extractValue(
+        /\|\s*\*\*\s*Subtotal\s*\(\s*Pre-?Tax\s*\)\s*\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
       const reportAltTotalDirectCosts = extractValue(
         /\|\s*Total\s*Direct\s*Costs\s*\([^)]*\)\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
@@ -1075,7 +1250,11 @@ export class ReportService {
         /\|\s*Sales\s*Tax\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltGrandTotalBidPrice = extractValue(
-        /\|\s*\*\*Grand\s*Total\s*Project\s*Bid\s*Price\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*Grand\s*Total\s*Project\s*Bid\s*Price\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+
+      const reportAltGrandTotalBidPrice3 = extractValue(
+        /\|\s*\*\*\s*Grand\s*Total\s*Project\s*Bid\s*Price\s*\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
 
       // Phase 29 "Final Client Quotation" variant labels
@@ -1092,6 +1271,8 @@ export class ReportService {
       const finalReportTotalDirectIndirectCosts =
         reportTotalDirectIndirectCosts > 0
           ? reportTotalDirectIndirectCosts
+          : reportAltTotalDirectIndirectCosts2 > 0
+            ? reportAltTotalDirectIndirectCosts2
           : reportAltSubtotalDirectIndirectCosts > 0
             ? reportAltSubtotalDirectIndirectCosts
             : reportAltTotalDirectCosts > 0
@@ -1100,7 +1281,11 @@ export class ReportService {
       const finalReportOverheadProfit =
         reportOverheadProfit > 0 ? reportOverheadProfit : reportAltOverheadProfit;
       const finalReportContingency =
-        reportContingency > 0 ? reportContingency : reportAltContingencyEscalation;
+        reportContingency > 0
+          ? reportContingency
+          : reportAltContingencyEscalation > 0
+            ? reportAltContingencyEscalation
+            : reportAltContingencyEscalation2;
       const finalReportEscalation =
         reportEscalation > 0
           ? reportEscalation
@@ -1110,6 +1295,8 @@ export class ReportService {
       const finalReportPreTaxProjectCost =
         reportPreTaxProjectCost > 0
           ? reportPreTaxProjectCost
+          : reportAltSubtotalPreTax > 0
+            ? reportAltSubtotalPreTax
           : reportAltPreTaxProjectCost > 0
             ? reportAltPreTaxProjectCost
             : reportAltPreTaxProjectCost2 > 0
@@ -1128,6 +1315,8 @@ export class ReportService {
             ? reportAltGrandTotalBidPrice
             : reportAltGrandTotalBidPrice2 > 0
               ? reportAltGrandTotalBidPrice2
+              : reportAltGrandTotalBidPrice3 > 0
+                ? reportAltGrandTotalBidPrice3
               : reportAltGrandTotalProjectCost;
 
       const reportContingencyIncludesEscalation =
@@ -1449,7 +1638,9 @@ export class ReportService {
           ? insuranceBondsLoose
           : phase26InsuranceBonds > 0
           ? phase26InsuranceBonds
-          : 0;
+          : phase30?.insuranceBonds && phase30.insuranceBonds > 0
+            ? phase30.insuranceBonds
+            : 0;
       const finalDirectAndInsurableSubtotal =
         phase26DirectAndInsurableSubtotal > 0
           ? phase26DirectAndInsurableSubtotal
