@@ -1289,6 +1289,87 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private fingerprintScopeCostSummary(summary: any): string {
+    if (!summary) return '';
+    const pick = {
+      materialCost: Number(summary?.materialCost || 0),
+      laborCost: Number(summary?.laborCost || 0),
+      directSubtotal: Number(summary?.directSubtotal || 0),
+      generalConditions: Number(summary?.generalConditions || 0),
+      permitsAdminFees: Number(summary?.permitsAdminFees || 0),
+      insuranceBonds: Number(summary?.insuranceBonds || 0),
+      overhead: Number(summary?.overhead || 0),
+      contingency: Number(summary?.contingency || 0),
+      escalation: Number(summary?.escalation || 0),
+      taxes: Number(summary?.taxes || 0),
+      suggestedBid: Number(summary?.suggestedBid || 0),
+      suggestedMarketBid: Number(summary?.suggestedMarketBid || 0),
+      reportGrandTotalBidPrice: Number(summary?.reportGrandTotalBidPrice || 0),
+      reportPreTaxProjectCost: Number(summary?.reportPreTaxProjectCost || 0),
+    };
+    return JSON.stringify(pick);
+  }
+
+  private fingerprintScopeBomTotals(
+    totals: { materialCost: number; laborCost: number; directSubtotal: number } | null,
+  ): string {
+    if (!totals) return '';
+    return JSON.stringify({
+      materialCost: Number(totals.materialCost || 0),
+      laborCost: Number(totals.laborCost || 0),
+      directSubtotal: Number(totals.directSubtotal || 0),
+    });
+  }
+
+  private async refreshScopeInsightDataWithRetries(jobId: number): Promise<void> {
+    const jobIdStr = String(jobId);
+    const beforeSummary = this.fingerprintScopeCostSummary(this.scopeCostSummary);
+    const beforeBom = this.fingerprintScopeBomTotals(this.scopeBomTotals);
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        const [summary, bomResults, permitWeeks, materialWeeks] = await Promise.all([
+          this.reportService.getDetailedCostSummary(jobIdStr),
+          firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
+          this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
+          this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
+        ]);
+
+        const bomTotals = this.extractScopeBomTotals(bomResults);
+        const afterSummary = this.fingerprintScopeCostSummary(summary);
+        const afterBom = this.fingerprintScopeBomTotals(bomTotals);
+
+        this.scopeCostSummary = summary || null;
+        this.scopeBomTotals = bomTotals;
+        this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
+          ? Number(permitWeeks)
+          : null;
+        this.scopeMaterialLeadTimeWeeks = Number.isFinite(Number(materialWeeks))
+          ? Number(materialWeeks)
+          : null;
+        this.cdr.detectChanges();
+
+        // If the backend had not yet persisted the new results, we often get the same
+        // cost summary payload again. Keep polling briefly until it changes.
+        const changed =
+          (afterSummary && afterSummary !== beforeSummary) ||
+          (afterBom && afterBom !== beforeBom);
+
+        if (changed) {
+          return;
+        }
+      } catch {
+        // ignore; retry
+      }
+
+      await this.sleep(900 + attempt * 250);
+    }
+  }
+
   private extractScopeBomTotals(bomResults: any): {
     materialCost: number;
     laborCost: number;
@@ -2246,19 +2327,23 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  onAnalysisComplete() {
-      const jobId = Number(this.projectDetails?.jobId);
-      if (!Number.isFinite(jobId)) {
-        this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
-          duration: 3000,
-        });
-        return;
-      }
+  async onAnalysisComplete() {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
 
-      this.projectStage = 'PRELIMINARY_SCOPE';
-      this.stageDisplayMode = 'stage';
+    // Refresh persisted analysis outputs before advancing stage.
+    // This prevents stale values that only correct after a full page reload.
+    await this.refreshScopeInsightDataWithRetries(jobId);
 
-      this.updateJobStatus('PRELIMINARY_SCOPE');
+    this.projectStage = 'PRELIMINARY_SCOPE';
+    this.stageDisplayMode = 'stage';
+
+    this.updateJobStatus('PRELIMINARY_SCOPE');
   }
 
   onJobGranted() {
