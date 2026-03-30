@@ -512,6 +512,32 @@ export class ProjectOverviewComponent {
         // Guardrail: never show client bid below total project cost
         this.bidPrice = Math.max(this.totalProjectCost, marketBid);
 
+        // Some reports/flows provide per-sq-ft figures (e.g. $215.50) in bid fields.
+        // If bidPrice is implausibly low compared to the overall totals, fall back
+        // to the best-known total so profitability calculations don't explode.
+        const overallTotal = this.overallBudgetValue;
+        const details: any = this.projectDetails as any;
+        const detailsTotal = Number(
+          details?.budget ||
+            details?.projectBudget ||
+            details?.totalProjectCost ||
+            details?.suggestedBid ||
+            details?.suggestedMarketBid ||
+            details?.costAnalysis?.suggestedBid ||
+            details?.costAnalysis?.suggestedMarketBid ||
+            0,
+        );
+        const expectedTotal = Math.max(
+          this.activeValue,
+          detailsTotal,
+          this.totalProjectCost,
+          marketBid,
+          overallTotal,
+        );
+        if (expectedTotal > 0 && this.bidPrice > 0 && this.bidPrice < expectedTotal * 0.1) {
+          this.bidPrice = expectedTotal;
+        }
+
         // Baseline for profitability should represent build cost, not client bid.
         this.baselineCost =
           this.costToBuild || Number(summary.directSubtotal || 0);
@@ -729,11 +755,8 @@ export class ProjectOverviewComponent {
 
   get overallBudgetValue(): number {
     const directTotal = Number(this.totalProjectCost || 0);
-    if (directTotal > 0) return directTotal;
 
     const fromActive = Number(this.activeValue || 0);
-    if (fromActive > 0) return fromActive;
-
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
       details?.budget ||
@@ -745,6 +768,18 @@ export class ProjectOverviewComponent {
         details?.costAnalysis?.suggestedMarketBid ||
         0,
     );
+
+    const comparisonBase = Math.max(fromActive, fromProjectDetails);
+    if (directTotal > 0) {
+      // Guard: if directTotal looks like a per-sq-ft number (e.g. $215.50) while we have
+      // a much larger active/project total, ignore directTotal.
+      if (comparisonBase <= 0 || directTotal >= comparisonBase * 0.1) {
+        return directTotal;
+      }
+    }
+
+    if (fromActive > 0) return fromActive;
+
     if (fromProjectDetails > 0) return fromProjectDetails;
 
     // As a last resort, use the bid price if we have it.

@@ -516,7 +516,61 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.totalProjectCost;
   }
 
+  private resolveBidPricing(): {
+    bidToClient: number;
+    baseCosts: number;
+    overheadProfit: number;
+    contingency: number;
+    escalation: number;
+    taxes: number;
+  } {
+    const summary: any = this.scopeCostSummary || {};
+
+    const reportBid = Number(summary?.reportGrandTotalBidPrice || 0);
+    const reportBase = Number(summary?.reportTotalDirectIndirectCosts || 0);
+    const reportOverheadProfit = Number(summary?.reportOverheadProfit || 0);
+    const reportContingency = Number(summary?.reportContingency || 0);
+    const reportEscalation = Number(summary?.reportEscalation || 0);
+    const reportTaxes = Number(summary?.reportVatAmount || 0);
+    const reportPreTax = Number(summary?.reportPreTaxProjectCost || 0);
+    const reportContingencyIncludesEscalation =
+      Boolean(summary?.reportContingencyIncludesEscalation);
+
+    const computedReportBid = reportPreTax > 0 ? reportPreTax + Math.max(reportTaxes, 0) : 0;
+
+    const bidToClient =
+      reportBid > 0 ? reportBid : computedReportBid > 0 ? computedReportBid : this.suggestedBid;
+
+    const baseCosts = reportBase > 0 ? reportBase : this.costToBuild;
+    const overheadProfit = reportOverheadProfit > 0 ? reportOverheadProfit : this.overheadProfit;
+    const contingency = reportContingency > 0 ? reportContingency : this.contingencyAllowance;
+    const escalation = reportContingencyIncludesEscalation
+      ? 0
+      : reportEscalation > 0
+        ? reportEscalation
+        : this.escalationAllowance;
+    const taxes = reportTaxes > 0 ? reportTaxes : this.taxesAllowance;
+
+    return {
+      bidToClient,
+      baseCosts,
+      overheadProfit,
+      contingency,
+      escalation,
+      taxes,
+    };
+  }
+
+  get clientBidPrice(): number {
+    return this.resolveBidPricing().bidToClient;
+  }
+
   get bidNetProfitMarginPercent(): number {
+    const resolved = this.resolveBidPricing();
+    if (resolved.bidToClient > 0 && resolved.overheadProfit > 0) {
+      return (resolved.overheadProfit / resolved.bidToClient) * 100;
+    }
+
     if (this.suggestedBid <= 0) return 0;
     const fullyLoadedCost =
       this.costToBuild +
@@ -622,7 +676,18 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get salesTaxPct(): number {
-    return this.resolvedSalesTaxRate * 100;
+    const fromSummary = Number(this.scopeCostSummary?.salesTaxPct || 0);
+    if (fromSummary > 0) return fromSummary;
+
+    const explicit = this.resolvedSalesTaxRate * 100;
+    if (explicit > 0) return explicit;
+
+    const base = Number(this.scopeCostSummary?.preTaxSubtotal || 0) || this.preTaxSubtotal;
+    if (base > 0 && this.taxesAllowance > 0) {
+      return (this.taxesAllowance / base) * 100;
+    }
+
+    return 0;
   }
 
   get preTaxSubtotal(): number {
@@ -631,9 +696,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get taxesAllowance(): number {
     if (this.hasBomDirectCosts && this.materialsCost > 0) {
-      return this.materialsCost * this.resolvedSalesTaxRate;
+      const computed = this.materialsCost * this.resolvedSalesTaxRate;
+      if (computed > 0) return computed;
     }
-    return Number(this.scopeCostSummary?.taxes || 0);
+    const taxes = Number(this.scopeCostSummary?.taxes || 0);
+    if (taxes > 0) return taxes;
+    return 0;
   }
 
   get costPerSqFt(): number {
@@ -1711,32 +1779,39 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openBidPriceDialog(): void {
-    const grossMargin = this.suggestedBid - this.costToBuild;
-    const grossMarginPercent = this.suggestedBid > 0 ? (grossMargin / this.suggestedBid) * 100 : 0;
-    const markupOnCostPercent = this.costToBuild > 0 ? ((this.suggestedBid / this.costToBuild) - 1) * 100 : 0;
-    const fullyLoadedCost =
-      this.costToBuild +
-      this.overheadProfit +
-      this.contingencyAllowance +
-      this.escalationAllowance +
-      this.taxesAllowance;
-    const totalCostBasis = fullyLoadedCost > 0 ? fullyLoadedCost : this.totalProjectCost;
-    const riskExposure = this.suggestedBid - totalCostBasis;
-    const netContractorProfit = riskExposure;
+    const resolved = this.resolveBidPricing();
+
+    const recommendedBid = resolved.bidToClient;
+    const costToBuild = resolved.baseCosts;
+    const overheadProfit = resolved.overheadProfit;
+    const contingencyAllowance = resolved.contingency;
+    const escalationAllowance = resolved.escalation;
+    const taxesAllowance = resolved.taxes;
+
+    const grossMargin = recommendedBid - costToBuild;
+    const grossMarginPercent = recommendedBid > 0 ? (grossMargin / recommendedBid) * 100 : 0;
+    const markupOnCostPercent = costToBuild > 0 ? ((recommendedBid / costToBuild) - 1) * 100 : 0;
+
+    // Net contractor profit in the full report corresponds to the OH&P line.
+    // Therefore, exclude overheadProfit from the cost basis when computing profit.
+    const totalCostBasis = costToBuild + contingencyAllowance + escalationAllowance + taxesAllowance;
+    const riskExposure = recommendedBid - totalCostBasis;
+    const netContractorProfit = overheadProfit > 0 ? overheadProfit : riskExposure;
     const netProfitMarginPercent =
-      this.suggestedBid > 0 ? (netContractorProfit / this.suggestedBid) * 100 : 0;
-    const returnOnCostPercent =
-      this.costToBuild > 0 ? (netContractorProfit / this.costToBuild) * 100 : 0;
+      recommendedBid > 0
+        ? ((overheadProfit > 0 ? overheadProfit : netContractorProfit) / recommendedBid) * 100
+        : 0;
+    const returnOnCostPercent = costToBuild > 0 ? (netContractorProfit / costToBuild) * 100 : 0;
     const size = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
 
     const data: BidPriceDialogData = {
-      suggestedBid: this.suggestedBid,
-      costToBuild: this.costToBuild,
+      suggestedBid: recommendedBid,
+      costToBuild,
       totalProjectCost: this.totalProjectCost,
-      overheadProfit: this.overheadProfit,
-      contingencyAllowance: this.contingencyAllowance,
-      escalationAllowance: this.escalationAllowance,
-      taxesAllowance: this.taxesAllowance,
+      overheadProfit,
+      contingencyAllowance,
+      escalationAllowance,
+      taxesAllowance,
       grossMargin,
       grossMarginPercent,
       markupOnCostPercent,
@@ -1747,7 +1822,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       marketRangeLow: this.marketRangeLow,
       marketRangeHigh: this.marketRangeHigh,
       costPerSqFt: this.costPerSqFt,
-      bidPerSqFtText: size > 0 ? formatMoney(this.suggestedBid / size, true, 2) : 'N/A',
+      bidPerSqFtText: size > 0 ? formatMoney(recommendedBid / size, true, 2) : 'N/A',
     };
 
     this.dialog.open(BidPriceDialogComponent, {
