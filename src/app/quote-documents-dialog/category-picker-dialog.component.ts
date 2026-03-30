@@ -25,13 +25,13 @@ import { MatButtonModule } from '@angular/material/button';
 ],
   template: `
     <h2 mat-dialog-title>Generate Quote</h2>
-    
+
     <mat-dialog-content style="min-height: 200px; padding: 20px;">
       <mat-radio-group [(ngModel)]="mode">
         <mat-radio-button value="PROJECT"> Whole Project </mat-radio-button>
         <mat-radio-button value="PHASE"> Specific Phase(s) </mat-radio-button>
       </mat-radio-group>
-    
+
       @if (mode === 'PHASE' && safePhaseList.length > 0) {
         <mat-form-field
           appearance="outline"
@@ -39,7 +39,7 @@ import { MatButtonModule } from '@angular/material/button';
           >
           <mat-label>Select Phase</mat-label>
           <mat-select [(ngModel)]="selectedPhases" multiple>
-            @for (phase of safePhaseList ?? []; track phase) {
+            @for (phase of safePhaseList; track phase) {
               <mat-option
                 [value]="phase.phase"
                 >
@@ -50,7 +50,7 @@ import { MatButtonModule } from '@angular/material/button';
         </mat-form-field>
       }
     </mat-dialog-content>
-    
+
     <mat-dialog-actions align="end" class="dialog-actions">
       <button mat-button class="btn btn-secondary" (click)="cancel()">Cancel</button>
       <button

@@ -456,8 +456,8 @@
                           </div>
                           <!-- Rows -->
                           @for (
-                            row of quoteRowsAsFormGroups; track trackByIndex(i,
-                            row); let i = $index) {
+                            row of quoteRowsAsFormGroups; track trackByIndex($index);
+                            let i = $index) {
                             <div
                               class="line-item-row"
                               [formGroupName]="i"

@@ -28,7 +28,7 @@
 
     <mat-card-content>
       <!-- CURRENT WEATHER -->
-      @if (forecast?.length) {
+      @if (forecast.length) {
         <div class="current-weather">
           <div class="left">
             <div class="location">{{ locationLabel }}</div>
@@ -62,7 +62,7 @@
         }
 
         <!-- FORECAST -->
-        @if (forecast?.length) {
+        @if (forecast.length) {
           <div class="forecast-scroll">
             @for (day of forecast | slice: 0 : 5; track day) {
               <div class="forecast-tile">
