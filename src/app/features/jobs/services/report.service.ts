@@ -939,6 +939,28 @@ export class ReportService {
       }
       const fullResponse = results[0].fullResponse;
 
+      const detectCurrencySymbol = (text: string): string => {
+        const raw = String(text || '');
+
+        // Prefer explicit ISO code markers.
+        if (/\bZAR\b/i.test(raw)) return 'R';
+        if (/\bUSD\b/i.test(raw)) return '$';
+        if (/\bGBP\b/i.test(raw)) return '£';
+        if (/\bEUR\b/i.test(raw)) return '€';
+
+        // Fall back to symbol detection.
+        if (/€\s*\d/.test(raw) || /\d\s*€/.test(raw)) return '€';
+        if (/£\s*\d/.test(raw) || /\d\s*£/.test(raw)) return '£';
+
+        // South African Rand reports often include "R 12,345" and VAT references.
+        if (/\bR\s*\d{1,3}(?:[\s,]\d{3})*(?:\.\d+)?\b/.test(raw)) return 'R';
+
+        // Default to USD symbol (also used in several existing reports).
+        return '$';
+      };
+
+      const currencySymbol = detectCurrencySymbol(fullResponse);
+
       const extractPhase30QuotationData = (response: string): {
         generalConditions: number;
         permitsAdminFees: number;
@@ -1722,6 +1744,7 @@ export class ReportService {
       }
 
       return {
+        currencySymbol,
         materialCost: finalMaterialCost,
         laborCost: finalLaborCost,
         directSubtotal: finalDirectSubtotal, // Cost to Build

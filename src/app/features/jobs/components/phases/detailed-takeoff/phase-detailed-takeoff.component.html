@@ -352,24 +352,116 @@
           ></div>
         </div>
       </section>
-      <section class="ve-card">
-        <button type="button" class="ve-toggle" (click)="toggleVeOpen()">
-          <div class="ve-header">
-            <div>
-              <h3>
-                <span class="ve-icon-badge">
-                  <lucide-icon name="zap" class="ve-zap"></lucide-icon>
-                </span>
-                Value Engineering Options
-              </h3>
-              <p>
-                Select options to reduce costs without significantly compromising
-                quality.
-              </p>
+    </ng-template>
+  </ng-container>
+
+  <ng-template #nonEstimationTabs>
+    <div class="scope-pane" *ngIf="activeTab === 'overview'">
+      <div class="hero-grid">
+        <button
+          type="button"
+          class="hero-card budget-card"
+          (click)="overallBudgetClick.emit()"
+        >
+          <div class="card-top">
+            <div class="icon-wrapper yellow">
+              <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
             </div>
-            <div class="text-right">
-              <p class="mini-label">Potential Savings</p>
-              <p class="phase-total">{{ totalVeSavings | money : true : 2 }}</p>
+            <p class="card-label">Overall Budget</p>
+            <p class="card-value">
+              <ng-container *ngIf="!isSummaryLoading; else overallBudgetLoading">
+                {{ overallBudgetValue | money : true : 2 }}
+              </ng-container>
+              <ng-template #overallBudgetLoading>--</ng-template>
+            </p>
+          </div>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Spent to Date</span>
+              <strong>{{
+                !isSummaryLoading ? (spentToDate | money : true : 2) : '--'
+              }}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div
+                class="progress-fill budget"
+                [style.width.%]="overallBudgetProgressPercent"
+              ></div>
+            </div>
+            <div class="progress-row">
+              <span>Remaining</span>
+              <strong>{{
+                !isSummaryLoading ? (overallRemainingBudget | money : true : 2) : '--'
+              }}</strong>
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          class="hero-card timeline-card"
+          (click)="overallTimelineClick.emit()"
+        >
+          <div class="card-top">
+            <div class="icon-wrapper blue">
+              <lucide-icon name="clock" class="icon-blue"></lucide-icon>
+            </div>
+            <p class="card-label">Overall Timeline</p>
+            <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
+          </div>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Progress</span>
+              <strong
+                >Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong
+              >
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div
+                class="progress-fill timeline"
+                [style.width.%]="timelineProgressPercent"
+              ></div>
+            </div>
+            <div class="progress-row">
+              <span>Est. Completion</span>
+              <strong>{{ estimatedCompletionDate | date: "MMM d, y" }}</strong>
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          class="hero-card bid-card"
+          (click)="bidPriceClick.emit()"
+        >
+          <div class="card-top">
+            <div class="icon-wrapper green">
+              <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
+            </div>
+            <p class="card-label">Bid Price (Client)</p>
+            <p class="card-value">
+              <ng-container *ngIf="!isSummaryLoading; else bidPriceLoading">
+                {{ bidPriceValue | money : true : 2 }}
+              </ng-container>
+              <ng-template #bidPriceLoading>--</ng-template>
+            </p>
+          </div>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Gross Profit</span>
+              <strong>{{
+                !isSummaryLoading ? (bidGrossProfit | money : true : 2) : '--'
+              }}</strong>
+            </div>
+            <div class="progress-row">
+              <span>Profit Margin</span>
+              <strong>{{ bidProfitMarginPercent | number: "1.1-1" }}%</strong>
+            </div>
+            <div class="progress-row">
+              <span>Exposure</span>
+              <strong>{{
+                !isSummaryLoading ? (bidExposureValue | money : true : 2) : '--'
+              }}</strong>
             </div>
           </div>
           <span class="ve-caret" [class.is-open]="veOpen">⌄</span>

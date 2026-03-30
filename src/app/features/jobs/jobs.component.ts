@@ -73,7 +73,7 @@ import { JobAssignmentService } from './job-assignment/job-assignment.service';
 import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
-import { formatMoney } from '../../shared/pipes/money.pipe';
+import { formatMoney, setDefaultCurrencySymbol } from '../../shared/pipes/money.pipe';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 import {
   MeasurementService,
@@ -1264,6 +1264,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     ])
       .then(([summary, bomResults, permitWeeks, materialWeeks]) => {
         this.scopeCostSummary = summary || null;
+        const currencySymbol = (summary as any)?.currencySymbol;
+        if (currencySymbol) {
+          setDefaultCurrencySymbol(String(currencySymbol));
+        }
         this.scopeBomTotals = this.extractScopeBomTotals(bomResults);
         this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
           ? Number(permitWeeks)
@@ -1337,6 +1341,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         const afterBom = this.fingerprintScopeBomTotals(bomTotals);
 
         this.scopeCostSummary = summary || null;
+        const currencySymbol = (summary as any)?.currencySymbol;
+        if (currencySymbol) {
+          setDefaultCurrencySymbol(String(currencySymbol));
+        }
         this.scopeBomTotals = bomTotals;
         this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
           ? Number(permitWeeks)

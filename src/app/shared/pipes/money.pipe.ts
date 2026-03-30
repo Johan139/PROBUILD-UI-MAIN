@@ -1,9 +1,20 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
+let defaultCurrencySymbol = '$';
+
+export function setDefaultCurrencySymbol(symbol: string): void {
+  defaultCurrencySymbol = symbol || '$';
+}
+
+export function getDefaultCurrencySymbol(): string {
+  return defaultCurrencySymbol;
+}
+
 export function formatMoney(
   value: number | string | null | undefined,
   withSymbol: boolean = true,
   fractionDigits: number = 2,
+  currencySymbol?: string,
 ): string {
   if (value == null || value === '') {
     return '';
@@ -15,7 +26,11 @@ export function formatMoney(
     parsed = value;
   } else {
     // Handle pre-formatted currency strings like "$936,940.59"
-    const cleaned = value.replace(/^\$/, '').replace(/,/g, '');
+    const cleaned = value
+      .replace(/^\$/, '')
+      .replace(/^ZAR\s*/i, '')
+      .replace(/^R\s*/i, '')
+      .replace(/,/g, '');
     parsed = Number(cleaned);
   }
 
@@ -33,7 +48,7 @@ export function formatMoney(
   const formatted = decPart != null ? `${intPart}.${decPart}` : intPart;
 
   const sign = isNegative ? '-' : '';
-  const symbol = withSymbol ? '$' : '';
+  const symbol = withSymbol ? (currencySymbol ?? defaultCurrencySymbol) : '';
 
   return `${sign}${symbol}${formatted}`;
 }
@@ -42,17 +57,33 @@ export function formatMoneyInText(
   text: string | null | undefined,
   withSymbol: boolean = true,
   fractionDigits: number = 2,
+  currencySymbol?: string,
 ): string {
   if (!text) return '';
-  
-  // Match dollar amounts with commas: $1,234.56 or $12,345.67
-  return text.replace(/\$([\d,]+(?:\.\d{2})?)/g, (match, amountStr) => {
-    const numericValue = parseFloat(amountStr.replace(/,/g, ''));
-    if (!isNaN(numericValue) && numericValue >= 0) {
-      return formatMoney(numericValue, withSymbol, fractionDigits);
-    }
-    return match;
-  });
+
+  // Match money values in text (currently supports $ and ZAR/R prefixes).
+  return text
+    .replace(/\$([\d,]+(?:\.\d{2})?)/g, (match, amountStr) => {
+      const numericValue = parseFloat(amountStr.replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        return formatMoney(numericValue, withSymbol, fractionDigits, currencySymbol);
+      }
+      return match;
+    })
+    .replace(/\bZAR\s*([\d,]+(?:\.\d{2})?)\b/gi, (match, amountStr) => {
+      const numericValue = parseFloat(amountStr.replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        return formatMoney(numericValue, withSymbol, fractionDigits, currencySymbol);
+      }
+      return match;
+    })
+    .replace(/\bR\s*([\d,]+(?:\.\d{2})?)\b/g, (match, amountStr) => {
+      const numericValue = parseFloat(amountStr.replace(/,/g, ''));
+      if (!isNaN(numericValue) && numericValue >= 0) {
+        return formatMoney(numericValue, withSymbol, fractionDigits, currencySymbol);
+      }
+      return match;
+    });
 }
 
 @Pipe({
@@ -64,8 +95,9 @@ export class MoneyPipe implements PipeTransform {
     value: number | string | null | undefined,
     withSymbol: boolean = true,
     fractionDigits: number = 2,
+    currencySymbol?: string,
   ): string {
-    return formatMoney(value, withSymbol, fractionDigits);
+    return formatMoney(value, withSymbol, fractionDigits, currencySymbol);
   }
 }
 
@@ -78,7 +110,8 @@ export class MoneyInTextPipe implements PipeTransform {
     text: string | null | undefined,
     withSymbol: boolean = true,
     fractionDigits: number = 2,
+    currencySymbol?: string,
   ): string {
-    return formatMoneyInText(text, withSymbol, fractionDigits);
+    return formatMoneyInText(text, withSymbol, fractionDigits, currencySymbol);
   }
 }

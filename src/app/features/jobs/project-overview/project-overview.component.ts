@@ -131,6 +131,7 @@ export class ProjectOverviewComponent {
   bidPrice: number = 0;
   totalProjectCost: number = 0;
   costToBuild: number = 0;
+  isFinancialLoading: boolean = false;
   grossProfit: number = 0;
   profitMargin: number = 0;
   profitAtRisk: number = 0;
@@ -283,6 +284,9 @@ export class ProjectOverviewComponent {
     this.loadFromCache();
 
     const jobId = this.projectDetails.jobId;
+
+    // Prevent cached financial values from flashing while fresh totals load.
+    this.isFinancialLoading = true;
 
     this.isSummaryLoading = true;
     this.reportService
@@ -495,15 +499,17 @@ export class ProjectOverviewComponent {
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    this.reportService.getDetailedCostSummary(jobId).then((summary) => {
-      if (summary) {
-        this.costToBuild = Number(summary.directSubtotal || 0);
-        if (this.costToBuild <= 0) {
-          this.costToBuild =
-            Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
-        }
-        this.totalProjectCost = Number(summary.suggestedBid || 0);
-        const marketBid = Number(summary.suggestedMarketBid || 0);
+    this.reportService
+      .getDetailedCostSummary(jobId)
+      .then((summary) => {
+        if (summary) {
+          this.costToBuild = Number(summary.directSubtotal || 0);
+          if (this.costToBuild <= 0) {
+            this.costToBuild =
+              Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
+          }
+          this.totalProjectCost = Number(summary.suggestedBid || 0);
+          const marketBid = Number(summary.suggestedMarketBid || 0);
 
         // Align with preliminary semantics:
         // - Total Project Cost = suggestedBid
@@ -545,9 +551,15 @@ export class ProjectOverviewComponent {
         this.escalation = Number(summary.escalation || 0);
         this.taxes = Number(summary.taxes || 0);
 
-        this.calculateProfitMetrics();
-      }
-    });
+          this.calculateProfitMetrics();
+        }
+      })
+      .catch(() => {
+        // keep cached values; just stop loading state
+      })
+      .finally(() => {
+        this.isFinancialLoading = false;
+      });
 
     this.bidsService.getBidsForJob(jobId).subscribe({
       next: (bids) => {
