@@ -516,6 +516,18 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.totalProjectCost;
   }
 
+  get bidNetProfitMarginPercent(): number {
+    if (this.suggestedBid <= 0) return 0;
+    const fullyLoadedCost =
+      this.costToBuild +
+      this.overheadProfit +
+      this.contingencyAllowance +
+      this.escalationAllowance +
+      this.taxesAllowance;
+    const netProfit = this.suggestedBid - fullyLoadedCost;
+    return (netProfit / this.suggestedBid) * 100;
+  }
+
   get costToBuild(): number {
     const bomSubtotal = Number(this.scopeBomTotals?.directSubtotal || 0);
     if (bomSubtotal > 0) return bomSubtotal;
@@ -614,23 +626,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get preTaxSubtotal(): number {
-    if (this.hasBomDirectCosts) {
-      return (
-        this.directAndInsurableSubtotal +
-        this.overheadProfit +
-        this.contingencyAllowance +
-        this.escalationAllowance
-      );
-    }
-
-    const fromSummary = Number(this.scopeCostSummary?.preTaxSubtotal || 0);
-    if (fromSummary > 0) return fromSummary;
-    return (
-      this.directAndInsurableSubtotal +
-      this.overheadProfit +
-      this.contingencyAllowance +
-      this.escalationAllowance
-    );
+    return this.directAndInsurableSubtotal;
   }
 
   get taxesAllowance(): number {
@@ -1600,12 +1596,6 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       permitsAdminFees: this.permitsAdminFees,
       insuranceBonds: this.insuranceBonds,
       directAndInsurableSubtotal: this.directAndInsurableSubtotal,
-      overheadProfit: this.overheadProfit,
-      overheadPct: this.overheadPct,
-      contingencyAllowance: this.contingencyAllowance,
-      contingencyPct: this.contingencyPct,
-      escalationAllowance: this.escalationAllowance,
-      preTaxSubtotal: this.preTaxSubtotal,
       taxesAllowance: this.taxesAllowance,
       salesTaxPct: this.salesTaxPct,
       totalProjectCost: this.totalProjectCost,
@@ -1732,9 +1722,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.taxesAllowance;
     const totalCostBasis = fullyLoadedCost > 0 ? fullyLoadedCost : this.totalProjectCost;
     const riskExposure = this.suggestedBid - totalCostBasis;
-    // Net contractor profit in this dialog follows user-facing bid economics:
-    // bid to client less direct costs.
-    const netContractorProfit = this.suggestedBid - this.costToBuild;
+    const netContractorProfit = riskExposure;
     const netProfitMarginPercent =
       this.suggestedBid > 0 ? (netContractorProfit / this.suggestedBid) * 100 : 0;
     const returnOnCostPercent =

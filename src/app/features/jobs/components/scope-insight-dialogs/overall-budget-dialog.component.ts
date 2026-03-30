@@ -17,12 +17,6 @@ export interface OverallBudgetDialogData {
   permitsAdminFees: number;
   insuranceBonds: number;
   directAndInsurableSubtotal: number;
-  overheadProfit: number;
-  overheadPct: number;
-  contingencyAllowance: number;
-  contingencyPct: number;
-  escalationAllowance: number;
-  preTaxSubtotal: number;
   taxesAllowance: number;
   salesTaxPct: number;
   totalProjectCost: number;
@@ -99,36 +93,6 @@ export interface OverallBudgetDialogData {
               <strong>{{
                 data.directAndInsurableSubtotal | money: true : 2
               }}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="scope-modal-section">
-          <p class="scope-modal-section-title">Markups & Contingencies</p>
-          <div class="scope-stat-list">
-            <div class="scope-stat-row">
-              <span
-                >GC Overhead & Profit ({{
-                  data.overheadPct | number: '1.0-2'
-                }}%)</span
-              >
-              <strong>{{ data.overheadProfit | money: true : 2 }}</strong>
-            </div>
-            <div class="scope-stat-row">
-              <span
-                >Contingency Allowance ({{
-                  data.contingencyPct | number: '1.0-2'
-                }}%)</span
-              >
-              <strong>{{ data.contingencyAllowance | money: true : 2 }}</strong>
-            </div>
-            <div class="scope-stat-row">
-              <span>Cost Escalation Allowance</span>
-              <strong>{{ data.escalationAllowance | money: true : 2 }}</strong>
-            </div>
-            <div class="scope-stat-row total">
-              <span>Subtotal (Pre-Tax Cost)</span>
-              <strong>{{ data.preTaxSubtotal | money: true : 2 }}</strong>
             </div>
           </div>
         </section>
