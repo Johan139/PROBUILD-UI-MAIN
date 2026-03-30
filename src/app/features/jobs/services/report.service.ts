@@ -941,12 +941,48 @@ export class ReportService {
 
       const detectCurrencySymbol = (text: string): string => {
         const raw = String(text || '');
+        const normalized = raw.toLowerCase();
 
         // Prefer explicit ISO code markers.
         if (/\bZAR\b/i.test(raw)) return 'R';
         if (/\bUSD\b/i.test(raw)) return '$';
         if (/\bGBP\b/i.test(raw)) return '£';
         if (/\bEUR\b/i.test(raw)) return '€';
+
+        // If ISO markers are absent, infer from extracted report location.
+        // We intentionally check for location before symbol fallback so
+        // location-driven reports still get the correct display currency.
+        const southAfricaLocationHints = [
+          'south africa',
+          'johannesburg',
+          'sandton',
+          'pretoria',
+          'cape town',
+          'durban',
+        ];
+        if (southAfricaLocationHints.some((hint) => normalized.includes(hint))) {
+          return 'R';
+        }
+
+        const ukLocationHints = ['united kingdom', ' uk ', ' england', ' london'];
+        if (ukLocationHints.some((hint) => normalized.includes(hint))) {
+          return '£';
+        }
+
+        const euroLocationHints = [
+          'eurozone',
+          'germany',
+          'france',
+          'spain',
+          'italy',
+          'netherlands',
+          'portugal',
+          'belgium',
+          'austria',
+        ];
+        if (euroLocationHints.some((hint) => normalized.includes(hint))) {
+          return '€';
+        }
 
         // Fall back to symbol detection.
         if (/€\s*\d/.test(raw) || /\d\s*€/.test(raw)) return '€';
