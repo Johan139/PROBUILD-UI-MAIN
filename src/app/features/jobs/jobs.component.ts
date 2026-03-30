@@ -265,6 +265,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private pollingSubscription: Subscription | null = null;
   private destroyRef = inject(DestroyRef);
   private readonly uiCacheVersion = 1 as const;
+  private readonly uiStateCacheTtlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+  private readonly teamCacheTtlMs = 15 * 60 * 1000; // 15 minutes
 
   private lastAuxLoadedJobId: number | null = null;
   private lastCurrencySeededJobId: number | null = null;
@@ -924,17 +926,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   loadAssignedTeam(): void {
     if (!this.projectDetails?.jobId) return;
 
-    // Stale-While-Revalidate: Load from Local Storage first
-    const storageKey = `team_${this.projectDetails.jobId}`;
-    if (this.isBrowser) {
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        try {
-          this.assignedTeamMembers = JSON.parse(cached);
-        } catch (e) {
-          // console.error('Error parsing cached team data', e);
-        }
-      }
+    // Stale-While-Revalidate: load cached team first.
+    const storageKey = this.getTeamCacheKey(this.projectDetails.jobId);
+    const cachedTeam = this.jobCache.get<JobUser[]>(storageKey);
+    if (cachedTeam) {
+      this.assignedTeamMembers = cachedTeam;
     }
 
     this.isLoadingTeam = true;
@@ -944,15 +940,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         const assignment = assignments.find((a) => a.id === jobId);
         if (assignment && assignment.jobUser) {
           this.assignedTeamMembers = assignment.jobUser;
-          // Update Local Storage with fresh data
-          if (this.isBrowser) {
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify(this.assignedTeamMembers),
-            );
-          }
+          this.jobCache.set(storageKey, this.assignedTeamMembers, {
+            ttlMs: this.teamCacheTtlMs,
+          });
         } else {
           this.assignedTeamMembers = [];
+          this.jobCache.remove(storageKey);
         }
         this.isLoadingTeam = false;
         this.cdr.detectChanges();
@@ -1228,6 +1221,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `job_ui_state_${jobId}`;
   }
 
+  private getTeamCacheKey(jobId: string | number): string {
+    const userId =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('userId') || 'anonymous'
+        : 'anonymous';
+    return `team_${jobId}_${userId}`;
+  }
+
   private hydrateJobUiStateFromCache(jobId: string | number | undefined): void {
     if (!jobId) {
       return;
@@ -1260,7 +1261,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       updatedAt: new Date().toISOString(),
     };
 
-    this.jobCache.set(this.getUiStateCacheKey(jobId), payload);
+    this.jobCache.set(this.getUiStateCacheKey(jobId), payload, {
+      ttlMs: this.uiStateCacheTtlMs,
+    });
   }
 
   private loadScopeInsightData(jobId: string): void {

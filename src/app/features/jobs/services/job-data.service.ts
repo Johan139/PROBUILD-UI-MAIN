@@ -25,6 +25,9 @@ import { GroupedSubtask, RawSubtask } from '../../../models/job-domain.models';
   providedIn: 'root',
 })
 export class JobDataService {
+  private readonly subtaskCacheTtlMs = 6 * 60 * 60 * 1000; // 6 hours
+  private readonly materialCacheTtlMs = 6 * 60 * 60 * 1000; // 6 hours
+
   constructor(
     private jobsService: JobsService,
     private jobWeather: JobWeatherService,
@@ -122,7 +125,9 @@ export class JobDataService {
       const grouped = this.jobSubtasks.groupSubtasksByTitle(result.data);
 
       this.store.setState({ subtaskGroups: grouped });
-      this.jobCache.set(subtasksStorageKey, grouped);
+      this.jobCache.set(subtasksStorageKey, grouped, {
+        ttlMs: this.subtaskCacheTtlMs,
+      });
     }
 
     // --------------------
@@ -141,7 +146,9 @@ export class JobDataService {
 
       if (hasParsedSubtasks) {
         this.store.setState({ subtaskGroups: parsedGroups });
-        this.jobCache.set(subtasksStorageKey, parsedGroups);
+        this.jobCache.set(subtasksStorageKey, parsedGroups, {
+          ttlMs: this.subtaskCacheTtlMs,
+        });
       }
 
       const materialGroups = this.jobParser.extractMaterialGroups(
@@ -151,7 +158,9 @@ export class JobDataService {
       this.store.setState({ materialGroups });
 
       if (materialGroups.length > 0) {
-        this.jobCache.set(materialsStorageKey, materialGroups);
+        this.jobCache.set(materialsStorageKey, materialGroups, {
+          ttlMs: this.materialCacheTtlMs,
+        });
       }
 
       // --------------------

@@ -67,6 +67,7 @@ export class PhaseConstructionLiveComponent {
   };
 
   private readonly cacheVersion = 1 as const;
+  private readonly cacheTtlMs = 7 * 24 * 60 * 60 * 1000; // 7 days
   private activeJobId: string | null = null;
 
   private readonly defaultTaskGroups: LiveTaskGroup[] = [
@@ -435,7 +436,9 @@ export class PhaseConstructionLiveComponent {
       updatedAt: new Date().toISOString(),
     };
 
-    this.jobCache.set(this.getStorageKey(resolvedJobId), payload);
+    this.jobCache.set(this.getStorageKey(resolvedJobId), payload, {
+      ttlMs: this.cacheTtlMs,
+    });
   }
 
   private getStorageKey(jobId: string): string {

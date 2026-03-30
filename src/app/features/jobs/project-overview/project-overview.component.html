@@ -42,20 +42,25 @@
         <div class="progress-row">
           <span class="text-muted">Spent to Date</span>
           <span class="font-medium">
-            {{ isFinancialLoading ? '--' : (spentToDate | money : true : 2) }} (
+            {{ isFinancialLoading ? '--' : (syncedSpentToDate | money : true : 2) }} (
               {{
-                (overallBudgetValue > 0 ? spentToDate / overallBudgetValue : 0)
+                (overallBudgetValue > 0 ? syncedSpentToDate / overallBudgetValue : 0)
                   | percent: "1.0-0"
               }})
           </span>
         </div>
         <div class="progress-bar-bg">
-          <div class="progress-bar yellow" style="width: 43%"></div>
+          <div
+            class="progress-bar yellow"
+            [style.width.%]="
+              overallBudgetValue > 0 ? (syncedSpentToDate / overallBudgetValue) * 100 : 0
+            "
+          ></div>
         </div>
         <div class="remaining-row">
           <span class="text-muted">Remaining</span>
           <span class="font-medium text-success">
-            {{ isFinancialLoading ? '--' : (overallRemainingBudget | money : true : 2) }}
+            {{ isFinancialLoading ? '--' : (syncedRemainingBudget | money : true : 2) }}
           </span>
         </div>
       </div>
@@ -101,7 +106,7 @@
         <div>
           <p class="card-label">Bid Price (Client)</p>
           <p class="card-value">
-            {{ isFinancialLoading ? '--' : (bidPrice | money : true : 2) }}
+            {{ isFinancialLoading ? '--' : (syncedBidPrice | money : true : 2) }}
           </p>
         </div>
       </div>
@@ -111,19 +116,19 @@
           <span
             class="font-medium text-success"
             [matTooltip]="profitBreakdownTooltip"
-            >{{ isFinancialLoading ? '--' : (grossProfit | money : true : 2) }}</span
+            >{{ isFinancialLoading ? '--' : (syncedGrossProfit | money : true : 2) }}</span
           >
         </div>
         <div class="progress-row">
           <span class="text-muted">Profit Margin</span>
           <span class="font-bold text-success"
-            >{{ profitMargin | number: "1.1-1" }}%</span
+            >{{ syncedProfitMarginPercent | number: "1.1-1" }}%</span
           >
         </div>
         <div class="risk-row">
           <span class="text-muted">Profit at Risk</span>
           <span class="font-medium text-warning">{{
-            isFinancialLoading ? '--' : (profitAtRisk | money : true : 2)
+            isFinancialLoading ? '--' : (syncedExposureValue | money : true : 2)
           }}</span>
         </div>
       </div>
@@ -339,298 +344,28 @@
           <div class="chart-text">
             <span class="score-value">{{ blueprintConfidenceScore }}%</span>
           </div>
-          <div class="progress-bar-bg">
-            <div
-              class="progress-bar blue"
-              [style.width.%]="(currentWeek / totalDuration) * 100"
-            ></div>
-          </div>
-          <div class="remaining-row">
-            <span class="text-muted">Est. Completion</span>
-            <span class="font-medium">{{ estimatedCompletionDate | date }}</span>
-          </div>
         </div>
       </div>
 
-      <!-- Bid Price -->
-      <div class="hero-card bid-card">
-        <div class="card-top">
-          <div class="icon-wrapper green">
-            <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
-          </div>
-          <div>
-            <p class="card-label">Bid Price (Client)</p>
-            <p class="card-value">
-              {{ bidPrice | money : true : 2 }}
-            </p>
-          </div>
+      <div class="score-breakdown">
+        <div class="score-item">
+          <span>Dimensional Accuracy</span>
+          <span class="font-medium text-success">{{ dimensionalAccuracy }}%</span>
         </div>
-        <div class="card-bottom">
-          <div class="progress-row">
-            <span class="text-muted">Gross Profit</span>
-            <span
-              class="font-medium text-success"
-              [matTooltip]="profitBreakdownTooltip"
-              >{{ grossProfit | money : true : 2 }}</span
-              >
-            </div>
-            <div class="progress-row">
-              <span class="text-muted">Profit Margin</span>
-              <span class="font-bold text-success"
-                >{{ profitMargin | number: "1.1-1" }}%</span
-                >
-              </div>
-              <div class="risk-row">
-                <span class="text-muted">Profit at Risk</span>
-                <span class="font-medium text-warning">{{
-                  profitAtRisk | money : true : 2
-                }}</span>
-              </div>
-            </div>
-          </div>
+        <div class="score-item">
+          <span>Completeness</span>
+          <span class="font-medium text-success">{{ completeness }}%</span>
         </div>
+        <div class="score-item">
+          <span>Readability</span>
+          <span class="font-medium text-success">{{ readability }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Details & Confidence Grid -->
-        <div class="details-grid">
-          <!-- Project Details -->
-          <div class="detail-card">
-            <div class="detail-header">
-              <h4 class="card-title">
-                <lucide-icon name="building-2" class="title-icon"></lucide-icon>
-                Project Details
-              </h4>
-              @if (isEditingProject) {
-                <div class="header-actions">
-                  <button class="btn-text text-success" (click)="saveProject()">
-                    Save
-                  </button>
-                  <button class="btn-text text-muted" (click)="toggleEditProject()">
-                    Cancel
-                  </button>
-                </div>
-              }
-              @if (!isEditingProject) {
-                <button
-                  class="edit-btn"
-                  (click)="toggleEditProject()"
-                  >
-                  <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-                  Edit
-                </button>
-              }
-            </div>
-
-            @if (!isEditingProject) {
-              <div class="detail-list">
-                <div class="detail-item">
-                  <span class="detail-label">Project Name</span>
-                  <span class="detail-value">{{
-                    projectDetails?.projectName || ""
-                  }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Address</span>
-                  <span class="detail-value truncate">{{
-                    projectDetails?.address ||
-                    projectDetails?.jobAddress?.formatted_address ||
-                    ""
-                  }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Project Type</span>
-                  <span class="detail-value">{{ projectDetails?.jobType || "" }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Total Area</span>
-                  <span class="detail-value"
-                    >{{ projectTotalArea ? (projectTotalArea | number: "1.0-0") : "N/A" }}
-                    sq ft</span
-                    >
-                  </div>
-                </div>
-              }
-
-              @if (isEditingProject) {
-                <div class="detail-list edit-mode">
-                  <div class="custom-edit-form">
-                    <label class="custom-edit-row">
-                      <span class="custom-edit-label">Project Name</span>
-                      <input
-                        class="custom-edit-input"
-                        type="text"
-                        [(ngModel)]="tempProjectDetails.projectName"
-                        />
-                      </label>
-                      <label class="custom-edit-row">
-                        <span class="custom-edit-label">Address</span>
-                        <input
-                          class="custom-edit-input"
-                          type="text"
-                          [(ngModel)]="tempProjectDetails.address"
-                          />
-                        </label>
-                        <label class="custom-edit-row">
-                          <span class="custom-edit-label">Project Type</span>
-                          <input
-                            class="custom-edit-input"
-                            type="text"
-                            [(ngModel)]="tempProjectDetails.jobType"
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- Client Details -->
-                  <div class="detail-card">
-                    <div class="detail-header">
-                      <h4 class="card-title">
-                        <lucide-icon name="user" class="title-icon"></lucide-icon>
-                        Client Details
-                      </h4>
-                      @if (isEditingClient) {
-                        <div class="header-actions">
-                          <button class="btn-text text-success" (click)="saveClient()">
-                            Save
-                          </button>
-                          <button class="btn-text text-muted" (click)="toggleEditClient()">
-                            Cancel
-                          </button>
-                        </div>
-                      }
-                      @if (!isEditingClient) {
-                        <button
-                          class="edit-btn"
-                          (click)="toggleEditClient()"
-                          >
-                          <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-                          Edit
-                        </button>
-                      }
-                    </div>
-
-                    @if (!isEditingClient) {
-                      <div class="detail-list">
-                        <div class="detail-item">
-                          <span class="detail-label">Client Name</span>
-                          <span class="detail-value">{{
-                            clientName || "Maria Hernandez"
-                          }}</span>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Contact Email</span>
-                          <span class="detail-value">{{ clientEmail }}</span>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Phone</span>
-                          <span class="detail-value">{{ clientPhone }}</span>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Contract Status</span>
-                          <span class="detail-value text-success">{{ contractStatus }}</span>
-                        </div>
-                      </div>
-                    }
-
-                    @if (isEditingClient) {
-                      <div class="detail-list edit-mode">
-                        <div class="custom-edit-form">
-                          <label class="custom-edit-row">
-                            <span class="custom-edit-label">First Name</span>
-                            <input
-                              class="custom-edit-input"
-                              type="text"
-                              [(ngModel)]="tempClientDetails.firstName"
-                              />
-                            </label>
-                            <label class="custom-edit-row">
-                              <span class="custom-edit-label">Last Name</span>
-                              <input
-                                class="custom-edit-input"
-                                type="text"
-                                [(ngModel)]="tempClientDetails.lastName"
-                                />
-                              </label>
-                              <label class="custom-edit-row">
-                                <span class="custom-edit-label">Email</span>
-                                <input
-                                  class="custom-edit-input"
-                                  type="email"
-                                  [(ngModel)]="tempClientDetails.email"
-                                  />
-                                </label>
-                                <label class="custom-edit-row">
-                                  <span class="custom-edit-label">Phone</span>
-                                  <input
-                                    class="custom-edit-input"
-                                    type="text"
-                                    [(ngModel)]="tempClientDetails.phone"
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                            }
-                          </div>
-
-                          <!-- Blueprint Confidence Score -->
-                          <div class="detail-card">
-                            <h4 class="card-title mb-4">
-                              <lucide-icon name="target" class="title-icon"></lucide-icon>
-                              Blueprint Confidence Score
-                            </h4>
-                            <div class="chart-container">
-                              <div class="circular-chart">
-                                <svg viewBox="0 0 128 128" class="chart-svg">
-                                  <circle
-                                    cx="64"
-                                    cy="64"
-                                    r="56"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="8"
-                                    class="chart-track"
-                                    />
-                                    <circle
-                                      cx="64"
-                                      cy="64"
-                                      r="56"
-                                      fill="none"
-                                      stroke="#22c55e"
-                                      stroke-width="8"
-              [attr.stroke-dasharray]="
-                blueprintConfidenceScore * 3.52 + ' ' + 100 * 3.52
-              "
-                                      stroke-linecap="round"
-                                      class="chart-value"
-                                      />
-                                    </svg>
-                                    <div class="chart-text">
-                                      <span class="score-value">{{ blueprintConfidenceScore }}%</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div class="score-breakdown">
-                                  <div class="score-item">
-                                    <span>Dimensional Accuracy</span>
-                                    <span class="font-medium text-success"
-                                      >{{ dimensionalAccuracy }}%</span
-                                      >
-                                    </div>
-                                    <div class="score-item">
-                                      <span>Completeness</span>
-                                      <span class="font-medium text-success">{{ completeness }}%</span>
-                                    </div>
-                                    <div class="score-item">
-                                      <span>Readability</span>
-                                      <span class="font-medium text-success">{{ readability }}%</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <!-- Collapsible Sections -->
-                              <mat-accordion class="dashboard-accordion" multi>
+  <!-- Collapsible Sections -->
+  <mat-accordion class="dashboard-accordion" multi>
                                 <div class="summary-card">
                                   <div class="card-header-btn" (click)="toggleExecutiveSummary()">
                                     <div class="header-content">
@@ -930,18 +665,33 @@
                                       @for (day of forecast; track day) {
                                         <div
                                           class="forecast-card"
-                                          [class.alert]="day.condition.toLowerCase().includes('rain')"
+                                          [class.alert]="
+                                            (day.condition || '').toLowerCase().includes('rain') ||
+                                            +(day.precipitationProbability || 0) > 50
+                                          "
                                           >
                                           <p class="date">{{ day.date }}</p>
                                           <img [src]="day.iconUrl" alt="Weather Icon" class="weather-icon" />
                                           <p class="temp">
-                                            {{
-                                            measurementService.convertTemperature(day.highTemp, temperatureUnit)
-                                            | number: "1.0-0"
-                                            }}°
+                                            <span class="high">
+                                              {{
+                                                measurementService.convertTemperature(day.highTemp, temperatureUnit)
+                                                  | number: "1.0-0"
+                                              }}°
+                                            </span>
+                                            <span class="low">
+                                              {{
+                                                measurementService.convertTemperature(day.lowTemp, temperatureUnit)
+                                                  | number: "1.0-0"
+                                              }}°
+                                            </span>
                                           </p>
                                           <p class="condition">{{ day.condition }}</p>
-                                          @if (day.condition.toLowerCase().includes('rain')) {
+                                          <p class="precip">💧 {{ day.precipitationProbability || 0 }}%</p>
+                                          @if (
+                                            (day.condition || '').toLowerCase().includes('rain') ||
+                                            +(day.precipitationProbability || 0) > 50
+                                          ) {
                                             <div
                                               class="weather-impact"
                                               >
@@ -1679,4 +1429,5 @@
                                                 </div>
                                               }
                                             </div>
+                                          </div>
 

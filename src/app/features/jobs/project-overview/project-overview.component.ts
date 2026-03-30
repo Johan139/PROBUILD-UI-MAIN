@@ -77,6 +77,15 @@ export class ProjectOverviewComponent {
   @Input() teamMemberCount: number = 0;
   @Input() timelineData: TimelineGroup[] = [];
   @Input() assignedTeamMembers: any[] = [];
+  @Input() scopeCostSummary: any = null;
+  @Input() scopeBomTotals: {
+    materialCost: number;
+    laborCost: number;
+    directSubtotal: number;
+  } | null = null;
+  @Input() scopeTotalProjectCost: number | null = null;
+  @Input() bidNetProfitMarginPercent: number | null = null;
+  @Input() bidTotalPrice: number | null = null;
 
   // Job Details & Weather Inputs
   @Input() projectDetails: any;
@@ -89,6 +98,7 @@ export class ProjectOverviewComponent {
   executiveSummaryExpanded = false;
   isSummaryLoading = false;
   private loadedExecutiveSummary: any = null;
+  private loadedCostSummary: any = null;
 
   @Output() jobArchived = new EventEmitter<number>();
 
@@ -307,16 +317,17 @@ export class ProjectOverviewComponent {
       this.blueprintSheetCount = data.sheetCount;
       this.blueprintRoomCount = data.roomCount;
       this.blueprintRooms = data.rooms;
-      this.projectTotalArea =
-        data.underRoofArea && data.underRoofArea > 0 ? data.underRoofArea : null;
+      const normalizedUnderRoofSqFt = this.normalizeUnderRoofAreaToSqFt(
+        data.underRoofArea,
+      );
+      this.projectTotalArea = normalizedUnderRoofSqFt && normalizedUnderRoofSqFt > 0
+        ? normalizedUnderRoofSqFt
+        : null;
 
       this.dimensionalAccuracy = data.dimensionalAccuracy || 0;
       this.completeness = data.completeness || 0;
       this.readability = data.readability || 0;
-      this.totalArea = this.blueprintRooms.reduce((sum, room) => {
-        const areaNum = parseFloat(room.area.replace(/[^0-9.]/g, ''));
-        return sum + (isNaN(areaNum) ? 0 : areaNum);
-      }, 0);
+      this.totalArea = this.computeRoomsTotalSqFt(this.blueprintRooms);
 
       this.saveToCache();
     });
@@ -502,6 +513,7 @@ export class ProjectOverviewComponent {
     this.reportService
       .getDetailedCostSummary(jobId)
       .then((summary) => {
+        this.loadedCostSummary = summary;
         if (summary) {
           this.costToBuild = Number(summary.directSubtotal || 0);
           if (this.costToBuild <= 0) {
@@ -555,6 +567,7 @@ export class ProjectOverviewComponent {
         }
       })
       .catch(() => {
+        this.loadedCostSummary = null;
         // keep cached values; just stop loading state
       })
       .finally(() => {
@@ -617,8 +630,8 @@ export class ProjectOverviewComponent {
         ? summary.keyHighlights
             .map((item: any) => ({
               label: String(item?.label || ''),
-              value: String(item?.value || ''),
-              note: String(item?.note || ''),
+              value: this.formatMoneyInText(String(item?.value || '')),
+              note: this.formatMoneyInText(String(item?.note || '')),
             }))
             .filter((item: any) => item.label || item.value || item.note)
         : [],
@@ -765,41 +778,101 @@ export class ProjectOverviewComponent {
   }
 
   get overallBudgetValue(): number {
-    const directTotal = Number(this.totalProjectCost || 0);
+    const fromScopeTotal = Number(this.scopeTotalProjectCost || 0);
+    if (fromScopeTotal > 0) return fromScopeTotal;
 
-    const fromActive = Number(this.activeValue || 0);
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fromSummary = Number(summary?.suggestedBid || 0);
+    if (fromSummary > 0) return fromSummary;
+
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
       details?.budget ||
         details?.projectBudget ||
         details?.totalProjectCost ||
+        details?.totalBudget ||
+        details?.estimatedBudget ||
         details?.suggestedBid ||
         details?.suggestedMarketBid ||
         details?.costAnalysis?.suggestedBid ||
         details?.costAnalysis?.suggestedMarketBid ||
         0,
     );
-
-    const comparisonBase = Math.max(fromActive, fromProjectDetails);
-    if (directTotal > 0) {
-      // Guard: if directTotal looks like a per-sq-ft number (e.g. $215.50) while we have
-      // a much larger active/project total, ignore directTotal.
-      if (comparisonBase <= 0 || directTotal >= comparisonBase * 0.1) {
-        return directTotal;
-      }
-    }
-
-    if (fromActive > 0) return fromActive;
-
     if (fromProjectDetails > 0) return fromProjectDetails;
 
-    // As a last resort, use the bid price if we have it.
+    const fromActive = Number(this.activeValue || 0);
+    if (fromActive > 0) return fromActive;
+
     const fromBid = Number(this.bidPrice || 0);
     return fromBid > 0 ? fromBid : 0;
   }
 
   get overallRemainingBudget(): number {
     return this.overallBudgetValue - this.spentToDate;
+  }
+
+  get syncedSpentToDate(): number {
+    // Keep this in sync with Scope Review behavior (currently pre-spend by default).
+    return Number(this.projectDetails?.actualCost || this.projectDetails?.spentToDate || 0);
+  }
+
+  get syncedRemainingBudget(): number {
+    return Math.max(0, this.overallBudgetValue - this.syncedSpentToDate);
+  }
+
+  get syncedBidPrice(): number {
+    const override = Number(this.bidTotalPrice || 0);
+    if (override > 0) return override;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    const projectCost = Number(summary?.suggestedBid || 0);
+    if (projectCost > 0 || marketBid > 0) {
+      return Math.max(projectCost, marketBid);
+    }
+
+    const direct = Number(this.bidPrice || 0);
+    return direct > 0 ? direct : this.overallBudgetValue;
+  }
+
+  get syncedCostToBuild(): number {
+    const fromBom = Number(this.scopeBomTotals?.directSubtotal || 0);
+    if (fromBom > 0) return fromBom;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const directSubtotal = Number(summary?.directSubtotal || 0);
+    if (directSubtotal > 0) return directSubtotal;
+
+    const material = Number(summary?.materialCost || 0);
+    const labor = Number(summary?.laborCost || 0);
+    const computed = material + labor;
+    return computed > 0 ? computed : Number(this.costToBuild || 0);
+  }
+
+  get syncedGrossProfit(): number {
+    return this.syncedBidPrice - this.syncedCostToBuild;
+  }
+
+  get syncedProfitMarginPercent(): number {
+    const override = Number(this.bidNetProfitMarginPercent || 0);
+    if (override > 0) return override;
+    if (this.syncedBidPrice <= 0) return 0;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fullyLoadedCost =
+      this.syncedCostToBuild +
+      Number(summary?.overhead || 0) +
+      Number(summary?.contingency || 0) +
+      Number(summary?.escalation || 0) +
+      Number(summary?.taxes || 0);
+    const netProfit = this.syncedBidPrice - fullyLoadedCost;
+    return (netProfit / this.syncedBidPrice) * 100;
+  }
+
+  get syncedExposureValue(): number {
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const contingency = Number(summary?.contingency || 0);
+    return contingency > 0 ? contingency : Math.max(0, this.overallBudgetValue * 0.08);
   }
 
   get profitBreakdownTooltip(): string {
@@ -1508,10 +1581,110 @@ export class ProjectOverviewComponent {
   }
 
   getAreaInSqM(areaStr: any): string {
-    if (areaStr === null || areaStr === undefined) return '0';
-    const str = String(areaStr);
-    const areaNum = parseFloat(str.replace(/[^0-9.]/g, ''));
-    if (isNaN(areaNum)) return '0';
-    return (areaNum * 0.092903).toFixed(1);
+    const parsed = this.parseAreaWithUnit(areaStr);
+    if (!parsed || parsed.value <= 0) return '0';
+
+    let sqFt = parsed.value;
+    if (parsed.unit === 'sqm') {
+      sqFt = parsed.value * 10.7639;
+    } else if (parsed.unit === 'unknown' && parsed.value <= 80) {
+      // Typical room-size heuristic: small unlabeled values are usually m² in reports.
+      sqFt = parsed.value * 10.7639;
+    }
+
+    return (sqFt * 0.092903).toFixed(1);
+  }
+
+  private formatMoneyInText(text: string): string {
+    if (!text) return text;
+
+    // Convert comma-grouped currency values to space-grouped style.
+    return text.replace(
+      /(?:\$|\bZAR\b|\bR\b)\s*((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/gi,
+      (match, amountStr) => {
+        const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
+        if (!isNaN(numericValue) && numericValue > 0) {
+          return formatMoney(numericValue, true, 2);
+        }
+        return match;
+      },
+    );
+  }
+
+  private normalizeNumericText(raw: string): string {
+    const compact = raw.replace(/\s/g, '');
+    const hasComma = compact.includes(',');
+    const hasDot = compact.includes('.');
+
+    if (hasComma && hasDot) {
+      // Assume commas are thousands separators.
+      return compact.replace(/,/g, '');
+    }
+
+    if (hasComma && !hasDot) {
+      // If comma is likely decimal separator, convert to dot.
+      if (/,(\d{1,2})$/.test(compact)) {
+        return compact.replace(',', '.');
+      }
+      // Otherwise treat as thousands separator.
+      return compact.replace(/,/g, '');
+    }
+
+    return compact;
+  }
+
+  private parseAreaWithUnit(input: any): { value: number; unit: 'sqft' | 'sqm' | 'unknown' } | null {
+    if (input == null) return null;
+    const raw = String(input).trim();
+    if (!raw) return null;
+
+    const lower = raw.toLowerCase();
+    const unit: 'sqft' | 'sqm' | 'unknown' = /\bm²\b|\bm2\b|\bsqm\b|\bsq m\b/.test(lower)
+      ? 'sqm'
+      : /\bsq\s*ft\b|\bsqft\b|\bft²\b|\bft2\b/.test(lower)
+        ? 'sqft'
+        : 'unknown';
+
+    const numericText = this.normalizeNumericText(raw).replace(/[^0-9.-]/g, '');
+    const value = Number.parseFloat(numericText);
+    if (!Number.isFinite(value)) return null;
+
+    return { value, unit };
+  }
+
+  private normalizeUnderRoofAreaToSqFt(rawArea: any): number | null {
+    const parsed = this.parseAreaWithUnit(rawArea);
+    if (!parsed || parsed.value <= 0) return null;
+
+    if (parsed.unit === 'sqm') {
+      return parsed.value * 10.7639;
+    }
+
+    if (parsed.unit === 'sqft') {
+      return parsed.value;
+    }
+
+    // Heuristic for unlabeled numeric values from report extraction:
+    // <= 500 is very likely m², otherwise sq ft.
+    return parsed.value <= 500 ? parsed.value * 10.7639 : parsed.value;
+  }
+
+  private computeRoomsTotalSqFt(
+    rooms: Array<{ name: string; area: string }>,
+  ): number {
+    return (rooms || []).reduce((sum, room) => {
+      const parsed = this.parseAreaWithUnit(room?.area);
+      if (!parsed || parsed.value <= 0) return sum;
+
+      let sqFt = parsed.value;
+      if (parsed.unit === 'sqm') {
+        sqFt = parsed.value * 10.7639;
+      } else if (parsed.unit === 'unknown' && parsed.value <= 80) {
+        // Typical room-area values in m² are small (e.g. 12, 27.5, 40).
+        sqFt = parsed.value * 10.7639;
+      }
+
+      return sum + sqFt;
+    }, 0);
   }
 }
