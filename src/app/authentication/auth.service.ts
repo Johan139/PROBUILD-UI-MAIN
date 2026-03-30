@@ -91,10 +91,13 @@ export class AuthService {
     this.clearInactivityTimer();
 
     if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
 
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
-      this.logout();
+      if (this.isLoggedIn()) {
+        this.logout();
+      }
     }, this.INACTIVITY_LIMIT);
   }
 
@@ -106,6 +109,11 @@ export class AuthService {
   }
 
   public resetInactivityTimer(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) {
+      this.clearInactivityTimer();
+      return;
+    }
     this.startInactivityTimer();
   }
 

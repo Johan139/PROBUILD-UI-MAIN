@@ -255,7 +255,15 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isBrowser) {
       setTimeout(() => this.onboardingService.checkOnboardingStatus(), 2000);
 
-      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
       for (const event of events) {
         window.addEventListener(event, this.inactivityEventHandler);
       }
@@ -296,7 +304,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.isBrowser) {
-      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
       for (const event of events) {
         window.removeEventListener(event, this.inactivityEventHandler);
       }
