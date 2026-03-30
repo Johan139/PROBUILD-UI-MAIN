@@ -595,14 +595,17 @@
             </div>
             <p class="card-label">Overall Budget</p>
             <p class="card-value">
-              {{ overallBudgetValue | money : true : 2 }}
+              <ng-container *ngIf="!isSummaryLoading; else overallBudgetLoading">
+                {{ overallBudgetValue | money : true : 2 }}
+              </ng-container>
+              <ng-template #overallBudgetLoading>--</ng-template>
             </p>
           </div>
           <div class="card-bottom">
             <div class="progress-row">
               <span>Spent to Date</span>
               <strong>{{
-                spentToDate | money : true : 2
+                !isSummaryLoading ? (spentToDate | money : true : 2) : '--'
               }}</strong>
             </div>
             <div class="progress-track" aria-hidden="true">
@@ -614,7 +617,7 @@
             <div class="progress-row">
               <span>Remaining</span>
               <strong>{{
-                overallRemainingBudget | money : true : 2
+                !isSummaryLoading ? (overallRemainingBudget | money : true : 2) : '--'
               }}</strong>
             </div>
           </div>
@@ -663,14 +666,17 @@
             </div>
             <p class="card-label">Bid Price (Client)</p>
             <p class="card-value">
-              {{ bidPriceValue | money : true : 2 }}
+              <ng-container *ngIf="!isSummaryLoading; else bidPriceLoading">
+                {{ bidPriceValue | money : true : 2 }}
+              </ng-container>
+              <ng-template #bidPriceLoading>--</ng-template>
             </p>
           </div>
           <div class="card-bottom">
             <div class="progress-row">
               <span>Gross Profit</span>
               <strong>{{
-                bidGrossProfit | money : true : 2
+                !isSummaryLoading ? (bidGrossProfit | money : true : 2) : '--'
               }}</strong>
             </div>
             <div class="progress-row">
@@ -680,7 +686,7 @@
             <div class="progress-row">
               <span>Exposure</span>
               <strong>{{
-                bidExposureValue | money : true : 2
+                !isSummaryLoading ? (bidExposureValue | money : true : 2) : '--'
               }}</strong>
             </div>
           </div>

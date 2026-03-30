@@ -38,19 +38,34 @@
             <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
           </div>
           <p class="card-label">Overall Budget</p>
-          <p class="card-value">{{ overallBudgetValue | money : true : 2 }}</p>
+          <p class="card-value">
+            <ng-container *ngIf="!isSummaryLoading; else overallBudgetLoading">
+              {{ overallBudgetValue | money : true : 2 }}
+            </ng-container>
+            <ng-template #overallBudgetLoading>--</ng-template>
+          </p>
         </div>
         <div class="card-bottom">
           <div class="progress-row">
             <span>Spent to Date</span>
-            <strong>{{ spentToDate | money : true : 2 }}</strong>
+            <strong>
+              <ng-container *ngIf="!isSummaryLoading; else spentToDateLoading">
+                {{ spentToDate | money : true : 2 }}
+              </ng-container>
+              <ng-template #spentToDateLoading>--</ng-template>
+            </strong>
           </div>
           <div class="progress-track" aria-hidden="true">
             <div class="progress-fill budget" [style.width.%]="overallBudgetProgressPercent"></div>
           </div>
           <div class="progress-row">
             <span>Remaining</span>
-            <strong>{{ overallRemainingBudget | money : true : 2 }}</strong>
+            <strong>
+              <ng-container *ngIf="!isSummaryLoading; else remainingLoading">
+                {{ overallRemainingBudget | money : true : 2 }}
+              </ng-container>
+              <ng-template #remainingLoading>--</ng-template>
+            </strong>
           </div>
         </div>
       </button>
@@ -94,7 +109,12 @@
         <div class="card-bottom">
           <div class="progress-row">
             <span>Gross Profit</span>
-            <strong>{{ bidGrossProfit | money : true : 2 }}</strong>
+            <strong>
+              <ng-container *ngIf="!isSummaryLoading; else grossProfitLoading">
+                {{ bidGrossProfit | money : true : 2 }}
+              </ng-container>
+              <ng-template #grossProfitLoading>--</ng-template>
+            </strong>
           </div>
           <div class="progress-row">
             <span>Profit Margin</span>
@@ -102,7 +122,12 @@
           </div>
           <div class="progress-row">
             <span>Exposure</span>
-            <strong>{{ bidExposureValue | money : true : 2 }}</strong>
+            <strong>
+              <ng-container *ngIf="!isSummaryLoading; else exposureLoading">
+                {{ bidExposureValue | money : true : 2 }}
+              </ng-container>
+              <ng-template #exposureLoading>--</ng-template>
+            </strong>
           </div>
         </div>
       </button>

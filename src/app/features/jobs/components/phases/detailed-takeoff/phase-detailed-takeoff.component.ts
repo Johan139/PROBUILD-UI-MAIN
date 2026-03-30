@@ -542,7 +542,7 @@ export class PhaseDetailedTakeoffComponent
     const source = String(text || '');
     if (!source) return source;
     const replacement = this.formatCurrency(amount);
-    const currencyPattern = /\$\s*\d[\d,\s]*(?:\.\d{1,2})?/;
+    const currencyPattern = /(?:\$|\bZAR\b|\bR\b)\s*\d[\d,\s]*(?:\.\d{1,2})?/i;
     return currencyPattern.test(source)
       ? source.replace(currencyPattern, replacement)
       : source;
@@ -550,13 +550,23 @@ export class PhaseDetailedTakeoffComponent
 
   private formatCompactThousands(amount: number): string {
     const safe = Number(amount || 0);
-    if (safe <= 0) return '$0';
-    return `$${Math.round(safe / 1000)}k`;
+    if (safe <= 0) return formatMoney(0, true, 0);
+
+    if (safe >= 1_000_000) {
+      const millions = Math.round((safe / 1_000_000) * 100) / 100;
+      return `${formatMoney(millions, true, 2)}M`;
+    }
+
+    if (safe >= 1_000) {
+      return `${formatMoney(Math.round(safe / 1000), true, 0)}k`;
+    }
+
+    return formatMoney(safe, true, 0);
   }
 
   private formatMoneyInText(text: string): string {
     if (!text) return text;
-    return text.replace(/\$((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/g, (match, amountStr) => {
+    return text.replace(/(?:\$|\bZAR\b|\bR\b)\s*((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/gi, (match, amountStr) => {
       const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
       if (!isNaN(numericValue) && numericValue > 0) {
         return formatMoney(numericValue, true, 2);

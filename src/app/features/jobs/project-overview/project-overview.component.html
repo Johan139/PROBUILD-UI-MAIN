@@ -34,7 +34,7 @@
         <div>
           <p class="card-label">Overall Budget</p>
           <p class="card-value">
-            {{ overallBudgetValue | money : true : 2 }}
+            {{ isFinancialLoading ? '--' : (overallBudgetValue | money : true : 2) }}
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@
         <div class="progress-row">
           <span class="text-muted">Spent to Date</span>
           <span class="font-medium">
-            {{ spentToDate | money : true : 2 }} (
+            {{ isFinancialLoading ? '--' : (spentToDate | money : true : 2) }} (
               {{
                 (overallBudgetValue > 0 ? spentToDate / overallBudgetValue : 0)
                   | percent: "1.0-0"
@@ -55,7 +55,7 @@
         <div class="remaining-row">
           <span class="text-muted">Remaining</span>
           <span class="font-medium text-success">
-            {{ overallRemainingBudget | money : true : 2 }}
+            {{ isFinancialLoading ? '--' : (overallRemainingBudget | money : true : 2) }}
           </span>
         </div>
       </div>
@@ -101,7 +101,7 @@
         <div>
           <p class="card-label">Bid Price (Client)</p>
           <p class="card-value">
-            {{ bidPrice | money : true : 2 }}
+            {{ isFinancialLoading ? '--' : (bidPrice | money : true : 2) }}
           </p>
         </div>
       </div>
@@ -111,7 +111,7 @@
           <span
             class="font-medium text-success"
             [matTooltip]="profitBreakdownTooltip"
-            >{{ grossProfit | money : true : 2 }}</span
+            >{{ isFinancialLoading ? '--' : (grossProfit | money : true : 2) }}</span
           >
         </div>
         <div class="progress-row">
@@ -123,7 +123,7 @@
         <div class="risk-row">
           <span class="text-muted">Profit at Risk</span>
           <span class="font-medium text-warning">{{
-            profitAtRisk | money : true : 2
+            isFinancialLoading ? '--' : (profitAtRisk | money : true : 2)
           }}</span>
         </div>
       </div>
