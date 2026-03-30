@@ -939,6 +939,60 @@ export class ReportService {
       }
       const fullResponse = results[0].fullResponse;
 
+      const extractPhase30QuotationData = (response: string): {
+        generalConditions: number;
+        permitsAdminFees: number;
+        insuranceBonds: number;
+        taxes: number;
+        suggestedBid: number;
+      } | null => {
+        if (!response) return null;
+
+        const match = response.match(
+          /###\s*Phase\s*30:[\s\S]*?Output\s*1[\s\S]*?```json\s*([\s\S]*?)\s*```/i,
+        );
+        if (!match || !match[1]) return null;
+
+        try {
+          const parsed = JSON.parse(match[1]);
+          if (!Array.isArray(parsed)) return null;
+
+          const sumBy = (predicate: (row: any) => boolean): number =>
+            parsed
+              .filter((row: any) => row && predicate(row))
+              .reduce((sum: number, row: any) => sum + Number(row.Amount || 0), 0);
+
+          const taxes = sumBy(
+            (r) => String(r.Category || '').toLowerCase() === 'taxes',
+          );
+
+          const generalConditions = sumBy(
+            (r) => String(r.Category || '').toLowerCase() === 'indirect costs',
+          );
+
+          const feesAndInsurance = sumBy(
+            (r) => String(r.Category || '').toLowerCase() === 'fees & insurance',
+          );
+
+          const total = parsed.reduce(
+            (sum: number, row: any) => sum + Number(row?.Amount || 0),
+            0,
+          );
+
+          return {
+            generalConditions,
+            permitsAdminFees: feesAndInsurance,
+            insuranceBonds: 0,
+            taxes,
+            suggestedBid: total,
+          };
+        } catch {
+          return null;
+        }
+      };
+
+      const phase30 = extractPhase30QuotationData(fullResponse);
+
       const parseCurrency = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
         const match = cleaned.match(/-?\$?\s*([\d,]+(?:\.\d+)?)/);
@@ -953,15 +1007,164 @@ export class ReportService {
 
       const extractValue = (regex: RegExp) => {
         const match = fullResponse.match(regex);
-        return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+        return match
+          ? parseFloat(String(match[1]).replace(/[\s,]/g, ''))
+          : 0;
       };
 
-      const materialCost = extractValue(
-        /\|\s*Total Material Cost.*?\$\s*([\d,]+\.?\d*)/,
+      // Some AI report variants provide explicit permits/insurance rows as pipe-table lines
+      // without a `$` prefix. Prefer these when present.
+      const permitsAdminFeesLoose = extractValue(
+        /\|\s*Total\s*Permits\s*&\s*Admin\s*Fees\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
-      const laborCost = extractValue(
-        /\|\s*Total Labor Cost.*?\$\s*([\d,]+\.?\d*)/,
+      const insuranceBondsLoose = extractValue(
+        /\|\s*Insurance\s*&\s*Bonds\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
+
+      // Phase 30 formatted client quotation totals (authoritative for Bid Proposal Analysis popup)
+      const reportTotalDirectIndirectCosts = extractValue(
+        /\|\s*\*\*Total\s*Direct\s*&\s*Indirect\s*Costs\*\*\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportOverheadProfit = extractValue(
+        /\|\s*GC\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportContingency = extractValue(
+        /\|\s*Contingency\s*Reserve\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportEscalation = extractValue(
+        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportPreTaxProjectCost = extractValue(
+        /\|\s*\*\*Total\s*Pre-?Tax\s*Project\s*Cost\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+      const reportVatAmount = extractValue(
+        /\|\s*Value\s*Added\s*Tax\s*\(VAT\s*@\s*\d+(?:\.\d+)?%\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportGrandTotalBidPrice = extractValue(
+        /\|\s*\*\*GRAND\s*TOTAL\s*BID\s*PRICE\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+
+      const reportAltSubtotalDirectIndirectCosts = extractValue(
+        /\|\s*Subtotal\s*\(Direct\s*Costs,[^\n]*?\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltOverheadProfit = extractValue(
+        /\|\s*General\s*Contractor\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltContingencyEscalation = extractValue(
+        /\|\s*Contingency\s*&\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltTotalDirectCosts = extractValue(
+        /\|\s*Total\s*Direct\s*Costs\s*\([^)]*\)\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
+      );
+      const reportAltEscalationAllowance = extractValue(
+        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
+      );
+      const reportAltPreTaxProjectCost2 = extractValue(
+        /\|\s*\*\*\s*Subtotal\s*\(\s*Pre-?Tax\s*Project\s*Cost\s*\)\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+      const reportAltTaxes2 = extractValue(
+        /\|\s*Sales\s*Tax\s*(?:on\s*Materials)?\s*(?:\([^)]*\))?\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
+      );
+      const reportAltGrandTotalBidPrice2 = extractValue(
+        /\|\s*\*\*\s*Grand\s*Total\s*\(\s*Calculated\s*GC\s*Bid\s*Price\s*\)\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+      const reportAltPreTaxProjectCost = extractValue(
+        /\|\s*\*\*Total\s*Pre-?Tax\s*Construction\s*Cost\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+      const reportAltTaxes = extractValue(
+        /\|\s*Sales\s*Tax\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltGrandTotalBidPrice = extractValue(
+        /\|\s*\*\*Grand\s*Total\s*Project\s*Bid\s*Price\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+
+      // Phase 29 "Final Client Quotation" variant labels
+      const reportAltTotalDirectInsurableCosts = extractValue(
+        /\|\s*Total\s*Direct\s*&\s*Insurable\s*Costs\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltTotalPreTaxBidPrice = extractValue(
+        /\|\s*\*\*\s*Total\s*Pre-?Tax\s*Bid\s*Price\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+      const reportAltGrandTotalProjectCost = extractValue(
+        /\|\s*\*\*\s*Grand\s*Total\s*Project\s*Cost\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+
+      const finalReportTotalDirectIndirectCosts =
+        reportTotalDirectIndirectCosts > 0
+          ? reportTotalDirectIndirectCosts
+          : reportAltSubtotalDirectIndirectCosts > 0
+            ? reportAltSubtotalDirectIndirectCosts
+            : reportAltTotalDirectCosts > 0
+              ? reportAltTotalDirectCosts
+              : reportAltTotalDirectInsurableCosts;
+      const finalReportOverheadProfit =
+        reportOverheadProfit > 0 ? reportOverheadProfit : reportAltOverheadProfit;
+      const finalReportContingency =
+        reportContingency > 0 ? reportContingency : reportAltContingencyEscalation;
+      const finalReportEscalation =
+        reportEscalation > 0
+          ? reportEscalation
+          : reportAltEscalationAllowance > 0
+            ? reportAltEscalationAllowance
+            : 0;
+      const finalReportPreTaxProjectCost =
+        reportPreTaxProjectCost > 0
+          ? reportPreTaxProjectCost
+          : reportAltPreTaxProjectCost > 0
+            ? reportAltPreTaxProjectCost
+            : reportAltPreTaxProjectCost2 > 0
+              ? reportAltPreTaxProjectCost2
+              : reportAltTotalPreTaxBidPrice;
+      const finalReportVatAmount =
+        reportVatAmount > 0
+          ? reportVatAmount
+          : reportAltTaxes > 0
+            ? reportAltTaxes
+            : reportAltTaxes2;
+      const finalReportGrandTotalBidPrice =
+        reportGrandTotalBidPrice > 0
+          ? reportGrandTotalBidPrice
+          : reportAltGrandTotalBidPrice > 0
+            ? reportAltGrandTotalBidPrice
+            : reportAltGrandTotalBidPrice2 > 0
+              ? reportAltGrandTotalBidPrice2
+              : reportAltGrandTotalProjectCost;
+
+      const reportContingencyIncludesEscalation =
+        reportContingency <= 0 && reportAltContingencyEscalation > 0;
+
+      const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n(.*?)\n\n/s);
+      if (quotationDataMatch && quotationDataMatch[1]) {
+        try {
+          const quotationData = JSON.parse(quotationDataMatch[1]);
+          const materialCost = quotationData.materialCost || 0;
+          const laborCost = quotationData.laborCost || 0;
+          const generalConditions = quotationData.generalConditions || 0;
+          const permitsAdminFees = quotationData.permitsAdminFees || 0;
+          const insuranceBonds = quotationData.insuranceBonds || 0;
+          const taxes = quotationData.taxes || 0;
+          const suggestedBid = quotationData.suggestedBid || 0;
+          const suggestedMarketBid = quotationData.suggestedMarketBid || 0;
+          const costPerSqFt = quotationData.costPerSqFt || 0;
+
+          return {
+            materialCost,
+            laborCost,
+            generalConditions,
+            permitsAdminFees,
+            insuranceBonds,
+            taxes,
+            suggestedBid,
+            suggestedMarketBid,
+            costPerSqFt,
+          };
+        } catch (error) {
+          console.error('Failed to parse Quotation Data JSON:', error);
+        }
+      }
+
+      const materialCost = extractValue(/Total Material Cost.*?\$\s*([\d,]+\.?\d*)/);
+      const laborCost = extractValue(/Total Labor Cost.*?\$\s*([\d,]+\.?\d*)/);
       const directSubtotal = extractValue(
         /\|\s*Subtotal\s*\(Direct.*?\).*?\$\s*([\d,]+\.?\d*)/,
       );
@@ -978,15 +1181,13 @@ export class ReportService {
       const contingencyPct = extractValue(
         /\|\s*Contingency Reserve.*?\|\s*([\d.]+)%/,
       );
-
-      const taxes =
-        extractValue(/\|\s*Sales Tax.*?\$\s*([\d,]+\.?\d*)/) ||
-        extractValue(/\|\s*Taxes.*?\$\s*([\d,]+\.?\d*)/);
+      const generalConditions = extractValue(/General Conditions.*?\$\s*([\d,]+\.?\d*)/);
+      const permitsAdminFees = extractValue(/Permits.*?\$\s*([\d,]+\.?\d*)/);
+      const insuranceBonds = extractValue(/Insurance.*?\$\s*([\d,]+\.?\d*)/);
+      const taxes = extractValue(/Sales Tax.*?\$\s*([\d,]+\.?\d*)/);
 
       // Handle potential markdown bold markers (**Calculated GC Bid Price**)
-      const suggestedBid = extractValue(
-        /Calculated GC Bid Price.*?\$\s*([\d,]+\.?\d*)/,
-      );
+      const suggestedBid = extractValue(/Calculated GC Bid Price.*?\$\s*([\d,]+\.?\d*)/);
       const suggestedMarketBid = extractValue(
         /Suggested Market Bid Price.*?\$\s*([\d,]+\.?\d*)/,
       );
@@ -1067,9 +1268,11 @@ export class ReportService {
           }
 
           // Some report variants swap amount/% columns. Resolve by semantic token.
-          const moneyToken = valueCols.find((v) => /\$/.test(v)) || amountCol;
+          // IMPORTANT: Only treat a cell as money if it actually contains a `$`.
+          // This prevents CSI codes like `23 00 00` from becoming `$23.00`.
+          const moneyToken = valueCols.find((v) => /\$/.test(v)) || '';
           const percentToken = valueCols.find((v) => /%/.test(v)) || '';
-          const amount = parseCurrency(moneyToken);
+          const amount = moneyToken ? parseCurrency(moneyToken) : 0;
           const pctFromCols = parsePercentage(percentToken);
           const pctFromLabel = parsePercentage(rawLabel);
           const pct = pctFromCols > 0 ? pctFromCols : pctFromLabel;
@@ -1101,12 +1304,12 @@ export class ReportService {
           }
 
           if (label.includes('permits') || label.includes('admin fees')) {
-            phase26PermitsAdminFees = amount;
+            if (amount > 0) phase26PermitsAdminFees = amount;
             return;
           }
 
           if (label.includes('insurance') || label.includes('bond')) {
-            phase26InsuranceBonds = amount;
+            if (amount > 0) phase26InsuranceBonds = amount;
             return;
           }
 
@@ -1114,7 +1317,7 @@ export class ReportService {
             label.includes('subtotal') &&
             (label.includes('insurable') || label.includes('direct & insurable'))
           ) {
-            phase26DirectAndInsurableSubtotal = amount;
+            if (amount > 0) phase26DirectAndInsurableSubtotal = amount;
             return;
           }
 
@@ -1220,6 +1423,8 @@ export class ReportService {
       const finalGeneralConditions =
         phase26GeneralConditions > 0
           ? phase26GeneralConditions
+          : phase30?.generalConditions && phase30.generalConditions > 0
+            ? phase30.generalConditions
           : budgetGeneralConditions > 0
             ? budgetGeneralConditions
             : 0;
@@ -1231,9 +1436,28 @@ export class ReportService {
             : finalMaterialCost + finalLaborCost + finalGeneralConditions > 0
               ? finalMaterialCost + finalLaborCost + finalGeneralConditions
               : 0;
-      const finalPermitsAdminFees = phase26PermitsAdminFees;
-      const finalInsuranceBonds = phase26InsuranceBonds;
-      const finalDirectAndInsurableSubtotal = phase26DirectAndInsurableSubtotal;
+      const finalPermitsAdminFees =
+        permitsAdminFeesLoose > 0
+          ? permitsAdminFeesLoose
+          : phase26PermitsAdminFees > 0
+          ? phase26PermitsAdminFees
+          : phase30?.permitsAdminFees && phase30.permitsAdminFees > 0
+            ? phase30.permitsAdminFees
+            : 0;
+      const finalInsuranceBonds =
+        insuranceBondsLoose > 0
+          ? insuranceBondsLoose
+          : phase26InsuranceBonds > 0
+          ? phase26InsuranceBonds
+          : 0;
+      const finalDirectAndInsurableSubtotal =
+        phase26DirectAndInsurableSubtotal > 0
+          ? phase26DirectAndInsurableSubtotal
+          : finalMaterialCost +
+              finalLaborCost +
+              finalGeneralConditions +
+              finalPermitsAdminFees +
+              finalInsuranceBonds;
       const finalOverhead =
         phase26Overhead > 0
           ? phase26Overhead
@@ -1251,11 +1475,21 @@ export class ReportService {
             : budgetContingency > 0
               ? budgetContingency
               : 0;
-      const finalContingencyPct = phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
+      const finalContingencyPct =
+        phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
 
       const escalation = phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
-      const finalTaxes = phase26Taxes > 0 ? phase26Taxes : taxes;
-      const finalSalesTaxPct = phase26SalesTaxPct;
+      const finalTaxes =
+        phase26Taxes > 0
+          ? phase26Taxes
+          : phase30?.taxes && phase30.taxes > 0
+            ? phase30.taxes
+            : taxes;
+      const vatPct =
+        extractValue(/VAT\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
+        extractValue(/VAT\s*\(\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
+        extractValue(/VAT[^\d]{0,12}(\d+(?:\.\d+)?)\s*%/i);
+      const finalSalesTaxPct = phase26SalesTaxPct > 0 ? phase26SalesTaxPct : vatPct;
       const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
       let finalSuggestedMarketBid =
         phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;
@@ -1317,6 +1551,15 @@ export class ReportService {
         costPerSqFt: finalCostPerSqFt,
         marketLow,
         marketHigh,
+
+        reportTotalDirectIndirectCosts: finalReportTotalDirectIndirectCosts,
+        reportOverheadProfit: finalReportOverheadProfit,
+        reportContingency: finalReportContingency,
+        reportEscalation: finalReportEscalation,
+        reportPreTaxProjectCost: finalReportPreTaxProjectCost,
+        reportVatAmount: finalReportVatAmount,
+        reportGrandTotalBidPrice: finalReportGrandTotalBidPrice,
+        reportContingencyIncludesEscalation,
       };
     } catch (err) {
       console.error('Failed to get detailed cost summary:', err);

@@ -99,6 +99,7 @@ export class PhaseDetailedTakeoffComponent
   @Input() scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   @Input() scopeTotalProjectCost: number | null = null;
   @Input() bidNetProfitMarginPercent: number | null = null;
+  @Input() bidTotalPrice: number | null = null;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
   @Input() isReportLoading = false;
   @Input() showEnvironmentalReport = true;
@@ -626,11 +627,26 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bidPriceValue(): number {
+    const override = Number(this.bidTotalPrice);
+    if (Number.isFinite(override) && override > 0) return override;
+
     const summary = this.scopeCostSummary || this.loadedCostSummary || null;
     const direct = Number(this.projectDetails?.bidPrice || 0);
-    if (direct > 0) return direct;
     const marketBid = Number(summary?.suggestedMarketBid || 0);
     const projectCost = Number(summary?.suggestedBid || 0);
+
+    // In some flows `projectDetails.bidPrice` is a per-sq-ft value (e.g. $215.50),
+    // while the cards and popup expect total project dollars.
+    // Only trust `projectDetails.bidPrice` if it looks consistent with the totals.
+    const comparisonBase = Math.max(projectCost, marketBid);
+    if (direct > 0) {
+      if (comparisonBase > 0) {
+        if (direct >= comparisonBase * 0.5) return direct;
+      } else if (direct >= 10000) {
+        return direct;
+      }
+    }
+
     if (projectCost > 0 || marketBid > 0) {
       return Math.max(projectCost, marketBid);
     }
@@ -642,7 +658,13 @@ export class PhaseDetailedTakeoffComponent
         this.projectDetails?.costAnalysis?.suggestedBid ||
         0,
     );
-    if (suggested > 0) return suggested;
+    if (suggested > 0) {
+      // Guard: if this looks like a per-sq-ft number, do not show it as a total bid.
+      if (this.overallBudgetValue > 0 && suggested < this.overallBudgetValue * 0.1) {
+        return this.overallBudgetValue;
+      }
+      return suggested;
+    }
     return this.overallBudgetValue;
   }
 
