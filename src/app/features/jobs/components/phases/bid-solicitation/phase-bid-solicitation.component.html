@@ -19,7 +19,7 @@
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
-  @if (stageDisplayMode === 'stage') {
+  @if (stageDisplayMode === "stage") {
     <app-job-inbound-bidding
       [projectDetails]="projectDetails"
       (back)="back.emit()"
@@ -27,4 +27,3 @@
     ></app-job-inbound-bidding>
   }
 </div>
-

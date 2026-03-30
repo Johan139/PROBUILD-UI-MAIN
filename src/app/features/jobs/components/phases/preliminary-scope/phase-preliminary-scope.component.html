@@ -30,90 +30,6 @@
     </button>
   </div>
 
-  <div class="scope-pane" *ngIf="stageDisplayMode === 'stage' && activeTab === 'overview'">
-    <div class="hero-grid">
-      <button type="button" class="hero-card budget-card" (click)="overallBudgetClick.emit()">
-        <div class="card-top">
-          <div class="icon-wrapper yellow">
-            <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
-          </div>
-          <p class="card-label">Overall Budget</p>
-          <p class="card-value">
-            <ng-container *ngIf="!isSummaryLoading; else overallBudgetLoading">
-              {{ overallBudgetValue | money : true : 2 }}
-            </ng-container>
-            <ng-template #overallBudgetLoading>--</ng-template>
-          </p>
-        </div>
-        <div class="card-bottom">
-          <div class="progress-row">
-            <span>Spent to Date</span>
-            <strong>
-              <ng-container *ngIf="!isSummaryLoading; else spentToDateLoading">
-                {{ spentToDate | money : true : 2 }}
-              </ng-container>
-              <ng-template #spentToDateLoading>--</ng-template>
-            </strong>
-          </div>
-          <div class="progress-track" aria-hidden="true">
-            <div class="progress-fill budget" [style.width.%]="overallBudgetProgressPercent"></div>
-          </div>
-          <div class="progress-row">
-            <span>Remaining</span>
-            <strong>
-              <ng-container *ngIf="!isSummaryLoading; else remainingLoading">
-                {{ overallRemainingBudget | money : true : 2 }}
-              </ng-container>
-              <ng-template #remainingLoading>--</ng-template>
-            </strong>
-          </div>
-        </div>
-      </button>
-      <button type="button" class="tab-btn" [class.active]="activeTab === 'timeline'" (click)="setActiveTab('timeline')">
-        Timeline & Tasks
-      </button>
-
-      <button type="button" class="hero-card bid-card" (click)="bidPriceClick.emit()">
-        <div class="card-top">
-          <div class="icon-wrapper green">
-            <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
-          </div>
-          <p class="card-label">Bid Price (Client)</p>
-          <p class="card-value">
-            <ng-container *ngIf="!isSummaryLoading; else bidPriceLoading">
-              {{ bidPriceValue | money : true : 2 }}
-            </ng-container>
-            <ng-template #bidPriceLoading>--</ng-template>
-          </p>
-        </div>
-        <div class="card-bottom">
-          <div class="progress-row">
-            <span>Gross Profit</span>
-            <strong>
-              <ng-container *ngIf="!isSummaryLoading; else grossProfitLoading">
-                {{ bidGrossProfit | money : true : 2 }}
-              </ng-container>
-              <ng-template #grossProfitLoading>--</ng-template>
-            </strong>
-          </div>
-          <div class="progress-row">
-            <span>Profit Margin</span>
-            <strong>{{ bidProfitMarginPercent | number: '1.1-1' }}%</strong>
-          </div>
-          <div class="progress-row">
-            <span>Exposure</span>
-            <strong>
-              <ng-container *ngIf="!isSummaryLoading; else exposureLoading">
-                {{ bidExposureValue | money : true : 2 }}
-              </ng-container>
-              <ng-template #exposureLoading>--</ng-template>
-            </strong>
-          </div>
-        </div>
-      </button>
-    </div>
-  }
-
   @if (stageDisplayMode === 'stage' && activeTab === 'overview') {
     <div class="scope-pane">
       <div class="hero-grid">
@@ -123,19 +39,37 @@
               <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
             </div>
             <p class="card-label">Overall Budget</p>
-            <p class="card-value">{{ overallBudgetValue | money : true : 2 }}</p>
+            <p class="card-value">
+              @if (hasResolvedFinancialSummary) {
+                {{ overallBudgetValue | money : true : 2 }}
+              } @else {
+                --
+              }
+            </p>
           </div>
           <div class="card-bottom">
             <div class="progress-row">
               <span>Spent to Date</span>
-              <strong>{{ spentToDate | money : true : 2 }}</strong>
+              <strong>
+                @if (hasResolvedFinancialSummary) {
+                  {{ spentToDate | money : true : 2 }}
+                } @else {
+                  --
+                }
+              </strong>
             </div>
             <div class="progress-track" aria-hidden="true">
               <div class="progress-fill budget" [style.width.%]="overallBudgetProgressPercent"></div>
             </div>
             <div class="progress-row">
               <span>Remaining</span>
-              <strong>{{ overallRemainingBudget | money : true : 2 }}</strong>
+              <strong>
+                @if (hasResolvedFinancialSummary) {
+                  {{ overallRemainingBudget | money : true : 2 }}
+                } @else {
+                  --
+                }
+              </strong>
             </div>
           </div>
         </button>
@@ -168,7 +102,7 @@
             </div>
             <p class="card-label">Bid Price (Client)</p>
             <p class="card-value">
-              @if (!isSummaryLoading) {
+              @if (hasResolvedFinancialSummary) {
                 {{ bidPriceValue | money : true : 2 }}
               } @else {
                 --
@@ -178,15 +112,33 @@
           <div class="card-bottom">
             <div class="progress-row">
               <span>Gross Profit</span>
-              <strong>{{ bidGrossProfit | money : true : 2 }}</strong>
+              <strong>
+                @if (hasResolvedFinancialSummary) {
+                  {{ bidGrossProfit | money : true : 2 }}
+                } @else {
+                  --
+                }
+              </strong>
             </div>
             <div class="progress-row">
               <span>Profit Margin</span>
-              <strong>{{ bidProfitMarginPercent | number: '1.1-1' }}%</strong>
+              <strong>
+                @if (hasResolvedFinancialSummary) {
+                  {{ bidProfitMarginPercent | number: '1.1-1' }}%
+                } @else {
+                  --
+                }
+              </strong>
             </div>
             <div class="progress-row">
               <span>Exposure</span>
-              <strong>{{ bidExposureValue | money : true : 2 }}</strong>
+              <strong>
+                @if (hasResolvedFinancialSummary) {
+                  {{ bidExposureValue | money : true : 2 }}
+                } @else {
+                  --
+                }
+              </strong>
             </div>
           </div>
         </button>

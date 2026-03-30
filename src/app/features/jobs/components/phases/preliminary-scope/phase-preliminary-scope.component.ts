@@ -461,6 +461,10 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     return fromProjectDetails > 0 ? fromProjectDetails : 0;
   }
 
+  get hasResolvedFinancialSummary(): boolean {
+    return !!(this.scopeCostSummary || this.loadedCostSummary);
+  }
+
   get spentToDate(): number {
     return 0;
   }
