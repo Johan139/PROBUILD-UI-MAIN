@@ -614,23 +614,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get preTaxSubtotal(): number {
-    if (this.hasBomDirectCosts) {
-      return (
-        this.directAndInsurableSubtotal +
-        this.overheadProfit +
-        this.contingencyAllowance +
-        this.escalationAllowance
-      );
-    }
-
-    const fromSummary = Number(this.scopeCostSummary?.preTaxSubtotal || 0);
-    if (fromSummary > 0) return fromSummary;
-    return (
-      this.directAndInsurableSubtotal +
-      this.overheadProfit +
-      this.contingencyAllowance +
-      this.escalationAllowance
-    );
+    return this.directAndInsurableSubtotal;
   }
 
   get taxesAllowance(): number {
@@ -1600,12 +1584,6 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       permitsAdminFees: this.permitsAdminFees,
       insuranceBonds: this.insuranceBonds,
       directAndInsurableSubtotal: this.directAndInsurableSubtotal,
-      overheadProfit: this.overheadProfit,
-      overheadPct: this.overheadPct,
-      contingencyAllowance: this.contingencyAllowance,
-      contingencyPct: this.contingencyPct,
-      escalationAllowance: this.escalationAllowance,
-      preTaxSubtotal: this.preTaxSubtotal,
       taxesAllowance: this.taxesAllowance,
       salesTaxPct: this.salesTaxPct,
       totalProjectCost: this.totalProjectCost,
