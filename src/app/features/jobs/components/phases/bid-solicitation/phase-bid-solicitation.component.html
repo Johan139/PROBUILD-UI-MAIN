@@ -19,11 +19,12 @@
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
-  <app-job-inbound-bidding
-    *ngIf="stageDisplayMode === 'stage'"
-    [projectDetails]="projectDetails"
-    (back)="back.emit()"
-    (goLive)="onInboundProceed()"
-  ></app-job-inbound-bidding>
+  @if (stageDisplayMode === 'stage') {
+    <app-job-inbound-bidding
+      [projectDetails]="projectDetails"
+      (back)="back.emit()"
+      (goLive)="onInboundProceed()"
+    ></app-job-inbound-bidding>
+  }
 </div>
 

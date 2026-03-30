@@ -51,7 +51,7 @@ import {
   PaymentIntentRequest,
   StripeService,
 } from '../../services/StripeService';
-import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -136,10 +136,8 @@ export type ActiveMap = Record<
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
-    NgForOf,
-    NgIf,
-    SharedModule,
-  ],
+    SharedModule
+],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })

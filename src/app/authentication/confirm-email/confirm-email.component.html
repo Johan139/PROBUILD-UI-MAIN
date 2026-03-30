@@ -1,31 +1,35 @@
-<div *ngIf="isLoading">
+@if (isLoading) {
+  <div>
     <app-loader></app-loader>
   </div>
-  <div class="container w-100">
-    <div class="row justify-content-center"> <!-- Center the card in the row -->
-      <div class="col-lg-12">
-        <mat-card class="confirm-email-card">
-          <mat-card-header class="text-center"> <!-- Center header content -->
-            <mat-card-title class="title-header text-bold"> Successful Registration </mat-card-title>
-            <mat-card-subtitle class="title-header text-color-cus"> If you see this email you have Successfully registered to ProBuild AI </mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <form [formGroup]="confirmEmailForm" (ngSubmit)="onConfirmEmail()">
-              <div style="margin-top: 1.5rem;">
-                <mat-card-actions>
-                  <button mat-button class="w-100 btn btn-primary" type="submit">Confirm Email</button>
-                </mat-card-actions>
-              </div>
-            </form>
-          </mat-card-content>
-        </mat-card>
-      </div>
+}
+<div class="container w-100">
+  <div class="row justify-content-center"> <!-- Center the card in the row -->
+    <div class="col-lg-12">
+      <mat-card class="confirm-email-card">
+        <mat-card-header class="text-center"> <!-- Center header content -->
+          <mat-card-title class="title-header text-bold"> Successful Registration </mat-card-title>
+          <mat-card-subtitle class="title-header text-color-cus"> If you see this email you have Successfully registered to ProBuild AI </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="confirmEmailForm" (ngSubmit)="onConfirmEmail()">
+            <div style="margin-top: 1.5rem;">
+              <mat-card-actions>
+                <button mat-button class="w-100 btn btn-primary" type="submit">Confirm Email</button>
+              </mat-card-actions>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
-  
-  <div *ngIf="showAlert" class="alert-overlay">
+</div>
+
+@if (showAlert) {
+  <div class="alert-overlay">
     <div class="alert-modal">
       <p>{{ alertMessage }}</p>
       <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
     </div>
   </div>
+}

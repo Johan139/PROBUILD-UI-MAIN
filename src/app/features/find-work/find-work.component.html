@@ -6,141 +6,147 @@
       <p>Find subcontractors and manage bids</p>
     </div>
     <!-- <button mat-flat-button color="primary" class="post-job-btn" (click)="openPostJobDialog()">
-      <mat-icon>add</mat-icon>
-      Post New Job
-    </button> -->
-  </div>
+    <mat-icon>add</mat-icon>
+    Post New Job
+  </button> -->
+</div>
 
-  <!-- Role Labels (Optional/Static for now) -->
-  <div class="role-labels">
-    <span class="role-label"><mat-icon>domain</mat-icon> General Contractor</span>
-    <span class="role-label right"><mat-icon>engineering</mat-icon> Subcontractor</span>
-  </div>
+<!-- Role Labels (Optional/Static for now) -->
+<div class="role-labels">
+  <span class="role-label"><mat-icon>domain</mat-icon> General Contractor</span>
+  <span class="role-label right"><mat-icon>engineering</mat-icon> Subcontractor</span>
+</div>
 
-  <!-- Tabs -->
-  <div class="tabs-navigation">
-    <button
-      (click)="setActiveTab('postings')"
-      [class.active]="activeTab === 'postings'"
-      class="tab-btn"
+<!-- Tabs -->
+<div class="tabs-navigation">
+  <button
+    (click)="setActiveTab('postings')"
+    [class.active]="activeTab === 'postings'"
+    class="tab-btn"
     >
-      My Job Postings
-      <span class="badge yellow" *ngIf="myPostings.length > 0">{{ myPostings.length }}</span>
-    </button>
-    <button
-      (click)="setActiveTab('browse')"
-      [class.active]="activeTab === 'browse'"
-      class="tab-btn"
+    My Job Postings
+    @if (myPostings.length > 0) {
+      <span class="badge yellow">{{ myPostings.length }}</span>
+    }
+  </button>
+  <button
+    (click)="setActiveTab('browse')"
+    [class.active]="activeTab === 'browse'"
+    class="tab-btn"
     >
-      Browse Jobs
-      <span class="badge green">{{ filteredJobs.length }}</span>
-    </button>
-    <button
-      (click)="setActiveTab('bids')"
-      [class.active]="activeTab === 'bids'"
-      class="tab-btn"
+    Browse Jobs
+    <span class="badge green">{{ filteredJobs.length }}</span>
+  </button>
+  <button
+    (click)="setActiveTab('bids')"
+    [class.active]="activeTab === 'bids'"
+    class="tab-btn"
     >
-      My Bids
-      <span class="badge blue">{{ myBids.length }}</span>
-    </button>
-    <button
-      (click)="setActiveTab('saved')"
-      [class.active]="activeTab === 'saved'"
-      class="tab-btn"
+    My Bids
+    <span class="badge blue">{{ myBids.length }}</span>
+  </button>
+  <button
+    (click)="setActiveTab('saved')"
+    [class.active]="activeTab === 'saved'"
+    class="tab-btn"
     >
-      Saved Jobs
-      <span class="badge purple" *ngIf="savedJobs.length > 0">{{ savedJobs.length }}</span>
-    </button>
-    <button
-      (click)="setActiveTab('alerts')"
-      [class.active]="activeTab === 'alerts'"
-      class="tab-btn"
+    Saved Jobs
+    @if (savedJobs.length > 0) {
+      <span class="badge purple">{{ savedJobs.length }}</span>
+    }
+  </button>
+  <button
+    (click)="setActiveTab('alerts')"
+    [class.active]="activeTab === 'alerts'"
+    class="tab-btn"
     >
-      <mat-icon class="tab-icon">notifications</mat-icon>
-      Job Alerts
-    </button>
-  </div>
+    <mat-icon class="tab-icon">notifications</mat-icon>
+    Job Alerts
+  </button>
+</div>
 
-  <div *ngIf="filtersLoading" class="centered-spinner-container">
+@if (filtersLoading) {
+  <div class="centered-spinner-container">
     <mat-spinner></mat-spinner>
   </div>
+}
 
-  <!-- Content Area -->
-  <div *ngIf="!filtersLoading" class="content-area">
-
+<!-- Content Area -->
+@if (!filtersLoading) {
+  <div class="content-area">
     <!-- MAP SECTION (Visible for tabs that need it) -->
-    <app-find-work-map
-      *ngIf="['postings', 'browse', 'bids', 'saved'].includes(activeTab)"
-      [center]="center"
-      [zoom]="zoom"
-      [jobs]="filteredJobs"
-      [distance]="100"
-      [myPostings]="myPostings"
-      [biddedJobIds]="biddedJobIds"
-      [savedJobs]="savedJobs"
-      [activeTab]="activeTab"
-      (markerClick)="onMarkerClick($event)"
-    ></app-find-work-map>
-
+    @if (['postings', 'browse', 'bids', 'saved'].includes(activeTab)) {
+      <app-find-work-map
+        [center]="center"
+        [zoom]="zoom"
+        [jobs]="filteredJobs"
+        [distance]="100"
+        [myPostings]="myPostings"
+        [biddedJobIds]="biddedJobIds"
+        [savedJobs]="savedJobs"
+        [activeTab]="activeTab"
+        (markerClick)="onMarkerClick($event)"
+      ></app-find-work-map>
+    }
     <!-- TAB CONTENT -->
     <div class="tab-content-wrapper">
-
-      <app-my-job-postings
-        *ngIf="activeTab === 'postings'"
-        [myPostings]="myPostings"
-        (postJob)="openPostJobDialog()"
-        (jobClick)="onJobClick($event)"
-      ></app-my-job-postings>
-
-      <app-browse-jobs
-        *ngIf="activeTab === 'browse'"
-        [jobs]="jobs"
-        [savedJobs]="savedJobs"
-        [loading]="jobsLoading"
-        [userAddresses]="userAddresses"
-        [(locationMode)]="locationMode"
-        [(selectedAddressId)]="selectedAddressId"
-        (filteredJobsChange)="onFilteredJobsChange($event)"
-        (jobClick)="onJobClick($event)"
-        (toggleSaved)="toggleSavedJob($event.jobId, $event.event)"
-        (openBid)="openBidDialog($event.jobId, $event.tradePackageId, $event.event)"
-        (highlightMarker)="highlightMarker($event)"
-        (unhighlightMarker)="unhighlightMarker($event)"
-        (addressSelected)="onAddressSelected()"
-      ></app-browse-jobs>
-
-      <app-my-bids
-        *ngIf="activeTab === 'bids'"
-        [myBids]="myBids"
-        [loading]="bidsLoading"
-        [userTrade]="userTrade"
-        [myQuotes]="myQuotes"
-        (viewMoreInfo)="onViewMoreInfo($event)"
-        (refreshJobs)="loadJobs()"
-      ></app-my-bids>
-
-      <app-saved-jobs
-        *ngIf="activeTab === 'saved'"
-        [savedJobsList]="filteredJobs"
-        [savedJobIds]="savedJobs"
-        [userTrade]="userTrade"
-        [myQuotes]="myQuotes"
-        (clearAll)="savedJobs = []; saveSavedJobs()"
-        (browseJobs)="setActiveTab('browse')"
-        (jobClick)="onJobClick($event)"
-        (toggleSaved)="toggleSavedJob($event.jobId, $event.event)"
-        (viewMoreInfo)="onViewMoreInfo($event)"
-      ></app-saved-jobs>
-
-      <app-job-alerts
-        *ngIf="activeTab === 'alerts'"
-        [selectedTrades]="selectedTrades"
-        (selectedTradesChange)="selectedTrades = $event"
-        [allTrades]="allTrades"
-        [notificationPreferences]="notificationPreferences"
-        (savePreferences)="saveSavedJobs()"
-      ></app-job-alerts>
-
+      @if (activeTab === 'postings') {
+        <app-my-job-postings
+          [myPostings]="myPostings"
+          (postJob)="openPostJobDialog()"
+          (jobClick)="onJobClick($event)"
+        ></app-my-job-postings>
+      }
+      @if (activeTab === 'browse') {
+        <app-browse-jobs
+          [jobs]="jobs"
+          [savedJobs]="savedJobs"
+          [loading]="jobsLoading"
+          [userAddresses]="userAddresses"
+          [(locationMode)]="locationMode"
+          [(selectedAddressId)]="selectedAddressId"
+          (filteredJobsChange)="onFilteredJobsChange($event)"
+          (jobClick)="onJobClick($event)"
+          (toggleSaved)="toggleSavedJob($event.jobId, $event.event)"
+          (openBid)="openBidDialog($event.jobId, $event.tradePackageId, $event.event)"
+          (highlightMarker)="highlightMarker($event)"
+          (unhighlightMarker)="unhighlightMarker($event)"
+          (addressSelected)="onAddressSelected()"
+        ></app-browse-jobs>
+      }
+      @if (activeTab === 'bids') {
+        <app-my-bids
+          [myBids]="myBids"
+          [loading]="bidsLoading"
+          [userTrade]="userTrade"
+          [myQuotes]="myQuotes"
+          (viewMoreInfo)="onViewMoreInfo($event)"
+          (refreshJobs)="loadJobs()"
+        ></app-my-bids>
+      }
+      @if (activeTab === 'saved') {
+        <app-saved-jobs
+          [savedJobsList]="filteredJobs"
+          [savedJobIds]="savedJobs"
+          [userTrade]="userTrade"
+          [myQuotes]="myQuotes"
+          (clearAll)="savedJobs = []; saveSavedJobs()"
+          (browseJobs)="setActiveTab('browse')"
+          (jobClick)="onJobClick($event)"
+          (toggleSaved)="toggleSavedJob($event.jobId, $event.event)"
+          (viewMoreInfo)="onViewMoreInfo($event)"
+        ></app-saved-jobs>
+      }
+      @if (activeTab === 'alerts') {
+        <app-job-alerts
+          [selectedTrades]="selectedTrades"
+          (selectedTradesChange)="selectedTrades = $event"
+          [allTrades]="allTrades"
+          [notificationPreferences]="notificationPreferences"
+          (savePreferences)="saveSavedJobs()"
+        ></app-job-alerts>
+      }
     </div>
   </div>
+}
 </div>

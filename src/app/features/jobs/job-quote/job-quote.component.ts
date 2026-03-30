@@ -22,7 +22,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCardModule } from '@angular/material/card';
 import { MatDivider, MatDividerModule } from '@angular/material/divider';
-import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -87,9 +87,6 @@ const Google_API = environment.Google_API;
     MatCardModule,
     MatDivider,
     FormsModule,
-    NgIf,
-    NgFor,
-    // Angular Material Modules
     MatFormFieldModule,
     MatSelectModule,
     MatDatepickerModule,
@@ -106,12 +103,11 @@ const Google_API = environment.Google_API;
     MatIconModule,
     MatCheckboxModule,
     MatRadioModule,
-    // Custom Components and Pipes
     LoaderComponent,
     SubscriptionWarningComponent,
     MatToolbarModule,
-    MoneyPipe,
-  ],
+    MoneyPipe
+],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
   styleUrls: ['./job-quote.component.scss'],

@@ -3,7 +3,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { PdfViewerStateService } from '../../../services/pdf-viewer-state.service';
 import { firstValueFrom, Subscription } from 'rxjs';
-import { CommonModule } from '@angular/common';
+
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { marked } from 'marked';
 import { FormsModule } from '@angular/forms';
@@ -26,14 +26,13 @@ import { AuthService } from '../../../authentication/auth.service';
   selector: 'app-blueprint-test-page',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     RouterLink,
     SubscriptionWarningComponent,
     RichTextEditorComponent,
     MatTabsModule,
-    MatExpansionModule,
-  ],
+    MatExpansionModule
+],
   templateUrl: './blueprint-test-page.component.html',
   styleUrls: ['./blueprint-test-page.component.scss'],
 })

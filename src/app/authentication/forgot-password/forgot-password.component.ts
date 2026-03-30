@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { NgIf } from '@angular/common';
+
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,13 +21,12 @@ import { MatDividerModule } from '@angular/material/divider';
   imports: [
     ReactiveFormsModule,
     MatCardModule,
-    NgIf,
     MatFormFieldModule,
     MatInputModule,
     LoaderComponent,
     MatButtonModule,
-    MatDividerModule,
-  ],
+    MatDividerModule
+],
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss'],
 })

@@ -38,79 +38,76 @@
     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
     class="hidden-file-input"
     (change)="onFileSelected($event)"
-  />
+    />
 
-  <section
-    class="checklist-item-card"
-    *ngFor="let item of closeoutItems"
-    [class.is-complete]="isComplete(item.key)"
-  >
-    <div class="checklist-item-main">
-      <div class="checklist-item-icon" [class.is-complete]="isComplete(item.key)">
-        <lucide-icon [name]="isComplete(item.key) ? 'check' : item.iconName" class="icon-sm"></lucide-icon>
-      </div>
-
-      <div class="checklist-item-content">
-        <div class="checklist-item-title-row">
-          <p class="checklist-item-title">{{ item.label }}</p>
-          <!-- <lucide-icon
-            *ngIf="getUpload(item.key)"
-            name="check"
-            class="icon-xs upload-confirm-icon"
-          ></lucide-icon> -->
+    @for (item of closeoutItems; track item) {
+      <section
+        class="checklist-item-card"
+        [class.is-complete]="isComplete(item.key)"
+        >
+        <div class="checklist-item-main">
+          <div class="checklist-item-icon" [class.is-complete]="isComplete(item.key)">
+            <lucide-icon [name]="isComplete(item.key) ? 'check' : item.iconName" class="icon-sm"></lucide-icon>
+          </div>
+          <div class="checklist-item-content">
+            <div class="checklist-item-title-row">
+              <p class="checklist-item-title">{{ item.label }}</p>
+              <!-- <lucide-icon
+              *ngIf="getUpload(item.key)"
+              name="check"
+              class="icon-xs upload-confirm-icon"
+            ></lucide-icon> -->
+          </div>
+          <p class="checklist-item-desc">{{ item.desc }}</p>
+          <p class="checklist-item-detail">{{ item.detail }}</p>
         </div>
-
-        <p class="checklist-item-desc">{{ item.desc }}</p>
-        <p class="checklist-item-detail">{{ item.detail }}</p>
       </div>
-    </div>
-
-    <div class="checklist-item-actions">
-      <ng-container *ngIf="getUpload(item.key) as upload; else uploadCta">
-        <div class="upload-meta">
-          <p class="upload-name">{{ upload.name }}</p>
-          <p class="upload-type">{{ upload.type }}</p>
-          <p class="upload-date">Uploaded {{ upload.date }}</p>
-          <p class="upload-date" *ngIf="isUploading(item.key)">
-            Uploading {{ uploadProgress(item.key) }}%
-          </p>
-          <p class="upload-error" *ngIf="uploadError(item.key)">{{ uploadError(item.key) }}</p>
-        </div>
-
-        <button
-          type="button"
-          class="btn btn-upload-secondary"
-          (click)="triggerFilePicker(item.key, closeoutFileInput)"
-        >
-          Replace
-        </button>
-
-        <button type="button" class="btn btn-upload-danger" (click)="removeUpload(item.key)">
-          Remove
-        </button>
-      </ng-container>
-
-      <ng-template #uploadCta>
-        <button
-          type="button"
-          class="btn btn-upload-outline"
-          (click)="triggerFilePicker(item.key, closeoutFileInput)"
-        >
-          <lucide-icon name="upload" class="icon-xs"></lucide-icon>
-          Upload PDF
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-mark"
-          [class.is-complete]="isComplete(item.key)"
-          (click)="toggleItem(item.key)"
-        >
-          {{ isComplete(item.key) ? 'Done' : 'Mark Done' }}
-        </button>
-      </ng-template>
-    </div>
-  </section>
+      <div class="checklist-item-actions">
+        @if (getUpload(item.key); as upload) {
+          <div class="upload-meta">
+            <p class="upload-name">{{ upload.name }}</p>
+            <p class="upload-type">{{ upload.type }}</p>
+            <p class="upload-date">Uploaded {{ upload.date }}</p>
+            @if (isUploading(item.key)) {
+              <p class="upload-date">
+                Uploading {{ uploadProgress(item.key) }}%
+              </p>
+            }
+            @if (uploadError(item.key)) {
+              <p class="upload-error">{{ uploadError(item.key) }}</p>
+            }
+          </div>
+          <button
+            type="button"
+            class="btn btn-upload-secondary"
+            (click)="triggerFilePicker(item.key, closeoutFileInput)"
+            >
+            Replace
+          </button>
+          <button type="button" class="btn btn-upload-danger" (click)="removeUpload(item.key)">
+            Remove
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-upload-outline"
+            (click)="triggerFilePicker(item.key, closeoutFileInput)"
+            >
+            <lucide-icon name="upload" class="icon-xs"></lucide-icon>
+            Upload PDF
+          </button>
+          <button
+            type="button"
+            class="btn btn-mark"
+            [class.is-complete]="isComplete(item.key)"
+            (click)="toggleItem(item.key)"
+            >
+            {{ isComplete(item.key) ? 'Done' : 'Mark Done' }}
+          </button>
+        }
+      </div>
+    </section>
+  }
 
   <section class="progress-card">
     <div class="progress-row">
@@ -128,10 +125,12 @@
     <p class="hint">Final handover package is complete and ready for archive.</p>
 
     <div class="closure-grid">
-      <article *ngFor="let stat of closureStats">
-        <span class="label">{{ stat.label }}</span>
-        <strong [class.archive-pill]="stat.label === 'Archive State'">{{ stat.label === 'Archive State' ? archiveState : stat.value }}</strong>
-      </article>
+      @for (stat of closureStats; track stat) {
+        <article>
+          <span class="label">{{ stat.label }}</span>
+          <strong [class.archive-pill]="stat.label === 'Archive State'">{{ stat.label === 'Archive State' ? archiveState : stat.value }}</strong>
+        </article>
+      }
     </div>
   </section>
 </section>

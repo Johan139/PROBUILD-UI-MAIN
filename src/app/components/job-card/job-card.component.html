@@ -1,122 +1,146 @@
 <div class="job-header">
   <h3>{{ job.projectName }}</h3>
   <div class="client-info">
-    <span *ngIf="job.clientCompanyName"
-      >{{ job.clientCompanyName }} ({{ job.clientName }})</span
-    >
-    <span *ngIf="!job.clientCompanyName">{{ job.clientName }}</span>
-    <ng-container *ngIf="job.clientRating; else newClient">
-      <mat-icon
-        *ngFor="let star of getStarRating(job.clientRating)"
-        class="gold-star"
-        >{{ star }}</mat-icon
-      >
-      <span>({{ job.clientRating.toFixed(1) }})</span>
-    </ng-container>
-    <ng-template #newClient>
+    @if (job.clientCompanyName) {
       <span
-        *ngIf="showNewTag"
-        class="new-tag"
-        matTooltip="This user is new to the system and does not have a rating yet"
-        >New</span
-      >
-    </ng-template>
-  </div>
-</div>
-<div class="job-location">
-  <span
-    >📍
-    {{
-      job.address ||
-        (job.city && job.state
+        >{{ job.clientCompanyName }} ({{ job.clientName }})</span
+        >
+      }
+      @if (!job.clientCompanyName) {
+        <span>{{ job.clientName }}</span>
+      }
+      @if (job.clientRating) {
+        @for (star of getStarRating(job.clientRating); track star) {
+          <mat-icon
+            class="gold-star"
+            >{{ star }}</mat-icon
+            >
+          }
+          <span>({{ job.clientRating.toFixed(1) }})</span>
+        } @else {
+          @if (showNewTag) {
+            <span
+              class="new-tag"
+              matTooltip="This user is new to the system and does not have a rating yet"
+              >New</span
+              >
+            }
+          }
+        </div>
+      </div>
+      <div class="job-location">
+        <span
+          >📍
+          {{
+          job.address ||
+          (job.city && job.state
           ? job.city + ", " + job.state
           : "Address not found")
-    }}
-    <span class="job-distance" *ngIf="job.distance"
-      >- {{ job.distance.toFixed(2) }} mi away</span
-    ></span
-  >
-</div>
-<div class="job-meta">
-  <div class="job-dates">
-    <p class="job-description">
-      <strong>Job Type:</strong> {{ job.jobType | titlecase }}
-    </p>
-    <p class="job-posted-date" *ngIf="job.biddingStartDate">
-      <strong>Posted:</strong> {{ job.biddingStartDate | date }}
-    </p>
-    <div class="job-expected-dates">
-      <span class="provisional-label">Provisional:</span>
-      <span *ngIf="job.potentialStartDate"
-        ><strong>Start:</strong> {{ job.potentialStartDate | date }}</span
-      >
-      <span *ngIf="job.potentialEndDate"
-        ><strong>End:</strong> {{ job.potentialEndDate | date }}</span
-      >
-      <span *ngIf="job.durationInDays"
-        ><strong>Duration:</strong> {{ job.durationInDays }} days</span
-      >
-    </div>
-  </div>
-</div>
-<div class="job-footer">
-  <div class="job-trades">
-    <span
-      *ngFor="let trade of job.trades"
-      class="trade-pill"
-      [class.match]="trade === userTrade"
-      [class.greyed-out]="!hasTradeMatch(job)"
-      [matTooltip]="getTradeTooltip(trade)"
-    >
-      {{ trade | titlecase }}
-    </span>
+          }}
+          @if (job.distance) {
+            <span class="job-distance"
+              >- {{ job.distance.toFixed(2) }} mi away</span
+              >
+              }</span
+              >
+            </div>
+            <div class="job-meta">
+              <div class="job-dates">
+                <p class="job-description">
+                  <strong>Job Type:</strong> {{ job.jobType | titlecase }}
+                </p>
+                @if (job.biddingStartDate) {
+                  <p class="job-posted-date">
+                    <strong>Posted:</strong> {{ job.biddingStartDate | date }}
+                  </p>
+                }
+                <div class="job-expected-dates">
+                  <span class="provisional-label">Provisional:</span>
+                  @if (job.potentialStartDate) {
+                    <span
+                      ><strong>Start:</strong> {{ job.potentialStartDate | date }}</span
+                      >
+                    }
+                    @if (job.potentialEndDate) {
+                      <span
+                        ><strong>End:</strong> {{ job.potentialEndDate | date }}</span
+                        >
+                      }
+                      @if (job.durationInDays) {
+                        <span
+                          ><strong>Duration:</strong> {{ job.durationInDays }} days</span
+                          >
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div class="job-footer">
+                    <div class="job-trades">
+                      @for (trade of job.trades; track trade) {
+                        <span
+                          class="trade-pill"
+                          [class.match]="trade === userTrade"
+                          [class.greyed-out]="!hasTradeMatch(job)"
+                          [matTooltip]="getTradeTooltip(trade)"
+                          >
+                          {{ trade | titlecase }}
+                        </span>
+                      }
 
-    <!-- Quote status -->
-    <div *ngIf="quote as q" class="status-pill-container">
-      <span class="status-pill" [ngClass]="getStatusClass(q.status)">
-        {{ q.status }}
-      </span>
-    </div>
-  </div>
+                      <!-- Quote status -->
+                      @if (quote; as q) {
+                        <div class="status-pill-container">
+                          <span class="status-pill" [ngClass]="getStatusClass(q.status)">
+                            {{ q.status }}
+                          </span>
+                        </div>
+                      }
+                    </div>
 
-  <div class="job-card-actions">
-    <!-- View / Edit Quote -->
-    <button
-      *ngIf="quote"
-      mat-button
-      type="button"
-      class="btn btn-primary"
-      (click)="onViewQuoteClick($event)"
-    >
-      View & Edit Quote
-    </button>
+                    <div class="job-card-actions">
+                      <!-- View / Edit Quote -->
+                      @if (quote) {
+                        <button
+                          mat-button
+                          type="button"
+                          class="btn btn-primary"
+                          (click)="onViewQuoteClick($event)"
+                          >
+                          View & Edit Quote
+                        </button>
+                      }
 
-    <!-- Withdraw Quote -->
-    <button
-      *ngIf="quote?.status === 'Submitted'"
-      mat-button
-      type="button"
-      class="btn btn-danger"
-      (click)="onWithdrawQuoteClick($event)"
-    >
-      Withdraw Quote
-    </button>
+                      <!-- Withdraw Quote -->
+                      @if (quote?.status === 'Submitted') {
+                        <button
+                          mat-button
+                          type="button"
+                          class="btn btn-danger"
+                          (click)="onWithdrawQuoteClick($event)"
+                          >
+                          Withdraw Quote
+                        </button>
+                      }
 
-    <!-- Job info -->
-    <button
-      mat-button
-      type="button"
-      class="btn btn-secondary"
-      (click)="onViewMoreInfoClick($event)"
-    >
-      More Information
-    </button>
+                      <!-- Job info -->
+                      <button
+                        mat-button
+                        type="button"
+                        class="btn btn-secondary"
+                        (click)="onViewMoreInfoClick($event)"
+                        >
+                        More Information
+                      </button>
 
-    <!-- Slot for Create Quote button -->
-    <ng-content *ngIf="showBidButton" select="[slot='actions']"></ng-content>
-  </div>
-</div>
+                      <!-- Slot for Create Quote button -->
+                      @if (showBidButton) {
+                        <ng-content select="[slot='actions']"></ng-content>
+                      }
+                    </div>
+                  </div>
 
-<p *ngIf="!hasTradeMatch(job)" class="trade-warning">
-  Your trade does not match up to anything required by this job
-</p>
+                  @if (!hasTradeMatch(job)) {
+                    <p class="trade-warning">
+                      Your trade does not match up to anything required by this job
+                    </p>
+                  }

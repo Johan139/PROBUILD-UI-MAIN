@@ -41,49 +41,56 @@
     <section class="messages">
       <h3 class="section-title">Messages</h3>
       <ul class="message-list">
-        <li class="message" *ngFor="let note of data.notes">
-          <div class="avatar" aria-hidden="true">
-           <span class="avatar__text">{{ getInitials(getUserName(note.createdByUserId)) }}</span>
-          </div>
-          <div class="bubble">
-            <div class="bubble-header">
-              <span class="author">{{ getUserName(note.createdByUserId) }}</span>
-              <span class="time">{{ note.createdAt | date:'short' }}</span>
+        @for (note of data.notes; track note) {
+          <li class="message">
+            <div class="avatar" aria-hidden="true">
+              <span class="avatar__text">{{ getInitials(getUserName(note.createdByUserId)) }}</span>
             </div>
-            <div class="bubble-text">
-              {{ note.noteText }}
+            <div class="bubble">
+              <div class="bubble-header">
+                <span class="author">{{ getUserName(note.createdByUserId) }}</span>
+                <span class="time">{{ note.createdAt | date:'short' }}</span>
+              </div>
+              <div class="bubble-text">
+                {{ note.noteText }}
+              </div>
             </div>
-          </div>
-        </li>
+          </li>
+        }
       </ul>
     </section>
 
-    <section *ngIf="data.notes[0].rejectionReason" class="rejection">
-      <h3 class="section-title">Rejection Reason</h3>
-      <p class="rejection-text">{{ data.notes[0].rejectionReason }}</p>
-    </section>
+    @if (data.notes[0].rejectionReason) {
+      <section class="rejection">
+        <h3 class="section-title">Rejection Reason</h3>
+        <p class="rejection-text">{{ data.notes[0].rejectionReason }}</p>
+      </section>
+    }
   </mat-dialog-content>
 
   <!-- Actions -->
   <mat-dialog-actions class="dialog-actions" align="end">
-    <button mat-button class="btn btn-primary"
-            *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="startApproval(data.notes[0])" matTooltip="Approve this action point" [matTooltipShowDelay]="500">
-      Approve
-    </button>
+    @if (authService.hasPermission('manageSubtaskNotes') && !data.isArchived) {
+      <button mat-button class="btn btn-primary"
+        (click)="startApproval(data.notes[0])" matTooltip="Approve this action point" [matTooltipShowDelay]="500">
+        Approve
+      </button>
+    }
 
-    <button mat-button class="btn btn-danger"
-            *ngIf="authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="rejectNote(data.notes[0])" matTooltip="Reject this action point" [matTooltipShowDelay]="500">
-      Reject
-    </button>
+    @if (authService.hasPermission('manageSubtaskNotes') && !data.isArchived) {
+      <button mat-button class="btn btn-danger"
+        (click)="rejectNote(data.notes[0])" matTooltip="Reject this action point" [matTooltipShowDelay]="500">
+        Reject
+      </button>
+    }
 
-    <button mat-button class="btn btn-secondary"
-            *ngIf="(data.notes[0].approved || data.notes[0].rejected) &&
-                   authService.hasPermission('manageSubtaskNotes') && !data.isArchived"
-            (click)="archiveNote(data.notes[0])" matTooltip="Archive this note - you can see all archived notes in the Archive page in the sidebar" [matTooltipShowDelay]="500">
-      Archive
-    </button>
+    @if ((data.notes[0].approved || data.notes[0].rejected) &&
+      authService.hasPermission('manageSubtaskNotes') && !data.isArchived) {
+      <button mat-button class="btn btn-secondary"
+        (click)="archiveNote(data.notes[0])" matTooltip="Archive this note - you can see all archived notes in the Archive page in the sidebar" [matTooltipShowDelay]="500">
+        Archive
+      </button>
+    }
 
     <button mat-button class="btn btn-ghost" (click)="openDocumentsDialog(data)" matTooltip="View the image attached this action point" [matTooltipShowDelay]="500">
       View Image

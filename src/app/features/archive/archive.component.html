@@ -25,307 +25,282 @@
       type="text"
       placeholder="Search archived items..."
       [(ngModel)]="searchTerm"
-    />
-  </div>
+      />
+    </div>
 
-  <!-- ================= FILTER PILLS ================= -->
-  <div class="archive-filters">
-    <button
-      *ngFor="let f of filters"
-      [class.active]="activeFilter === f.key"
-      (click)="activeFilter = f.key"
-    >
-      <mat-icon>{{ f.icon }}</mat-icon>
-      {{ f.label }}
-      <span class="count">{{ f.count }}</span>
-    </button>
-  </div>
+    <!-- ================= FILTER PILLS ================= -->
+    <div class="archive-filters">
+      @for (f of filters; track f) {
+        <button
+          [class.active]="activeFilter === f.key"
+          (click)="activeFilter = f.key"
+          >
+          <mat-icon>{{ f.icon }}</mat-icon>
+          {{ f.label }}
+          <span class="count">{{ f.count }}</span>
+        </button>
+      }
+    </div>
 
-  <!-- ================= TABLES ================= -->
-  <div class="archive-table" [ngClass]="activeFilter" [ngSwitch]="activeFilter">
-    <!-- ================= PROJECTS ================= -->
-    <ng-container *ngSwitchCase="'projects'">
-      <div class="table-header">
-        <span>Project Name</span>
-        <!-- <span>Client</span> -->
-        <span>Type</span>
-        <span>Status</span>
-        <span>Archived Date</span>
-        <span>Actions</span>
-      </div>
-
-      <div
-        class="table-row"
-        *ngFor="let item of archivedProjects | archiveSearch: searchTerm"
-      >
-        <div class="cell main">
-          <strong>{{ item.title }}</strong>
-          <small>{{ item.id }}</small>
-        </div>
-
-        <!-- <div class="cell">—</div> -->
-
-        <div class="cell">
-          <span>{{ item.type }}</span>
-        </div>
-
-        <div class="cell">
-          <span class="status archived">{{ item.status }}</span>
-        </div>
-
-        <div class="cell">
-          {{ item.archivedAt | date: "yyyy-MM-dd" }}
-        </div>
-
-        <div class="cell actions">
-          <div class="action-pill">
-            <button
-              class="icon-btn success"
-              matTooltip="Restore project"
-              (click)="unarchive(item)"
-            >
-              <mat-icon>restore</mat-icon>
-            </button>
-
-            <button
-              class="icon-btn danger"
-              matTooltip="Delete permanently"
-              (click)="delete(item)"
-            >
-              <mat-icon>delete_forever</mat-icon>
-            </button>
+    <!-- ================= TABLES ================= -->
+    <div class="archive-table" [ngClass]="activeFilter">
+      @switch (activeFilter) {
+        <!-- ================= PROJECTS ================= -->
+        @case ('projects') {
+          <div class="table-header">
+            <span>Project Name</span>
+            <!-- <span>Client</span> -->
+            <span>Type</span>
+            <span>Status</span>
+            <span>Archived Date</span>
+            <span>Actions</span>
           </div>
-        </div>
-      </div>
-    </ng-container>
-
-    <!-- ================= QUOTES ================= -->
-    <ng-container *ngSwitchCase="'quotes'">
-      <div class="table-header">
-        <span>Quote Name</span>
-        <span>Client</span>
-        <span>Amount</span>
-        <span>Status</span>
-        <span>Archived</span>
-        <span>Actions</span>
-      </div>
-
-      <div
-        class="table-row"
-        *ngFor="let item of archivedQuotes | archiveSearch: searchTerm"
-      >
-        <div class="cell main">
-          <strong>{{ item.title }}</strong>
-        </div>
-
-        <div class="cell">{{ item.client }}</div>
-        <div class="cell">
-          {{ item.amount | currency: "USD" : "symbol" : "1.2-2" }}
-        </div>
-
-        <div class="cell">
-          <span class="status archived">{{ item.status }}</span>
-        </div>
-
-        <div class="cell">
-          {{ item.archivedAt | date: "yyyy-MM-dd" }}
-        </div>
-
-        <div class="cell actions">
-          <div class="action-pill">
-            <button
-              class="icon-btn success"
-              matTooltip="Restore project"
-              (click)="unarchive(item)"
-            >
-              <mat-icon>restore</mat-icon>
-            </button>
-
-            <button
-              class="icon-btn danger"
-              matTooltip="Delete permanently"
-              (click)="delete(item)"
-            >
-              <mat-icon>delete_forever</mat-icon>
-            </button>
+          @for (item of archivedProjects | archiveSearch: searchTerm; track item) {
+            <div
+              class="table-row"
+              >
+              <div class="cell main">
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.id }}</small>
+              </div>
+              <!-- <div class="cell">—</div> -->
+              <div class="cell">
+                <span>{{ item.type }}</span>
+              </div>
+              <div class="cell">
+                <span class="status archived">{{ item.status }}</span>
+              </div>
+              <div class="cell">
+                {{ item.archivedAt | date: "yyyy-MM-dd" }}
+              </div>
+              <div class="cell actions">
+                <div class="action-pill">
+                  <button
+                    class="icon-btn success"
+                    matTooltip="Restore project"
+                    (click)="unarchive(item)"
+                    >
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                  <button
+                    class="icon-btn danger"
+                    matTooltip="Delete permanently"
+                    (click)="delete(item)"
+                    >
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+        <!-- ================= QUOTES ================= -->
+        @case ('quotes') {
+          <div class="table-header">
+            <span>Quote Name</span>
+            <span>Client</span>
+            <span>Amount</span>
+            <span>Status</span>
+            <span>Archived</span>
+            <span>Actions</span>
           </div>
-        </div>
-      </div>
-    </ng-container>
-
-    <!-- ================= INVOICES ================= -->
-    <ng-container *ngSwitchCase="'invoices'">
-      <div class="table-header">
-        <span>Invoice Name</span>
-        <span>Client</span>
-        <span>Amount</span>
-        <span>Status</span>
-        <span>Archived</span>
-        <span>Actions</span>
-      </div>
-
-      <div
-        class="table-row"
-        *ngFor="let item of archivedInvoices | archiveSearch: searchTerm"
-      >
-        <div class="cell main">
-          <strong>{{ item.title }}</strong>
-        </div>
-
-        <div class="cell">{{ item.client }}</div>
-        <div class="cell">
-          {{ item.amount | currency: "USD" : "symbol" : "1.2-2" }}
-        </div>
-
-        <div class="cell">
-          <span class="status archived">{{ item.status }}</span>
-        </div>
-
-        <div class="cell">
-          {{ item.archivedAt | date: "yyyy-MM-dd" }}
-        </div>
-
-        <div class="cell actions">
-          <div class="action-pill">
-            <button
-              class="icon-btn success"
-              matTooltip="Restore project"
-              (click)="unarchive(item)"
-            >
-              <mat-icon>restore</mat-icon>
-            </button>
-
-            <button
-              class="icon-btn danger"
-              matTooltip="Delete permanently"
-              (click)="delete(item)"
-            >
-              <mat-icon>delete_forever</mat-icon>
-            </button>
+          @for (item of archivedQuotes | archiveSearch: searchTerm; track item) {
+            <div
+              class="table-row"
+              >
+              <div class="cell main">
+                <strong>{{ item.title }}</strong>
+              </div>
+              <div class="cell">{{ item.client }}</div>
+              <div class="cell">
+                {{ item.amount | currency: "USD" : "symbol" : "1.2-2" }}
+              </div>
+              <div class="cell">
+                <span class="status archived">{{ item.status }}</span>
+              </div>
+              <div class="cell">
+                {{ item.archivedAt | date: "yyyy-MM-dd" }}
+              </div>
+              <div class="cell actions">
+                <div class="action-pill">
+                  <button
+                    class="icon-btn success"
+                    matTooltip="Restore project"
+                    (click)="unarchive(item)"
+                    >
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                  <button
+                    class="icon-btn danger"
+                    matTooltip="Delete permanently"
+                    (click)="delete(item)"
+                    >
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+        <!-- ================= INVOICES ================= -->
+        @case ('invoices') {
+          <div class="table-header">
+            <span>Invoice Name</span>
+            <span>Client</span>
+            <span>Amount</span>
+            <span>Status</span>
+            <span>Archived</span>
+            <span>Actions</span>
           </div>
-        </div>
-      </div>
-    </ng-container>
-    <!-- ================= DOCUMENTS ================= -->
-    <ng-container *ngSwitchCase="'documents'">
-      <div class="table-header">
-        <span>Document Name</span>
-        <span>Project</span>
-        <span>Type</span>
-        <span>Size</span>
-        <span>Archived</span>
-        <span>Actions</span>
-      </div>
-
-      <div
-        class="table-row"
-        *ngFor="let item of archivedDocuments | archiveSearch: searchTerm"
-      >
-        <div class="cell main">
-          <strong>{{ item.title }}</strong>
-        </div>
-
-        <div class="cell">{{ item.project }}</div>
-
-        <div class="cell">
-          <span>{{ item.documentType }}</span>
-        </div>
-
-        <div class="cell">{{ item.size | number }} KB</div>
-
-        <div class="cell">
-          {{ item.archivedAt | date: "yyyy-MM-dd" }}
-        </div>
-
-        <div class="cell actions">
-          <div class="action-pill">
-            <button
-              class="icon-btn success"
-              matTooltip="Restore document"
-              (click)="unarchive(item)"
-            >
-              <mat-icon>restore</mat-icon>
-            </button>
-
-            <button
-              class="icon-btn danger"
-              matTooltip="Delete permanently"
-              (click)="delete(item)"
-            >
-              <mat-icon>delete_forever</mat-icon>
-            </button>
+          @for (item of archivedInvoices | archiveSearch: searchTerm; track item) {
+            <div
+              class="table-row"
+              >
+              <div class="cell main">
+                <strong>{{ item.title }}</strong>
+              </div>
+              <div class="cell">{{ item.client }}</div>
+              <div class="cell">
+                {{ item.amount | currency: "USD" : "symbol" : "1.2-2" }}
+              </div>
+              <div class="cell">
+                <span class="status archived">{{ item.status }}</span>
+              </div>
+              <div class="cell">
+                {{ item.archivedAt | date: "yyyy-MM-dd" }}
+              </div>
+              <div class="cell actions">
+                <div class="action-pill">
+                  <button
+                    class="icon-btn success"
+                    matTooltip="Restore project"
+                    (click)="unarchive(item)"
+                    >
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                  <button
+                    class="icon-btn danger"
+                    matTooltip="Delete permanently"
+                    (click)="delete(item)"
+                    >
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+        <!-- ================= DOCUMENTS ================= -->
+        @case ('documents') {
+          <div class="table-header">
+            <span>Document Name</span>
+            <span>Project</span>
+            <span>Type</span>
+            <span>Size</span>
+            <span>Archived</span>
+            <span>Actions</span>
           </div>
-        </div>
-      </div>
-    </ng-container>
-    <!-- ================= JOB POSTINGS ================= -->
-    <ng-container *ngSwitchCase="'jobs'">
-      <div class="table-header">
-        <span>Job Title</span>
-        <span>Trade</span>
-        <span>Bids</span>
-        <span>Status</span>
-        <span>Archived</span>
-        <span>Actions</span>
-      </div>
-
-      <div
-        class="table-row"
-        *ngFor="let item of archivedJobs | archiveSearch: searchTerm"
-      >
-        <div class="cell main">
-          <strong>{{ item.title }}</strong>
-          <small>{{ item.jobId }}</small>
-        </div>
-
-        <div class="cell">
-          <span class="trade-pill">{{ item.tradeName || "-" }}</span>
-        </div>
-
-        <div class="cell">{{ item.bidsCount ?? 0 }} bids</div>
-
-        <div class="cell">
-          <span class="status" [ngClass]="item.status?.toLowerCase()">
-            {{ item.status }}
-          </span>
-        </div>
-
-        <div class="cell">
-          {{ item.archivedAt | date: "yyyy-MM-dd" }}
-        </div>
-
-        <div class="cell actions">
-          <div class="action-pill">
-            <button
-              class="icon-btn success"
-              matTooltip="Restore project"
-              (click)="unarchive(item)"
-            >
-              <mat-icon>restore</mat-icon>
-            </button>
-
-            <button
-              class="icon-btn danger"
-              matTooltip="Delete permanently"
-              (click)="delete(item)"
-            >
-              <mat-icon>delete_forever</mat-icon>
-            </button>
+          @for (item of archivedDocuments | archiveSearch: searchTerm; track item) {
+            <div
+              class="table-row"
+              >
+              <div class="cell main">
+                <strong>{{ item.title }}</strong>
+              </div>
+              <div class="cell">{{ item.project }}</div>
+              <div class="cell">
+                <span>{{ item.documentType }}</span>
+              </div>
+              <div class="cell">{{ item.size | number }} KB</div>
+              <div class="cell">
+                {{ item.archivedAt | date: "yyyy-MM-dd" }}
+              </div>
+              <div class="cell actions">
+                <div class="action-pill">
+                  <button
+                    class="icon-btn success"
+                    matTooltip="Restore document"
+                    (click)="unarchive(item)"
+                    >
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                  <button
+                    class="icon-btn danger"
+                    matTooltip="Delete permanently"
+                    (click)="delete(item)"
+                    >
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+        <!-- ================= JOB POSTINGS ================= -->
+        @case ('jobs') {
+          <div class="table-header">
+            <span>Job Title</span>
+            <span>Trade</span>
+            <span>Bids</span>
+            <span>Status</span>
+            <span>Archived</span>
+            <span>Actions</span>
           </div>
-        </div>
+          @for (item of archivedJobs | archiveSearch: searchTerm; track item) {
+            <div
+              class="table-row"
+              >
+              <div class="cell main">
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.jobId }}</small>
+              </div>
+              <div class="cell">
+                <span class="trade-pill">{{ item.tradeName || "-" }}</span>
+              </div>
+              <div class="cell">{{ item.bidsCount ?? 0 }} bids</div>
+              <div class="cell">
+                <span class="status" [ngClass]="item.status?.toLowerCase()">
+                  {{ item.status }}
+                </span>
+              </div>
+              <div class="cell">
+                {{ item.archivedAt | date: "yyyy-MM-dd" }}
+              </div>
+              <div class="cell actions">
+                <div class="action-pill">
+                  <button
+                    class="icon-btn success"
+                    matTooltip="Restore project"
+                    (click)="unarchive(item)"
+                    >
+                    <mat-icon>restore</mat-icon>
+                  </button>
+                  <button
+                    class="icon-btn danger"
+                    matTooltip="Delete permanently"
+                    (click)="delete(item)"
+                    >
+                    <mat-icon>delete_forever</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <!-- ================= EMPTY STATE ================= -->
+    @if (filteredItems.length === 0) {
+      <div class="empty">
+        No archived items found
       </div>
-    </ng-container>
+    }
+
+    <!-- ================= FOOTER POLICY ================= -->
+    <div class="archive-policy">
+      <mat-icon>info</mat-icon>
+      Archived items are retained for 90 days before permanent deletion. Financial
+      documents (quotes & invoices) are retained for 7 years.
+    </div>
   </div>
-
-  <!-- ================= EMPTY STATE ================= -->
-  <div class="empty" *ngIf="filteredItems.length === 0">
-    No archived items found
-  </div>
-
-  <!-- ================= FOOTER POLICY ================= -->
-  <div class="archive-policy">
-    <mat-icon>info</mat-icon>
-    Archived items are retained for 90 days before permanent deletion. Financial
-    documents (quotes & invoices) are retained for 7 years.
-  </div>
-</div>

@@ -6,9 +6,11 @@
     <mat-form-field appearance="fill">
       <mat-label>Email Address</mat-label>
       <input matInput type="email" name="email" [(ngModel)]="email" required email #emailInput="ngModel">
-      <mat-error *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)">
-        Please enter your email address.
-      </mat-error>
+      @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
+        <mat-error>
+          Please enter your email address.
+        </mat-error>
+      }
     </mat-form-field>
 
     <button mat-button class="btn btn-primary" type="submit" [disabled]="unsubscribeForm.invalid">
@@ -16,7 +18,9 @@
     </button>
   </form>
 
-  <p *ngIf="message" class="message">{{ message }}</p>
+  @if (message) {
+    <p class="message">{{ message }}</p>
+  }
 
   <a routerLink="/" class="home-button">Return to Home</a>
 </div>

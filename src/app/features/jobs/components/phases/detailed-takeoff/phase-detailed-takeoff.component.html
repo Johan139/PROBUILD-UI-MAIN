@@ -28,7 +28,7 @@
       class="takeoff-tab"
       [class.active]="activeTab === 'estimation'"
       (click)="setActiveTab('estimation')"
-    >
+      >
       Estimation
     </button>
     <button
@@ -36,7 +36,7 @@
       class="takeoff-tab"
       [class.active]="activeTab === 'overview'"
       (click)="setActiveTab('overview')"
-    >
+      >
       Overview
     </button>
     <button
@@ -44,7 +44,7 @@
       class="takeoff-tab"
       [class.active]="activeTab === 'timeline'"
       (click)="setActiveTab('timeline')"
-    >
+      >
       Timeline &amp; Tasks
     </button>
     <button
@@ -52,12 +52,12 @@
       class="takeoff-tab"
       [class.active]="activeTab === 'blueprints'"
       (click)="setActiveTab('blueprints')"
-    >
+      >
       Blueprint Viewer
     </button>
   </section>
 
-  <ng-container *ngIf="activeTab === 'estimation'; else nonEstimationTabs">
+  @if (activeTab === 'estimation') {
     <section class="takeoff-card">
       <div class="takeoff-head">
         <h3>Bills of Materials by Phase</h3>
@@ -66,7 +66,6 @@
           proceeding.
         </p>
       </div>
-
       <div class="takeoff-controls">
         <button type="button" class="btn btn-outline" (click)="collapseAll()">
           Collapse All
@@ -79,99 +78,99 @@
           class="btn btn-primary"
           [disabled]="!bomKeys.length || allPhasesConfirmed"
           (click)="confirmAllPhases()"
-        >
+          >
           Confirm All Phases
         </button>
       </div>
-
-      <div class="phase-list" *ngIf="!isLoading; else loadingBomBlock">
-        <article
-          class="phase-item"
-          *ngFor="let key of objectKeys(billsOfMaterials)"
-          [attr.data-bom-key]="key"
-        >
-          <button
-            type="button"
-            class="phase-item-header"
-            (click)="toggleBomSection(key)"
-          >
-            <div class="phase-left">
-              <span
-                class="phase-icon"
-                [class.is-confirmed]="confirmedBomSections.has(key)"
+      @if (!isLoading) {
+        <div class="phase-list">
+          @for (key of objectKeys(billsOfMaterials); track key) {
+            <article
+              class="phase-item"
+              [attr.data-bom-key]="key"
               >
-                {{ confirmedBomSections.has(key) ? "✓" : "$" }}
-              </span>
-              <div>
-                <p class="phase-name">{{ billsOfMaterials[key].name }}</p>
-                <p class="phase-meta">{{ billsOfMaterials[key].summary }}</p>
-              </div>
-            </div>
-            <div class="phase-right">
-              <span class="phase-total">
-                {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
-              </span>
-              <span
-                class="state-pill"
-                [class.is-active]="confirmedBomSections.has(key)"
-              >
-                {{ confirmedBomSections.has(key) ? "Confirmed" : "Pending" }}
-              </span>
-            </div>
-          </button>
-
-          <div
-            class="phase-item-body"
-            *ngIf="expandedBomSections.includes(key)"
-          >
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Spec</th>
-                  <th class="num">Qty</th>
-                  <th class="num">Unit</th>
-                  <th class="num">Unit Cost</th>
-                  <th class="num">Total</th>
-                  <th class="actions-col"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  *ngFor="
-                    let mat of billsOfMaterials[key].materials;
-                    let i = index
-                  "
+              <button
+                type="button"
+                class="phase-item-header"
+                (click)="toggleBomSection(key)"
                 >
-                  <td>{{ mat.item }}</td>
-                  <td>{{ mat.spec }}</td>
-                  <td class="num">
-                    <button
-                      type="button"
-                      class="cell-edit-btn"
-                      *ngIf="!isEditingCell(key, 'materials', i, 'qty')"
+                <div class="phase-left">
+                  <span
+                    class="phase-icon"
+                    [class.is-confirmed]="confirmedBomSections.has(key)"
+                    >
+                    {{ confirmedBomSections.has(key) ? "✓" : "$" }}
+                  </span>
+                  <div>
+                    <p class="phase-name">{{ billsOfMaterials[key].name }}</p>
+                    <p class="phase-meta">{{ billsOfMaterials[key].summary }}</p>
+                  </div>
+                </div>
+                <div class="phase-right">
+                  <span class="phase-total">
+                    {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
+                  </span>
+                  <span
+                    class="state-pill"
+                    [class.is-active]="confirmedBomSections.has(key)"
+                    >
+                    {{ confirmedBomSections.has(key) ? "Confirmed" : "Pending" }}
+                  </span>
+                </div>
+              </button>
+              @if (expandedBomSections.includes(key)) {
+                <div
+                  class="phase-item-body"
+                  >
+                  <table class="items-table">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Spec</th>
+                        <th class="num">Qty</th>
+                        <th class="num">Unit</th>
+                        <th class="num">Unit Cost</th>
+                        <th class="num">Total</th>
+                        <th class="actions-col"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (
+                        mat of billsOfMaterials[key].materials; track
+                        mat; let i = $index) {
+                        <tr
+                          >
+                          <td>{{ mat.item }}</td>
+                          <td>{{ mat.spec }}</td>
+                          <td class="num">
+                            @if (!isEditingCell(key, 'materials', i, 'qty')) {
+                              <button
+                                type="button"
+                                class="cell-edit-btn"
                       (click)="
                         startCellEdit(key, 'materials', i, 'qty', mat.qty)
                       "
-                    >
-                      {{ mat.qty }}
-                    </button>
-                    <input
-                      *ngIf="isEditingCell(key, 'materials', i, 'qty')"
-                      class="cell-edit-input"
-                      type="number"
-                      [value]="editBuffer"
-                      (input)="editBuffer = $any($event.target).value"
-                      (blur)="commitCellEdit()"
-                      (keydown)="handleEditKeydown($event)"
-                    />
-                  </td>
-                  <td class="num">{{ mat.unit }}</td>
-                  <td class="num">
-                    <button
-                      type="button"
-                      class="cell-edit-btn"
-                      *ngIf="!isEditingCell(key, 'materials', i, 'unitCost')"
+                                >
+                                {{ mat.qty }}
+                              </button>
+                            }
+                            @if (isEditingCell(key, 'materials', i, 'qty')) {
+                              <input
+                                class="cell-edit-input"
+                                type="number"
+                                [value]="editBuffer"
+                                (input)="editBuffer = $any($event.target).value"
+                                (blur)="commitCellEdit()"
+                                (keydown)="handleEditKeydown($event)"
+                                />
+                            }
+                          </td>
+                          <td class="num">{{ mat.unit }}</td>
+                          <td class="num">
+                            @if (!isEditingCell(key, 'materials', i, 'unitCost')) {
+                              <button
+                                type="button"
+                                class="cell-edit-btn"
                       (click)="
                         startCellEdit(
                           key,
@@ -181,963 +180,989 @@
                           mat.unitCost
                         )
                       "
-                    >
-                      {{ mat.unitCost | money }}
-                    </button>
-                    <input
-                      *ngIf="isEditingCell(key, 'materials', i, 'unitCost')"
-                      class="cell-edit-input"
-                      type="number"
-                      [value]="editBuffer"
-                      (input)="editBuffer = $any($event.target).value"
-                      (blur)="commitCellEdit()"
-                      (keydown)="handleEditKeydown($event)"
-                    />
-                  </td>
-                  <td class="num">{{ mat.total | money }}</td>
-                  <td class="actions-cell">
-                    <button
-                      *ngIf="isBomRowModified(key, 'materials', i)"
-                      type="button"
-                      class="revert-btn"
-                      title="Revert this item to its original AI-generated values"
-                      (click)="revertBomRow(key, 'materials', i)"
-                    >
-                      Revert
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <table
-              class="items-table"
-              *ngIf="billsOfMaterials[key].labor?.length"
-            >
-              <thead>
-                <tr>
-                  <th>Trade</th>
-                  <th>Scope</th>
-                  <th class="num">Hours</th>
-                  <th class="num">Rate</th>
-                  <th class="num">Total</th>
-                  <th class="actions-col"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  *ngFor="
-                    let labor of billsOfMaterials[key].labor;
-                    let i = index
-                  "
-                >
-                  <td>{{ labor.trade }}</td>
-                  <td>{{ labor.scope }}</td>
-                  <td class="num">
-                    <button
-                      type="button"
-                      class="cell-edit-btn"
-                      *ngIf="!isEditingCell(key, 'labor', i, 'hours')"
+                                >
+                                {{ mat.unitCost | money }}
+                              </button>
+                            }
+                            @if (isEditingCell(key, 'materials', i, 'unitCost')) {
+                              <input
+                                class="cell-edit-input"
+                                type="number"
+                                [value]="editBuffer"
+                                (input)="editBuffer = $any($event.target).value"
+                                (blur)="commitCellEdit()"
+                                (keydown)="handleEditKeydown($event)"
+                                />
+                            }
+                          </td>
+                          <td class="num">{{ mat.total | money }}</td>
+                          <td class="actions-cell">
+                            @if (isBomRowModified(key, 'materials', i)) {
+                              <button
+                                type="button"
+                                class="revert-btn"
+                                title="Revert this item to its original AI-generated values"
+                                (click)="revertBomRow(key, 'materials', i)"
+                                >
+                                Revert
+                              </button>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  @if (billsOfMaterials[key].labor.length) {
+                    <table
+                      class="items-table"
+                      >
+                      <thead>
+                        <tr>
+                          <th>Trade</th>
+                          <th>Scope</th>
+                          <th class="num">Hours</th>
+                          <th class="num">Rate</th>
+                          <th class="num">Total</th>
+                          <th class="actions-col"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (
+                          labor of billsOfMaterials[key].labor; track
+                          labor; let i = $index) {
+                          <tr
+                            >
+                            <td>{{ labor.trade }}</td>
+                            <td>{{ labor.scope }}</td>
+                            <td class="num">
+                              @if (!isEditingCell(key, 'labor', i, 'hours')) {
+                                <button
+                                  type="button"
+                                  class="cell-edit-btn"
                       (click)="
                         startCellEdit(key, 'labor', i, 'hours', labor.hours)
                       "
-                    >
-                      {{ labor.hours }}
-                    </button>
-                    <input
-                      *ngIf="isEditingCell(key, 'labor', i, 'hours')"
-                      class="cell-edit-input"
-                      type="number"
-                      [value]="editBuffer"
-                      (input)="editBuffer = $any($event.target).value"
-                      (blur)="commitCellEdit()"
-                      (keydown)="handleEditKeydown($event)"
-                    />
-                  </td>
-                  <td class="num">
-                    <button
-                      type="button"
-                      class="cell-edit-btn"
-                      *ngIf="!isEditingCell(key, 'labor', i, 'rate')"
+                                  >
+                                  {{ labor.hours }}
+                                </button>
+                              }
+                              @if (isEditingCell(key, 'labor', i, 'hours')) {
+                                <input
+                                  class="cell-edit-input"
+                                  type="number"
+                                  [value]="editBuffer"
+                                  (input)="editBuffer = $any($event.target).value"
+                                  (blur)="commitCellEdit()"
+                                  (keydown)="handleEditKeydown($event)"
+                                  />
+                              }
+                            </td>
+                            <td class="num">
+                              @if (!isEditingCell(key, 'labor', i, 'rate')) {
+                                <button
+                                  type="button"
+                                  class="cell-edit-btn"
                       (click)="
                         startCellEdit(key, 'labor', i, 'rate', labor.rate)
                       "
+                                  >
+                                  {{ labor.rate | money }}
+                                </button>
+                              }
+                              @if (isEditingCell(key, 'labor', i, 'rate')) {
+                                <input
+                                  class="cell-edit-input"
+                                  type="number"
+                                  [value]="editBuffer"
+                                  (input)="editBuffer = $any($event.target).value"
+                                  (blur)="commitCellEdit()"
+                                  (keydown)="handleEditKeydown($event)"
+                                  />
+                              }
+                            </td>
+                            <td class="num">{{ labor.total | money }}</td>
+                            <td class="actions-cell">
+                              @if (isBomRowModified(key, 'labor', i)) {
+                                <button
+                                  type="button"
+                                  class="revert-btn"
+                                  title="Revert this item to its original AI-generated values"
+                                  (click)="revertBomRow(key, 'labor', i)"
+                                  >
+                                  Revert
+                                </button>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                  <div class="phase-footer">
+                    <span>Phase Subtotal</span>
+                    <strong>
+                      {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
+                    </strong>
+                  </div>
+                  @if (!confirmedBomSections.has(key)) {
+                    <div
+                      class="inline-disclaimer"
+                      >
+                      <strong>AI-Generated Estimate.</strong>
+                      Review quantities and pricing carefully before accepting this
+                      phase.
+                    </div>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-outline confirm-btn"
+                    [class.is-confirmed]="confirmedBomSections.has(key)"
+                    (click)="toggleSectionConfirm(key)"
                     >
-                      {{ labor.rate | money }}
-                    </button>
+                    {{
+                    confirmedBomSections.has(key)
+                    ? "Remove Confirmation"
+                    : "I have reviewed and confirm this phase"
+                    }}
                     <input
-                      *ngIf="isEditingCell(key, 'labor', i, 'rate')"
-                      class="cell-edit-input"
-                      type="number"
-                      [value]="editBuffer"
-                      (input)="editBuffer = $any($event.target).value"
-                      (blur)="commitCellEdit()"
-                      (keydown)="handleEditKeydown($event)"
-                    />
-                  </td>
-                  <td class="num">{{ labor.total | money }}</td>
-                  <td class="actions-cell">
-                    <button
-                      *ngIf="isBomRowModified(key, 'labor', i)"
-                      type="button"
-                      class="revert-btn"
-                      title="Revert this item to its original AI-generated values"
-                      (click)="revertBomRow(key, 'labor', i)"
-                    >
-                      Revert
+                      type="checkbox"
+                      [checked]="confirmedBomSections.has(key)"
+                      tabindex="-1"
+                      aria-hidden="true"
+                      />
                     </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="phase-footer">
-              <span>Phase Subtotal</span>
-              <strong>
-                {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
-              </strong>
-            </div>
-
-            <div
-              class="inline-disclaimer"
-              *ngIf="!confirmedBomSections.has(key)"
-            >
-              <strong>AI-Generated Estimate.</strong>
-              Review quantities and pricing carefully before accepting this
-              phase.
-            </div>
-
-            <button
-              type="button"
-              class="btn btn-outline confirm-btn"
-              [class.is-confirmed]="confirmedBomSections.has(key)"
-              (click)="toggleSectionConfirm(key)"
-            >
-              {{
-                confirmedBomSections.has(key)
-                  ? "Remove Confirmation"
-                  : "I have reviewed and confirm this phase"
-              }}
-              <input
-                type="checkbox"
-                [checked]="confirmedBomSections.has(key)"
-                tabindex="-1"
-                aria-hidden="true"
-              />
-            </button>
+                  </div>
+                }
+              </article>
+            }
           </div>
-        </article>
-      </div>
-
-      <ng-template #loadingBomBlock>
-        <p class="phase-meta">Loading BOM analysis...</p>
-      </ng-template>
-    </section>
-
-    <section class="progress-card">
-      <div class="progress-row">
-        <span>Confirmed Phases</span>
-        <strong>{{ confirmedBomSections.size }} / {{ bomKeys.length }}</strong>
-      </div>
-      <div class="progress-track">
-        <div
-          class="progress-fill"
-          [style.width.%]="confirmedProgressPercent"
-        ></div>
-      </div>
-    </section>
-
-    <section class="ve-card">
-      <button type="button" class="ve-toggle" (click)="toggleVeOpen()">
-        <div class="ve-header">
-          <div>
-            <h3>
-              <span class="ve-icon-badge">
-                <lucide-icon name="zap" class="ve-zap"></lucide-icon>
-              </span>
-              Value Engineering Options
-            </h3>
-            <p>
-              Select options to reduce costs without significantly compromising
-              quality.
-            </p>
-          </div>
-          <div class="text-right">
-            <p class="mini-label">Potential Savings</p>
-            <p class="phase-total">{{ totalVeSavings | money : true : 2 }}</p>
-          </div>
+        } @else {
+          <p class="phase-meta">Loading BOM analysis...</p>
+        }
+      </section>
+      <section class="progress-card">
+        <div class="progress-row">
+          <span>Confirmed Phases</span>
+          <strong>{{ confirmedBomSections.size }} / {{ bomKeys.length }}</strong>
         </div>
-        <span class="ve-caret" [class.is-open]="veOpen">⌄</span>
-      </button>
-
-      <div class="ve-list" *ngIf="veOpen">
-        <article class="ve-item" *ngFor="let ve of valueEngineering">
-          <button
-            type="button"
-            class="ve-item-head"
-            (click)="toggleVeExpanded(ve.id)"
-          >
-            <div class="ve-main">
-              <div>
-                <p class="phase-name">
-                  <span
-                    class="ve-icon-badge small"
-                    [class.is-active]="isVeApplied(ve.id)"
-                    [class.is-inactive]="!isVeApplied(ve.id)"
-                  >
-                    <lucide-icon name="zap" class="ve-zap small"></lucide-icon>
-                  </span>
-                  {{ ve.id }} -
-                  {{ stripMarkdown(ve.category || "Value Engineering") }}
-                </p>
-                <p class="phase-meta">
-                  You Save {{ getVeSavings(ve) | money : true : 2 }}
-                </p>
-              </div>
-            </div>
-            <div class="ve-head-right">
-              <span
-                class="state-pill"
-                [class.is-active]="isVeApplied(ve.id)"
-                [class.is-inactive]="!isVeApplied(ve.id)"
-              >
-                {{ isVeApplied(ve.id) ? "Applied" : "Not Applied" }}
-              </span>
-              <span class="ve-row-caret" [class.is-open]="expandedVE === ve.id"
-                >⌄</span
-              >
-            </div>
-          </button>
-
-          <div class="ve-item-body" *ngIf="expandedVE === ve.id">
-            <div class="ve-cost-summary">
-              <article>
-                <p class="mini-label">Original Cost</p>
-                <strong>{{ getVeOriginalCost(ve) | money : true : 2 }}</strong>
-              </article>
-              <article>
-                <p class="mini-label">Alternative Cost</p>
-                <strong
-                  >{{ getVeAlternativeCost(ve) | money : true : 2 }}</strong
-                >
-              </article>
-              <article class="save">
-                <p class="mini-label">You Save</p>
-                <strong>{{ getVeSavings(ve) | money : true : 2 }}</strong>
-              </article>
-            </div>
-
-            <div class="ve-details-grid">
-              <div>
-                <p class="mini-label ve-detail-label">Original Specification</p>
-                <p>{{ stripMarkdown(ve.original) }}</p>
-              </div>
-              <div>
-                <p class="mini-label ve-detail-label">Proposed Alternative</p>
-                <p>{{ stripMarkdown(ve.proposed) }}</p>
-              </div>
-              <div>
-                <p class="mini-label ve-detail-label">Schedule Impact</p>
-                <p>{{ stripMarkdown(ve.scheduleImpact || "Neutral") }}</p>
-              </div>
-              <div>
-                <p class="mini-label ve-detail-label">Performance Impact</p>
-                <p>
-                  {{ stripMarkdown(ve.performanceImpact || "See analysis") }}
-                </p>
-              </div>
-            </div>
-
-            <div class="ve-actions">
-              <button
-                type="button"
-                class="btn"
-                [class.btn-primary]="!isVeApplied(ve.id)"
-                [class.btn-outline]="isVeApplied(ve.id)"
-                [disabled]="isVeSaving(ve.id)"
-                (click)="applyOrRemoveVe(ve.id)"
-              >
-                {{
-                  isVeSaving(ve.id)
-                    ? isVeApplied(ve.id)
-                      ? "Removing..."
-                      : "Applying..."
-                    : isVeApplied(ve.id)
-                      ? "Remove Option"
-                      : "Apply Option"
-                }}
-              </button>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section
-      class="quote-card"
-      *ngIf="!quoteGenerated; else generatedQuoteBlock"
-    >
-      <h4>
-        {{
-          allPhasesConfirmed
-            ? "Ready to Generate Quotation?"
-            : "Confirm All Phases to Continue"
-        }}
-      </h4>
-      <p *ngIf="allPhasesConfirmed; else phaseReminder">
-        We will create a client-facing quotation from your confirmed selections.
-      </p>
-      <ng-template #phaseReminder>
-        <p>
-          {{ bomKeys.length - confirmedBomSections.size }} phase{{
-            bomKeys.length - confirmedBomSections.size === 1 ? "" : "s"
-          }}
-          remaining.
-        </p>
-      </ng-template>
-
-      <div class="quote-actions">
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="!allPhasesConfirmed || isGeneratingQuote"
-          (click)="generateQuotation()"
-        >
-          {{ isGeneratingQuote ? "Generating Quote..." : "Generate Quotation" }}
-        </button>
-      </div>
-
-      <div class="budget-grid">
-        <article>
-          <p class="mini-label">Direct Costs</p>
-          <strong>{{ adjustedEstimateTotal | money : true : 2 }}</strong>
-        </article>
-        <article>
-          <p class="mini-label">Total Project Budget</p>
-          <strong>{{ projectBudget | money : true : 2 }}</strong>
-        </article>
-        <article>
-          <p class="mini-label">Recommended Bid</p>
-          <strong>{{ recommendedBid | money : true : 2 }}</strong>
-        </article>
-      </div>
-    </section>
-
-    <ng-template #generatedQuoteBlock>
-      <section class="quote-card generated">
-        <h4>Quotation Generated</h4>
-        <p>
-          Quotation is ready. You can view, regenerate, or send it to the
-          client.
-        </p>
-
-        <div class="quote-actions">
-          <button type="button" class="btn btn-outline" (click)="viewQuote()">
-            View Quote
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline"
-            [disabled]="isGeneratingQuote"
-            (click)="regenerateQuote()"
-          >
-            {{ isGeneratingQuote ? "Regenerating..." : "Regenerate Quote" }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="isSending || isGeneratingQuote"
-            (click)="sendToClient()"
-          >
-            {{ isSending ? "Sending..." : "Send to Client" }}
-          </button>
-        </div>
-
-        <div class="quote-revision-card">
-          <div class="quote-revision-content">
-            <div class="quote-revision-icon" aria-hidden="true">
-              <lucide-icon name="rotate-ccw"></lucide-icon>
-            </div>
-            <div>
-              <h4 class="quote-revision-title">Need to make changes?</h4>
-              <p class="quote-revision-copy">
-                Update your BOM selections above and regenerate a revised
-                quotation.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="btn btn-outline quote-revision-btn"
-            [disabled]="isGeneratingQuote || isSending"
-            (click)="startQuoteRevision()"
-          >
-            <lucide-icon name="rotate-ccw"></lucide-icon>
-            Revise &amp; Regenerate
-          </button>
+        <div class="progress-track">
+          <div
+            class="progress-fill"
+            [style.width.%]="confirmedProgressPercent"
+          ></div>
         </div>
       </section>
-    </ng-template>
-  </ng-container>
-
-  <ng-template #nonEstimationTabs>
-    <div class="scope-pane" *ngIf="activeTab === 'overview'">
-      <div class="hero-grid">
-        <button
-          type="button"
-          class="hero-card budget-card"
-          (click)="overallBudgetClick.emit()"
-        >
-          <div class="card-top">
-            <div class="icon-wrapper yellow">
-              <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
+      <section class="ve-card">
+        <button type="button" class="ve-toggle" (click)="toggleVeOpen()">
+          <div class="ve-header">
+            <div>
+              <h3>
+                <span class="ve-icon-badge">
+                  <lucide-icon name="zap" class="ve-zap"></lucide-icon>
+                </span>
+                Value Engineering Options
+              </h3>
+              <p>
+                Select options to reduce costs without significantly compromising
+                quality.
+              </p>
             </div>
-            <p class="card-label">Overall Budget</p>
-            <p class="card-value">
-              {{ overallBudgetValue | money : true : 2 }}
-            </p>
-          </div>
-          <div class="card-bottom">
-            <div class="progress-row">
-              <span>Spent to Date</span>
-              <strong>{{
-                spentToDate | money : true : 2
-              }}</strong>
-            </div>
-            <div class="progress-track" aria-hidden="true">
-              <div
-                class="progress-fill budget"
-                [style.width.%]="overallBudgetProgressPercent"
-              ></div>
-            </div>
-            <div class="progress-row">
-              <span>Remaining</span>
-              <strong>{{
-                overallRemainingBudget | money : true : 2
-              }}</strong>
+            <div class="text-right">
+              <p class="mini-label">Potential Savings</p>
+              <p class="phase-total">{{ totalVeSavings | money : true : 2 }}</p>
             </div>
           </div>
+          <span class="ve-caret" [class.is-open]="veOpen">⌄</span>
         </button>
-
-        <button
-          type="button"
-          class="hero-card timeline-card"
-          (click)="overallTimelineClick.emit()"
-        >
-          <div class="card-top">
-            <div class="icon-wrapper blue">
-              <lucide-icon name="clock" class="icon-blue"></lucide-icon>
-            </div>
-            <p class="card-label">Overall Timeline</p>
-            <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
-          </div>
-          <div class="card-bottom">
-            <div class="progress-row">
-              <span>Progress</span>
-              <strong
-                >Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong
+        @if (veOpen) {
+          <div class="ve-list">
+            @for (ve of valueEngineering; track ve) {
+              <article class="ve-item">
+                <button
+                  type="button"
+                  class="ve-item-head"
+                  (click)="toggleVeExpanded(ve.id)"
+                  >
+                  <div class="ve-main">
+                    <div>
+                      <p class="phase-name">
+                        <span
+                          class="ve-icon-badge small"
+                          [class.is-active]="isVeApplied(ve.id)"
+                          [class.is-inactive]="!isVeApplied(ve.id)"
+                          >
+                          <lucide-icon name="zap" class="ve-zap small"></lucide-icon>
+                        </span>
+                        {{ ve.id }} -
+                        {{ stripMarkdown(ve.category || "Value Engineering") }}
+                      </p>
+                      <p class="phase-meta">
+                        You Save {{ getVeSavings(ve) | money : true : 2 }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="ve-head-right">
+                    <span
+                      class="state-pill"
+                      [class.is-active]="isVeApplied(ve.id)"
+                      [class.is-inactive]="!isVeApplied(ve.id)"
+                      >
+                      {{ isVeApplied(ve.id) ? "Applied" : "Not Applied" }}
+                    </span>
+                    <span class="ve-row-caret" [class.is-open]="expandedVE === ve.id"
+                      >⌄</span
+                      >
+                    </div>
+                  </button>
+                  @if (expandedVE === ve.id) {
+                    <div class="ve-item-body">
+                      <div class="ve-cost-summary">
+                        <article>
+                          <p class="mini-label">Original Cost</p>
+                          <strong>{{ getVeOriginalCost(ve) | money : true : 2 }}</strong>
+                        </article>
+                        <article>
+                          <p class="mini-label">Alternative Cost</p>
+                          <strong
+                            >{{ getVeAlternativeCost(ve) | money : true : 2 }}</strong
+                            >
+                          </article>
+                          <article class="save">
+                            <p class="mini-label">You Save</p>
+                            <strong>{{ getVeSavings(ve) | money : true : 2 }}</strong>
+                          </article>
+                        </div>
+                        <div class="ve-details-grid">
+                          <div>
+                            <p class="mini-label ve-detail-label">Original Specification</p>
+                            <p>{{ stripMarkdown(ve.original) }}</p>
+                          </div>
+                          <div>
+                            <p class="mini-label ve-detail-label">Proposed Alternative</p>
+                            <p>{{ stripMarkdown(ve.proposed) }}</p>
+                          </div>
+                          <div>
+                            <p class="mini-label ve-detail-label">Schedule Impact</p>
+                            <p>{{ stripMarkdown(ve.scheduleImpact || "Neutral") }}</p>
+                          </div>
+                          <div>
+                            <p class="mini-label ve-detail-label">Performance Impact</p>
+                            <p>
+                              {{ stripMarkdown(ve.performanceImpact || "See analysis") }}
+                            </p>
+                          </div>
+                        </div>
+                        <div class="ve-actions">
+                          <button
+                            type="button"
+                            class="btn"
+                            [class.btn-primary]="!isVeApplied(ve.id)"
+                            [class.btn-outline]="isVeApplied(ve.id)"
+                            [disabled]="isVeSaving(ve.id)"
+                            (click)="applyOrRemoveVe(ve.id)"
+                            >
+                            {{
+                            isVeSaving(ve.id)
+                            ? isVeApplied(ve.id)
+                            ? "Removing..."
+                            : "Applying..."
+                            : isVeApplied(ve.id)
+                            ? "Remove Option"
+                            : "Apply Option"
+                            }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          </section>
+          @if (!quoteGenerated) {
+            <section
+              class="quote-card"
               >
-            </div>
-            <div class="progress-track" aria-hidden="true">
-              <div
-                class="progress-fill timeline"
-                [style.width.%]="timelineProgressPercent"
-              ></div>
-            </div>
-            <div class="progress-row">
-              <span>Est. Completion</span>
-              <strong>{{ estimatedCompletionDate | date: "MMM d, y" }}</strong>
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="hero-card bid-card"
-          (click)="bidPriceClick.emit()"
-        >
-          <div class="card-top">
-            <div class="icon-wrapper green">
-              <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
-            </div>
-            <p class="card-label">Bid Price (Client)</p>
-            <p class="card-value">
-              {{ bidPriceValue | money : true : 2 }}
-            </p>
-          </div>
-          <div class="card-bottom">
-            <div class="progress-row">
-              <span>Gross Profit</span>
-              <strong>{{
-                bidGrossProfit | money : true : 2
-              }}</strong>
-            </div>
-            <div class="progress-row">
-              <span>Profit Margin</span>
-              <strong>{{ bidProfitMarginPercent | number: "1.1-1" }}%</strong>
-            </div>
-            <div class="progress-row">
-              <span>Exposure</span>
-              <strong>{{
-                bidExposureValue | money : true : 2
-              }}</strong>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      <div class="details-grid">
-        <article class="detail-card">
-          <div class="detail-header">
-            <h4 class="card-title">
-              <lucide-icon name="building-2" class="title-icon"></lucide-icon>
-              Project Details
-            </h4>
-            <div class="header-actions" *ngIf="isEditingProject">
-              <button
-                mat-button
-                type="button"
-                class="btn btn-primary"
-                (click)="saveProject()"
-              >
-                Save
-              </button>
-              <button
-                mat-button
-                type="button"
-                class="btn btn-secondary"
-                (click)="toggleEditProject()"
-              >
-                Cancel
-              </button>
-            </div>
-            <button
-              class="edit-btn"
-              (click)="toggleEditProject()"
-              *ngIf="!isEditingProject"
-            >
-              <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-              Edit
-            </button>
-          </div>
-
-          <div class="detail-list" *ngIf="!isEditingProject">
-            <div class="detail-item">
-              <span class="detail-label">Project Name</span>
-              <span class="detail-value">{{
-                projectDetails?.projectName || "N/A"
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Address</span>
-              <span class="detail-value">{{
-                projectDetails?.address ||
-                  projectDetails?.jobAddress?.formatted_address ||
-                  "N/A"
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Project Type</span>
-              <span class="detail-value">{{
-                projectDetails?.jobType || "N/A"
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Total Area</span>
-              <span class="detail-value"
-                >{{
-                  projectTotalArea
-                    ? (projectTotalArea | number: "1.0-0")
-                    : "N/A"
+              <h4>
+                {{
+                allPhasesConfirmed
+                ? "Ready to Generate Quotation?"
+                : "Confirm All Phases to Continue"
                 }}
-                sq ft</span
-              >
-            </div>
-          </div>
-
-          <div class="detail-list edit-mode" *ngIf="isEditingProject">
-            <label class="edit-field">
-              <span>Project Name</span>
-              <input [(ngModel)]="tempProjectDetails.projectName" />
-            </label>
-            <label class="edit-field">
-              <span>Address</span>
-              <input [(ngModel)]="tempProjectDetails.address" />
-            </label>
-            <label class="edit-field">
-              <span>Project Type</span>
-              <input [(ngModel)]="tempProjectDetails.jobType" />
-            </label>
-          </div>
-        </article>
-
-        <article class="detail-card">
-          <div class="detail-header">
-            <h4 class="card-title">
-              <lucide-icon name="user" class="title-icon"></lucide-icon>
-              Client Details
-            </h4>
-            <div class="header-actions" *ngIf="isEditingClient">
-              <button
-                mat-button
-                type="button"
-                class="btn btn-primary"
-                (click)="saveClient()"
-              >
-                Save
-              </button>
-              <button
-                mat-button
-                type="button"
-                class="btn btn-secondary"
-                (click)="toggleEditClient()"
-              >
-                Cancel
-              </button>
-            </div>
-            <button
-              class="edit-btn"
-              (click)="toggleEditClient()"
-              *ngIf="!isEditingClient"
-            >
-              <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-              Edit
-            </button>
-          </div>
-
-          <div class="detail-list" *ngIf="!isEditingClient">
-            <div class="detail-item">
-              <span class="detail-label">Client Name</span>
-              <span class="detail-value">{{ clientName }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Contact Email</span>
-              <span class="detail-value">{{ clientEmail }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Phone</span>
-              <span class="detail-value">{{ clientPhone }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Contract Status</span>
-              <span class="detail-value">{{ contractStatus }}</span>
-            </div>
-          </div>
-
-          <div class="detail-list edit-mode" *ngIf="isEditingClient">
-            <label class="edit-field">
-              <span>First Name</span>
-              <input [(ngModel)]="tempClientDetails.firstName" />
-            </label>
-            <label class="edit-field">
-              <span>Last Name</span>
-              <input [(ngModel)]="tempClientDetails.lastName" />
-            </label>
-            <label class="edit-field">
-              <span>Email</span>
-              <input [(ngModel)]="tempClientDetails.email" />
-            </label>
-            <label class="edit-field">
-              <span>Phone</span>
-              <input [(ngModel)]="tempClientDetails.phone" />
-            </label>
-          </div>
-        </article>
-
-        <article class="detail-card confidence-card">
-          <h4 class="card-title mb-4">
-            <lucide-icon name="target" class="title-icon"></lucide-icon>
-            Blueprint Confidence Score
-          </h4>
-          <div class="chart-container">
-            <div class="circular-chart">
-              <svg viewBox="0 0 128 128" class="chart-svg">
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="8"
-                  class="chart-track"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  fill="none"
-                  stroke="#22c55e"
-                  stroke-width="8"
+              </h4>
+              @if (allPhasesConfirmed) {
+                <p>
+                  We will create a client-facing quotation from your confirmed selections.
+                </p>
+              } @else {
+                <p>
+                  {{ bomKeys.length - confirmedBomSections.size }} phase{{
+                  bomKeys.length - confirmedBomSections.size === 1 ? "" : "s"
+                  }}
+                  remaining.
+                </p>
+              }
+              <div class="quote-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="!allPhasesConfirmed || isGeneratingQuote"
+                  (click)="generateQuotation()"
+                  >
+                  {{ isGeneratingQuote ? "Generating Quote..." : "Generate Quotation" }}
+                </button>
+              </div>
+              <div class="budget-grid">
+                <article>
+                  <p class="mini-label">Direct Costs</p>
+                  <strong>{{ adjustedEstimateTotal | money : true : 2 }}</strong>
+                </article>
+                <article>
+                  <p class="mini-label">Total Project Budget</p>
+                  <strong>{{ projectBudget | money : true : 2 }}</strong>
+                </article>
+                <article>
+                  <p class="mini-label">Recommended Bid</p>
+                  <strong>{{ recommendedBid | money : true : 2 }}</strong>
+                </article>
+              </div>
+            </section>
+          } @else {
+            <section class="quote-card generated">
+              <h4>Quotation Generated</h4>
+              <p>
+                Quotation is ready. You can view, regenerate, or send it to the
+                client.
+              </p>
+              <div class="quote-actions">
+                <button type="button" class="btn btn-outline" (click)="viewQuote()">
+                  View Quote
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  [disabled]="isGeneratingQuote"
+                  (click)="regenerateQuote()"
+                  >
+                  {{ isGeneratingQuote ? "Regenerating..." : "Regenerate Quote" }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="isSending || isGeneratingQuote"
+                  (click)="sendToClient()"
+                  >
+                  {{ isSending ? "Sending..." : "Send to Client" }}
+                </button>
+              </div>
+              <div class="quote-revision-card">
+                <div class="quote-revision-content">
+                  <div class="quote-revision-icon" aria-hidden="true">
+                    <lucide-icon name="rotate-ccw"></lucide-icon>
+                  </div>
+                  <div>
+                    <h4 class="quote-revision-title">Need to make changes?</h4>
+                    <p class="quote-revision-copy">
+                      Update your BOM selections above and regenerate a revised
+                      quotation.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline quote-revision-btn"
+                  [disabled]="isGeneratingQuote || isSending"
+                  (click)="startQuoteRevision()"
+                  >
+                  <lucide-icon name="rotate-ccw"></lucide-icon>
+                  Revise &amp; Regenerate
+                </button>
+              </div>
+            </section>
+          }
+        } @else {
+          @if (activeTab === 'overview') {
+            <div class="scope-pane">
+              <div class="hero-grid">
+                <button
+                  type="button"
+                  class="hero-card budget-card"
+                  (click)="overallBudgetClick.emit()"
+                  >
+                  <div class="card-top">
+                    <div class="icon-wrapper yellow">
+                      <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
+                    </div>
+                    <p class="card-label">Overall Budget</p>
+                    <p class="card-value">
+                      {{ overallBudgetValue | money : true : 2 }}
+                    </p>
+                  </div>
+                  <div class="card-bottom">
+                    <div class="progress-row">
+                      <span>Spent to Date</span>
+                      <strong>{{
+                        spentToDate | money : true : 2
+                      }}</strong>
+                    </div>
+                    <div class="progress-track" aria-hidden="true">
+                      <div
+                        class="progress-fill budget"
+                        [style.width.%]="overallBudgetProgressPercent"
+                      ></div>
+                    </div>
+                    <div class="progress-row">
+                      <span>Remaining</span>
+                      <strong>{{
+                        overallRemainingBudget | money : true : 2
+                      }}</strong>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  class="hero-card timeline-card"
+                  (click)="overallTimelineClick.emit()"
+                  >
+                  <div class="card-top">
+                    <div class="icon-wrapper blue">
+                      <lucide-icon name="clock" class="icon-blue"></lucide-icon>
+                    </div>
+                    <p class="card-label">Overall Timeline</p>
+                    <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
+                  </div>
+                  <div class="card-bottom">
+                    <div class="progress-row">
+                      <span>Progress</span>
+                      <strong
+                        >Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong
+                        >
+                      </div>
+                      <div class="progress-track" aria-hidden="true">
+                        <div
+                          class="progress-fill timeline"
+                          [style.width.%]="timelineProgressPercent"
+                        ></div>
+                      </div>
+                      <div class="progress-row">
+                        <span>Est. Completion</span>
+                        <strong>{{ estimatedCompletionDate | date: "MMM d, y" }}</strong>
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    class="hero-card bid-card"
+                    (click)="bidPriceClick.emit()"
+                    >
+                    <div class="card-top">
+                      <div class="icon-wrapper green">
+                        <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
+                      </div>
+                      <p class="card-label">Bid Price (Client)</p>
+                      <p class="card-value">
+                        {{ bidPriceValue | money : true : 2 }}
+                      </p>
+                    </div>
+                    <div class="card-bottom">
+                      <div class="progress-row">
+                        <span>Gross Profit</span>
+                        <strong>{{
+                          bidGrossProfit | money : true : 2
+                        }}</strong>
+                      </div>
+                      <div class="progress-row">
+                        <span>Profit Margin</span>
+                        <strong>{{ bidProfitMarginPercent | number: "1.1-1" }}%</strong>
+                      </div>
+                      <div class="progress-row">
+                        <span>Exposure</span>
+                        <strong>{{
+                          bidExposureValue | money : true : 2
+                        }}</strong>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <div class="details-grid">
+                  <article class="detail-card">
+                    <div class="detail-header">
+                      <h4 class="card-title">
+                        <lucide-icon name="building-2" class="title-icon"></lucide-icon>
+                        Project Details
+                      </h4>
+                      @if (isEditingProject) {
+                        <div class="header-actions">
+                          <button
+                            mat-button
+                            type="button"
+                            class="btn btn-primary"
+                            (click)="saveProject()"
+                            >
+                            Save
+                          </button>
+                          <button
+                            mat-button
+                            type="button"
+                            class="btn btn-secondary"
+                            (click)="toggleEditProject()"
+                            >
+                            Cancel
+                          </button>
+                        </div>
+                      }
+                      @if (!isEditingProject) {
+                        <button
+                          class="edit-btn"
+                          (click)="toggleEditProject()"
+                          >
+                          <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
+                          Edit
+                        </button>
+                      }
+                    </div>
+                    @if (!isEditingProject) {
+                      <div class="detail-list">
+                        <div class="detail-item">
+                          <span class="detail-label">Project Name</span>
+                          <span class="detail-value">{{
+                            projectDetails?.projectName || "N/A"
+                          }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Address</span>
+                          <span class="detail-value">{{
+                            projectDetails?.address ||
+                            projectDetails?.jobAddress?.formatted_address ||
+                            "N/A"
+                          }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Project Type</span>
+                          <span class="detail-value">{{
+                            projectDetails?.jobType || "N/A"
+                          }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Total Area</span>
+                          <span class="detail-value"
+                            >{{
+                            projectTotalArea
+                            ? (projectTotalArea | number: "1.0-0")
+                            : "N/A"
+                            }}
+                            sq ft</span
+                            >
+                          </div>
+                        </div>
+                      }
+                      @if (isEditingProject) {
+                        <div class="detail-list edit-mode">
+                          <label class="edit-field">
+                            <span>Project Name</span>
+                            <input [(ngModel)]="tempProjectDetails.projectName" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Address</span>
+                            <input [(ngModel)]="tempProjectDetails.address" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Project Type</span>
+                            <input [(ngModel)]="tempProjectDetails.jobType" />
+                          </label>
+                        </div>
+                      }
+                    </article>
+                    <article class="detail-card">
+                      <div class="detail-header">
+                        <h4 class="card-title">
+                          <lucide-icon name="user" class="title-icon"></lucide-icon>
+                          Client Details
+                        </h4>
+                        @if (isEditingClient) {
+                          <div class="header-actions">
+                            <button
+                              mat-button
+                              type="button"
+                              class="btn btn-primary"
+                              (click)="saveClient()"
+                              >
+                              Save
+                            </button>
+                            <button
+                              mat-button
+                              type="button"
+                              class="btn btn-secondary"
+                              (click)="toggleEditClient()"
+                              >
+                              Cancel
+                            </button>
+                          </div>
+                        }
+                        @if (!isEditingClient) {
+                          <button
+                            class="edit-btn"
+                            (click)="toggleEditClient()"
+                            >
+                            <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
+                            Edit
+                          </button>
+                        }
+                      </div>
+                      @if (!isEditingClient) {
+                        <div class="detail-list">
+                          <div class="detail-item">
+                            <span class="detail-label">Client Name</span>
+                            <span class="detail-value">{{ clientName }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Contact Email</span>
+                            <span class="detail-value">{{ clientEmail }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Phone</span>
+                            <span class="detail-value">{{ clientPhone }}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="detail-label">Contract Status</span>
+                            <span class="detail-value">{{ contractStatus }}</span>
+                          </div>
+                        </div>
+                      }
+                      @if (isEditingClient) {
+                        <div class="detail-list edit-mode">
+                          <label class="edit-field">
+                            <span>First Name</span>
+                            <input [(ngModel)]="tempClientDetails.firstName" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Last Name</span>
+                            <input [(ngModel)]="tempClientDetails.lastName" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Email</span>
+                            <input [(ngModel)]="tempClientDetails.email" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Phone</span>
+                            <input [(ngModel)]="tempClientDetails.phone" />
+                          </label>
+                        </div>
+                      }
+                    </article>
+                    <article class="detail-card confidence-card">
+                      <h4 class="card-title mb-4">
+                        <lucide-icon name="target" class="title-icon"></lucide-icon>
+                        Blueprint Confidence Score
+                      </h4>
+                      <div class="chart-container">
+                        <div class="circular-chart">
+                          <svg viewBox="0 0 128 128" class="chart-svg">
+                            <circle
+                              cx="64"
+                              cy="64"
+                              r="56"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="8"
+                              class="chart-track"
+                              />
+                              <circle
+                                cx="64"
+                                cy="64"
+                                r="56"
+                                fill="none"
+                                stroke="#22c55e"
+                                stroke-width="8"
                   [attr.stroke-dasharray]="
                     blueprintConfidenceScore * 3.52 + ' ' + 100 * 3.52
                   "
-                  stroke-linecap="round"
-                  class="chart-value"
-                />
-              </svg>
-              <div class="chart-text">
-                <span class="score-value">{{ blueprintConfidenceScore }}%</span>
-              </div>
-            </div>
-          </div>
-          <div class="score-breakdown">
-            <div class="score-item">
-              <span>Dimensional Accuracy</span>
-              <span class="font-medium text-success"
-                >{{ dimensionalAccuracy }}%</span
-              >
-            </div>
-            <div class="score-item">
-              <span class="detail-label">Completeness</span>
-              <span class="font-medium text-success">{{ completeness }}%</span>
-            </div>
-            <div class="score-item">
-              <span>Readability</span>
-              <span class="font-medium text-success">{{ readability }}%</span>
-            </div>
-          </div>
-        </article>
-      </div>
+                                stroke-linecap="round"
+                                class="chart-value"
+                                />
+                              </svg>
+                              <div class="chart-text">
+                                <span class="score-value">{{ blueprintConfidenceScore }}%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="score-breakdown">
+                            <div class="score-item">
+                              <span>Dimensional Accuracy</span>
+                              <span class="font-medium text-success"
+                                >{{ dimensionalAccuracy }}%</span
+                                >
+                              </div>
+                              <div class="score-item">
+                                <span class="detail-label">Completeness</span>
+                                <span class="font-medium text-success">{{ completeness }}%</span>
+                              </div>
+                              <div class="score-item">
+                                <span>Readability</span>
+                                <span class="font-medium text-success">{{ readability }}%</span>
+                              </div>
+                            </div>
+                          </article>
+                        </div>
+                        <div class="summary-card">
+                          <div class="card-header-btn" (click)="toggleExecutiveSummary()">
+                            <div class="header-content">
+                              <div class="icon-wrapper yellow">
+                                <lucide-icon name="file-text" class="icon"></lucide-icon>
+                              </div>
+                              <div class="text-left">
+                                <h3>Executive Summary</h3>
+                                @if (isSummaryLoading) {
+                                  <p>Loading project analysis...</p>
+                                }
+                                @if (!isSummaryLoading) {
+                                  <p>
+                                    Complete project analysis overview
+                                  </p>
+                                }
+                              </div>
+                            </div>
+                            <div class="header-actions">
+                              @if (executiveSummary.blueprintConfidence.overallConfidence > 0) {
+                                <span
+                                  class="confidence-badge"
+                                  >
+                                  {{ executiveSummary.blueprintConfidence.overallConfidence }}%
+                                  Confidence
+                                </span>
+                              }
+                              <lucide-icon
+                                [name]="executiveSummaryExpanded ? 'chevron-up' : 'chevron-down'"
+                                class="chevron"
+                              ></lucide-icon>
+                            </div>
+                          </div>
+                          @if (executiveSummaryExpanded) {
+                            <div class="card-body">
+                              @if (executiveSummary.overview) {
+                                <div class="section">
+                                  <h4>Overview</h4>
+                                  <p>{{ executiveSummary.overview }}</p>
+                                </div>
+                              }
+                              @if (executiveSummary.keyHighlights.length > 0) {
+                                <div
+                                  class="section"
+                                  >
+                                  <h4>Key Highlights</h4>
+                                  <div class="grid-3">
+                                    @for (item of executiveSummary.keyHighlights; track item) {
+                                      <div
+                                        class="highlight-box"
+                                        >
+                                        <span class="label">{{ item.label }}</span>
+                                        <span class="value">{{ item.value }}</span>
+                                        <span class="note">{{ item.note }}</span>
+                                      </div>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                              @if (executiveSummary.riskFactors.length > 0) {
+                                <div class="section">
+                                  <h4>Risk Factors</h4>
+                                  <div class="risk-list">
+                                    @for (item of executiveSummary.riskFactors; track item) {
+                                      <div
+                                        class="risk-item"
+                                        >
+                                        <div
+                                          class="risk-dot"
+                                          [class.high]="item.severity === 'high'"
+                                          [class.medium]="item.severity === 'medium'"
+                                        ></div>
+                                        <div class="risk-content">
+                                          <span class="risk-title">{{ item.risk }}</span>
+                                          <span class="risk-desc">{{ item.description }}</span>
+                                        </div>
+                                        <span
+                                          class="risk-badge"
+                                          [class.high]="item.severity === 'high'"
+                                          [class.medium]="item.severity === 'medium'"
+                                          >
+                                          {{ item.severity }}
+                                        </span>
+                                      </div>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                              @if (
+                                executiveSummary.strategicAnalysis.opportunities.length > 0 ||
+                                executiveSummary.strategicAnalysis.risks.length > 0 ||
+                                executiveSummary.strategicAnalysis.implications.length > 0
+                                ) {
+                                <div
+                                  class="section"
+                                  >
+                                  <h4>Strategic Analysis</h4>
+                                  @if (
+                                    executiveSummary.strategicAnalysis.opportunities.length > 0
+                                    ) {
+                                    <div
+                                      class="risk-list"
+                                      >
+                                      @for (
+                                        item of executiveSummary.strategicAnalysis.opportunities
+                                        ; track
+                                        item) {
+                                        <div
+                                          class="risk-item"
+                                          >
+                                          <div class="risk-dot medium"></div>
+                                          <div class="risk-content">
+                                            <span class="risk-title">Opportunity</span>
+                                            <span class="risk-desc">{{ item }}</span>
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                  @if (executiveSummary.strategicAnalysis.risks.length > 0) {
+                                    <div
+                                      class="risk-list"
+                                      >
+                                      @for (item of executiveSummary.strategicAnalysis.risks; track item) {
+                                        <div
+                                          class="risk-item"
+                                          >
+                                          <div class="risk-dot high"></div>
+                                          <div class="risk-content">
+                                            <span class="risk-title">Risk</span>
+                                            <span class="risk-desc">{{ item }}</span>
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                  @if (executiveSummary.strategicAnalysis.implications.length > 0) {
+                                    <div
+                                      class="risk-list"
+                                      >
+                                      @for (
+                                        item of executiveSummary.strategicAnalysis.implications
+                                        ; track
+                                        item) {
+                                        <div
+                                          class="risk-item"
+                                          >
+                                          <div class="risk-dot"></div>
+                                          <div class="risk-content">
+                                            <span class="risk-title">Implication</span>
+                                            <span class="risk-desc">{{ item }}</span>
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                              }
+                              @if (executiveSummary.topPriorities.length > 0) {
+                                <div
+                                  class="section"
+                                  >
+                                  <h4>Top 3 Executive Priorities</h4>
+                                  <div class="risk-list">
+                                    @for (
+                                      item of executiveSummary.topPriorities; track
+                                      item; let i = $index) {
+                                      <div
+                                        class="risk-item"
+                                        >
+                                        <div class="risk-dot medium"></div>
+                                        <div class="risk-content">
+                                          <span class="risk-title">Priority {{ i + 1 }}</span>
+                                          <span class="risk-desc">{{ item }}</span>
+                                        </div>
+                                      </div>
+                                    }
+                                  </div>
+                                </div>
+                              }
+                              @if (executiveSummary.executiveRecommendation) {
+                                <div class="section">
+                                  <h4>Executive Recommendation</h4>
+                                  <p>{{ executiveSummary.executiveRecommendation }}</p>
+                                </div>
+                              }
+                              @if (
+                                !executiveSummary.overview &&
+                                executiveSummary.keyHighlights.length === 0 &&
+                                executiveSummary.riskFactors.length === 0 &&
+                                executiveSummary.strategicAnalysis.opportunities.length === 0 &&
+                                executiveSummary.strategicAnalysis.risks.length === 0 &&
+                                executiveSummary.strategicAnalysis.implications.length === 0 &&
+                                executiveSummary.topPriorities.length === 0 &&
+                                !executiveSummary.executiveRecommendation &&
+                                !isSummaryLoading
+                                ) {
+                                <p
+                                  class="summary-empty"
+                                  >
+                                  Executive summary data is not available for this project yet.
+                                </p>
+                              }
+                              @if (!isSummaryLoading) {
+                                <p class="summary-disclaimer">
+                                  This report was generated by AI. View our terms and conditions.
+                                </p>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                    @if (activeTab === 'timeline') {
+                      <div class="scope-pane">
+                        <mat-accordion multi>
+                          <mat-expansion-panel [expanded]="true">
+                            <mat-expansion-panel-header>
+                              <mat-panel-title class="timeline-title"
+                                >Probuild Construction Timeline</mat-panel-title
+                                >
+                              </mat-expansion-panel-header>
+                              <mat-divider class="timeline-divider"></mat-divider>
+                              <div class="timeline-wrapper">
+                                <app-timeline
+                                  [taskGroups]="timelineGroups"
+                                  [isProjectOwner]="isProjectOwner"
+                                ></app-timeline>
+                              </div>
+                            </mat-expansion-panel>
+                            <mat-expansion-panel [expanded]="true">
+                              <mat-expansion-panel-header>
+                                <mat-panel-title>Tasks and Subtasks</mat-panel-title>
+                              </mat-expansion-panel-header>
+                              <mat-divider></mat-divider>
+                              <app-construction-phases
+                                [groups]="constructionPhaseGroups"
+                                [isProjectOwner]="isProjectOwner"
+                              ></app-construction-phases>
+                            </mat-expansion-panel>
+                          </mat-accordion>
+                        </div>
+                      }
+                      @if (activeTab === 'blueprints') {
+                        <div class="scope-pane">
+                          @if (isLoadingBlueprints) {
+                            <p class="blueprint-loading">
+                              Loading blueprints...
+                            </p>
+                          }
+                          <app-project-blueprint-viewer
+                            [mode]="'view'"
+                            [uploadedFiles]="blueprintFiles"
+                            [selectedFile]="selectedBlueprint"
+                            [pdfSrc]="blueprintPdfSrc"
+                            (fileSelected)="onBlueprintSelected($event)"
+                          ></app-project-blueprint-viewer>
+                        </div>
+                      }
+                    }
 
-      <div class="summary-card">
-        <div class="card-header-btn" (click)="toggleExecutiveSummary()">
-          <div class="header-content">
-            <div class="icon-wrapper yellow">
-              <lucide-icon name="file-text" class="icon"></lucide-icon>
-            </div>
-            <div class="text-left">
-              <h3>Executive Summary</h3>
-              <p *ngIf="isSummaryLoading">Loading project analysis...</p>
-              <p *ngIf="!isSummaryLoading">
-                Complete project analysis overview
-              </p>
-            </div>
-          </div>
-          <div class="header-actions">
-            <span
-              class="confidence-badge"
-              *ngIf="executiveSummary.blueprintConfidence.overallConfidence > 0"
-            >
-              {{ executiveSummary.blueprintConfidence.overallConfidence }}%
-              Confidence
-            </span>
-            <lucide-icon
-              [name]="executiveSummaryExpanded ? 'chevron-up' : 'chevron-down'"
-              class="chevron"
-            ></lucide-icon>
-          </div>
-        </div>
-
-        <div *ngIf="executiveSummaryExpanded" class="card-body">
-          <div class="section" *ngIf="executiveSummary.overview">
-            <h4>Overview</h4>
-            <p>{{ executiveSummary.overview }}</p>
-          </div>
-
-          <div
-            class="section"
-            *ngIf="executiveSummary.keyHighlights.length > 0"
-          >
-            <h4>Key Highlights</h4>
-            <div class="grid-3">
-              <div
-                *ngFor="let item of executiveSummary.keyHighlights"
-                class="highlight-box"
-              >
-                <span class="label">{{ item.label }}</span>
-                <span class="value">{{ item.value }}</span>
-                <span class="note">{{ item.note }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="section" *ngIf="executiveSummary.riskFactors.length > 0">
-            <h4>Risk Factors</h4>
-            <div class="risk-list">
-              <div
-                *ngFor="let item of executiveSummary.riskFactors"
-                class="risk-item"
-              >
-                <div
-                  class="risk-dot"
-                  [class.high]="item.severity === 'high'"
-                  [class.medium]="item.severity === 'medium'"
-                ></div>
-                <div class="risk-content">
-                  <span class="risk-title">{{ item.risk }}</span>
-                  <span class="risk-desc">{{ item.description }}</span>
-                </div>
-                <span
-                  class="risk-badge"
-                  [class.high]="item.severity === 'high'"
-                  [class.medium]="item.severity === 'medium'"
-                >
-                  {{ item.severity }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="section"
-            *ngIf="
-              executiveSummary.strategicAnalysis.opportunities.length > 0 ||
-              executiveSummary.strategicAnalysis.risks.length > 0 ||
-              executiveSummary.strategicAnalysis.implications.length > 0
-            "
-          >
-            <h4>Strategic Analysis</h4>
-
-            <div
-              class="risk-list"
-              *ngIf="
-                executiveSummary.strategicAnalysis.opportunities.length > 0
-              "
-            >
-              <div
-                class="risk-item"
-                *ngFor="
-                  let item of executiveSummary.strategicAnalysis.opportunities
-                "
-              >
-                <div class="risk-dot medium"></div>
-                <div class="risk-content">
-                  <span class="risk-title">Opportunity</span>
-                  <span class="risk-desc">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="risk-list"
-              *ngIf="executiveSummary.strategicAnalysis.risks.length > 0"
-            >
-              <div
-                class="risk-item"
-                *ngFor="let item of executiveSummary.strategicAnalysis.risks"
-              >
-                <div class="risk-dot high"></div>
-                <div class="risk-content">
-                  <span class="risk-title">Risk</span>
-                  <span class="risk-desc">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="risk-list"
-              *ngIf="executiveSummary.strategicAnalysis.implications.length > 0"
-            >
-              <div
-                class="risk-item"
-                *ngFor="
-                  let item of executiveSummary.strategicAnalysis.implications
-                "
-              >
-                <div class="risk-dot"></div>
-                <div class="risk-content">
-                  <span class="risk-title">Implication</span>
-                  <span class="risk-desc">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="section"
-            *ngIf="executiveSummary.topPriorities.length > 0"
-          >
-            <h4>Top 3 Executive Priorities</h4>
-            <div class="risk-list">
-              <div
-                class="risk-item"
-                *ngFor="
-                  let item of executiveSummary.topPriorities;
-                  let i = index
-                "
-              >
-                <div class="risk-dot medium"></div>
-                <div class="risk-content">
-                  <span class="risk-title">Priority {{ i + 1 }}</span>
-                  <span class="risk-desc">{{ item }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section" *ngIf="executiveSummary.executiveRecommendation">
-            <h4>Executive Recommendation</h4>
-            <p>{{ executiveSummary.executiveRecommendation }}</p>
-          </div>
-
-          <p
-            class="summary-empty"
-            *ngIf="
-              !executiveSummary.overview &&
-              executiveSummary.keyHighlights.length === 0 &&
-              executiveSummary.riskFactors.length === 0 &&
-              executiveSummary.strategicAnalysis.opportunities.length === 0 &&
-              executiveSummary.strategicAnalysis.risks.length === 0 &&
-              executiveSummary.strategicAnalysis.implications.length === 0 &&
-              executiveSummary.topPriorities.length === 0 &&
-              !executiveSummary.executiveRecommendation &&
-              !isSummaryLoading
-            "
-          >
-            Executive summary data is not available for this project yet.
-          </p>
-
-          <p class="summary-disclaimer" *ngIf="!isSummaryLoading">
-            This report was generated by AI. View our terms and conditions.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="scope-pane" *ngIf="activeTab === 'timeline'">
-      <mat-accordion multi>
-        <mat-expansion-panel [expanded]="true">
-          <mat-expansion-panel-header>
-            <mat-panel-title class="timeline-title"
-              >Probuild Construction Timeline</mat-panel-title
-            >
-          </mat-expansion-panel-header>
-          <mat-divider class="timeline-divider"></mat-divider>
-
-          <div class="timeline-wrapper">
-            <app-timeline
-              [taskGroups]="timelineGroups"
-              [isProjectOwner]="isProjectOwner"
-            ></app-timeline>
-          </div>
-        </mat-expansion-panel>
-
-        <mat-expansion-panel [expanded]="true">
-          <mat-expansion-panel-header>
-            <mat-panel-title>Tasks and Subtasks</mat-panel-title>
-          </mat-expansion-panel-header>
-          <mat-divider></mat-divider>
-
-          <app-construction-phases
-            [groups]="constructionPhaseGroups"
-            [isProjectOwner]="isProjectOwner"
-          ></app-construction-phases>
-        </mat-expansion-panel>
-      </mat-accordion>
-    </div>
-
-    <div class="scope-pane" *ngIf="activeTab === 'blueprints'">
-      <p class="blueprint-loading" *ngIf="isLoadingBlueprints">
-        Loading blueprints...
-      </p>
-      <app-project-blueprint-viewer
-        [mode]="'view'"
-        [uploadedFiles]="blueprintFiles"
-        [selectedFile]="selectedBlueprint"
-        [pdfSrc]="blueprintPdfSrc"
-        (fileSelected)="onBlueprintSelected($event)"
-      ></app-project-blueprint-viewer>
-    </div>
-  </ng-template>
-</section>
+                  </section>

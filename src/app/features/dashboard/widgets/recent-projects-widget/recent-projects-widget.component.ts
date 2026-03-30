@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { ChangeDetectorRef, Component, EventEmitter, NgZone, OnDestroy, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +23,6 @@ import { startWith } from 'rxjs/operators';
   templateUrl: './recent-projects-widget.component.html',
   styleUrls: ['./recent-projects-widget.component.scss'],
   imports: [
-    CommonModule,
     MatCardModule,
     MatDividerModule,
     MatTableModule,
@@ -31,8 +30,8 @@ import { startWith } from 'rxjs/operators';
     MatIconModule,
     MatButtonModule,
     ProjectCardComponent,
-    ProjectsTableComponent,
-  ],
+    ProjectsTableComponent
+],
 })
 export class RecentProjectsWidgetComponent implements OnDestroy {
   projects: Project[] = [];

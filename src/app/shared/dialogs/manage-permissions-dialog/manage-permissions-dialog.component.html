@@ -3,12 +3,16 @@
   <div class="select-all-container">
     <mat-checkbox (change)="selectAll($event.checked)">Select All</mat-checkbox>
   </div>
-  <div *ngFor="let group of groupedPermissions" class="permission-group">
-    <h3>{{ group.group }}</h3>
-    <mat-checkbox *ngFor="let permission of group.permissions" [formControlName]="permission.key">
-      {{ permission.name }}
-    </mat-checkbox>
-  </div>
+  @for (group of groupedPermissions; track group) {
+    <div class="permission-group">
+      <h3>{{ group.group }}</h3>
+      @for (permission of group.permissions; track permission) {
+        <mat-checkbox [formControlName]="permission.key">
+          {{ permission.name }}
+        </mat-checkbox>
+      }
+    </div>
+  }
 </mat-dialog-content>
 <mat-dialog-actions align="end" class="dialog-actions">
   <button mat-button class="btn btn-secondary" (click)="close()">Cancel</button>

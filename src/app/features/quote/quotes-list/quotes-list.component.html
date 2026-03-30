@@ -6,22 +6,23 @@
     </h1>
     <p>
       {{
-        isInboundView
-          ? "Documents sent to you by others"
-          : "Manage your quotes and invoices"
+      isInboundView
+      ? "Documents sent to you by others"
+      : "Manage your quotes and invoices"
       }}
     </p>
   </div>
 
-  <button
-    *ngIf="!isInboundView"
-    mat-button
-    class="btn btn-primary"
-    (click)="redirectToQuote()"
-  >
-    <mat-icon>add</mat-icon>
-    Create New
-  </button>
+  @if (!isInboundView) {
+    <button
+      mat-button
+      class="btn btn-primary"
+      (click)="redirectToQuote()"
+      >
+      <mat-icon>add</mat-icon>
+      Create New
+    </button>
+  }
 </div>
 <mat-tab-group (selectedIndexChange)="onDirectionChange($event)">
   <!-- OUTBOUND -->
@@ -113,189 +114,189 @@
     </div>
 
     <!-- ACCEPTED / PAID -->
-    <section *ngIf="accepted.length">
-      <h3 class="section-title success">
-        {{ acceptedLabel }} ({{ accepted.length }})
-      </h3>
-
-      <div
-        *ngFor="let q of accepted"
-        class="quote-row accepted"
-        (click)="openQuote(q.id)"
-      >
-        <div class="row-left">
-          <div class="icon" [class.invoice-icon]="isInvoice(q)">
-            <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+    @if (accepted.length) {
+      <section>
+        <h3 class="section-title success">
+          {{ acceptedLabel }} ({{ accepted.length }})
+        </h3>
+        @for (q of accepted; track q) {
+          <div
+            class="quote-row accepted"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status ok">{{ getStatusLabel(q) }}</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
           </div>
-
-          <div class="meta">
-            <div class="number">{{ q.number }}</div>
-            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
-          </div>
-        </div>
-
-        <div class="row-right">
-          <div class="amount">
-            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
-          </div>
-
-          <div class="date">
-            {{ q.createdDate | date: "yyyy-MM-dd" }}
-          </div>
-
-          <span class="status ok">{{ getStatusLabel(q) }}</span>
-          <mat-icon class="chevron">chevron_right</mat-icon>
-        </div>
-      </div>
-    </section>
+        }
+      </section>
+    }
 
     <!-- PENDING -->
-    <section *ngIf="pending.length">
-      <h3 class="section-title warning">
-        {{ pendingLabel }} ({{ pending.length }})
-      </h3>
-
-      <div
-        *ngFor="let q of pending"
-        class="quote-row pending"
-        (click)="openQuote(q.id)"
-      >
-        <div class="row-left">
-          <div class="icon" [class.invoice-icon]="isInvoice(q)">
-            <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+    @if (pending.length) {
+      <section>
+        <h3 class="section-title warning">
+          {{ pendingLabel }} ({{ pending.length }})
+        </h3>
+        @for (q of pending; track q) {
+          <div
+            class="quote-row pending"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status warn">{{ getStatusLabel(q) }}</span>
+              @if (!isInboundView) {
+                <button
+                  mat-button
+                  class="btn btn-ghost reminder"
+                  (click)="sendReminder(q.id); $event.stopPropagation()"
+                  >
+                  Send Reminder
+                </button>
+              }
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
           </div>
-
-          <div class="meta">
-            <div class="number">{{ q.number }}</div>
-            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
-          </div>
-        </div>
-
-        <div class="row-right">
-          <div class="amount">
-            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
-          </div>
-
-          <div class="date">
-            {{ q.createdDate | date: "yyyy-MM-dd" }}
-          </div>
-
-          <span class="status warn">{{ getStatusLabel(q) }}</span>
-
-          <button
-            *ngIf="!isInboundView"
-            mat-button
-            class="btn btn-ghost reminder"
-            (click)="sendReminder(q.id); $event.stopPropagation()"
-          >
-            Send Reminder
-          </button>
-
-          <mat-icon class="chevron">chevron_right</mat-icon>
-        </div>
-      </div>
-    </section>
+        }
+      </section>
+    }
 
     <!-- DECLINED / VOID -->
-    <section *ngIf="declined.length">
-      <h3 class="section-title danger">
-        {{ declinedLabel }} ({{ declined.length }})
-      </h3>
-
-      <div
-        *ngFor="let q of declined"
-        class="quote-row declined"
-        (click)="openQuote(q.id)"
-      >
-        <div class="row-left">
-          <div class="icon" [class.invoice-icon]="isInvoice(q)">
-            <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+    @if (declined.length) {
+      <section>
+        <h3 class="section-title danger">
+          {{ declinedLabel }} ({{ declined.length }})
+        </h3>
+        @for (q of declined; track q) {
+          <div
+            class="quote-row declined"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status err">{{ getStatusLabel(q) }}</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
           </div>
-
-          <div class="meta">
-            <div class="number">{{ q.number }}</div>
-            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
-          </div>
-        </div>
-
-        <div class="row-right">
-          <div class="amount">
-            {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
-          </div>
-
-          <div class="date">
-            {{ q.createdDate | date: "yyyy-MM-dd" }}
-          </div>
-
-          <span class="status err">{{ getStatusLabel(q) }}</span>
-          <mat-icon class="chevron">chevron_right</mat-icon>
-        </div>
-      </div>
-    </section>
+        }
+      </section>
+    }
 
     <!-- DRAFTS -->
-    <section *ngIf="draft.length">
-      <h3 class="section-title">Drafts ({{ draft.length }})</h3>
-
-      <div *ngFor="let q of draft" class="quote-row" (click)="openQuote(q.id)">
-        <div class="row-left">
-          <div class="icon" [class.invoice-icon]="isInvoice(q)">
-            <mat-icon>{{ isInvoice(q) ? "receipt_long" : "edit" }}</mat-icon>
+    @if (draft.length) {
+      <section>
+        <h3 class="section-title">Drafts ({{ draft.length }})</h3>
+        @for (q of draft; track q) {
+          <div class="quote-row" (click)="openQuote(q.id)">
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ isInvoice(q) ? "receipt_long" : "edit" }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              @if (q.total) {
+                <div class="amount">
+                  {{ q.total | currency: "USD" : "symbol" : "1.0-0" }}
+                </div>
+              }
+              <span class="status">draft</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
           </div>
-
-          <div class="meta">
-            <div class="number">{{ q.number }}</div>
-            <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
-          </div>
-        </div>
-
-        <div class="row-right">
-          <div class="amount" *ngIf="q.total">
-            {{ q.total | currency: "USD" : "symbol" : "1.0-0" }}
-          </div>
-
-          <span class="status">draft</span>
-          <mat-icon class="chevron">chevron_right</mat-icon>
-        </div>
-      </div>
-    </section>
+        }
+      </section>
+    }
 
     <!-- EMPTY STATE -->
-    <div
-      class="empty-state"
-      *ngIf="
-        !accepted.length && !pending.length && !declined.length && !draft.length
-      "
-    >
-      <mat-icon>{{
-        isInvoiceView ? "receipt_long" : "request_quote"
-      }}</mat-icon>
-      <h3>
-        No
-        {{
+    @if (
+      !accepted.length && !pending.length && !declined.length && !draft.length
+      ) {
+      <div
+        class="empty-state"
+        >
+        <mat-icon>{{
+          isInvoiceView ? "receipt_long" : "request_quote"
+        }}</mat-icon>
+        <h3>
+          No
+          {{
           docTypeFilter === "ALL"
-            ? "documents"
-            : docTypeFilter === "INVOICE"
-              ? "invoices"
-              : "quotes"
-        }}
-        yet
-      </h3>
-      <p *ngIf="!isInboundView">
-        Create your first {{ isInvoiceView ? "invoice" : "quote" }} to get
-        started
-      </p>
-      <p *ngIf="isInboundView">No documents have been sent to you yet</p>
-
-      <button
-        *ngIf="!isInboundView"
-        mat-button
-        class="btn btn-primary"
-        (click)="isInvoiceView ? redirectToInvoice() : redirectToQuote()"
-      >
-        <mat-icon>add</mat-icon>
-        Create {{ isInvoiceView ? "Invoice" : "Quote" }}
-      </button>
-    </div>
+          ? "documents"
+          : docTypeFilter === "INVOICE"
+          ? "invoices"
+          : "quotes"
+          }}
+          yet
+        </h3>
+        @if (!isInboundView) {
+          <p>
+            Create your first {{ isInvoiceView ? "invoice" : "quote" }} to get
+            started
+          </p>
+        }
+        @if (isInboundView) {
+          <p>No documents have been sent to you yet</p>
+        }
+        @if (!isInboundView) {
+          <button
+            mat-button
+            class="btn btn-primary"
+            (click)="isInvoiceView ? redirectToInvoice() : redirectToQuote()"
+            >
+            <mat-icon>add</mat-icon>
+            Create {{ isInvoiceView ? "Invoice" : "Quote" }}
+          </button>
+        }
+      </div>
+    }
   </div>
 </ng-template>

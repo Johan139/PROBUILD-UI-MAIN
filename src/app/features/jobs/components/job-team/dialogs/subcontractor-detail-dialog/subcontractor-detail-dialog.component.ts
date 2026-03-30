@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,12 +10,11 @@ import { JobsService } from '../../../../../../services/jobs.service';
   selector: 'app-subcontractor-detail-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
     SharedModule
-  ],
+],
   template: `
     <div class="modal-container">
       <button class="close-btn" mat-icon-button mat-dialog-close>

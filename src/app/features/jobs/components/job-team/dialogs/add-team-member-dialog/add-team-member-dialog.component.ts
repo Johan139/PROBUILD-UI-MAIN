@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,52 +17,63 @@ import { userTypes } from '../../../../../../data/user-types';
   selector: 'app-add-team-member-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule
-  ],
+],
   template: `
     <div class="dialog-container">
       <h2 mat-dialog-title>Add Team Member</h2>
       <mat-dialog-content>
         <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline">
-          <mat-label>First Name</mat-label>
-          <input matInput formControlName="firstName" placeholder="John">
-          <mat-error *ngIf="form.get('firstName')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Last Name</mat-label>
-          <input matInput formControlName="lastName" placeholder="Doe">
-          <mat-error *ngIf="form.get('lastName')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Phone</mat-label>
-          <input matInput formControlName="phoneNumber" placeholder="(555) 123-4567">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" type="email" placeholder="john.doe@example.com">
-          <mat-error *ngIf="form.get('email')?.hasError('required')">Required</mat-error>
-          <mat-error *ngIf="form.get('email')?.hasError('email')">Invalid email</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Role</mat-label>
-          <mat-select formControlName="role">
-            <mat-option *ngFor="let role of availableRoles" [value]="role.value">
-              {{ role.display }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.get('role')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" placeholder="John">
+            @if (form.get('firstName')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" placeholder="Doe">
+            @if (form.get('lastName')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phoneNumber" placeholder="(555) 123-4567">
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="john.doe@example.com">
+            @if (form.get('email')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+            @if (form.get('email')?.hasError('email')) {
+              <mat-error>Invalid email</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Role</mat-label>
+            <mat-select formControlName="role">
+              @for (role of availableRoles; track role) {
+                <mat-option [value]="role.value">
+                  {{ role.display }}
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.get('role')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
         </form>
       </mat-dialog-content>
       <mat-dialog-actions align="end" class="dialog-actions">
@@ -72,7 +83,7 @@ import { userTypes } from '../../../../../../data/user-types';
         </button>
       </mat-dialog-actions>
     </div>
-  `,
+    `,
   styles: [`
     .dialog-container {
       background-color: var(--color-surface);

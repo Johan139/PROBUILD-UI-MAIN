@@ -5,13 +5,13 @@ import {
   MAT_DIALOG_DATA,
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common';
+
 import { StripeService } from '../../services/StripeService';
 export type BillingCycle = 'monthly' | 'yearly';
 @Component({
   selector: 'app-payment-prompt-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title>Registration Complete</h2>
     <mat-dialog-content>

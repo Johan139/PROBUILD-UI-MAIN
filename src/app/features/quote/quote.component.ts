@@ -25,7 +25,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { CommonModule, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MatRadioModule } from '@angular/material/radio';
 import { AuthService } from '../../authentication/auth.service';
 import { Store } from '../../store/store.service';
@@ -110,8 +110,6 @@ interface CompanyAddressDTO {
     MatIconModule,
     MatDividerModule,
     MatExpansionModule,
-    NgIf,
-
     MatDialogModule,
     MatCheckboxModule,
     MatProgressSpinnerModule,
@@ -120,8 +118,8 @@ interface CompanyAddressDTO {
     MatNativeDateModule,
     MatRadioModule,
     MatTooltipModule,
-    MatProgressBarModule,
-  ],
+    MatProgressBarModule
+],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
   providers: [QuoteService],

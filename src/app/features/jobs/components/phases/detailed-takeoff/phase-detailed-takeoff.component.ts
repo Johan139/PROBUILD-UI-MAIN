@@ -85,9 +85,8 @@ interface BomSection {
     MatExpansionModule,
     MatDividerModule,
     ProjectBlueprintViewerComponent,
-    MoneyPipe,
-    MoneyInTextPipe,
-  ],
+    MoneyPipe
+],
   templateUrl: './phase-detailed-takeoff.component.html',
   styleUrl: './phase-detailed-takeoff.component.scss',
 })

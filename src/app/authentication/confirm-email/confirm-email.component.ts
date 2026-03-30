@@ -8,7 +8,7 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { NgIf } from '@angular/common';
+
 import { MatInputModule } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
 import { LoaderComponent } from '../../loader/loader.component';
@@ -24,10 +24,9 @@ import { of } from 'rxjs';
     MatCardModule,
     ReactiveFormsModule,
     MatInputModule,
-    NgIf,
     LoaderComponent,
-    MatButton,
-  ],
+    MatButton
+],
   templateUrl: './confirm-email.component.html',
   styleUrls: ['./confirm-email.component.scss'],
 })

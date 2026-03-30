@@ -10,12 +10,12 @@ import {
   MatDialogRef,
   MAT_DIALOG_DATA,
 } from '@angular/material/dialog';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-confirm-ai-acceptance-dialog',
   standalone: true,
-  imports: [MatDialogModule, CommonModule],
+  imports: [MatDialogModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './confirm-aiacceptance-dialog.component.html',
   styleUrls: ['./confirm-aiacceptance-dialog.component.scss']

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { HttpEventType } from '@angular/common/http';
 import { Component, EventEmitter, Input, OnInit, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
@@ -30,7 +30,7 @@ interface CloseoutUpload {
 @Component({
   selector: 'app-phase-closeout',
   standalone: true,
-  imports: [CommonModule, PhaseNavigationHeaderComponent, LucideIconsModule],
+  imports: [PhaseNavigationHeaderComponent, LucideIconsModule],
   templateUrl: './phase-closeout.component.html',
   styleUrl: './phase-closeout.component.scss',
 })

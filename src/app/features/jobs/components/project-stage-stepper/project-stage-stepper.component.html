@@ -10,42 +10,43 @@
 
       <!-- Steps -->
       <div class="steps-container">
-        <div
-          *ngFor="let step of lifecycleSteps; let i = index"
-          class="step-item"
-        >
-          <!-- Step Circle -->
+        @for (step of lifecycleSteps; track step; let i = $index) {
           <div
-            class="step-circle"
-            [class.completed]="isStepCompleted(step.id)"
-            [class.current]="isStepCurrent(step.id)"
-            [class.pending]="isStepPending(step.id)"
-          >
-            <lucide-angular
-              [img]="CheckCircle2"
-              class="step-icon"
-              *ngIf="isStepCompleted(step.id)"
+            class="step-item"
             >
-            </lucide-angular>
-
-            <lucide-angular
-              [img]="step.icon"
-              class="step-icon"
-              *ngIf="!isStepCompleted(step.id)"
-            >
-            </lucide-angular>
+            <!-- Step Circle -->
+            <div
+              class="step-circle"
+              [class.completed]="isStepCompleted(step.id)"
+              [class.current]="isStepCurrent(step.id)"
+              [class.pending]="isStepPending(step.id)"
+              >
+              @if (isStepCompleted(step.id)) {
+                <lucide-angular
+                  [img]="CheckCircle2"
+                  class="step-icon"
+                  >
+                </lucide-angular>
+              }
+              @if (!isStepCompleted(step.id)) {
+                <lucide-angular
+                  [img]="step.icon"
+                  class="step-icon"
+                  >
+                </lucide-angular>
+              }
+            </div>
+            <!-- Step Label -->
+            <p
+              class="step-label"
+              [class.current-text]="isStepCurrent(step.id)"
+              [class.completed-text]="isStepCompleted(step.id)"
+              [class.pending-text]="isStepPending(step.id)"
+              >
+              {{ step.shortLabel }}
+            </p>
           </div>
-
-          <!-- Step Label -->
-          <p
-            class="step-label"
-            [class.current-text]="isStepCurrent(step.id)"
-            [class.completed-text]="isStepCompleted(step.id)"
-            [class.pending-text]="isStepPending(step.id)"
-          >
-            {{ step.shortLabel }}
-          </p>
-        </div>
+        }
       </div>
     </div>
   </div>

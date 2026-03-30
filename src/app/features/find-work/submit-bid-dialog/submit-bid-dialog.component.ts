@@ -5,7 +5,7 @@ import {
   MatDialogModule,
 } from '@angular/material/dialog';
 import { FileUploadService } from '../../../services/file-upload.service';
-import { CommonModule } from '@angular/common';
+
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -30,7 +30,6 @@ interface BidTargetTradePackage {
   styleUrls: ['./submit-bid-dialog.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatStepperModule,
     MatFormFieldModule,
@@ -38,8 +37,8 @@ interface BidTargetTradePackage {
     MatButtonModule,
     MatProgressBarModule,
     MatSelectModule,
-    MatDialogModule,
-  ],
+    MatDialogModule
+],
 })
 export class SubmitBidDialogComponent implements OnInit {
   @ViewChild('stepper')

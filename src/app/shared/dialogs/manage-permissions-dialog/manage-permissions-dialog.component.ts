@@ -8,7 +8,7 @@ import {
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TeamManagementService } from '../../../services/team-management.service';
 import { PERMISSIONS } from '../../../data/permissions';
-import { CommonModule } from '@angular/common';
+
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -17,12 +17,11 @@ import { MatDialogModule } from '@angular/material/dialog';
   selector: 'app-manage-permissions-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatDialogModule,
-  ],
+    MatDialogModule
+],
   templateUrl: './manage-permissions-dialog.component.html',
   styleUrl: './manage-permissions-dialog.component.scss',
 })

@@ -88,7 +88,7 @@ export interface QuotePreviewData {
             mat-icon-button
             matTooltip="Print preview"
             (click)="printPreview()"
-          >
+            >
             <mat-icon>print</mat-icon>
           </button>
           <button mat-icon-button matTooltip="Close" (click)="close()">
@@ -96,27 +96,34 @@ export interface QuotePreviewData {
           </button>
         </div>
       </div>
-
+    
       <!-- Scrollable Preview Content -->
       <div class="preview-scroll-container">
         <div class="quote-preview" id="quote-preview-content">
           <!-- Quote Header -->
           <header class="preview-header">
             <div class="company-section">
-              <img
-                *ngIf="data.logoUrl"
-                [src]="data.logoUrl"
-                alt="Company Logo"
-                class="company-logo"
-              />
+              @if (data.logoUrl) {
+                <img
+                  [src]="data.logoUrl"
+                  alt="Company Logo"
+                  class="company-logo"
+                  />
+              }
               <div class="company-info">
                 <h3 class="company-name">{{ data.companyName }}</h3>
-                <p *ngIf="data.companyAddress">{{ data.companyAddress }}</p>
-                <p *ngIf="data.companyEmail">{{ data.companyEmail }}</p>
-                <p *ngIf="data.companyPhone">{{ data.companyPhone }}</p>
+                @if (data.companyAddress) {
+                  <p>{{ data.companyAddress }}</p>
+                }
+                @if (data.companyEmail) {
+                  <p>{{ data.companyEmail }}</p>
+                }
+                @if (data.companyPhone) {
+                  <p>{{ data.companyPhone }}</p>
+                }
               </div>
             </div>
-
+    
             <div class="document-section">
               <h1 class="document-title">
                 {{ data.documentType === 'INVOICE' ? 'INVOICE' : 'QUOTE' }}
@@ -138,9 +145,9 @@ export interface QuotePreviewData {
                 <div class="meta-row">
                   <span class="label">
                     {{
-                      data.documentType === 'INVOICE'
-                        ? 'Due Date'
-                        : 'Valid Until'
+                    data.documentType === 'INVOICE'
+                    ? 'Due Date'
+                    : 'Valid Until'
                     }}:
                   </span>
                   <span class="value">{{
@@ -148,43 +155,55 @@ export interface QuotePreviewData {
                   }}</span>
                 </div>
                 <!-- Payment Terms - Invoice only -->
-                <div
-                  class="meta-row"
-                  *ngIf="data.documentType === 'INVOICE' && data.paymentTerms"
-                >
-                  <span class="label">Payment Terms:</span>
-                  <span class="value">{{ data.paymentTerms }}</span>
-                </div>
+                @if (data.documentType === 'INVOICE' && data.paymentTerms) {
+                  <div
+                    class="meta-row"
+                    >
+                    <span class="label">Payment Terms:</span>
+                    <span class="value">{{ data.paymentTerms }}</span>
+                  </div>
+                }
               </div>
             </div>
           </header>
-
+    
           <div class="divider"></div>
-
+    
           <!-- Bill To & Project Section -->
           <section class="details-section">
             <div class="detail-block">
               <h4>BILL TO</h4>
               <p class="client-name">{{ data.clientName || 'Client Name' }}</p>
-              <p *ngIf="data.clientAddress">{{ data.clientAddress }}</p>
-              <p *ngIf="data.clientPhone">{{ data.clientPhone }}</p>
-              <p *ngIf="data.clientEmail">{{ data.clientEmail }}</p>
+              @if (data.clientAddress) {
+                <p>{{ data.clientAddress }}</p>
+              }
+              @if (data.clientPhone) {
+                <p>{{ data.clientPhone }}</p>
+              }
+              @if (data.clientEmail) {
+                <p>{{ data.clientEmail }}</p>
+              }
             </div>
-
-            <div
-              class="detail-block"
-              *ngIf="data.projectName || data.projectAddress"
-            >
-              <h4>PROJECT</h4>
-              <p *ngIf="data.projectName" class="project-name">
-                {{ data.projectName }}
-              </p>
-              <p *ngIf="data.projectAddress">{{ data.projectAddress }}</p>
-            </div>
+    
+            @if (data.projectName || data.projectAddress) {
+              <div
+                class="detail-block"
+                >
+                <h4>PROJECT</h4>
+                @if (data.projectName) {
+                  <p class="project-name">
+                    {{ data.projectName }}
+                  </p>
+                }
+                @if (data.projectAddress) {
+                  <p>{{ data.projectAddress }}</p>
+                }
+              </div>
+            }
           </section>
-
+    
           <div class="divider"></div>
-
+    
           <!-- Line Items Table -->
           <section class="items-section">
             <table class="items-table">
@@ -198,24 +217,28 @@ export interface QuotePreviewData {
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let row of data.rows">
-                  <td class="desc-col">{{ row.description }}</td>
-                  <td class="qty-col">{{ row.quantity }}</td>
-                  <td class="unit-col">{{ row.unit }}</td>
-                  <td class="price-col">
-                    {{ row.unitPrice | currency: 'USD' : 'symbol' : '1.2-2' }}
-                  </td>
-                  <td class="amount-col">
-                    {{ row.total | currency: 'USD' : 'symbol' : '1.2-2' }}
-                  </td>
-                </tr>
-                <tr *ngIf="data.rows.length === 0" class="empty-row">
-                  <td colspan="5">No line items added</td>
-                </tr>
+                @for (row of data.rows; track row) {
+                  <tr>
+                    <td class="desc-col">{{ row.description }}</td>
+                    <td class="qty-col">{{ row.quantity }}</td>
+                    <td class="unit-col">{{ row.unit }}</td>
+                    <td class="price-col">
+                      {{ row.unitPrice | currency: 'USD' : 'symbol' : '1.2-2' }}
+                    </td>
+                    <td class="amount-col">
+                      {{ row.total | currency: 'USD' : 'symbol' : '1.2-2' }}
+                    </td>
+                  </tr>
+                }
+                @if (data.rows.length === 0) {
+                  <tr class="empty-row">
+                    <td colspan="5">No line items added</td>
+                  </tr>
+                }
               </tbody>
             </table>
           </section>
-
+    
           <!-- Totals Section -->
           <section class="totals-section">
             <div class="totals-container">
@@ -225,38 +248,42 @@ export interface QuotePreviewData {
                   {{ data.subtotal | currency: 'USD' : 'symbol' : '1.2-2' }}
                 </span>
               </div>
-
-              <div
-                class="total-row"
-                *ngIf="data.extraCost && data.extraCost > 0"
-              >
-                <span class="label">Extra Cost:</span>
-                <span class="value">
-                  {{ data.extraCost | currency: 'USD' : 'symbol' : '1.2-2' }}
-                </span>
-              </div>
-
-              <div
-                class="total-row"
-                *ngIf="data.discountRate && data.discountRate > 0"
-              >
-                <span class="label">Discount ({{ data.discountRate }}%):</span>
-                <span class="value negative">
-                  -{{
+    
+              @if (data.extraCost && data.extraCost > 0) {
+                <div
+                  class="total-row"
+                  >
+                  <span class="label">Extra Cost:</span>
+                  <span class="value">
+                    {{ data.extraCost | currency: 'USD' : 'symbol' : '1.2-2' }}
+                  </span>
+                </div>
+              }
+    
+              @if (data.discountRate && data.discountRate > 0) {
+                <div
+                  class="total-row"
+                  >
+                  <span class="label">Discount ({{ data.discountRate }}%):</span>
+                  <span class="value negative">
+                    -{{
                     data.discountAmount | currency: 'USD' : 'symbol' : '1.2-2'
-                  }}
-                </span>
-              </div>
-
-              <div class="total-row" *ngIf="data.taxRate && data.taxRate > 0">
-                <span class="label">Tax ({{ data.taxRate }}%):</span>
-                <span class="value">
-                  {{ data.taxAmount | currency: 'USD' : 'symbol' : '1.2-2' }}
-                </span>
-              </div>
-
+                    }}
+                  </span>
+                </div>
+              }
+    
+              @if (data.taxRate && data.taxRate > 0) {
+                <div class="total-row">
+                  <span class="label">Tax ({{ data.taxRate }}%):</span>
+                  <span class="value">
+                    {{ data.taxAmount | currency: 'USD' : 'symbol' : '1.2-2' }}
+                  </span>
+                </div>
+              }
+    
               <div class="totals-divider"></div>
-
+    
               <!-- Grand Total -->
               <div class="total-row grand-total">
                 <span class="label">Total:</span>
@@ -264,61 +291,68 @@ export interface QuotePreviewData {
                   {{ data.grandTotal | currency: 'USD' : 'symbol' : '1.2-2' }}
                 </span>
               </div>
-
+    
               <!-- Amount Paid - Invoice only -->
-              <div
-                class="total-row amount-paid"
-                *ngIf="data.amountPaid && data.amountPaid > 0"
-              >
-                <span class="label">Amount Paid:</span>
-                <span class="value paid">
-                  -{{ data.amountPaid | currency: 'USD' : 'symbol' : '1.2-2' }}
-                </span>
-              </div>
-
+              @if (data.amountPaid && data.amountPaid > 0) {
+                <div
+                  class="total-row amount-paid"
+                  >
+                  <span class="label">Amount Paid:</span>
+                  <span class="value paid">
+                    -{{ data.amountPaid | currency: 'USD' : 'symbol' : '1.2-2' }}
+                  </span>
+                </div>
+              }
+    
               <!-- Balance Due - Invoice only -->
-              <div
-                class="total-row balance-due"
-                *ngIf="
-                  data.balanceDue !== undefined &&
-                  data.amountPaid &&
-                  data.amountPaid > 0
-                "
-                [class.paid-in-full]="data.balanceDue <= 0"
-              >
-                <span class="label">
-                  {{ data.balanceDue > 0 ? 'Balance Due:' : 'Paid in Full:' }}
-                </span>
-                <span class="value">
-                  {{
+              @if (
+                data.balanceDue !== undefined &&
+                data.amountPaid &&
+                data.amountPaid > 0
+                ) {
+                <div
+                  class="total-row balance-due"
+                  [class.paid-in-full]="data.balanceDue <= 0"
+                  >
+                  <span class="label">
+                    {{ data.balanceDue > 0 ? 'Balance Due:' : 'Paid in Full:' }}
+                  </span>
+                  <span class="value">
+                    {{
                     (data.balanceDue < 0 ? 0 : data.balanceDue)
-                      | currency: 'USD' : 'symbol' : '1.2-2'
-                  }}
-                </span>
-              </div>
+                    | currency: 'USD' : 'symbol' : '1.2-2'
+                    }}
+                  </span>
+                </div>
+              }
             </div>
           </section>
-
+    
           <!-- Notes & Terms -->
-          <section class="notes-section" *ngIf="data.notes || data.terms">
-            <div class="notes-block" *ngIf="data.notes">
-              <h4>NOTES</h4>
-              <p>{{ data.notes }}</p>
-            </div>
-
-            <div class="terms-block" *ngIf="data.terms">
-              <h4>TERMS & CONDITIONS</h4>
-              <p>{{ data.terms }}</p>
-            </div>
-          </section>
-
+          @if (data.notes || data.terms) {
+            <section class="notes-section">
+              @if (data.notes) {
+                <div class="notes-block">
+                  <h4>NOTES</h4>
+                  <p>{{ data.notes }}</p>
+                </div>
+              }
+              @if (data.terms) {
+                <div class="terms-block">
+                  <h4>TERMS & CONDITIONS</h4>
+                  <p>{{ data.terms }}</p>
+                </div>
+              }
+            </section>
+          }
+    
           <!-- Footer -->
           <footer class="preview-footer">
             <p>Generated by ProBuildAI</p>
           </footer>
         </div>
       </div>
-
+    
       <!-- Dialog Actions -->
       <div class="dialog-actions">
         <button mat-button class="btn btn-secondary" (click)="close()">Close</button>
@@ -330,12 +364,12 @@ export interface QuotePreviewData {
           mat-button
           class="btn btn-primary"
           (click)="confirmAndClose()"
-        >
+          >
           Looks Good
         </button>
       </div>
     </div>
-  `,
+    `,
   styles: [
     `
       .preview-container {

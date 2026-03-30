@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import {
   Component,
@@ -37,13 +37,12 @@ import { formatMoney } from '../../../../../shared/pipes/money.pipe';
   selector: 'app-phase-contract-award',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     PhaseNavigationHeaderComponent,
     LucideIconsModule,
     DragAndDropDirective,
-    MatSnackBarModule,
-  ],
+    MatSnackBarModule
+],
   templateUrl: './phase-contract-award.component.html',
   styleUrl: './phase-contract-award.component.scss',
 })

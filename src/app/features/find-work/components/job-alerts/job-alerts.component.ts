@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -15,10 +15,15 @@ import { Subject, takeUntil } from 'rxjs';
   styleUrls: ['./job-alerts.component.scss'],
   standalone: true,
   imports: [
-    CommonModule, MatIconModule, MatButtonModule, MatCheckboxModule,
-    MatSlideToggleModule, MatAutocompleteModule, MatTooltipModule,
-    FormsModule, ReactiveFormsModule
-  ]
+    MatIconModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatSlideToggleModule,
+    MatAutocompleteModule,
+    MatTooltipModule,
+    FormsModule,
+    ReactiveFormsModule
+]
 })
 export class JobAlertsComponent implements OnInit, OnDestroy {
   @Input() distance: number = 100;

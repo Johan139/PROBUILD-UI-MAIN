@@ -8,7 +8,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { NgIf } from '@angular/common';
+
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,7 +28,6 @@ declare const google: any;
   imports: [
     ReactiveFormsModule,
     MatCardModule,
-    NgIf,
     MatFormFieldModule,
     MatInputModule,
     LoaderComponent,
@@ -36,8 +35,8 @@ declare const google: any;
     MatIconModule,
     MatDividerModule,
     RouterLink,
-    MatSnackBarModule,
-  ],
+    MatSnackBarModule
+],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })

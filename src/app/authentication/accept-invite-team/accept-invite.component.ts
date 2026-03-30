@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { NgIf } from '@angular/common';
+
 import { MatButton } from '@angular/material/button';
 import { LoaderComponent } from '../../loader/loader.component';
 import { environment } from '../../../environments/environment';
@@ -18,9 +18,8 @@ import { TeamManagementService } from '../../services/team-management.service';
     ReactiveFormsModule,
     MatCardModule,
     MatButton,
-    NgIf,
-    LoaderComponent,
-  ],
+    LoaderComponent
+],
   templateUrl: './accept-invite.component.html',
   styleUrls: ['./accept-invite.component.scss'],
 })

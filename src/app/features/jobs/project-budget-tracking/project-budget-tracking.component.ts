@@ -8,13 +8,7 @@ import {
   PLATFORM_ID,
   ChangeDetectorRef,
 } from '@angular/core';
-import {
-  CommonModule,
-  NgIf,
-  NgForOf,
-  DecimalPipe,
-  isPlatformBrowser,
-} from '@angular/common';
+import { CommonModule, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -43,11 +37,9 @@ import { MoneyPipe } from '../../../shared/pipes/money.pipe';
     MatIconModule,
     MatTooltipModule,
     MatExpansionModule,
-    NgIf,
-    NgForOf,
     DecimalPipe,
-    MoneyPipe,
-  ],
+    MoneyPipe
+],
   templateUrl: './project-budget-tracking.component.html',
   styleUrl: './project-budget-tracking.component.scss',
   providers: [QuoteService],
