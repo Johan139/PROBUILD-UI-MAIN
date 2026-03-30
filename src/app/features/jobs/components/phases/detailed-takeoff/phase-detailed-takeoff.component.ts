@@ -98,6 +98,7 @@ export class PhaseDetailedTakeoffComponent
   @Input() scopeCostSummary: any = null;
   @Input() scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   @Input() scopeTotalProjectCost: number | null = null;
+  @Input() bidNetProfitMarginPercent: number | null = null;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
   @Input() isReportLoading = false;
   @Input() showEnvironmentalReport = true;
@@ -625,16 +626,17 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bidPriceValue(): number {
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
     const direct = Number(this.projectDetails?.bidPrice || 0);
     if (direct > 0) return direct;
-    const marketBid = Number(this.loadedCostSummary?.suggestedMarketBid || 0);
-    const projectCost = Number(this.loadedCostSummary?.suggestedBid || 0);
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    const projectCost = Number(summary?.suggestedBid || 0);
     if (projectCost > 0 || marketBid > 0) {
       return Math.max(projectCost, marketBid);
     }
     const suggested = Number(
-      this.loadedCostSummary?.suggestedBid ||
-        this.loadedCostSummary?.suggestedMarketBid ||
+      summary?.suggestedBid ||
+        summary?.suggestedMarketBid ||
         this.projectDetails?.suggestedBid ||
         this.projectDetails?.suggestedMarketBid ||
         this.projectDetails?.costAnalysis?.suggestedBid ||
@@ -645,9 +647,19 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bidCostToBuild(): number {
-    const directSubtotal = Number(this.loadedCostSummary?.directSubtotal || 0);
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fromBom = Number(this.scopeBomTotals?.directSubtotal || 0);
+    if (fromBom > 0) return fromBom;
+
+    const directSubtotal = Number(summary?.directSubtotal || 0);
     if (directSubtotal > 0) return directSubtotal;
-    return this.overallBudgetValue;
+
+    const material = Number(summary?.materialCost || 0);
+    const labor = Number(summary?.laborCost || 0);
+    const computed = material + labor;
+    if (computed > 0) return computed;
+
+    return 0;
   }
 
   get bidGrossProfit(): number {
@@ -655,12 +667,24 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bidProfitMarginPercent(): number {
+    const override = Number(this.bidNetProfitMarginPercent);
+    if (Number.isFinite(override) && override > 0) return override;
     if (this.bidPriceValue <= 0) return 0;
-    return (this.bidGrossProfit / this.bidPriceValue) * 100;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fullyLoadedCost =
+      this.bidCostToBuild +
+      Number(summary?.overhead || 0) +
+      Number(summary?.contingency || 0) +
+      Number(summary?.escalation || 0) +
+      Number(summary?.taxes || 0);
+    const netProfit = this.bidPriceValue - fullyLoadedCost;
+    return (netProfit / this.bidPriceValue) * 100;
   }
 
   get bidExposureValue(): number {
-    const contingency = Number(this.loadedCostSummary?.contingency || 0);
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const contingency = Number(summary?.contingency || 0);
     return contingency > 0
       ? contingency
       : Math.max(0, this.overallBudgetValue * 0.08);
