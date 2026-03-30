@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,47 +15,56 @@ import { AuthService } from '../../../../../../authentication/auth.service';
   selector: 'app-add-subcontractor-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule
-  ],
+],
   template: `
     <div class="dialog-container">
       <h2 mat-dialog-title>Add Subcontractor</h2>
       <mat-dialog-content>
         <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Trade</mat-label>
-          <input matInput formControlName="trade" placeholder="e.g. Electrical">
-          <mat-error *ngIf="form.get('trade')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Company Name</mat-label>
-          <input matInput formControlName="company" placeholder="Company Name">
-          <mat-error *ngIf="form.get('company')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Contact Person (Full Name)</mat-label>
-          <input matInput formControlName="contact" placeholder="John Doe">
-          <mat-error *ngIf="form.get('contact')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Phone</mat-label>
-          <input matInput formControlName="phone" placeholder="(555) 123-4567">
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Email</mat-label>
-          <input matInput formControlName="email" type="email" placeholder="john.doe@example.com">
-          <mat-error *ngIf="form.get('email')?.hasError('required')">Required</mat-error>
-          <mat-error *ngIf="form.get('email')?.hasError('email')">Invalid email</mat-error>
-        </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Trade</mat-label>
+            <input matInput formControlName="trade" placeholder="e.g. Electrical">
+            @if (form.get('trade')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Company Name</mat-label>
+            <input matInput formControlName="company" placeholder="Company Name">
+            @if (form.get('company')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Contact Person (Full Name)</mat-label>
+            <input matInput formControlName="contact" placeholder="John Doe">
+            @if (form.get('contact')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Phone</mat-label>
+            <input matInput formControlName="phone" placeholder="(555) 123-4567">
+          </mat-form-field>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="john.doe@example.com">
+            @if (form.get('email')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
+            @if (form.get('email')?.hasError('email')) {
+              <mat-error>Invalid email</mat-error>
+            }
+          </mat-form-field>
         </form>
       </mat-dialog-content>
       <mat-dialog-actions align="end" class="dialog-actions">
@@ -65,7 +74,7 @@ import { AuthService } from '../../../../../../authentication/auth.service';
         </button>
       </mat-dialog-actions>
     </div>
-  `,
+    `,
   styles: [`
     .dialog-container {
       background-color: var(--color-surface);

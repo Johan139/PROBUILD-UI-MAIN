@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
-import { NgIf } from '@angular/common';
+
 import { NewUserDashboardComponent } from './new-user-dashboard/new-user-dashboard.component';
 import { ProjectsService } from '../../services/projects.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [NgIf, NewUserDashboardComponent, MatIconModule, MatSidenavModule],
+  imports: [NewUserDashboardComponent, MatIconModule, MatSidenavModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

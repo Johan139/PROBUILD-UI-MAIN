@@ -21,7 +21,7 @@ import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEventDialogComponent } from './add-event-dialog.component';
 import { JobDataService } from '../jobs/services/job-data.service';
 import { Job } from '../../models/job';
-import { CommonModule } from '@angular/common';
+
 import { JobCardComponent } from '../../components/job-card/job-card.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -33,7 +33,6 @@ import { JobParserService } from '../jobs/services/jobs/job-parser.service';
   selector: 'app-calendar',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     FormsModule,
     MatCardModule,
@@ -47,8 +46,8 @@ import { JobParserService } from '../jobs/services/jobs/job-parser.service';
     MatSelectModule,
     MatTooltipModule,
     JobCardComponent,
-    MatIconModule,
-  ],
+    MatIconModule
+],
   templateUrl: './calendar.component.html',
   styleUrls: ['./calendar.component.scss'],
 })

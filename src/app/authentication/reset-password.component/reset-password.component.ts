@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
+
 import { ForgotPasswordService } from '../forgot-password/forgot-password.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,7 +27,6 @@ import { LoaderComponent } from '../../loader/loader.component';
   styleUrls: ['./reset-password.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -36,8 +35,8 @@ import { LoaderComponent } from '../../loader/loader.component';
     MatDividerModule,
     MatProgressSpinnerModule,
     LoaderComponent,
-    HttpClientModule,
-  ],
+    HttpClientModule
+],
 })
 export class ResetPasswordComponent implements OnInit {
   resetForm!: FormGroup;

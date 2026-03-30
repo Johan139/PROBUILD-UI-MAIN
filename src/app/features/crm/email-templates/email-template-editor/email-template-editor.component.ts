@@ -12,7 +12,7 @@ import {
   Injector,
   runInInjectionContext,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   FormBuilder,
@@ -49,7 +49,6 @@ import {
   selector: 'app-email-template-editor',
   standalone: true,
   imports: [
-    CommonModule,
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
@@ -59,8 +58,8 @@ import {
     MatSlideToggleModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    MatDialogModule,
-  ],
+    MatDialogModule
+],
   templateUrl: './email-template-editor.component.html',
   styleUrls: ['./email-template-editor.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -809,20 +808,21 @@ onPreviewIframeLoad(event: Event): void {
   selector: 'app-email-template-send-test-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatInputModule,
-  ],
+    MatInputModule
+],
   template: `
     <h2 mat-dialog-title>Send test email</h2>
     <div mat-dialog-content>
       <mat-form-field appearance="outline" style="width: 100%;">
         <mat-label>Recipient email</mat-label>
         <input matInput [formControl]="email" placeholder="name@company.com" autocomplete="email" />
-        <mat-error *ngIf="email.invalid">Enter a valid email address</mat-error>
+        @if (email.invalid) {
+          <mat-error>Enter a valid email address</mat-error>
+        }
       </mat-form-field>
     </div>
     <div mat-dialog-actions align="end">
@@ -831,7 +831,7 @@ onPreviewIframeLoad(event: Event): void {
         Send
       </button>
     </div>
-  `,
+    `,
 })
 export class EmailTemplateSendTestDialogComponent {
   private dialogRef = inject(MatDialogRef<EmailTemplateSendTestDialogComponent>);

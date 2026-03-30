@@ -33,210 +33,212 @@
   </section>
 
   <section class="permits-list permits-list-copy">
-    <article class="permit-item permit-item--add" *ngIf="addingPermit">
-      <div class="permit-copy permit-copy--with-meta">
-        <div class="permit-title-row">
-          <div class="permit-title-main">
-            <span class="permit-icon-wrap">
-              <lucide-icon name="plus"></lucide-icon>
-            </span>
-            <h4>New Permit</h4>
-          </div>
-        </div>
-
-        <div class="permit-form-grid">
-          <label>
-            <span>Permit Name</span>
-            <input type="text" [(ngModel)]="newPermitDraft.name" placeholder="e.g. Fire Permit" />
-          </label>
-          <label>
-            <span>Issuing Agency</span>
-            <input type="text" [(ngModel)]="newPermitDraft.issuingAgency" placeholder="e.g. City of Georgetown" />
-          </label>
-          <label class="permit-form-grid__full">
-            <span>Requirements</span>
-            <input type="text" [(ngModel)]="newPermitDraft.requirements" placeholder="Brief requirements" />
-          </label>
-        </div>
-      </div>
-
-      <div class="permit-actions">
-        <button type="button" class="btn btn-primary" (click)="saveNewPermit()">Save</button>
-        <button type="button" class="btn btn-outline" (click)="cancelAddPermit()">Cancel</button>
-      </div>
-    </article>
-
-    <article
-      class="permit-item"
-      *ngFor="let permit of permits"
-      [class.is-uploaded]="!!permit.documentId"
-      [class.is-na]="isPermitNA(permit.status)"
-    >
-      <input
-        #permitFileInput
-        type="file"
-        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-        class="hidden-input"
-        (change)="onPermitFileSelected(permit, $event)"
-      />
-
-      <div class="permit-copy permit-copy--with-meta">
-        <div class="permit-title-row permit-title-row--with-status">
-          <div class="permit-title-main">
-            <span class="permit-icon-wrap">
-              <lucide-icon [name]="getPermitIconName(permit.name)"></lucide-icon>
-            </span>
-
-            <div>
-              <div class="permit-title-inline">
-                <h4>{{ permit.name || 'Unnamed Permit' }}</h4>
-                <lucide-icon *ngIf="permit.documentId" name="check" class="permit-complete-icon"></lucide-icon>
-                <span class="na-pill" *ngIf="isPermitNA(permit.status)">N/A</span>
-              </div>
-              <p>{{ permit.requirements || 'Permit requirements and agency checks are managed in the permit details dialog.' }}</p>
+    @if (addingPermit) {
+      <article class="permit-item permit-item--add">
+        <div class="permit-copy permit-copy--with-meta">
+          <div class="permit-title-row">
+            <div class="permit-title-main">
+              <span class="permit-icon-wrap">
+                <lucide-icon name="plus"></lucide-icon>
+              </span>
+              <h4>New Permit</h4>
             </div>
           </div>
-        </div>
-
-        <p class="permit-accepts" *ngIf="permit.issuingAgency">Agency: {{ permit.issuingAgency }}</p>
-        <p class="permit-accepts" *ngIf="permit.expirationDate">Expires: {{ permit.expirationDate | date: 'mediumDate' }}</p>
-      </div>
-
-      <div class="permit-actions">
-        <div class="permit-actions-status">
-          <span class="state-pill" [ngClass]="getPermitStatusClass(permit.status)">
-            {{ getPermitStatusLabel(permit.status) }}
-          </span>
-        </div>
-
-        <ng-container *ngIf="permit.documentId; else notUploadedActions">
-          <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="viewPermitDocument(permit)">
-            <lucide-icon name="eye" class="btn-icon"></lucide-icon>
-            <span>{{ permit.document?.fileName || 'View document' }}</span>
-          </button>
-          <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
-            Replace
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline btn-danger-ghost"
-            [disabled]="isPermitBusy(permit)"
-            (click)="removePermitDocument(permit)"
-          >
-            Remove
-          </button>
-        </ng-container>
-
-        <ng-template #notUploadedActions>
-          <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
-            <lucide-icon name="upload" class="btn-icon"></lucide-icon>
-            <span>Upload</span>
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-outline btn-na"
-            [disabled]="isPermitBusy(permit)"
-            *ngIf="!isPermitNA(permit.status)"
-            (click)="markPermitNA(permit)"
-          >
-            N/A
-          </button>
-
-          <button
-            type="button"
-            class="btn btn-outline btn-undo"
-            [disabled]="isPermitBusy(permit)"
-            *ngIf="isPermitNA(permit.status)"
-            (click)="undoPermitNA(permit)"
-          >
-            Undo
-          </button>
-        </ng-template>
-      </div>
-    </article>
-
-    <article class="permit-item permit-item--empty" *ngIf="!isPermitLoading && permits.length === 0">
-      <div class="permit-copy">
-        <h4>No permits available yet</h4>
-        <p>Use Permit Details to add permits manually or allow AI suggestions to populate the list.</p>
-      </div>
-    </article>
-  </section>
-
-  <section class="progress-card progress-card-copy">
-    <div class="progress-row progress-row--with-action">
-      <div>
-        <span>Items Completed</span>
-        <strong>{{ completedCount }} / {{ totalPermitCount }}</strong>
-      </div>
-      <div class="progress-actions">
-        <button type="button" class="btn btn-outline" (click)="startAddPermit()" [disabled]="addingPermit">Add Permit</button>
-        <button type="button" class="btn btn-outline" (click)="openPermitsDialog()">Open Full Permit Details</button>
-      </div>
-    </div>
-
-    <div class="progress-track">
-      <div class="progress-fill" [style.width.%]="permitProgressPercent"></div>
-    </div>
-
-    <p class="progress-copy" *ngIf="canProceed; else permitsPending">
-      All items addressed. You may proceed to the next phase.
-    </p>
-    <ng-template #permitsPending>
-      <p class="progress-copy">Please upload a document or mark as N/A for each item before proceeding.</p>
-    </ng-template>
-  </section>
-
-  <div class="modal-overlay" *ngIf="viewingPermit" (click)="closePermitPreview()">
-    <section class="modal-card compliance-preview-modal" (click)="$event.stopPropagation()">
-      <header class="compliance-modal-header">
-        <div class="compliance-modal-title">
-          <div class="compliance-modal-icon">
-            <lucide-icon name="file-text"></lucide-icon>
-          </div>
-          <div>
-            <h3>{{ viewingPermit.document?.fileName || viewingPermit.name || 'Compliance document' }}</h3>
-            <p>Compliance Document Preview</p>
+          <div class="permit-form-grid">
+            <label>
+              <span>Permit Name</span>
+              <input type="text" [(ngModel)]="newPermitDraft.name" placeholder="e.g. Fire Permit" />
+            </label>
+            <label>
+              <span>Issuing Agency</span>
+              <input type="text" [(ngModel)]="newPermitDraft.issuingAgency" placeholder="e.g. City of Georgetown" />
+            </label>
+            <label class="permit-form-grid__full">
+              <span>Requirements</span>
+              <input type="text" [(ngModel)]="newPermitDraft.requirements" placeholder="Brief requirements" />
+            </label>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" (click)="closePermitPreview()">
-          <lucide-icon name="x"></lucide-icon>
-        </button>
-      </header>
+        <div class="permit-actions">
+          <button type="button" class="btn btn-primary" (click)="saveNewPermit()">Save</button>
+          <button type="button" class="btn btn-outline" (click)="cancelAddPermit()">Cancel</button>
+        </div>
+      </article>
+    }
 
-      <div class="compliance-modal-body">
-        <ng-container *ngIf="!loadingPermitPreview && viewingPermitUrl; else loadingPreviewState">
-          <iframe [src]="viewingPermitUrl" title="Permit preview"></iframe>
-        </ng-container>
-
-        <ng-template #loadingPreviewState>
-          <div class="preview-loading">
-            <lucide-icon name="loader-circle"></lucide-icon>
-            <p>Loading preview…</p>
-          </div>
-        </ng-template>
-      </div>
-
-      <footer class="compliance-modal-footer">
-        <p>If this is not the correct document, you can replace it below.</p>
-
-        <div class="compliance-footer-actions">
-          <input
-            #previewReplaceInput
-            type="file"
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            class="hidden-input"
-            (change)="onPreviewFileSelected($event)"
+    @for (permit of permits; track permit) {
+      <article
+        class="permit-item"
+        [class.is-uploaded]="!!permit.documentId"
+        [class.is-na]="isPermitNA(permit.status)"
+        >
+        <input
+          #permitFileInput
+          type="file"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          class="hidden-input"
+          (change)="onPermitFileSelected(permit, $event)"
           />
-          <button type="button" class="btn btn-outline" (click)="openPermitPreviewInNewTab()">Open in New Tab</button>
-          <button type="button" class="btn btn-outline" (click)="closePermitPreview()">Close</button>
-          <button type="button" class="btn btn-primary" (click)="onReplaceFromPreview(previewReplaceInput)">
-            <lucide-icon name="upload" class="btn-icon"></lucide-icon>
-            Replace Document
-          </button>
-        </div>
-      </footer>
+          <div class="permit-copy permit-copy--with-meta">
+            <div class="permit-title-row permit-title-row--with-status">
+              <div class="permit-title-main">
+                <span class="permit-icon-wrap">
+                  <lucide-icon [name]="getPermitIconName(permit.name)"></lucide-icon>
+                </span>
+                <div>
+                  <div class="permit-title-inline">
+                    <h4>{{ permit.name || 'Unnamed Permit' }}</h4>
+                    @if (permit.documentId) {
+                      <lucide-icon name="check" class="permit-complete-icon"></lucide-icon>
+                    }
+                    @if (isPermitNA(permit.status)) {
+                      <span class="na-pill">N/A</span>
+                    }
+                  </div>
+                  <p>{{ permit.requirements || 'Permit requirements and agency checks are managed in the permit details dialog.' }}</p>
+                </div>
+              </div>
+            </div>
+            @if (permit.issuingAgency) {
+              <p class="permit-accepts">Agency: {{ permit.issuingAgency }}</p>
+            }
+            @if (permit.expirationDate) {
+              <p class="permit-accepts">Expires: {{ permit.expirationDate | date: 'mediumDate' }}</p>
+            }
+          </div>
+          <div class="permit-actions">
+            <div class="permit-actions-status">
+              <span class="state-pill" [ngClass]="getPermitStatusClass(permit.status)">
+                {{ getPermitStatusLabel(permit.status) }}
+              </span>
+            </div>
+            @if (permit.documentId) {
+              <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="viewPermitDocument(permit)">
+                <lucide-icon name="eye" class="btn-icon"></lucide-icon>
+                <span>{{ permit.document?.fileName || 'View document' }}</span>
+              </button>
+              <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
+                Replace
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline btn-danger-ghost"
+                [disabled]="isPermitBusy(permit)"
+                (click)="removePermitDocument(permit)"
+                >
+                Remove
+              </button>
+            } @else {
+              <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
+                <lucide-icon name="upload" class="btn-icon"></lucide-icon>
+                <span>Upload</span>
+              </button>
+              @if (!isPermitNA(permit.status)) {
+                <button
+                  type="button"
+                  class="btn btn-outline btn-na"
+                  [disabled]="isPermitBusy(permit)"
+                  (click)="markPermitNA(permit)"
+                  >
+                  N/A
+                </button>
+              }
+              @if (isPermitNA(permit.status)) {
+                <button
+                  type="button"
+                  class="btn btn-outline btn-undo"
+                  [disabled]="isPermitBusy(permit)"
+                  (click)="undoPermitNA(permit)"
+                  >
+                  Undo
+                </button>
+              }
+            }
+          </div>
+        </article>
+      }
+
+      @if (!isPermitLoading && permits.length === 0) {
+        <article class="permit-item permit-item--empty">
+          <div class="permit-copy">
+            <h4>No permits available yet</h4>
+            <p>Use Permit Details to add permits manually or allow AI suggestions to populate the list.</p>
+          </div>
+        </article>
+      }
     </section>
-  </div>
-</section>
+
+    <section class="progress-card progress-card-copy">
+      <div class="progress-row progress-row--with-action">
+        <div>
+          <span>Items Completed</span>
+          <strong>{{ completedCount }} / {{ totalPermitCount }}</strong>
+        </div>
+        <div class="progress-actions">
+          <button type="button" class="btn btn-outline" (click)="startAddPermit()" [disabled]="addingPermit">Add Permit</button>
+          <button type="button" class="btn btn-outline" (click)="openPermitsDialog()">Open Full Permit Details</button>
+        </div>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="permitProgressPercent"></div>
+      </div>
+
+      @if (canProceed) {
+        <p class="progress-copy">
+          All items addressed. You may proceed to the next phase.
+        </p>
+      } @else {
+        <p class="progress-copy">Please upload a document or mark as N/A for each item before proceeding.</p>
+      }
+    </section>
+
+    @if (viewingPermit) {
+      <div class="modal-overlay" (click)="closePermitPreview()">
+        <section class="modal-card compliance-preview-modal" (click)="$event.stopPropagation()">
+          <header class="compliance-modal-header">
+            <div class="compliance-modal-title">
+              <div class="compliance-modal-icon">
+                <lucide-icon name="file-text"></lucide-icon>
+              </div>
+              <div>
+                <h3>{{ viewingPermit.document?.fileName || viewingPermit.name || 'Compliance document' }}</h3>
+                <p>Compliance Document Preview</p>
+              </div>
+            </div>
+            <button type="button" class="modal-close-btn" (click)="closePermitPreview()">
+              <lucide-icon name="x"></lucide-icon>
+            </button>
+          </header>
+          <div class="compliance-modal-body">
+            @if (!loadingPermitPreview && viewingPermitUrl) {
+              <iframe [src]="viewingPermitUrl" title="Permit preview"></iframe>
+            } @else {
+              <div class="preview-loading">
+                <lucide-icon name="loader-circle"></lucide-icon>
+                <p>Loading preview…</p>
+              </div>
+            }
+          </div>
+          <footer class="compliance-modal-footer">
+            <p>If this is not the correct document, you can replace it below.</p>
+            <div class="compliance-footer-actions">
+              <input
+                #previewReplaceInput
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                class="hidden-input"
+                (change)="onPreviewFileSelected($event)"
+                />
+                <button type="button" class="btn btn-outline" (click)="openPermitPreviewInNewTab()">Open in New Tab</button>
+                <button type="button" class="btn btn-outline" (click)="closePermitPreview()">Close</button>
+                <button type="button" class="btn btn-primary" (click)="onReplaceFromPreview(previewReplaceInput)">
+                  <lucide-icon name="upload" class="btn-icon"></lucide-icon>
+                  Replace Document
+                </button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      }
+    </section>

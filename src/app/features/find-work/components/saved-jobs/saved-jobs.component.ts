@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Job } from '../../../../models/job';
@@ -11,7 +11,7 @@ import { QuoteListItemDto } from '../../../../features/quote/quote.model';
   templateUrl: './saved-jobs.component.html',
   styleUrls: ['./saved-jobs.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, JobCardComponent]
+  imports: [MatIconModule, MatButtonModule, JobCardComponent]
 })
 export class SavedJobsComponent {
   @Input() savedJobsList: Job[] = [];

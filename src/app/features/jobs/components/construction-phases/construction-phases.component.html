@@ -1,16 +1,16 @@
 <div class="phases-content">
-    <div class="grid-layout">
+  <div class="grid-layout">
 
-      <!-- Left Column: Phases -->
-      <div class="phases-sidebar">
-        <p class="sidebar-label">Construction Phases</p>
-        <div class="phases-list">
+    <!-- Left Column: Phases -->
+    <div class="phases-sidebar">
+      <p class="sidebar-label">Construction Phases</p>
+      <div class="phases-list">
+        @for (group of groups; track group; let i = $index) {
           <button
-            *ngFor="let group of groups; let i = index"
             class="phase-item"
             [class.selected]="selectedGroup === group"
             (click)="selectGroup(group)"
-          >
+            >
             <span class="phase-name truncate">{{ group.title }}</span>
             <div class="phase-meta">
               <span class="task-count" [class.selected-text]="selectedGroup === group">
@@ -21,23 +21,27 @@
               </span>
             </div>
           </button>
-        </div>
+        }
       </div>
+    </div>
 
-      <!-- Right Column: Tasks -->
-      <div class="tasks-panel">
-        <div class="tasks-header">
-          <p class="tasks-title">
-            Tasks <span class="highlight">{{ selectedGroup?.title }}</span>
-          </p>
-          <button class="btn-outline-sm" (click)="toggleAddTask()" *ngIf="isProjectOwner">
+    <!-- Right Column: Tasks -->
+    <div class="tasks-panel">
+      <div class="tasks-header">
+        <p class="tasks-title">
+          Tasks <span class="highlight">{{ selectedGroup?.title }}</span>
+        </p>
+        @if (isProjectOwner) {
+          <button class="btn-outline-sm" (click)="toggleAddTask()">
             <lucide-icon name="plus" size="14"></lucide-icon>
             Add Subtask
           </button>
-        </div>
+        }
+      </div>
 
-        <!-- Add Task Form -->
-        <div class="add-task-form" *ngIf="addingTask">
+      <!-- Add Task Form -->
+      @if (addingTask) {
+        <div class="add-task-form">
           <div class="form-header">
             <span class="form-title">New Task</span>
             <button class="btn-icon" (click)="toggleAddTask()">
@@ -50,186 +54,196 @@
               class="form-input col-span-2"
               placeholder="Task name"
               [(ngModel)]="newTask.name"
-            >
-            <div class="form-group">
-              <label>Days</label>
-              <input
-                type="number"
-                class="form-input"
-                min="1"
-                [(ngModel)]="newTask.days"
-                (ngModelChange)="updateNewTaskDate('days', $event)"
               >
-            </div>
-            <div class="form-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                class="form-input"
-                [(ngModel)]="newTask.startDate"
-                (ngModelChange)="updateNewTaskDate('startDate', $event)"
-              >
-            </div>
-            <div class="form-group col-span-2">
-              <label>End Date</label>
-              <input
-                type="date"
-                class="form-input"
-                [(ngModel)]="newTask.endDate"
-                (ngModelChange)="updateNewTaskDate('endDate', $event)"
-              >
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn-primary-full" (click)="addTask()">Add Task</button>
-            <button class="btn-secondary-full" (click)="cancelAddTask()">Cancel</button>
-          </div>
-        </div>
-
-        <!-- Task List -->
-        <div class="task-list">
-          <div class="task-item" *ngFor="let task of getVisibleSubtasks(selectedGroup); let i = index">
-            <div class="task-row">
-              <div class="task-info">
-                <div class="task-main-line">
-                  <!-- Name Edit/View -->
-                  <div class="editable-field name-field">
+              <div class="form-group">
+                <label>Days</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  min="1"
+                  [(ngModel)]="newTask.days"
+                  (ngModelChange)="updateNewTaskDate('days', $event)"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    class="form-input"
+                    [(ngModel)]="newTask.startDate"
+                    (ngModelChange)="updateNewTaskDate('startDate', $event)"
+                    >
+                  </div>
+                  <div class="form-group col-span-2">
+                    <label>End Date</label>
                     <input
-                      *ngIf="editingTask?.taskId === task.id && editingTask?.field === 'name'"
-                      type="text"
-                      class="inline-input"
-                      [(ngModel)]="task.task"
-                      (blur)="stopEditing()"
-                      (keydown.enter)="stopEditing()"
-                      autoFocus
-                    >
-                    <span
-                      *ngIf="!(editingTask?.taskId === task.id && editingTask?.field === 'name')"
-                      class="text-value clickable"
-                      (click)="startEditing(selectedGroup, task, 'name')"
-                    >
-                      {{ task.task }}
-                    </span>
-                  </div>
-
-                  <!-- Status Edit/View -->
-                  <div class="editable-field status-field">
-                    <select
-                      *ngIf="editingTask?.taskId === task.id && editingTask?.field === 'status'"
-                      class="inline-select"
-                      [(ngModel)]="task.status"
-                      (change)="stopEditing()"
-                      (blur)="stopEditing()"
-                    >
-                        <option value="Pending">Pending</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                    </select>
-                    <span
-                        *ngIf="!(editingTask?.taskId === task.id && editingTask?.field === 'status')"
-                        class="status-pill clickable"
-                        [ngClass]="'status-' + (task.status || 'Pending').toLowerCase().replace(' ', '-')"
-                        (click)="startEditing(selectedGroup, task, 'status')"
-                    >
-                        {{ task.status || 'Pending' }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="task-sub-line">
-                  <div class="meta-group">
-                    <lucide-icon name="calendar" size="12"></lucide-icon>
-
-                    <!-- Start Date -->
-                    <div class="editable-field">
-                         <input
-                            *ngIf="editingTask?.taskId === task.id && editingTask?.field === 'startDate'"
-                            type="date"
-                            class="inline-input-sm"
-                            [ngModel]="task.startDate"
-                            (ngModelChange)="updateTaskField(selectedGroup, task, 'startDate', $event)"
-                            (blur)="stopEditing()"
-                            (keydown.enter)="stopEditing()"
-                          >
-                          <span
-                            *ngIf="!(editingTask?.taskId === task.id && editingTask?.field === 'startDate')"
-                            class="clickable-sm"
-                            (click)="startEditing(selectedGroup, task, 'startDate')"
-                          >
-                            {{ task.startDate }}
-                          </span>
-                    </div>
-                    <span> - </span>
-                    <!-- End Date -->
-                    <div class="editable-field">
-                         <input
-                            *ngIf="editingTask?.taskId === task.id && editingTask?.field === 'endDate'"
-                            type="date"
-                            class="inline-input-sm"
-                            [ngModel]="task.endDate"
-                            (ngModelChange)="updateTaskField(selectedGroup, task, 'endDate', $event)"
-                            (blur)="stopEditing()"
-                            (keydown.enter)="stopEditing()"
-                          >
-                          <span
-                            *ngIf="!(editingTask?.taskId === task.id && editingTask?.field === 'endDate')"
-                            class="clickable-sm"
-                            (click)="startEditing(selectedGroup, task, 'endDate')"
-                          >
-                            {{ task.endDate }}
-                          </span>
+                      type="date"
+                      class="form-input"
+                      [(ngModel)]="newTask.endDate"
+                      (ngModelChange)="updateNewTaskDate('endDate', $event)"
+                      >
                     </div>
                   </div>
-
-                  <!-- Days -->
-                  <div class="editable-field days-field">
-                        <input
-                            *ngIf="editingTask?.taskId === task.id && editingTask?.field === 'days'"
-                            type="number"
-                            class="inline-input-xs"
-                            [ngModel]="task.days"
-                            (ngModelChange)="updateTaskField(selectedGroup, task, 'days', $event)"
-                            (blur)="stopEditing()"
-                            (keydown.enter)="stopEditing()"
-                          >
-                          <span
-                            *ngIf="!(editingTask?.taskId === task.id && editingTask?.field === 'days')"
-                            class="clickable-sm"
-                            (click)="startEditing(selectedGroup, task, 'days')"
-                          >
-                            {{ task.days }} days
-                          </span>
+                  <div class="form-actions">
+                    <button class="btn-primary-full" (click)="addTask()">Add Task</button>
+                    <button class="btn-secondary-full" (click)="cancelAddTask()">Cancel</button>
                   </div>
                 </div>
+              }
+
+              <!-- Task List -->
+              <div class="task-list">
+                @for (task of getVisibleSubtasks(selectedGroup); track task; let i = $index) {
+                  <div class="task-item">
+                    <div class="task-row">
+                      <div class="task-info">
+                        <div class="task-main-line">
+                          <!-- Name Edit/View -->
+                          <div class="editable-field name-field">
+                            @if (editingTask?.taskId === task.id && editingTask?.field === 'name') {
+                              <input
+                                type="text"
+                                class="inline-input"
+                                [(ngModel)]="task.task"
+                                (blur)="stopEditing()"
+                                (keydown.enter)="stopEditing()"
+                                autoFocus
+                                >
+                            }
+                            @if (!(editingTask?.taskId === task.id && editingTask?.field === 'name')) {
+                              <span
+                                class="text-value clickable"
+                                (click)="startEditing(selectedGroup, task, 'name')"
+                                >
+                                {{ task.task }}
+                              </span>
+                            }
+                          </div>
+                          <!-- Status Edit/View -->
+                          <div class="editable-field status-field">
+                            @if (editingTask?.taskId === task.id && editingTask?.field === 'status') {
+                              <select
+                                class="inline-select"
+                                [(ngModel)]="task.status"
+                                (change)="stopEditing()"
+                                (blur)="stopEditing()"
+                                >
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                            }
+                            @if (!(editingTask?.taskId === task.id && editingTask?.field === 'status')) {
+                              <span
+                                class="status-pill clickable"
+                                [ngClass]="'status-' + (task.status || 'Pending').toLowerCase().replace(' ', '-')"
+                                (click)="startEditing(selectedGroup, task, 'status')"
+                                >
+                                {{ task.status || 'Pending' }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                        <div class="task-sub-line">
+                          <div class="meta-group">
+                            <lucide-icon name="calendar" size="12"></lucide-icon>
+                            <!-- Start Date -->
+                            <div class="editable-field">
+                              @if (editingTask?.taskId === task.id && editingTask?.field === 'startDate') {
+                                <input
+                                  type="date"
+                                  class="inline-input-sm"
+                                  [ngModel]="task.startDate"
+                                  (ngModelChange)="updateTaskField(selectedGroup, task, 'startDate', $event)"
+                                  (blur)="stopEditing()"
+                                  (keydown.enter)="stopEditing()"
+                                  >
+                              }
+                              @if (!(editingTask?.taskId === task.id && editingTask?.field === 'startDate')) {
+                                <span
+                                  class="clickable-sm"
+                                  (click)="startEditing(selectedGroup, task, 'startDate')"
+                                  >
+                                  {{ task.startDate }}
+                                </span>
+                              }
+                            </div>
+                            <span> - </span>
+                            <!-- End Date -->
+                            <div class="editable-field">
+                              @if (editingTask?.taskId === task.id && editingTask?.field === 'endDate') {
+                                <input
+                                  type="date"
+                                  class="inline-input-sm"
+                                  [ngModel]="task.endDate"
+                                  (ngModelChange)="updateTaskField(selectedGroup, task, 'endDate', $event)"
+                                  (blur)="stopEditing()"
+                                  (keydown.enter)="stopEditing()"
+                                  >
+                              }
+                              @if (!(editingTask?.taskId === task.id && editingTask?.field === 'endDate')) {
+                                <span
+                                  class="clickable-sm"
+                                  (click)="startEditing(selectedGroup, task, 'endDate')"
+                                  >
+                                  {{ task.endDate }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+                          <!-- Days -->
+                          <div class="editable-field days-field">
+                            @if (editingTask?.taskId === task.id && editingTask?.field === 'days') {
+                              <input
+                                type="number"
+                                class="inline-input-xs"
+                                [ngModel]="task.days"
+                                (ngModelChange)="updateTaskField(selectedGroup, task, 'days', $event)"
+                                (blur)="stopEditing()"
+                                (keydown.enter)="stopEditing()"
+                                >
+                            }
+                            @if (!(editingTask?.taskId === task.id && editingTask?.field === 'days')) {
+                              <span
+                                class="clickable-sm"
+                                (click)="startEditing(selectedGroup, task, 'days')"
+                                >
+                                {{ task.days }} days
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Actions -->
+                      <div class="task-actions">
+                        <button
+                          class="btn-xs-outline"
+                          (click)="updateTask(selectedGroup, task)"
+                          [disabled]="!isProjectOwner"
+                          >
+                          Update
+                        </button>
+                        @if (isProjectOwner) {
+                          <button class="btn-xs-yellow" (click)="deleteTask(selectedGroup, i)">Delete</button>
+                        }
+                        <mat-checkbox
+                          [checked]="task.accepted"
+                          (change)="handleApproval(selectedGroup, task)"
+                          [disabled]="!isProjectOwner"
+                          class="custom-checkbox"
+                        ></mat-checkbox>
+                      </div>
+                    </div>
+                  </div>
+                }
               </div>
 
-              <!-- Actions -->
-              <div class="task-actions">
-                <button
-                  class="btn-xs-outline"
-                  (click)="updateTask(selectedGroup, task)"
-                  [disabled]="!isProjectOwner"
-                >
-                  Update
-                </button>
-                <button class="btn-xs-yellow" (click)="deleteTask(selectedGroup, i)" *ngIf="isProjectOwner">Delete</button>
-                <mat-checkbox
-                    [checked]="task.accepted"
-                    (change)="handleApproval(selectedGroup, task)"
-                    [disabled]="!isProjectOwner"
-                    class="custom-checkbox"
-                ></mat-checkbox>
+              <!-- Footer -->
+              <div class="tasks-footer">
+                <span>Total: {{ getTotalCount(selectedGroup) }} tasks</span>
+                <span>Completed: {{ getCompletedCount(selectedGroup) }}</span>
+                <span>Days: {{ getTotalDays(selectedGroup) }}</span>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Footer -->
-        <div class="tasks-footer">
-          <span>Total: {{ getTotalCount(selectedGroup) }} tasks</span>
-          <span>Completed: {{ getCompletedCount(selectedGroup) }}</span>
-          <span>Days: {{ getTotalDays(selectedGroup) }}</span>
-        </div>
-      </div>
-    </div>
-</div>

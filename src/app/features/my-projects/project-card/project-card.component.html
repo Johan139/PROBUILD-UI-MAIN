@@ -4,154 +4,168 @@
       [src]="project.thumbnailUrl || '/placeholder.svg?height=200&width=400'"
       [alt]="project.projectName"
       class="thumbnail-img"
-    />
-    <div class="status-badge" [ngClass]="getStatusColor(project.status)">
-      {{ getStatusLabel(project.status) }}
+      />
+      <div class="status-badge" [ngClass]="getStatusColor(project.status)">
+        {{ getStatusLabel(project.status) }}
+      </div>
+
+      @if (project.status === 'ANALYZING') {
+        <div class="analyzing-overlay">
+          <div class="analyzing-content">
+            <div class="analyzing-header">
+              <mat-icon class="spinning">autorenew</mat-icon>
+              <span>AI Analysis in Progress</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="project.progress || 0"
+            ></mat-progress-bar>
+            <div class="analyzing-footer">
+              <span>Processing...</span>
+              <span>{{ project.progress || 0 }}%</span>
+            </div>
+          </div>
+        </div>
+      }
     </div>
-
-    <div *ngIf="project.status === 'ANALYZING'" class="analyzing-overlay">
-      <div class="analyzing-content">
-        <div class="analyzing-header">
-          <mat-icon class="spinning">autorenew</mat-icon>
-          <span>AI Analysis in Progress</span>
-        </div>
-        <mat-progress-bar
-          mode="determinate"
-          [value]="project.progress || 0"
-        ></mat-progress-bar>
-        <div class="analyzing-footer">
-          <span>Processing...</span>
-          <span>{{ project.progress || 0 }}%</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="card-content-wrapper">
-    <mat-card-content class="card-content">
-      <div class="card-title-bar">
-        <h3 class="project-title">{{ project.projectName }}</h3>
-        <button
-          mat-icon-button
-          [matMenuTriggerFor]="jobMenu"
-          class="menu-button"
-          matTooltip="Project Options"
-          matTooltipShowDelay="500"
-        >
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        <mat-menu #jobMenu="matMenu">
-          <button mat-menu-item (click)="onView.emit(project.jobId)">
-            View Project
+    <div class="card-content-wrapper">
+      <mat-card-content class="card-content">
+        <div class="card-title-bar">
+          <h3 class="project-title">{{ project.projectName }}</h3>
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="jobMenu"
+            class="menu-button"
+            matTooltip="Project Options"
+            matTooltipShowDelay="500"
+            >
+            <mat-icon>more_vert</mat-icon>
           </button>
-          <button mat-menu-item (click)="onArchive.emit(project.jobId)">
-            Archive Project
-          </button>
-          <button mat-menu-item (click)="openThumbnailPicker($event)">
-            Upload Thumbnail
-          </button>
-        </mat-menu>
-      </div>
-      <div class="project-address">
-        <mat-icon matTooltip="Address" matTooltipShowDelay="500"
-          >pin_drop</mat-icon
-        >
-        <span>{{ project.address }}</span>
-      </div>
+          <mat-menu #jobMenu="matMenu">
+            <button mat-menu-item (click)="onView.emit(project.jobId)">
+              View Project
+            </button>
+            <button mat-menu-item (click)="onArchive.emit(project.jobId)">
+              Archive Project
+            </button>
+            <button mat-menu-item (click)="openThumbnailPicker($event)">
+              Upload Thumbnail
+            </button>
+          </mat-menu>
+        </div>
+        <div class="project-address">
+          <mat-icon matTooltip="Address" matTooltipShowDelay="500"
+            >pin_drop</mat-icon
+            >
+            <span>{{ project.address }}</span>
+          </div>
 
-      <div class="project-stats">
-        <div class="stat-item">
-          <mat-icon matTooltip="Budget" matTooltipShowDelay="500"
-            >attach_money</mat-icon
-          >
-          <span *ngIf="project.budget">{{ project.budget }}</span>
-        </div>
-        <!-- <div class="stat-item">
-          <mat-icon>schedule</mat-icon>
-          <span *ngIf="project.deadline">{{ project.deadline }}</span>
-        </div> -->
-        <div class="stat-item">
-          <mat-icon matTooltip="Start Date" matTooltipShowDelay="500"
-            >schedule</mat-icon
-          >
-          <span
-            *ngIf="
-              project.potentialStartDate &&
-              (project.potentialStartDate | date: 'yyyy') !== '0001'
-            "
-            >{{ project.potentialStartDate | date }}</span
-          >
-        </div>
-        <div class="stat-item">
-          <mat-icon matTooltip="Bids" matTooltipShowDelay="500"
-            >people</mat-icon
-          >
-          <span *ngIf="project.numberOfBids !== undefined"
-            >{{ project.numberOfBids }} bids</span
-          >
-        </div>
-        <div class="stat-item">
-          <mat-icon matTooltip="Team Members" matTooltipShowDelay="500"
-            >people</mat-icon
-          >
-          <span *ngIf="project.team !== undefined"
-            >{{ project.team }} members</span
-          >
-        </div>
-      </div>
+          <div class="project-stats">
+            <div class="stat-item">
+              <mat-icon matTooltip="Budget" matTooltipShowDelay="500"
+                >attach_money</mat-icon
+                >
+                @if (project.budget) {
+                  <span>{{ project.budget }}</span>
+                }
+              </div>
+              <!-- <div class="stat-item">
+              <mat-icon>schedule</mat-icon>
+              <span *ngIf="project.deadline">{{ project.deadline }}</span>
+            </div> -->
+            <div class="stat-item">
+              <mat-icon matTooltip="Start Date" matTooltipShowDelay="500"
+                >schedule</mat-icon
+                >
+                @if (
+                  project.potentialStartDate &&
+                  (project.potentialStartDate | date: 'yyyy') !== '0001'
+                  ) {
+                  <span
+                    >{{ project.potentialStartDate | date }}</span
+                    >
+                }
+              </div>
+              <div class="stat-item">
+                <mat-icon matTooltip="Bids" matTooltipShowDelay="500"
+                  >people</mat-icon
+                  >
+                  @if (project.numberOfBids !== undefined) {
+                    <span
+                      >{{ project.numberOfBids }} bids</span
+                      >
+                    }
+                  </div>
+                  <div class="stat-item">
+                    <mat-icon matTooltip="Team Members" matTooltipShowDelay="500"
+                      >people</mat-icon
+                      >
+                      @if (project.team !== undefined) {
+                        <span
+                          >{{ project.team }} members</span
+                          >
+                        }
+                      </div>
+                    </div>
 
-      <div *ngIf="project.progress !== undefined" class="progress-section">
-        <div class="progress-info">
-          <span>Progress</span>
-          <span class="progress-value">{{ project.progress }}%</span>
-        </div>
-        <!--JUST REMOVING THIS FOR THE MOMENT.-->
-        <!-- <div class="progress">
-          <div class="bar" [style.width.%]="project.progress"></div>
-        </div> -->
-      </div>
-    </mat-card-content>
-    <mat-card-actions class="card-actions">
-      <ng-container *ngIf="isActivationStage(project.status); else defaultActions">
-        <button
-          class="activate-button"
-          (click)="onActivate.emit(project.jobId)"
-        >
-          Activate Project
-        </button>
-        <!-- <button class="icon-button" (click)="onEdit.emit(project.jobId)">
-          <mat-icon>edit</mat-icon>
-        </button> -->
-        <!-- <button class="icon-button" (click)="onDelete.emit(project.jobId)">
-          <mat-icon>delete</mat-icon>
-        </button> -->
-      </ng-container>
-      <ng-template #defaultActions>
-        <button
-          class="view-details-button"
-          (click)="onView.emit(project.jobId)"
-        >
-          <mat-icon *ngIf="project.status !== 'ANALYZING'">visibility</mat-icon>
-          <mat-icon *ngIf="project.status === 'ANALYZING'" class="spinning"
-            >autorenew</mat-icon
-          >
-          {{
-            project.status === "ANALYZING"
-              ? "Continue Analysis"
-              : "View Details"
-          }}
-        </button>
-        <!-- <button class="icon-button" (click)="onEdit.emit(project.jobId)">
-          <mat-icon>edit</mat-icon>
-        </button> -->
-      </ng-template>
-    </mat-card-actions>
-  </div>
-</mat-card>
+                    @if (project.progress !== undefined) {
+                      <div class="progress-section">
+                        <div class="progress-info">
+                          <span>Progress</span>
+                          <span class="progress-value">{{ project.progress }}%</span>
+                        </div>
+                        <!--JUST REMOVING THIS FOR THE MOMENT.-->
+                        <!-- <div class="progress">
+                        <div class="bar" [style.width.%]="project.progress"></div>
+                      </div> -->
+                    </div>
+                  }
+                </mat-card-content>
+                <mat-card-actions class="card-actions">
+                  @if (isActivationStage(project.status)) {
+                    <button
+                      class="activate-button"
+                      (click)="onActivate.emit(project.jobId)"
+                      >
+                      Activate Project
+                    </button>
+                    <!-- <button class="icon-button" (click)="onEdit.emit(project.jobId)">
+                    <mat-icon>edit</mat-icon>
+                  </button> -->
+                  <!-- <button class="icon-button" (click)="onDelete.emit(project.jobId)">
+                  <mat-icon>delete</mat-icon>
+                </button> -->
+              } @else {
+                <button
+                  class="view-details-button"
+                  (click)="onView.emit(project.jobId)"
+                  >
+                  @if (project.status !== 'ANALYZING') {
+                    <mat-icon>visibility</mat-icon>
+                  }
+                  @if (project.status === 'ANALYZING') {
+                    <mat-icon class="spinning"
+                      >autorenew</mat-icon
+                      >
+                    }
+                    {{
+                    project.status === "ANALYZING"
+                    ? "Continue Analysis"
+                    : "View Details"
+                    }}
+                  </button>
+                  <!-- <button class="icon-button" (click)="onEdit.emit(project.jobId)">
+                  <mat-icon>edit</mat-icon>
+                </button> -->
+              }
+            </mat-card-actions>
+          </div>
+        </mat-card>
 
-<input
-  #fileInput
-  type="file"
-  (change)="onFileSelected($event)"
-  style="display: none"
-  accept="image/png, image/jpeg"
-/>
+        <input
+          #fileInput
+          type="file"
+          (change)="onFileSelected($event)"
+          style="display: none"
+          accept="image/png, image/jpeg"
+          />

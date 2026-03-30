@@ -20,7 +20,7 @@
       (cancelProject)="cancel()"
       (addressConfirmed)="onAddressConfirmed($event)"
       (addressEdit)="setFlow('extracting', { pct: 80 })"
-    >
+      >
     </app-project-blueprint-viewer>
   </div>
 
@@ -28,10 +28,14 @@
   <div class="guided-setup-card">
     <div class="card">
       <div class="guided-setup-header">
-        <h3 *ngIf="flowType === 'walkthrough'">
-          New Project – Guided Walkthrough
-        </h3>
-        <h3 *ngIf="flowType === 'standard'">New Project – Standard Analysis</h3>
+        @if (flowType === 'walkthrough') {
+          <h3>
+            New Project – Guided Walkthrough
+          </h3>
+        }
+        @if (flowType === 'standard') {
+          <h3>New Project – Standard Analysis</h3>
+        }
         <!-- <span>AI Extract</span> -->
       </div>
       <!-- Flow Type Selector -->
@@ -39,206 +43,216 @@
         <label
           matTooltip="Upload your blueprints, fill in the details, and let the system handle the complete analysis automatically without any further intervention"
           [matTooltipShowDelay]="500"
-        >
+          >
           <input
             type="radio"
             name="flowType"
             value="standard"
             [(ngModel)]="flowType"
-          />
-          <span>Standard Analysis</span>
-        </label>
-        <!-- <label
+            />
+            <span>Standard Analysis</span>
+          </label>
+          <!-- <label
           matTooltip="A phased approach where you review and intervene at each step, allowing you to refine and correct the analysis as you go"
           [matTooltipShowDelay]="500"
-        >
+          >
           <input
             type="radio"
             name="flowType"
             value="walkthrough"
             [(ngModel)]="flowType"
-          />
-          <span>Guided Walkthrough</span>
-        </label> -->
-      </div>
-      <div class="progress-steps" *ngIf="flowType === 'walkthrough'">
-        <span
-          *ngFor="let step of progressSteps"
-          class="progress-step"
-          [class.done]="step.done"
-        >
-          <lucide-icon *ngIf="step.done" [img]="Check"></lucide-icon>
-          <span *ngIf="!step.done" class="progress-step-dot"></span>
-          {{ step.k }}
-        </span>
-      </div>
-
-      <!-- Standard Analysis Container -->
-      <div *ngIf="flowType === 'standard'" class="standard-analysis-container">
-        <h4>Standard Analysis Options</h4>
-
-        <mat-accordion multi>
-          <mat-expansion-panel [expanded]="true">
-            <mat-expansion-panel-header>
-              <mat-panel-title>Project Details</mat-panel-title>
-            </mat-expansion-panel-header>
-            <div [formGroup]="clientForm">
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>Project Name</mat-label>
-                  <input matInput formControlName="projectName" />
-                </mat-form-field>
-              </div>
-              <mat-form-field appearance="fill">
-                <mat-label>Start Date</mat-label>
-                <input
-                  matInput
-                  [matDatepicker]="picker"
-                  formControlName="startDate"
-                  readonly
-                  (click)="picker.open()"
-                />
-                <mat-datepicker-toggle
-                  matSuffix
-                  [for]="picker"
-                ></mat-datepicker-toggle>
-                <mat-datepicker #picker></mat-datepicker>
-              </mat-form-field>
-            </div>
-            <div class="form-row">
-              <div [formGroup]="addressForm" class="address-container">
-                <mat-form-field appearance="fill" class="address-form-field">
-                  <mat-label>Address</mat-label>
-
-                  <input
-                    matInput
-                    formControlName="formattedAddress"
-                    [matAutocomplete]="auto"
-                    placeholder="Enter an address"
-                  />
-
-                  <mat-autocomplete
-                    #auto="matAutocomplete"
-                    (optionSelected)="onAddressSelected($event)"
-                  >
-                    <mat-option *ngFor="let option of options" [value]="option">
-                      {{ option.description }}
-                    </mat-option>
-                  </mat-autocomplete>
-                </mat-form-field>
-              </div>
-            </div>
-            <mat-form-field appearance="fill">
-              <mat-label>Budget Level</mat-label>
-              <mat-select [(ngModel)]="budgetLevel">
-                <mat-option value="high">High</mat-option>
-                <mat-option value="medium">Medium</mat-option>
-                <mat-option value="low">Low</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </mat-expansion-panel>
-          <mat-expansion-panel [expanded]="true">
-            <mat-expansion-panel-header>
-              <mat-panel-title>Client Details</mat-panel-title>
-            </mat-expansion-panel-header>
-            <div [formGroup]="clientForm">
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>First Name</mat-label>
-                  <input matInput formControlName="firstName" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Last Name</mat-label>
-                  <input matInput formControlName="lastName" />
-                </mat-form-field>
-              </div>
-              <div class="form-row">
-                <mat-form-field appearance="fill">
-                  <mat-label>Email</mat-label>
-                  <input matInput formControlName="email" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Phone</mat-label>
-                  <input matInput formControlName="phone" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Company Name</mat-label>
-                  <input matInput formControlName="companyName" />
-                </mat-form-field>
-                <mat-form-field appearance="fill">
-                  <mat-label>Position</mat-label>
-                  <input matInput formControlName="position" />
-                </mat-form-field>
-              </div>
-            </div>
-          </mat-expansion-panel>
-          <mat-expansion-panel [expanded]="true">
-            <mat-expansion-panel-header>
-              <mat-panel-title>User Context</mat-panel-title>
-              <mat-panel-description>
-                Provide additional context for the AI analysis - text or a file
-              </mat-panel-description>
-            </mat-expansion-panel-header>
-            <div [formGroup]="clientForm">
-              <div class="form-row">
-                <mat-form-field appearance="fill" class="full-width" floatLabel="always">
-                  <mat-label>User Context</mat-label>
-                  <textarea
-                    matInput
-                    formControlName="userContextText"
-                    placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."
-                  ></textarea>
-                </mat-form-field>
-              </div>
-              <div class="form-row">
-                <button
-                  mat-button
-                  type="button"
-                  (click)="userContextFileInput.click()"
-                  class="btn btn-secondary"
-                  matTooltip="Upload a document containing specifications, notes, or requirements to help the AI understand your project better"
+            />
+            <span>Guided Walkthrough</span>
+          </label> -->
+        </div>
+        @if (flowType === 'walkthrough') {
+          <div class="progress-steps">
+            @for (step of progressSteps; track step) {
+              <span
+                class="progress-step"
+                [class.done]="step.done"
                 >
-                  <img
-                    src="assets/custom-svg/upload-folder-svgrepo-com.svg"
-                    alt="Upload Icon"
-                    class="upload-icon"
-                  />
-                  Upload Context File
-                </button>
-                <input
-                  type="file"
-                  #userContextFileInput
-                  hidden
-                  (change)="onUserContextFileSelected($event)"
-                  id="userContextFile"
-                />
-                <div *ngIf="userContextFile" class="upload-complete">
-                  <p
-                    [matTooltip]="userContextFile.name"
-                    matTooltipPosition="above"
-                  >
-                    {{ userContextFile.name }} uploaded successfully
-                  </p>
-                </div>
-              </div>
-            </div>
-          </mat-expansion-panel>
-        </mat-accordion>
+                @if (step.done) {
+                  <lucide-icon [img]="Check"></lucide-icon>
+                }
+                @if (!step.done) {
+                  <span class="progress-step-dot"></span>
+                }
+                {{ step.k }}
+              </span>
+            }
+          </div>
+        }
 
-        <mat-form-field appearance="fill" *ngIf="analysisType === 'Selected'">
-          <mat-label>Select Prompts</mat-label>
-          <mat-select [formControl]="selectedPrompts" multiple>
-            <mat-option
-              *ngFor="let prompt of availablePrompts$ | async"
-              [value]="prompt.id"
-            >
-              {{ prompt.promptName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <div
-          style="align-self: flex-start"
+        <!-- Standard Analysis Container -->
+        @if (flowType === 'standard') {
+          <div class="standard-analysis-container">
+            <h4>Standard Analysis Options</h4>
+            <mat-accordion multi>
+              <mat-expansion-panel [expanded]="true">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Project Details</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div [formGroup]="clientForm">
+                  <div class="form-row">
+                    <mat-form-field appearance="fill">
+                      <mat-label>Project Name</mat-label>
+                      <input matInput formControlName="projectName" />
+                    </mat-form-field>
+                  </div>
+                  <mat-form-field appearance="fill">
+                    <mat-label>Start Date</mat-label>
+                    <input
+                      matInput
+                      [matDatepicker]="picker"
+                      formControlName="startDate"
+                      readonly
+                      (click)="picker.open()"
+                      />
+                      <mat-datepicker-toggle
+                        matSuffix
+                        [for]="picker"
+                      ></mat-datepicker-toggle>
+                      <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                  </div>
+                  <div class="form-row">
+                    <div [formGroup]="addressForm" class="address-container">
+                      <mat-form-field appearance="fill" class="address-form-field">
+                        <mat-label>Address</mat-label>
+                        <input
+                          matInput
+                          formControlName="formattedAddress"
+                          [matAutocomplete]="auto"
+                          placeholder="Enter an address"
+                          />
+                          <mat-autocomplete
+                            #auto="matAutocomplete"
+                            (optionSelected)="onAddressSelected($event)"
+                            >
+                            @for (option of options; track option) {
+                              <mat-option [value]="option">
+                                {{ option.description }}
+                              </mat-option>
+                            }
+                          </mat-autocomplete>
+                        </mat-form-field>
+                      </div>
+                    </div>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Budget Level</mat-label>
+                      <mat-select [(ngModel)]="budgetLevel">
+                        <mat-option value="high">High</mat-option>
+                        <mat-option value="medium">Medium</mat-option>
+                        <mat-option value="low">Low</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </mat-expansion-panel>
+                  <mat-expansion-panel [expanded]="true">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>Client Details</mat-panel-title>
+                    </mat-expansion-panel-header>
+                    <div [formGroup]="clientForm">
+                      <div class="form-row">
+                        <mat-form-field appearance="fill">
+                          <mat-label>First Name</mat-label>
+                          <input matInput formControlName="firstName" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Last Name</mat-label>
+                          <input matInput formControlName="lastName" />
+                        </mat-form-field>
+                      </div>
+                      <div class="form-row">
+                        <mat-form-field appearance="fill">
+                          <mat-label>Email</mat-label>
+                          <input matInput formControlName="email" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Phone</mat-label>
+                          <input matInput formControlName="phone" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Company Name</mat-label>
+                          <input matInput formControlName="companyName" />
+                        </mat-form-field>
+                        <mat-form-field appearance="fill">
+                          <mat-label>Position</mat-label>
+                          <input matInput formControlName="position" />
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  </mat-expansion-panel>
+                  <mat-expansion-panel [expanded]="true">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>User Context</mat-panel-title>
+                      <mat-panel-description>
+                        Provide additional context for the AI analysis - text or a file
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <div [formGroup]="clientForm">
+                      <div class="form-row">
+                        <mat-form-field appearance="fill" class="full-width" floatLabel="always">
+                          <mat-label>User Context</mat-label>
+                          <textarea
+                            matInput
+                            formControlName="userContextText"
+                            placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."
+                          ></textarea>
+                        </mat-form-field>
+                      </div>
+                      <div class="form-row">
+                        <button
+                          mat-button
+                          type="button"
+                          (click)="userContextFileInput.click()"
+                          class="btn btn-secondary"
+                          matTooltip="Upload a document containing specifications, notes, or requirements to help the AI understand your project better"
+                          >
+                          <img
+                            src="assets/custom-svg/upload-folder-svgrepo-com.svg"
+                            alt="Upload Icon"
+                            class="upload-icon"
+                            />
+                            Upload Context File
+                          </button>
+                          <input
+                            type="file"
+                            #userContextFileInput
+                            hidden
+                            (change)="onUserContextFileSelected($event)"
+                            id="userContextFile"
+                            />
+                            @if (userContextFile) {
+                              <div class="upload-complete">
+                                <p
+                                  [matTooltip]="userContextFile.name"
+                                  matTooltipPosition="above"
+                                  >
+                                  {{ userContextFile.name }} uploaded successfully
+                                </p>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </mat-expansion-panel>
+                    </mat-accordion>
+                    @if (analysisType === 'Selected') {
+                      <mat-form-field appearance="fill">
+                        <mat-label>Select Prompts</mat-label>
+                        <mat-select [formControl]="selectedPrompts" multiple>
+                          @for (prompt of availablePrompts$ | async; track prompt) {
+                            <mat-option
+                              [value]="prompt.id"
+                              >
+                              {{ prompt.promptName }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    }
+                    <div
+                      style="align-self: flex-start"
           [matTooltip]="
             isLoading
               ? 'Analysis in progress...'
@@ -246,355 +260,382 @@
                 ? 'Please select a blueprint first'
                 : 'Begin the analysis with the selected options'
           "
-        >
-          <button
-            mat-button
-            class="btn btn-primary"
-            (click)="startStandardAnalysis()"
-            [disabled]="!selectedFile || isLoading"
-          >
-            <lucide-icon
-              [img]="HardHat"
-              class="animate-spin"
-              *ngIf="isLoading"
-            ></lucide-icon>
-            <span *ngIf="!isLoading">Start Analysis</span>
-          </button>
-        </div>
+                      >
+                      <button
+                        mat-button
+                        class="btn btn-primary"
+                        (click)="startStandardAnalysis()"
+                        [disabled]="!selectedFile || isLoading"
+                        >
+                        @if (isLoading) {
+                          <lucide-icon
+                            [img]="HardHat"
+                            class="animate-spin"
+                          ></lucide-icon>
+                        }
+                        @if (!isLoading) {
+                          <span>Start Analysis</span>
+                        }
+                      </button>
+                    </div>
+                    <!-- Real-time Progress Display -->
+                    @if (
+                      isLoading &&
+                      flowType === 'standard' &&
+                      (state$ | async)?.analysisProgress; as progress
+                      ) {
+                      <div
+                        class="analysis-progress-container"
+                        >
+                        <h4>Analysis in Progress...</h4>
+                        <mat-progress-bar
+                          mode="determinate"
+                          [value]="(progress.currentStep / progress.totalSteps) * 100"
+                        ></mat-progress-bar>
+                        @if (progress.currentStep > 0) {
+                          <p>
+                            Step {{ progress.currentStep }} of {{ progress.totalSteps }}
+                          </p>
+                        }
+                        <p>{{ progress.statusMessage }}</p>
+                        @if (progress.currentStep === 0) {
+                          <p>Your job is being queued...</p>
+                        }
+                        @if (progress.hasFailed) {
+                          <div class="error-message">
+                            <mat-card class="error-card">
+                              <mat-card-header>
+                                <mat-card-title>Analysis Failed</mat-card-title>
+                              </mat-card-header>
+                              <mat-card-content>
+                                <p>{{ progress.errorMessage }}</p>
+                              </mat-card-content>
+                              <mat-card-actions>
+                                <button mat-button class="btn btn-secondary" type="button" (click)="isLoading = false">Dismiss</button>
+                              </mat-card-actions>
+                            </mat-card>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
 
-        <!-- Real-time Progress Display -->
-        <div
-          *ngIf="
-            isLoading &&
-            flowType === 'standard' &&
-            (state$ | async)?.analysisProgress as progress
-          "
-          class="analysis-progress-container"
-        >
-          <h4>Analysis in Progress...</h4>
-          <mat-progress-bar
-            mode="determinate"
-            [value]="(progress.currentStep / progress.totalSteps) * 100"
-          ></mat-progress-bar>
-          <p *ngIf="progress.currentStep > 0">
-            Step {{ progress.currentStep }} of {{ progress.totalSteps }}
-          </p>
-          <p>{{ progress.statusMessage }}</p>
-          <p *ngIf="progress.currentStep === 0">Your job is being queued...</p>
-          <div *ngIf="progress.hasFailed" class="error-message">
-            <mat-card class="error-card">
-              <mat-card-header>
-                <mat-card-title>Analysis Failed</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <p>{{ progress.errorMessage }}</p>
-              </mat-card-content>
-              <mat-card-actions>
-                <button mat-button class="btn btn-secondary" type="button" (click)="isLoading = false">Dismiss</button>
-              </mat-card-actions>
-            </mat-card>
-          </div>
-        </div>
-      </div>
-
-      <!-- Enhanced Walkthrough Container -->
-      <div
-        *ngIf="flowType === 'walkthrough'"
-        class="walkthrough-container"
-        [formGroup]="clientForm"
-      >
-        <!-- Stepper/Progress Bar -->
-        <div class="walkthrough-stepper">
-          <ng-container *ngIf="state$ | async as state">
-            <ul class="stepper-list">
-              <li
-                *ngFor="let step of state.walkthroughHistory; let i = index"
-                class="stepper-item"
-                [class.is-active]="i === state.currentWalkthroughStep"
-                [class.is-complete]="i < state.currentWalkthroughStep"
-              >
-                <div class="stepper-indicator">
-                  <div class="stepper-line"></div>
-                  <div class="stepper-dot"></div>
-                </div>
-                <div class="stepper-label">
-                  {{ step.promptKey | titlecase }}
-                </div>
-              </li>
-            </ul>
-          </ng-container>
-        </div>
-
-        <mat-form-field appearance="fill">
-          <mat-label>Start Date</mat-label>
-          <input
-            matInput
-            [matDatepicker]="picker"
-            formControlName="startDate"
-            readonly
-            (click)="picker.open()"
-          />
-          <mat-datepicker-toggle
-            matSuffix
-            [for]="picker"
-          ></mat-datepicker-toggle>
-          <mat-datepicker #picker></mat-datepicker>
-        </mat-form-field>
-
-        <mat-form-field appearance="fill">
-          <mat-label>Budget Level</mat-label>
-          <mat-select formControlName="budgetLevel">
-            <mat-option value="high">High</mat-option>
-            <mat-option value="medium">Medium</mat-option>
-            <mat-option value="low">Low</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <!-- AI Response Viewer -->
-        <div class="response-viewer" (scroll)="onResponseViewerScroll($event)">
-          <div *ngIf="state$ | async as state">
-            <div
-              *ngIf="
-                state.flowType === 'walkthrough' &&
-                state.walkthroughHistory.length > 0
-              "
-            >
-              <app-rich-text-editor
+                <!-- Enhanced Walkthrough Container -->
+                @if (flowType === 'walkthrough') {
+                  <div
+                    class="walkthrough-container"
+                    [formGroup]="clientForm"
+                    >
+                    <!-- Stepper/Progress Bar -->
+                    <div class="walkthrough-stepper">
+                      @if (state$ | async; as state) {
+                        <ul class="stepper-list">
+                          @for (step of state.walkthroughHistory; track step; let i = $index) {
+                            <li
+                              class="stepper-item"
+                              [class.is-active]="i === state.currentWalkthroughStep"
+                              [class.is-complete]="i < state.currentWalkthroughStep"
+                              >
+                              <div class="stepper-indicator">
+                                <div class="stepper-line"></div>
+                                <div class="stepper-dot"></div>
+                              </div>
+                              <div class="stepper-label">
+                                {{ step.promptKey | titlecase }}
+                              </div>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                    <mat-form-field appearance="fill">
+                      <mat-label>Start Date</mat-label>
+                      <input
+                        matInput
+                        [matDatepicker]="picker"
+                        formControlName="startDate"
+                        readonly
+                        (click)="picker.open()"
+                        />
+                        <mat-datepicker-toggle
+                          matSuffix
+                          [for]="picker"
+                        ></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Budget Level</mat-label>
+                        <mat-select formControlName="budgetLevel">
+                          <mat-option value="high">High</mat-option>
+                          <mat-option value="medium">Medium</mat-option>
+                          <mat-option value="low">Low</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <!-- AI Response Viewer -->
+                      <div class="response-viewer" (scroll)="onResponseViewerScroll($event)">
+                        @if (state$ | async; as state) {
+                          <div>
+                            @if (
+                              state.flowType === 'walkthrough' &&
+                              state.walkthroughHistory.length > 0
+                              ) {
+                              <div
+                                >
+                                <app-rich-text-editor
                 [initialContent]="
                   state.walkthroughHistory[state.currentWalkthroughStep]
                     .aiResponse
                 "
-                (contentChanged)="onEditorContentChanged($event)"
-              >
-              </app-rich-text-editor>
-              <textarea
-                [(ngModel)]="currentUserComments"
-                placeholder="Add general comments here..."
-              ></textarea>
-              <button
-                mat-button
-                class="btn btn-secondary"
-                (click)="undo()"
-                matTooltip="Revert your last change"
-              >
-                Undo
-              </button>
-              <button
-                mat-button
-                class="btn btn-secondary"
-                (click)="redo()"
-                matTooltip="Reapply the change you undid"
-              >
-                Redo
-              </button>
-              <mat-checkbox [(ngModel)]="applyCostOptimisation"
-                >Apply Cost Optimisation and Efficiency</mat-checkbox
-              >
-              <button
-                mat-button
-                class="btn btn-primary"
-                (click)="rerunCurrentStep()"
-                matTooltip="Rerun the analysis for this step with your changes."
-              >
-                <lucide-icon
-                  [img]="HardHat"
-                  class="animate-spin"
-                  *ngIf="isRerunningStep"
-                ></lucide-icon>
-                <span *ngIf="!isRerunningStep">Rerun with my edits</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                                  (contentChanged)="onEditorContentChanged($event)"
+                                  >
+                                </app-rich-text-editor>
+                                <textarea
+                                  [(ngModel)]="currentUserComments"
+                                  placeholder="Add general comments here..."
+                                ></textarea>
+                                <button
+                                  mat-button
+                                  class="btn btn-secondary"
+                                  (click)="undo()"
+                                  matTooltip="Revert your last change"
+                                  >
+                                  Undo
+                                </button>
+                                <button
+                                  mat-button
+                                  class="btn btn-secondary"
+                                  (click)="redo()"
+                                  matTooltip="Reapply the change you undid"
+                                  >
+                                  Redo
+                                </button>
+                                <mat-checkbox [(ngModel)]="applyCostOptimisation"
+                                  >Apply Cost Optimisation and Efficiency</mat-checkbox
+                                  >
+                                  <button
+                                    mat-button
+                                    class="btn btn-primary"
+                                    (click)="rerunCurrentStep()"
+                                    matTooltip="Rerun the analysis for this step with your changes."
+                                    >
+                                    @if (isRerunningStep) {
+                                      <lucide-icon
+                                        [img]="HardHat"
+                                        class="animate-spin"
+                                      ></lucide-icon>
+                                    }
+                                    @if (!isRerunningStep) {
+                                      <span>Rerun with my edits</span>
+                                    }
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                        <!-- Navigation Buttons -->
+                        <div class="walkthrough-navigation">
+                          <button
+                            mat-button
+                            class="btn btn-ghost"
+                            (click)="goToPreviousStep()"
+                            matTooltip="Go back to the previous step."
+                            >
+                            Back
+                          </button>
+                          <button
+                            mat-button
+                            class="btn btn-primary"
+                            (click)="goToNextStep()"
+                            [disabled]="!hasScrolledToBottom"
+                            matTooltip="Proceed to the next step in the walkthrough."
+                            >
+                            @if (isNavigatingNext) {
+                              <lucide-icon
+                                [img]="HardHat"
+                                class="animate-spin"
+                              ></lucide-icon>
+                            }
+                            @if (!isNavigatingNext) {
+                              <span>Next</span>
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    }
 
-        <!-- Navigation Buttons -->
-        <div class="walkthrough-navigation">
-          <button
-            mat-button
-            class="btn btn-ghost"
-            (click)="goToPreviousStep()"
-            matTooltip="Go back to the previous step."
-          >
-            Back
-          </button>
-          <button
-            mat-button
-            class="btn btn-primary"
-            (click)="goToNextStep()"
-            [disabled]="!hasScrolledToBottom"
-            matTooltip="Proceed to the next step in the walkthrough."
-          >
-            <lucide-icon
-              [img]="HardHat"
-              class="animate-spin"
-              *ngIf="isNavigatingNext"
-            ></lucide-icon>
-            <span *ngIf="!isNavigatingNext">Next</span>
-          </button>
-        </div>
-      </div>
-
-      <div
-        [ngSwitch]="flow.step"
-        class="step-switcher"
-        *ngIf="flowType === 'walkthrough'"
-      >
-        <p *ngSwitchCase="'idle'">
-          Start by uploading a blueprint and selecting your project start date
-        </p>
-
-        <div *ngSwitchCase="'uploaded'" class="info-block">
-          <h4>Ready to start?</h4>
-          <p>We’ll parse sheets, title blocks, scales, and more.</p>
-          <div class="info-block-actions">
-            <button
-              mat-button
-              class="btn btn-primary"
-              (click)="beginExtraction()"
-              matTooltip="Start processing the blueprint to extract project details and requirements"
-            >
-              Begin Extraction
-            </button>
-            <button
-              mat-button
-              class="btn btn-secondary"
-              (click)="cancel()"
-              [disabled]="flow.step === 'idle'"
-              matTooltip="Upload a different blueprint file instead"
-            >
-              Replace File
-            </button>
-          </div>
-        </div>
-
-        <div *ngSwitchCase="'extracting'" class="info-block">
-          <div class="info-block-header">
-            <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
-            <h4>AI Metadata Extraction</h4>
-          </div>
-          <p>Pulling address, sheets, and site details…</p>
-        </div>
-
-        <div *ngSwitchCase="'address'" class="info-block">
-          <h4>Confirm Address</h4>
-          <p>We’ll sync weather + regional pricing once confirmed.</p>
-          <div>
-            Detected: <b>{{ addressField }}</b>
-          </div>
-          <div class="info-block-actions">
-            <button
-              mat-button
-              class="btn btn-primary"
-              (click)="confirmAddress()"
-              [disabled]="isLoading"
-              matTooltip="Confirm this location to retrieve accurate weather data and local pricing adjustments"
-            >
-              <span *ngIf="!isLoading">Confirm & Continue</span>
-            </button>
-            <button
-              mat-button
-              class="btn btn-ghost"
-              (click)="setFlow('extracting', { pct: 85 })"
-              matTooltip="Manually correct the address if the extracted one is inaccurate"
-            >
-              Edit Again
-            </button>
-          </div>
-        </div>
-
-        <!-- <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
-          <div class="walkthrough-header">
-            <div>
-              <div *ngIf="isWalkthrough(flow)">
-                Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}
+                    @if (flowType === 'walkthrough') {
+                      <div
+                        class="step-switcher"
+                        >
+                      @switch (flow.step) {
+                        @case ('idle') {
+                          <p>
+                            Start by uploading a blueprint and selecting your project start date
+                          </p>
+                        }
+                        @case ('uploaded') {
+                          <div class="info-block">
+                            <h4>Ready to start?</h4>
+                            <p>We’ll parse sheets, title blocks, scales, and more.</p>
+                            <div class="info-block-actions">
+                              <button
+                                mat-button
+                                class="btn btn-primary"
+                                (click)="beginExtraction()"
+                                matTooltip="Start processing the blueprint to extract project details and requirements"
+                                >
+                                Begin Extraction
+                              </button>
+                              <button
+                                mat-button
+                                class="btn btn-secondary"
+                                (click)="cancel()"
+                                [disabled]="flow.step === 'idle'"
+                                matTooltip="Upload a different blueprint file instead"
+                                >
+                                Replace File
+                              </button>
+                            </div>
+                          </div>
+                        }
+                        @case ('extracting') {
+                          <div class="info-block">
+                            <div class="info-block-header">
+                              <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
+                              <h4>AI Metadata Extraction</h4>
+                            </div>
+                            <p>Pulling address, sheets, and site details…</p>
+                          </div>
+                        }
+                        @case ('address') {
+                          <div class="info-block">
+                            <h4>Confirm Address</h4>
+                            <p>We’ll sync weather + regional pricing once confirmed.</p>
+                            <div>
+                              Detected: <b>{{ addressField }}</b>
+                            </div>
+                            <div class="info-block-actions">
+                              <button
+                                mat-button
+                                class="btn btn-primary"
+                                (click)="confirmAddress()"
+                                [disabled]="isLoading"
+                                matTooltip="Confirm this location to retrieve accurate weather data and local pricing adjustments"
+                                >
+                                @if (!isLoading) {
+                                  <span>Confirm & Continue</span>
+                                }
+                              </button>
+                              <button
+                                mat-button
+                                class="btn btn-ghost"
+                                (click)="setFlow('extracting', { pct: 85 })"
+                                matTooltip="Manually correct the address if the extracted one is inaccurate"
+                                >
+                                Edit Again
+                              </button>
+                            </div>
+                          </div>
+                        }
+                        <!-- <div *ngSwitchCase="'walkthrough'" class="walkthrough-panel">
+                        <div class="walkthrough-header">
+                          <div>
+                            <div *ngIf="isWalkthrough(flow)">
+                              Section {{ flow.index + 1 }} of {{ SECTION_ORDER.length }}
+                            </div>
+                            <h4
+                              *ngIf="isWalkthrough(flow)"
+                              [style.color]="SECTION_ORDER[flow.index].color"
+                              >
+                              {{ SECTION_ORDER[flow.index].key }}
+                            </h4>
+                          </div>
+                          <div class="walkthrough-progress">
+                            <span
+                              *ngFor="let section of SECTION_ORDER; let i = index"
+                              class="walkthrough-progress-dot"
+                              [class.active]="isWalkthrough(flow) && i <= flow.index"
+                              [style.background]="section.color"
+                            ></span>
+                          </div>
+                        </div>
+                        <div *ngIf="isWalkthrough(flow)">
+                          {{ defaultDesc[SECTION_ORDER[flow.index].key] }}
+                        </div>
+                        <div *ngIf="isWalkthrough(flow)" class="notes-section">
+                          <label>Add notes or changes (optional)</label>
+                          <textarea
+                            [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]"
+                            [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)"
+                            >
+                          </textarea>
+                        </div>
+                        <div class="walkthrough-actions">
+                          <div>Your input updates the BoM at the end.</div>
+                          <button mat-button class="btn btn-primary" (click)="nextStep()">
+                            <span *ngIf="isWalkthrough(flow)">{{
+                              flow.index === SECTION_ORDER.length - 1 ? "Finish" : "Next"
+                            }}</span>
+                          </button>
+                        </div>
+                      </div> -->
+                      @case ('finalizing') {
+                        <div class="info-block">
+                          <div class="info-block-header">
+                            <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
+                            <h4>Finalizing</h4>
+                          </div>
+                          <p>Applying your adjustments to the BoM & scope.</p>
+                          <p>Reanalyzing blueprint and updating quantities…</p>
+                        </div>
+                      }
+                      @case ('done') {
+                        <div class="info-block">
+                          <div class="info-block-header">
+                            <lucide-icon [img]="Check"></lucide-icon>
+                            <h4>AI Analysis Complete</h4>
+                          </div>
+                          <p>Your edits have been applied. Download your outputs below.</p>
+                          <div class="info-block-actions">
+                            <button
+                              mat-button
+                              class="btn btn-primary"
+                              matTooltip="Open the detailed Bill of Materials generated from the analysis"
+                              >
+                              View Final Bill of Materials
+                            </button>
+                            <button
+                              mat-button
+                              class="btn btn-secondary"
+                              matTooltip="Download a comprehensive report of the project analysis"
+                              >
+                              Download Project Summary
+                            </button>
+                            <button
+                              mat-button
+                              class="btn btn-ghost"
+                              matTooltip="Start the bidding process to find contractors and suppliers"
+                              >
+                              Launch Bidding Phase
+                            </button>
+                          </div>
+                          <div class="info-block-actions">
+                            <button
+                              mat-button
+                              class="btn btn-ghost"
+                              (click)="setFlow('idle')"
+                              matTooltip="Clear current results and start a new project analysis"
+                              >
+                              Start Another
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
               </div>
-              <h4
-                *ngIf="isWalkthrough(flow)"
-                [style.color]="SECTION_ORDER[flow.index].color"
-              >
-                {{ SECTION_ORDER[flow.index].key }}
-              </h4>
-            </div>
-            <div class="walkthrough-progress">
-              <span
-                *ngFor="let section of SECTION_ORDER; let i = index"
-                class="walkthrough-progress-dot"
-                [class.active]="isWalkthrough(flow) && i <= flow.index"
-                [style.background]="section.color"
-              ></span>
             </div>
           </div>
-          <div *ngIf="isWalkthrough(flow)">
-            {{ defaultDesc[SECTION_ORDER[flow.index].key] }}
-          </div>
-          <div *ngIf="isWalkthrough(flow)" class="notes-section">
-            <label>Add notes or changes (optional)</label>
-            <textarea
-              [(ngModel)]="flow.notes[SECTION_ORDER[flow.index].key]"
-              [placeholder]="getPlaceholder(SECTION_ORDER[flow.index].key)"
-            >
-            </textarea>
-          </div>
-          <div class="walkthrough-actions">
-            <div>Your input updates the BoM at the end.</div>
-            <button mat-button class="btn btn-primary" (click)="nextStep()">
-              <span *ngIf="isWalkthrough(flow)">{{
-                flow.index === SECTION_ORDER.length - 1 ? "Finish" : "Next"
-              }}</span>
-            </button>
-          </div>
-        </div> -->
-
-        <div *ngSwitchCase="'finalizing'" class="info-block">
-          <div class="info-block-header">
-            <lucide-icon [img]="HardHat" class="animate-spin"></lucide-icon>
-            <h4>Finalizing</h4>
-          </div>
-          <p>Applying your adjustments to the BoM & scope.</p>
-          <p>Reanalyzing blueprint and updating quantities…</p>
-        </div>
-
-        <div *ngSwitchCase="'done'" class="info-block">
-          <div class="info-block-header">
-            <lucide-icon [img]="Check"></lucide-icon>
-            <h4>AI Analysis Complete</h4>
-          </div>
-          <p>Your edits have been applied. Download your outputs below.</p>
-          <div class="info-block-actions">
-            <button
-              mat-button
-              class="btn btn-primary"
-              matTooltip="Open the detailed Bill of Materials generated from the analysis"
-            >
-              View Final Bill of Materials
-            </button>
-            <button
-              mat-button
-              class="btn btn-secondary"
-              matTooltip="Download a comprehensive report of the project analysis"
-            >
-              Download Project Summary
-            </button>
-            <button
-              mat-button
-              class="btn btn-ghost"
-              matTooltip="Start the bidding process to find contractors and suppliers"
-            >
-              Launch Bidding Phase
-            </button>
-          </div>
-          <div class="info-block-actions">
-            <button
-              mat-button
-              class="btn btn-ghost"
-              (click)="setFlow('idle')"
-              matTooltip="Clear current results and start a new project analysis"
-            >
-              Start Another
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>

@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   LucideAngularModule,
   Brain,
@@ -50,7 +50,7 @@ interface LifecycleStep {
 @Component({
   selector: 'app-project-stage-stepper',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [LucideAngularModule],
   templateUrl: './project-stage-stepper.component.html',
   styleUrls: ['./project-stage-stepper.component.scss']
 })

@@ -1,15 +1,16 @@
 <div class="analysis-container">
   <!-- Progress Header -->
   <div class="progress-card">
-    <button
-      *ngIf="currentStep === 'complete' && emailSent"
-      type="button"
-      class="continue-btn proceed-top-right"
-      (click)="onContinue()"
-    >
-      Proceed to Scope Review
-      <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
-    </button>
+    @if (currentStep === 'complete' && emailSent) {
+      <button
+        type="button"
+        class="continue-btn proceed-top-right"
+        (click)="onContinue()"
+        >
+        Proceed to Scope Review
+        <lucide-angular [img]="ArrowRight" class="btn-icon"></lucide-angular>
+      </button>
+    }
 
     <div class="progress-header">
       <div class="progress-icon-wrapper">
@@ -23,9 +24,9 @@
         <h2 class="progress-title">Blueprint Analysis</h2>
         <p class="progress-status">
           {{
-            currentStep === "complete"
-              ? "Analysis complete - Review results below"
-              : statusMessage
+          currentStep === "complete"
+          ? "Analysis complete - Review results below"
+          : statusMessage
           }}
         </p>
       </div>
@@ -42,196 +43,227 @@
     <div class="progress-bar-bg">
       <div class="progress-bar-fill" [style.width.%]="analysisProgress"></div>
     </div>
-    <p *ngIf="currentStep !== 'complete'" class="progress-note">
-      This process may take up to 15 minutes for complex blueprints. You can
-      navigate away and return anytime.
-    </p>
+    @if (currentStep !== 'complete') {
+      <p class="progress-note">
+        This process may take up to 15 minutes for complex blueprints. You can
+        navigate away and return anytime.
+      </p>
+    }
   </div>
 
   <!-- Steps List -->
   <div class="steps-list">
-    <div *ngFor="let step of analysisSteps" class="step-card">
-      <button class="step-header" (click)="toggleSection(step.id)">
-        <div class="step-info-wrapper">
-          <div
-            class="step-status-icon"
-            [class.complete]="isStepComplete(step.id)"
-            [class.active]="isStepActive(step.id)"
-          >
-            <lucide-angular
-              [img]="CheckCircle2"
-              *ngIf="isStepComplete(step.id)"
-            ></lucide-angular>
-            <lucide-angular
-              [img]="Loader2"
-              class="spinning"
-              *ngIf="isStepActive(step.id)"
-            ></lucide-angular>
-            <lucide-angular
-              [img]="step.icon"
-              *ngIf="!isStepComplete(step.id) && !isStepActive(step.id)"
-            ></lucide-angular>
-          </div>
-          <div class="step-text">
-            <p
-              class="step-label"
+    @for (step of analysisSteps; track step) {
+      <div class="step-card">
+        <button class="step-header" (click)="toggleSection(step.id)">
+          <div class="step-info-wrapper">
+            <div
+              class="step-status-icon"
               [class.complete]="isStepComplete(step.id)"
               [class.active]="isStepActive(step.id)"
-            >
-              {{ step.label }}
-            </p>
-            <p class="step-sublabel" *ngIf="isStepComplete(step.id)">
-              Completed
-            </p>
-            <p class="step-sublabel active" *ngIf="isStepActive(step.id)">
-              Analyzing...
-            </p>
-          </div>
-        </div>
-        <div class="step-actions">
-          <span *ngIf="isStepComplete(step.id)" class="badge-done">Done</span>
-          <lucide-angular
-            [img]="expandedSections.includes(step.id) ? ChevronUp : ChevronDown"
-            class="chevron"
-          ></lucide-angular>
-        </div>
-      </button>
-
-      <!-- Expanded Content -->
-      <div *ngIf="expandedSections.includes(step.id)" class="step-content">
-        <!-- Metadata Content -->
-        <div *ngIf="step.id === 'metadata'" class="step-detail">
-          <div class="grid-2-col">
-            <div *ngFor="let key of objectKeys(metadata)">
-              <label class="detail-label">{{
-                key.replace("([A-Z])", " $1") | titlecase
-              }}</label>
-              <p class="detail-value">{{ metadata[key] }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Rooms Content -->
-        <div *ngIf="step.id === 'rooms'" class="step-detail">
-          <div class="rooms-header">
-            <h4>Detected Rooms</h4>
-            <p class="sub-text">
-              {{ rooms.length }} rooms - {{ totalArea | number }} sq ft total
-            </p>
-          </div>
-          <div class="rooms-grid">
-            <div *ngFor="let room of rooms" class="room-card">
-              <span class="room-name">{{ room.name }}</span>
-              <span class="room-area">{{ room.area }} sf</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Zoning Content -->
-        <div *ngIf="step.id === 'zoning'" class="step-detail">
-          <div class="grid-2-col mb-4">
-            <div>
-              <label class="detail-label">Zoning</label>
-              <p class="detail-value">{{ zoningData.zoning }}</p>
-            </div>
-            <div>
-              <label class="detail-label">Lot Size</label>
-              <p class="detail-value">{{ zoningData.lotSize }}</p>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label class="detail-label block mb-2">Setbacks</label>
-            <div class="flex-row gap-4">
-              <div
-                *ngFor="let key of objectKeys(zoningData.setbacks)"
-                class="tag-box"
               >
-                <span class="tag-label">{{ key | titlecase }}:</span>
-                <span class="tag-value">{{ zoningData.setbacks[key] }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label class="detail-label block mb-2">Utilities</label>
-            <div class="flex-row gap-2">
-              <span
-                *ngFor="let util of zoningData.utilities"
-                class="badge badge-dark"
-                >{{ util }}</span
-              >
-            </div>
-          </div>
-          <div *ngIf="zoningData.unforeseenWork.length > 0">
-            <label class="detail-label block mb-2"
-              >Potential Unforeseen Work</label
-            >
-            <div class="list-stack">
-              <div
-                *ngFor="let item of zoningData.unforeseenWork"
-                class="risk-item"
-              >
+              @if (isStepComplete(step.id)) {
                 <lucide-angular
-                  [img]="AlertTriangle"
-                  class="icon-sm"
-                  [class.text-yellow]="item.risk === 'medium'"
-                  [class.text-blue]="item.risk === 'low'"
+                  [img]="CheckCircle2"
                 ></lucide-angular>
-                <span class="risk-text">{{ item.item }}</span>
-                <span
-                  class="badge badge-risk ml-auto"
-                  [class.risk-medium]="item.risk === 'medium'"
-                  [class.risk-low]="item.risk === 'low'"
+              }
+              @if (isStepActive(step.id)) {
+                <lucide-angular
+                  [img]="Loader2"
+                  class="spinning"
+                ></lucide-angular>
+              }
+              @if (!isStepComplete(step.id) && !isStepActive(step.id)) {
+                <lucide-angular
+                  [img]="step.icon"
+                ></lucide-angular>
+              }
+            </div>
+            <div class="step-text">
+              <p
+                class="step-label"
+                [class.complete]="isStepComplete(step.id)"
+                [class.active]="isStepActive(step.id)"
                 >
-                  {{ item.risk }} risk
-                </span>
-              </div>
+                {{ step.label }}
+              </p>
+              @if (isStepComplete(step.id)) {
+                <p class="step-sublabel">
+                  Completed
+                </p>
+              }
+              @if (isStepActive(step.id)) {
+                <p class="step-sublabel active">
+                  Analyzing...
+                </p>
+              }
             </div>
           </div>
-        </div>
-
-        <!-- Permits Content -->
-        <div *ngIf="step.id === 'permits'" class="step-detail">
-          <h4 class="section-title">Required Permits</h4>
-          <div class="list-stack">
-            <div
-              *ngFor="let permit of permits"
-              class="permit-item"
-              [class.uploaded]="permit.status === 'uploaded'"
-            >
-              <div class="permit-info">
-                <lucide-angular
-                  [img]="permit.status === 'uploaded' ? CheckCircle2 : FileText"
-                  class="icon-md"
-                  [class.text-green]="permit.status === 'uploaded'"
-                  [class.text-gray]="permit.status !== 'uploaded'"
-                ></lucide-angular>
-                <div>
-                  <p class="permit-name">{{ permit.name }}</p>
-                  <p class="permit-agency">{{ permit.agency }}</p>
+          <div class="step-actions">
+            @if (isStepComplete(step.id)) {
+              <span class="badge-done">Done</span>
+            }
+            <lucide-angular
+              [img]="expandedSections.includes(step.id) ? ChevronUp : ChevronDown"
+              class="chevron"
+            ></lucide-angular>
+          </div>
+        </button>
+        <!-- Expanded Content -->
+        @if (expandedSections.includes(step.id)) {
+          <div class="step-content">
+            <!-- Metadata Content -->
+            @if (step.id === 'metadata') {
+              <div class="step-detail">
+                <div class="grid-2-col">
+                  @for (key of objectKeys(metadata); track key) {
+                    <div>
+                      <label class="detail-label">{{
+                        key.replace("([A-Z])", " $1") | titlecase
+                      }}</label>
+                      <p class="detail-value">{{ metadata[key] }}</p>
+                    </div>
+                  }
                 </div>
               </div>
-              <div *ngIf="permit.status === 'uploaded'" class="permit-status">
-                <span class="badge badge-success">On File</span>
-                <span class="file-name">{{ permit.file }}</span>
+            }
+            <!-- Rooms Content -->
+            @if (step.id === 'rooms') {
+              <div class="step-detail">
+                <div class="rooms-header">
+                  <h4>Detected Rooms</h4>
+                  <p class="sub-text">
+                    {{ rooms.length }} rooms - {{ totalArea | number }} sq ft total
+                  </p>
+                </div>
+                <div class="rooms-grid">
+                  @for (room of rooms; track room) {
+                    <div class="room-card">
+                      <span class="room-name">{{ room.name }}</span>
+                      <span class="room-area">{{ room.area }} sf</span>
+                    </div>
+                  }
+                </div>
               </div>
-              <button
-                *ngIf="permit.status !== 'uploaded'"
-                class="btn-outline-sm"
-                (click)="handlePermitUpload(permit.id)"
-              >
-                I Have This
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Blueprint Review Content -->
-        <div *ngIf="step.id === 'blueprint-review'" class="step-detail">
-          <h4 class="section-title">Issues Found</h4>
-          <div class="list-stack">
-            <div *ngFor="let issue of blueprintIssues" class="issue-item">
-              <div class="issue-icon-wrapper">
-                <lucide-angular
+            }
+            <!-- Zoning Content -->
+            @if (step.id === 'zoning') {
+              <div class="step-detail">
+                <div class="grid-2-col mb-4">
+                  <div>
+                    <label class="detail-label">Zoning</label>
+                    <p class="detail-value">{{ zoningData.zoning }}</p>
+                  </div>
+                  <div>
+                    <label class="detail-label">Lot Size</label>
+                    <p class="detail-value">{{ zoningData.lotSize }}</p>
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label class="detail-label block mb-2">Setbacks</label>
+                  <div class="flex-row gap-4">
+                    @for (key of objectKeys(zoningData.setbacks); track key) {
+                      <div
+                        class="tag-box"
+                        >
+                        <span class="tag-label">{{ key | titlecase }}:</span>
+                        <span class="tag-value">{{ zoningData.setbacks[key] }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label class="detail-label block mb-2">Utilities</label>
+                  <div class="flex-row gap-2">
+                    @for (util of zoningData.utilities; track util) {
+                      <span
+                        class="badge badge-dark"
+                        >{{ util }}</span
+                        >
+                      }
+                    </div>
+                  </div>
+                  @if (zoningData.unforeseenWork.length > 0) {
+                    <div>
+                      <label class="detail-label block mb-2"
+                        >Potential Unforeseen Work</label
+                        >
+                        <div class="list-stack">
+                          @for (item of zoningData.unforeseenWork; track item) {
+                            <div
+                              class="risk-item"
+                              >
+                              <lucide-angular
+                                [img]="AlertTriangle"
+                                class="icon-sm"
+                                [class.text-yellow]="item.risk === 'medium'"
+                                [class.text-blue]="item.risk === 'low'"
+                              ></lucide-angular>
+                              <span class="risk-text">{{ item.item }}</span>
+                              <span
+                                class="badge badge-risk ml-auto"
+                                [class.risk-medium]="item.risk === 'medium'"
+                                [class.risk-low]="item.risk === 'low'"
+                                >
+                                {{ item.risk }} risk
+                              </span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+                <!-- Permits Content -->
+                @if (step.id === 'permits') {
+                  <div class="step-detail">
+                    <h4 class="section-title">Required Permits</h4>
+                    <div class="list-stack">
+                      @for (permit of permits; track permit) {
+                        <div
+                          class="permit-item"
+                          [class.uploaded]="permit.status === 'uploaded'"
+                          >
+                          <div class="permit-info">
+                            <lucide-angular
+                              [img]="permit.status === 'uploaded' ? CheckCircle2 : FileText"
+                              class="icon-md"
+                              [class.text-green]="permit.status === 'uploaded'"
+                              [class.text-gray]="permit.status !== 'uploaded'"
+                            ></lucide-angular>
+                            <div>
+                              <p class="permit-name">{{ permit.name }}</p>
+                              <p class="permit-agency">{{ permit.agency }}</p>
+                            </div>
+                          </div>
+                          @if (permit.status === 'uploaded') {
+                            <div class="permit-status">
+                              <span class="badge badge-success">On File</span>
+                              <span class="file-name">{{ permit.file }}</span>
+                            </div>
+                          }
+                          @if (permit.status !== 'uploaded') {
+                            <button
+                              class="btn-outline-sm"
+                              (click)="handlePermitUpload(permit.id)"
+                              >
+                              I Have This
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                <!-- Blueprint Review Content -->
+                @if (step.id === 'blueprint-review') {
+                  <div class="step-detail">
+                    <h4 class="section-title">Issues Found</h4>
+                    <div class="list-stack">
+                      @for (issue of blueprintIssues; track issue) {
+                        <div class="issue-item">
+                          <div class="issue-icon-wrapper">
+                            <lucide-angular
                   [img]="
                     issue.type === 'error'
                       ? AlertTriangle
@@ -239,115 +271,128 @@
                         ? AlertTriangle
                         : Info
                   "
-                  class="icon-md"
-                  [class.text-red]="issue.type === 'error'"
-                  [class.text-yellow]="issue.type === 'warning'"
-                  [class.text-blue]="issue.type === 'info'"
-                ></lucide-angular>
-              </div>
-              <div class="issue-content">
-                <p class="issue-title">{{ issue.title }}</p>
-                <p class="issue-location">{{ issue.location }}</p>
-              </div>
-              <div class="issue-meta">
-                <span class="badge badge-dark">{{ issue.code }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Site Logistics Content -->
-        <div *ngIf="step.id === 'site-logistics'" class="step-detail">
-          <div class="grid-2-col mb-4">
-            <div>
-              <label class="detail-label block mb-2">Site Zones</label>
-              <div class="list-stack-sm">
-                <div *ngFor="let zone of siteLogistics.zones" class="info-box">
-                  {{ zone }}
+                              class="icon-md"
+                              [class.text-red]="issue.type === 'error'"
+                              [class.text-yellow]="issue.type === 'warning'"
+                              [class.text-blue]="issue.type === 'info'"
+                            ></lucide-angular>
+                          </div>
+                          <div class="issue-content">
+                            <p class="issue-title">{{ issue.title }}</p>
+                            <p class="issue-location">{{ issue.location }}</p>
+                          </div>
+                          <div class="issue-meta">
+                            <span class="badge badge-dark">{{ issue.code }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                <!-- Site Logistics Content -->
+                @if (step.id === 'site-logistics') {
+                  <div class="step-detail">
+                    <div class="grid-2-col mb-4">
+                      <div>
+                        <label class="detail-label block mb-2">Site Zones</label>
+                        <div class="list-stack-sm">
+                          @for (zone of siteLogistics.zones; track zone) {
+                            <div class="info-box">
+                              {{ zone }}
+                            </div>
+                          }
+                        </div>
+                      </div>
+                      <div>
+                        <label class="detail-label block mb-2">Equipment Needed</label>
+                        <div class="flex-wrap gap-2">
+                          @for (eq of siteLogistics.equipment; track eq) {
+                            <span
+                              class="badge badge-dark"
+                              >{{ eq }}</span
+                              >
+                            }
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="detail-label block mb-2">Safety Hazards</label>
+                        <div class="list-stack-sm">
+                          @for (hazard of siteLogistics.hazards; track hazard) {
+                            <div
+                              class="hazard-box"
+                              >
+                              <lucide-angular
+                                [img]="AlertTriangle"
+                                class="icon-sm text-red"
+                              ></lucide-angular>
+                              <span>{{ hazard }}</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  <!-- Quality Management Content -->
+                  @if (step.id === 'quality-management') {
+                    <div class="step-detail">
+                      <div class="grid-2-col mb-4">
+                        <div>
+                          <label class="detail-label block mb-2">Applicable Codes</label>
+                          <div class="flex-wrap gap-2">
+                            @for (code of qualityManagement.codes; track code) {
+                              <span
+                                class="badge badge-dark"
+                                >{{ code }}</span
+                                >
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <label class="detail-label block mb-2">Required Mock-ups</label>
+                            <div class="list-stack-sm">
+                              @for (mockup of qualityManagement.mockups; track mockup) {
+                                <div
+                                  class="info-box"
+                                  >
+                                  {{ mockup }}
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <label class="detail-label block mb-2"
+                            >Inspection Hold Points</label
+                            >
+                            <div class="list-stack-sm">
+                              @for (
+                                point of qualityManagement.holdPoints; track
+                                point; let i = $index) {
+                                <div
+                                  class="hold-point"
+                                  >
+                                  <div class="step-number">{{ i + 1 }}</div>
+                                  <span>{{ point }}</span>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                      <!-- Cost Estimation Content -->
+                      @if (step.id === 'cost-estimation') {
+                        <div class="step-detail">
+                          <p class="placeholder-text">
+                            Generating detailed Bill of Materials and cost estimates.
+                          </p>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
-              </div>
+              }
             </div>
-            <div>
-              <label class="detail-label block mb-2">Equipment Needed</label>
-              <div class="flex-wrap gap-2">
-                <span
-                  *ngFor="let eq of siteLogistics.equipment"
-                  class="badge badge-dark"
-                  >{{ eq }}</span
-                >
-              </div>
-            </div>
-          </div>
-          <div>
-            <label class="detail-label block mb-2">Safety Hazards</label>
-            <div class="list-stack-sm">
-              <div
-                *ngFor="let hazard of siteLogistics.hazards"
-                class="hazard-box"
-              >
-                <lucide-angular
-                  [img]="AlertTriangle"
-                  class="icon-sm text-red"
-                ></lucide-angular>
-                <span>{{ hazard }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Quality Management Content -->
-        <div *ngIf="step.id === 'quality-management'" class="step-detail">
-          <div class="grid-2-col mb-4">
-            <div>
-              <label class="detail-label block mb-2">Applicable Codes</label>
-              <div class="flex-wrap gap-2">
-                <span
-                  *ngFor="let code of qualityManagement.codes"
-                  class="badge badge-dark"
-                  >{{ code }}</span
-                >
-              </div>
-            </div>
-            <div>
-              <label class="detail-label block mb-2">Required Mock-ups</label>
-              <div class="list-stack-sm">
-                <div
-                  *ngFor="let mockup of qualityManagement.mockups"
-                  class="info-box"
-                >
-                  {{ mockup }}
-                </div>
-              </div>
-            </div>
+            <!-- Continue Button -->
           </div>
-          <div>
-            <label class="detail-label block mb-2"
-              >Inspection Hold Points</label
-            >
-            <div class="list-stack-sm">
-              <div
-                *ngFor="
-                  let point of qualityManagement.holdPoints;
-                  let i = index
-                "
-                class="hold-point"
-              >
-                <div class="step-number">{{ i + 1 }}</div>
-                <span>{{ point }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cost Estimation Content -->
-        <div *ngIf="step.id === 'cost-estimation'" class="step-detail">
-          <p class="placeholder-text">
-            Generating detailed Bill of Materials and cost estimates.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Continue Button -->
-</div>

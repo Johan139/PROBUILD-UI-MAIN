@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,7 +16,6 @@ import { trades } from '../../../../../../data/registration-data';
   selector: 'app-post-to-marketplace-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -25,7 +24,7 @@ import { trades } from '../../../../../../data/registration-data';
     MatButtonModule,
     MatDatepickerModule,
     MatNativeDateModule
-  ],
+],
   template: `
     <div class="dialog-container">
       <h2 mat-dialog-title>Post Job to Marketplace</h2>
@@ -33,42 +32,48 @@ import { trades } from '../../../../../../data/registration-data';
         <div class="header-info">
           <p>Find qualified subcontractors for your project</p>
         </div>
-
+    
         <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Trade Required</mat-label>
-          <mat-select formControlName="trade">
-            <mat-option *ngFor="let trade of trades" [value]="trade.value">
-              {{ trade.display }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="form.get('trade')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Estimated Budget ($)</mat-label>
-          <input matInput type="number" formControlName="budget" placeholder="150000">
-          <mat-error *ngIf="form.get('budget')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-
-        <div class="row">
           <mat-form-field appearance="outline">
-            <mat-label>Start Date</mat-label>
-            <input matInput [matDatepicker]="picker" formControlName="startDate">
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
+            <mat-label>Trade Required</mat-label>
+            <mat-select formControlName="trade">
+              @for (trade of trades; track trade) {
+                <mat-option [value]="trade.value">
+                  {{ trade.display }}
+                </mat-option>
+              }
+            </mat-select>
+            @if (form.get('trade')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
-
+    
           <mat-form-field appearance="outline">
-            <mat-label>Duration (e.g. 6 weeks)</mat-label>
-            <input matInput formControlName="duration" placeholder="6 weeks">
+            <mat-label>Estimated Budget ($)</mat-label>
+            <input matInput type="number" formControlName="budget" placeholder="150000">
+            @if (form.get('budget')?.hasError('required')) {
+              <mat-error>Required</mat-error>
+            }
           </mat-form-field>
-        </div>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Job Description</mat-label>
-          <textarea matInput formControlName="description" rows="3" placeholder="Describe the scope of work..."></textarea>
-        </mat-form-field>
+    
+          <div class="row">
+            <mat-form-field appearance="outline">
+              <mat-label>Start Date</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="startDate">
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+    
+            <mat-form-field appearance="outline">
+              <mat-label>Duration (e.g. 6 weeks)</mat-label>
+              <input matInput formControlName="duration" placeholder="6 weeks">
+            </mat-form-field>
+          </div>
+    
+          <mat-form-field appearance="outline">
+            <mat-label>Job Description</mat-label>
+            <textarea matInput formControlName="description" rows="3" placeholder="Describe the scope of work..."></textarea>
+          </mat-form-field>
         </form>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
@@ -78,7 +83,7 @@ import { trades } from '../../../../../../data/registration-data';
         </button>
       </mat-dialog-actions>
     </div>
-  `,
+    `,
   styles: [`
     .dialog-container {
       background-color: var(--color-surface);

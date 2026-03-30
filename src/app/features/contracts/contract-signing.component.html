@@ -1,20 +1,26 @@
-<div class="contract-signing-container" *ngIf="contract">
-  <h1>Contract Signing</h1>
-  <div class="contract-text">
-    <pre>{{ contract.contractText }}</pre>
+@if (contract) {
+  <div class="contract-signing-container">
+    <h1>Contract Signing</h1>
+    <div class="contract-text">
+      <pre>{{ contract.contractText }}</pre>
+    </div>
+    @if (contract.status !== 'SIGNED') {
+      <div class="signature-area">
+        <label for="signature">Digital Signature:</label>
+        <input type="text" id="signature" [(ngModel)]="signature" placeholder="Type your full name">
+        <button (click)="submitSignature()" [disabled]="!signature">Sign Contract</button>
+      </div>
+    }
+    @if (contract.status === 'SIGNED') {
+      <div class="signed-confirmation">
+        <p>Contract signed successfully!</p>
+      </div>
+    }
   </div>
+}
 
-  <div class="signature-area" *ngIf="contract.status !== 'SIGNED'">
-    <label for="signature">Digital Signature:</label>
-    <input type="text" id="signature" [(ngModel)]="signature" placeholder="Type your full name">
-    <button (click)="submitSignature()" [disabled]="!signature">Sign Contract</button>
+@if (!contract) {
+  <div>
+    <p>Loading contract...</p>
   </div>
-
-  <div class="signed-confirmation" *ngIf="contract.status === 'SIGNED'">
-    <p>Contract signed successfully!</p>
-  </div>
-</div>
-
-<div *ngIf="!contract">
-  <p>Loading contract...</p>
-</div>
+}

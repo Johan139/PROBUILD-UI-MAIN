@@ -19,395 +19,416 @@
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
-  <section class="trade-award-content" *ngIf="!isLoading; else loadingTemplate">
-    <article class="trade-award-intro-card">
-      <div class="trade-award-intro-icon">
-        <lucide-icon name="hammer"></lucide-icon>
+  @if (!isLoading) {
+    <section class="trade-award-content">
+      <article class="trade-award-intro-card">
+        <div class="trade-award-intro-icon">
+          <lucide-icon name="hammer"></lucide-icon>
+        </div>
+        <div>
+          <h3>Subcontract Award &amp; Contracting</h3>
+          <p>
+            Review bids for marketplace packages and upload quotations for in-house packages. Award each
+            package or mark as N/A.
+          </p>
+        </div>
+      </article>
+      <section class="trade-award-summary-grid">
+        <article class="summary-card trades">
+          <lucide-icon name="hammer"></lucide-icon>
+          <p>Trades</p>
+          <strong>{{ tradeItems.length }}</strong>
+        </article>
+        <article class="summary-card vendors">
+          <lucide-icon name="users"></lucide-icon>
+          <p>Vendors</p>
+          <strong>{{ vendorItems.length }}</strong>
+        </article>
+        <article class="summary-card suppliers">
+          <lucide-icon name="folder-check"></lucide-icon>
+          <p>Suppliers</p>
+          <strong>{{ supplierItems.length }}</strong>
+        </article>
+        <article class="summary-card awarded">
+          <lucide-icon name="check-circle-2"></lucide-icon>
+          <p>Awarded / Addressed</p>
+          <strong>{{ awardedCount }}</strong>
+        </article>
+      </section>
+      <div class="trade-award-tabs">
+        <button type="button" [class.active]="awardTab === 'trades'" (click)="setTab('trades')">
+          Trades <span>{{ tradeItems.length }}</span>
+        </button>
+        <button type="button" [class.active]="awardTab === 'vendors'" (click)="setTab('vendors')">
+          Vendors <span>{{ vendorItems.length }}</span>
+        </button>
+        <button type="button" [class.active]="awardTab === 'suppliers'" (click)="setTab('suppliers')">
+          Suppliers <span>{{ supplierItems.length }}</span>
+        </button>
       </div>
-      <div>
-        <h3>Subcontract Award &amp; Contracting</h3>
-        <p>
-          Review bids for marketplace packages and upload quotations for in-house packages. Award each
-          package or mark as N/A.
-        </p>
-      </div>
-    </article>
-
-    <section class="trade-award-summary-grid">
-      <article class="summary-card trades">
-        <lucide-icon name="hammer"></lucide-icon>
-        <p>Trades</p>
-        <strong>{{ tradeItems.length }}</strong>
-      </article>
-      <article class="summary-card vendors">
-        <lucide-icon name="users"></lucide-icon>
-        <p>Vendors</p>
-        <strong>{{ vendorItems.length }}</strong>
-      </article>
-      <article class="summary-card suppliers">
-        <lucide-icon name="folder-check"></lucide-icon>
-        <p>Suppliers</p>
-        <strong>{{ supplierItems.length }}</strong>
-      </article>
-      <article class="summary-card awarded">
-        <lucide-icon name="check-circle-2"></lucide-icon>
-        <p>Awarded / Addressed</p>
-        <strong>{{ awardedCount }}</strong>
-      </article>
-    </section>
-
-    <div class="trade-award-tabs">
-      <button type="button" [class.active]="awardTab === 'trades'" (click)="setTab('trades')">
-        Trades <span>{{ tradeItems.length }}</span>
-      </button>
-      <button type="button" [class.active]="awardTab === 'vendors'" (click)="setTab('vendors')">
-        Vendors <span>{{ vendorItems.length }}</span>
-      </button>
-      <button type="button" [class.active]="awardTab === 'suppliers'" (click)="setTab('suppliers')">
-        Suppliers <span>{{ supplierItems.length }}</span>
-      </button>
-    </div>
-
-    <section class="trade-award-empty" *ngIf="currentItems.length === 0">
-      <lucide-icon name="alert-circle"></lucide-icon>
-      <p>No packages in this tab</p>
-      <small>Return to Bid Solicitation to publish marketplace packages or mark in-house packages.</small>
-    </section>
-
-    <section class="trade-award-list" *ngIf="currentItems.length > 0">
-      <article
-        class="trade-award-item"
-        *ngFor="let item of currentItems"
-        [class.na]="isNotApplicable(item)"
-        [ngClass]="['card-' + cardType(item), item.isInHouse ? 'lane-in-house' : 'lane-marketplace']"
-      >
-        <header>
-          <button type="button" class="toggle" (click)="toggleExpanded(item.id)">
-            <div class="toggle-left">
-              <div class="item-icon" [ngClass]="'icon-' + cardType(item)">
-                <lucide-icon [name]="cardIcon(item)"></lucide-icon>
-              </div>
-              <div>
-                <h4>{{ item.trade }}</h4>
-                <p>
-                  {{ item.csiCode }} • {{ itemLaneLabel(item) }}
-                  <span class="mode-pill" [class.in-house]="item.isInHouse" [class.marketplace]="!item.isInHouse">
-                    {{ item.isInHouse ? 'In-House' : 'Marketplace' }}
-                  </span>
-                  <span class="work-type-chip" [ngClass]="workTypeClass(item)">
-                    {{ workTypeLabel(item) }}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            <div class="toggle-right">
-              <span class="budget-chip">Budget {{ itemBudget(item) | money : true : 2 }}</span>
-              <lucide-icon name="chevron-down" [class.open]="isExpanded(item.id)"></lucide-icon>
-            </div>
-          </button>
-
-          <div class="actions">
-            <span class="pill awarded" *ngIf="isAwarded(item)">Awarded</span>
-            <span class="pill na" *ngIf="isNotApplicable(item)">N/A</span>
-            <button type="button" class="ghost" (click)="toggleNotApplicable(item)">
-              {{ isNotApplicable(item) ? 'Undo N/A' : 'N/A' }}
-            </button>
-          </div>
-        </header>
-
-        <section *ngIf="isExpanded(item.id) && !isNotApplicable(item)">
-          <ng-container *ngIf="!isInHouse(item); else inHouseTemplate">
-            <div class="ai-row">
-              <button
-                type="button"
-                class="ai-analyze"
-                [disabled]="analyzingPackageIds.has(item.id)"
-                (click)="runAiAnalysis(item)"
+      @if (currentItems.length === 0) {
+        <section class="trade-award-empty">
+          <lucide-icon name="alert-circle"></lucide-icon>
+          <p>No packages in this tab</p>
+          <small>Return to Bid Solicitation to publish marketplace packages or mark in-house packages.</small>
+        </section>
+      }
+      @if (currentItems.length > 0) {
+        <section class="trade-award-list">
+          @for (item of currentItems; track item) {
+            <article
+              class="trade-award-item"
+              [class.na]="isNotApplicable(item)"
+              [ngClass]="['card-' + cardType(item), item.isInHouse ? 'lane-in-house' : 'lane-marketplace']"
               >
-                <lucide-icon name="sparkles"></lucide-icon>
-                {{ analyzingPackageIds.has(item.id) ? 'AI Analyzing...' : 'AI Analyze Quotes' }}
-              </button>
-            </div>
-
-            <article class="ai-result" *ngIf="analysisFor(item) as analysis">
-              <h5>AI Recommendation</h5>
-              <p>{{ analysis.summary }}</p>
-              <ul *ngIf="analysis.reasons.length > 0">
-                <li *ngFor="let reason of analysis.reasons">{{ reason }}</li>
-              </ul>
-            </article>
-
-            <section class="trade-award-empty" *ngIf="bidsForPackage(item).length === 0">
-              <lucide-icon name="alert-circle"></lucide-icon>
-              <p>No bids yet</p>
-              <small>Bids will appear here once contractors submit pricing for this marketplace post.</small>
-            </section>
-
-            <div class="bid-list">
-              <article class="bid-card" *ngFor="let bid of bidsForPackage(item)">
-                <div class="bid-main" (click)="openBidDialog(item, bid)">
-                  <div class="bid-left-meta">
-                    <div class="bid-select-dot" [class.selected]="awardedBidByPackageId[item.id] === bid.bidId"></div>
+              <header>
+                <button type="button" class="toggle" (click)="toggleExpanded(item.id)">
+                  <div class="toggle-left">
+                    <div class="item-icon" [ngClass]="'icon-' + cardType(item)">
+                      <lucide-icon [name]="cardIcon(item)"></lucide-icon>
+                    </div>
                     <div>
-                      <h5>{{ bid.bidderName }}</h5>
-                      <p>{{ bid.specialty || 'General Trade' }}</p>
-                      <div class="bid-badges">
-                        <span class="chip-insured" *ngIf="bid.insurance">Insured</span>
-                        <span class="chip-license" *ngIf="licenseDisplay(bid.licenseNo) as license">License: {{ license }}</span>
-                        <span class="chip-bondable" *ngIf="bid.bondable">Bondable</span>
-                        <span class="chip-location">{{ bid.location }}</span>
-                      </div>
-                      <div class="bid-ratings">
-                        <small *ngIf="(bid.googleRating || 0) > 0">
-                          <svg viewBox="0 0 24 24" class="google-icon" fill="none" aria-hidden="true">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                          </svg>
-                          {{ bid.googleRating | number : '1.0-1' }} ({{ bid.googleReviews || 0 }})
-                        </small>
-                        <ng-container *ngIf="(bid.proBuildRating || bid.rating || 0) > 0; else noProBuildRating">
-                          <small>ProBuild {{ (bid.proBuildRating || bid.rating) | number : '1.0-1' }}</small>
-                        </ng-container>
-                        <ng-template #noProBuildRating>
-                          <small>ProBuild N/A</small>
-                        </ng-template>
-                      </div>
-                      <div class="bid-experience">
-                        <small>{{ bid.completedJobs || 0 }} jobs completed</small>
-                        <small>{{ bid.yearsInBusiness || 0 }} yrs in business</small>
-                      </div>
+                      <h4>{{ item.trade }}</h4>
+                      <p>
+                        {{ item.csiCode }} • {{ itemLaneLabel(item) }}
+                        <span class="mode-pill" [class.in-house]="item.isInHouse" [class.marketplace]="!item.isInHouse">
+                          {{ item.isInHouse ? 'In-House' : 'Marketplace' }}
+                        </span>
+                        <span class="work-type-chip" [ngClass]="workTypeClass(item)">
+                          {{ workTypeLabel(item) }}
+                        </span>
+                      </p>
                     </div>
                   </div>
-
-                  <div class="bid-price-wrap">
-                    <div class="price">{{ bid.amount | money : true : 2 }}</div>
-                    <small [ngClass]="budgetVarianceClass(item, bid)">
-                      {{ budgetVarianceLabel(item, bid) }}
-                    </small>
+                  <div class="toggle-right">
+                    <span class="budget-chip">Budget {{ itemBudget(item) | money : true : 2 }}</span>
+                    <lucide-icon name="chevron-down" [class.open]="isExpanded(item.id)"></lucide-icon>
                   </div>
-                </div>
-
-                <div class="bid-actions">
-                  <span class="ref"
-                    >Ref: {{ bid.quoteRef || ('Q-' + bid.bidId) }} • Submitted: {{ bid.submittedLabel || 'recently' }}
-                    • Valid until: {{ bid.validUntil || 'TBC' }}</span
-                  >
-                  <button type="button" class="ghost" (click)="toggleBidExpanded(item, bid)">
-                    {{ isBidExpanded(item, bid) ? 'Hide Quote' : 'View Quote' }}
+                </button>
+                <div class="actions">
+                  @if (isAwarded(item)) {
+                    <span class="pill awarded">Awarded</span>
+                  }
+                  @if (isNotApplicable(item)) {
+                    <span class="pill na">N/A</span>
+                  }
+                  <button type="button" class="ghost" (click)="toggleNotApplicable(item)">
+                    {{ isNotApplicable(item) ? 'Undo N/A' : 'N/A' }}
                   </button>
                 </div>
-
-                <section class="bid-expanded" *ngIf="isBidExpanded(item, bid)">
-                  <p class="quoted-scope"><strong>Quoted Scope</strong> {{ bid.quotedScope || 'Quoted scope as submitted.' }}</p>
-                  <div class="contact-grid">
-                    <p><strong>Contact:</strong> {{ bid.contact || 'Estimator Team' }}</p>
-                    <p><strong>Phone:</strong> {{ bid.phone || 'N/A' }}</p>
-                    <p><strong>Email:</strong> {{ bid.email || 'N/A' }}</p>
-                    <p><strong>Lead:</strong> {{ bid.leadTime }}</p>
-                    <p><strong>License:</strong> {{ bid.licenseNo || 'N/A' }}</p>
-                    <p><strong>Insurance:</strong> {{ bid.insuranceCoverage || 'N/A' }}</p>
-                    <p><strong>Bondable:</strong> {{ bid.bondable ? 'Yes' : 'No' }}</p>
-                    <p><strong>Warranty:</strong> {{ bid.warranty || 'N/A' }}</p>
-                  </div>
-
-                  <div *ngIf="bid.documentUrl">
-                    <button type="button" class="quote-doc-btn" (click)="openBidDocument(bid.documentUrl, $event)">View / Download PDF</button>
-                  </div>
-
-                  <div class="inc-exc-grid">
-                    <div>
-                      <h6>Inclusions</h6>
-                      <ul>
-                        <li *ngFor="let inc of (bid.inclusions || ['Quoted scope as submitted'])">{{ inc }}</li>
-                      </ul>
+              </header>
+              @if (isExpanded(item.id) && !isNotApplicable(item)) {
+                <section>
+                  @if (!isInHouse(item)) {
+                    <div class="ai-row">
+                      <button
+                        type="button"
+                        class="ai-analyze"
+                        [disabled]="analyzingPackageIds.has(item.id)"
+                        (click)="runAiAnalysis(item)"
+                        >
+                        <lucide-icon name="sparkles"></lucide-icon>
+                        {{ analyzingPackageIds.has(item.id) ? 'AI Analyzing...' : 'AI Analyze Quotes' }}
+                      </button>
                     </div>
-                    <div>
-                      <h6>Exclusions</h6>
-                      <ul>
-                        <li *ngFor="let exc of (bid.exclusions || ['No exclusions specified'])">{{ exc }}</li>
-                      </ul>
-                    </div>
-                  </div>
-                </section>
-
-                <button type="button" class="award-btn" (click)="toggleAward(item, bid.bidId)">
-                  {{ awardedBidByPackageId[item.id] === bid.bidId ? 'Unaward' : 'Award' }}
-                </button>
+                    @if (analysisFor(item); as analysis) {
+                      <article class="ai-result">
+                        <h5>AI Recommendation</h5>
+                        <p>{{ analysis.summary }}</p>
+                        @if (analysis.reasons.length > 0) {
+                          <ul>
+                            @for (reason of analysis.reasons; track reason) {
+                              <li>{{ reason }}</li>
+                            }
+                          </ul>
+                        }
+                      </article>
+                    }
+                    @if (bidsForPackage(item).length === 0) {
+                      <section class="trade-award-empty">
+                        <lucide-icon name="alert-circle"></lucide-icon>
+                        <p>No bids yet</p>
+                        <small>Bids will appear here once contractors submit pricing for this marketplace post.</small>
+                      </section>
+                    }
+                    <div class="bid-list">
+                      @for (bid of bidsForPackage(item); track bid) {
+                        <article class="bid-card">
+                          <div class="bid-main" (click)="openBidDialog(item, bid)">
+                            <div class="bid-left-meta">
+                              <div class="bid-select-dot" [class.selected]="awardedBidByPackageId[item.id] === bid.bidId"></div>
+                              <div>
+                                <h5>{{ bid.bidderName }}</h5>
+                                <p>{{ bid.specialty || 'General Trade' }}</p>
+                                <div class="bid-badges">
+                                  @if (bid.insurance) {
+                                    <span class="chip-insured">Insured</span>
+                                  }
+                                  @if (licenseDisplay(bid.licenseNo); as license) {
+                                    <span class="chip-license">License: {{ license }}</span>
+                                  }
+                                  @if (bid.bondable) {
+                                    <span class="chip-bondable">Bondable</span>
+                                  }
+                                  <span class="chip-location">{{ bid.location }}</span>
+                                </div>
+                                <div class="bid-ratings">
+                                  @if ((bid.googleRating || 0) > 0) {
+                                    <small>
+                                      <svg viewBox="0 0 24 24" class="google-icon" fill="none" aria-hidden="true">
+                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                      </svg>
+                                      {{ bid.googleRating | number : '1.0-1' }} ({{ bid.googleReviews || 0 }})
+                                    </small>
+                                  }
+                                  @if ((bid.proBuildRating || bid.rating || 0) > 0) {
+                                    <small>ProBuild {{ (bid.proBuildRating || bid.rating) | number : '1.0-1' }}</small>
+                                  } @else {
+                                    <small>ProBuild N/A</small>
+                                  }
+                                </div>
+                                <div class="bid-experience">
+                                  <small>{{ bid.completedJobs || 0 }} jobs completed</small>
+                                  <small>{{ bid.yearsInBusiness || 0 }} yrs in business</small>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="bid-price-wrap">
+                              <div class="price">{{ bid.amount | money : true : 2 }}</div>
+                              <small [ngClass]="budgetVarianceClass(item, bid)">
+                                {{ budgetVarianceLabel(item, bid) }}
+                              </small>
+                            </div>
+                          </div>
+                          <div class="bid-actions">
+                            <span class="ref"
+                              >Ref: {{ bid.quoteRef || ('Q-' + bid.bidId) }} • Submitted: {{ bid.submittedLabel || 'recently' }}
+                              • Valid until: {{ bid.validUntil || 'TBC' }}</span
+                              >
+                              <button type="button" class="ghost" (click)="toggleBidExpanded(item, bid)">
+                                {{ isBidExpanded(item, bid) ? 'Hide Quote' : 'View Quote' }}
+                              </button>
+                            </div>
+                            @if (isBidExpanded(item, bid)) {
+                              <section class="bid-expanded">
+                                <p class="quoted-scope"><strong>Quoted Scope</strong> {{ bid.quotedScope || 'Quoted scope as submitted.' }}</p>
+                                <div class="contact-grid">
+                                  <p><strong>Contact:</strong> {{ bid.contact || 'Estimator Team' }}</p>
+                                  <p><strong>Phone:</strong> {{ bid.phone || 'N/A' }}</p>
+                                  <p><strong>Email:</strong> {{ bid.email || 'N/A' }}</p>
+                                  <p><strong>Lead:</strong> {{ bid.leadTime }}</p>
+                                  <p><strong>License:</strong> {{ bid.licenseNo || 'N/A' }}</p>
+                                  <p><strong>Insurance:</strong> {{ bid.insuranceCoverage || 'N/A' }}</p>
+                                  <p><strong>Bondable:</strong> {{ bid.bondable ? 'Yes' : 'No' }}</p>
+                                  <p><strong>Warranty:</strong> {{ bid.warranty || 'N/A' }}</p>
+                                </div>
+                                @if (bid.documentUrl) {
+                                  <div>
+                                    <button type="button" class="quote-doc-btn" (click)="openBidDocument(bid.documentUrl, $event)">View / Download PDF</button>
+                                  </div>
+                                }
+                                <div class="inc-exc-grid">
+                                  <div>
+                                    <h6>Inclusions</h6>
+                                    <ul>
+                                      <li *ngFor="let inc of (bid.inclusions || ['Quoted scope as submitted'])">{{ inc }}</li>
+                                    </ul>
+                                  </div>
+                                  <div>
+                                    <h6>Exclusions</h6>
+                                    <ul>
+                                      @for (exc of (bid.exclusions || ['No exclusions specified']); track exc) {
+                                        <li>{{ exc }}</li>
+                                      }
+                                    </ul>
+                                  </div>
+                                </div>
+                              </section>
+                            }
+                            <button type="button" class="award-btn" (click)="toggleAward(item, bid.bidId)">
+                              {{ awardedBidByPackageId[item.id] === bid.bidId ? 'Unaward' : 'Award' }}
+                            </button>
+                          </article>
+                        }
+                      </div>
+                    } @else {
+                      <div class="in-house-upload">
+                        <div class="upload-head">
+                          <lucide-icon name="file-text"></lucide-icon>
+                          <div>
+                            <h5>Upload In-House Quote</h5>
+                            <p>Drag and drop a quote file or browse to upload.</p>
+                          </div>
+                        </div>
+                        <div class="upload-drop-zone" appDragAndDrop (fileDropped)="onInHouseFilesDropped(item, $event)">
+                          <lucide-icon name="upload"></lucide-icon>
+                          <p>Drop quote file here</p>
+                          <small>PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</small>
+                          <label class="upload-btn" [attr.for]="'in-house-file-' + item.id">Browse files</label>
+                          <input
+                            class="upload-input"
+                            [id]="'in-house-file-' + item.id"
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                            (change)="onInHouseFileSelected(item, $event)"
+                            />
+                        </div>
+                        @if (inHouseUploadByPackageId[item.id]; as uploaded) {
+                          <div class="uploaded">
+                            <div>
+                              <strong>{{ uploaded.name }}</strong>
+                              <small>{{ uploaded.uploadedAt | date : 'medium' }}</small>
+                            </div>
+                            <span class="pill awarded">Quote Uploaded</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
               </article>
-            </div>
-          </ng-container>
-
-          <ng-template #inHouseTemplate>
-            <div class="in-house-upload">
-              <div class="upload-head">
-                <lucide-icon name="file-text"></lucide-icon>
-                <div>
-                  <h5>Upload In-House Quote</h5>
-                  <p>Drag and drop a quote file or browse to upload.</p>
-                </div>
-              </div>
-
-              <div class="upload-drop-zone" appDragAndDrop (fileDropped)="onInHouseFilesDropped(item, $event)">
-                <lucide-icon name="upload"></lucide-icon>
-                <p>Drop quote file here</p>
-                <small>PDF, DOC, DOCX, XLS, XLSX, PNG, JPG</small>
-
-                <label class="upload-btn" [attr.for]="'in-house-file-' + item.id">Browse files</label>
-                <input
-                  class="upload-input"
-                  [id]="'in-house-file-' + item.id"
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                  (change)="onInHouseFileSelected(item, $event)"
-                />
-              </div>
-
-              <div class="uploaded" *ngIf="inHouseUploadByPackageId[item.id] as uploaded">
-                <div>
-                  <strong>{{ uploaded.name }}</strong>
-                  <small>{{ uploaded.uploadedAt | date : 'medium' }}</small>
-                </div>
-                <span class="pill awarded">Quote Uploaded</span>
-              </div>
-            </div>
-          </ng-template>
+            }
+          </section>
+        }
+        <section class="trade-award-progress">
+          <div class="row">
+            <span>Items Completed</span>
+            <strong>{{ awardedCount }} / {{ totalCount }}</strong>
+          </div>
+          <div class="track">
+            <div class="fill" [style.width.%]="completionPercent"></div>
+          </div>
+          @if (canProceed) {
+            <p>
+              All awards are complete. You may proceed to Mobilization.
+            </p>
+          } @else {
+            <p>Address every package by awarding or marking N/A to proceed.</p>
+          }
         </section>
-      </article>
-    </section>
+      </section>
+    } @else {
+      <section class="trade-award-loading">
+        <p>Loading trade award data...</p>
+      </section>
+    }
 
-    <section class="trade-award-progress">
-      <div class="row">
-        <span>Items Completed</span>
-        <strong>{{ awardedCount }} / {{ totalCount }}</strong>
+    @if (detailDialog; as detail) {
+      <div class="bid-detail-overlay" (click)="closeBidDialog()">
+        <div class="bid-detail-modal" (click)="$event.stopPropagation()">
+          <header class="detail-header">
+            <div>
+              <h3>{{ detail.bid.bidderName }}</h3>
+              <p>{{ detail.bid.specialty || 'General Trade' }}</p>
+              <div class="detail-chips">
+                @if (detail.bid.insurance) {
+                  <span class="chip-insured">Insured</span>
+                }
+                @if (detail.bid.licenseNo) {
+                  <span class="chip-license">{{ detail.bid.licenseNo }}</span>
+                }
+                @if (detail.bid.bondable) {
+                  <span class="chip-bondable">Bondable</span>
+                }
+                <span class="chip-location">{{ detail.bid.location }}</span>
+              </div>
+            </div>
+            <button type="button" class="ghost" (click)="closeBidDialog()">Close</button>
+          </header>
+          <section class="detail-ratings-row">
+            @if ((detail.bid.googleRating || 0) > 0) {
+              <div class="detail-rating-box">
+                <div class="rating-label google-label">
+                  <svg viewBox="0 0 24 24" class="google-icon" fill="none" aria-hidden="true">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Google Rating
+                </div>
+                <strong>{{ detail.bid.googleRating | number : '1.0-1' }}</strong>
+                <small>Based on {{ detail.bid.googleReviews || 0 }} Google reviews</small>
+              </div>
+            }
+            <div class="detail-rating-box probuild">
+              <div class="rating-label">
+                <lucide-icon name="star"></lucide-icon>
+                ProBuild Rating
+              </div>
+              <strong>{{ (detail.bid.proBuildRating || detail.bid.rating) | number : '1.0-1' }}</strong>
+              <small>Based on {{ detail.bid.proBuildReviews || 0 }} verified project reviews</small>
+            </div>
+          </section>
+          <section class="detail-meta-grid">
+            <p><strong>{{ detail.bid.completedJobs || 0 }}</strong> jobs completed</p>
+            <p><strong>{{ detail.bid.yearsInBusiness || 0 }}</strong> yrs in business</p>
+            <p><strong>Lead:</strong> {{ detail.bid.leadTime }}</p>
+            <p><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
+            <p [ngClass]="budgetVarianceClass(detail.item, detail.bid)">{{ budgetVarianceLabel(detail.item, detail.bid) }}</p>
+          </section>
+          <section class="detail-refs">
+            <p><strong>Ref:</strong> {{ detail.bid.quoteRef || ('Q-' + detail.bid.bidId) }}</p>
+            <p><strong>Submitted:</strong> {{ detail.bid.submittedLabel || 'recently' }}</p>
+            <p><strong>Valid until:</strong> {{ detail.bid.validUntil || 'TBC' }}</p>
+          </section>
+          @if (detail.bid.documentUrl) {
+            <section class="detail-block">
+              <h6>Quote Document</h6>
+              <button type="button" class="quote-doc-btn" (click)="openBidDocument(detail.bid.documentUrl, $event)">View / Download PDF</button>
+            </section>
+          }
+          <section class="detail-block">
+            <h6>Contractor Details</h6>
+            <p><strong>Contact:</strong> {{ detail.bid.contact || 'Estimator Team' }}</p>
+            <p><strong>Phone:</strong> {{ detail.bid.phone || 'N/A' }}</p>
+            <p><strong>Email:</strong> {{ detail.bid.email || 'N/A' }}</p>
+          </section>
+          <section class="detail-block">
+            <h6>Compliance</h6>
+            <p><strong>License:</strong> {{ detail.bid.licenseNo || 'N/A' }} (Active)</p>
+            <p><strong>Insurance:</strong> {{ detail.bid.insuranceCoverage || 'N/A' }}</p>
+            <p><strong>Bondable:</strong> {{ detail.bid.bondable ? 'Yes' : 'No' }}</p>
+            <p><strong>Warranty:</strong> {{ detail.bid.warranty || 'N/A' }}</p>
+          </section>
+          <section class="detail-block">
+            <h6>Quoted Scope</h6>
+            <p>{{ detail.bid.quotedScope || 'Quoted scope as submitted.' }}</p>
+          </section>
+          <section class="detail-two-col">
+            <div class="detail-block">
+              <h6>Inclusions</h6>
+              <ul>
+                <li *ngFor="let inc of (detail.bid.inclusions || ['Quoted scope as submitted'])">{{ inc }}</li>
+              </ul>
+            </div>
+            <div class="detail-block">
+              <h6>Exclusions</h6>
+              <ul>
+                @for (exc of (detail.bid.exclusions || ['No exclusions specified']); track exc) {
+                  <li>{{ exc }}</li>
+                }
+              </ul>
+            </div>
+          </section>
+          <section class="detail-cost-summary">
+            <h6>Cost Summary</h6>
+            <p><span>Quoted Amount</span><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
+            <p><span>Your Budget</span><strong>{{ itemBudget(detail.item) | money : true : 2 }}</strong></p>
+            <p>
+              <span>Variance</span>
+              <strong [ngClass]="budgetVarianceClass(detail.item, detail.bid)">
+                {{ budgetVarianceAmount(detail.item, detail.bid) | money : true : 2 }}
+              </strong>
+            </p>
+            <p><span>Lead Time</span><strong>{{ detail.bid.leadTime }}</strong></p>
+          </section>
+        </div>
       </div>
-      <div class="track">
-        <div class="fill" [style.width.%]="completionPercent"></div>
-      </div>
-      <p *ngIf="canProceed; else pendingTemplate">
-        All awards are complete. You may proceed to Mobilization.
-      </p>
-      <ng-template #pendingTemplate>
-        <p>Address every package by awarding or marking N/A to proceed.</p>
-      </ng-template>
-    </section>
-  </section>
+    }
 
-  <div class="bid-detail-overlay" *ngIf="detailDialog as detail" (click)="closeBidDialog()">
-    <div class="bid-detail-modal" (click)="$event.stopPropagation()">
-      <header class="detail-header">
-        <div>
-          <h3>{{ detail.bid.bidderName }}</h3>
-          <p>{{ detail.bid.specialty || 'General Trade' }}</p>
-          <div class="detail-chips">
-            <span class="chip-insured" *ngIf="detail.bid.insurance">Insured</span>
-            <span class="chip-license" *ngIf="detail.bid.licenseNo">{{ detail.bid.licenseNo }}</span>
-            <span class="chip-bondable" *ngIf="detail.bid.bondable">Bondable</span>
-            <span class="chip-location">{{ detail.bid.location }}</span>
-          </div>
-        </div>
-        <button type="button" class="ghost" (click)="closeBidDialog()">Close</button>
-      </header>
-
-      <section class="detail-ratings-row">
-        <div class="detail-rating-box" *ngIf="(detail.bid.googleRating || 0) > 0">
-          <div class="rating-label google-label">
-            <svg viewBox="0 0 24 24" class="google-icon" fill="none" aria-hidden="true">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Google Rating
-          </div>
-          <strong>{{ detail.bid.googleRating | number : '1.0-1' }}</strong>
-          <small>Based on {{ detail.bid.googleReviews || 0 }} Google reviews</small>
-        </div>
-        <div class="detail-rating-box probuild">
-          <div class="rating-label">
-            <lucide-icon name="star"></lucide-icon>
-            ProBuild Rating
-          </div>
-          <strong>{{ (detail.bid.proBuildRating || detail.bid.rating) | number : '1.0-1' }}</strong>
-          <small>Based on {{ detail.bid.proBuildReviews || 0 }} verified project reviews</small>
-        </div>
-      </section>
-
-      <section class="detail-meta-grid">
-        <p><strong>{{ detail.bid.completedJobs || 0 }}</strong> jobs completed</p>
-        <p><strong>{{ detail.bid.yearsInBusiness || 0 }}</strong> yrs in business</p>
-        <p><strong>Lead:</strong> {{ detail.bid.leadTime }}</p>
-        <p><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
-        <p [ngClass]="budgetVarianceClass(detail.item, detail.bid)">{{ budgetVarianceLabel(detail.item, detail.bid) }}</p>
-      </section>
-
-      <section class="detail-refs">
-        <p><strong>Ref:</strong> {{ detail.bid.quoteRef || ('Q-' + detail.bid.bidId) }}</p>
-        <p><strong>Submitted:</strong> {{ detail.bid.submittedLabel || 'recently' }}</p>
-        <p><strong>Valid until:</strong> {{ detail.bid.validUntil || 'TBC' }}</p>
-      </section>
-
-      <section class="detail-block" *ngIf="detail.bid.documentUrl">
-        <h6>Quote Document</h6>
-        <button type="button" class="quote-doc-btn" (click)="openBidDocument(detail.bid.documentUrl, $event)">View / Download PDF</button>
-      </section>
-
-      <section class="detail-block">
-        <h6>Contractor Details</h6>
-        <p><strong>Contact:</strong> {{ detail.bid.contact || 'Estimator Team' }}</p>
-        <p><strong>Phone:</strong> {{ detail.bid.phone || 'N/A' }}</p>
-        <p><strong>Email:</strong> {{ detail.bid.email || 'N/A' }}</p>
-      </section>
-
-      <section class="detail-block">
-        <h6>Compliance</h6>
-        <p><strong>License:</strong> {{ detail.bid.licenseNo || 'N/A' }} (Active)</p>
-        <p><strong>Insurance:</strong> {{ detail.bid.insuranceCoverage || 'N/A' }}</p>
-        <p><strong>Bondable:</strong> {{ detail.bid.bondable ? 'Yes' : 'No' }}</p>
-        <p><strong>Warranty:</strong> {{ detail.bid.warranty || 'N/A' }}</p>
-      </section>
-
-      <section class="detail-block">
-        <h6>Quoted Scope</h6>
-        <p>{{ detail.bid.quotedScope || 'Quoted scope as submitted.' }}</p>
-      </section>
-
-      <section class="detail-two-col">
-        <div class="detail-block">
-          <h6>Inclusions</h6>
-          <ul>
-            <li *ngFor="let inc of (detail.bid.inclusions || ['Quoted scope as submitted'])">{{ inc }}</li>
-          </ul>
-        </div>
-        <div class="detail-block">
-          <h6>Exclusions</h6>
-          <ul>
-            <li *ngFor="let exc of (detail.bid.exclusions || ['No exclusions specified'])">{{ exc }}</li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="detail-cost-summary">
-        <h6>Cost Summary</h6>
-        <p><span>Quoted Amount</span><strong>{{ detail.bid.amount | money : true : 2 }}</strong></p>
-        <p><span>Your Budget</span><strong>{{ itemBudget(detail.item) | money : true : 2 }}</strong></p>
-        <p>
-          <span>Variance</span>
-          <strong [ngClass]="budgetVarianceClass(detail.item, detail.bid)">
-            {{ budgetVarianceAmount(detail.item, detail.bid) | money : true : 2 }}
-          </strong>
-        </p>
-        <p><span>Lead Time</span><strong>{{ detail.bid.leadTime }}</strong></p>
-      </section>
-    </div>
   </div>
-
-  <ng-template #loadingTemplate>
-    <section class="trade-award-loading">
-      <p>Loading trade award data...</p>
-    </section>
-  </ng-template>
-</div>
 

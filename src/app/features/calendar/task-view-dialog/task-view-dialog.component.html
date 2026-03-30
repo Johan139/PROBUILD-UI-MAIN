@@ -28,41 +28,54 @@
 
     <h3>Daily Construction & Logistics Plan</h3>
 
-    <div class="daily-logistics-container" *ngIf="data.dailyLogistics && data.dailyLogistics.length > 0; else noData">
-      <div class="logistics-item" *ngFor="let entry of data.dailyLogistics">
-        <div class="logistics-header">
-          <span class="logistics-date">{{ entry.date }} ({{ entry.day }})</span>
-        </div>
-        <div class="logistics-content">
-          <div class="content-section" *ngIf="entry.tasks">
-            <span class="section-label">Tasks:</span>
-            <span class="section-value">{{ entry.tasks }}</span>
+    @if (data.dailyLogistics && data.dailyLogistics.length > 0) {
+      <div class="daily-logistics-container">
+        @for (entry of data.dailyLogistics; track entry) {
+          <div class="logistics-item">
+            <div class="logistics-header">
+              <span class="logistics-date">{{ entry.date }} ({{ entry.day }})</span>
+            </div>
+            <div class="logistics-content">
+              @if (entry.tasks) {
+                <div class="content-section">
+                  <span class="section-label">Tasks:</span>
+                  <span class="section-value">{{ entry.tasks }}</span>
+                </div>
+              }
+              @if (entry.materials) {
+                <div class="content-section">
+                  <span class="section-label">Materials:</span>
+                  <span class="section-value">{{ entry.materials }}</span>
+                </div>
+              }
+              @if (entry.equipment) {
+                <div class="content-section">
+                  <span class="section-label">Equipment:</span>
+                  <span class="section-value">{{ entry.equipment }}</span>
+                </div>
+              }
+              @if (entry.personnel) {
+                <div class="content-section">
+                  <span class="section-label">Personnel:</span>
+                  <span class="section-value">{{ entry.personnel }}</span>
+                </div>
+              }
+              @if (entry.milestones) {
+                <div class="content-section milestone">
+                  <span class="section-label">Milestone:</span>
+                  <span class="section-value">{{ entry.milestones }}</span>
+                </div>
+              }
+            </div>
           </div>
-          <div class="content-section" *ngIf="entry.materials">
-            <span class="section-label">Materials:</span>
-            <span class="section-value">{{ entry.materials }}</span>
-          </div>
-          <div class="content-section" *ngIf="entry.equipment">
-            <span class="section-label">Equipment:</span>
-            <span class="section-value">{{ entry.equipment }}</span>
-          </div>
-          <div class="content-section" *ngIf="entry.personnel">
-            <span class="section-label">Personnel:</span>
-            <span class="section-value">{{ entry.personnel }}</span>
-          </div>
-          <div class="content-section milestone" *ngIf="entry.milestones">
-            <span class="section-label">Milestone:</span>
-            <span class="section-value">{{ entry.milestones }}</span>
-          </div>
-        </div>
+        }
       </div>
-    </div>
-
-    <ng-template #noData>
+    } @else {
       <div class="no-data-message">
         No daily logistics data available for this task's timeframe.
       </div>
-    </ng-template>
+    }
+
   </div>
 
   <div class="modal-actions">

@@ -3,21 +3,31 @@
   <div class="dialog-header">
     <div class="header-left">
       <div class="status-icon">
-        <lucide-angular
-          [img]="CheckCircle2"
-          class="icon-success"
-          *ngIf="task.status?.toLowerCase() === 'completed'">
-        </lucide-angular>
-        <lucide-angular
-          [img]="PlayCircle"
-          class="icon-warning"
-          *ngIf="task.status?.toLowerCase() === 'in-progress' || task.status?.toLowerCase() === 'active'">
-        </lucide-angular>
-        <div class="pending-circle" *ngIf="task.status?.toLowerCase() === 'pending' || !task.status"></div>
+        @if (task.status?.toLowerCase() === 'completed') {
+          <lucide-angular
+            [img]="CheckCircle2"
+            class="icon-success"
+            >
+          </lucide-angular>
+        }
+        @if (task.status?.toLowerCase() === 'in-progress' || task.status?.toLowerCase() === 'active') {
+          <lucide-angular
+            [img]="PlayCircle"
+            class="icon-warning"
+            >
+          </lucide-angular>
+        }
+        @if (task.status?.toLowerCase() === 'pending' || !task.status) {
+          <div class="pending-circle"></div>
+        }
       </div>
       <div>
-        <h2 class="task-title" *ngIf="!editMode">{{ task.task }}</h2>
-        <input *ngIf="editMode" [(ngModel)]="task.task" class="edit-input-lg" placeholder="Task Name">
+        @if (!editMode) {
+          <h2 class="task-title">{{ task.task }}</h2>
+        }
+        @if (editMode) {
+          <input [(ngModel)]="task.task" class="edit-input-lg" placeholder="Task Name">
+        }
 
         <div class="task-meta">
           <span class="badge">{{ task.status || 'Pending' }}</span>
@@ -37,8 +47,12 @@
     <div class="location-row">
       <lucide-angular [img]="MapPin" class="icon-location"></lucide-angular>
       <span class="label">Location:</span>
-      <span *ngIf="!editMode">{{ task.location }}</span>
-      <input *ngIf="editMode" [(ngModel)]="task.location" class="edit-input-sm" placeholder="Location">
+      @if (!editMode) {
+        <span>{{ task.location }}</span>
+      }
+      @if (editMode) {
+        <input [(ngModel)]="task.location" class="edit-input-sm" placeholder="Location">
+      }
     </div>
 
     <mat-tab-group>
@@ -48,39 +62,55 @@
           <!-- Description -->
           <div class="section">
             <h4 class="section-title">Work Description</h4>
-            <div class="info-box" *ngIf="!editMode">
-              {{ task.description }}
-            </div>
-            <textarea *ngIf="editMode" [(ngModel)]="task.description" class="edit-textarea" rows="4"></textarea>
+            @if (!editMode) {
+              <div class="info-box">
+                {{ task.description }}
+              </div>
+            }
+            @if (editMode) {
+              <textarea [(ngModel)]="task.description" class="edit-textarea" rows="4"></textarea>
+            }
           </div>
 
           <!-- Materials -->
           <div class="section">
             <h4 class="section-title">Materials Required</h4>
-            <div class="materials-grid" *ngIf="!editMode">
-              <div class="material-item" *ngFor="let mat of task.materials">
-                <div class="dot"></div>
-                <span>{{ mat }}</span>
+            @if (!editMode) {
+              <div class="materials-grid">
+                @for (mat of task.materials; track mat) {
+                  <div class="material-item">
+                    <div class="dot"></div>
+                    <span>{{ mat }}</span>
+                  </div>
+                }
               </div>
-            </div>
-            <div class="materials-edit" *ngIf="editMode">
-              <div class="material-input-row" *ngFor="let mat of task.materials; let i = index; trackBy: trackByIndex">
-                <input [(ngModel)]="task.materials![i]" class="edit-input-sm">
-                <button mat-icon-button color="warn" (click)="removeMaterial(i)">
-                  <mat-icon>delete</mat-icon>
-                </button>
+            }
+            @if (editMode) {
+              <div class="materials-edit">
+                @for (mat of task.materials; track trackByIndex(i, mat); let i = $index) {
+                  <div class="material-input-row">
+                    <input [(ngModel)]="task.materials![i]" class="edit-input-sm">
+                    <button mat-icon-button color="warn" (click)="removeMaterial(i)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+                <button mat-button color="primary" (click)="addMaterial()">+ Add Material</button>
               </div>
-              <button mat-button color="primary" (click)="addMaterial()">+ Add Material</button>
-            </div>
+            }
           </div>
 
           <!-- Notes -->
           <div class="section">
             <h4 class="section-title">Notes</h4>
-            <div class="info-box italic" *ngIf="!editMode">
-              {{ task.notes || 'No notes added.' }}
-            </div>
-            <textarea *ngIf="editMode" [(ngModel)]="task.notes" class="edit-textarea" rows="3" placeholder="Add notes..."></textarea>
+            @if (!editMode) {
+              <div class="info-box italic">
+                {{ task.notes || 'No notes added.' }}
+              </div>
+            }
+            @if (editMode) {
+              <textarea [(ngModel)]="task.notes" class="edit-textarea" rows="3" placeholder="Add notes..."></textarea>
+            }
           </div>
         </div>
       </mat-tab>
@@ -89,11 +119,13 @@
       <mat-tab label="Checklist">
         <div class="tab-body">
           <div class="checklist-container">
-            <div class="checklist-item" *ngFor="let item of task.checklist">
-              <mat-checkbox [(ngModel)]="item.done" [disabled]="!editMode && !data.isOwner">
-                <span [class.done]="item.done">{{ item.item }}</span>
-              </mat-checkbox>
-            </div>
+            @for (item of task.checklist; track item) {
+              <div class="checklist-item">
+                <mat-checkbox [(ngModel)]="item.done" [disabled]="!editMode && !data.isOwner">
+                  <span [class.done]="item.done">{{ item.item }}</span>
+                </mat-checkbox>
+              </div>
+            }
           </div>
         </div>
       </mat-tab>
@@ -102,19 +134,23 @@
       <mat-tab label="Photos">
         <div class="tab-body">
           <div class="photos-grid">
-            <div class="photo-card" *ngFor="let photo of task.photos">
-              <div class="photo-placeholder">
-                <lucide-angular [img]="Camera" class="icon-camera-lg"></lucide-angular>
+            @for (photo of task.photos; track photo) {
+              <div class="photo-card">
+                <div class="photo-placeholder">
+                  <lucide-angular [img]="Camera" class="icon-camera-lg"></lucide-angular>
+                </div>
+                <div class="photo-caption">
+                  <span class="caption">{{ photo.caption }}</span>
+                  <span class="date">{{ photo.date }}</span>
+                </div>
               </div>
-              <div class="photo-caption">
-                <span class="caption">{{ photo.caption }}</span>
-                <span class="date">{{ photo.date }}</span>
+            }
+            @if (!task.photos?.length) {
+              <div class="no-photos">
+                <lucide-angular [img]="Camera" class="icon-camera-xl"></lucide-angular>
+                <p>No photos uploaded yet.</p>
               </div>
-            </div>
-            <div class="no-photos" *ngIf="!task.photos?.length">
-              <lucide-angular [img]="Camera" class="icon-camera-xl"></lucide-angular>
-              <p>No photos uploaded yet.</p>
-            </div>
+            }
           </div>
         </div>
       </mat-tab>
@@ -130,15 +166,21 @@
       </span>
     </div>
     <div class="footer-right">
-      <button mat-button class="btn btn-secondary" type="button" (click)="toggleEdit()" *ngIf="data.isOwner">
-        {{ editMode ? 'Cancel' : 'Edit' }}
-      </button>
-      <button mat-button class="btn btn-primary" type="button" (click)="save()" *ngIf="editMode">
-        Save Changes
-      </button>
-      <button mat-button class="btn btn-secondary" type="button" (click)="close()" *ngIf="!editMode">
-        Close
-      </button>
+      @if (data.isOwner) {
+        <button mat-button class="btn btn-secondary" type="button" (click)="toggleEdit()">
+          {{ editMode ? 'Cancel' : 'Edit' }}
+        </button>
+      }
+      @if (editMode) {
+        <button mat-button class="btn btn-primary" type="button" (click)="save()">
+          Save Changes
+        </button>
+      }
+      @if (!editMode) {
+        <button mat-button class="btn btn-secondary" type="button" (click)="close()">
+          Close
+        </button>
+      }
     </div>
   </div>
 </div>

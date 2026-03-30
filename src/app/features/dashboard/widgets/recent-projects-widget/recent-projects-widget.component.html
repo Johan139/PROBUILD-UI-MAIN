@@ -11,7 +11,7 @@
           mat-icon-button
           (click)="toggleProjectView('grid')"
           [class.active]="projectView === 'grid'"
-        >
+          >
           <mat-icon>grid_view</mat-icon>
         </button>
 
@@ -19,7 +19,7 @@
           mat-icon-button
           (click)="toggleProjectView('list')"
           [class.active]="projectView === 'list'"
-        >
+          >
           <mat-icon>list</mat-icon>
         </button>
       </div>
@@ -27,44 +27,43 @@
 
     <mat-card-content>
       <!-- GRID VIEW -->
-      <ng-container *ngIf="projectView === 'grid'">
+      @if (projectView === 'grid') {
         <div class="carousel-controls">
           <button
             mat-icon-button
             (click)="prevProject()"
             [disabled]="currentIndex === 0"
-          >
+            >
             <mat-icon>chevron_left</mat-icon>
           </button>
-
           <button
             mat-icon-button
             (click)="nextProject()"
             [disabled]="currentIndex >= projects.length - 5"
-          >
+            >
             <mat-icon>chevron_right</mat-icon>
           </button>
         </div>
-
         <div class="projects-carousel">
-          <app-project-card
-            *ngFor="let project of visibleProjects"
-            [project]="project"
-            (onView)="loadJob($event)"
-            (onArchive)="archiveJob($event)"
-            (onUploadThumbnail)="uploadThumbnail($event)"
-          ></app-project-card>
+          @for (project of visibleProjects; track project) {
+            <app-project-card
+              [project]="project"
+              (onView)="loadJob($event)"
+              (onArchive)="archiveJob($event)"
+              (onUploadThumbnail)="uploadThumbnail($event)"
+            ></app-project-card>
+          }
         </div>
-      </ng-container>
+      }
 
       <!-- LIST VIEW -->
-      <ng-container *ngIf="projectView === 'list'">
+      @if (projectView === 'list') {
         <app-projects-table
           [projects]="projects"
           (onView)="loadJob($event)"
           (onArchive)="archiveJob($event)"
         ></app-projects-table>
-      </ng-container>
+      }
     </mat-card-content>
   </mat-card>
 </section>

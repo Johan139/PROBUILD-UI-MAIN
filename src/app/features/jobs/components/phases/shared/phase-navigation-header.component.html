@@ -1,21 +1,22 @@
 <div class="phase-nav-shell">
   <div class="phase-nav-row" [class.no-back]="!showBack">
-    <button
-      *ngIf="showBack"
-      type="button"
-      class="phase-link-btn"
-      (click)="back.emit()"
-    >
-      <lucide-icon name="chevron-left" class="mini-icon"></lucide-icon>
-      <span>{{ backLabel }}</span>
-    </button>
+    @if (showBack) {
+      <button
+        type="button"
+        class="phase-link-btn"
+        (click)="back.emit()"
+        >
+        <lucide-icon name="chevron-left" class="mini-icon"></lucide-icon>
+        <span>{{ backLabel }}</span>
+      </button>
+    }
 
     <div class="phase-nav-actions">
       <button
         type="button"
         class="phase-action-btn danger"
         (click)="discard.emit()"
-      >
+        >
         <lucide-icon name="trash-2" class="mini-icon"></lucide-icon>
         <span>{{ discardLabel }}</span>
       </button>
@@ -25,7 +26,7 @@
           type="button"
           class="phase-action-btn warning"
           (click)="toggleExportMenu()"
-        >
+          >
           <lucide-icon name="upload" class="mini-icon"></lucide-icon>
           <span>{{ exportLabel }}</span>
           <lucide-icon
@@ -35,232 +36,229 @@
           ></lucide-icon>
         </button>
 
-        <div class="phase-export-menu" *ngIf="showExportMenu">
-          <p class="export-menu-title">Reports &amp; Documents</p>
-
-          <button
-            type="button"
-            class="export-item"
-            (click)="requestDocuments()"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="folder" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">View Documents</span>
-              <span class="export-item-desc">Uploaded plans and files</span>
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
-
-          <button
-            type="button"
-            class="export-item"
-            [disabled]="isReportLoading"
-            (click)="request('fullReport')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="file-text" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">{{
-                isReportLoading ? "Loading..." : "View Full Report"
-              }}</span>
-              <span class="export-item-desc">Complete project analysis</span>
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
-
-          <button
-            type="button"
-            class="export-item"
-            (click)="request('billOfMaterials')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="file-text" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">View Bill of Materials</span>
-              <span class="export-item-desc"
-                >Itemized material and labor list</span
+        @if (showExportMenu) {
+          <div class="phase-export-menu">
+            <p class="export-menu-title">Reports &amp; Documents</p>
+            <button
+              type="button"
+              class="export-item"
+              (click)="requestDocuments()"
               >
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
-
-          <button
-            type="button"
-            class="export-item"
-            [disabled]="isReportLoading"
-            (click)="request('executiveSummary')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="target" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">{{
-                isReportLoading ? "Loading..." : "View Executive Summary"
-              }}</span>
-              <span class="export-item-desc"
-                >Leadership overview and key risks</span
+              <span class="export-item-icon"
+                ><lucide-icon name="folder" class="mini-icon"></lucide-icon
+              ></span>
+              <span class="export-item-copy">
+                <span class="export-item-label">View Documents</span>
+                <span class="export-item-desc">Uploaded plans and files</span>
+              </span>
+              <lucide-icon
+                name="chevron-right"
+                class="mini-icon export-item-arrow"
+              ></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="export-item"
+              [disabled]="isReportLoading"
+              (click)="request('fullReport')"
               >
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
-
-          <button
-            type="button"
-            class="export-item"
-            *ngIf="showEnvironmentalReport"
-            [disabled]="isReportLoading"
-            (click)="request('environmentalReport')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="map-pin" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">{{
-                isReportLoading ? "Loading..." : "View Environmental Report"
-              }}</span>
-              <span class="export-item-desc"
-                >Lifecycle and environmental insights</span
+              <span class="export-item-icon"
+                ><lucide-icon name="file-text" class="mini-icon"></lucide-icon
+              ></span>
+              <span class="export-item-copy">
+                <span class="export-item-label">{{
+                  isReportLoading ? "Loading..." : "View Full Report"
+                }}</span>
+                <span class="export-item-desc">Complete project analysis</span>
+              </span>
+              <lucide-icon
+                name="chevron-right"
+                class="mini-icon export-item-arrow"
+              ></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="export-item"
+              (click)="request('billOfMaterials')"
               >
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
+              <span class="export-item-icon"
+                ><lucide-icon name="file-text" class="mini-icon"></lucide-icon
+              ></span>
+              <span class="export-item-copy">
+                <span class="export-item-label">View Bill of Materials</span>
+                <span class="export-item-desc"
+                  >Itemized material and labor list</span
+                  >
+                </span>
+                <lucide-icon
+                  name="chevron-right"
+                  class="mini-icon export-item-arrow"
+                ></lucide-icon>
+              </button>
+              <button
+                type="button"
+                class="export-item"
+                [disabled]="isReportLoading"
+                (click)="request('executiveSummary')"
+                >
+                <span class="export-item-icon"
+                  ><lucide-icon name="target" class="mini-icon"></lucide-icon
+                ></span>
+                <span class="export-item-copy">
+                  <span class="export-item-label">{{
+                    isReportLoading ? "Loading..." : "View Executive Summary"
+                  }}</span>
+                  <span class="export-item-desc"
+                    >Leadership overview and key risks</span
+                    >
+                  </span>
+                  <lucide-icon
+                    name="chevron-right"
+                    class="mini-icon export-item-arrow"
+                  ></lucide-icon>
+                </button>
+                @if (showEnvironmentalReport) {
+                  <button
+                    type="button"
+                    class="export-item"
+                    [disabled]="isReportLoading"
+                    (click)="request('environmentalReport')"
+                    >
+                    <span class="export-item-icon"
+                      ><lucide-icon name="map-pin" class="mini-icon"></lucide-icon
+                    ></span>
+                    <span class="export-item-copy">
+                      <span class="export-item-label">{{
+                        isReportLoading ? "Loading..." : "View Environmental Report"
+                      }}</span>
+                      <span class="export-item-desc"
+                        >Lifecycle and environmental insights</span
+                        >
+                      </span>
+                      <lucide-icon
+                        name="chevron-right"
+                        class="mini-icon export-item-arrow"
+                      ></lucide-icon>
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="export-item"
+                    [disabled]="isReportLoading"
+                    (click)="request('procurementSchedule')"
+                    >
+                    <span class="export-item-icon"
+                      ><lucide-icon name="clock" class="mini-icon"></lucide-icon
+                    ></span>
+                    <span class="export-item-copy">
+                      <span class="export-item-label">{{
+                        isReportLoading ? "Loading..." : "View Procurement Schedule"
+                      }}</span>
+                      <span class="export-item-desc">Long-lead ordering plan</span>
+                    </span>
+                    <lucide-icon
+                      name="chevron-right"
+                      class="mini-icon export-item-arrow"
+                    ></lucide-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="export-item"
+                    [disabled]="isReportLoading"
+                    (click)="request('dailyConstructionPlan')"
+                    >
+                    <span class="export-item-icon"
+                      ><lucide-icon name="dollar-sign" class="mini-icon"></lucide-icon
+                    ></span>
+                    <span class="export-item-copy">
+                      <span class="export-item-label">{{
+                        isReportLoading ? "Loading..." : "View Daily Construction Plan"
+                      }}</span>
+                      <span class="export-item-desc"
+                        >Daily sequencing and logistics</span
+                        >
+                      </span>
+                      <lucide-icon
+                        name="chevron-right"
+                        class="mini-icon export-item-arrow"
+                      ></lucide-icon>
+                    </button>
+                  </div>
+                }
+              </div>
 
-          <button
-            type="button"
-            class="export-item"
-            [disabled]="isReportLoading"
-            (click)="request('procurementSchedule')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="clock" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">{{
-                isReportLoading ? "Loading..." : "View Procurement Schedule"
-              }}</span>
-              <span class="export-item-desc">Long-lead ordering plan</span>
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
+              <button
+                type="button"
+                class="phase-action-btn primary"
+                [class.is-disabled]="proceedDisabled"
+                [attr.aria-disabled]="proceedDisabled"
+                (click)="onProceedClick()"
+                >
+                <span>{{ proceedLabel }}</span>
+                <lucide-icon
+                  name="chevron-right"
+                  class="mini-icon trailing"
+                ></lucide-icon>
+              </button>
 
-          <button
-            type="button"
-            class="export-item"
-            [disabled]="isReportLoading"
-            (click)="request('dailyConstructionPlan')"
-          >
-            <span class="export-item-icon"
-              ><lucide-icon name="dollar-sign" class="mini-icon"></lucide-icon
-            ></span>
-            <span class="export-item-copy">
-              <span class="export-item-label">{{
-                isReportLoading ? "Loading..." : "View Daily Construction Plan"
-              }}</span>
-              <span class="export-item-desc"
-                >Daily sequencing and logistics</span
-              >
-            </span>
-            <lucide-icon
-              name="chevron-right"
-              class="mini-icon export-item-arrow"
-            ></lucide-icon>
-          </button>
-        </div>
-      </div>
+              @if (showDevProceedButton) {
+                <button
+                  type="button"
+                  class="phase-action-btn dev-primary"
+                  (click)="forceProceed()"
+                  >
+                  <lucide-icon name="chevron-right" class="mini-icon"></lucide-icon>
+                  <span>Dev: Next Phase</span>
+                </button>
+              }
+            </div>
+          </div>
 
-      <button
-        type="button"
-        class="phase-action-btn primary"
-        [class.is-disabled]="proceedDisabled"
-        [attr.aria-disabled]="proceedDisabled"
-        (click)="onProceedClick()"
-      >
-        <span>{{ proceedLabel }}</span>
-        <lucide-icon
-          name="chevron-right"
-          class="mini-icon trailing"
-        ></lucide-icon>
-      </button>
+          <div class="project-details-card">
+            <div class="project-details-head">
+              <p>Project Details</p>
+              <span>{{ stageLabel }}</span>
+            </div>
+            <div class="project-details-grid">
+              <article class="project-detail-item">
+                <div class="project-detail-icon">
+                  <lucide-icon name="folder-open"></lucide-icon>
+                </div>
+                <div>
+                  <small>Project</small>
+                  <strong>{{ projectName }}</strong>
+                </div>
+              </article>
 
-      <button
-        *ngIf="showDevProceedButton"
-        type="button"
-        class="phase-action-btn dev-primary"
-        (click)="forceProceed()"
-      >
-        <lucide-icon name="chevron-right" class="mini-icon"></lucide-icon>
-        <span>Dev: Next Phase</span>
-      </button>
-    </div>
-  </div>
+              <article class="project-detail-item">
+                <div class="project-detail-icon">
+                  <lucide-icon name="user"></lucide-icon>
+                </div>
+                <div>
+                  <small>Client</small>
+                  <strong>{{ clientName || "Client" }}</strong>
+                </div>
+              </article>
 
-  <div class="project-details-card">
-    <div class="project-details-head">
-      <p>Project Details</p>
-      <span>{{ stageLabel }}</span>
-    </div>
-    <div class="project-details-grid">
-      <article class="project-detail-item">
-        <div class="project-detail-icon">
-          <lucide-icon name="folder-open"></lucide-icon>
-        </div>
-        <div>
-          <small>Project</small>
-          <strong>{{ projectName }}</strong>
-        </div>
-      </article>
+              <article class="project-detail-item">
+                <div class="project-detail-icon">
+                  <lucide-icon name="map-pin"></lucide-icon>
+                </div>
+                <div>
+                  <small>Address</small>
+                  <strong>{{ projectAddress || "Address pending" }}</strong>
+                </div>
+              </article>
 
-      <article class="project-detail-item">
-        <div class="project-detail-icon">
-          <lucide-icon name="user"></lucide-icon>
+              <article class="project-detail-item">
+                <div class="project-detail-icon">
+                  <lucide-icon name="ruler"></lucide-icon>
+                </div>
+                <div>
+                  <small>Size</small>
+                  <strong>{{ projectSizeSqFt }} sq ft</strong>
+                </div>
+              </article>
+            </div>
+          </div>
         </div>
-        <div>
-          <small>Client</small>
-          <strong>{{ clientName || "Client" }}</strong>
-        </div>
-      </article>
-
-      <article class="project-detail-item">
-        <div class="project-detail-icon">
-          <lucide-icon name="map-pin"></lucide-icon>
-        </div>
-        <div>
-          <small>Address</small>
-          <strong>{{ projectAddress || "Address pending" }}</strong>
-        </div>
-      </article>
-
-      <article class="project-detail-item">
-        <div class="project-detail-icon">
-          <lucide-icon name="ruler"></lucide-icon>
-        </div>
-        <div>
-          <small>Size</small>
-          <strong>{{ projectSizeSqFt }} sq ft</strong>
-        </div>
-      </article>
-    </div>
-  </div>
-</div>

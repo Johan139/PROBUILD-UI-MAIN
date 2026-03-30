@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { PdfViewerComponent } from '../pdf-viewer.component';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { BlueprintDocument } from '../pdf-viewer.component';
 import { PdfViewerStateService } from '../../../services/pdf-viewer-state.service';
@@ -8,7 +8,7 @@ import { PdfViewerStateService } from '../../../services/pdf-viewer-state.servic
 @Component({
   selector: 'app-pdf-viewer-popout',
   standalone: true,
-  imports: [CommonModule, PdfViewerComponent],
+  imports: [PdfViewerComponent],
   template: `
     <div class="popout-container">
       <app-pdf-viewer

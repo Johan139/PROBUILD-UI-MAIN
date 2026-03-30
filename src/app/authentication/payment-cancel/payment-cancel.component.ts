@@ -5,12 +5,12 @@ import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-payment-cancel',
   standalone: true, // ✅ NOW this component supports imports
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
+  imports: [MatCardModule, MatIconModule, MatButtonModule],
   templateUrl: './payment-cancel.component.html',
   styleUrls: ['./payment-cancel.component.scss'],
 })

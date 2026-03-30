@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,14 +25,13 @@ export interface NoteEntryDialogResult {
   selector: 'app-note-entry-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
-  ],
+    MatSelectModule
+],
   template: `
     <h2 mat-dialog-title>{{ data.title || 'Add Note' }}</h2>
     <mat-dialog-content>

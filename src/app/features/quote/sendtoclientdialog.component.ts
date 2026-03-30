@@ -53,7 +53,7 @@ export interface SendToClientDialogResult {
         <mat-icon class="header-icon">send</mat-icon>
         <h2 mat-dialog-title>Send {{ docTypeLabel }} to Client</h2>
       </div>
-
+    
       <mat-dialog-content>
         <div class="quote-summary">
           <div class="summary-item">
@@ -67,7 +67,7 @@ export interface SendToClientDialogResult {
             }}</span>
           </div>
         </div>
-
+    
         <form [formGroup]="form" class="send-form">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Client Email</mat-label>
@@ -76,81 +76,89 @@ export interface SendToClientDialogResult {
               type="email"
               formControlName="clientEmail"
               placeholder="client@example.com"
-            />
-            <mat-icon matSuffix>email</mat-icon>
-            <mat-error *ngIf="form.get('clientEmail')?.hasError('required')">
-              Email is required
-            </mat-error>
-            <mat-error *ngIf="form.get('clientEmail')?.hasError('email')">
-              Please enter a valid email address
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Client Name (Optional)</mat-label>
-            <input
-              matInput
-              type="text"
-              formControlName="clientName"
-              placeholder="John Doe"
-            />
-            <mat-icon matSuffix>person</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Personal Message (Optional)</mat-label>
-            <textarea
-              matInput
-              formControlName="personalMessage"
-              rows="4"
-              placeholder="Add a personal note to your client..."
-            ></textarea>
-            <mat-hint align="end"
-              >{{
-                form.get('personalMessage')?.value?.length || 0
-              }}/500</mat-hint
-            >
-          </mat-form-field>
-
-          <div class="checkbox-row">
-            <mat-checkbox formControlName="attachPdf" color="primary">
-              Attach PDF copy of {{ docTypeLabel.toLowerCase() }}
-            </mat-checkbox>
+              />
+              <mat-icon matSuffix>email</mat-icon>
+              @if (form.get('clientEmail')?.hasError('required')) {
+                <mat-error>
+                  Email is required
+                </mat-error>
+              }
+              @if (form.get('clientEmail')?.hasError('email')) {
+                <mat-error>
+                  Please enter a valid email address
+                </mat-error>
+              }
+            </mat-form-field>
+    
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Client Name (Optional)</mat-label>
+              <input
+                matInput
+                type="text"
+                formControlName="clientName"
+                placeholder="John Doe"
+                />
+                <mat-icon matSuffix>person</mat-icon>
+              </mat-form-field>
+    
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Personal Message (Optional)</mat-label>
+                <textarea
+                  matInput
+                  formControlName="personalMessage"
+                  rows="4"
+                  placeholder="Add a personal note to your client..."
+                ></textarea>
+                <mat-hint align="end"
+                  >{{
+                  form.get('personalMessage')?.value?.length || 0
+                  }}/500</mat-hint
+                  >
+                </mat-form-field>
+    
+                <div class="checkbox-row">
+                  <mat-checkbox formControlName="attachPdf" color="primary">
+                    Attach PDF copy of {{ docTypeLabel.toLowerCase() }}
+                  </mat-checkbox>
+                </div>
+              </form>
+    
+              <div class="info-box">
+                <mat-icon>info</mat-icon>
+                <span>
+                  The client will receive an email with the
+                  {{ docTypeLabel.toLowerCase() }} details. Once sent, the
+                  {{ docTypeLabel.toLowerCase() }} status will change to "Submitted".
+                </span>
+              </div>
+            </mat-dialog-content>
+    
+            <mat-dialog-actions align="end" class="dialog-actions">
+              <button
+                mat-button
+                class="btn btn-secondary"
+                (click)="onCancel()"
+                [disabled]="isSending"
+                >
+                Cancel
+              </button>
+              <button
+                mat-button
+                class="btn btn-primary"
+                (click)="onSend()"
+                [disabled]="form.invalid || isSending"
+                >
+                @if (isSending) {
+                  <mat-spinner diameter="20"></mat-spinner>
+                }
+                @if (!isSending) {
+                  <mat-icon>send</mat-icon>
+                }
+                <span>{{ isSending ? 'Sending...' : 'Send to Client' }}</span>
+              </button>
+            </mat-dialog-actions>
           </div>
-        </form>
-
-        <div class="info-box">
-          <mat-icon>info</mat-icon>
-          <span>
-            The client will receive an email with the
-            {{ docTypeLabel.toLowerCase() }} details. Once sent, the
-            {{ docTypeLabel.toLowerCase() }} status will change to "Submitted".
-          </span>
-        </div>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end" class="dialog-actions">
-        <button
-          mat-button
-          class="btn btn-secondary"
-          (click)="onCancel()"
-          [disabled]="isSending"
-        >
-          Cancel
-        </button>
-        <button
-          mat-button
-          class="btn btn-primary"
-          (click)="onSend()"
-          [disabled]="form.invalid || isSending"
-        >
-          <mat-spinner *ngIf="isSending" diameter="20"></mat-spinner>
-          <mat-icon *ngIf="!isSending">send</mat-icon>
-          <span>{{ isSending ? 'Sending...' : 'Send to Client' }}</span>
-        </button>
-      </mat-dialog-actions>
-    </div>
-  `,
+    `,
   styles: [
     `
       .dialog-container {

@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormBuilder,
   FormGroup,
@@ -21,13 +21,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   selector: 'app-edit-client-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
-  ],
+    MatButtonModule
+],
   templateUrl: './edit-client-dialog.component.html',
   styleUrls: ['./edit-client-dialog.component.scss'],
 })

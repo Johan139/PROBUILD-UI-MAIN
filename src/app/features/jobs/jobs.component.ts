@@ -13,12 +13,7 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  NgForOf,
-  NgIf,
-  isPlatformBrowser,
-  CommonModule,
-} from '@angular/common';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatDivider } from '@angular/material/divider';
@@ -170,8 +165,6 @@ interface JobUiStateCache {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    NgIf,
-    NgForOf,
     MatButton,
     MatCard,
     MatCardContent,
@@ -209,7 +202,7 @@ interface JobUiStateCache {
     PhaseMobilizationComponent,
     PhaseConstructionLiveComponent,
     PhaseCloseoutComponent
-  ],
+],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
 })

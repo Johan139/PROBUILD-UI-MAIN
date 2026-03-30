@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +18,7 @@ import { ConfirmationDialogComponent } from '../../../quote/confirmation-dialog.
   templateUrl: './my-job-postings.component.html',
   styleUrls: ['./my-job-postings.component.scss'],
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, FormsModule],
+  imports: [MatIconModule, MatButtonModule, FormsModule],
 })
 export class MyJobPostingsComponent {
   @Input() myPostings: Job[] = [];

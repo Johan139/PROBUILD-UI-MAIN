@@ -2,43 +2,53 @@
   <mat-card class="pdf-viewer-card" #pdfViewerCard [hidden]="!isVisible">
     <mat-card-header>
       <div class="header-controls">
-        <div *ngIf="blueprints.length > 1" class="dropdown-container">
-          <select (change)="onPdfSelectionChange($event)">
-            <option *ngFor="let blueprint of blueprints" [value]="blueprint.pdfUrl" [selected]="blueprint === selectedBlueprint">
-              {{ blueprint.name }}
-            </option>
-          </select>
-        </div>
-        <mat-button-toggle-group *ngIf="isBlueprintLoaded" [value]="viewMode" class="view-toggle" [hideSingleSelectionIndicator]="true">
-          <mat-button-toggle value="pdf" class="toggle-button-left" (click)="onViewModeChange('pdf')" matTooltip="Switch to PDF View" matTooltipShowDelay="500">
-            <mat-icon>picture_as_pdf</mat-icon> PDF View
-          </mat-button-toggle>
-          <mat-button-toggle value="interactive" class="toggle-button-right" (click)="onViewModeChange('interactive')" matTooltip="Switch to Interactive View" matTooltipShowDelay="500">
-            <mat-icon>layers</mat-icon> Interactive
-          </mat-button-toggle>
-        </mat-button-toggle-group>
+        @if (blueprints.length > 1) {
+          <div class="dropdown-container">
+            <select (change)="onPdfSelectionChange($event)">
+              @for (blueprint of blueprints; track blueprint) {
+                <option [value]="blueprint.pdfUrl" [selected]="blueprint === selectedBlueprint">
+                  {{ blueprint.name }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+        @if (isBlueprintLoaded) {
+          <mat-button-toggle-group [value]="viewMode" class="view-toggle" [hideSingleSelectionIndicator]="true">
+            <mat-button-toggle value="pdf" class="toggle-button-left" (click)="onViewModeChange('pdf')" matTooltip="Switch to PDF View" matTooltipShowDelay="500">
+              <mat-icon>picture_as_pdf</mat-icon> PDF View
+            </mat-button-toggle>
+            <mat-button-toggle value="interactive" class="toggle-button-right" (click)="onViewModeChange('interactive')" matTooltip="Switch to Interactive View" matTooltipShowDelay="500">
+              <mat-icon>layers</mat-icon> Interactive
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        }
         <div class="action-buttons">
-                  <!-- TODO: Need to come back and fix this, popout is not bringing the component with it  -->
+          <!-- TODO: Need to come back and fix this, popout is not bringing the component with it  -->
           <!--<button mat-icon-button (click)="openPopout()" class="pop-out-icon" matTooltip="Pop out viewer" matTooltipShowDelay="500">
-            <mat-icon>open_in_new</mat-icon>
-          </button> -->
-          <button mat-icon-button *ngIf="viewMode === 'interactive'" (click)="showAdjustmentControls = !showAdjustmentControls" class="pop-out-icon" matTooltip="Toggle Adjustment Controls" matTooltipShowDelay="500">
+          <mat-icon>open_in_new</mat-icon>
+        </button> -->
+        @if (viewMode === 'interactive') {
+          <button mat-icon-button (click)="showAdjustmentControls = !showAdjustmentControls" class="pop-out-icon" matTooltip="Toggle Adjustment Controls" matTooltipShowDelay="500">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button (click)="openInNewTab()" class="pop-out-icon" matTooltip="Open PDF in new tab" matTooltipShowDelay="500" *ngIf="viewMode !== 'interactive'">
+        }
+        @if (viewMode !== 'interactive') {
+          <button mat-icon-button (click)="openInNewTab()" class="pop-out-icon" matTooltip="Open PDF in new tab" matTooltipShowDelay="500">
             <mat-icon>open_in_browser</mat-icon>
           </button>
-          <button mat-icon-button (click)="toggleVisibility()" class="pop-out-icon" matTooltip="{{ isVisible ? 'Hide Viewer' : 'Show Viewer' }}" matTooltipShowDelay="500">
-            <mat-icon>{{ isVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
-          </button>
-        </div>
+        }
+        <button mat-icon-button (click)="toggleVisibility()" class="pop-out-icon" matTooltip="{{ isVisible ? 'Hide Viewer' : 'Show Viewer' }}" matTooltipShowDelay="500">
+          <mat-icon>{{ isVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
       </div>
-    </mat-card-header>
+    </div>
+  </mat-card-header>
 
-    <mat-card-content class="pdf-container" #viewerContainer>
+  <mat-card-content class="pdf-container" #viewerContainer>
 
-        <ng2-pdfjs-viewer
-        *ngIf="viewMode === 'pdf'"
+    @if (viewMode === 'pdf') {
+      <ng2-pdfjs-viewer
         [pdfSrc]="pdfSrc"
         [page]="page"
         [viewerId]="'pdfViewer'"
@@ -51,41 +61,54 @@
         [externalWindow]="externalWindow"
         >
       </ng2-pdfjs-viewer>
+    }
 
-      <ng2-pdfjs-viewer
+    <ng2-pdfjs-viewer
       #externalPdfViewer
       [externalWindow]="true"
       [hidden]="true"
       [viewerId]="externalViewerId">
-      </ng2-pdfjs-viewer>
+    </ng2-pdfjs-viewer>
 
-      <div *ngIf="viewMode === 'interactive'" class="interactive-container">
-        <div *ngIf="isImageLoading" class="loading-spinner"><mat-spinner></mat-spinner></div>
+    @if (viewMode === 'interactive') {
+      <div class="interactive-container">
+        @if (isImageLoading) {
+          <div class="loading-spinner"><mat-spinner></mat-spinner></div>
+        }
         <div class="panzoom-content" #panzoomContent>
-          <img [src]="displayedImageUrl" *ngIf="displayedImageUrl" alt="Blueprint Page"/>
-          <img [src]="currentImageUrl" (load)="onImageLoad($event)" *ngIf="currentImageUrl !== displayedImageUrl" style="display: none;"/>
+          @if (displayedImageUrl) {
+            <img [src]="displayedImageUrl" alt="Blueprint Page"/>
+          }
+          @if (currentImageUrl !== displayedImageUrl) {
+            <img [src]="currentImageUrl" (load)="onImageLoad($event)" style="display: none;"/>
+          }
           <div class="overlay-wrapper">
-            <app-blueprint-overlay
-              *ngIf="(overlayState.isOverlayVisible$ | async) && imageDimensions"
-              [imageDimensions]="imageDimensions"
-            ></app-blueprint-overlay>
+            @if ((overlayState.isOverlayVisible$ | async) && imageDimensions) {
+              <app-blueprint-overlay
+                [imageDimensions]="imageDimensions"
+              ></app-blueprint-overlay>
+            }
           </div>
         </div>
-        <div class="coordinate-display" *ngIf="overlayState.cursorPosition$ | async as cursorPos">
-          X: {{ cursorPos.x }}, Y: {{ cursorPos.y }}
-        </div>
+        @if (overlayState.cursorPosition$ | async; as cursorPos) {
+          <div class="coordinate-display">
+            X: {{ cursorPos.x }}, Y: {{ cursorPos.y }}
+          </div>
+        }
       </div>
-    </mat-card-content>
+    }
+  </mat-card-content>
 
-    <mat-card-actions class="pdf-actions">
-      <div class="page-controls">
-        <button mat-button (click)="setPage(page - 1)" [disabled]="page <= 1"><mat-icon>keyboard_arrow_left</mat-icon> Previous</button>
-        <span>Page {{ page }} / {{ totalPages }}</span>
-        <button mat-button (click)="setPage(page + 1)" [disabled]="page >= totalPages">Next <mat-icon>keyboard_arrow_right</mat-icon></button>
-      </div>
-    </mat-card-actions>
+  <mat-card-actions class="pdf-actions">
+    <div class="page-controls">
+      <button mat-button (click)="setPage(page - 1)" [disabled]="page <= 1"><mat-icon>keyboard_arrow_left</mat-icon> Previous</button>
+      <span>Page {{ page }} / {{ totalPages }}</span>
+      <button mat-button (click)="setPage(page + 1)" [disabled]="page >= totalPages">Next <mat-icon>keyboard_arrow_right</mat-icon></button>
+    </div>
+  </mat-card-actions>
 
-    <mat-card-actions *ngIf="viewMode === 'interactive' && showAdjustmentControls" class="overlay-controls-actions">
+  @if (viewMode === 'interactive' && showAdjustmentControls) {
+    <mat-card-actions class="overlay-controls-actions">
       <div class="overlay-controls">
         <div class="control-group">
           <label>X Offset:</label>
@@ -104,10 +127,13 @@
         </div>
       </div>
     </mat-card-actions>
-    <div class="resize-handle" (mousedown)="onResizeStart($event)"></div>
-  </mat-card>
+  }
+  <div class="resize-handle" (mousedown)="onResizeStart($event)"></div>
+</mat-card>
 
-  <div #sidebarToggle *ngIf="!isVisible" class="sidebar-toggle" (click)="toggleVisibility()" matTooltip="Show Viewer" matTooltipShowDelay="500">
+@if (!isVisible) {
+  <div #sidebarToggle class="sidebar-toggle" (click)="toggleVisibility()" matTooltip="Show Viewer" matTooltipShowDelay="500">
     <mat-icon>visibility</mat-icon>
   </div>
+}
 </div>

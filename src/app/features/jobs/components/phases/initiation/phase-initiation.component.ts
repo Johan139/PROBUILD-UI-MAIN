@@ -1,11 +1,11 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { JobAnalysisWalkthroughComponent } from './job-analysis-walkthrough.component';
 
 @Component({
   selector: 'app-phase-initiation',
   standalone: true,
-  imports: [CommonModule, JobAnalysisWalkthroughComponent],
+  imports: [JobAnalysisWalkthroughComponent],
   template: `
     <app-job-analysis-walkthrough
       [jobId]="jobId"

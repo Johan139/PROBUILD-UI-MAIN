@@ -1,22 +1,28 @@
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
-</div>
+@if (isLoading) {
+  <div>
+    <app-loader></app-loader>
+  </div>
+}
 
 <div class="dashboard-container">
   <div class="welcome-header">
     <h2>Welcome to ProBuild AI</h2>
     <p>Manage your construction projects with AI-powered tools</p>
 
-    <div *ngIf="teams.length > 1" class="team-picker">
-      <mat-form-field appearance="outline">
-        <mat-label>Select Team</mat-label>
-        <mat-select [(ngModel)]="selectedTeam" name="team">
-          <mat-option *ngFor="let team of teams" [value]="team">
-            {{ team.inviterName }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </div>
+    @if (teams.length > 1) {
+      <div class="team-picker">
+        <mat-form-field appearance="outline">
+          <mat-label>Select Team</mat-label>
+          <mat-select [(ngModel)]="selectedTeam" name="team">
+            @for (team of teams; track team) {
+              <mat-option [value]="team">
+                {{ team.inviterName }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    }
   </div>
 
   <div class="quick-actions">
@@ -31,7 +37,7 @@
           (click)="navigateToJobs()"
           matTooltip="This will bring you to the New Project page where you can create a new project"
           [matTooltipShowDelay]="500"
-        >
+          >
           <mat-icon>add</mat-icon>
           Create New Project
         </button>
@@ -42,7 +48,7 @@
           (click)="navigateToProjects()"
           matTooltip="This will bring you to the My Projects page where you can view all of your projects"
           [matTooltipShowDelay]="500"
-        >
+          >
           <mat-icon>list</mat-icon>
           View All Projects
         </button>
@@ -53,7 +59,7 @@
           (click)="navigateToCalendar()"
           matTooltip="This will bring you to the Calendar page where you can view your schedule and events"
           [matTooltipShowDelay]="500"
-        >
+          >
           <mat-icon>calendar_today</mat-icon>
           View Calendar
         </button>
@@ -67,14 +73,15 @@
           <mat-icon>expand_more</mat-icon>
         </button>
 
-        <button
-          *ngIf="isCustomizeMode"
-          class="customize-btn"
-          (click)="toggleCustomizeMode()"
-        >
-          <mat-icon>check</mat-icon>
-          Done
-        </button>
+        @if (isCustomizeMode) {
+          <button
+            class="customize-btn"
+            (click)="toggleCustomizeMode()"
+            >
+            <mat-icon>check</mat-icon>
+            Done
+          </button>
+        }
       </div>
     </div>
   </div>
@@ -85,25 +92,27 @@
     class="layout-menu"
     yPosition="below"
     xPosition="before"
-  >
-    <!-- PRESET LAYOUTS -->
-    <button
-      mat-menu-item
-      *ngFor="let layout of layouts"
-      (click)="selectLayout(layout)"
-      [class.active]="layout.id === currentLayout.id"
     >
-      <div class="layout-item">
-        <div class="layout-text">
-          <div class="title">{{ layout.label }}</div>
-          <div class="subtitle">{{ layout.description }}</div>
+    <!-- PRESET LAYOUTS -->
+    @for (layout of layouts; track layout) {
+      <button
+        mat-menu-item
+        (click)="selectLayout(layout)"
+        [class.active]="layout.id === currentLayout.id"
+        >
+        <div class="layout-item">
+          <div class="layout-text">
+            <div class="title">{{ layout.label }}</div>
+            <div class="subtitle">{{ layout.description }}</div>
+          </div>
+          @if (layout.id === currentLayout.id) {
+            <mat-icon class="check-icon">
+              check
+            </mat-icon>
+          }
         </div>
-
-        <mat-icon *ngIf="layout.id === currentLayout.id" class="check-icon">
-          check
-        </mat-icon>
-      </div>
-    </button>
+      </button>
+    }
 
     <!-- CUSTOM SECTION -->
     <div class="layout-divider"></div>
@@ -112,7 +121,7 @@
       mat-menu-item
       class="layout-custom-item"
       (click)="toggleCustomizeMode()"
-    >
+      >
       <div class="layout-item">
         <div class="layout-text">
           <div class="title">Custom Layout</div>
@@ -123,114 +132,114 @@
   </mat-menu>
 
   <!-- CUSTOMIZE PANEL -->
-  <div class="widget-customize-panel" *ngIf="isCustomizeMode">
-    <div class="panel-header">
-      <mat-icon>settings</mat-icon>
-      <span>Dashboard Widgets</span>
-
-      <div class="panel-hints">
-        <span><mat-icon>drag_indicator</mat-icon> Drag to reorder</span>
-        <span><mat-icon>visibility</mat-icon> Click to toggle</span>
-        <span><mat-icon>aspect_ratio</mat-icon> Click size to resize</span>
+  @if (isCustomizeMode) {
+    <div class="widget-customize-panel">
+      <div class="panel-header">
+        <mat-icon>settings</mat-icon>
+        <span>Dashboard Widgets</span>
+        <div class="panel-hints">
+          <span><mat-icon>drag_indicator</mat-icon> Drag to reorder</span>
+          <span><mat-icon>visibility</mat-icon> Click to toggle</span>
+          <span><mat-icon>aspect_ratio</mat-icon> Click size to resize</span>
+        </div>
       </div>
+      <div class="widget-list">
+        @for (widget of widgets; track widget) {
+          <button
+            class="widget-pill"
+            [class.active]="widget.enabled"
+            (click)="toggleWidget(widget.id)"
+            >
+            <mat-icon>{{ widget.icon }}</mat-icon>
+            {{ widget.title }}
+            <!-- Eye icon for visibility toggle -->
+            <mat-icon class="visibility-icon">
+              {{ widget.enabled ? "visibility" : "visibility_off" }}
+            </mat-icon>
+            @if (widget.enabled) {
+              <span
+                class="size-badge"
+                (click)="openSizePicker($event, widget.id)"
+                [matMenuTriggerFor]="sizeMenu"
+                #sizeTrigger="matMenuTrigger"
+                >
+                {{ widget.size }}
+                <mat-icon>expand_more</mat-icon>
+              </span>
+            }
+          </button>
+        }
+      </div>
+      <!-- SIZE PICKER MENU -->
+      <mat-menu #sizeMenu="matMenu" class="size-picker-menu">
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'small')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'small'"
+          >
+          <span class="size-label">
+            <mat-icon>view_agenda</mat-icon>
+            Small
+          </span>
+          <span class="size-cols">3 cols</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'medium')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'medium'"
+          >
+          <span class="size-label">
+            <mat-icon>view_module</mat-icon>
+            Medium
+          </span>
+          <span class="size-cols">6 cols</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'large')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'large'"
+          >
+          <span class="size-label">
+            <mat-icon>view_day</mat-icon>
+            Large
+          </span>
+          <span class="size-cols">12 cols</span>
+        </button>
+      </mat-menu>
     </div>
-
-    <div class="widget-list">
-      <button
-        class="widget-pill"
-        *ngFor="let widget of widgets"
-        [class.active]="widget.enabled"
-        (click)="toggleWidget(widget.id)"
-      >
-        <mat-icon>{{ widget.icon }}</mat-icon>
-        {{ widget.title }}
-
-        <!-- Eye icon for visibility toggle -->
-        <mat-icon class="visibility-icon">
-          {{ widget.enabled ? "visibility" : "visibility_off" }}
-        </mat-icon>
-
-        <span
-          class="size-badge"
-          *ngIf="widget.enabled"
-          (click)="openSizePicker($event, widget.id)"
-          [matMenuTriggerFor]="sizeMenu"
-          #sizeTrigger="matMenuTrigger"
-        >
-          {{ widget.size }}
-          <mat-icon>expand_more</mat-icon>
-        </span>
-      </button>
-    </div>
-
-    <!-- SIZE PICKER MENU -->
-    <mat-menu #sizeMenu="matMenu" class="size-picker-menu">
-      <button
-        mat-menu-item
-        (click)="changeWidgetSize(selectedWidgetForResize, 'small')"
-        [class.selected]="getWidgetSize(selectedWidgetForResize) === 'small'"
-      >
-        <span class="size-label">
-          <mat-icon>view_agenda</mat-icon>
-          Small
-        </span>
-        <span class="size-cols">3 cols</span>
-      </button>
-
-      <button
-        mat-menu-item
-        (click)="changeWidgetSize(selectedWidgetForResize, 'medium')"
-        [class.selected]="getWidgetSize(selectedWidgetForResize) === 'medium'"
-      >
-        <span class="size-label">
-          <mat-icon>view_module</mat-icon>
-          Medium
-        </span>
-        <span class="size-cols">6 cols</span>
-      </button>
-
-      <button
-        mat-menu-item
-        (click)="changeWidgetSize(selectedWidgetForResize, 'large')"
-        [class.selected]="getWidgetSize(selectedWidgetForResize) === 'large'"
-      >
-        <span class="size-label">
-          <mat-icon>view_day</mat-icon>
-          Large
-        </span>
-        <span class="size-cols">12 cols</span>
-      </button>
-    </mat-menu>
-  </div>
+  }
 
   <!-- DASHBOARD GRID -->
   <div class="dashboard-grid">
-    <section
-      *ngFor="let widget of widgets; let i = index"
-      class="dashboard-widget"
-      [class.span-small]="widget.size === 'small'"
-      [class.span-medium]="widget.size === 'medium'"
-      [class.span-large]="widget.size === 'large'"
-      [attr.data-widget-id]="widget.id"
-      [hidden]="!widget.enabled"
-      [draggable]="currentLayout.id === 'custom' && isCustomizeMode"
+    @for (widget of widgets; track widget; let i = $index) {
+      <section
+        class="dashboard-widget"
+        [class.span-small]="widget.size === 'small'"
+        [class.span-medium]="widget.size === 'medium'"
+        [class.span-large]="widget.size === 'large'"
+        [attr.data-widget-id]="widget.id"
+        [hidden]="!widget.enabled"
+        [draggable]="currentLayout.id === 'custom' && isCustomizeMode"
       (dragstart)="
         currentLayout.id === 'custom' && isCustomizeMode && onDragStart(i)
       "
       (dragover)="
         currentLayout.id === 'custom' && isCustomizeMode && onDragOver($event)
       "
-      (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop(i)"
-    >
-      <ng-container [ngSwitch]="widget.id">
-        <app-action-points-widget
-          *ngSwitchCase="'actionPoints'"
-          [notes]="notes"
-        ></app-action-points-widget>
-
-        <app-weather-widget *ngSwitchCase="'weather'"></app-weather-widget>
-      </ng-container>
-    </section>
+        (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop(i)"
+        >
+        @switch (widget.id) {
+          @case ('actionPoints') {
+            <app-action-points-widget
+              [notes]="notes"
+            ></app-action-points-widget>
+          }
+          @case ('weather') {
+            <app-weather-widget></app-weather-widget>
+          }
+        }
+      </section>
+    }
   </div>
   <div class="recent-projects-section">
     <app-recent-projects-widget></app-recent-projects-widget>
@@ -240,42 +249,51 @@
     <div class="documents-dialog">
       <h2 mat-dialog-title>Quote Documents</h2>
       <mat-dialog-content>
-        <div *ngIf="isDocumentsLoading" class="loading-documents">
-          <app-loader></app-loader>
-          <p>Loading documents...</p>
-        </div>
-
-        <div *ngIf="!isDocumentsLoading">
-          <div
-            *ngIf="documents.length === 0 && !documentsError"
-            class="no-documents"
-          >
-            <p>No documents available for this quote.</p>
+        @if (isDocumentsLoading) {
+          <div class="loading-documents">
+            <app-loader></app-loader>
+            <p>Loading documents...</p>
           </div>
+        }
 
-          <div *ngIf="documentsError" class="no-documents">
-            <p>{{ documentsError }}</p>
-          </div>
-
-          <div *ngIf="documents.length > 0" class="documents-list">
-            <div class="document-item" *ngFor="let doc of documents">
-              <div class="document-info">
-                <span class="document-name">{{ doc.name }}</span>
-                <span class="document-meta">
-                  {{ doc.type }} - {{ doc.size | filesize }}
-                </span>
+        @if (!isDocumentsLoading) {
+          <div>
+            @if (documents.length === 0 && !documentsError) {
+              <div
+                class="no-documents"
+                >
+                <p>No documents available for this quote.</p>
               </div>
-              <button
-                mat-button
-                type="button"
-                class="btn btn-ghost view-btn"
-                (click)="viewDocument(doc)"
-              >
-                View
-              </button>
-            </div>
+            }
+            @if (documentsError) {
+              <div class="no-documents">
+                <p>{{ documentsError }}</p>
+              </div>
+            }
+            @if (documents.length > 0) {
+              <div class="documents-list">
+                @for (doc of documents; track doc) {
+                  <div class="document-item">
+                    <div class="document-info">
+                      <span class="document-name">{{ doc.name }}</span>
+                      <span class="document-meta">
+                        {{ doc.type }} - {{ doc.size | filesize }}
+                      </span>
+                    </div>
+                    <button
+                      mat-button
+                      type="button"
+                      class="btn btn-ghost view-btn"
+                      (click)="viewDocument(doc)"
+                      >
+                      View
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </mat-dialog-content>
 
       <mat-dialog-actions align="end" class="dialog-actions">
@@ -284,7 +302,7 @@
           type="button"
           class="btn btn-secondary"
           (click)="closeDocumentsDialog()"
-        >
+          >
           Close
         </button>
       </mat-dialog-actions>
@@ -311,7 +329,7 @@
           type="button"
           class="btn btn-primary"
           (click)="submitApproval()"
-        >
+          >
           Submit
         </button>
         <button
@@ -319,7 +337,7 @@
           type="button"
           class="btn btn-secondary"
           (click)="cancelApproval()"
-        >
+          >
           Cancel
         </button>
       </mat-dialog-actions>

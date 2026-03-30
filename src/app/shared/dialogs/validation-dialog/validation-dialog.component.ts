@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, Inject } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
@@ -16,7 +16,7 @@ export interface ValidationDialogData {
 @Component({
   selector: 'app-validation-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, LucideIconsModule],
+  imports: [MatDialogModule, LucideIconsModule],
   templateUrl: './validation-dialog.component.html',
   styleUrl: './validation-dialog.component.scss',
 })
