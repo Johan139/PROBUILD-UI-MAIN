@@ -69,28 +69,8 @@
           </div>
         </div>
       </button>
-
-      <button type="button" class="hero-card timeline-card" (click)="overallTimelineClick.emit()">
-        <div class="card-top">
-          <div class="icon-wrapper blue">
-            <lucide-icon name="clock" class="icon-blue"></lucide-icon>
-          </div>
-          <p class="card-label">Overall Timeline</p>
-          <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
-        </div>
-        <div class="card-bottom">
-          <div class="progress-row">
-            <span>Progress</span>
-            <strong>Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong>
-          </div>
-          <div class="progress-track" aria-hidden="true">
-            <div class="progress-fill timeline" [style.width.%]="timelineProgressPercent"></div>
-          </div>
-          <div class="progress-row">
-            <span>Est. Completion</span>
-            <strong>{{ estimatedCompletionDate | date: 'MMM d, y' }}</strong>
-          </div>
-        </div>
+      <button type="button" class="tab-btn" [class.active]="activeTab === 'timeline'" (click)="setActiveTab('timeline')">
+        Timeline & Tasks
       </button>
 
       <button type="button" class="hero-card bid-card" (click)="bidPriceClick.emit()">
@@ -132,351 +112,475 @@
         </div>
       </button>
     </div>
+  }
 
-    <div class="details-grid">
-      <article class="detail-card">
-        <div class="detail-header">
-          <h4 class="card-title">
-            <lucide-icon name="building-2" class="title-icon"></lucide-icon>
-            Project Details
-          </h4>
-          <div class="header-actions" *ngIf="isEditingProject">
-            <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveProject()">Save</button>
-            <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditProject()">Cancel</button>
+  @if (stageDisplayMode === 'stage' && activeTab === 'overview') {
+    <div class="scope-pane">
+      <div class="hero-grid">
+        <button type="button" class="hero-card budget-card" (click)="overallBudgetClick.emit()">
+          <div class="card-top">
+            <div class="icon-wrapper yellow">
+              <lucide-icon name="dollar-sign" class="icon-yellow"></lucide-icon>
+            </div>
+            <p class="card-label">Overall Budget</p>
+            <p class="card-value">{{ overallBudgetValue | money : true : 2 }}</p>
           </div>
-          <button class="edit-btn" (click)="toggleEditProject()" *ngIf="!isEditingProject">
-            <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-            Edit
-          </button>
-        </div>
-
-        <div class="detail-list" *ngIf="!isEditingProject">
-          <div class="detail-item">
-            <span class="detail-label">Project Name</span>
-            <span class="detail-value">{{ projectDetails?.projectName || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Address</span>
-            <span class="detail-value">{{ projectDetails?.address || projectDetails?.jobAddress?.formatted_address || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Project Type</span>
-            <span class="detail-value">{{ projectDetails?.jobType || 'N/A' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Total Area</span>
-            <span class="detail-value">{{ projectTotalArea ? (projectTotalArea | number: '1.0-0') : 'N/A' }} sq ft</span>
-          </div>
-        </div>
-
-        <div class="detail-list edit-mode" *ngIf="isEditingProject">
-          <label class="edit-field">
-            <span>Project Name</span>
-            <input [(ngModel)]="tempProjectDetails.projectName" />
-          </label>
-          <label class="edit-field">
-            <span>Address</span>
-            <input [(ngModel)]="tempProjectDetails.address" />
-          </label>
-          <label class="edit-field">
-            <span>Project Type</span>
-            <input [(ngModel)]="tempProjectDetails.jobType" />
-          </label>
-        </div>
-      </article>
-
-      <article class="detail-card">
-        <div class="detail-header">
-          <h4 class="card-title">
-            <lucide-icon name="user" class="title-icon"></lucide-icon>
-            Client Details
-          </h4>
-          <div class="header-actions" *ngIf="isEditingClient">
-            <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveClient()">Save</button>
-            <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditClient()">Cancel</button>
-          </div>
-          <button class="edit-btn" (click)="toggleEditClient()" *ngIf="!isEditingClient">
-            <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
-            Edit
-          </button>
-        </div>
-
-        <div class="detail-list" *ngIf="!isEditingClient">
-          <div class="detail-item">
-            <span class="detail-label">Client Name</span>
-            <span class="detail-value">{{ clientName }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Contact Email</span>
-            <span class="detail-value">{{ clientEmail }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Phone</span>
-            <span class="detail-value">{{ clientPhone }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Contract Status</span>
-            <span class="detail-value">{{ contractStatus }}</span>
-          </div>
-        </div>
-
-        <div class="detail-list edit-mode" *ngIf="isEditingClient">
-          <label class="edit-field">
-            <span>First Name</span>
-            <input [(ngModel)]="tempClientDetails.firstName" />
-          </label>
-          <label class="edit-field">
-            <span>Last Name</span>
-            <input [(ngModel)]="tempClientDetails.lastName" />
-          </label>
-          <label class="edit-field">
-            <span>Email</span>
-            <input [(ngModel)]="tempClientDetails.email" />
-          </label>
-          <label class="edit-field">
-            <span>Phone</span>
-            <input [(ngModel)]="tempClientDetails.phone" />
-          </label>
-        </div>
-      </article>
-
-      <article class="detail-card confidence-card">
-        <h4 class="card-title mb-4">
-          <lucide-icon name="target" class="title-icon"></lucide-icon>
-          Blueprint Confidence Score
-        </h4>
-        <div class="chart-container">
-          <div class="circular-chart">
-            <svg viewBox="0 0 128 128" class="chart-svg">
-              <circle cx="64" cy="64" r="56" fill="none" stroke="currentColor" stroke-width="8" class="chart-track" />
-              <circle
-                cx="64"
-                cy="64"
-                r="56"
-                fill="none"
-                stroke="#22c55e"
-                stroke-width="8"
-                [attr.stroke-dasharray]="blueprintConfidenceScore * 3.52 + ' ' + 100 * 3.52"
-                stroke-linecap="round"
-                class="chart-value"
-              />
-            </svg>
-            <div class="chart-text">
-              <span class="score-value">{{ blueprintConfidenceScore }}%</span>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Spent to Date</span>
+              <strong>{{ spentToDate | money : true : 2 }}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill budget" [style.width.%]="overallBudgetProgressPercent"></div>
+            </div>
+            <div class="progress-row">
+              <span>Remaining</span>
+              <strong>{{ overallRemainingBudget | money : true : 2 }}</strong>
             </div>
           </div>
+        </button>
+        <button type="button" class="hero-card timeline-card" (click)="overallTimelineClick.emit()">
+          <div class="card-top">
+            <div class="icon-wrapper blue">
+              <lucide-icon name="clock" class="icon-blue"></lucide-icon>
+            </div>
+            <p class="card-label">Overall Timeline</p>
+            <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
+          </div>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Progress</span>
+              <strong>Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div class="progress-fill timeline" [style.width.%]="timelineProgressPercent"></div>
+            </div>
+            <div class="progress-row">
+              <span>Est. Completion</span>
+              <strong>{{ estimatedCompletionDate | date: 'MMM d, y' }}</strong>
+            </div>
+          </div>
+        </button>
+        <button type="button" class="hero-card bid-card" (click)="bidPriceClick.emit()">
+          <div class="card-top">
+            <div class="icon-wrapper green">
+              <lucide-icon name="trending-up" class="icon-green"></lucide-icon>
+            </div>
+            <p class="card-label">Bid Price (Client)</p>
+            <p class="card-value">
+              @if (!isSummaryLoading) {
+                {{ bidPriceValue | money : true : 2 }}
+              } @else {
+                --
+              }
+            </p>
+          </div>
+          <div class="card-bottom">
+            <div class="progress-row">
+              <span>Gross Profit</span>
+              <strong>{{ bidGrossProfit | money : true : 2 }}</strong>
+            </div>
+            <div class="progress-row">
+              <span>Profit Margin</span>
+              <strong>{{ bidProfitMarginPercent | number: '1.1-1' }}%</strong>
+            </div>
+            <div class="progress-row">
+              <span>Exposure</span>
+              <strong>{{ bidExposureValue | money : true : 2 }}</strong>
+            </div>
+          </div>
+        </button>
+      </div>
+      <div class="details-grid">
+        <article class="detail-card">
+          <div class="detail-header">
+            <h4 class="card-title">
+              <lucide-icon name="building-2" class="title-icon"></lucide-icon>
+              Project Details
+            </h4>
+            @if (isEditingProject) {
+              <div class="header-actions">
+                <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveProject()">Save</button>
+                <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditProject()">Cancel</button>
+              </div>
+            }
+            @if (!isEditingProject) {
+              <button class="edit-btn" (click)="toggleEditProject()">
+                <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
+                Edit
+              </button>
+            }
+          </div>
+          @if (!isEditingProject) {
+            <div class="detail-list">
+              <div class="detail-item">
+                <span class="detail-label">Project Name</span>
+                <span class="detail-value">{{ projectDetails?.projectName || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Address</span>
+                <span class="detail-value">{{ projectDetails?.address || projectDetails?.jobAddress?.formatted_address || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Project Type</span>
+                <span class="detail-value">{{ projectDetails?.jobType || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Area</span>
+                <span class="detail-value">{{ projectTotalArea ? (projectTotalArea | number: '1.0-0') : 'N/A' }} sq ft</span>
+              </div>
+            </div>
+          }
+          @if (isEditingProject) {
+            <div class="detail-list edit-mode">
+              <label class="edit-field">
+                <span>Project Name</span>
+                <input [(ngModel)]="tempProjectDetails.projectName" />
+              </label>
+              <label class="edit-field">
+                <span>Address</span>
+                <input [(ngModel)]="tempProjectDetails.address" />
+              </label>
+              <label class="edit-field">
+                <span>Project Type</span>
+                <input [(ngModel)]="tempProjectDetails.jobType" />
+              </label>
+            </div>
+          }
+        </article>
+        <article class="detail-card">
+          <div class="detail-header">
+            <h4 class="card-title">
+              <lucide-icon name="user" class="title-icon"></lucide-icon>
+              Client Details
+            </h4>
+            @if (isEditingClient) {
+              <div class="header-actions">
+                <button mat-button type="button" class="btn btn-primary action-btn" (click)="saveClient()">Save</button>
+                <button mat-button type="button" class="btn btn-secondary action-btn" (click)="toggleEditClient()">Cancel</button>
+              </div>
+            }
+            @if (!isEditingClient) {
+              <button class="edit-btn" (click)="toggleEditClient()">
+                <lucide-icon name="edit" class="w-4 h-4 mr-1"></lucide-icon>
+                Edit
+              </button>
+            }
+          </div>
+          @if (!isEditingClient) {
+            <div class="detail-list">
+              <div class="detail-item">
+                <span class="detail-label">Client Name</span>
+                <span class="detail-value">{{ clientName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Contact Email</span>
+                <span class="detail-value">{{ clientEmail }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone</span>
+                <span class="detail-value">{{ clientPhone }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Contract Status</span>
+                <span class="detail-value">{{ contractStatus }}</span>
+              </div>
+            </div>
+          }
+          @if (isEditingClient) {
+            <div class="detail-list edit-mode">
+              <label class="edit-field">
+                <span>First Name</span>
+                <input [(ngModel)]="tempClientDetails.firstName" />
+              </label>
+              <label class="edit-field">
+                <span>Last Name</span>
+                <input [(ngModel)]="tempClientDetails.lastName" />
+              </label>
+              <label class="edit-field">
+                <span>Email</span>
+                <input [(ngModel)]="tempClientDetails.email" />
+              </label>
+              <label class="edit-field">
+                <span>Phone</span>
+                <input [(ngModel)]="tempClientDetails.phone" />
+              </label>
+            </div>
+          }
+        </article>
+        <article class="detail-card confidence-card">
+          <h4 class="card-title mb-4">
+            <lucide-icon name="target" class="title-icon"></lucide-icon>
+            Blueprint Confidence Score
+          </h4>
+          <div class="chart-container">
+            <div class="circular-chart">
+              <svg viewBox="0 0 128 128" class="chart-svg">
+                <circle cx="64" cy="64" r="56" fill="none" stroke="currentColor" stroke-width="8" class="chart-track" />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  fill="none"
+                  stroke="#22c55e"
+                  stroke-width="8"
+                  [attr.stroke-dasharray]="blueprintConfidenceScore * 3.52 + ' ' + 100 * 3.52"
+                  stroke-linecap="round"
+                  class="chart-value"
+                  />
+                </svg>
+                <div class="chart-text">
+                  <span class="score-value">{{ blueprintConfidenceScore }}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="score-breakdown">
+              <div class="score-item">
+                <span>Dimensional Accuracy</span>
+                <span class="font-medium text-success">{{ dimensionalAccuracy }}%</span>
+              </div>
+              <div class="score-item">
+                <span class="detail-label">Completeness</span>
+                <span class="font-medium text-success">{{ completeness }}%</span>
+              </div>
+              <div class="score-item">
+                <span>Readability</span>
+                <span class="font-medium text-success">{{ readability }}%</span>
+              </div>
+            </div>
+          </article>
         </div>
-        <div class="score-breakdown">
-          <div class="score-item">
-            <span>Dimensional Accuracy</span>
-            <span class="font-medium text-success">{{ dimensionalAccuracy }}%</span>
+        <div class="summary-card">
+          <div class="card-header-btn" (click)="toggleExecutiveSummary()">
+            <div class="header-content">
+              <div class="icon-wrapper yellow">
+                <lucide-icon name="file-text" class="icon"></lucide-icon>
+              </div>
+              <div class="text-left">
+                <h3>Executive Summary</h3>
+                @if (isSummaryLoading) {
+                  <p>Loading project analysis...</p>
+                }
+                @if (!isSummaryLoading) {
+                  <p>Complete project analysis overview</p>
+                }
+              </div>
+            </div>
+            <div class="header-actions">
+              @if (executiveSummary.blueprintConfidence.overallConfidence > 0) {
+                <span class="confidence-badge">
+                  {{ executiveSummary.blueprintConfidence.overallConfidence }}% Confidence
+                </span>
+              }
+              <lucide-icon [name]="executiveSummaryExpanded ? 'chevron-up' : 'chevron-down'" class="chevron"></lucide-icon>
+            </div>
           </div>
-          <div class="score-item">
-            <span class="detail-label">Completeness</span>
-            <span class="font-medium text-success">{{ completeness }}%</span>
-          </div>
-          <div class="score-item">
-            <span>Readability</span>
-            <span class="font-medium text-success">{{ readability }}%</span>
-          </div>
-        </div>
-      </article>
-    </div>
-
-    <div class="summary-card">
-      <div class="card-header-btn" (click)="toggleExecutiveSummary()">
-        <div class="header-content">
-          <div class="icon-wrapper yellow">
-            <lucide-icon name="file-text" class="icon"></lucide-icon>
-          </div>
-          <div class="text-left">
-            <h3>Executive Summary</h3>
-            <p *ngIf="isSummaryLoading">Loading project analysis...</p>
-            <p *ngIf="!isSummaryLoading">Complete project analysis overview</p>
-          </div>
-        </div>
-        <div class="header-actions">
-          <span class="confidence-badge" *ngIf="executiveSummary.blueprintConfidence.overallConfidence > 0">
-            {{ executiveSummary.blueprintConfidence.overallConfidence }}% Confidence
-          </span>
-          <lucide-icon [name]="executiveSummaryExpanded ? 'chevron-up' : 'chevron-down'" class="chevron"></lucide-icon>
+          @if (executiveSummaryExpanded) {
+            <div class="card-body">
+              @if (executiveSummary.overview) {
+                <div class="section">
+                  <h4>Overview</h4>
+                  <p>{{ executiveSummary.overview }}</p>
+                </div>
+              }
+              @if (executiveSummary.keyHighlights.length > 0) {
+                <div class="section">
+                  <h4>Key Highlights</h4>
+                  <div class="grid-3">
+                    @for (item of executiveSummary.keyHighlights; track item) {
+                      <div class="highlight-box">
+                        <span class="label">{{ item.label }}</span>
+                        <span class="value">{{ item.value }}</span>
+                        <span class="note">{{ item.note }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (executiveSummary.riskFactors.length > 0) {
+                <div class="section">
+                  <h4>Risk Factors</h4>
+                  <div class="risk-list">
+                    @for (item of executiveSummary.riskFactors; track item) {
+                      <div class="risk-item">
+                        <div class="risk-dot" [class.high]="item.severity === 'high'" [class.medium]="item.severity === 'medium'"></div>
+                        <div class="risk-content">
+                          <span class="risk-title">{{ item.risk }}</span>
+                          <span class="risk-desc">{{ item.description }}</span>
+                        </div>
+                        <span class="risk-badge" [class.high]="item.severity === 'high'" [class.medium]="item.severity === 'medium'">
+                          {{ item.severity }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (executiveSummary.strategicAnalysis.opportunities.length > 0 || executiveSummary.strategicAnalysis.risks.length > 0 || executiveSummary.strategicAnalysis.implications.length > 0) {
+                <div class="section">
+                  <h4>Strategic Analysis</h4>
+                  @if (executiveSummary.strategicAnalysis.opportunities.length > 0) {
+                    <div class="risk-list">
+                      @for (item of executiveSummary.strategicAnalysis.opportunities; track item) {
+                        <div class="risk-item">
+                          <div class="risk-dot medium"></div>
+                          <div class="risk-content">
+                            <span class="risk-title">Opportunity</span>
+                            <span class="risk-desc">{{ item }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (executiveSummary.strategicAnalysis.risks.length > 0) {
+                    <div class="risk-list">
+                      @for (item of executiveSummary.strategicAnalysis.risks; track item) {
+                        <div class="risk-item">
+                          <div class="risk-dot high"></div>
+                          <div class="risk-content">
+                            <span class="risk-title">Risk</span>
+                            <span class="risk-desc">{{ item }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (executiveSummary.strategicAnalysis.implications.length > 0) {
+                    <div class="risk-list">
+                      @for (item of executiveSummary.strategicAnalysis.implications; track item) {
+                        <div class="risk-item">
+                          <div class="risk-dot"></div>
+                          <div class="risk-content">
+                            <span class="risk-title">Implication</span>
+                            <span class="risk-desc">{{ item }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+              @if (executiveSummary.topPriorities.length > 0) {
+                <div class="section">
+                  <h4>Top 3 Executive Priorities</h4>
+                  <div class="risk-list">
+                    @for (item of executiveSummary.topPriorities; track item; let i = $index) {
+                      <div class="risk-item">
+                        <div class="risk-dot medium"></div>
+                        <div class="risk-content">
+                          <span class="risk-title">Priority {{ i + 1 }}</span>
+                          <span class="risk-desc">{{ item }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (executiveSummary.executiveRecommendation) {
+                <div class="section">
+                  <h4>Executive Recommendation</h4>
+                  <p>{{ executiveSummary.executiveRecommendation }}</p>
+                </div>
+              }
+              @if (!executiveSummary.overview && executiveSummary.keyHighlights.length === 0 && executiveSummary.riskFactors.length === 0 && executiveSummary.strategicAnalysis.opportunities.length === 0 && executiveSummary.strategicAnalysis.risks.length === 0 && executiveSummary.strategicAnalysis.implications.length === 0 && executiveSummary.topPriorities.length === 0 && !executiveSummary.executiveRecommendation && !isSummaryLoading) {
+                <p class="summary-empty">
+                  Executive summary data is not available for this project yet.
+                </p>
+              }
+              @if (!isSummaryLoading) {
+                <p class="summary-disclaimer">
+                  This report was generated by AI. View our terms and conditions.
+                </p>
+              }
+            </div>
+          }
         </div>
       </div>
+    }
 
-      <div *ngIf="executiveSummaryExpanded" class="card-body">
-        <div class="section" *ngIf="executiveSummary.overview">
-          <h4>Overview</h4>
-          <p>{{ executiveSummary.overview }}</p>
-        </div>
-
-        <div class="section" *ngIf="executiveSummary.keyHighlights.length > 0">
-          <h4>Key Highlights</h4>
-          <div class="grid-3">
-            <div *ngFor="let item of executiveSummary.keyHighlights" class="highlight-box">
-              <span class="label">{{ item.label }}</span>
-              <span class="value">{{ item.value }}</span>
-              <span class="note">{{ item.note }}</span>
+    @if (stageDisplayMode === 'stage' && activeTab === 'timeline') {
+      <div class="scope-pane">
+        <mat-accordion multi>
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title class="timeline-title">Probuild Construction Timeline</mat-panel-title>
+            </mat-expansion-panel-header>
+            <mat-divider class="timeline-divider"></mat-divider>
+            <div class="timeline-wrapper">
+              <app-timeline [taskGroups]="timelineGroups"></app-timeline>
             </div>
-          </div>
-        </div>
+          </mat-expansion-panel>
+          <mat-expansion-panel [expanded]="true">
+            <mat-expansion-panel-header>
+              <mat-panel-title>Tasks and Subtasks</mat-panel-title>
+            </mat-expansion-panel-header>
+            <mat-divider></mat-divider>
+            <app-construction-phases
+              [groups]="constructionPhaseGroups"
+              [isProjectOwner]="isProjectOwner"
+            ></app-construction-phases>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    }
 
-        <div class="section" *ngIf="executiveSummary.riskFactors.length > 0">
-          <h4>Risk Factors</h4>
-          <div class="risk-list">
-            <div *ngFor="let item of executiveSummary.riskFactors" class="risk-item">
-              <div class="risk-dot" [class.high]="item.severity === 'high'" [class.medium]="item.severity === 'medium'"></div>
-              <div class="risk-content">
-                <span class="risk-title">{{ item.risk }}</span>
-                <span class="risk-desc">{{ item.description }}</span>
-              </div>
-              <span class="risk-badge" [class.high]="item.severity === 'high'" [class.medium]="item.severity === 'medium'">
-                {{ item.severity }}
+    @if (stageDisplayMode === 'stage' && activeTab === 'blueprints') {
+      <div class="scope-pane">
+        @if (isLoadingBlueprints) {
+          <p class="blueprint-loading">Loading blueprints...</p>
+        }
+        <app-project-blueprint-viewer
+          [mode]="'view'"
+          [uploadedFiles]="blueprintFiles"
+          [selectedFile]="selectedBlueprint"
+          [pdfSrc]="blueprintPdfSrc"
+          (fileSelected)="onBlueprintSelected($event)"
+        ></app-project-blueprint-viewer>
+      </div>
+    }
+
+    @if (stageDisplayMode === 'stage') {
+      <section class="internal-team-section">
+        <div class="internal-team-card">
+          <button
+            type="button"
+            class="internal-team-header"
+            (click)="internalTeamOpen = !internalTeamOpen"
+            >
+            <div class="internal-team-header-left">
+              <span class="internal-team-icon-wrap">
+                <lucide-icon name="users"></lucide-icon>
               </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="section" *ngIf="executiveSummary.strategicAnalysis.opportunities.length > 0 || executiveSummary.strategicAnalysis.risks.length > 0 || executiveSummary.strategicAnalysis.implications.length > 0">
-          <h4>Strategic Analysis</h4>
-
-          <div class="risk-list" *ngIf="executiveSummary.strategicAnalysis.opportunities.length > 0">
-            <div class="risk-item" *ngFor="let item of executiveSummary.strategicAnalysis.opportunities">
-              <div class="risk-dot medium"></div>
-              <div class="risk-content">
-                <span class="risk-title">Opportunity</span>
-                <span class="risk-desc">{{ item }}</span>
+              <div>
+                <h4>Internal Team</h4>
+                <p>{{ assignedTeamMembers.length }} members assigned</p>
               </div>
             </div>
-          </div>
-
-          <div class="risk-list" *ngIf="executiveSummary.strategicAnalysis.risks.length > 0">
-            <div class="risk-item" *ngFor="let item of executiveSummary.strategicAnalysis.risks">
-              <div class="risk-dot high"></div>
-              <div class="risk-content">
-                <span class="risk-title">Risk</span>
-                <span class="risk-desc">{{ item }}</span>
-              </div>
+            <div class="internal-team-header-right">
+              <span class="member-count-pill">{{ assignedTeamMembers.length }} members</span>
+              <lucide-icon
+                [name]="internalTeamOpen ? 'chevron-up' : 'chevron-down'"
+                class="team-chevron"
+              ></lucide-icon>
             </div>
-          </div>
-
-          <div class="risk-list" *ngIf="executiveSummary.strategicAnalysis.implications.length > 0">
-            <div class="risk-item" *ngFor="let item of executiveSummary.strategicAnalysis.implications">
-              <div class="risk-dot"></div>
-              <div class="risk-content">
-                <span class="risk-title">Implication</span>
-                <span class="risk-desc">{{ item }}</span>
-              </div>
+          </button>
+          @if (internalTeamOpen) {
+            <div class="internal-team-body">
+              <app-job-team
+                [projectDetails]="projectDetails"
+                [assignedTeamMembers]="assignedTeamMembers"
+                [showSubcontractors]="false"
+                (refreshTeam)="refreshTeamRequested.emit()"
+              ></app-job-team>
             </div>
-          </div>
+          }
         </div>
+      </section>
+    }
 
-        <div class="section" *ngIf="executiveSummary.topPriorities.length > 0">
-          <h4>Top 3 Executive Priorities</h4>
-          <div class="risk-list">
-            <div class="risk-item" *ngFor="let item of executiveSummary.topPriorities; let i = index">
-              <div class="risk-dot medium"></div>
-              <div class="risk-content">
-                <span class="risk-title">Priority {{ i + 1 }}</span>
-                <span class="risk-desc">{{ item }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section" *ngIf="executiveSummary.executiveRecommendation">
-          <h4>Executive Recommendation</h4>
-          <p>{{ executiveSummary.executiveRecommendation }}</p>
-        </div>
-
-        <p class="summary-empty" *ngIf="!executiveSummary.overview && executiveSummary.keyHighlights.length === 0 && executiveSummary.riskFactors.length === 0 && executiveSummary.strategicAnalysis.opportunities.length === 0 && executiveSummary.strategicAnalysis.risks.length === 0 && executiveSummary.strategicAnalysis.implications.length === 0 && executiveSummary.topPriorities.length === 0 && !executiveSummary.executiveRecommendation && !isSummaryLoading">
-          Executive summary data is not available for this project yet.
-        </p>
-
-        <p class="summary-disclaimer" *ngIf="!isSummaryLoading">
-          This report was generated by AI. View our terms and conditions.
-        </p>
-      </div>
-    </div>
+    @if (stageDisplayMode === 'live' && liveStageTemplate) {
+      <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
+    }
   </div>
-
-  <div class="scope-pane" *ngIf="stageDisplayMode === 'stage' && activeTab === 'timeline'">
-    <mat-accordion multi>
-      <mat-expansion-panel [expanded]="true">
-        <mat-expansion-panel-header>
-          <mat-panel-title class="timeline-title">Probuild Construction Timeline</mat-panel-title>
-        </mat-expansion-panel-header>
-        <mat-divider class="timeline-divider"></mat-divider>
-
-        <div class="timeline-wrapper">
-          <app-timeline [taskGroups]="timelineGroups"></app-timeline>
-        </div>
-      </mat-expansion-panel>
-
-      <mat-expansion-panel [expanded]="true">
-        <mat-expansion-panel-header>
-          <mat-panel-title>Tasks and Subtasks</mat-panel-title>
-        </mat-expansion-panel-header>
-        <mat-divider></mat-divider>
-
-        <app-construction-phases
-          [groups]="constructionPhaseGroups"
-          [isProjectOwner]="isProjectOwner"
-        ></app-construction-phases>
-      </mat-expansion-panel>
-    </mat-accordion>
-  </div>
-
-  <div class="scope-pane" *ngIf="stageDisplayMode === 'stage' && activeTab === 'blueprints'">
-    <p class="blueprint-loading" *ngIf="isLoadingBlueprints">Loading blueprints...</p>
-    <app-project-blueprint-viewer
-      [mode]="'view'"
-      [uploadedFiles]="blueprintFiles"
-      [selectedFile]="selectedBlueprint"
-      [pdfSrc]="blueprintPdfSrc"
-      (fileSelected)="onBlueprintSelected($event)"
-    ></app-project-blueprint-viewer>
-  </div>
-
-  <section class="internal-team-section" *ngIf="stageDisplayMode === 'stage'">
-    <div class="internal-team-card">
-      <button
-        type="button"
-        class="internal-team-header"
-        (click)="internalTeamOpen = !internalTeamOpen"
-      >
-        <div class="internal-team-header-left">
-          <span class="internal-team-icon-wrap">
-            <lucide-icon name="users"></lucide-icon>
-          </span>
-          <div>
-            <h4>Internal Team</h4>
-            <p>{{ assignedTeamMembers.length }} members assigned</p>
-          </div>
-        </div>
-
-        <div class="internal-team-header-right">
-          <span class="member-count-pill">{{ assignedTeamMembers.length }} members</span>
-          <lucide-icon
-            [name]="internalTeamOpen ? 'chevron-up' : 'chevron-down'"
-            class="team-chevron"
-          ></lucide-icon>
-        </div>
-      </button>
-
-      <div class="internal-team-body" *ngIf="internalTeamOpen">
-        <app-job-team
-          [projectDetails]="projectDetails"
-          [assignedTeamMembers]="assignedTeamMembers"
-          [showSubcontractors]="false"
-          (refreshTeam)="refreshTeamRequested.emit()"
-        ></app-job-team>
-      </div>
-    </div>
-  </section>
-
-  <ng-container *ngIf="stageDisplayMode === 'live' && liveStageTemplate">
-    <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
-  </ng-container>
-</div>
 
 

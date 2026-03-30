@@ -4,9 +4,11 @@
     <h1 class="title">Notifications</h1>
 
     <div class="tools">
-      <div class="count" *ngIf="paginatedNotifications.length">
-        Page {{ currentPage }} of {{ totalPages }}
-      </div>
+      @if (paginatedNotifications.length) {
+        <div class="count">
+          Page {{ currentPage }} of {{ totalPages }}
+        </div>
+      }
 
       <label class="size" aria-label="Page size">
         <span>Show</span>
@@ -17,14 +19,15 @@
         </select>
       </label>
 
-      <button
-        class="btn ghost"
-        type="button"
-        (click)="markAllRead()"
-        *ngIf="paginatedNotifications.length"
-      >
-        Mark all read
-      </button>
+      @if (paginatedNotifications.length) {
+        <button
+          class="btn ghost"
+          type="button"
+          (click)="markAllRead()"
+          >
+          Mark all read
+        </button>
+      }
     </div>
   </header>
 
@@ -34,7 +37,7 @@
       class="tab"
       [class.active]="activeTab === 'ALL'"
       (click)="setTab('ALL')"
-    >
+      >
       All ({{ totalNotifications }})
     </button>
 
@@ -42,86 +45,89 @@
       class="tab"
       [class.active]="activeTab === 'UNREAD'"
       (click)="setTab('UNREAD')"
-    >
+      >
       Unread ({{ unreadCount }})
     </button>
   </div>
 
   <!-- ================= EMPTY STATE ================= -->
-  <section class="empty" *ngIf="!visibleNotifications.length">
-    <div class="empty__icon">🔔</div>
-    <p>No notifications yet</p>
-  </section>
+  @if (!visibleNotifications.length) {
+    <section class="empty">
+      <div class="empty__icon">🔔</div>
+      <p>No notifications yet</p>
+    </section>
+  }
 
   <!-- ================= NOTIFICATION LIST ================= -->
-  <div class="notif-list" *ngIf="visibleNotifications.length">
-    <div
-      class="notif-card"
-      *ngFor="let n of visibleNotifications; trackBy: trackByNotif"
-      [class.unread]="isUnread(n)"
-      (click)="onOpen(n)"
-      tabindex="0"
-      (keydown.enter)="onOpen(n)"
-      (keydown.space)="onOpen(n)"
-    >
-      <div class="accent"></div>
-
-      <div class="icon">
-        <mat-icon>notifications</mat-icon>
-      </div>
-
-      <div class="content">
-        <div class="title">
-          {{ n.message }}
+  @if (visibleNotifications.length) {
+    <div class="notif-list">
+      @for (n of visibleNotifications; track trackByNotif($index, n)) {
+        <div
+          class="notif-card"
+          [class.unread]="isUnread(n)"
+          (click)="onOpen(n)"
+          tabindex="0"
+          (keydown.enter)="onOpen(n)"
+          (keydown.space)="onOpen(n)"
+          >
+          <div class="accent"></div>
+          <div class="icon">
+            <mat-icon>notifications</mat-icon>
+          </div>
+          <div class="content">
+            <div class="title">
+              {{ n.message }}
+            </div>
+            @if (n.projectName) {
+              <div class="project">
+                <mat-icon>folder</mat-icon>
+                {{ n.projectName }}
+              </div>
+            }
+          </div>
+          <div class="meta">
+            <span class="date">
+              {{ n.timestamp | date: "yyyy-MM-dd" }}
+            </span>
+            @if (isUnread(n)) {
+              <span class="dot"></span>
+            }
+            <button
+              class="close"
+              type="button"
+              aria-label="Dismiss notification"
+              (click)="$event.stopPropagation()"
+              >
+              ×
+            </button>
+          </div>
         </div>
-
-        <div class="project" *ngIf="n.projectName">
-          <mat-icon>folder</mat-icon>
-          {{ n.projectName }}
-        </div>
-      </div>
-
-      <div class="meta">
-        <span class="date">
-          {{ n.timestamp | date: "yyyy-MM-dd" }}
-        </span>
-
-        <span class="dot" *ngIf="isUnread(n)"></span>
-
-        <button
-          class="close"
-          type="button"
-          aria-label="Dismiss notification"
-          (click)="$event.stopPropagation()"
-        >
-          ×
-        </button>
-      </div>
+      }
     </div>
-  </div>
+  }
 
   <!-- ================= PAGINATION ================= -->
-  <nav class="pager" *ngIf="paginatedNotifications.length">
-    <button
-      class="nav icon-btn"
-      (click)="previousPage()"
-      [disabled]="currentPage === 1"
-      aria-label="Previous page"
-    >
-      <span class="material-symbols-outlined">chevron_left</span>
-    </button>
-
-    <span class="pageinfo"> Page {{ currentPage }} of {{ totalPages }} </span>
-
-    <button
-      class="nav icon-btn"
-      (click)="nextPage()"
-      [disabled]="currentPage === totalPages"
-      aria-label="Next page"
-    >
-      <span class="material-symbols-outlined">chevron_right</span>
-    </button>
-  </nav>
+  @if (paginatedNotifications.length) {
+    <nav class="pager">
+      <button
+        class="nav icon-btn"
+        (click)="previousPage()"
+        [disabled]="currentPage === 1"
+        aria-label="Previous page"
+        >
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+      <span class="pageinfo"> Page {{ currentPage }} of {{ totalPages }} </span>
+      <button
+        class="nav icon-btn"
+        (click)="nextPage()"
+        [disabled]="currentPage === totalPages"
+        aria-label="Next page"
+        >
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </nav>
+  }
   <!-- ================= PREFERENCES ================= -->
   <section class="preferences">
     <div class="preferences__header">
@@ -130,17 +136,18 @@
     </div>
 
     <div class="preferences__grid">
-      <div class="pref-item" *ngFor="let row of preferenceRows">
-        <span>{{ row.label }}</span>
-
-        <mat-slide-toggle
-          [checked]="isPreferenceEnabled(row.type, NotificationChannel.InApp)"
+      @for (row of preferenceRows; track row) {
+        <div class="pref-item">
+          <span>{{ row.label }}</span>
+          <mat-slide-toggle
+            [checked]="isPreferenceEnabled(row.type, NotificationChannel.InApp)"
           (change)="
             onToggle(row.type, NotificationChannel.InApp, $event.checked)
           "
-        >
-        </mat-slide-toggle>
-      </div>
+            >
+          </mat-slide-toggle>
+        </div>
+      }
     </div>
   </section>
 </div>

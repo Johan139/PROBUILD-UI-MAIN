@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Inject, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   MatDialogModule,
   MatDialogRef,
@@ -17,13 +17,12 @@ import { environment } from '../../../../environments/environment';
   selector: 'app-documents-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     MatDialogModule,
     MatButtonModule,
     MatListModule,
     MatIconModule,
-    FileSizePipe,
-  ],
+    FileSizePipe
+],
   templateUrl: './documents-dialog.component.html',
   styleUrls: ['./documents-dialog.component.scss'],
 })

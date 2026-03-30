@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
 import { MatDialog } from '@angular/material/dialog';
@@ -14,7 +14,7 @@ export type PhaseReportRequestType =
 @Component({
   selector: 'app-phase-navigation-header',
   standalone: true,
-  imports: [CommonModule, LucideIconsModule],
+  imports: [LucideIconsModule],
   templateUrl: './phase-navigation-header.component.html',
   styleUrl: './phase-navigation-header.component.scss',
 })

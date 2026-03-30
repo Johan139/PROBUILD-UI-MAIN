@@ -44,7 +44,7 @@ export interface OverallTimelineDialogData {
           <mat-icon>close</mat-icon>
         </button>
       </header>
-
+    
       <mat-dialog-content class="scope-modal-content">
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Schedule Summary</p>
@@ -55,17 +55,19 @@ export interface OverallTimelineDialogData {
             <div class="scope-stat-row"><span>Working Days</span><strong>{{ data.workingDaysText }}</strong></div>
           </div>
         </section>
-
+    
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Key Milestones</p>
           <div class="scope-stat-list">
-            <div class="scope-stat-row" *ngFor="let milestone of data.milestones">
-              <span>{{ milestone.phase }}</span>
-              <strong [ngClass]="milestone.tone">{{ milestone.weeks }}</strong>
-            </div>
+            @for (milestone of data.milestones; track milestone) {
+              <div class="scope-stat-row">
+                <span>{{ milestone.phase }}</span>
+                <strong [ngClass]="milestone.tone">{{ milestone.weeks }}</strong>
+              </div>
+            }
           </div>
         </section>
-
+    
         <section class="scope-modal-section">
           <p class="scope-modal-section-title">Schedule Risk Assessment</p>
           <div class="scope-stat-list">
@@ -77,7 +79,7 @@ export interface OverallTimelineDialogData {
         </section>
       </mat-dialog-content>
     </div>
-  `,
+    `,
   styles: [
     `
       .scope-modal {

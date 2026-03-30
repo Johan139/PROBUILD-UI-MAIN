@@ -3,9 +3,11 @@
 
   <mat-dialog-content id="cd-desc" class="cd-content">
     <p class="cd-message">{{ data.message }}</p>
-    <mat-form-field *ngIf="data.input" class="cd-field">
-      <textarea matInput [(ngModel)]="reason" placeholder="Reason" cdkFocusInitial></textarea>
-    </mat-form-field>
+    @if (data.input) {
+      <mat-form-field class="cd-field">
+        <textarea matInput [(ngModel)]="reason" placeholder="Reason" cdkFocusInitial></textarea>
+      </mat-form-field>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end" class="cd-actions">

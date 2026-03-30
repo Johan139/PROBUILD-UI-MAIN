@@ -27,54 +27,64 @@
       <div class="modal-section">
         <p class="section-title-sm">Affected Tasks</p>
         <div class="task-list-simple">
-          <div *ngFor="let task of affectedTasks" class="task-row-simple">
-            <span class="task-name-sm">{{ task }}</span>
-            <span class="task-status-sm">Will be rescheduled</span>
-          </div>
+          @for (task of affectedTasks; track task) {
+            <div class="task-row-simple">
+              <span class="task-name-sm">{{ task }}</span>
+              <span class="task-status-sm">Will be rescheduled</span>
+            </div>
+          }
         </div>
       </div>
 
       <div class="modal-section">
         <div class="section-header">
-            <p class="section-title-sm">Team Members to Notify</p>
-            <button class="btn-text btn-add" (click)="toggleAddMember()">
-                {{ isAddingMember ? 'Done' : '+ Add' }}
-            </button>
+          <p class="section-title-sm">Team Members to Notify</p>
+          <button class="btn-text btn-add" (click)="toggleAddMember()">
+            {{ isAddingMember ? 'Done' : '+ Add' }}
+          </button>
         </div>
 
         <div class="task-list-simple">
-          <div *ngFor="let member of membersToNotify" class="task-row-simple">
-            <div class="member-info-group">
+          @for (member of membersToNotify; track member) {
+            <div class="task-row-simple">
+              <div class="member-info-group">
                 <button class="btn-icon btn-remove" (click)="removeMember(member)">
-                    <lucide-angular [img]="X" class="icon-xs"></lucide-angular>
+                  <lucide-angular [img]="X" class="icon-xs"></lucide-angular>
                 </button>
                 <div class="member-details">
-                    <p class="member-name">{{ member.firstName }} {{ member.lastName }}</p>
-                    <p class="member-role">{{ member.jobRole || member.role }}</p>
+                  <p class="member-name">{{ member.firstName }} {{ member.lastName }}</p>
+                  <p class="member-role">{{ member.jobRole || member.role }}</p>
                 </div>
+              </div>
+              <span class="notification-badge">
+                <lucide-angular [img]="Bell" class="icon-xs"></lucide-angular>
+                Will be notified
+              </span>
             </div>
-            <span class="notification-badge">
-              <lucide-angular [img]="Bell" class="icon-xs"></lucide-angular>
-              Will be notified
-            </span>
-          </div>
-          <div *ngIf="membersToNotify.length === 0" class="empty-state-text">
-            No team members selected.
-          </div>
+          }
+          @if (membersToNotify.length === 0) {
+            <div class="empty-state-text">
+              No team members selected.
+            </div>
+          }
         </div>
 
         <!-- Add Member Selection -->
-        <div *ngIf="isAddingMember" class="add-member-panel">
+        @if (isAddingMember) {
+          <div class="add-member-panel">
             <input type="text" placeholder="Search team..." class="search-input" [formControl]="searchControl">
             <div class="member-list-scroll">
-                <div *ngFor="let member of filteredAvailableMembers"
-                     class="member-option"
-                     (click)="addMember(member)">
-                    <span>{{ member.firstName }} {{ member.lastName }} ({{ member.jobRole || member.role }})</span>
-                    <lucide-angular [img]="Plus" class="icon-add"></lucide-angular>
+              @for (member of filteredAvailableMembers; track member) {
+                <div
+                  class="member-option"
+                  (click)="addMember(member)">
+                  <span>{{ member.firstName }} {{ member.lastName }} ({{ member.jobRole || member.role }})</span>
+                  <lucide-angular [img]="Plus" class="icon-add"></lucide-angular>
                 </div>
+              }
             </div>
-        </div>
+          </div>
+        }
       </div>
 
       <div class="timeline-adjustment-preview">

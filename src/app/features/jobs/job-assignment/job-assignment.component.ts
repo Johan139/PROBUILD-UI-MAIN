@@ -15,7 +15,7 @@ import {
   JobAssignmentLink,
   JobUser,
 } from './job-assignment.model';
-import { AsyncPipe, NgForOf, NgIf } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { MatCard, MatCardModule } from '@angular/material/card';
 import { LoaderComponent } from '../../../loader/loader.component';
@@ -38,8 +38,6 @@ import { UserService } from '../../../services/user.service';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    NgIf,
-    NgForOf,
     MatButton,
     LoaderComponent,
     MatCard,
@@ -52,8 +50,8 @@ import { UserService } from '../../../services/user.service';
     MatAutocompleteModule,
     AsyncPipe,
     MatTooltipModule,
-    SharedModule,
-  ],
+    SharedModule
+],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './job-assignment.component.html',
   styleUrls: ['./job-assignment.component.scss'],

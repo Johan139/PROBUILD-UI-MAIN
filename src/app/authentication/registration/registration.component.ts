@@ -12,7 +12,7 @@ import {
   ValidatorFn,
   ValidationErrors,
 } from '@angular/forms';
-import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -97,10 +97,8 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatGridListModule,
     MatGridListModule,
     ReactiveFormsModule,
-    NgForOf,
     MatSelectModule,
     MatDialogModule,
-    NgIf,
     MatInputModule,
     MatFormFieldModule,
     MatButton,
@@ -111,8 +109,8 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatChipsModule,
     MatRadioModule,
     MatIconModule,
-    RouterLink,
-  ],
+    RouterLink
+],
   templateUrl: './registration.component.html',
   styleUrl: './registration.component.scss',
 })

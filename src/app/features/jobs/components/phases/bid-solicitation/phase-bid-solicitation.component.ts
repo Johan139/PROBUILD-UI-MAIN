@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { JobInboundBiddingComponent } from './job-inbound-bidding.component';
 import {
@@ -27,7 +27,7 @@ interface ReadinessItem {
 @Component({
   selector: 'app-phase-bid-solicitation',
   standalone: true,
-  imports: [CommonModule, JobInboundBiddingComponent, PhaseNavigationHeaderComponent],
+  imports: [JobInboundBiddingComponent, PhaseNavigationHeaderComponent],
   templateUrl: './phase-bid-solicitation.component.html',
   styleUrl: './phase-bid-solicitation.component.scss',
 })

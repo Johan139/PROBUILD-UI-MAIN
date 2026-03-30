@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,7 +14,6 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-post-job-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     MatDialogModule,
     FormsModule,
     MatButtonModule,
@@ -24,7 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
     MatDatepickerModule,
     MatNativeDateModule,
     MatIconModule
-  ],
+],
   templateUrl: './post-job-dialog.component.html',
   styleUrls: ['./post-job-dialog.component.scss']
 })

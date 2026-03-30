@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { CommonModule } from '@angular/common';
+
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatTimepickerModule } from '@angular/material/timepicker';
@@ -28,12 +28,11 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
     MatDialogModule,
     MatIconModule,
     MatDividerModule,
-    CommonModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatDialogContent,
-    MatDialogActions,
-  ],
+    MatDialogActions
+],
   templateUrl: './add-event-dialog.component.html',
   styleUrls: ['./add-event-dialog.component.scss'],
 })

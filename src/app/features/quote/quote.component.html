@@ -1,303 +1,326 @@
-<div *ngIf="jobDetailsLoading" class="quote-skeleton">
-  <div class="skeleton header"></div>
-  <div class="skeleton block"></div>
-  <div class="skeleton block"></div>
-  <div class="skeleton table"></div>
-  <div class="skeleton totals"></div>
-</div>
+@if (jobDetailsLoading) {
+  <div class="quote-skeleton">
+    <div class="skeleton header"></div>
+    <div class="skeleton block"></div>
+    <div class="skeleton block"></div>
+    <div class="skeleton table"></div>
+    <div class="skeleton totals"></div>
+  </div>
+}
 
-<div class="quote-page" *ngIf="!jobDetailsLoading">
-  <div class="toast-anchor" id="toast-anchor"></div>
-
-  <!-- ================= TOP BAR (now inside grid) ================= -->
-  <div class="quote-editor-header full-width">
-    <!-- LEFT -->
-    <div class="header-left">
-      <button
-        mat-button
-        class="back-btn"
-        (click)="goBackToQuotes()"
-        aria-label="Go back to quotes list"
-      >
-        <mat-icon>arrow_back</mat-icon>
-        Back to Quotes & Invoices
-      </button>
-
-      <div class="title-group">
-        <h1>
-          {{
+@if (!jobDetailsLoading) {
+  <div class="quote-page">
+    <div class="toast-anchor" id="toast-anchor"></div>
+    <!-- ================= TOP BAR (now inside grid) ================= -->
+    <div class="quote-editor-header full-width">
+      <!-- LEFT -->
+      <div class="header-left">
+        <button
+          mat-button
+          class="back-btn"
+          (click)="goBackToQuotes()"
+          aria-label="Go back to quotes list"
+          >
+          <mat-icon>arrow_back</mat-icon>
+          Back to Quotes & Invoices
+        </button>
+        <div class="title-group">
+          <h1>
+            {{
             isInboundQuote
-              ? isQuote
-                ? "Quote Received"
-                : "Invoice Received"
-              : isQuote
-                ? "Quote Editor"
-                : "Invoice Editor"
-          }}
-        </h1>
-        <p class="parag">
-          {{
+            ? isQuote
+            ? "Quote Received"
+            : "Invoice Received"
+            : isQuote
+            ? "Quote Editor"
+            : "Invoice Editor"
+            }}
+          </h1>
+          <p class="parag">
+            {{
             isInboundQuote
-              ? "Review and respond to this document"
-              : "Generate professional documents for your clients"
-          }}
-        </p>
-      </div>
-
-      <div class="header-actions">
-        <!-- <button *ngIf="!isInboundQuote" mat-raised-button class="btn-primary">
+            ? "Review and respond to this document"
+            : "Generate professional documents for your clients"
+            }}
+          </p>
+        </div>
+        <div class="header-actions">
+          <!-- <button *ngIf="!isInboundQuote" mat-raised-button class="btn-primary">
           <mat-icon>add</mat-icon>
           {{ isQuote ? "New Quote" : "New Invoice" }}
         </button> -->
       </div>
     </div>
-
     <!-- RIGHT -->
     <!-- RIGHT -->
     <div class="header-right">
       <!-- Only show toggle for outbound drafts -->
-      <div class="doc-toggle" *ngIf="!isInboundQuote && !readOnly">
-        <button
-          class="toggle-btn"
-          [class.active]="isQuote"
-          (click)="switchToQuote()"
-        >
-          <mat-icon>request_quote</mat-icon>
-          Quote
-        </button>
-
-        <button
-          class="toggle-btn"
-          [class.active]="isInvoice"
-          (click)="switchToInvoice()"
-        >
-          <mat-icon>receipt_long</mat-icon>
-          Invoice
-        </button>
-      </div>
-
+      @if (!isInboundQuote && !readOnly) {
+        <div class="doc-toggle">
+          <button
+            class="toggle-btn"
+            [class.active]="isQuote"
+            (click)="switchToQuote()"
+            >
+            <mat-icon>request_quote</mat-icon>
+            Quote
+          </button>
+          <button
+            class="toggle-btn"
+            [class.active]="isInvoice"
+            (click)="switchToInvoice()"
+            >
+            <mat-icon>receipt_long</mat-icon>
+            Invoice
+          </button>
+        </div>
+      }
       <!-- Show document type badge for inbound OR submitted outbound -->
-      <div class="doc-type-badge" *ngIf="isInboundQuote || readOnly">
-        <mat-icon>{{ isQuote ? "request_quote" : "receipt_long" }}</mat-icon>
-        <span>{{ isQuote ? "Quote" : "Invoice" }}</span>
-      </div>
+      @if (isInboundQuote || readOnly) {
+        <div class="doc-type-badge">
+          <mat-icon>{{ isQuote ? "request_quote" : "receipt_long" }}</mat-icon>
+          <span>{{ isQuote ? "Quote" : "Invoice" }}</span>
+        </div>
+      }
     </div>
   </div>
-
   <!-- ================= LEFT SIDEBAR ================= -->
-  <aside class="quote-sidebar" *ngIf="!isInboundQuote">
-    <!-- TAB NAVIGATION -->
-    <div class="sidebar-tabs">
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === 'company'"
-        (click)="switchTab('company')"
-      >
-        <mat-icon>business</mat-icon>
-        Company
-      </button>
-      <button
-        class="tab-btn"
-        [class.active]="activeTab === 'jobs'"
-        *ngIf="!isInboundQuote"
-        (click)="switchTab('jobs')"
-        [disabled]="readOnly"
-      >
-        <mat-icon>work</mat-icon>
-        Jobs ({{ successJobs.length }})
-      </button>
-    </div>
-
-    <!-- COMPANY TAB CONTENT -->
-    <div class="sidebar-content" *ngIf="activeTab === 'company'">
-      <!-- Company Logo -->
-      <!-- Company Logo - hide upload functionality when readOnly -->
-      <section class="sidebar-card" *ngIf="!isInboundQuote">
-        <h4>Company Logo</h4>
-
-        <div
-          class="logo-container"
-          [class.readonly]="readOnly"
-          (click)="!readOnly && triggerFileInput()"
-          [matTooltip]="readOnly ? '' : 'Upload or replace your company logo'"
-        >
-          <div class="placeholder" *ngIf="!logoId && !logoUrl && !readOnly">
-            <mat-icon>cloud_upload</mat-icon>
-            <span>Upload Logo</span>
-          </div>
-
-          <img
-            *ngIf="logoId"
-            class="logo-image"
-            [src]="logoImageSrc"
-            (error)="onLogoLoadError($event)"
-            alt="Company logo"
-          />
-
-          <input
-            #fileInput
-            type="file"
-            accept="image/*"
-            class="file-input"
-            (change)="onLogoChange($event)"
+  @if (!isInboundQuote) {
+    <aside class="quote-sidebar">
+      <!-- TAB NAVIGATION -->
+      <div class="sidebar-tabs">
+        <button
+          class="tab-btn"
+          [class.active]="activeTab === 'company'"
+          (click)="switchTab('company')"
+          >
+          <mat-icon>business</mat-icon>
+          Company
+        </button>
+        @if (!isInboundQuote) {
+          <button
+            class="tab-btn"
+            [class.active]="activeTab === 'jobs'"
+            (click)="switchTab('jobs')"
             [disabled]="readOnly"
-          />
-
-          <button
-            *ngIf="logoUrl && !readOnly"
-            mat-icon-button
-            class="remove-logo"
-            (click)="removeLogo(); $event.stopPropagation()"
-          >
-            <mat-icon>close</mat-icon>
+            >
+            <mat-icon>work</mat-icon>
+            Jobs ({{ successJobs.length }})
           </button>
-        </div>
-      </section>
-
-      <!-- Company Details - hide edit button when readOnly -->
-      <section class="sidebar-card" *ngIf="!isInboundQuote">
-        <div class="sidebar-header">
-          <h4>Company Details</h4>
-          <button
-            mat-icon-button
-            class="edit-button"
-            *ngIf="!readOnly"
-            (click)="openEditCompanyDialog()"
-          >
-            <mat-icon>edit</mat-icon>
-          </button>
-        </div>
-
-        <div class="sidebar-text" *ngIf="companyDetails as c">
-          <div class="company-name">{{ c.name }}</div>
-          <div class="company-address" *ngIf="c.address">
-            {{ getCompanyAddress() }}
-          </div>
-          <div class="company-email" *ngIf="c.email">{{ c.email }}</div>
-          <div class="company-phone" *ngIf="c.phoneNumber">
-            {{ c.phoneNumber }}
-          </div>
-        </div>
-      </section>
-      <!-- Quick Actions -->
-      <!-- <section class="sidebar-card">
-        <h4>Quick Actions</h4>
-        <button mat-button>View All Documents</button>
-        <button mat-button>Client Directory</button>
-        <button mat-button>Template Settings</button>
-      </section> -->
-    </div>
-
-    <!-- JOBS TAB CONTENT - SIMPLIFIED -->
-    <div class="sidebar-content" *ngIf="activeTab === 'jobs'">
-      <!-- Loading -->
-      <div *ngIf="jobsLoading" class="jobs-loading">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Loading jobs...</p>
+        }
       </div>
-
-      <!-- Empty State -->
-      <div *ngIf="!jobsLoading && successJobs.length === 0" class="jobs-empty">
-        <mat-icon>work_off</mat-icon>
-        <p>No jobs found</p>
-        <button mat-button class="btn btn-secondary" type="button" routerLink="/jobs">Browse Jobs</button>
-      </div>
-
-      <!-- Jobs List - Simple -->
-      <div *ngIf="!jobsLoading && successJobs.length > 0" class="jobs-list">
-        <div class="jobs-header">
-          <h4>Select a Job</h4>
-          <span class="jobs-count">{{ successJobs.length }} jobs</span>
+      <!-- COMPANY TAB CONTENT -->
+      @if (activeTab === 'company') {
+        <div class="sidebar-content">
+          <!-- Company Logo -->
+          <!-- Company Logo - hide upload functionality when readOnly -->
+          @if (!isInboundQuote) {
+            <section class="sidebar-card">
+              <h4>Company Logo</h4>
+              <div
+                class="logo-container"
+                [class.readonly]="readOnly"
+                (click)="!readOnly && triggerFileInput()"
+                [matTooltip]="readOnly ? '' : 'Upload or replace your company logo'"
+                >
+                @if (!logoId && !logoUrl && !readOnly) {
+                  <div class="placeholder">
+                    <mat-icon>cloud_upload</mat-icon>
+                    <span>Upload Logo</span>
+                  </div>
+                }
+                @if (logoId) {
+                  <img
+                    class="logo-image"
+                    [src]="logoImageSrc"
+                    (error)="onLogoLoadError($event)"
+                    alt="Company logo"
+                    />
+                }
+                <input
+                  #fileInput
+                  type="file"
+                  accept="image/*"
+                  class="file-input"
+                  (change)="onLogoChange($event)"
+                  [disabled]="readOnly"
+                  />
+                  @if (logoUrl && !readOnly) {
+                    <button
+                      mat-icon-button
+                      class="remove-logo"
+                      (click)="removeLogo(); $event.stopPropagation()"
+                      >
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+                </div>
+              </section>
+            }
+            <!-- Company Details - hide edit button when readOnly -->
+            @if (!isInboundQuote) {
+              <section class="sidebar-card">
+                <div class="sidebar-header">
+                  <h4>Company Details</h4>
+                  @if (!readOnly) {
+                    <button
+                      mat-icon-button
+                      class="edit-button"
+                      (click)="openEditCompanyDialog()"
+                      >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                </div>
+                @if (companyDetails; as c) {
+                  <div class="sidebar-text">
+                    <div class="company-name">{{ c.name }}</div>
+                    @if (c.address) {
+                      <div class="company-address">
+                        {{ getCompanyAddress() }}
+                      </div>
+                    }
+                    @if (c.email) {
+                      <div class="company-email">{{ c.email }}</div>
+                    }
+                    @if (c.phoneNumber) {
+                      <div class="company-phone">
+                        {{ c.phoneNumber }}
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
+            }
+            <!-- Quick Actions -->
+            <!-- <section class="sidebar-card">
+            <h4>Quick Actions</h4>
+            <button mat-button>View All Documents</button>
+            <button mat-button>Client Directory</button>
+            <button mat-button>Template Settings</button>
+          </section> -->
         </div>
-
-        <div
-          class="job-item"
-          *ngFor="let job of successJobs"
-          [class.selected]="selectedJobId === job.id?.toString()"
-        >
-          <div
-            class="job-name"
-            [title]="job.projectName || job.jobType || 'Job #' + job.id"
-          >
-            {{ job.projectName || job.jobType || "Job #" + job.jobId }}
-          </div>
-
-          <button
-            mat-button
-            class="btn btn-primary generate-btn"
-            (click)="openGenerateQuoteDialog(job)"
-            matTooltip="Generate a quote from this job"
-          >
-            Generate Quote
-          </button>
+      }
+      <!-- JOBS TAB CONTENT - SIMPLIFIED -->
+      @if (activeTab === 'jobs') {
+        <div class="sidebar-content">
+          <!-- Loading -->
+          @if (jobsLoading) {
+            <div class="jobs-loading">
+              <mat-spinner diameter="40"></mat-spinner>
+              <p>Loading jobs...</p>
+            </div>
+          }
+          <!-- Empty State -->
+          @if (!jobsLoading && successJobs.length === 0) {
+            <div class="jobs-empty">
+              <mat-icon>work_off</mat-icon>
+              <p>No jobs found</p>
+              <button mat-button class="btn btn-secondary" type="button" routerLink="/jobs">Browse Jobs</button>
+            </div>
+          }
+          <!-- Jobs List - Simple -->
+          @if (!jobsLoading && successJobs.length > 0) {
+            <div class="jobs-list">
+              <div class="jobs-header">
+                <h4>Select a Job</h4>
+                <span class="jobs-count">{{ successJobs.length }} jobs</span>
+              </div>
+              @for (job of successJobs; track job) {
+                <div
+                  class="job-item"
+                  [class.selected]="selectedJobId === job.id?.toString()"
+                  >
+                  <div
+                    class="job-name"
+                    [title]="job.projectName || job.jobType || 'Job #' + job.id"
+                    >
+                    {{ job.projectName || job.jobType || "Job #" + job.jobId }}
+                  </div>
+                  <button
+                    mat-button
+                    class="btn btn-primary generate-btn"
+                    (click)="openGenerateQuoteDialog(job)"
+                    matTooltip="Generate a quote from this job"
+                    >
+                    Generate Quote
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
-      </div>
-    </div>
-  </aside>
-
+      }
+    </aside>
+  }
   <!-- ================= INBOUND QUOTE SIDEBAR (Sender Info) ================= -->
-  <aside class="quote-sidebar inbound-sidebar" *ngIf="isInboundQuote">
-    <section class="sidebar-card">
-      <h4>Received From</h4>
-      <div class="sidebar-text">
-        <div class="company-name">{{ quoteForm.get("from")?.value }}</div>
-      </div>
-    </section>
-
-    <section class="sidebar-card">
-      <h4>Document Status</h4>
-      <div
-        class="status-badge"
-        [ngClass]="isAlreadyActioned ? 'actioned' : 'pending'"
-      >
-        {{ isAlreadyActioned ? "Responded" : "Pending Review" }}
-      </div>
-    </section>
-  </aside>
-
+  @if (isInboundQuote) {
+    <aside class="quote-sidebar inbound-sidebar">
+      <section class="sidebar-card">
+        <h4>Received From</h4>
+        <div class="sidebar-text">
+          <div class="company-name">{{ quoteForm.get("from")?.value }}</div>
+        </div>
+      </section>
+      <section class="sidebar-card">
+        <h4>Document Status</h4>
+        <div
+          class="status-badge"
+          [ngClass]="isAlreadyActioned ? 'actioned' : 'pending'"
+          >
+          {{ isAlreadyActioned ? "Responded" : "Pending Review" }}
+        </div>
+      </section>
+    </aside>
+  }
   <!-- ================= MAIN CONTENT ================= -->
   <main class="quote-main" [class.inbound-view]="isInboundQuote">
-    <mat-progress-bar
-      *ngIf="isSaving"
-      mode="indeterminate"
-      class="quote-progress-bar"
-    ></mat-progress-bar>
-
+    @if (isSaving) {
+      <mat-progress-bar
+        mode="indeterminate"
+        class="quote-progress-bar"
+      ></mat-progress-bar>
+    }
     <form [formGroup]="quoteForm">
       <!-- ================= QUOTE HEADER ================= -->
       <header class="quote-top-header">
         <!-- LEFT -->
         <div class="company-header">
           <!-- LOGO AT TOP -->
-          <img
-            *ngIf="logoId"
-            class="quote-logo"
-            [src]="logoImageSrc"
-            alt="Company logo"
-          />
-
+          @if (logoId) {
+            <img
+              class="quote-logo"
+              [src]="logoImageSrc"
+              alt="Company logo"
+              />
+          }
           <!-- TEXT MOVES DOWN -->
-          <div class="company-block" *ngIf="companyDetails as c">
-            <div class="company-name">{{ c.name }}</div>
-
-            <div class="company-address" *ngIf="c.address">
-              {{ getCompanyAddress() }}
+          @if (companyDetails; as c) {
+            <div class="company-block">
+              <div class="company-name">{{ c.name }}</div>
+              @if (c.address) {
+                <div class="company-address">
+                  {{ getCompanyAddress() }}
+                </div>
+              }
+              @if (c.email) {
+                <div class="company-details">
+                  {{ c.email }}
+                </div>
+              }
+              @if (c.phoneNumber) {
+                <div class="company-details">
+                  {{ c.phoneNumber }}
+                </div>
+              }
             </div>
-            <div class="company-details" *ngIf="c.email">
-              {{ c.email }}
-            </div>
-            <div class="company-details" *ngIf="c.phoneNumber">
-              {{ c.phoneNumber }}
-            </div>
-          </div>
+          }
         </div>
-
         <!-- RIGHT -->
         <div class="quote-block">
           <div class="quote-title">
             {{ isQuote ? "QUOTE" : "INVOICE" }}
           </div>
-
           <div class="quote-meta-row">
             <span>{{ isQuote ? "Quote #" : "Invoice #" }}:</span>
             <input
@@ -306,499 +329,493 @@
               formControlName="number"
               [readonly]="true"
               placeholder="Auto-generated"
-            />
-          </div>
-
-          <div class="quote-meta-row">
-            <span>Date:</span>
-            <input
-              class="meta-input"
-              type="date"
-              formControlName="date"
-              [readonly]="readOnly"
-            />
-          </div>
-          <div class="quote-meta-row">
-            <span>{{ isQuote ? "Valid Until:" : "Due Date:" }}</span>
-            <input
-              class="meta-input"
-              type="date"
-              formControlName="dueDate"
-              [readonly]="isInboundQuote"
-            />
-          </div>
-          <div class="quote-meta-row" *ngIf="isInvoice">
-            <span>Payment Terms:</span>
-            <select
-              class="meta-input"
-              formControlName="paymentTerms"
-              [disabled]="readOnly || isInboundQuote"
-            >
-              <option value="">Select...</option>
-              <option value="Due on Receipt">Due on Receipt</option>
-              <option value="Net 15">Net 15</option>
-              <option value="Net 30">Net 30</option>
-              <option value="Net 60">Net 60</option>
-            </select>
-          </div>
-        </div>
-      </header>
-
-      <div class="section-divider"></div>
-
-      <!-- ================= ALERTS ================= -->
-      <div *ngIf="showFeeReminder" class="alert alert-warning">
-        <strong>Reminder:</strong>
-        A fee (5% Subcontractors, 2.5% Vendors) applies if you win this bid.
-      </div>
-
-      <div *ngIf="isFinalBiddingRound" class="alert alert-info">
-        This is the final bidding round.
-      </div>
-
-      <!-- ================= BILL TO / PROJECT ================= -->
-      <section class="details-section">
-        <!-- Bill To -->
-        <div class="details-card">
-          <h4 class="section-title">Bill To:</h4>
-
-          <div class="field-stack">
-            <input
-              type="text"
-              class="dark-input"
-              placeholder="Client Name"
-              formControlName="to"
-              [readonly]="isInboundQuote"
-            />
-
-            <input
-              type="text"
-              class="dark-input"
-              formControlName="clientAddress"
-              placeholder="Client Address"
-              [readonly]="isInboundQuote"
-            />
-
-            <div class="field-row">
-              <input
-                type="text"
-                class="dark-input"
-                placeholder="Phone"
-                formControlName="clientPhone"
-                [readonly]="isInboundQuote"
-              />
-              <input
-                type="email"
-                class="dark-input"
-                placeholder="Email"
-                formControlName="clientEmail"
-                [readonly]="isInboundQuote"
               />
             </div>
-          </div>
-        </div>
-
-        <!-- Project -->
-        <div class="details-card">
-          <h4 class="section-title">Project Details:</h4>
-
-          <div class="field-stack">
-            <input
-              type="text"
-              class="dark-input"
-              placeholder="Project Name"
-              formControlName="projectName"
-              [readonly]="isInboundQuote"
-            />
-            <input
-              type="text"
-              class="dark-input"
-              placeholder="Project Address"
-              formControlName="projectAddress"
-              [readonly]="isInboundQuote"
-            />
-          </div>
-        </div>
-      </section>
-
-      <div class="section-divider"></div>
-      <!-- ================= LINE ITEMS ================= -->
-      <section class="line-items-section" formArrayName="quoteRows">
-        <h4 class="section-title">Line Items</h4>
-
-        <!-- Header -->
-        <div class="line-items-header">
-          <span>Description</span>
-          <span>Qty</span>
-          <span>Unit</span>
-          <span>Unit Price</span>
-          <span class="amount-col">Amount</span>
-          <span *ngIf="!readOnly"></span>
-        </div>
-
-        <!-- Rows -->
-        <div
-          class="line-item-row"
-          *ngFor="
-            let row of quoteRowsAsFormGroups;
-            let i = index;
-            trackBy: trackByIndex
-          "
-          [formGroupName]="i"
-        >
-          <input
-            type="text"
-            class="dark-input"
-            formControlName="description"
-            placeholder="Item description"
-            [readonly]="readOnly"
-          />
-
-          <input
-            type="number"
-            class="dark-input qty-input"
-            formControlName="quantity"
-            min="1"
-            [readonly]="readOnly"
-          />
-
-          <select
-            class="dark-input"
-            formControlName="unit"
-            [disabled]="readOnly || isInboundQuote"
-          >
-            <option *ngFor="let unit of units" [value]="unit.code">
-              {{ unit.label }}
-            </option>
-          </select>
-
-          <input
-            type="number"
-            class="dark-input price-input"
-            formControlName="unitPrice"
-            min="0"
-            step="any"
-            [readonly]="readOnly"
-          />
-
-          <div class="amount-cell">
-            ${{ row.get("total")?.value | number: "1.2-2" }}
-          </div>
-
-          <!-- Hide delete button when read-only -->
-          <button
-            mat-icon-button
-            class="delete-btn"
-            *ngIf="quoteRows.length > 1 && !readOnly"
-            (click)="removeRow(i)"
-            matTooltip="Remove this line item"
-          >
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
-
-        <!-- Hide Add button when read-only -->
-        <button
-          mat-button
-          class="btn btn-secondary add-line-btn"
-          (click)="addRow()"
-          matTooltip="Add a new line item to the quote"
-          *ngIf="!readOnly"
-        >
-          <mat-icon>add</mat-icon>
-          Add Line Item
-        </button>
-      </section>
-
-      <div class="section-divider"></div>
-
-      <!-- ================= TOTALS ================= -->
-      <section class="totals-section">
-        <!-- Subtotal -->
-        <div class="totals-row">
-          <span class="label">Subtotal:</span>
-          <div></div>
-          <span class="value"> ${{ getSubtotal() | number: "1.2-2" }} </span>
-        </div>
-
-        <!-- Extra Cost -->
-        <div class="totals-row" *ngIf="hasExtraCost">
-          <span class="label">Extra Cost:</span>
-          <input
-            type="number"
-            class="dark-input small"
-            formControlName="extraCostValue"
-            [readonly]="isInboundQuote"
-            *ngIf="!isInboundQuote"
-          />
-          <span class="value">
-            ${{ quoteForm.get("extraCostValue")?.value | number: "1.2-2" }}
-          </span>
-        </div>
-
-        <!-- Discount -->
-        <div class="totals-row">
-          <span class="label">Discount:</span>
-
-          <div class="inline-input" *ngIf="!isInboundQuote">
-            <select class="dark-input small">
-              <option>%</option>
-            </select>
-            <input
-              type="number"
-              class="dark-input small"
-              formControlName="discountValue"
-            />
-          </div>
-          <div *ngIf="isInboundQuote">
-            {{ quoteForm.get("discountValue")?.value || 0 }}%
-          </div>
-
-          <span class="value negative">
-            -{{
-              (hasDiscount
-                ? (getSubtotal() *
-                    (quoteForm.get("discountValue")?.value || 0)) /
-                  100
-                : 0
-              ) | number: "1.2-2"
-            }}
-          </span>
-        </div>
-
-        <!-- Tax -->
-        <div class="totals-row">
-          <span class="label">Tax Rate:</span>
-
-          <div class="inline-input" *ngIf="!isInboundQuote">
-            <input
-              type="number"
-              class="dark-input small"
-              formControlName="taxValue"
-            />
-            <span class="suffix">%</span>
-          </div>
-          <div *ngIf="isInboundQuote">
-            {{ quoteForm.get("taxValue")?.value || 0 }}%
-          </div>
-
-          <span class="value">
-            ${{
-              (hasTax
-                ? (getSubtotal() * (quoteForm.get("taxValue")?.value || 0)) /
-                  100
-                : 0
-              ) | number: "1.2-2"
-            }}
-          </span>
-        </div>
-        <div class="totals-row" *ngIf="isInvoice">
-          <span class="label">Amount Paid:</span>
-
-          <div class="inline-input" *ngIf="!isInboundQuote && !readOnly">
-            <span class="prefix">$</span>
-            <input
-              type="number"
-              class="dark-input small"
-              formControlName="amountPaid"
-              min="0"
-              step="any"
-            />
-          </div>
-          <span *ngIf="isInboundQuote || readOnly">
-            ${{ quoteForm.get("amountPaid")?.value | number: "1.2-2" }}
-          </span>
-
-          <span class="value negative">
-            -${{ quoteForm.get("amountPaid")?.value || 0 | number: "1.2-2" }}
-          </span>
-        </div>
-
-        <!-- Balance Due - Invoice only, when payment exists -->
-        <div
-          class="totals-row balance-due"
-          *ngIf="isInvoice && quoteForm.get('amountPaid')?.value > 0"
-        >
-          <span class="label">Balance Due:</span>
-          <div></div>
-          <span class="value balance-amount">
-            ${{ getBalanceDue() | number: "1.2-2" }}
-          </span>
-        </div>
-        <div class="totals-divider"></div>
-
-        <!-- Total -->
-        <div class="totals-row total">
-          <span class="label">Total:</span>
-          <div></div>
-          <span class="value total-amount">
-            ${{ getGrandTotal() | number: "1.2-2" }}
-          </span>
-        </div>
-      </section>
-
-      <!-- ================= NOTES / TERMS ================= -->
-      <section class="notes-terms">
-        <mat-form-field appearance="outline">
-          <mat-label>Notes</mat-label>
-          <textarea
-            matInput
-            rows="4"
-            formControlName="notes"
-            [readonly]="isInboundQuote"
-          ></textarea>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Terms & Conditions</mat-label>
-          <textarea
-            matInput
-            rows="4"
-            formControlName="terms"
-            [readonly]="isInboundQuote"
-          ></textarea>
-        </mat-form-field>
-      </section>
-
-      <!-- ================= ACTION BAR ================= -->
-      <footer class="quote-actions">
-        <!-- INBOUND QUOTES: Only show these buttons -->
-        <ng-container *ngIf="isInboundQuote">
-          <span class="spacer"></span>
-
-          <button
-            mat-button
-            class="btn btn-secondary"
-            matTooltip="Download a PDF copy for your records"
-            (click)="exportPdf()"
-            *ngIf="quoteId"
-          >
-            Download PDF
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-danger"
-            (click)="rejectQuote()"
-            [disabled]="isAlreadyActioned"
-          >
-            Reject Quote
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-primary"
-            (click)="approveQuote()"
-            [disabled]="isAlreadyActioned"
-          >
-            Approve Quote
-          </button>
-        </ng-container>
-
-        <!-- OUTBOUND SUBMITTED: Read-only, only download -->
-        <ng-container *ngIf="!isInboundQuote && readOnly">
-          <span class="spacer"></span>
-
-          <button
-            mat-button
-            class="btn btn-secondary"
-            matTooltip="Download a PDF copy for your records"
-            (click)="exportPdf()"
-            *ngIf="quoteId"
-          >
-            Download PDF
-          </button>
-        </ng-container>
-
-        <!-- OUTBOUND DRAFT: Full editing buttons -->
-        <ng-container *ngIf="!isInboundQuote && !readOnly && !isBidMode">
-          <button
-            mat-button
-            class="btn btn-ghost"
-            matTooltip="Preview the document"
-            (click)="openPreview()"
-          >
-            Preview
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-ghost"
-            matTooltip="Create a copy of this quote"
-            (click)="duplicateQuote()"
-            *ngIf="quoteId"
-          >
-            Duplicate
-          </button>
-          <button
-            mat-button
-            class="btn btn-ghost"
-            matTooltip="Archive this quote"
-            (click)="archiveItem()"
-            *ngIf="quoteId"
-          >
-            Archive
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-danger"
-            matTooltip="Permanently delete this draft"
-            (click)="deleteQuote()"
-            *ngIf="quoteId"
-          >
-            Delete
-          </button>
-
-          <span class="spacer"></span>
-
-          <button
-            mat-button
-            class="btn btn-secondary"
-            matTooltip="Save without sending to the client"
-            (click)="saveToDatabase()"
-          >
-            Save Draft
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-secondary"
-            matTooltip="Download a PDF copy and submit manually"
-            (click)="onSubmit()"
-            *ngIf="quoteId"
-          >
-            Export PDF
-          </button>
-
-          <button
-            mat-button
-            class="btn btn-primary"
-            [disabled]="isSaving"
-            matTooltip="Submit and email this quote to the client"
-            (click)="submitQuote()"
-          >
-            <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
-
-            <span *ngIf="!isSaving">Send to Client</span>
-          </button>
-        </ng-container>
-
-        <ng-container *ngIf="!isInboundQuote && !readOnly && isBidMode">
-          <span class="spacer"></span>
-
-          <button mat-button class="btn btn-secondary" type="button" (click)="cancelBidMode()">Cancel</button>
-          <button
-            mat-button
-            class="btn btn-primary"
-            [disabled]="isSaving"
-            (click)="generateForBid()"
-          >
-            <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
-            <span *ngIf="!isSaving">Generate for Bid</span>
-          </button>
-        </ng-container>
-      </footer>
-    </form>
-  </main>
-</div>
+            <div class="quote-meta-row">
+              <span>Date:</span>
+              <input
+                class="meta-input"
+                type="date"
+                formControlName="date"
+                [readonly]="readOnly"
+                />
+              </div>
+              <div class="quote-meta-row">
+                <span>{{ isQuote ? "Valid Until:" : "Due Date:" }}</span>
+                <input
+                  class="meta-input"
+                  type="date"
+                  formControlName="dueDate"
+                  [readonly]="isInboundQuote"
+                  />
+                </div>
+                @if (isInvoice) {
+                  <div class="quote-meta-row">
+                    <span>Payment Terms:</span>
+                    <select
+                      class="meta-input"
+                      formControlName="paymentTerms"
+                      [disabled]="readOnly || isInboundQuote"
+                      >
+                      <option value="">Select...</option>
+                      <option value="Due on Receipt">Due on Receipt</option>
+                      <option value="Net 15">Net 15</option>
+                      <option value="Net 30">Net 30</option>
+                      <option value="Net 60">Net 60</option>
+                    </select>
+                  </div>
+                }
+              </div>
+            </header>
+            <div class="section-divider"></div>
+            <!-- ================= ALERTS ================= -->
+            @if (showFeeReminder) {
+              <div class="alert alert-warning">
+                <strong>Reminder:</strong>
+                A fee (5% Subcontractors, 2.5% Vendors) applies if you win this bid.
+              </div>
+            }
+            @if (isFinalBiddingRound) {
+              <div class="alert alert-info">
+                This is the final bidding round.
+              </div>
+            }
+            <!-- ================= BILL TO / PROJECT ================= -->
+            <section class="details-section">
+              <!-- Bill To -->
+              <div class="details-card">
+                <h4 class="section-title">Bill To:</h4>
+                <div class="field-stack">
+                  <input
+                    type="text"
+                    class="dark-input"
+                    placeholder="Client Name"
+                    formControlName="to"
+                    [readonly]="isInboundQuote"
+                    />
+                    <input
+                      type="text"
+                      class="dark-input"
+                      formControlName="clientAddress"
+                      placeholder="Client Address"
+                      [readonly]="isInboundQuote"
+                      />
+                      <div class="field-row">
+                        <input
+                          type="text"
+                          class="dark-input"
+                          placeholder="Phone"
+                          formControlName="clientPhone"
+                          [readonly]="isInboundQuote"
+                          />
+                          <input
+                            type="email"
+                            class="dark-input"
+                            placeholder="Email"
+                            formControlName="clientEmail"
+                            [readonly]="isInboundQuote"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Project -->
+                      <div class="details-card">
+                        <h4 class="section-title">Project Details:</h4>
+                        <div class="field-stack">
+                          <input
+                            type="text"
+                            class="dark-input"
+                            placeholder="Project Name"
+                            formControlName="projectName"
+                            [readonly]="isInboundQuote"
+                            />
+                            <input
+                              type="text"
+                              class="dark-input"
+                              placeholder="Project Address"
+                              formControlName="projectAddress"
+                              [readonly]="isInboundQuote"
+                              />
+                            </div>
+                          </div>
+                        </section>
+                        <div class="section-divider"></div>
+                        <!-- ================= LINE ITEMS ================= -->
+                        <section class="line-items-section" formArrayName="quoteRows">
+                          <h4 class="section-title">Line Items</h4>
+                          <!-- Header -->
+                          <div class="line-items-header">
+                            <span>Description</span>
+                            <span>Qty</span>
+                            <span>Unit</span>
+                            <span>Unit Price</span>
+                            <span class="amount-col">Amount</span>
+                            @if (!readOnly) {
+                              <span></span>
+                            }
+                          </div>
+                          <!-- Rows -->
+                          @for (
+                            row of quoteRowsAsFormGroups; track trackByIndex($index);
+                            let i = $index) {
+                            <div
+                              class="line-item-row"
+                              [formGroupName]="i"
+                              >
+                              <input
+                                type="text"
+                                class="dark-input"
+                                formControlName="description"
+                                placeholder="Item description"
+                                [readonly]="readOnly"
+                                />
+                                <input
+                                  type="number"
+                                  class="dark-input qty-input"
+                                  formControlName="quantity"
+                                  min="1"
+                                  [readonly]="readOnly"
+                                  />
+                                  <select
+                                    class="dark-input"
+                                    formControlName="unit"
+                                    [disabled]="readOnly || isInboundQuote"
+                                    >
+                                    @for (unit of units; track unit) {
+                                      <option [value]="unit.code">
+                                        {{ unit.label }}
+                                      </option>
+                                    }
+                                  </select>
+                                  <input
+                                    type="number"
+                                    class="dark-input price-input"
+                                    formControlName="unitPrice"
+                                    min="0"
+                                    step="any"
+                                    [readonly]="readOnly"
+                                    />
+                                    <div class="amount-cell">
+                                      ${{ row.get("total")?.value | number: "1.2-2" }}
+                                    </div>
+                                    <!-- Hide delete button when read-only -->
+                                    @if (quoteRows.length > 1 && !readOnly) {
+                                      <button
+                                        mat-icon-button
+                                        class="delete-btn"
+                                        (click)="removeRow(i)"
+                                        matTooltip="Remove this line item"
+                                        >
+                                        <mat-icon>delete</mat-icon>
+                                      </button>
+                                    }
+                                  </div>
+                                }
+                                <!-- Hide Add button when read-only -->
+                                @if (!readOnly) {
+                                  <button
+                                    mat-button
+                                    class="btn btn-secondary add-line-btn"
+                                    (click)="addRow()"
+                                    matTooltip="Add a new line item to the quote"
+                                    >
+                                    <mat-icon>add</mat-icon>
+                                    Add Line Item
+                                  </button>
+                                }
+                              </section>
+                              <div class="section-divider"></div>
+                              <!-- ================= TOTALS ================= -->
+                              <section class="totals-section">
+                                <!-- Subtotal -->
+                                <div class="totals-row">
+                                  <span class="label">Subtotal:</span>
+                                  <div></div>
+                                  <span class="value"> ${{ getSubtotal() | number: "1.2-2" }} </span>
+                                </div>
+                                <!-- Extra Cost -->
+                                @if (hasExtraCost) {
+                                  <div class="totals-row">
+                                    <span class="label">Extra Cost:</span>
+                                    @if (!isInboundQuote) {
+                                      <input
+                                        type="number"
+                                        class="dark-input small"
+                                        formControlName="extraCostValue"
+                                        [readonly]="isInboundQuote"
+                                        />
+                                    }
+                                    <span class="value">
+                                      ${{ quoteForm.get("extraCostValue")?.value | number: "1.2-2" }}
+                                    </span>
+                                  </div>
+                                }
+                                <!-- Discount -->
+                                <div class="totals-row">
+                                  <span class="label">Discount:</span>
+                                  @if (!isInboundQuote) {
+                                    <div class="inline-input">
+                                      <select class="dark-input small">
+                                        <option>%</option>
+                                      </select>
+                                      <input
+                                        type="number"
+                                        class="dark-input small"
+                                        formControlName="discountValue"
+                                        />
+                                      </div>
+                                    }
+                                    @if (isInboundQuote) {
+                                      <div>
+                                        {{ quoteForm.get("discountValue")?.value || 0 }}%
+                                      </div>
+                                    }
+                                    <span class="value negative">
+                                      -{{
+                                      (hasDiscount
+                                      ? (getSubtotal() *
+                                      (quoteForm.get("discountValue")?.value || 0)) /
+                                      100
+                                      : 0
+                                      ) | number: "1.2-2"
+                                      }}
+                                    </span>
+                                  </div>
+                                  <!-- Tax -->
+                                  <div class="totals-row">
+                                    <span class="label">Tax Rate:</span>
+                                    @if (!isInboundQuote) {
+                                      <div class="inline-input">
+                                        <input
+                                          type="number"
+                                          class="dark-input small"
+                                          formControlName="taxValue"
+                                          />
+                                          <span class="suffix">%</span>
+                                        </div>
+                                      }
+                                      @if (isInboundQuote) {
+                                        <div>
+                                          {{ quoteForm.get("taxValue")?.value || 0 }}%
+                                        </div>
+                                      }
+                                      <span class="value">
+                                        ${{
+                                        (hasTax
+                                        ? (getSubtotal() * (quoteForm.get("taxValue")?.value || 0)) /
+                                        100
+                                        : 0
+                                        ) | number: "1.2-2"
+                                        }}
+                                      </span>
+                                    </div>
+                                    @if (isInvoice) {
+                                      <div class="totals-row">
+                                        <span class="label">Amount Paid:</span>
+                                        @if (!isInboundQuote && !readOnly) {
+                                          <div class="inline-input">
+                                            <span class="prefix">$</span>
+                                            <input
+                                              type="number"
+                                              class="dark-input small"
+                                              formControlName="amountPaid"
+                                              min="0"
+                                              step="any"
+                                              />
+                                            </div>
+                                          }
+                                          @if (isInboundQuote || readOnly) {
+                                            <span>
+                                              ${{ quoteForm.get("amountPaid")?.value | number: "1.2-2" }}
+                                            </span>
+                                          }
+                                          <span class="value negative">
+                                            -${{ quoteForm.get("amountPaid")?.value || 0 | number: "1.2-2" }}
+                                          </span>
+                                        </div>
+                                      }
+                                      <!-- Balance Due - Invoice only, when payment exists -->
+                                      @if (isInvoice && quoteForm.get('amountPaid')?.value > 0) {
+                                        <div
+                                          class="totals-row balance-due"
+                                          >
+                                          <span class="label">Balance Due:</span>
+                                          <div></div>
+                                          <span class="value balance-amount">
+                                            ${{ getBalanceDue() | number: "1.2-2" }}
+                                          </span>
+                                        </div>
+                                      }
+                                      <div class="totals-divider"></div>
+                                      <!-- Total -->
+                                      <div class="totals-row total">
+                                        <span class="label">Total:</span>
+                                        <div></div>
+                                        <span class="value total-amount">
+                                          ${{ getGrandTotal() | number: "1.2-2" }}
+                                        </span>
+                                      </div>
+                                    </section>
+                                    <!-- ================= NOTES / TERMS ================= -->
+                                    <section class="notes-terms">
+                                      <mat-form-field appearance="outline">
+                                        <mat-label>Notes</mat-label>
+                                        <textarea
+                                          matInput
+                                          rows="4"
+                                          formControlName="notes"
+                                          [readonly]="isInboundQuote"
+                                        ></textarea>
+                                      </mat-form-field>
+                                      <mat-form-field appearance="outline">
+                                        <mat-label>Terms & Conditions</mat-label>
+                                        <textarea
+                                          matInput
+                                          rows="4"
+                                          formControlName="terms"
+                                          [readonly]="isInboundQuote"
+                                        ></textarea>
+                                      </mat-form-field>
+                                    </section>
+                                    <!-- ================= ACTION BAR ================= -->
+                                    <footer class="quote-actions">
+                                      <!-- INBOUND QUOTES: Only show these buttons -->
+                                      @if (isInboundQuote) {
+                                        <span class="spacer"></span>
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-secondary"
+                                            matTooltip="Download a PDF copy for your records"
+                                            (click)="exportPdf()"
+                                            >
+                                            Download PDF
+                                          </button>
+                                        }
+                                        <button
+                                          mat-button
+                                          class="btn btn-danger"
+                                          (click)="rejectQuote()"
+                                          [disabled]="isAlreadyActioned"
+                                          >
+                                          Reject Quote
+                                        </button>
+                                        <button
+                                          mat-button
+                                          class="btn btn-primary"
+                                          (click)="approveQuote()"
+                                          [disabled]="isAlreadyActioned"
+                                          >
+                                          Approve Quote
+                                        </button>
+                                      }
+                                      <!-- OUTBOUND SUBMITTED: Read-only, only download -->
+                                      @if (!isInboundQuote && readOnly) {
+                                        <span class="spacer"></span>
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-secondary"
+                                            matTooltip="Download a PDF copy for your records"
+                                            (click)="exportPdf()"
+                                            >
+                                            Download PDF
+                                          </button>
+                                        }
+                                      }
+                                      <!-- OUTBOUND DRAFT: Full editing buttons -->
+                                      @if (!isInboundQuote && !readOnly && !isBidMode) {
+                                        <button
+                                          mat-button
+                                          class="btn btn-ghost"
+                                          matTooltip="Preview the document"
+                                          (click)="openPreview()"
+                                          >
+                                          Preview
+                                        </button>
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-ghost"
+                                            matTooltip="Create a copy of this quote"
+                                            (click)="duplicateQuote()"
+                                            >
+                                            Duplicate
+                                          </button>
+                                        }
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-ghost"
+                                            matTooltip="Archive this quote"
+                                            (click)="archiveItem()"
+                                            >
+                                            Archive
+                                          </button>
+                                        }
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-danger"
+                                            matTooltip="Permanently delete this draft"
+                                            (click)="deleteQuote()"
+                                            >
+                                            Delete
+                                          </button>
+                                        }
+                                        <span class="spacer"></span>
+                                        <button
+                                          mat-button
+                                          class="btn btn-secondary"
+                                          matTooltip="Save without sending to the client"
+                                          (click)="saveToDatabase()"
+                                          >
+                                          Save Draft
+                                        </button>
+                                        @if (quoteId) {
+                                          <button
+                                            mat-button
+                                            class="btn btn-secondary"
+                                            matTooltip="Download a PDF copy and submit manually"
+                                            (click)="onSubmit()"
+                                            >
+                                            Export PDF
+                                          </button>
+                                        }
+                                        <button
+                                          mat-button
+                                          class="btn btn-primary"
+                                          [disabled]="isSaving"
+                                          matTooltip="Submit and email this quote to the client"
+                                          (click)="submitQuote()"
+                                          >
+                                          @if (isSaving) {
+                                            <mat-spinner diameter="18"></mat-spinner>
+                                          }
+                                          @if (!isSaving) {
+                                            <span>Send to Client</span>
+                                          }
+                                        </button>
+                                      }
+                                      @if (!isInboundQuote && !readOnly && isBidMode) {
+                                        <span class="spacer"></span>
+                                        <button mat-button class="btn btn-secondary" type="button" (click)="cancelBidMode()">Cancel</button>
+                                        <button
+                                          mat-button
+                                          class="btn btn-primary"
+                                          [disabled]="isSaving"
+                                          (click)="generateForBid()"
+                                          >
+                                          @if (isSaving) {
+                                            <mat-spinner diameter="18"></mat-spinner>
+                                          }
+                                          @if (!isSaving) {
+                                            <span>Generate for Bid</span>
+                                          }
+                                        </button>
+                                      }
+                                    </footer>
+                                  </form>
+                                </main>
+                              </div>
+                            }

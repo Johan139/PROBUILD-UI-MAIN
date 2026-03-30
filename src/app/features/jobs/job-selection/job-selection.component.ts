@@ -7,7 +7,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { NgForOf, NgIf, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -30,8 +30,6 @@ import { v4 as uuidv4 } from 'uuid';
   selector: 'app-job-selection',
   standalone: true,
   imports: [
-    NgForOf,
-    NgIf,
     CommonModule,
     MatCardModule,
     MatButtonModule,
@@ -44,8 +42,8 @@ import { v4 as uuidv4 } from 'uuid';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    FileSizePipe,
-  ],
+    FileSizePipe
+],
   templateUrl: './job-selection.component.html',
   styleUrls: ['./job-selection.component.scss'],
   encapsulation: ViewEncapsulation.None,

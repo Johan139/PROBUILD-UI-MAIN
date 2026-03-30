@@ -5,7 +5,7 @@ import {
   OnDestroy,
   OnInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,7 +30,6 @@ import { startWith } from 'rxjs/operators';
   selector: 'app-my-projects',
   standalone: true,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatIconModule,
     MatTableModule,
@@ -39,8 +38,8 @@ import { startWith } from 'rxjs/operators';
     ProjectCardComponent,
     ProjectsTableComponent,
     LoaderComponent,
-    MatSnackBarModule,
-  ],
+    MatSnackBarModule
+],
   templateUrl: './my-projects.component.html',
   styleUrls: ['./my-projects.component.scss'],
 })

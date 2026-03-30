@@ -16,13 +16,7 @@ import {
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
-import {
-  NgIf,
-  NgOptimizedImage,
-  isPlatformBrowser,
-  NgFor,
-  DatePipe,
-} from '@angular/common';
+import { NgOptimizedImage, isPlatformBrowser, DatePipe } from '@angular/common';
 import { MatListModule, MatNavList } from '@angular/material/list';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -62,7 +56,6 @@ type NavItem = {
     MatToolbarModule,
     MatCardModule,
     MatSidenavModule,
-    NgIf,
     MatNavList,
     LoaderComponent,
     MatIconModule,
@@ -73,7 +66,6 @@ type NavItem = {
     NgOptimizedImage,
     RouterModule,
     MatIconModule,
-    NgFor,
     MatDividerModule,
     FooterComponent,
     AiChatIconComponent,
@@ -83,8 +75,8 @@ type NavItem = {
     MatIconModule,
     NotificationsMenuComponent,
     OnboardingPromptComponent,
-    OnboardingOverlayComponent,
-  ],
+    OnboardingOverlayComponent
+],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   providers: [DatePipe],

@@ -7,12 +7,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  CommonModule,
-  DatePipe,
-  NgIf,
-  isPlatformBrowser,
-} from '@angular/common';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -66,8 +61,6 @@ const BASE_URL = environment.BACKEND_URL;
   selector: 'app-new-user-dashboard',
   standalone: true,
   imports: [
-    NgIf,
-    CommonModule,
     MatButtonModule,
     MatCardModule,
     MatProgressBarModule,
@@ -86,8 +79,8 @@ const BASE_URL = environment.BACKEND_URL;
     MatTooltipModule,
     ActionPointsWidgetComponent,
     RecentProjectsWidgetComponent,
-    WeatherWidgetComponent,
-  ],
+    WeatherWidgetComponent
+],
   templateUrl: './new-user-dashboard.component.html',
   styleUrls: ['./new-user-dashboard.component.scss'],
   encapsulation: ViewEncapsulation.None,

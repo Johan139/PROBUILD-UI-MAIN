@@ -8,7 +8,7 @@ import {
   NgZone,
   effect,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
   FormBuilder,
   FormGroup,
@@ -33,24 +33,23 @@ const darkMapId = 'cfb7ea445a870af82d9def4b';
   selector: 'app-address-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
-    MatSelectModule,
-  ],
+    MatSelectModule
+],
   template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Address' : 'Add New Address' }}</h2>
-
+    
     <mat-dialog-content class="dialog-content">
       <form
         [formGroup]="form"
         (ngSubmit)="onSave()"
         class="address-dialog-form"
-      >
+        >
         <!-- Autocomplete Address Field -->
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Address</mat-label>
@@ -59,43 +58,47 @@ const darkMapId = 'cfb7ea445a870af82d9def4b';
             matInput
             placeholder="Start typing an address"
             formControlName="formattedAddress"
-          />
-        </mat-form-field>
-
-        <!-- ✅ Dynamic Address Type -->
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Address Type</mat-label>
-          <mat-select formControlName="addressType" required>
-            <mat-option *ngFor="let t of addressTypes" [value]="t.id">
-              {{ t.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <div #mapContainer class="map-container" *ngIf="mapReady"></div>
-
-        <div class="buttons">
-          <button
-            mat-raised-button
-            class="dialog-btn-primary"
-            type="submit"
-            [disabled]="form.invalid"
-          >
-            {{ data ? 'Update' : 'Save' }}
-          </button>
-
-          <button
-            mat-button
-            mat-dialog-close
-            type="button"
-            class="dialog-btn-cancel"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </mat-dialog-content>
-  `,
+            />
+          </mat-form-field>
+    
+          <!-- ✅ Dynamic Address Type -->
+          <mat-form-field appearance="fill" class="full-width">
+            <mat-label>Address Type</mat-label>
+            <mat-select formControlName="addressType" required>
+              @for (t of addressTypes; track t) {
+                <mat-option [value]="t.id">
+                  {{ t.name }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+    
+          @if (mapReady) {
+            <div #mapContainer class="map-container"></div>
+          }
+    
+          <div class="buttons">
+            <button
+              mat-raised-button
+              class="dialog-btn-primary"
+              type="submit"
+              [disabled]="form.invalid"
+              >
+              {{ data ? 'Update' : 'Save' }}
+            </button>
+    
+            <button
+              mat-button
+              mat-dialog-close
+              type="button"
+              class="dialog-btn-cancel"
+              >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </mat-dialog-content>
+    `,
   styles: [
     `
       .address-dialog-form {

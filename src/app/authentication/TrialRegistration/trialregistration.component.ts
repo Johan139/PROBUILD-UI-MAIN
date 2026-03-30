@@ -11,7 +11,7 @@ import {
   ValidationErrors,
   ValidatorFn,
 } from '@angular/forms';
-import { AsyncPipe, CommonModule, NgForOf, NgIf } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -28,12 +28,9 @@ import { catchError, map, startWith } from 'rxjs/operators';
 import { InvitationService } from '../../services/invitation.service';
 import { Observable, of } from 'rxjs';
 import { LoaderComponent } from '../../loader/loader.component';
-import { MatDivider } from '@angular/material/divider';
 import { StripeService } from '../../services/StripeService';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PaymentPromptDialogComponent } from './../registration/payment-prompt-dialog.component';
-import { COUNTRIES } from '../../data/countries';
-import { STATES } from '../../data/states';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { userTypes } from '../../data/user-types';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -79,10 +76,8 @@ export type BillingCycle = 'monthly' | 'yearly';
     CommonModule,
     MatGridListModule,
     ReactiveFormsModule,
-    NgForOf,
     MatSelectModule,
     MatDialogModule,
-    NgIf,
     MatInputModule,
     MatFormFieldModule,
     MatButton,
@@ -93,8 +88,8 @@ export type BillingCycle = 'monthly' | 'yearly';
     MatChipsModule,
     MatRadioModule,
     MatIconModule,
-    RouterLink,
-  ],
+    RouterLink
+],
   templateUrl: './trialregistration.component.html',
   styleUrl: './trialregistration.component.scss',
 })

@@ -1,6 +1,8 @@
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
-</div>
+@if (isLoading) {
+  <div>
+    <app-loader></app-loader>
+  </div>
+}
 
 <div class="container w-100">
   <div class="row justify-content-center">
@@ -30,7 +32,7 @@
                   mat-button
                   class="btn btn-primary"
                   type="submit"
-                >
+                  >
                   Accept Invitation
                 </button>
               </mat-card-actions>
@@ -42,9 +44,11 @@
   </div>
 </div>
 
-<div *ngIf="showAlert" class="alert-overlay">
-  <div class="alert-modal">
-    <p>{{ alertMessage }}</p>
-    <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
+@if (showAlert) {
+  <div class="alert-overlay">
+    <div class="alert-modal">
+      <p>{{ alertMessage }}</p>
+      <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
+    </div>
   </div>
-</div>
+}

@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { SubTasks } from '../../../models/sub-tasks';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgForOf, NgIf, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { MatButton } from '@angular/material/button';
 import { MatCard } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -26,13 +26,11 @@ import { InitiateBiddingDialogComponent } from '../initiate-bidding-dialog/initi
   standalone: true,
   imports: [
     FormsModule,
-    NgIf,
-    NgForOf,
     MatButton,
     LoaderComponent,
     GanttChartComponent,
-    MatCard,
-  ],
+    MatCard
+],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './job-edit.component.html',
   styleUrl: './job-edit.component.scss',

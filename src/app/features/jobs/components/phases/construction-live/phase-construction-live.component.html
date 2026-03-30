@@ -18,7 +18,7 @@
     (documentsRequested)="documentsRequested.emit()"
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
-<!--
+  <!--
   <section class="summary-strip">
     <article>
       <p class="mini-label">Active Crews</p>
@@ -77,7 +77,7 @@
         *ngFor="let group of taskGroups"
         [class.is-active]="group.id === selectedGroupId"
         (click)="selectGroup(group.id)"
-      >
+        >
         <span>{{ group.title }}</span>
         <small>
           {{ getCompletedCount(group) }}/{{ group.subtasks.length }} complete · {{ getTotalDays(group) }}d
@@ -104,110 +104,112 @@
             type="date"
             [(ngModel)]="newTask.startDate"
             (ngModelChange)="updateNewTaskDate('startDate', $event)"
-          />
-        </label>
-        <label>
-          <span>Days</span>
-          <input
-            type="number"
-            min="0"
-            [(ngModel)]="newTask.days"
-            (ngModelChange)="updateNewTaskDate('days', $event)"
-          />
-        </label>
-        <label>
-          <span>End date</span>
-          <input
-            type="date"
-            [(ngModel)]="newTask.endDate"
-            (ngModelChange)="updateNewTaskDate('endDate', $event)"
-          />
-        </label>
-      </div>
-      <div class="tasks-header-actions">
-        <button type="button" class="btn btn-primary" (click)="addTask()">Add Task</button>
-        <button type="button" class="btn btn-outline" (click)="cancelAddTask()">Cancel</button>
-      </div>
-    </div>
-
-    <div class="tasks-table-wrap" *ngIf="tasksExpanded">
-      <table class="tasks-table" *ngIf="visibleSubtasks.length > 0; else noTasks">
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Status</th>
-            <th>Start</th>
-            <th>End</th>
-            <th class="num">Days</th>
-            <th>Approved</th>
-            <th class="num">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let task of visibleSubtasks">
-            <td>
-              <input
-                type="text"
-                [value]="task.task"
-                (focus)="startEditing(task, 'task')"
-                (blur)="stopEditing()"
-                (change)="updateTaskField(task, 'task', $any($event.target).value)"
+            />
+          </label>
+          <label>
+            <span>Days</span>
+            <input
+              type="number"
+              min="0"
+              [(ngModel)]="newTask.days"
+              (ngModelChange)="updateNewTaskDate('days', $event)"
               />
-            </td>
-            <td>
-              <select [value]="task.status" (change)="updateTaskStatus(task, $any($event.target).value)">
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </td>
-            <td>
+            </label>
+            <label>
+              <span>End date</span>
               <input
                 type="date"
-                [value]="task.startDate"
-                (focus)="startEditing(task, 'startDate')"
-                (blur)="stopEditing()"
-                (change)="updateTaskField(task, 'startDate', $any($event.target).value)"
-              />
-            </td>
-            <td>
-              <input
-                type="date"
-                [value]="task.endDate"
-                (focus)="startEditing(task, 'endDate')"
-                (blur)="stopEditing()"
-                (change)="updateTaskField(task, 'endDate', $any($event.target).value)"
-              />
-            </td>
-            <td class="num">
-              <input
-                type="number"
-                min="0"
-                [value]="task.days"
-                (focus)="startEditing(task, 'days')"
-                (blur)="stopEditing()"
-                (change)="updateTaskField(task, 'days', $any($event.target).value)"
-              />
-            </td>
-            <td>
-              <button type="button" class="btn btn-outline" (click)="handleApproval(task)">
-                {{ task.accepted ? 'Approved' : 'Approve' }}
-              </button>
-            </td>
-            <td class="num">
-              <button type="button" class="btn btn-danger" (click)="deleteTask(task.id)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                [(ngModel)]="newTask.endDate"
+                (ngModelChange)="updateNewTaskDate('endDate', $event)"
+                />
+              </label>
+            </div>
+            <div class="tasks-header-actions">
+              <button type="button" class="btn btn-primary" (click)="addTask()">Add Task</button>
+              <button type="button" class="btn btn-outline" (click)="cancelAddTask()">Cancel</button>
+            </div>
+          </div>
 
-    <ng-template #noTasks>
-      <p class="hint">No tasks available in this group yet.</p>
-    </ng-template>
-  </section> -->
+          <div class="tasks-table-wrap" *ngIf="tasksExpanded">
+            <table class="tasks-table" *ngIf="visibleSubtasks.length > 0; else noTasks">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th class="num">Days</th>
+                  <th>Approved</th>
+                  <th class="num">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let task of visibleSubtasks">
+                  <td>
+                    <input
+                      type="text"
+                      [value]="task.task"
+                      (focus)="startEditing(task, 'task')"
+                      (blur)="stopEditing()"
+                      (change)="updateTaskField(task, 'task', $any($event.target).value)"
+                      />
+                    </td>
+                    <td>
+                      <select [value]="task.status" (change)="updateTaskStatus(task, $any($event.target).value)">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        [value]="task.startDate"
+                        (focus)="startEditing(task, 'startDate')"
+                        (blur)="stopEditing()"
+                        (change)="updateTaskField(task, 'startDate', $any($event.target).value)"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="date"
+                          [value]="task.endDate"
+                          (focus)="startEditing(task, 'endDate')"
+                          (blur)="stopEditing()"
+                          (change)="updateTaskField(task, 'endDate', $any($event.target).value)"
+                          />
+                        </td>
+                        <td class="num">
+                          <input
+                            type="number"
+                            min="0"
+                            [value]="task.days"
+                            (focus)="startEditing(task, 'days')"
+                            (blur)="stopEditing()"
+                            (change)="updateTaskField(task, 'days', $any($event.target).value)"
+                            />
+                          </td>
+                          <td>
+                            <button type="button" class="btn btn-outline" (click)="handleApproval(task)">
+                              {{ task.accepted ? 'Approved' : 'Approve' }}
+                            </button>
+                          </td>
+                          <td class="num">
+                            <button type="button" class="btn btn-danger" (click)="deleteTask(task.id)">Delete</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-  <section class="live-view-card" *ngIf="liveStageTemplate">
-    <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
-  </section>
-</section>
+                  <ng-template #noTasks>
+                    <p class="hint">No tasks available in this group yet.</p>
+                  </ng-template>
+                </section> -->
+
+                @if (liveStageTemplate) {
+                  <section class="live-view-card">
+                    <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
+                  </section>
+                }
+              </section>

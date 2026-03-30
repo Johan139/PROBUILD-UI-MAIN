@@ -46,9 +46,8 @@ type ScopeTab = 'overview' | 'timeline' | 'blueprints';
     MatDividerModule,
     ProjectBlueprintViewerComponent,
     JobTeamComponent,
-    MoneyPipe,
-    MoneyInTextPipe,
-  ],
+    MoneyPipe
+],
   templateUrl: './phase-preliminary-scope.component.html',
   styleUrl: './phase-preliminary-scope.component.scss',
 })

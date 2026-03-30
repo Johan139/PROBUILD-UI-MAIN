@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
 import { catchError, finalize, forkJoin, of, Subject, takeUntil, timeout } from 'rxjs';
@@ -68,7 +68,6 @@ interface JobMarker {
   styleUrls: ['./find-work.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     MatDialogModule,
     MatMenuModule,
     MatIconModule,
@@ -89,8 +88,8 @@ interface JobMarker {
     MyBidsComponent,
     SavedJobsComponent,
     JobAlertsComponent,
-    FindWorkMapComponent,
-  ],
+    FindWorkMapComponent
+],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })

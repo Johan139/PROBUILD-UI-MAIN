@@ -1,5 +1,5 @@
 import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -16,14 +16,13 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
 
   imports: [
-    CommonModule,
     FormsModule,
     MatRadioModule,
     MatFormFieldModule,
     MatSelectModule,
     MatButtonModule,
-    MatDialogModule,
-  ],
+    MatDialogModule
+],
   template: `
     <h2 mat-dialog-title>Generate Quote</h2>
 
@@ -33,21 +32,23 @@ import { MatButtonModule } from '@angular/material/button';
         <mat-radio-button value="PHASE"> Specific Phase(s) </mat-radio-button>
       </mat-radio-group>
 
-      <mat-form-field
-        *ngIf="mode === 'PHASE' && safePhaseList.length > 0"
-        appearance="outline"
-        style="width: 100%; margin-top: 16px;"
-      >
-        <mat-label>Select Phase</mat-label>
-        <mat-select [(ngModel)]="selectedPhases" multiple>
-          <mat-option
-            *ngFor="let phase of safePhaseList ?? []"
-            [value]="phase.phase"
+      @if (mode === 'PHASE' && safePhaseList.length > 0) {
+        <mat-form-field
+          appearance="outline"
+          style="width: 100%; margin-top: 16px;"
           >
-            {{ phase.phase }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+          <mat-label>Select Phase</mat-label>
+          <mat-select [(ngModel)]="selectedPhases" multiple>
+            @for (phase of safePhaseList; track phase) {
+              <mat-option
+                [value]="phase.phase"
+                >
+                {{ phase.phase }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="dialog-actions">
@@ -57,11 +58,11 @@ import { MatButtonModule } from '@angular/material/button';
         class="btn btn-primary"
         (click)="confirm()"
         [disabled]="mode === 'PHASE' && selectedPhases.length === 0"
-      >
+        >
         Generate
       </button>
     </mat-dialog-actions>
-  `,
+    `,
 })
 export class CategoryPickerDialogComponent {
   mode: 'PROJECT' | 'PHASE' = 'PROJECT';

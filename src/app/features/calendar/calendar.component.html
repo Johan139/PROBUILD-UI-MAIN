@@ -19,7 +19,7 @@
                 : 'Hide projects without events'
             "
             [class.active-toggle]="hideEmptyProjects"
-          >
+            >
             <mat-icon>{{
               hideEmptyProjects ? "visibility_off" : "visibility"
             }}</mat-icon>
@@ -33,40 +33,43 @@
             placeholder="Search projects..."
             [(ngModel)]="searchTerm"
             (ngModelChange)="filterJobs()"
-          />
-        </mat-form-field>
+            />
+          </mat-form-field>
 
-        <div class="job-list-scroll">
-          <div
-            *ngFor="let job of filteredJobs"
-            class="job-item-wrapper"
-            [class.selected]="isJobSelected(job.jobId)"
+          <div class="job-list-scroll">
+            @for (job of filteredJobs; track job) {
+              <div
+                class="job-item-wrapper"
+                [class.selected]="isJobSelected(job.jobId)"
             [style.border-color]="
               isJobSelected(job.jobId) ? jobColors[job.jobId] : ''
             "
-            (click)="toggleJobSelection(job.jobId)"
-          >
-            <div
-              class="selection-indicator"
-              [style.background-color]="jobColors[job.jobId]"
-            ></div>
+                (click)="toggleJobSelection(job.jobId)"
+                >
+                <div
+                  class="selection-indicator"
+                  [style.background-color]="jobColors[job.jobId]"
+                ></div>
+                <app-job-card
+                  [job]="job"
+                  [showNewTag]="false"
+                  [showBidButton]="false"
+                  >
+                </app-job-card>
+                <!-- <div class="selected-overlay" *ngIf="isJobSelected(job.jobId)">
+                <mat-icon>check_circle</mat-icon>
+              </div> -->
+            </div>
+          }
 
-            <app-job-card
-              [job]="job"
-              [showNewTag]="false"
-              [showBidButton]="false"
-            >
-            </app-job-card>
-
-            <!-- <div class="selected-overlay" *ngIf="isJobSelected(job.jobId)">
-               <mat-icon>check_circle</mat-icon>
-             </div> -->
-          </div>
-
-          <div *ngIf="filteredJobs.length === 0 && !isLoading" class="no-jobs">
-            No projects found
-          </div>
-          <div *ngIf="isLoading" class="loading">Loading projects...</div>
+          @if (filteredJobs.length === 0 && !isLoading) {
+            <div class="no-jobs">
+              No projects found
+            </div>
+          }
+          @if (isLoading) {
+            <div class="loading">Loading projects...</div>
+          }
         </div>
       </div>
     </div>
@@ -82,14 +85,14 @@
                 type="button"
                 class="btn btn-primary add-event-btn"
                 (click)="openAddEventDialog()"
-              >
+                >
                 Add Event
               </button>
               <mat-button-toggle-group
                 #group="matButtonToggleGroup"
                 [(ngModel)]="viewMode"
                 (change)="updateCalendarView()"
-              >
+                >
                 <mat-button-toggle value="projects">
                   Projects
                 </mat-button-toggle>
@@ -100,7 +103,7 @@
                 <mat-select
                   [(ngModel)]="statusFilter"
                   (selectionChange)="updateCalendarView()"
-                >
+                  >
                   <mat-option value="all">All</mat-option>
                   <mat-option value="LIVE">Live</mat-option>
                   <mat-option value="BIDDING">Bidding</mat-option>

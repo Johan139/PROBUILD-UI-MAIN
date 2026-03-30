@@ -1,5 +1,7 @@
 <div class="container">
-  <app-loader *ngIf="isLoading"></app-loader>
+  @if (isLoading) {
+    <app-loader></app-loader>
+  }
 
 
   <mat-card class="profile-card">
@@ -16,114 +18,125 @@
         <mat-form-field class="job-selection">
           <mat-label>Select Project</mat-label>
           <input type="text"
-                 placeholder="Search for a project"
-                 aria-label="Select Project"
-                 matInput
-                 [formControl]="jobControl"
-                 [matAutocomplete]="autoJob">
-          <mat-autocomplete #autoJob="matAutocomplete" [displayWith]="displayJob" (optionSelected)="onJobSelectionChange($event.option.value)">
-            <mat-option *ngIf="!(filteredJobs | async)?.length" disabled>
-              No projects found
-            </mat-option>
-            <mat-option *ngFor="let job of filteredJobs | async" [value]="job">
-              {{ job.projectName }}
-            </mat-option>
-          </mat-autocomplete>
-        </mat-form-field>
+            placeholder="Search for a project"
+            aria-label="Select Project"
+            matInput
+            [formControl]="jobControl"
+            [matAutocomplete]="autoJob">
+            <mat-autocomplete #autoJob="matAutocomplete" [displayWith]="displayJob" (optionSelected)="onJobSelectionChange($event.option.value)">
+              @if (!(filteredJobs | async)?.length) {
+                <mat-option disabled>
+                  No projects found
+                </mat-option>
+              }
+              @for (job of filteredJobs | async; track job) {
+                <mat-option [value]="job">
+                  {{ job.projectName }}
+                </mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
 
-        <mat-form-field class="job-selection">
-          <mat-label>Select Team Member</mat-label>
-          <input type="text"
-                 placeholder="Search for a team member"
-                 aria-label="Select Team Member"
-                 matInput
-                 [formControl]="userControl"
-                 [matAutocomplete]="autoUser">
-          <mat-autocomplete #autoUser="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelected($event.option.value)">
-            <mat-option *ngIf="!(filteredUsers | async)?.length" disabled>
-              No users found
-            </mat-option>
-            <mat-option *ngFor="let user of filteredUsers | async" [value]="user">
-              {{ user.firstName }} {{ user.lastName }}
-            </mat-option>
-          </mat-autocomplete>
-        </mat-form-field>
+          <mat-form-field class="job-selection">
+            <mat-label>Select Team Member</mat-label>
+            <input type="text"
+              placeholder="Search for a team member"
+              aria-label="Select Team Member"
+              matInput
+              [formControl]="userControl"
+              [matAutocomplete]="autoUser">
+              <mat-autocomplete #autoUser="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelected($event.option.value)">
+                @if (!(filteredUsers | async)?.length) {
+                  <mat-option disabled>
+                    No users found
+                  </mat-option>
+                }
+                @for (user of filteredUsers | async; track user) {
+                  <mat-option [value]="user">
+                    {{ user.firstName }} {{ user.lastName }}
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
 
-        <mat-form-field class="job-role-field"
-                        [class.filled]="newAssignment.jobRole"
-                        [matTooltip]="!newAssignment.jobRole ? 'This will be automatically filled in when a user is selected' : ''">
-          <mat-label>Job Role</mat-label>
-          <input matInput [value]="newAssignment.jobRole | roleDisplay" name="jobRole" readonly>
-        </mat-form-field>
-      </form>
+            <mat-form-field class="job-role-field"
+              [class.filled]="newAssignment.jobRole"
+              [matTooltip]="!newAssignment.jobRole ? 'This will be automatically filled in when a user is selected' : ''">
+              <mat-label>Job Role</mat-label>
+              <input matInput [value]="newAssignment.jobRole | roleDisplay" name="jobRole" readonly>
+            </mat-form-field>
+          </form>
 
-      <div class="button-container">
-        <button mat-button class="btn btn-primary" type="button" *ngIf="authService.hasPermission('AddTeamMembers')" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser || !newAssignment.jobRole">
-          {{ isSaving ? 'Saving...' : 'Assign' }}
-        </button>
-      </div>
-    </div>
+          <div class="button-container">
+            @if (authService.hasPermission('AddTeamMembers')) {
+              <button mat-button class="btn btn-primary" type="button" (click)="submitAssignment()" [disabled]="isSaving || !selectedJob || !selectedUser || !newAssignment.jobRole">
+                {{ isSaving ? 'Saving...' : 'Assign' }}
+              </button>
+            }
+          </div>
+        </div>
 
-    <!-- Table Section -->
-    <div class="section table-container">
-      <h3>Assignment List</h3>
-      <table mat-table [dataSource]="filteredJobAssignment" class="themed-table">
-        <!-- ID Column -->
-        <ng-container matColumnDef="id">
-          <th mat-header-cell *matHeaderCellDef>id</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.job.id || 'N/A' }}
-          </td>
-        </ng-container>
+        <!-- Table Section -->
+        <div class="section table-container">
+          <h3>Assignment List</h3>
+          <table mat-table [dataSource]="filteredJobAssignment" class="themed-table">
+            <!-- ID Column -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>id</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.job.id || 'N/A' }}
+              </td>
+            </ng-container>
 
-        <!-- Project Name Column -->
-        <ng-container matColumnDef="projectName">
-          <th mat-header-cell *matHeaderCellDef>Project Name</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.job.projectName || 'N/A' }}
-          </td>
-        </ng-container>
+            <!-- Project Name Column -->
+            <ng-container matColumnDef="projectName">
+              <th mat-header-cell *matHeaderCellDef>Project Name</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.job.projectName || 'N/A' }}
+              </td>
+            </ng-container>
 
-        <!-- Assigned User Column -->
-        <ng-container matColumnDef="assignedUser">
-          <th mat-header-cell *matHeaderCellDef>Assigned User</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.user.firstName || '' }} {{ element.user.lastName || 'N/A' }}
-          </td>
-        </ng-container>
+            <!-- Assigned User Column -->
+            <ng-container matColumnDef="assignedUser">
+              <th mat-header-cell *matHeaderCellDef>Assigned User</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.user.firstName || '' }} {{ element.user.lastName || 'N/A' }}
+              </td>
+            </ng-container>
 
-        <!-- Job Role Column -->
-        <ng-container matColumnDef="jobRole">
-          <th mat-header-cell *matHeaderCellDef>Job Role</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.user.jobRole | roleDisplay }}
-          </td>
-        </ng-container>
+            <!-- Job Role Column -->
+            <ng-container matColumnDef="jobRole">
+              <th mat-header-cell *matHeaderCellDef>Job Role</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.user.jobRole | roleDisplay }}
+              </td>
+            </ng-container>
 
-        <!-- Phone Number Column -->
-        <ng-container matColumnDef="phoneNumber">
-          <th mat-header-cell *matHeaderCellDef>Phone Number</th>
-          <td mat-cell *matCellDef="let element">
-            {{ element.user.phoneNumber || 'N/A' }}
-          </td>
-        </ng-container>
+            <!-- Phone Number Column -->
+            <ng-container matColumnDef="phoneNumber">
+              <th mat-header-cell *matHeaderCellDef>Phone Number</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.user.phoneNumber || 'N/A' }}
+              </td>
+            </ng-container>
 
-        <!-- Actions Column -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let element">
-            <button mat-button class="btn btn-danger" type="button"
-                    *ngIf="authService.hasPermission('deleteTeamMembers')"
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let element">
+                @if (authService.hasPermission('deleteTeamMembers')) {
+                  <button mat-button class="btn btn-danger" type="button"
                     (click)="deleteUserAssignment(element.job, element.user)"
                     [disabled]="isLoading">
-              Delete
-            </button>
-          </td>
-        </ng-container>
+                    Delete
+                  </button>
+                }
+              </td>
+            </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="assignmentColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: assignmentColumns;"></tr>
-      </table>
+            <tr mat-header-row *matHeaderRowDef="assignmentColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: assignmentColumns;"></tr>
+          </table>
+        </div>
+      </mat-card>
     </div>
-  </mat-card>
-</div>

@@ -4,7 +4,7 @@ import {
   MatDialogModule,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { CommonModule } from '@angular/common';
+
 import { LoaderComponent } from '../loader/loader.component';
 import { FileSizePipe } from '../features/Documents/filesize.pipe';
 import { JobsService } from '../services/jobs.service';
@@ -12,45 +12,57 @@ import { JobsService } from '../services/jobs.service';
 @Component({
   selector: 'app-quote-documents-dialog',
   standalone: true,
-  imports: [MatDialogModule, CommonModule, LoaderComponent, FileSizePipe],
+  imports: [MatDialogModule, LoaderComponent, FileSizePipe],
   template: `
     <div class="documents-dialog">
       <h2 mat-dialog-title>Quote Documents</h2>
       <mat-dialog-content>
         <!-- Show loading indicator while fetching documents -->
-        <div *ngIf="isLoading" class="loading-documents">
-          <app-loader></app-loader>
-          <p>Loading documents...</p>
-        </div>
+        @if (isLoading) {
+          <div class="loading-documents">
+            <app-loader></app-loader>
+            <p>Loading documents...</p>
+          </div>
+        }
         <!-- Show content only when not loading -->
-        <div *ngIf="!isLoading">
-          <div *ngIf="documents.length === 0 && !error" class="no-documents">
-            <p>No documents available for this quote.</p>
-          </div>
-          <div *ngIf="error" class="no-documents">
-            <p>{{ error }}</p>
-          </div>
-          <div *ngIf="documents.length > 0" class="documents-list">
-            <div class="document-item" *ngFor="let doc of documents">
-              <div class="document-info">
-                <span class="document-name">{{ doc.name }}</span>
-                <span class="document-meta">
-                  {{ doc.type }} - {{ doc.size | filesize }}
-                </span>
+        @if (!isLoading) {
+          <div>
+            @if (documents.length === 0 && !error) {
+              <div class="no-documents">
+                <p>No documents available for this quote.</p>
               </div>
-              <button mat-button class="btn btn-ghost" type="button" (click)="viewDocument(doc)">
-                View
-              </button>
-            </div>
+            }
+            @if (error) {
+              <div class="no-documents">
+                <p>{{ error }}</p>
+              </div>
+            }
+            @if (documents.length > 0) {
+              <div class="documents-list">
+                @for (doc of documents; track doc) {
+                  <div class="document-item">
+                    <div class="document-info">
+                      <span class="document-name">{{ doc.name }}</span>
+                      <span class="document-meta">
+                        {{ doc.type }} - {{ doc.size | filesize }}
+                      </span>
+                    </div>
+                    <button mat-button class="btn btn-ghost" type="button" (click)="viewDocument(doc)">
+                      View
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </mat-dialog-content>
       <mat-dialog-actions align="end" class="dialog-actions">
         <button mat-button class="btn btn-secondary" type="button" (click)="close()">Cancel</button>
         <button mat-button class="btn btn-primary" type="button" (click)="close()">Continue</button>
       </mat-dialog-actions>
     </div>
-  `,
+    `,
   styles: [
     `
       .document-meta {

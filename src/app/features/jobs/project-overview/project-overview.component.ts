@@ -62,11 +62,10 @@ import { formatMoney } from '../../../shared/pipes/money.pipe';
     MatExpansionModule,
     LucideIconsModule,
     MoneyPipe,
-    MoneyInTextPipe,
     ProjectCardComponent,
     ProjectsTableComponent,
-    WeatherImpactModalComponent,
-  ],
+    WeatherImpactModalComponent
+],
 
   templateUrl: './project-overview.component.html',
   styleUrls: ['./project-overview.component.scss'],

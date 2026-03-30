@@ -9,176 +9,166 @@
       <h2>User Management</h2>
     </div>
 
-    <ng-container *ngIf="user$ | async as user; else loadingTpl">
-      <ng-container *ngIf="address$ | async"></ng-container>
+    @if (user$ | async; as user) {
+      @if (address$ | async) {
+      }
       <div class="actions">
         <button mat-button type="button" class="btn btn-primary" (click)="save(user)" [disabled]="saving">
           Save
         </button>
-
         <button mat-button type="button" class="btn btn-secondary" (click)="sendPasswordReset(user)">
           Send password reset
         </button>
       </div>
-
       <div class="section">
         <h3>Profile</h3>
-
         <div class="grid">
           <mat-form-field appearance="outline">
             <mat-label>First Name</mat-label>
             <input matInput [formControl]="form.controls.firstName" />
           </mat-form-field>
-
           <mat-form-field appearance="outline">
             <mat-label>Last Name</mat-label>
             <input matInput [formControl]="form.controls.lastName" />
           </mat-form-field>
-
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
             <input matInput [formControl]="form.controls.email" />
           </mat-form-field>
-
           <mat-form-field appearance="outline">
             <mat-label>Phone Prefix</mat-label>
             <mat-select
               [(value)]="selectedCountryCode"
               (selectionChange)="onCountryCodeChange($event.value)"
               aria-label="Country code"
-            >
+              >
               <mat-option>
                 <input
                   matInput
                   placeholder="Search..."
                   [formControl]="countryFilterCtrl"
                   (keydown)="$event.stopPropagation()"
+                  />
+                </mat-option>
+                @for (c of filteredCountryCodes | async; track c) {
+                  <mat-option
+                    [value]="c"
+                    >
+                    {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Phone</mat-label>
+              <input
+                matInput
+                [formControl]="form.controls.phoneNumber"
+                (input)="onPhoneInput($event)"
+                (paste)="onPhonePaste($event)"
+                (blur)="onPhoneBlur($event)"
                 />
-              </mat-option>
-              <mat-option
-                *ngFor="let c of filteredCountryCodes | async"
-                [value]="c"
-              >
-                {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Phone</mat-label>
-            <input
-              matInput
-              [formControl]="form.controls.phoneNumber"
-              (input)="onPhoneInput($event)"
-              (paste)="onPhonePaste($event)"
-              (blur)="onPhoneBlur($event)"
-            />
-            <mat-error *ngIf="form.controls.phoneNumber.hasError('required')">
-              Mandatory Field: Input Required.
-            </mat-error>
-            <mat-error *ngIf="form.controls.phoneNumber.hasError('invalidPhone')">
-              Please enter a valid phone number for the selected country.
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>User Type</mat-label>
-            <mat-select [formControl]="form.controls.userType">
-              <mat-option *ngFor="let t of userTypes" [value]="t">{{ t }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Trade</mat-label>
-            <input matInput [formControl]="form.controls.trade" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Supplier Type</mat-label>
-            <input matInput [formControl]="form.controls.supplierType" />
-          </mat-form-field>
-
-          <mat-slide-toggle [formControl]="form.controls.isAdmin">Admin</mat-slide-toggle>
-
-          <mat-slide-toggle [formControl]="form.controls.emailConfirmed">Email Confirmed</mat-slide-toggle>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Company</h3>
-        <div class="grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Company Name</mat-label>
-            <input matInput [formControl]="form.controls.companyName" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Company Reg No</mat-label>
-            <input matInput [formControl]="form.controls.companyRegNo" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>VAT No</mat-label>
-            <input matInput [formControl]="form.controls.vatNo" />
-          </mat-form-field>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Address</h3>
-        <div class="grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Address</mat-label>
-            <input
-              matInput
-              [formControl]="addressForm.controls.addressInput"
-              placeholder="Search address..."
-              [matAutocomplete]="addrAuto"
-            />
-
-            <mat-autocomplete
-              #addrAuto="matAutocomplete"
-              [displayWith]="addressDisplayFn"
-              (optionSelected)="onAddressSelected($event.option.value)"
-            >
-              <mat-option
-                *ngFor="let option of addressOptions"
-                [value]="option"
-              >
-                {{ option.description }}
-              </mat-option>
-            </mat-autocomplete>
-          </mat-form-field>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Subscription</h3>
-        <div class="grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Subscription Package</mat-label>
-            <mat-select [formControl]="form.controls.subscriptionPackage">
-              <mat-option
-                *ngFor="let p of (subscriptionPackages$ | async)"
-                [value]="p.name"
-              >
-                {{ p.name }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <div class="sub-meta">
-            <div><span class="label">Active</span> {{ user.subscription?.hasActiveSubscription ? 'Yes' : 'No' }}</div>
-            <div><span class="label">Status</span> {{ user.subscription?.status || '-' }}</div>
-            <div><span class="label">Package</span> {{ user.subscription?.package || '-' }}</div>
-            <div><span class="label">Valid Until</span> {{ user.subscription?.validUntil ? (user.subscription?.validUntil | date : 'mediumDate') : '-' }}</div>
+                @if (form.controls.phoneNumber.hasError('required')) {
+                  <mat-error>
+                    Mandatory Field: Input Required.
+                  </mat-error>
+                }
+                @if (form.controls.phoneNumber.hasError('invalidPhone')) {
+                  <mat-error>
+                    Please enter a valid phone number for the selected country.
+                  </mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>User Type</mat-label>
+                <mat-select [formControl]="form.controls.userType">
+                  @for (t of userTypes; track t) {
+                    <mat-option [value]="t">{{ t }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Trade</mat-label>
+                <input matInput [formControl]="form.controls.trade" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Supplier Type</mat-label>
+                <input matInput [formControl]="form.controls.supplierType" />
+              </mat-form-field>
+              <mat-slide-toggle [formControl]="form.controls.isAdmin">Admin</mat-slide-toggle>
+              <mat-slide-toggle [formControl]="form.controls.emailConfirmed">Email Confirmed</mat-slide-toggle>
+            </div>
           </div>
-        </div>
-      </div>
-    </ng-container>
+          <div class="section">
+            <h3>Company</h3>
+            <div class="grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Company Name</mat-label>
+                <input matInput [formControl]="form.controls.companyName" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Company Reg No</mat-label>
+                <input matInput [formControl]="form.controls.companyRegNo" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>VAT No</mat-label>
+                <input matInput [formControl]="form.controls.vatNo" />
+              </mat-form-field>
+            </div>
+          </div>
+          <div class="section">
+            <h3>Address</h3>
+            <div class="grid">
+              <mat-form-field appearance="outline">
+                <mat-label>Address</mat-label>
+                <input
+                  matInput
+                  [formControl]="addressForm.controls.addressInput"
+                  placeholder="Search address..."
+                  [matAutocomplete]="addrAuto"
+                  />
+                  <mat-autocomplete
+                    #addrAuto="matAutocomplete"
+                    [displayWith]="addressDisplayFn"
+                    (optionSelected)="onAddressSelected($event.option.value)"
+                    >
+                    @for (option of addressOptions; track option) {
+                      <mat-option
+                        [value]="option"
+                        >
+                        {{ option.description }}
+                      </mat-option>
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+              </div>
+            </div>
+            <div class="section">
+              <h3>Subscription</h3>
+              <div class="grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Subscription Package</mat-label>
+                  <mat-select [formControl]="form.controls.subscriptionPackage">
+                    @for (p of (subscriptionPackages$ | async); track p) {
+                      <mat-option
+                        [value]="p.name"
+                        >
+                        {{ p.name }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <div class="sub-meta">
+                  <div><span class="label">Active</span> {{ user.subscription?.hasActiveSubscription ? 'Yes' : 'No' }}</div>
+                  <div><span class="label">Status</span> {{ user.subscription?.status || '-' }}</div>
+                  <div><span class="label">Package</span> {{ user.subscription?.package || '-' }}</div>
+                  <div><span class="label">Valid Until</span> {{ user.subscription?.validUntil ? (user.subscription?.validUntil | date : 'mediumDate') : '-' }}</div>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <p>Loading user details...</p>
+          }
 
-    <ng-template #loadingTpl>
-      <p>Loading user details...</p>
-    </ng-template>
-  </mat-card>
-</div>
+        </mat-card>
+      </div>
