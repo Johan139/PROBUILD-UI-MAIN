@@ -595,15 +595,23 @@
                     </div>
                     <p class="card-label">Overall Budget</p>
                     <p class="card-value">
-                      {{ overallBudgetValue | money : true : 2 }}
+                      @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                        --
+                      } @else {
+                        {{ overallBudgetValue | money : true : 2 }}
+                      }
                     </p>
                   </div>
                   <div class="card-bottom">
                     <div class="progress-row">
                       <span>Spent to Date</span>
-                      <strong>{{
-                        spentToDate | money : true : 2
-                      }}</strong>
+                      <strong>
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ spentToDate | money : true : 2 }}
+                        }
+                      </strong>
                     </div>
                     <div class="progress-track" aria-hidden="true">
                       <div
@@ -613,9 +621,13 @@
                     </div>
                     <div class="progress-row">
                       <span>Remaining</span>
-                      <strong>{{
-                        overallRemainingBudget | money : true : 2
-                      }}</strong>
+                      <strong>
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ overallRemainingBudget | money : true : 2 }}
+                        }
+                      </strong>
                     </div>
                   </div>
                 </button>
@@ -629,14 +641,24 @@
                       <lucide-icon name="clock" class="icon-blue"></lucide-icon>
                     </div>
                     <p class="card-label">Overall Timeline</p>
-                    <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
+                    <p class="card-value">
+                      @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                        --
+                      } @else {
+                        {{ totalDurationWeeks }} Weeks
+                      }
+                    </p>
                   </div>
                   <div class="card-bottom">
                     <div class="progress-row">
                       <span>Progress</span>
-                      <strong
-                        >Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong
-                        >
+                      <strong>
+                        @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                          --
+                        } @else {
+                          Week {{ currentWeek }} of {{ totalDurationWeeks }}
+                        }
+                      </strong>
                       </div>
                       <div class="progress-track" aria-hidden="true">
                         <div
@@ -646,7 +668,13 @@
                       </div>
                       <div class="progress-row">
                         <span>Est. Completion</span>
-                        <strong>{{ estimatedCompletionDate | date: "MMM d, y" }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                            --
+                          } @else {
+                            {{ estimatedCompletionDate | date: "MMM d, y" }}
+                          }
+                        </strong>
                       </div>
                     </div>
                   </button>
@@ -661,25 +689,43 @@
                       </div>
                       <p class="card-label">Bid Price (Client)</p>
                       <p class="card-value">
-                        {{ bidPriceValue | money : true : 2 }}
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ bidPriceValue | money : true : 2 }}
+                        }
                       </p>
                     </div>
                     <div class="card-bottom">
                       <div class="progress-row">
                         <span>Gross Profit</span>
-                        <strong>{{
-                          bidGrossProfit | money : true : 2
-                        }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidGrossProfit | money : true : 2 }}
+                          }
+                        </strong>
                       </div>
                       <div class="progress-row">
                         <span>Profit Margin</span>
-                        <strong>{{ bidProfitMarginPercent | number: "1.1-1" }}%</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidProfitMarginPercent | number: "1.1-1" }}%
+                          }
+                        </strong>
                       </div>
                       <div class="progress-row">
                         <span>Exposure</span>
-                        <strong>{{
-                          bidExposureValue | money : true : 2
-                        }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidExposureValue | money : true : 2 }}
+                          }
+                        </strong>
                       </div>
                     </div>
                   </button>

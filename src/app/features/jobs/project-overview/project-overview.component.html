@@ -74,25 +74,25 @@
         </div>
         <div>
           <p class="card-label">Overall Timeline</p>
-          <p class="card-value">{{ totalDuration }} Weeks</p>
+          <p class="card-value">{{ totalDuration > 0 ? totalDuration + ' Weeks' : '--' }}</p>
         </div>
       </div>
       <div class="card-bottom">
         <div class="progress-row">
           <span class="text-muted">Progress</span>
-          <span class="font-medium"
-            >Week {{ currentWeek }} of {{ totalDuration }}</span
-          >
+          <span class="font-medium">
+            {{ totalDuration > 0 ? ('Week ' + currentWeek + ' of ' + totalDuration) : '--' }}
+          </span>
         </div>
         <div class="progress-bar-bg">
           <div
             class="progress-bar blue"
-            [style.width.%]="(currentWeek / totalDuration) * 100"
+            [style.width.%]="totalDuration > 0 ? (currentWeek / totalDuration) * 100 : 0"
           ></div>
         </div>
         <div class="remaining-row">
           <span class="text-muted">Est. Completion</span>
-          <span class="font-medium">{{ estimatedCompletionDate | date }}</span>
+          <span class="font-medium">{{ estimatedCompletionDate ? (estimatedCompletionDate | date) : '--' }}</span>
         </div>
       </div>
     </div>
@@ -121,9 +121,9 @@
         </div>
         <div class="progress-row">
           <span class="text-muted">Profit Margin</span>
-          <span class="font-bold text-success"
-            >{{ syncedProfitMarginPercent | number: "1.1-1" }}%</span
-          >
+          <span class="font-bold text-success">
+            {{ isFinancialLoading ? '--' : ((syncedProfitMarginPercent | number: "1.1-1") + '%') }}
+          </span>
         </div>
         <div class="risk-row">
           <span class="text-muted">Profit at Risk</span>

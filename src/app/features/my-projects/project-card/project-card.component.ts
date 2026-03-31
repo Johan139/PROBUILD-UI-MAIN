@@ -47,6 +47,46 @@ export class ProjectCardComponent {
 
   constructor(private snackBar: MatSnackBar) {}
 
+  get resolvedStartDate(): Date | null {
+    const project = this.project as any;
+    const rawDate =
+      project?.potentialStartDate ??
+      project?.desiredStartDate ??
+      project?.startDate ??
+      project?.biddingStartDate ??
+      project?.PotentialStartDate ??
+      null;
+
+    if (!rawDate) return null;
+
+    const parsed = new Date(rawDate);
+    if (isNaN(parsed.getTime()) || parsed.getFullYear() <= 1) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  get resolvedSquareFootage(): number | null {
+    const project = this.project as any;
+    const rawSize =
+      project?.buildingSize ??
+      project?.projectSize ??
+      project?.underRoofArea ??
+      project?.BuildingSize ??
+      null;
+
+    const parsed = this.parseNumericValue(rawSize);
+    return parsed > 0 ? parsed : null;
+  }
+
+  private parseNumericValue(value: unknown): number {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '');
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
   statusColors: Record<string, string> = {
     INITIATION: 'status-initiation',
     BIDDING: 'status-bid-solicitation',

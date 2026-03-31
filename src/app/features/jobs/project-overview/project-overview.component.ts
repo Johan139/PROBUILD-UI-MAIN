@@ -7,6 +7,7 @@ import {
   ViewChild,
   DestroyRef,
   inject,
+  SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -217,6 +218,7 @@ export class ProjectOverviewComponent {
 
   private localStorageKey = '';
   private projectStartDate: Date | null = null;
+  private lastProjectJobId: string | null = null;
 
   constructor(
     public measurementService: MeasurementService,
@@ -243,7 +245,17 @@ export class ProjectOverviewComponent {
     localStorage.setItem('tempUnit', unit);
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    const nextJobId = this.projectDetails?.jobId
+      ? String(this.projectDetails.jobId)
+      : null;
+    const projectChanged = !!nextJobId && nextJobId !== this.lastProjectJobId;
+
+    if (projectChanged) {
+      this.resetTransientOverviewState();
+      this.lastProjectJobId = nextJobId;
+    }
+
     if (this.projectDetails?.jobId) {
       this.localStorageKey = `project_overview_${this.projectDetails.jobId}`;
       this.loadProjectData();
@@ -251,9 +263,38 @@ export class ProjectOverviewComponent {
       // Initialize temp objects for editing
       this.tempProjectDetails = { ...this.projectDetails };
     }
-    if (this.timelineData) {
+    if (changes['timelineData'] || changes['projectDetails']) {
       this.processTimelineData();
     }
+  }
+
+  private resetTransientOverviewState(): void {
+    this.isFinancialLoading = true;
+    this.loadedCostSummary = null;
+    this.loadedExecutiveSummary = null;
+
+    this.activeValue = 0;
+    this.spentToDate = 0;
+    this.remainingBudget = 0;
+    this.bidPrice = 0;
+    this.totalProjectCost = 0;
+    this.costToBuild = 0;
+    this.grossProfit = 0;
+    this.profitMargin = 0;
+    this.profitAtRisk = 0;
+    this.baselineCost = 0;
+    this.overheadAndProfit = 0;
+    this.contingency = 0;
+    this.escalation = 0;
+    this.taxes = 0;
+
+    this.totalDuration = 0;
+    this.currentWeek = 0;
+    this.displayWeek = 1;
+    this.projectStartDate = null;
+    this.estimatedCompletionDate = null;
+    this.outlookTasks = [];
+    this.behindScheduleCount = 0;
   }
 
   private loadFromCache(): void {
