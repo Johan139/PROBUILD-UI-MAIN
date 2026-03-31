@@ -56,4 +56,5 @@ export interface Job {
   archivedAt?: Date;
   tradePackageLaborBudgetVisible?: boolean;
   tradePackageMaterialBudgetVisible?: boolean;
+  buildingSize?: number;
 }

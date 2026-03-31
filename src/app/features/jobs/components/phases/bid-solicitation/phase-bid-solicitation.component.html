@@ -19,11 +19,15 @@
     (reportRequested)="reportRequested.emit($event)"
   ></app-phase-navigation-header>
 
-  @if (stageDisplayMode === "stage") {
+  @if (stageDisplayMode === "stage" || !liveStageTemplate) {
     <app-job-inbound-bidding
       [projectDetails]="projectDetails"
       (back)="back.emit()"
       (goLive)="onInboundProceed()"
     ></app-job-inbound-bidding>
+  }
+
+  @if (stageDisplayMode === "live" && liveStageTemplate) {
+    <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
   }
 </div>
