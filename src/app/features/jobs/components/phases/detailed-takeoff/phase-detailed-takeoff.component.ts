@@ -164,11 +164,13 @@ export class PhaseDetailedTakeoffComponent
 
   private lastLoadedJobId: string | null = null;
   private lastLoadedOverviewJobId: string | null = null;
+  private activeOverviewLoadJobId: string | null = null;
   private loadedExecutiveSummary: any = null;
   private loadedCostSummary: any = null;
   private loadedBlueprintIntelligence: any = null;
   private loadedJob: any = null;
   private loadedClient: any = null;
+  isOverviewCardsLoading = true;
 
   costAnalysis: any = null;
   editingCell: {
@@ -217,6 +219,7 @@ export class PhaseDetailedTakeoffComponent
       return;
     }
 
+    this.resetOverviewCardsState();
     this.loadData(jobId);
     this.loadOverviewData();
   }
@@ -525,6 +528,10 @@ export class PhaseDetailedTakeoffComponent
         0,
     );
     return fromProjectDetails > 0 ? fromProjectDetails : 0;
+  }
+
+  get hasResolvedFinancialSummary(): boolean {
+    return !!this.loadedCostSummary;
   }
 
   private normalizeHighlightLabel(label: string): string {
@@ -911,9 +918,11 @@ export class PhaseDetailedTakeoffComponent
     const jobId = String(
       this.projectDetails?.jobId || this.projectDetails?.id || '',
     ).trim();
-    if (!jobId || jobId === this.lastLoadedJobId) return;
+    if (!jobId || jobId === this.lastLoadedOverviewJobId) return;
 
     this.isSummaryLoading = true;
+    this.isOverviewCardsLoading = true;
+    this.activeOverviewLoadJobId = jobId;
 
     try {
       const [summary, cost, blueprint, job, client] = await Promise.all([
@@ -924,22 +933,42 @@ export class PhaseDetailedTakeoffComponent
         firstValueFrom(this.jobsService.getClientDetails(Number(jobId))),
       ]);
 
+      if (this.activeOverviewLoadJobId !== jobId) return;
+
       this.loadedExecutiveSummary = summary;
       this.loadedCostSummary = cost;
       this.loadedBlueprintIntelligence = blueprint;
       this.loadedJob = job;
       this.loadedClient = client;
-      this.lastLoadedJobId = jobId;
+      this.lastLoadedOverviewJobId = jobId;
     } catch {
+      if (this.activeOverviewLoadJobId !== jobId) return;
+
       this.loadedExecutiveSummary = null;
       this.loadedCostSummary = null;
       this.loadedBlueprintIntelligence = null;
       this.loadedJob = null;
       this.loadedClient = null;
-      this.lastLoadedJobId = null;
+      this.lastLoadedOverviewJobId = null;
     } finally {
-      this.isSummaryLoading = false;
+      if (this.activeOverviewLoadJobId === jobId) {
+        this.isSummaryLoading = false;
+        this.isOverviewCardsLoading = false;
+        this.activeOverviewLoadJobId = null;
+      }
     }
+  }
+
+  private resetOverviewCardsState(): void {
+    this.loadedExecutiveSummary = null;
+    this.loadedCostSummary = null;
+    this.loadedBlueprintIntelligence = null;
+    this.loadedJob = null;
+    this.loadedClient = null;
+    this.lastLoadedOverviewJobId = null;
+    this.isSummaryLoading = true;
+    this.isOverviewCardsLoading = true;
+    this.activeOverviewLoadJobId = null;
   }
 
   onBlueprintSelected(file: UploadedFileInfo): void {

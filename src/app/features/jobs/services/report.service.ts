@@ -1380,10 +1380,17 @@ export class ReportService {
       const reportContingencyIncludesEscalation =
         reportContingency <= 0 && reportAltContingencyEscalation > 0;
 
-      const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n(.*?)\n\n/s);
+      const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n([\s\S]*?)(?:\n\s*\n|$)/i);
       if (quotationDataMatch && quotationDataMatch[1]) {
         try {
-          const quotationData = JSON.parse(quotationDataMatch[1]);
+          const rawQuotationData = String(quotationDataMatch[1]).trim();
+          const withoutCodeFence = rawQuotationData
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+          const jsonBlockMatch = withoutCodeFence.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+          const jsonPayload = jsonBlockMatch ? jsonBlockMatch[1] : withoutCodeFence;
+          const quotationData = JSON.parse(jsonPayload);
           const materialCost = quotationData.materialCost || 0;
           const laborCost = quotationData.laborCost || 0;
           const generalConditions = quotationData.generalConditions || 0;

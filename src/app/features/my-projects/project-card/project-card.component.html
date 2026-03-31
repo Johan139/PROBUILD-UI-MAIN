@@ -49,20 +49,16 @@
 
       <div class="project-stats">
         <div class="stat-item">
-          <mat-icon matTooltip="Budget" matTooltipShowDelay="500">attach_money</mat-icon>
-          <span>{{ project.budget || 'TBD' }}</span>
-        </div>
-        <div class="stat-item">
           <mat-icon matTooltip="Start Date" matTooltipShowDelay="500">schedule</mat-icon>
-          @if (project.potentialStartDate && (project.potentialStartDate | date: 'yyyy') !== '0001') {
-            <span>{{ project.potentialStartDate | date }}</span>
+          @if (resolvedStartDate) {
+            <span>{{ resolvedStartDate | date }}</span>
           } @else {
             <span>TBD</span>
           }
         </div>
         <div class="stat-item">
           <mat-icon matTooltip="Square Footage" matTooltipShowDelay="500">square_foot</mat-icon>
-          <span>{{ project.buildingSize ? project.buildingSize + ' sq ft' : 'TBD' }}</span>
+          <span>{{ resolvedSquareFootage ? (resolvedSquareFootage | number : '1.0-0') + ' sq ft' : 'TBD' }}</span>
         </div>
         <div class="stat-item">
           <mat-icon matTooltip="Team Members" matTooltipShowDelay="500">people</mat-icon>

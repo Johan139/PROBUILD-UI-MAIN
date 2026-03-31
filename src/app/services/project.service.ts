@@ -90,12 +90,30 @@ export class ProjectService {
               existing?.progress !== undefined &&
               (p.progress === undefined || p.progress === 0);
 
+            const normalizedStartDate =
+              p.potentialStartDate ??
+              p.desiredStartDate ??
+              p.startDate ??
+              p.PotentialStartDate ??
+              p.DesiredStartDate ??
+              p.StartDate ??
+              existing?.potentialStartDate;
+
+            const normalizedBuildingSize =
+              p.buildingSize ??
+              p.projectSize ??
+              p.BuildingSize ??
+              p.ProjectSize ??
+              existing?.buildingSize;
+
             return {
               ...p,
               // Preserve locally-maintained fields so UI doesn't flicker between refreshes
               progress: shouldPreserveExistingProgress
                 ? existing?.progress
                 : (p.progress ?? existing?.progress),
+              potentialStartDate: normalizedStartDate,
+              buildingSize: normalizedBuildingSize,
               thumbnailUrl:
                 p.thumbnailUrl || existing?.thumbnailUrl || this.getImageForJob(p.jobId),
             };
