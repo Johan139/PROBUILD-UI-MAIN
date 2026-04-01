@@ -455,7 +455,9 @@ export class ReportService {
           const valueRaw = cleanText(parts.slice(1).join(':'));
           const money = valueRaw.match(/\$[\d,.]+/);
           const percent = valueRaw.match(/\d+(?:\.\d+)?%/);
-          const duration = valueRaw.match(/\b\d+\s*(?:months?|weeks?)\b/i);
+          const duration = valueRaw.match(
+            /\b\d+(?:\.\d+)?\s*(?:working\s*days?|days?|months?|weeks?)\b/i,
+          );
           const value = money?.[0] || percent?.[0] || duration?.[0] || valueRaw || 'N/A';
           return {
             label,

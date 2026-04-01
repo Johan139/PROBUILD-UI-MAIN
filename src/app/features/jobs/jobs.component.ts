@@ -553,6 +553,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   blueprintPdfSrc: string | Uint8Array | null = null;
   isLoadingBlueprints: boolean = false;
   scopeCostSummary: any = null;
+  scopeExecutiveSummaryData: any = null;
   scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   scopePermitLeadTimeWeeks: number | null = null;
   scopeMaterialLeadTimeWeeks: number | null = null;
@@ -1176,6 +1177,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get totalDurationWeeksForDialog(): number {
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.weeks && summaryTimeline.weeks > 0) {
+      return summaryTimeline.weeks;
+    }
+
     if (!this.timelineGroups?.length) return 0;
 
     const ranges = this.timelineGroups.flatMap((group) => {
@@ -1205,17 +1211,125 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get workingDaysForDialog(): number {
-    return this.totalDurationWeeksForDialog > 0 ? this.totalDurationWeeksForDialog * 5 : 0;
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.workingDays && summaryTimeline.workingDays > 0) {
+      return summaryTimeline.workingDays;
+    }
+    return this.totalDurationWeeksForDialog > 0 ? Math.round(this.totalDurationWeeksForDialog * 5) : 0;
   }
 
   get projectStartDate(): Date | null {
+    // Prefer timeline-derived start when available; avoids placeholder DB dates.
+    const timelineStarts = (this.timelineGroups || [])
+      .flatMap((group) =>
+        (group.subtasks || []).map((task) => {
+          const raw = task.start || task.startDate || null;
+          const d = raw ? new Date(raw) : null;
+          return d && !isNaN(d.getTime()) && d.getFullYear() >= 2000 ? d : null;
+        }),
+      )
+      .filter((d): d is Date => !!d);
+    if (timelineStarts.length > 0) {
+      return new Date(
+        Math.min(...timelineStarts.map((d) => d.getTime())),
+      );
+    }
+
     const rawDate =
       this.projectDetails?.desiredStartDate ??
       this.projectDetails?.DesiredStartDate ??
       this.projectDetails?.date ??
       null;
     const d = rawDate ? new Date(rawDate) : null;
-    return d && !isNaN(d.getTime()) ? d : null;
+    if (!d || isNaN(d.getTime())) return null;
+    // Ignore sentinel values like 0001-01-01.
+    return d.getFullYear() >= 2000 ? d : null;
+  }
+
+  private extractExecutiveSummaryTimeline(): {
+    workingDays: number;
+    weeks: number;
+    months: number;
+  } | null {
+    const summary =
+      this.scopeExecutiveSummaryData ??
+      this.projectDetails?.executiveSummary ??
+      this.projectDetails?.scopeExecutiveSummary ??
+      this.projectDetails?.preliminaryScope?.executiveSummary ??
+      null;
+    const keyHighlights = Array.isArray(summary?.keyHighlights) ? summary.keyHighlights : [];
+    const durationHighlight = keyHighlights.find((item: any) => {
+      const label = String(item?.label || '')
+        .toLowerCase()
+        .replace(/[*_`]/g, '')
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+      return (
+        label.includes('projectduration') ||
+        label.includes('projectedtimeline') ||
+        label.includes('projecttimeline')
+      );
+    });
+    const timelineHighlightText = keyHighlights
+      .map((item: any) => ({
+        label: String(item?.label || '')
+          .toLowerCase()
+          .replace(/[*_`]/g, '')
+          .replace(/[^a-z0-9]+/g, '')
+          .trim(),
+        text: `${String(item?.value || '')} ${String(item?.note || '')}`.trim(),
+      }))
+      .filter(
+        (item: any) =>
+          item.label.includes('projectduration') ||
+          item.label.includes('projectedtimeline') ||
+          item.label.includes('projecttimeline') ||
+          /working\s*days?|months?|weeks?/i.test(item.text),
+      )
+      .map((item: any) => item.text)
+      .join(' ');
+    const combinedText = [
+      `${String(durationHighlight?.value || '')} ${String(durationHighlight?.note || '')}`.trim(),
+      timelineHighlightText,
+      String(summary?.overview || ''),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!combinedText) return null;
+
+    const workingDaysMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*working\s*days?\b/i);
+    const weeksMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*weeks?\b/i);
+    const monthsMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*months?\b/i);
+
+    const workingDays = Number(workingDaysMatch?.[1] || 0);
+    const weeks = Number(weeksMatch?.[1] || 0);
+    const months = Number(monthsMatch?.[1] || 0);
+    if (workingDays <= 0 && weeks <= 0 && months <= 0) return null;
+
+    const resolvedWeeks =
+      workingDays > 0 ? workingDays / 5 : months > 0 ? months * 4.33 : weeks > 0 ? weeks : 0;
+    const resolvedWorkingDays =
+      workingDays > 0
+        ? workingDays
+        : resolvedWeeks > 0
+          ? resolvedWeeks * 5
+          : months > 0
+            ? months * 21.65
+            : 0;
+    const resolvedMonths =
+      months > 0
+        ? months
+        : resolvedWeeks > 0
+          ? resolvedWeeks / 4.33
+          : resolvedWorkingDays > 0
+            ? resolvedWorkingDays / 21.65
+            : 0;
+
+    return {
+      workingDays: Math.round(resolvedWorkingDays),
+      weeks: Math.round(resolvedWeeks * 10) / 10,
+      months: Math.round(resolvedMonths * 10) / 10,
+    };
   }
 
   onMobilizationStartDateSaved(isoDate: string): void {
@@ -1789,6 +1903,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const numericJobId = Number(jobId);
     if (!Number.isFinite(numericJobId) || numericJobId <= 0) {
       this.scopeCostSummary = null;
+      this.scopeExecutiveSummaryData = null;
       this.scopeBomTotals = null;
       this.scopePermitLeadTimeWeeks = null;
       this.scopeMaterialLeadTimeWeeks = null;
@@ -1798,6 +1913,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     void this.refreshFinancialSnapshot(numericJobId, 0).catch(() => {
       this.scopeCostSummary = null;
+      this.scopeExecutiveSummaryData = null;
       this.scopeBomTotals = null;
       this.scopePermitLeadTimeWeeks = null;
       this.scopeMaterialLeadTimeWeeks = null;
@@ -2002,10 +2118,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.financialSnapshotRefreshInFlight = true;
     this.lastFinancialSnapshotRefreshJobId = Number(jobId);
     try {
-      const [budgetResult, summaryResult, bomResult, permitWeeksResult, materialWeeksResult] =
+      const [budgetResult, summaryResult, executiveSummaryResult, bomResult, permitWeeksResult, materialWeeksResult] =
         await Promise.allSettled([
         firstValueFrom(this.budgetService.getBudget(Number(jobId), true)),
         this.reportService.getDetailedCostSummary(String(jobId)),
+        this.reportService.getExecutiveSummaryData(String(jobId)),
         firstValueFrom(this.bomService.getBillOfMaterials(String(jobId), true)),
         this.reportService.getPermittingLeadTimeWeeks(String(jobId)),
         this.reportService.getMaxProcurementLeadTimeWeeks(String(jobId)),
@@ -2019,6 +2136,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (summaryResult.status === 'fulfilled' && summaryResult.value) {
         this.scopeCostSummary = summaryResult.value;
+      }
+      if (executiveSummaryResult.status === 'fulfilled' && executiveSummaryResult.value) {
+        this.scopeExecutiveSummaryData = executiveSummaryResult.value;
       }
       if (bomResult.status === 'fulfilled') {
         this.scopeBomTotals = this.extractScopeBomTotals(bomResult.value);
@@ -2283,8 +2403,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     for (let attempt = 0; attempt < 8; attempt++) {
       try {
-        const [summary, bomResults, permitWeeks, materialWeeks] = await Promise.all([
+        const [summary, executiveSummary, bomResults, permitWeeks, materialWeeks] = await Promise.all([
           this.reportService.getDetailedCostSummary(jobIdStr),
+          this.reportService.getExecutiveSummaryData(jobIdStr),
           firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
           this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
           this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
@@ -2295,6 +2416,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         const afterBom = this.fingerprintScopeBomTotals(bomTotals);
 
         this.scopeCostSummary = summary || null;
+        this.scopeExecutiveSummaryData = executiveSummary || null;
         const currencySymbol = (summary as any)?.currencySymbol;
         if (currencySymbol) {
           setDefaultCurrencySymbol(String(currencySymbol));
@@ -2750,9 +2872,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const jobId = String(this.projectDetails?.jobId || '');
     if (!jobId) return;
 
-    const [budgetResult, summaryResult, bomResult] = await Promise.allSettled([
+    const [budgetResult, summaryResult, executiveSummaryResult, bomResult] = await Promise.allSettled([
       firstValueFrom(this.budgetService.getBudget(Number(jobId), true)),
       this.reportService.getDetailedCostSummary(jobId),
+      this.reportService.getExecutiveSummaryData(jobId),
       firstValueFrom(this.bomService.getBillOfMaterials(jobId, true)),
     ]);
 
@@ -2764,6 +2887,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (summaryResult.status === 'fulfilled' && summaryResult.value) {
       this.scopeCostSummary = summaryResult.value;
+    }
+    if (executiveSummaryResult.status === 'fulfilled' && executiveSummaryResult.value) {
+      this.scopeExecutiveSummaryData = executiveSummaryResult.value;
     }
 
     const summary = (this.scopeCostSummary || {}) as any;
@@ -2806,8 +2932,22 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  openOverallTimelineDialog(): void {
+  async openOverallTimelineDialog(): Promise<void> {
+    const jobId = String(this.projectDetails?.jobId || '');
+    if (!this.scopeExecutiveSummaryData && jobId) {
+      try {
+        this.scopeExecutiveSummaryData = await this.reportService.getExecutiveSummaryData(jobId);
+      } catch {
+        // keep existing fallback behavior
+      }
+    }
+
     const milestones = this.buildTimelineMilestones();
+    const durationWeeks = this.totalDurationWeeksForDialog;
+    const durationWeeksText =
+      durationWeeks > 0 && Number.isInteger(durationWeeks)
+        ? String(durationWeeks)
+        : durationWeeks.toFixed(1).replace(/\.0$/, '');
 
     const data: OverallTimelineDialogData = {
       noticeToProceed: this.projectStartDate
@@ -2817,8 +2957,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         ? format(this.substantialCompletionDate, 'MMM d, yyyy')
         : 'TBD',
       contractDurationText:
-        this.totalDurationWeeksForDialog > 0
-          ? `${this.totalDurationWeeksForDialog} weeks (${this.totalDurationWeeksForDialog * 7} calendar days)`
+        durationWeeks > 0
+          ? `${durationWeeksText} weeks (${Math.round(durationWeeks * 7)} calendar days)`
           : 'TBD',
       workingDaysText:
         this.workingDaysForDialog > 0 ? `${this.workingDaysForDialog} days` : 'TBD',
