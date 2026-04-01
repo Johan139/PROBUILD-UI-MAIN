@@ -31,6 +31,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   private analysisFinished = false;
   private completionPollTicksWithoutEmail = 0;
   private readonly maxCompletionPollTicksWithoutEmail = 6;
+  private completionReachedAtMs: number | null = null;
+  private readonly emailWaitGraceMs = 15000;
 
   private signalRSubscription: Subscription | null = null;
   private analysisDataSubscription: Subscription | null = null;
@@ -213,6 +215,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
     if (isComplete || derivedComplete) {
       this.analysisFinished = true;
+      if (!this.completionReachedAtMs) {
+        this.completionReachedAtMs = Date.now();
+      }
     }
 
     if (extractedDataJson) {
@@ -247,10 +252,19 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
     // Email is treated as the final step.
     if (!this.emailSent) {
+      const waitedLongEnough =
+        this.completionReachedAtMs !== null &&
+        Date.now() - this.completionReachedAtMs >= this.emailWaitGraceMs;
+
+      if (waitedLongEnough) {
+        // Do not block stage progression forever on a missed/delayed email event.
+        this.emailSent = true;
+      } else {
       this.analysisProgress = Math.min(this.analysisProgress || 99, 99);
       this.statusMessage = 'Sending completion email...';
       this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
       return;
+      }
     }
 
     this.currentStep = 'complete';
@@ -319,6 +333,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
     if (update.isComplete || derivedComplete) {
       this.analysisFinished = true;
+      if (!this.completionReachedAtMs) {
+        this.completionReachedAtMs = Date.now();
+      }
       this.applyCompletionGate();
 
       // Do NOT stop polling immediately on completion.

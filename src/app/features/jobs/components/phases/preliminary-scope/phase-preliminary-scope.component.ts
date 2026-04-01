@@ -440,10 +440,15 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     const fromParent = Number(this.scopeTotalProjectCost || 0);
     if (fromParent > 0) return fromParent;
 
-    const totalProjectCost = Number(
-      this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0,
-    );
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
+    if (reportGrandTotal > 0) return reportGrandTotal;
+
+    const totalProjectCost = Number(summary?.suggestedBid || 0);
     if (totalProjectCost > 0) return totalProjectCost;
+
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return marketBid;
 
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
@@ -484,13 +489,24 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
 
     const summary = this.scopeCostSummary || this.loadedCostSummary || null;
     const direct = Number(this.projectDetails?.bidPrice || 0);
+    const reportGrandTotalBidPrice = Number(summary?.reportGrandTotalBidPrice || 0);
     const marketBid = Number(summary?.suggestedMarketBid || 0);
     const projectCost = Number(summary?.suggestedBid || 0);
+    const fullyLoadedCost =
+      this.bidCostToBuild +
+      Number(summary?.overhead || 0) +
+      Number(summary?.contingency || 0) +
+      Number(summary?.escalation || 0) +
+      Number(summary?.taxes || 0);
+
+    // Prefer explicit client-facing bid totals over internal project-cost totals.
+    if (reportGrandTotalBidPrice > 0) return reportGrandTotalBidPrice;
+    if (marketBid > 0) return marketBid;
 
     // In some flows `projectDetails.bidPrice` is a per-sq-ft value (e.g. $215.50),
     // while the cards and popup expect total project dollars.
     // Only trust `projectDetails.bidPrice` if it looks consistent with the totals.
-    const comparisonBase = Math.max(projectCost, marketBid);
+    const comparisonBase = Math.max(projectCost, marketBid, fullyLoadedCost);
     if (direct > 0) {
       if (comparisonBase > 0) {
         if (direct >= comparisonBase * 0.5) return direct;
@@ -499,9 +515,15 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
       }
     }
 
-    if (projectCost > 0 || marketBid > 0) {
-      return Math.max(projectCost, marketBid);
+    // If we only have project cost and components, derive a client bid estimate.
+    if (fullyLoadedCost > 0 && projectCost > 0) {
+      const target = Math.max(fullyLoadedCost, projectCost * 1.1);
+      return Math.round(target * 100) / 100;
     }
+    if (fullyLoadedCost > 0) {
+      return Math.round(fullyLoadedCost * 100) / 100;
+    }
+
     const suggested = Number(
       summary?.suggestedBid ||
         summary?.suggestedMarketBid ||

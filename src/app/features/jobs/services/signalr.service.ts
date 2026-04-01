@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   HubConnection,
   HubConnectionBuilder,
+  HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr';
 import { Subject, Observable } from 'rxjs';
@@ -56,8 +57,15 @@ export class SignalrService {
   }
 
   public startConnection(): void {
-    if (this.hubConnection && this.hubConnection.state === 'Connected') {
-      return;
+    if (this.hubConnection) {
+      const state = this.hubConnection.state;
+      if (
+        state === HubConnectionState.Connected ||
+        state === HubConnectionState.Connecting ||
+        state === HubConnectionState.Reconnecting
+      ) {
+        return;
+      }
     }
 
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
@@ -66,7 +74,9 @@ export class SignalrService {
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
         accessTokenFactory: async () => {
-          const token = await this.authService.getToken();
+          // SignalR handshake should not block on token refresh retries/timeouts.
+          // Use currently stored token and let normal HTTP flow refresh in background.
+          const token = this.authService.getAccessTokenFast();
           return token || '';
         },
       })

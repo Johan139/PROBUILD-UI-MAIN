@@ -131,6 +131,7 @@ export interface OverallBudgetDialogData {
             </div>
           </div>
         </section>
+
       </mat-dialog-content>
     </div>
   `,
@@ -339,5 +340,30 @@ export class OverallBudgetDialogComponent {
   constructor(
     public dialogRef: MatDialogRef<OverallBudgetDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: OverallBudgetDialogData,
-  ) {}
+  ) {
+    this.normalizeIndirectSoftCosts();
+  }
+
+  private normalizeIndirectSoftCosts(): void {
+    const general = Number(this.data?.generalConditionsSiteServices || 0);
+    const permits = Number(this.data?.permitsAdminFees || 0);
+    const insurance = Number(this.data?.insuranceBonds || 0);
+
+    if (general > 0 && permits <= 0 && insurance <= 0) {
+      const inferredGroupedIndirect = general / (1 - 0.0882 - 0.0259);
+      const inferredPermits =
+        Math.round(inferredGroupedIndirect * 0.0882 * 100) / 100;
+      const inferredInsurance =
+        Math.round(inferredGroupedIndirect * 0.0259 * 100) / 100;
+
+      this.data.permitsAdminFees = inferredPermits;
+      this.data.insuranceBonds = inferredInsurance;
+      this.data.directAndInsurableSubtotal =
+        Number(this.data.materialsCost || 0) +
+        Number(this.data.laborCost || 0) +
+        general +
+        inferredPermits +
+        inferredInsurance;
+    }
+  }
 }

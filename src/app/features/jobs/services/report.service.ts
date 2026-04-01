@@ -22,6 +22,56 @@ export class ReportService {
     private http: HttpClient,
   ) {}
 
+  invalidateBomResultsCache(jobId?: string): void {
+    const key = String(jobId || '').trim();
+    if (key) {
+      this.bomResultsCache.delete(key);
+      return;
+    }
+    this.bomResultsCache.clear();
+  }
+
+  private sortBomResultsNewestFirst(results: any[]): any[] {
+    return [...results].sort((a: any, b: any) => {
+      const timeA = new Date(a?.createdAt || 0).getTime();
+      const timeB = new Date(b?.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+
+      const idA = Number(a?.id || 0);
+      const idB = Number(b?.id || 0);
+      return idB - idA;
+    });
+  }
+
+  private selectBestBomResult(results: any[] | null): any | null {
+    if (!Array.isArray(results) || results.length === 0) return null;
+
+    const withResponse = results.filter(
+      (r) => typeof r?.fullResponse === 'string' && r.fullResponse.trim().length > 0,
+    );
+    if (withResponse.length === 0) return null;
+
+    const scored = [...withResponse].sort((a: any, b: any) => {
+      const textA = String(a?.fullResponse || '');
+      const textB = String(b?.fullResponse || '');
+      const hasPhase30A = /###\s*Phase\s*30\s*:/i.test(textA) ? 1 : 0;
+      const hasPhase30B = /###\s*Phase\s*30\s*:/i.test(textB) ? 1 : 0;
+      if (hasPhase30A !== hasPhase30B) return hasPhase30B - hasPhase30A;
+
+      const timeA = new Date(a?.createdAt || 0).getTime();
+      const timeB = new Date(b?.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+
+      const idA = Number(a?.id || 0);
+      const idB = Number(b?.id || 0);
+      if (idA !== idB) return idB - idA;
+
+      return textB.length - textA.length;
+    });
+
+    return scored[0] || null;
+  }
+
   private async getBomResults(jobId: string): Promise<any[] | null> {
     const key = String(jobId);
     const now = Date.now();
@@ -32,7 +82,9 @@ export class ReportService {
 
     try {
       const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
-      const normalized = Array.isArray(results) ? results : null;
+      const normalized = Array.isArray(results)
+        ? this.sortBomResultsNewestFirst(results)
+        : null;
       this.bomResultsCache.set(key, { cachedAt: now, results: normalized });
       return normalized;
     } catch (err) {
@@ -931,13 +983,13 @@ export class ReportService {
 
   async getDetailedCostSummary(jobId: string): Promise<any> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
-      if (!results || results.length === 0 || !results[0].fullResponse) {
+      const results = await this.getBomResults(jobId);
+      const best = this.selectBestBomResult(results);
+      if (!best) {
         return null;
       }
-      const fullResponse = results[0].fullResponse;
+      const fullResponse = String(best.fullResponse || '');
+      const hasPhase30Section = /###\s*Phase\s*30\s*:/i.test(fullResponse);
 
       const detectCurrencySymbol = (text: string): string => {
         const raw = String(text || '');
@@ -1137,12 +1189,6 @@ export class ReportService {
             (r) => String(r.Category || '').toLowerCase() === 'taxes',
           );
 
-          // Phase 30 JSON uses Category = 'Indirect Costs' and can include nested
-          // Categorized_Materials for breakdowns.
-          const indirectRows = parsed.filter(
-            (r: any) => String(r?.Category || '').toLowerCase() === 'indirect costs',
-          );
-
           const sumCategorizedMaterials = (
             row: any,
             predicate: (itemName: string) => boolean,
@@ -1159,23 +1205,28 @@ export class ReportService {
           let permitsAdminFees = 0;
           let insuranceBonds = 0;
 
-          indirectRows.forEach((row: any) => {
+          // Different report variants classify these rows under either "Direct Costs"
+          // or "Indirect Costs", so match by Phase_Item semantics across all rows.
+          parsed.forEach((row: any) => {
             const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+            const amount = Number(row?.Amount || 0);
+            if (!phaseItem) return;
 
             // General conditions variants: "General Conditions", "General Conditions & Site Services", etc.
             if (phaseItem.includes('general') && phaseItem.includes('condition')) {
-              generalConditions += Number(row?.Amount || 0);
+              generalConditions += amount;
               return;
             }
 
-            // Fees / permits / insurance often appear combined under one row. Classify by item keywords.
-            const looksLikePermitsOrInsurance =
+            // Fees / permits / insurance can appear as dedicated rows or nested materials.
+            const hasPermitsHint =
               phaseItem.includes('permit') ||
-              phaseItem.includes('admin') ||
+              phaseItem.includes('admin');
+            const hasInsuranceHint =
               phaseItem.includes('insurance') ||
               phaseItem.includes('bond');
 
-            if (looksLikePermitsOrInsurance) {
+            if (hasPermitsHint || hasInsuranceHint) {
               const permits = sumCategorizedMaterials(row, (name) =>
                 name.includes('permit') || name.includes('admin'),
               );
@@ -1187,8 +1238,14 @@ export class ReportService {
                 permitsAdminFees += permits;
                 insuranceBonds += insurance;
               } else {
-                // If we have no categorized breakdown, prefer to treat as permits/admin.
-                permitsAdminFees += Number(row?.Amount || 0);
+                if (hasPermitsHint && hasInsuranceHint) {
+                  // Combined row with no nested breakdown: keep backward-compatible default.
+                  permitsAdminFees += amount;
+                } else if (hasPermitsHint) {
+                  permitsAdminFees += amount;
+                } else if (hasInsuranceHint) {
+                  insuranceBonds += amount;
+                }
               }
             }
           });
@@ -1228,6 +1285,70 @@ export class ReportService {
         return match ? parseFloat(match[1]) : 0;
       };
 
+      const extractPhaseItemTotalsFromAnyJsonBlock = (
+        source: string,
+      ): {
+        generalConditions: number;
+        permitsAdminFees: number;
+        insuranceBonds: number;
+      } | null => {
+        const fenceRegex = /```json\s*([\s\S]*?)\s*```/gi;
+        let match: RegExpExecArray | null;
+
+        while ((match = fenceRegex.exec(source)) !== null) {
+          const raw = String(match[1] || '').trim();
+          if (!raw) continue;
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) continue;
+
+            const rows = parsed.filter(
+              (r: any) =>
+                r &&
+                typeof r === 'object' &&
+                Object.prototype.hasOwnProperty.call(r, 'Phase_Item') &&
+                Object.prototype.hasOwnProperty.call(r, 'Amount'),
+            );
+            if (!rows.length) continue;
+
+            let generalConditions = 0;
+            let permitsAdminFees = 0;
+            let insuranceBonds = 0;
+
+            rows.forEach((row: any) => {
+              const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+              const amount = Number(row?.Amount || 0);
+              if (!phaseItem || amount <= 0) return;
+
+              if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+                generalConditions += amount;
+                return;
+              }
+              if (phaseItem.includes('permit') || phaseItem.includes('admin')) {
+                permitsAdminFees += amount;
+                return;
+              }
+              if (phaseItem.includes('insurance') || phaseItem.includes('bond')) {
+                insuranceBonds += amount;
+              }
+            });
+
+            if (generalConditions > 0 || permitsAdminFees > 0 || insuranceBonds > 0) {
+              return {
+                generalConditions,
+                permitsAdminFees,
+                insuranceBonds,
+              };
+            }
+          } catch {
+            // Try next json fence
+          }
+        }
+
+        return null;
+      };
+
       const extractValue = (regex: RegExp) => {
         const match = fullResponse.match(regex);
         return match
@@ -1235,13 +1356,26 @@ export class ReportService {
           : 0;
       };
 
+      const extractTableAmountByLabel = (labelPattern: string): number => {
+        const escaped = labelPattern;
+        const match = fullResponse.match(
+          new RegExp(
+            `\\|\\s*(?:\\*{0,2}\\s*)?${escaped}(?:\\s*\\*{0,2})?\\s*\\|\\s*(?:\\*{0,2}\\s*)?(?:\\$|ZAR)?\\s*([\\d,]+(?:\\.\\d+)?)\\s*(?:\\*{0,2})?\\s*\\|`,
+            'i',
+          ),
+        );
+        return match
+          ? parseFloat(String(match[1]).replace(/[\s,]/g, ''))
+          : 0;
+      };
+
       // Some AI report variants provide explicit permits/insurance rows as pipe-table lines
       // without a `$` prefix. Prefer these when present.
-      const permitsAdminFeesLoose = extractValue(
-        /\|\s*Total\s*Permits\s*&\s*Admin\s*Fees\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      const permitsAdminFeesLoose = extractTableAmountByLabel(
+        '(?:Total\\s*)?Permits\\s*(?:&|and)?\\s*Admin\\s*Fees',
       );
-      const insuranceBondsLoose = extractValue(
-        /\|\s*Insurance\s*&\s*Bonds\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      const insuranceBondsLoose = extractTableAmountByLabel(
+        '(?:Total\\s*)?Insurance\\s*(?:&|and)?\\s*Bonds',
       );
 
       // Phase 30 formatted client quotation totals (authoritative for Bid Proposal Analysis popup)
@@ -1746,6 +1880,25 @@ export class ReportService {
             : 0;
 
       if (
+        finalGeneralConditions <= 0 ||
+        finalPermitsAdminFees <= 0 ||
+        finalInsuranceBonds <= 0
+      ) {
+        const jsonPhaseItemTotals = extractPhaseItemTotalsFromAnyJsonBlock(fullResponse);
+        if (jsonPhaseItemTotals) {
+          if (finalGeneralConditions <= 0) {
+            finalGeneralConditions = Number(jsonPhaseItemTotals.generalConditions || 0);
+          }
+          if (finalPermitsAdminFees <= 0) {
+            finalPermitsAdminFees = Number(jsonPhaseItemTotals.permitsAdminFees || 0);
+          }
+          if (finalInsuranceBonds <= 0) {
+            finalInsuranceBonds = Number(jsonPhaseItemTotals.insuranceBonds || 0);
+          }
+        }
+      }
+
+      if (
         groupedIndirectCosts > 0 &&
         finalPermitsAdminFees <= 0 &&
         finalInsuranceBonds <= 0
@@ -1756,6 +1909,20 @@ export class ReportService {
           0,
           groupedIndirectCosts - finalPermitsAdminFees - finalInsuranceBonds,
         );
+      }
+
+      // Last-resort normalization: if only General Conditions is available, infer
+      // permits/insurance using the same default split ratios used elsewhere.
+      if (
+        finalGeneralConditions > 0 &&
+        finalPermitsAdminFees <= 0 &&
+        finalInsuranceBonds <= 0
+      ) {
+        const inferredGroupedIndirect = finalGeneralConditions / (1 - 0.0882 - 0.0259);
+        finalPermitsAdminFees =
+          Math.round(inferredGroupedIndirect * 0.0882 * 100) / 100;
+        finalInsuranceBonds =
+          Math.round(inferredGroupedIndirect * 0.0259 * 100) / 100;
       }
       const finalDirectAndInsurableSubtotal =
         phase26DirectAndInsurableSubtotal > 0
@@ -1884,6 +2051,19 @@ export class ReportService {
         reportVatAmount: finalReportVatAmount,
         reportGrandTotalBidPrice: finalReportGrandTotalBidPrice,
         reportContingencyIncludesEscalation,
+        debugIndirect: {
+          bomId: Number(best?.id || 0),
+          bomCreatedAt: String(best?.createdAt || ''),
+          hasPhase30Section,
+          phase30GeneralConditions: Number(phase30?.generalConditions || 0),
+          phase30PermitsAdminFees: Number(phase30?.permitsAdminFees || 0),
+          phase30InsuranceBonds: Number(phase30?.insuranceBonds || 0),
+          tablePermitsLoose: Number(permitsAdminFeesLoose || 0),
+          tableInsuranceLoose: Number(insuranceBondsLoose || 0),
+          finalGeneralConditions: Number(finalGeneralConditions || 0),
+          finalPermitsAdminFees: Number(finalPermitsAdminFees || 0),
+          finalInsuranceBonds: Number(finalInsuranceBonds || 0),
+        },
       };
     } catch (err) {
       console.error('Failed to get detailed cost summary:', err);
