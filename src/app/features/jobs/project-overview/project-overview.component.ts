@@ -344,6 +344,8 @@ export class ProjectOverviewComponent {
       .getExecutiveSummaryData(jobId)
       .then((summary) => {
         this.loadedExecutiveSummary = summary;
+        // Recompute timeline cards once summary timeline becomes available.
+        this.processTimelineData();
       })
       .catch(() => {
         this.loadedExecutiveSummary = null;
@@ -669,11 +671,22 @@ export class ProjectOverviewComponent {
       },
       keyHighlights: Array.isArray(summary?.keyHighlights)
         ? summary.keyHighlights
-            .map((item: any) => ({
-              label: String(item?.label || ''),
-              value: this.formatMoneyInText(String(item?.value || '')),
-              note: this.formatMoneyInText(String(item?.note || '')),
-            }))
+            .map((item: any) => {
+              const label = String(item?.label || '');
+              const rawValue = String(item?.value || '');
+              const rawNote = String(item?.note || '');
+              const normalizedLabel = label
+                .toLowerCase()
+                .replace(/[*_`]/g, '')
+                .replace(/[^a-z0-9]+/g, '')
+                .trim();
+
+              return {
+                label,
+                value: this.formatMoneyInText(rawValue),
+                note: this.formatMoneyInText(rawNote),
+              };
+            })
             .filter((item: any) => item.label || item.value || item.note)
         : [],
       riskFactors: Array.isArray(summary?.riskFactors)
@@ -945,6 +958,13 @@ export class ProjectOverviewComponent {
   }
 
   processTimelineData(): void {
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.workingDays && summaryTimeline.workingDays > 0) {
+      this.totalDuration = Math.max(1, Math.round(summaryTimeline.workingDays / 5));
+    } else if (summaryTimeline?.weeks && summaryTimeline.weeks > 0) {
+      this.totalDuration = Math.max(1, Math.round(summaryTimeline.weeks));
+    }
+
     if (!this.timelineData || this.timelineData.length === 0) return;
 
     const allTasks = this.timelineData.flatMap((g) => g.subtasks);
@@ -962,12 +982,14 @@ export class ProjectOverviewComponent {
       this.projectStartDate = new Date(minStart);
       const maxEnd = Math.max(...endDates);
 
-      // Total Duration in weeks
+      // Total duration falls back to timeline only when summary duration is missing.
       const durationMs = maxEnd - minStart;
-      this.totalDuration = Math.max(
-        1,
-        Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)),
-      );
+      if (!(summaryTimeline && (summaryTimeline.workingDays > 0 || summaryTimeline.weeks > 0))) {
+        this.totalDuration = Math.max(
+          1,
+          Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)),
+        );
+      }
 
       // Current Week
       const now = new Date().getTime();
@@ -1061,6 +1083,102 @@ export class ProjectOverviewComponent {
 
     // Check Weather Impact (Next 10 Days)
     this.checkWeatherRisk(allTasks);
+  }
+
+  private extractExecutiveSummaryTimeline(): {
+    workingDays: number;
+    weeks: number;
+    months: number;
+  } | null {
+    const summary =
+      this.loadedExecutiveSummary ||
+      this.projectDetails?.executiveSummary ||
+      this.projectDetails?.scopeExecutiveSummary ||
+      this.projectDetails?.preliminaryScope?.executiveSummary ||
+      null;
+    const keyHighlights = Array.isArray(summary?.keyHighlights) ? summary.keyHighlights : [];
+    const durationHighlight = keyHighlights.find((item: any) => {
+      const label = String(item?.label || '')
+        .toLowerCase()
+        .replace(/[*_`]/g, '')
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+      return (
+        label.includes('projectduration') ||
+        label.includes('projectedtimeline') ||
+        label.includes('projecttimeline')
+      );
+    });
+    const timelineHighlightText = keyHighlights
+      .map((item: any) => ({
+        label: String(item?.label || '')
+          .toLowerCase()
+          .replace(/[*_`]/g, '')
+          .replace(/[^a-z0-9]+/g, '')
+          .trim(),
+        text: `${String(item?.value || '')} ${String(item?.note || '')}`.trim(),
+      }))
+      .filter(
+        (item: any) =>
+          item.label.includes('projectduration') ||
+          item.label.includes('projectedtimeline') ||
+          item.label.includes('projecttimeline') ||
+          /working\s*days?|months?|weeks?/i.test(item.text),
+      )
+      .map((item: any) => item.text)
+      .join(' ');
+
+    const combinedText = [
+      `${String(durationHighlight?.value || '')} ${String(durationHighlight?.note || '')}`.trim(),
+      timelineHighlightText,
+      String(summary?.overview || ''),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!combinedText) return null;
+
+    const workingDaysMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*working\s*days?\b/i);
+    const weeksMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*weeks?\b/i);
+    const monthsMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*months?\b/i);
+
+    const workingDays = Number(workingDaysMatch?.[1] || 0);
+    const weeks = Number(weeksMatch?.[1] || 0);
+    const months = Number(monthsMatch?.[1] || 0);
+
+    if (workingDays > 0 || weeks > 0 || months > 0) {
+      const resolvedWeeks =
+        workingDays > 0
+          ? workingDays / 5
+          : months > 0
+            ? months * 4.33
+            : weeks > 0
+              ? weeks
+              : 0;
+      const resolvedWorkingDays =
+        workingDays > 0
+          ? workingDays
+          : resolvedWeeks > 0
+            ? resolvedWeeks * 5
+            : months > 0
+              ? months * 21.65
+              : 0;
+      const resolvedMonths =
+        months > 0
+          ? months
+          : resolvedWeeks > 0
+            ? resolvedWeeks / 4.33
+            : resolvedWorkingDays > 0
+              ? resolvedWorkingDays / 21.65
+              : 0;
+
+      return {
+        workingDays: Math.round(resolvedWorkingDays),
+        weeks: Math.round(resolvedWeeks * 10) / 10,
+        months: Math.round(resolvedMonths * 10) / 10,
+      };
+    }
+
+    return null;
   }
 
   checkWeatherRisk(tasks: any[]): void {
