@@ -1,4 +1,5 @@
 export const environment = {
+  refreshTokenRequestTimeoutMs: 15_000,
   BACKEND_URL:
     'https://probuildai-backend-dev.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api',
   SIGNALR_URL:
