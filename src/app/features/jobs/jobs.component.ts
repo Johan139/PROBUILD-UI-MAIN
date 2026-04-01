@@ -473,9 +473,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly uiCacheVersion = 1 as const;
   private readonly uiStateCacheTtlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
   private readonly teamCacheTtlMs = 15 * 60 * 1000; // 15 minutes
+  private readonly phasePrefetchDelayMs = 1200;
 
   private lastAuxLoadedJobId: number | null = null;
   private lastCurrencySeededJobId: number | null = null;
+  private fetchedDataKeys = new Set<string>();
+  private prefetchedPhaseKeys = new Set<string>();
 
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
@@ -600,6 +603,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   ): void {
     this.activeTab = tab;
     this.persistJobUiState();
+    this.primeDataForCurrentView();
+    this.prefetchLikelyNextData();
   }
 
   setStageDisplayMode(mode: 'stage' | 'live'): void {
@@ -1483,14 +1488,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
           if (this.lastAuxLoadedJobId !== jobId) {
             this.lastAuxLoadedJobId = jobId;
-
-            this.loadBlueprints();
-            this.loadAssignedTeam();
-            this.loadBudgetLineItems(jobId);
-
-            if (this.projectStage !== 'INITIATION') {
-              this.loadScopeInsightData(this.projectDetails.jobId);
-            }
+            this.fetchedDataKeys.clear();
+            this.prefetchedPhaseKeys.clear();
+            this.primeDataForCurrentView();
+            this.prefetchLikelyNextData();
 
             this.authService.currentUser$
               .pipe(
@@ -1634,6 +1635,102 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.scopeMaterialLeadTimeWeeks = null;
         this.cdr.detectChanges();
       });
+  }
+
+  private stageToStatusKey(stage: ProjectPhase): string {
+    const map: Record<ProjectPhase, string> = {
+      INITIATION: 'INITIATION',
+      PRELIMINARY_SCOPE: 'PRELIMINARY_SCOPE',
+      DETAILED_TAKEOFF: 'DETAILED_TAKEOFF',
+      CONTRACT_AWARD: 'CONTRACT_AWARD',
+      PRE_CONSTRUCTION: 'PRE_CONSTRUCTION',
+      BID_SOLICITATION: 'BID_SOLICITATION',
+      TRADE_AWARD: 'TRADE_AWARD',
+      MOBILIZATION: 'MOBILIZATION',
+      CONSTRUCTION_LIVE: 'CONSTRUCTION_LIVE',
+      CLOSEOUT: 'CLOSEOUT',
+    };
+    return map[stage];
+  }
+
+  private nextProjectPhase(current: ProjectPhase): ProjectPhase | null {
+    const order: ProjectPhase[] = [
+      'INITIATION',
+      'PRELIMINARY_SCOPE',
+      'DETAILED_TAKEOFF',
+      'CONTRACT_AWARD',
+      'PRE_CONSTRUCTION',
+      'BID_SOLICITATION',
+      'TRADE_AWARD',
+      'MOBILIZATION',
+      'CONSTRUCTION_LIVE',
+      'CLOSEOUT',
+    ];
+    const idx = order.indexOf(current);
+    if (idx < 0 || idx >= order.length - 1) {
+      return null;
+    }
+    return order[idx + 1];
+  }
+
+  private markFetched(jobId: number, key: string): void {
+    this.fetchedDataKeys.add(`${jobId}:${key}`);
+  }
+
+  private isFetched(jobId: number, key: string): boolean {
+    return this.fetchedDataKeys.has(`${jobId}:${key}`);
+  }
+
+  private primeDataForCurrentView(): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+
+    const needsScope = this.projectStage !== 'INITIATION' || this.activeTab === 'overview' || this.activeTab === 'budget';
+    if (needsScope && !this.isFetched(jobId, 'scope')) {
+      this.markFetched(jobId, 'scope');
+      this.loadScopeInsightData(String(jobId));
+    }
+
+    const needsBudget = this.activeTab === 'budget' || this.activeTab === 'overview';
+    if (needsBudget && !this.isFetched(jobId, 'budget')) {
+      this.markFetched(jobId, 'budget');
+      this.loadBudgetLineItems(jobId);
+    }
+
+    if (this.activeTab === 'team' && !this.isFetched(jobId, 'team')) {
+      this.markFetched(jobId, 'team');
+      this.loadAssignedTeam();
+    }
+
+    if (this.activeTab === 'blueprints' && !this.isFetched(jobId, 'blueprints')) {
+      this.markFetched(jobId, 'blueprints');
+      this.loadBlueprints();
+    }
+  }
+
+  private prefetchLikelyNextData(): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+
+    const nextStage = this.nextProjectPhase(this.projectStage);
+    if (!nextStage) {
+      return;
+    }
+
+    const nextStatusKey = this.stageToStatusKey(nextStage);
+    const prefetchKey = `${jobId}:${nextStatusKey}`;
+    if (this.prefetchedPhaseKeys.has(prefetchKey)) {
+      return;
+    }
+    this.prefetchedPhaseKeys.add(prefetchKey);
+
+    setTimeout(() => {
+      this.prefetchPhaseData(nextStatusKey, String(jobId));
+    }, this.phasePrefetchDelayMs);
   }
 
   private loadBudgetLineItems(jobId: number): void {
@@ -2762,6 +2859,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
+      this.primeDataForCurrentView();
+      this.prefetchLikelyNextData();
   }
 
   private triggerTradePackageRefreshIfNeeded(): void {
