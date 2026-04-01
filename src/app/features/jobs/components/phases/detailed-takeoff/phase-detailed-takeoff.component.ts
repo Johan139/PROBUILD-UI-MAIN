@@ -507,12 +507,15 @@ export class PhaseDetailedTakeoffComponent
     const fromParent = Number(this.scopeTotalProjectCost || 0);
     if (fromParent > 0) return fromParent;
 
-    const totalProjectCost = Number(
-      this.scopeCostSummary?.suggestedBid ||
-        this.loadedCostSummary?.suggestedBid ||
-        0,
-    );
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
+    if (reportGrandTotal > 0) return reportGrandTotal;
+
+    const totalProjectCost = Number(summary?.suggestedBid || 0);
     if (totalProjectCost > 0) return totalProjectCost;
+
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return marketBid;
 
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(

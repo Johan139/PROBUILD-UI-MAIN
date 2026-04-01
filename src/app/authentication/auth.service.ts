@@ -13,6 +13,7 @@ import {
   filter,
   take,
   finalize,
+  timeout,
 } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
@@ -37,13 +38,21 @@ export class AuthService {
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
+  private inactivityPauseSources = new Set<string>();
   /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
   private readonly REFRESH_TIMEOUT_MS = 10000;
+  private readonly REFRESH_RETRY_COOLDOWN_MS = 30000;
+  private readonly REFRESH_FAILURE_WINDOW_MS = 60000;
+  private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 3;
   private isRefreshing = false;
-  private refreshTokenSubject = new BehaviorSubject<{
-    token: string;
-    refreshToken: string;
-  } | null>(null);
+  private refreshRetryCooldownUntil = 0;
+  private refreshAuthFailureCount = 0;
+  private refreshAuthFailureWindowStartedAt = 0;
+  private refreshTokenSubject = new BehaviorSubject<
+    | { token: string; refreshToken: string }
+    | { failed: true; error: unknown }
+    | null
+  >(null);
 
   constructor(
     private router: Router,
@@ -152,6 +161,26 @@ export class AuthService {
     return error.status === 400 || error.status === 401 || error.status === 403;
   }
 
+  private shouldLogoutNowForRefreshAuthFailure(): boolean {
+    const now = Date.now();
+    if (
+      !this.refreshAuthFailureWindowStartedAt ||
+      now - this.refreshAuthFailureWindowStartedAt > this.REFRESH_FAILURE_WINDOW_MS
+    ) {
+      this.refreshAuthFailureWindowStartedAt = now;
+      this.refreshAuthFailureCount = 1;
+      return false;
+    }
+
+    this.refreshAuthFailureCount += 1;
+    return this.refreshAuthFailureCount >= this.MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES;
+  }
+
+  private resetRefreshAuthFailureState(): void {
+    this.refreshAuthFailureCount = 0;
+    this.refreshAuthFailureWindowStartedAt = 0;
+  }
+
   private logoutWithReason(
     reason: 'manual' | 'inactivity' | 'refresh_invalid' | 'token_invalid',
   ): void {
@@ -163,6 +192,7 @@ export class AuthService {
 
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.isLoggedIn()) return;
+    if (this.inactivityPauseSources.size > 0) return;
 
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
@@ -185,7 +215,25 @@ export class AuthService {
       this.clearInactivityTimer();
       return;
     }
+    if (this.inactivityPauseSources.size > 0) {
+      this.clearInactivityTimer();
+      return;
+    }
     this.startInactivityTimer();
+  }
+
+  public pauseInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.add(key);
+    this.clearInactivityTimer();
+  }
+
+  public resumeInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.delete(key);
+    if (this.inactivityPauseSources.size === 0) {
+      this.startInactivityTimer();
+    }
   }
 
   public hasPermission(permissionKey: string): Observable<boolean> {
@@ -410,6 +458,7 @@ export class AuthService {
       this.addressStore.clear();
     }
     this.currentUserSubject.next(null);
+    this.resetRefreshAuthFailureState();
 
     this.router.navigate(['/login']);
   }
@@ -417,37 +466,62 @@ export class AuthService {
   refreshToken(): Observable<any> {
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
-        filter((tokenResponse) => tokenResponse != null),
+        filter((tokenResponse) => tokenResponse !== null),
         take(1),
+        switchMap((tokenResponse) => {
+          if ((tokenResponse as any)?.failed) {
+            return throwError(
+              () =>
+                ((tokenResponse as { failed: true; error: unknown }).error ??
+                  new Error('Refresh token request failed.')),
+            );
+          }
+          return of(tokenResponse);
+        }),
       );
+    }
+
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      this.refreshTokenSubject.next({
+        failed: true,
+        error: new Error('No refresh token available.'),
+      });
+      this.logoutWithReason('refresh_invalid');
+      return throwError(() => new Error('No refresh token available.'));
     }
 
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      this.logoutWithReason('refresh_invalid');
-      return throwError(() => new Error('No refresh token available.'));
-    }
-
     return this.http
       .post(`${this.apiUrl}/refresh-token`, { refreshToken })
       .pipe(
+        timeout(this.REFRESH_TIMEOUT_MS),
         tap((response: any) => {
           if (response && response.token && response.refreshToken) {
             localStorage.setItem('accessToken', response.token);
             localStorage.setItem('refreshToken', response.refreshToken);
             this.loadUserFromToken(response.token);
+            this.resetRefreshAuthFailureState();
             this.refreshTokenSubject.next(response);
           } else {
-            this.logoutWithReason('refresh_invalid');
+            this.refreshTokenSubject.next({
+              failed: true,
+              error: new Error('Invalid refresh token response'),
+            });
+            if (this.shouldLogoutNowForRefreshAuthFailure()) {
+              this.logoutWithReason('refresh_invalid');
+            }
             throw new Error('Invalid refresh token response');
           }
         }),
         catchError((err) => {
+          this.refreshTokenSubject.next({ failed: true, error: err });
           if (this.shouldForceLogoutOnRefreshFailure(err)) {
-            this.logoutWithReason('refresh_invalid');
+            if (this.shouldLogoutNowForRefreshAuthFailure()) {
+              this.logoutWithReason('refresh_invalid');
+            }
           }
           return throwError(() => err);
         }),
@@ -471,16 +545,30 @@ export class AuthService {
 
     // Refresh if expiring within 5 seconds
     if (exp * 1000 < Date.now() + 5000) {
+      if (Date.now() < this.refreshRetryCooldownUntil) {
+        return this.normalizeToken(token);
+      }
       try {
         await firstValueFrom(this.refreshToken());
+        this.refreshRetryCooldownUntil = 0;
         return localStorage.getItem('accessToken');
       } catch (e) {
         console.error('Refresh failed in getToken()', e);
-        return null;
+        this.refreshRetryCooldownUntil =
+          Date.now() + this.REFRESH_RETRY_COOLDOWN_MS;
+        // Best effort fallback: keep using current token temporarily to avoid
+        // request storms / SignalR negotiation loops during transient outages.
+        return this.normalizeToken(token);
       }
     }
 
     return this.normalizeToken(token);
+  }
+
+  getAccessTokenFast(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    const token = localStorage.getItem('accessToken');
+    return token ? this.normalizeToken(token) : null;
   }
 
   isLoggedIn(): boolean {

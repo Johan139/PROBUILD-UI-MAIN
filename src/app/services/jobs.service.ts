@@ -128,8 +128,11 @@ export class JobsService {
     return request$;
   }
 
-  GetBillOfMaterials(jobId: any): Observable<any> {
+  GetBillOfMaterials(jobId: any, forceRefresh = false): Observable<any> {
     const key = String(jobId);
+    if (forceRefresh) {
+      this.bomCache.delete(key);
+    }
     const now = Date.now();
     const cached = this.bomCache.get(key);
     if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {

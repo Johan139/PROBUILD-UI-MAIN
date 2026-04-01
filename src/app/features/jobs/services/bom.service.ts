@@ -40,28 +40,41 @@ export class BomService {
     private snackBar: MatSnackBar,
   ) {}
 
-  getBillOfMaterials(jobId: string): Observable<any> {
+  getBillOfMaterials(jobId: string, forceRefresh = false): Observable<any> {
     const key = String(jobId);
+    if (forceRefresh) {
+      this.bomCache.delete(key);
+    }
     const cached = this.bomCache.get(key);
     const now = Date.now();
     if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {
       return of(cached.value);
     }
 
-    return this.jobsService.GetBillOfMaterials(jobId).pipe(
+    return this.jobsService.GetBillOfMaterials(jobId, forceRefresh).pipe(
       map((status: any) => {
         const normalized = Array.isArray(status) ? status : [];
         if (normalized.length > 0) {
-          const mapped = normalized.map((doc: any) => ({
-            id: doc.id,
-            jobId: doc.jobId,
-            documentId: doc.DocumentId,
-            bomJson: '',
-            materialsEstimateJson: doc.materialsEstimateJson,
-            fullResponse: doc.fullResponse,
-            createdAt: doc.createdAt,
-            parsedReport: this.parseReport(doc.fullResponse),
-          }));
+          const mapped = normalized
+            .map((doc: any) => ({
+              id: doc.id,
+              jobId: doc.jobId,
+              documentId: doc.DocumentId,
+              bomJson: '',
+              materialsEstimateJson: doc.materialsEstimateJson,
+              fullResponse: doc.fullResponse,
+              createdAt: doc.createdAt,
+              parsedReport: this.parseReport(doc.fullResponse),
+            }))
+            .sort((a: any, b: any) => {
+              const timeA = new Date(a?.createdAt || 0).getTime();
+              const timeB = new Date(b?.createdAt || 0).getTime();
+              if (timeA !== timeB) return timeB - timeA;
+
+              const idA = Number(a?.id || 0);
+              const idB = Number(b?.id || 0);
+              return idB - idA;
+            });
 
           this.bomCache.set(key, { cachedAt: now, value: mapped });
           return mapped;
