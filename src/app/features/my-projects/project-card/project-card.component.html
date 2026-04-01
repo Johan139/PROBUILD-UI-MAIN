@@ -47,18 +47,27 @@
         <span>{{ project.address }}</span>
       </div>
 
+      <div class="project-meta-row">
+        <mat-icon matTooltip="Created" matTooltipShowDelay="500">event_available</mat-icon>
+        @if (formatProjectDate(project.createdAt)) {
+          <span>{{ formatProjectDate(project.createdAt) }}</span>
+        } @else {
+          <span>TBD</span>
+        }
+      </div>
+
       <div class="project-stats">
         <div class="stat-item">
           <mat-icon matTooltip="Start Date" matTooltipShowDelay="500">schedule</mat-icon>
           @if (resolvedStartDate) {
-            <span>{{ resolvedStartDate | date }}</span>
+            <span>{{ formatProjectDate(resolvedStartDate) }}</span>
           } @else {
             <span>TBD</span>
           }
         </div>
         <div class="stat-item">
-          <mat-icon matTooltip="Square Footage" matTooltipShowDelay="500">square_foot</mat-icon>
-          <span>{{ resolvedSquareFootage ? (resolvedSquareFootage | number : '1.0-0') + ' sq ft' : 'TBD' }}</span>
+          <mat-icon matTooltip="Building size" matTooltipShowDelay="500">square_foot</mat-icon>
+          <span>{{ formatProjectArea(project) }}</span>
         </div>
         <div class="stat-item">
           <mat-icon matTooltip="Team Members" matTooltipShowDelay="500">people</mat-icon>

@@ -15,6 +15,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Project } from '../../../models/project';
+import {
+  formatDateDdMmmYyyy,
+  formatProjectBuildingAreaDisplay,
+  getProjectStatusLabel,
+} from '../project-display.utils';
 
 @Component({
   selector: 'app-project-card',
@@ -33,6 +38,9 @@ import { Project } from '../../../models/project';
   styleUrls: ['./project-card.component.scss'],
 })
 export class ProjectCardComponent {
+  readonly formatProjectDate = formatDateDdMmmYyyy;
+  readonly formatProjectArea = formatProjectBuildingAreaDisplay;
+
   @Input() project!: Project;
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @Output() onView = new EventEmitter<number>();
@@ -67,26 +75,6 @@ export class ProjectCardComponent {
     return parsed;
   }
 
-  get resolvedSquareFootage(): number | null {
-    const project = this.project as any;
-    const rawSize =
-      project?.buildingSize ??
-      project?.projectSize ??
-      project?.underRoofArea ??
-      project?.BuildingSize ??
-      null;
-
-    const parsed = this.parseNumericValue(rawSize);
-    return parsed > 0 ? parsed : null;
-  }
-
-  private parseNumericValue(value: unknown): number {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '');
-    const parsed = Number(cleaned);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
   statusColors: Record<string, string> = {
     INITIATION: 'status-initiation',
     BIDDING: 'status-bid-solicitation',
@@ -111,38 +99,14 @@ export class ProjectCardComponent {
     ANALYZING: 'status-analyzing',
   };
 
-  statusLabels: Record<string, string> = {
-    INITIATION: 'Project Initiation',
-    BIDDING: 'Bidding Phase',
-    BID_SOLICITATION: 'Bid Solicitation',
-    LIVE: 'Live Project',
-    CONSTRUCTION_LIVE: 'Construction Live',
-    DRAFT: 'Preliminary',
-    PRELIMINARY: 'Preliminary Scope Review',
-    PRELIMINARY_SCOPE: 'Preliminary Scope Review',
-    DETAILED_TAKEOFF: 'Detailed Estimating & Takeoff',
-    CONTRACT_AWARD: 'Contract Award & Execution',
-    PRE_CONSTRUCTION: 'Pre-Construction & Compliance',
-    TRADE_AWARD: 'Trade Award & Final Buyout',
-    MOBILIZATION: 'Project Mobilization',
-    CLOSEOUT: 'Project Closeout & Handover',
-    COMPLETED: 'Completed',
-    FAILED: 'Failed',
-    DISCARD: 'Discarded',
-    ARCHIVED: 'Archived',
-    CLOSURE: 'Closed',
-    NEW: 'New',
-    ANALYZING: 'Analyzing',
-  };
-
   getStatusColor(status: string | undefined): string {
     if (!status) return 'status-preliminary-scope';
-    return this.statusColors[status] || 'status-preliminary-scope';
+    const key = status.toUpperCase();
+    return this.statusColors[key] || 'status-preliminary-scope';
   }
 
   getStatusLabel(status: string | undefined): string {
-    if (!status) return 'Unknown';
-    return this.statusLabels[status] || status.replace(/_/g, ' ');
+    return getProjectStatusLabel(status);
   }
 
   isActivationStage(status: string | undefined): boolean {
