@@ -49,13 +49,6 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   filteredProjects: Project[] = [];
   projectFilter: 'all' | 'BIDDING' | 'LIVE' | 'DRAFT' | 'FAILED' = 'all';
   projectView: 'grid' | 'list' = 'grid';
-  jobDisplayedColumns: string[] = [
-    'project',
-    'created',
-    'progress',
-    'status',
-    'actions',
-  ];
 
   biddingProjectsCount = 0;
   liveProjectsCount = 0;

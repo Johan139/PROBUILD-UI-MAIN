@@ -58,7 +58,8 @@
       margin-bottom: var(--space-1);
     }
 
-    .project-address {
+    .project-address,
+    .project-meta-row {
       display: flex;
       align-items: center;
       gap: var(--space-2);

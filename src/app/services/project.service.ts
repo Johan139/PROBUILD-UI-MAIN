@@ -114,6 +114,7 @@ export class ProjectService {
                 : (p.progress ?? existing?.progress),
               potentialStartDate: normalizedStartDate,
               buildingSize: normalizedBuildingSize,
+              country: p.country ?? existing?.country,
               thumbnailUrl:
                 p.thumbnailUrl || existing?.thumbnailUrl || this.getImageForJob(p.jobId),
             };
