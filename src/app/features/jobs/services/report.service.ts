@@ -1218,8 +1218,8 @@ export class ReportService {
 
       const parseCurrency = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
-        const match = cleaned.match(/-?(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)/i);
-        return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+        const match = cleaned.match(/-?(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)/i);
+        return match ? parseFloat(match[1].replace(/[\s,]/g, '')) : 0;
       };
 
       const parsePercentage = (raw: string): number => {
@@ -1297,6 +1297,9 @@ export class ReportService {
       );
       const reportAltTaxes2 = extractValue(
         /\|\s*Sales\s*Tax\s*(?:on\s*Materials)?\s*(?:\([^)]*\))?\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
+      );
+      const reportTexasSalesTaxPct = extractValue(
+        /Texas\s*(?:Material\s*)?Sales\s*Tax\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/i,
       );
       const reportAltGrandTotalBidPrice2 = extractValue(
         /\|\s*\*\*\s*Grand\s*Total\s*\(\s*Calculated\s*GC\s*Bid\s*Price\s*\)\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
@@ -1436,8 +1439,29 @@ export class ReportService {
         /\|\s*Contingency Reserve.*?\|\s*([\d.]+)%/,
       );
       const generalConditions = extractValue(/General Conditions.*?\$\s*([\d,]+\.?\d*)/);
-      const permitsAdminFees = extractValue(/Permits.*?\$\s*([\d,]+\.?\d*)/);
-      const insuranceBonds = extractValue(/Insurance.*?\$\s*([\d,]+\.?\d*)/);
+      const groupedIndirectCosts = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?General\s*Conditions(?:[^|]*?)Site\s*Overheads(?:[^|]*?)Permits(?:[^|]*?)Insurance(?:\s*and\s*Bonds)?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const permitsAdminFeesFromSummaryTable = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Permits?\s*(?:&|and)?\s*Admin(?:istrative)?\s*Fees?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const insuranceBondsFromSummaryTable = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?Insurance\s*(?:&|and)?\s*Bonds?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const permitsAdminFees = extractValue(/Permits.*?\$\s*([\d,\s]+\.?\d*)/);
+      const insuranceBonds = extractValue(/Insurance.*?\$\s*([\d,\s]+\.?\d*)/);
+      const permitsAdminFeesLooseText = extractValue(
+        /Permits?\s*(?:&|and)?\s*Admin(?:istrative)?\s*Fees?[^\n]{0,120}\$?\s*([\d,\s]+(?:\.\d+)?)/i,
+      );
+      const insuranceBondsLooseText = extractValue(
+        /Insurance\s*(?:&|and)?\s*Bonds?[^\n]{0,120}\$?\s*([\d,\s]+(?:\.\d+)?)/i,
+      );
+      const permitsAdminFeesAnyTableRow = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Permits?(?:\s*&\s*|\s+and\s+)?Admin(?:istrative)?\s*Fees?(?:\s*\*{0,2})?\s*\|[^\n]*?\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const insuranceBondsAnyTableRow = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Insurance(?:\s*&\s*|\s+and\s+)?Bonds?(?:\s*\*{0,2})?\s*\|[^\n]*?\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
       const taxes = extractValue(/Sales Tax.*?\$\s*([\d,]+\.?\d*)/);
 
       // Handle potential markdown bold markers (**Calculated GC Bid Price**)
@@ -1674,11 +1698,13 @@ export class ReportService {
             : budgetLaborCost > 0
               ? budgetLaborCost
               : 0;
-      const finalGeneralConditions =
+      let finalGeneralConditions =
         phase26GeneralConditions > 0
           ? phase26GeneralConditions
           : phase30?.generalConditions && phase30.generalConditions > 0
             ? phase30.generalConditions
+          : groupedIndirectCosts > 0
+            ? groupedIndirectCosts
           : budgetGeneralConditions > 0
             ? budgetGeneralConditions
             : 0;
@@ -1690,22 +1716,47 @@ export class ReportService {
             : finalMaterialCost + finalLaborCost + finalGeneralConditions > 0
               ? finalMaterialCost + finalLaborCost + finalGeneralConditions
               : 0;
-      const finalPermitsAdminFees =
+      let finalPermitsAdminFees =
         permitsAdminFeesLoose > 0
           ? permitsAdminFeesLoose
+          : permitsAdminFeesFromSummaryTable > 0
+            ? permitsAdminFeesFromSummaryTable
+            : permitsAdminFeesAnyTableRow > 0
+              ? permitsAdminFeesAnyTableRow
+            : permitsAdminFeesLooseText > 0
+              ? permitsAdminFeesLooseText
           : phase26PermitsAdminFees > 0
           ? phase26PermitsAdminFees
           : phase30?.permitsAdminFees && phase30.permitsAdminFees > 0
             ? phase30.permitsAdminFees
             : 0;
-      const finalInsuranceBonds =
+      let finalInsuranceBonds =
         insuranceBondsLoose > 0
           ? insuranceBondsLoose
+          : insuranceBondsFromSummaryTable > 0
+            ? insuranceBondsFromSummaryTable
+            : insuranceBondsAnyTableRow > 0
+              ? insuranceBondsAnyTableRow
+            : insuranceBondsLooseText > 0
+              ? insuranceBondsLooseText
           : phase26InsuranceBonds > 0
           ? phase26InsuranceBonds
           : phase30?.insuranceBonds && phase30.insuranceBonds > 0
             ? phase30.insuranceBonds
             : 0;
+
+      if (
+        groupedIndirectCosts > 0 &&
+        finalPermitsAdminFees <= 0 &&
+        finalInsuranceBonds <= 0
+      ) {
+        finalPermitsAdminFees = Math.round(groupedIndirectCosts * 0.0882 * 100) / 100;
+        finalInsuranceBonds = Math.round(groupedIndirectCosts * 0.0259 * 100) / 100;
+        finalGeneralConditions = Math.max(
+          0,
+          groupedIndirectCosts - finalPermitsAdminFees - finalInsuranceBonds,
+        );
+      }
       const finalDirectAndInsurableSubtotal =
         phase26DirectAndInsurableSubtotal > 0
           ? phase26DirectAndInsurableSubtotal
@@ -1745,7 +1796,23 @@ export class ReportService {
         extractValue(/VAT\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
         extractValue(/VAT\s*\(\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
         extractValue(/VAT[^\d]{0,12}(\d+(?:\.\d+)?)\s*%/i);
-      const finalSalesTaxPct = phase26SalesTaxPct > 0 ? phase26SalesTaxPct : vatPct;
+      const phase30SalesTaxPct =
+        phase30 && finalMaterialCost > 0
+          ? (Number(phase30.taxes || 0) / finalMaterialCost) * 100
+          : 0;
+
+      const isReasonableTaxPct = (value: number): boolean =>
+        Number.isFinite(value) && value > 0 && value <= 35;
+
+      const finalSalesTaxPct = isReasonableTaxPct(reportTexasSalesTaxPct)
+        ? reportTexasSalesTaxPct
+        : isReasonableTaxPct(phase26SalesTaxPct)
+          ? phase26SalesTaxPct
+          : isReasonableTaxPct(vatPct)
+            ? vatPct
+            : isReasonableTaxPct(phase30SalesTaxPct)
+              ? phase30SalesTaxPct
+              : 0;
       const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
       let finalSuggestedMarketBid =
         phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;

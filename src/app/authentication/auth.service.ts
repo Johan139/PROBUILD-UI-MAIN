@@ -36,6 +36,8 @@ export class AuthService {
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
+  /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
+  private readonly REFRESH_TIMEOUT_MS = 10000;
   private isRefreshing = false;
   private refreshTokenSubject = new BehaviorSubject<{
     token: string;
@@ -85,6 +87,61 @@ export class AuthService {
   private getExp(token: string | null): number | null {
     const payload = this.parseJwt<any>(token);
     return payload?.exp ?? null;
+  }
+
+  private async refreshWithTimeout(timeoutMs: number = this.REFRESH_TIMEOUT_MS): Promise<void> {
+    await Promise.race([
+      firstValueFrom(this.refreshToken()),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Refresh token timeout')), timeoutMs),
+      ),
+    ]);
+  }
+
+  /**
+   * Runs after bootstrap when the access token is already expired.
+   * Must not block APP_INITIALIZER — otherwise the whole shell (including /login) waits on refresh timeouts.
+   */
+  private async performColdStartRefresh(): Promise<void> {
+    try {
+      await this.refreshWithTimeout();
+      const newToken = localStorage.getItem('accessToken');
+      if (newToken) this.loadUserFromToken(newToken);
+    } catch (err) {
+      const isTimeout =
+        err instanceof Error && String(err.message).includes('Refresh token timeout');
+
+      if (isTimeout) {
+        try {
+          await this.refreshWithTimeout();
+          const newToken = localStorage.getItem('accessToken');
+          if (newToken) {
+            this.loadUserFromToken(newToken);
+            return;
+          }
+        } catch (retryErr) {
+          console.error('Session expired. Logging out.', retryErr);
+          this.logout();
+          return;
+        }
+      }
+
+      if (!this.shouldForceLogoutOnRefreshFailure(err)) {
+        console.warn(
+          'Token refresh failed during cold start due to transient error; preserving session.',
+          err,
+        );
+        return;
+      }
+
+      console.error('Session expired. Logging out.', err);
+      this.logout();
+    }
+  }
+
+  private shouldForceLogoutOnRefreshFailure(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) return false;
+    return error.status === 400 || error.status === 401 || error.status === 403;
   }
 
   public startInactivityTimer(): void {
@@ -154,20 +211,8 @@ export class AuthService {
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // console.log('Access token expired, attempting to refresh...');
-      try {
-        await Promise.race([
-          firstValueFrom(this.refreshToken()),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Refresh token timeout')), 1500),
-          ),
-        ]);
-        const newToken = localStorage.getItem('accessToken');
-        if (newToken) this.loadUserFromToken(newToken);
-      } catch (err) {
-        console.error('Session expired. Logging out.', err);
-        this.logout();
-      }
+      // Do not await: APP_INITIALIZER would block first paint for the full refresh timeout (+ retry).
+      void this.performColdStartRefresh();
     }
   }
   googleLogin(idToken: string): Observable<any> {
@@ -380,7 +425,9 @@ export class AuthService {
           }
         }),
         catchError((err) => {
-          this.logout();
+          if (this.shouldForceLogoutOnRefreshFailure(err)) {
+            this.logout();
+          }
           return throwError(() => err);
         }),
         finalize(() => {
@@ -533,7 +580,10 @@ export class AuthService {
     return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
       tap((memberDetails) => {
         const isAdmin =
-          memberDetails.isAdmin ?? payload?.IsAdmin ?? payload?.isAdmin ?? false;
+          memberDetails.isAdmin ??
+          payload?.IsAdmin ??
+          payload?.isAdmin ??
+          false;
         const user = {
           id: memberDetails.id,
           inviterId: memberDetails.inviterId,

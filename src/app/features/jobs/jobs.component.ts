@@ -131,6 +131,7 @@ import {
 } from './components/scope-insight-dialogs/bid-price-dialog.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { JobCacheService } from './services/jobs/job-cache.service';
+ import { BudgetLineItem } from '../../models/budget-line-item.model';
 
 type ProjectPhase =
   | 'INITIATION'
@@ -254,8 +255,196 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   public isGeneratingReport = false;
   public isReportLoading = false;
 
+  private analysisAutoAdvanceTriggeredForJobIds = new Set<number>();
+
   get constructionPhaseGroups(): any[] {
     return this.store.getState().subtaskGroups;
+  }
+
+  private buildAiBudgetItemsFromReport(report: any, jobId: number): BudgetLineItem[] {
+    const newItems: BudgetLineItem[] = [];
+    if (!report || !Array.isArray(report.sections)) {
+      return newItems;
+    }
+
+    report.sections.forEach((section: any) => {
+      let category = 'Other';
+      const rawTitle = String(section?.title || '');
+      const lowerTitle = rawTitle.toLowerCase();
+      let phase = rawTitle
+        .replace(
+          / - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i,
+          '',
+        )
+        .trim();
+
+      if (lowerTitle.includes('material')) {
+        category = 'Materials';
+      } else if (lowerTitle.includes('labor') || lowerTitle.includes('subcontractor')) {
+        category = 'Subcontractor';
+      }
+
+      if (
+        (lowerTitle.includes('total') && lowerTitle.includes('breakdown')) ||
+        lowerTitle.includes('project cost breakdown') ||
+        lowerTitle.includes('project cost summary') ||
+        lowerTitle.includes('summary of costs')
+      ) {
+        return;
+      }
+
+      if (section?.type !== 'table' || !Array.isArray(section?.content)) {
+        return;
+      }
+
+      const getIndex = (headers: string[], ...names: string[]) =>
+        headers.findIndex((h) =>
+          names.some((n) => String(h || '').toLowerCase().includes(n.toLowerCase())),
+        );
+
+      const headers = Array.isArray(section?.headers) ? section.headers : [];
+      const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
+      const tradeIdx = getIndex(headers, 'Trade');
+      const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
+      const unitIdx = getIndex(headers, 'Unit');
+      const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
+      const detailIdx = getIndex(headers, 'Size/Detail', 'Detail', 'Size', 'Dimensions');
+      const costIdx = getIndex(headers, 'Total Cost', 'Total Estimated Cost', 'Est. Cost', 'Total Price');
+      const unitCostIdx = getIndex(headers, 'Unit Cost', 'Rate', 'Hourly Rate');
+
+      section.content.forEach((row: any[]) => {
+        if (!Array.isArray(row) || row.length === 0) {
+          return;
+        }
+
+        let item =
+          itemIdx > -1
+            ? row[itemIdx]
+            : tradeIdx > -1
+              ? row[tradeIdx]
+              : 'Unknown Item';
+        item = String(item || '');
+
+        const trade = String((tradeIdx > -1 ? row[tradeIdx] : phase) || '');
+
+        const lowerItem = item.toLowerCase();
+        if (
+          lowerItem.includes('total') ||
+          lowerItem.includes('subtotal') ||
+          lowerItem.includes('overhead') ||
+          lowerItem.includes('contingency') ||
+          lowerItem.includes('escalation') ||
+          lowerItem.includes('calculated gc bid')
+        ) {
+          return;
+        }
+
+        if (specIdx > -1 && row[specIdx]) {
+          item += ` - ${row[specIdx]}`;
+        }
+
+        let notes = 'Imported from AI Analysis';
+        if (detailIdx > -1 && row[detailIdx]) {
+          notes = `${row[detailIdx]}; ${notes}`;
+        }
+
+        let cost = 0;
+        let qty = 0;
+        let unitCost = 0;
+
+        if (qtyIdx > -1) {
+          const qStr = String(row[qtyIdx] ?? '');
+          qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        if (unitCostIdx > -1) {
+          const ucStr = String(row[unitCostIdx] ?? '');
+          unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        if (costIdx > -1) {
+          const cStr = String(row[costIdx] ?? '');
+          cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        const calculatedCost = qty * unitCost;
+        if (calculatedCost > 0) {
+          if (cost === 0 || Math.abs(cost - calculatedCost) > calculatedCost * 0.1) {
+            cost = calculatedCost;
+          }
+        } else if (cost === 0 && costIdx === -1) {
+          const lastVal = String(row[row.length - 1] ?? '');
+          if (lastVal.includes('.') || lastVal.includes('$')) {
+            cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
+          }
+        }
+
+        const unit =
+          unitIdx > -1
+            ? String(row[unitIdx] ?? '')
+            : category === 'Labor'
+              ? 'Hours'
+              : 'ea';
+
+        if (!item || item === 'Unknown Item') {
+          return;
+        }
+
+        if (cost > 0) {
+          newItems.push({
+            jobId,
+            category,
+            phase,
+            item,
+            trade,
+            estimatedCost: cost,
+            actualCost: 0,
+            percentComplete: 0,
+            quantity: qty > 0 ? qty : undefined,
+            unit: qty > 0 ? unit : undefined,
+            unitCost: unitCost > 0 ? unitCost : undefined,
+            status: 'Pending',
+            notes,
+            source: 'AI',
+            id: 0,
+            forecastToComplete: cost,
+          } as BudgetLineItem);
+        }
+      });
+    });
+
+    return newItems;
+  }
+
+  private async importAiBudgetItemsIfNeeded(jobId: number): Promise<void> {
+    try {
+      const existing = await firstValueFrom(this.budgetService.getBudget(jobId));
+      const hasAiItems = (existing || []).some(
+        (item) => String((item as any)?.source || '') === 'AI',
+      );
+      if (hasAiItems) {
+        return;
+      }
+
+      const results = await firstValueFrom(
+        this.bomService.getBillOfMaterials(String(jobId)),
+      );
+      const normalized = Array.isArray(results)
+        ? results
+        : results
+          ? [results]
+          : [];
+      const report = normalized?.[0]?.parsedReport;
+
+      const newItems = this.buildAiBudgetItemsFromReport(report, jobId);
+      if (!newItems.length) {
+        return;
+      }
+
+      await firstValueFrom(this.budgetService.addBudgetItemsBatch(newItems));
+    } catch {
+      return;
+    }
   }
   public reportHtml: string | null = null;
   public reportTitle: string = 'Full Project Analysis Report';
@@ -325,6 +514,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   scopePermitLeadTimeWeeks: number | null = null;
   scopeMaterialLeadTimeWeeks: number | null = null;
+  budgetLineItems: BudgetLineItem[] = [];
 
   // Project Overview Data
   overviewProjects: Project[] = [];
@@ -481,13 +671,34 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return base > 0 && amount > 0 ? amount / base : 0;
   }
 
+  private isReasonableSalesTaxPct(value: number): boolean {
+    return Number.isFinite(value) && value > 0 && value <= 35;
+  }
+
+  private get minimumNetMarginRate(): number {
+    const explicitPct = Number(this.scopeCostSummary?.targetNetMarginPct || 0);
+    if (Number.isFinite(explicitPct) && explicitPct >= 2 && explicitPct <= 30) {
+      return explicitPct / 100;
+    }
+
+    return 0.1;
+  }
+
   private get resolvedSalesTaxRate(): number {
     const explicitPct = Number(this.scopeCostSummary?.salesTaxPct || 0);
-    if (explicitPct > 0) return explicitPct / 100;
+    if (this.isReasonableSalesTaxPct(explicitPct)) return explicitPct / 100;
 
     const summaryMaterial = Number(this.scopeCostSummary?.materialCost || 0);
     const summaryTax = Number(this.scopeCostSummary?.taxes || 0);
-    return summaryMaterial > 0 && summaryTax > 0 ? summaryTax / summaryMaterial : 0;
+    if (summaryMaterial > 0 && summaryTax > 0) {
+      const derivedPct = (summaryTax / summaryMaterial) * 100;
+      if (this.isReasonableSalesTaxPct(derivedPct)) {
+        return derivedPct / 100;
+      }
+    }
+
+    // Conservative fallback to avoid propagating clearly invalid extracted rates.
+    return 0.0825;
   }
 
   get totalProjectCost(): number {
@@ -501,9 +712,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.projectDetails?.budget ||
       this.projectDetails?.totalBudget ||
       this.projectDetails?.estimatedBudget ||
-      1451759;
+      0;
     const parsed = Number(String(raw).replace(/[^0-9.-]/g, ''));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1451759;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   }
 
   get suggestedBid(): number {
@@ -532,20 +743,46 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const reportContingencyIncludesEscalation =
       Boolean(summary?.reportContingencyIncludesEscalation);
 
+    const summaryOverhead = Number(summary?.overhead || 0);
+    const summaryContingency = Number(summary?.contingency || 0);
+    const summaryEscalation = Number(summary?.escalation || 0);
+    const summaryTaxes = Number(summary?.taxes || 0);
+
     const computedReportBid = reportPreTax > 0 ? reportPreTax + Math.max(reportTaxes, 0) : 0;
 
-    const bidToClient =
+    const preferredBid =
       reportBid > 0 ? reportBid : computedReportBid > 0 ? computedReportBid : this.suggestedBid;
+    const bidFloor = this.totalProjectCost;
+    const bidToClient = Math.max(preferredBid, bidFloor);
 
-    const baseCosts = reportBase > 0 ? reportBase : this.costToBuild;
-    const overheadProfit = reportOverheadProfit > 0 ? reportOverheadProfit : this.overheadProfit;
-    const contingency = reportContingency > 0 ? reportContingency : this.contingencyAllowance;
+    const baseCosts = this.costToBuild > 0 ? this.costToBuild : reportBase;
+    const overheadProfit = summaryOverhead > 0
+      ? summaryOverhead
+      : reportOverheadProfit > 0 && reportOverheadProfit <= Math.max(baseCosts, bidToClient) * 0.35
+        ? reportOverheadProfit
+        : this.overheadProfit;
+    const contingency = summaryContingency > 0
+      ? summaryContingency
+      : reportContingency > 0 && reportContingency <= Math.max(baseCosts, bidToClient) * 0.2
+        ? reportContingency
+        : this.contingencyAllowance;
     const escalation = reportContingencyIncludesEscalation
       ? 0
-      : reportEscalation > 0
-        ? reportEscalation
-        : this.escalationAllowance;
-    const taxes = reportTaxes > 0 ? reportTaxes : this.taxesAllowance;
+      : summaryEscalation > 0
+        ? summaryEscalation
+        : reportEscalation > 0 && reportEscalation <= Math.max(baseCosts, bidToClient) * 0.15
+          ? reportEscalation
+          : this.escalationAllowance;
+
+    const taxesFromReportLooksReasonable =
+      reportTaxes > 0 && this.materialsCost > 0
+        ? (reportTaxes / this.materialsCost) * 100 <= 35
+        : false;
+    const taxes = summaryTaxes > 0
+      ? summaryTaxes
+      : taxesFromReportLooksReasonable
+        ? reportTaxes
+        : this.taxesAllowance;
 
     return {
       bidToClient,
@@ -557,28 +794,53 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
+  private recommendedBidFromResolved(resolved: {
+    bidToClient: number;
+    baseCosts: number;
+    overheadProfit: number;
+    contingency: number;
+    escalation: number;
+    taxes: number;
+  }): number {
+    const totalCostBasis =
+      resolved.baseCosts +
+      resolved.overheadProfit +
+      resolved.contingency +
+      resolved.escalation +
+      resolved.taxes;
+
+    const requiredBidForProfit =
+      totalCostBasis > 0 && this.minimumNetMarginRate > 0 && this.minimumNetMarginRate < 1
+        ? totalCostBasis / (1 - this.minimumNetMarginRate)
+        : totalCostBasis;
+
+    return Math.max(resolved.bidToClient, requiredBidForProfit);
+  }
+
   get clientBidPrice(): number {
-    return this.resolveBidPricing().bidToClient;
+    const resolved = this.resolveBidPricing();
+    return this.recommendedBidFromResolved(resolved);
   }
 
   get bidNetProfitMarginPercent(): number {
     const resolved = this.resolveBidPricing();
-    if (resolved.bidToClient > 0 && resolved.overheadProfit > 0) {
-      return (resolved.overheadProfit / resolved.bidToClient) * 100;
-    }
+    const recommendedBid = this.recommendedBidFromResolved(resolved);
+    if (recommendedBid <= 0) return 0;
 
-    if (this.suggestedBid <= 0) return 0;
     const fullyLoadedCost =
-      this.costToBuild +
-      this.overheadProfit +
-      this.contingencyAllowance +
-      this.escalationAllowance +
-      this.taxesAllowance;
-    const netProfit = this.suggestedBid - fullyLoadedCost;
-    return (netProfit / this.suggestedBid) * 100;
+      resolved.baseCosts +
+      resolved.overheadProfit +
+      resolved.contingency +
+      resolved.escalation +
+      resolved.taxes;
+    const netProfit = recommendedBid - fullyLoadedCost;
+    return (netProfit / recommendedBid) * 100;
   }
 
   get costToBuild(): number {
+    const budgetBackedDirect = this.materialsCost + this.laborCost;
+    if (this.budgetLineItems.length > 0) return budgetBackedDirect;
+
     const bomSubtotal = Number(this.scopeBomTotals?.directSubtotal || 0);
     if (bomSubtotal > 0) return bomSubtotal;
 
@@ -589,6 +851,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get materialsCost(): number {
+    const budgetValue = this.categoryTotalFromBudgetItems('materials');
+    if (budgetValue > 0 || this.budgetLineItems.length > 0) return budgetValue;
+
     const bomValue = Number(this.scopeBomTotals?.materialCost || 0);
     if (bomValue > 0) return bomValue;
 
@@ -599,6 +864,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get laborCost(): number {
+    const budgetValue = this.categoryTotalFromBudgetItems('subcontractor');
+    if (budgetValue > 0 || this.budgetLineItems.length > 0) return budgetValue;
+
     const bomValue = Number(this.scopeBomTotals?.laborCost || 0);
     if (bomValue > 0) return bomValue;
 
@@ -673,10 +941,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get salesTaxPct(): number {
     const fromSummary = Number(this.scopeCostSummary?.salesTaxPct || 0);
-    if (fromSummary > 0) return fromSummary;
+    if (this.isReasonableSalesTaxPct(fromSummary)) return fromSummary;
 
     const explicit = this.resolvedSalesTaxRate * 100;
-    if (explicit > 0) return explicit;
+    if (this.isReasonableSalesTaxPct(explicit)) return explicit;
 
     const base = Number(this.scopeCostSummary?.preTaxSubtotal || 0) || this.preTaxSubtotal;
     if (base > 0 && this.taxesAllowance > 0) {
@@ -696,6 +964,13 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (computed > 0) return computed;
     }
     const taxes = Number(this.scopeCostSummary?.taxes || 0);
+    if (taxes > 0 && this.materialsCost > 0) {
+      const derivedPct = (taxes / this.materialsCost) * 100;
+      if (this.isReasonableSalesTaxPct(derivedPct)) {
+        return taxes;
+      }
+      return this.materialsCost * this.resolvedSalesTaxRate;
+    }
     if (taxes > 0) return taxes;
     return 0;
   }
@@ -1076,6 +1351,34 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
     });
+
+    this.signalrService.analysisProgress
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((update) => {
+        const currentJobId = Number(this.projectDetails?.jobId);
+        if (!Number.isFinite(currentJobId)) {
+          return;
+        }
+
+        if (Number(update?.jobId) !== currentJobId) {
+          return;
+        }
+
+        if (!update?.isComplete || update?.hasFailed) {
+          return;
+        }
+
+        if (this.projectStage !== 'INITIATION') {
+          return;
+        }
+
+        if (this.analysisAutoAdvanceTriggeredForJobIds.has(currentJobId)) {
+          return;
+        }
+
+        this.analysisAutoAdvanceTriggeredForJobIds.add(currentJobId);
+        void this.onAnalysisComplete();
+      });
     this.signalrService.uploadComplete.subscribe(() => {
       this.isUploading = false;
       this.resetFileInput();
@@ -1148,6 +1451,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
             this.loadBlueprints();
             this.loadAssignedTeam();
+            this.loadBudgetLineItems(jobId);
 
             if (this.projectStage !== 'INITIATION') {
               this.loadScopeInsightData(this.projectDetails.jobId);
@@ -1295,6 +1599,102 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.scopeMaterialLeadTimeWeeks = null;
         this.cdr.detectChanges();
       });
+  }
+
+  private loadBudgetLineItems(jobId: number): void {
+    if (!Number.isFinite(Number(jobId)) || Number(jobId) <= 0) {
+      this.budgetLineItems = [];
+      return;
+    }
+
+    this.budgetService.getBudget(Number(jobId)).subscribe({
+      next: (items) => {
+        this.budgetLineItems = Array.isArray(items) ? items : [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.budgetLineItems = [];
+      },
+    });
+  }
+
+  private categoryTotalFromBudgetItems(category: 'materials' | 'subcontractor'): number {
+    if (!Array.isArray(this.budgetLineItems) || this.budgetLineItems.length === 0) {
+      return 0;
+    }
+
+    const toIsoTime = (item: any): number => {
+      const updated = Date.parse(String(item?.updatedAt || ''));
+      if (Number.isFinite(updated)) return updated;
+      const created = Date.parse(String(item?.createdAt || ''));
+      if (Number.isFinite(created)) return created;
+      return 0;
+    };
+
+    const normalizeItemBase = (itemName: string): string =>
+      String(itemName || '')
+        .split(' - ')[0]
+        .trim()
+        .toLowerCase();
+
+    const categoryFamily = (rawCategory: string): 'materials' | 'subcontractor' | 'other' => {
+      const normalized = String(rawCategory || '').trim().toLowerCase();
+      if (normalized === 'materials' || normalized === 'material') return 'materials';
+      if (
+        normalized === 'subcontractor' ||
+        normalized === 'subcontractors' ||
+        normalized === 'labor'
+      ) {
+        return 'subcontractor';
+      }
+      return 'other';
+    };
+
+    const lineCost = (item: any): number => {
+      const actual = Number(item?.actualCost || 0);
+      if (actual > 0) return actual;
+
+      const qty = Number(item?.quantity || 0);
+      const unit = Number(item?.unitCost || 0);
+      if (qty > 0 && unit > 0) return qty * unit;
+
+      return Number(item?.estimatedCost || 0);
+    };
+
+    const sorted = [...this.budgetLineItems].sort((a: any, b: any) => {
+      const timeDelta = toIsoTime(b) - toIsoTime(a);
+      if (timeDelta !== 0) return timeDelta;
+      return Number(b?.id || 0) - Number(a?.id || 0);
+    });
+
+    const keptByKey = new Map<string, any>();
+
+    const canonicalKey = (item: any, family: 'materials' | 'subcontractor'): string => {
+      const phase = String(item?.phase || '').trim().toLowerCase();
+      const trade = String(item?.trade || '').trim().toLowerCase();
+      const itemBase = normalizeItemBase(item?.item || '');
+      const unit = String(item?.unit || '').trim().toLowerCase();
+      return `${family}|${phase}|${trade}|${itemBase}|${unit}`;
+    };
+
+    sorted.forEach((item: any) => {
+      const family = categoryFamily(String(item?.category || ''));
+      if (family !== category) return;
+
+      // Deduplicate across AI/BOM/manual variants of the same logical line.
+      // We intentionally do NOT use source/sourceId for the primary key so that
+      // "original AI row" and "edited BOM row" collapse into one effective value.
+      const dedupeKey = canonicalKey(item, family);
+
+      if (!keptByKey.has(dedupeKey)) {
+        keptByKey.set(dedupeKey, item);
+      }
+    });
+
+    return Array.from(keptByKey.values()).reduce(
+      (sum, item) => sum + lineCost(item),
+      0,
+    );
   }
 
   private sleep(ms: number): Promise<void> {
@@ -1743,6 +2143,28 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openOverallBudgetDialog(): void {
+    const jobId = String(this.projectDetails?.jobId || '');
+    if (jobId) {
+      // Refresh in background so dialog opens immediately.
+      this.budgetService.getBudget(Number(jobId)).pipe(take(1)).subscribe({
+        next: (latestBudgetItems) => {
+          this.budgetLineItems = Array.isArray(latestBudgetItems) ? latestBudgetItems : [];
+        },
+        error: () => {
+          // Keep current values if refresh fails.
+        },
+      });
+
+      this.reportService.getDetailedCostSummary(jobId).then((refreshed) => {
+        if (refreshed) {
+          this.scopeCostSummary = refreshed;
+          this.cdr.detectChanges();
+        }
+      }).catch(() => {
+        // Keep current values if refresh fails.
+      });
+    }
+
     const directCostBase = this.materialsCost + this.laborCost;
     const materialRatio =
       directCostBase > 0 ? (this.materialsCost / directCostBase) * 100 : 0;
@@ -1874,26 +2296,26 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   openBidPriceDialog(): void {
     const resolved = this.resolveBidPricing();
 
-    const recommendedBid = resolved.bidToClient;
+    const bidBeforeMarginFloor = resolved.bidToClient;
     const costToBuild = resolved.baseCosts;
     const overheadProfit = resolved.overheadProfit;
     const contingencyAllowance = resolved.contingency;
     const escalationAllowance = resolved.escalation;
     const taxesAllowance = resolved.taxes;
+    const recommendedBid = this.recommendedBidFromResolved(resolved);
+    const totalCostBasis =
+      costToBuild + overheadProfit + contingencyAllowance + escalationAllowance + taxesAllowance;
 
+    // Keep all profitability metrics on a single coherent basis so every card
+    // moves together when direct cost inputs change.
     const grossMargin = recommendedBid - costToBuild;
     const grossMarginPercent = recommendedBid > 0 ? (grossMargin / recommendedBid) * 100 : 0;
     const markupOnCostPercent = costToBuild > 0 ? ((recommendedBid / costToBuild) - 1) * 100 : 0;
 
-    // Net contractor profit in the full report corresponds to the OH&P line.
-    // Therefore, exclude overheadProfit from the cost basis when computing profit.
-    const totalCostBasis = costToBuild + contingencyAllowance + escalationAllowance + taxesAllowance;
-    const riskExposure = recommendedBid - totalCostBasis;
-    const netContractorProfit = overheadProfit > 0 ? overheadProfit : riskExposure;
-    const netProfitMarginPercent =
-      recommendedBid > 0
-        ? ((overheadProfit > 0 ? overheadProfit : netContractorProfit) / recommendedBid) * 100
-        : 0;
+    const riskExposure =
+      recommendedBid - (costToBuild + overheadProfit + escalationAllowance + taxesAllowance);
+    const netContractorProfit = recommendedBid - totalCostBasis;
+    const netProfitMarginPercent = recommendedBid > 0 ? (netContractorProfit / recommendedBid) * 100 : 0;
     const returnOnCostPercent = costToBuild > 0 ? (netContractorProfit / costToBuild) * 100 : 0;
     const size = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
 
@@ -2351,6 +2773,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     // Refresh persisted analysis outputs before advancing stage.
     // This prevents stale values that only correct after a full page reload.
     await this.refreshScopeInsightDataWithRetries(jobId);
+
+    await this.importAiBudgetItemsIfNeeded(jobId);
 
     this.projectStage = 'PRELIMINARY_SCOPE';
     this.stageDisplayMode = 'stage';

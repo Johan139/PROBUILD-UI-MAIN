@@ -75,7 +75,7 @@ export interface BidPriceDialogData {
           <div class="scope-stat-list">
             <div class="scope-stat-row"><span>Bid Price to Client</span><strong>{{ data.suggestedBid | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Less: Direct Costs</span><strong>-{{ data.costToBuild | money : true : 2 }}</strong></div>
-            <div class="scope-stat-row"><span>Less: General Conditions</span><strong>-{{ data.overheadProfit | money : true : 2 }}</strong></div>
+            <div class="scope-stat-row"><span>Less: Overhead & Profit</span><strong>-{{ data.overheadProfit | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Less: Contingency</span><strong>-{{ data.contingencyAllowance | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Less: Escalation</span><strong>-{{ data.escalationAllowance | money : true : 2 }}</strong></div>
             <div class="scope-stat-row"><span>Less: Taxes</span><strong>-{{ data.taxesAllowance | money : true : 2 }}</strong></div>

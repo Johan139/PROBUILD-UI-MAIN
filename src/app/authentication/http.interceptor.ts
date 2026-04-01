@@ -11,6 +11,10 @@ import { from, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
+const shouldForceLogoutOnRefreshFailure = (error: unknown): boolean =>
+  error instanceof HttpErrorResponse &&
+  (error.status === 400 || error.status === 401 || error.status === 403);
+
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
@@ -66,7 +70,9 @@ export const authInterceptor: HttpInterceptorFn = (
                 return next(retryReq);
               }),
               catchError((refreshErr) => {
-                authService.logout();
+                if (shouldForceLogoutOnRefreshFailure(refreshErr)) {
+                  authService.logout();
+                }
                 return throwError(() => refreshErr);
               }),
             );
