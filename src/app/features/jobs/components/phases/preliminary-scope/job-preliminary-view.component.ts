@@ -297,8 +297,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
       if (section.title && section.title.includes('Bill of Materials')) {
         const key = section.title.split(' - ')[0].replace(/\s+/g, '').toLowerCase(); // e.g. "Groundwork & Foundation" -> "groundwork&foundation"
 
-        // Parse totals from the table if possible, or calculate
-        let totalMat = 0;
         const materials = section.content
           .filter(
             (row: any[]) =>
@@ -308,7 +306,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
             // | Item | Specification | Unit | Quantity | Unit Cost | Total Item Cost | ...
             // 0, 1, 2, 3, 4, 5
             const cost = parseFloat(row[5]?.replace(/[^0-9.]/g, '')) || 0;
-            totalMat += cost;
             return {
               item: row[0],
               spec: row[1],
@@ -317,7 +314,13 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
               unitCost: row[4]?.replace('$', ''),
               total: cost,
             };
-          });
+          })
+          .filter((row) => Number(row.total) > 0);
+
+        const totalMat = materials.reduce(
+          (sum, row) => sum + Number(row.total),
+          0,
+        );
 
         if (!this.billsOfMaterials[key]) {
           this.billsOfMaterials[key] = {
@@ -341,7 +344,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
           .split(' - ')[0]
           .replace(/\s+/g, '')
           .toLowerCase();
-        let totalLab = 0;
         const labor = section.content
           .filter(
             (row: any[]) =>
@@ -351,7 +353,6 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
             // | Trade | Scope | Hours | Rate | Total | ...
             // 0, 1, 2, 3, 4
             const cost = parseFloat(row[4]?.replace(/[^0-9.]/g, '')) || 0;
-            totalLab += cost;
             return {
               trade: row[0],
               scope: row[1],
@@ -359,7 +360,13 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
               rate: row[3]?.replace('$', ''),
               total: cost,
             };
-          });
+          })
+          .filter((row) => Number(row.total) > 0);
+
+        const totalLab = labor.reduce(
+          (sum, row) => sum + Number(row.total),
+          0,
+        );
 
         if (!this.billsOfMaterials[key]) {
             this.billsOfMaterials[key] = {
@@ -377,6 +384,17 @@ export class JobPreliminaryViewComponent implements OnInit, OnChanges {
          }
       }
     });
+
+    const bomFiltered: Record<string, any> = {};
+    Object.keys(this.billsOfMaterials).forEach((k) => {
+      const p = this.billsOfMaterials[k];
+      const phaseTotal =
+        Number(p?.totalMaterialCost || 0) + Number(p?.totalLaborCost || 0);
+      if (phaseTotal > 0) {
+        bomFiltered[k] = p;
+      }
+    });
+    this.billsOfMaterials = bomFiltered;
   }
 
   private getBomPhaseTotals(): { material: number; labor: number } {
