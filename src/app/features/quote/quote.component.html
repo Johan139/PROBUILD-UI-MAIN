@@ -450,7 +450,7 @@
                             <span>Unit</span>
                             <span>Unit Price</span>
                             <span class="amount-col">Amount</span>
-                            @if (!readOnly) {
+                            @if (!readOnly && !lineItemsReadOnly) {
                               <span></span>
                             }
                           </div>
@@ -467,19 +467,19 @@
                                 class="dark-input"
                                 formControlName="description"
                                 placeholder="Item description"
-                                [readonly]="readOnly"
+                                [readonly]="readOnly || lineItemsReadOnly"
                                 />
                                 <input
                                   type="number"
                                   class="dark-input qty-input"
                                   formControlName="quantity"
                                   min="1"
-                                  [readonly]="readOnly"
+                                  [readonly]="readOnly || lineItemsReadOnly"
                                   />
                                   <select
                                     class="dark-input"
                                     formControlName="unit"
-                                    [disabled]="readOnly || isInboundQuote"
+                                    [disabled]="readOnly || isInboundQuote || lineItemsReadOnly"
                                     >
                                     @for (unit of units; track unit) {
                                       <option [value]="unit.code">
@@ -493,13 +493,13 @@
                                     formControlName="unitPrice"
                                     min="0"
                                     step="any"
-                                    [readonly]="readOnly"
+                                    [readonly]="readOnly || lineItemsReadOnly"
                                     />
                                     <div class="amount-cell">
                                       ${{ row.get("total")?.value | number: "1.2-2" }}
                                     </div>
                                     <!-- Hide delete button when read-only -->
-                                    @if (quoteRows.length > 1 && !readOnly) {
+                                    @if (quoteRows.length > 1 && !readOnly && !lineItemsReadOnly) {
                                       <button
                                         mat-icon-button
                                         class="delete-btn"
@@ -512,7 +512,7 @@
                                   </div>
                                 }
                                 <!-- Hide Add button when read-only -->
-                                @if (!readOnly) {
+                                @if (!readOnly && !lineItemsReadOnly) {
                                   <button
                                     mat-button
                                     class="btn btn-secondary add-line-btn"
