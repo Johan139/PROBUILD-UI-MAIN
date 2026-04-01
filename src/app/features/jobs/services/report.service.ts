@@ -1290,6 +1290,13 @@ export class ReportService {
       const parseMoneyLikeCell = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '').trim();
         if (!cleaned) return 0;
+        // Guard: ignore descriptive cells like "Per Phase 23 analysis" so
+        // phase numbers are never parsed as currency amounts.
+        const alphaStripped = cleaned.replace(
+          /^(?:\$|£|€|ZAR|USD|GBP|EUR|BWP|R|P)\s*/i,
+          '',
+        );
+        if (/[A-Za-z]/.test(alphaStripped)) return 0;
         const match = cleaned.match(
           /-?(?:\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\s*([\d][\d,\s]*(?:\.\d+)?)/i,
         );
@@ -1373,7 +1380,7 @@ export class ReportService {
         const escaped = labelPattern;
         const match = fullResponse.match(
           new RegExp(
-            `\\|\\s*(?:\\*{0,2}\\s*)?${escaped}(?:\\s*\\*{0,2})?\\s*\\|\\s*(?:\\*{0,2}\\s*)?(?:\\$|ZAR)?\\s*([\\d,]+(?:\\.\\d+)?)\\s*(?:\\*{0,2})?\\s*\\|`,
+            `\\|\\s*(?:\\*{0,2}\\s*)?${escaped}(?:\\s*\\*{0,2})?\\s*\\|\\s*(?:\\*{0,2}\\s*)?(?:\\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\\s*([\\d,]+(?:\\.\\d+)?)\\s*(?:\\*{0,2})?\\s*\\|`,
             'i',
           ),
         );
@@ -1694,15 +1701,27 @@ export class ReportService {
 
           // Some report variants swap amount/% columns. Resolve by semantic token.
           // IMPORTANT: Only treat a cell as money if it actually contains a `$`.
-          // This prevents CSI codes like `23 00 00` from becoming `$23.00`.
+          // This prevents phase/cost-code numbers from becoming amounts.
           const moneyToken =
             valueCols.find((v) =>
-              /(?:\$|£|€|\bZAR\b|\bR\b|\bUSD\b|\bGBP\b|\bEUR\b|\bBWP\b|\bP\b)/i.test(v),
+              /(?:\$|£|€|\bZAR\b|\bUSD\b|\bGBP\b|\bEUR\b|\bBWP\b|(?:^|\s)R(?=\s|[\d,\.])|(?:^|\s)P(?=\s|[\d,\.]))/i.test(
+                v,
+              ),
             ) || '';
           const percentToken = valueCols.find((v) => /%/.test(v)) || '';
+          const plainAmountToken =
+            valueCols.find((v) => {
+              const cleaned = String(v || '').replace(/\*\*/g, '').trim();
+              if (!cleaned || /%/.test(cleaned)) return false;
+              // Reject descriptive cells; keep numeric-only amount cells.
+              if (/[A-Za-z]/.test(cleaned)) return false;
+              return /[\d]/.test(cleaned);
+            }) || '';
           const amount = moneyToken
             ? parseCurrency(moneyToken)
-            : parseMoneyLikeCell(amountCol);
+            : plainAmountToken
+              ? parseMoneyLikeCell(plainAmountToken)
+              : parseMoneyLikeCell(amountCol);
           const pctFromCols = parsePercentage(percentToken);
           const pctFromLabel = parsePercentage(rawLabel);
           const pct = pctFromCols > 0 ? pctFromCols : pctFromLabel;
@@ -1950,7 +1969,7 @@ export class ReportService {
               finalGeneralConditions +
               finalPermitsAdminFees +
               finalInsuranceBonds;
-      const finalOverhead =
+      let finalOverhead =
         phase26Overhead > 0
           ? phase26Overhead
           : overhead > 0
@@ -1959,7 +1978,7 @@ export class ReportService {
               ? budgetOverhead
               : 0;
       const finalOverheadPct = phase26OverheadPct > 0 ? phase26OverheadPct : overheadPct;
-      const finalContingency =
+      let finalContingency =
         phase26Contingency > 0
           ? phase26Contingency
           : contingency > 0
@@ -1970,7 +1989,10 @@ export class ReportService {
       const finalContingencyPct =
         phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
 
-      const escalation = phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
+      let finalEscalation =
+        finalReportEscalation > 0
+          ? finalReportEscalation
+          : phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
       const finalTaxes =
         phase26Taxes > 0
           ? phase26Taxes
@@ -1998,13 +2020,64 @@ export class ReportService {
             : isReasonableTaxPct(phase30SalesTaxPct)
               ? phase30SalesTaxPct
               : 0;
+
+      // Validation gate: if a markup amount clearly looks like a misparsed percent
+      // token (e.g. 15.00 instead of 15% of base), rebuild it from percentage.
+      const parseIntegrityIssues: string[] = [];
+      const normalizeMarkupAmount = (
+        label: string,
+        amount: number,
+        pct: number,
+        base: number,
+      ): number => {
+        if (!(base > 0)) return amount;
+        const hasPct = Number.isFinite(pct) && pct > 0 && pct <= 35;
+        const looksTinyAbsolute = amount > 0 && amount < 1000 && base >= 100000;
+        const expectedFromPct = hasPct ? (base * pct) / 100 : 0;
+
+        if ((amount <= 0 || looksTinyAbsolute) && expectedFromPct > 0) {
+          parseIntegrityIssues.push(`${label}:rebuilt_from_pct`);
+          return Math.round(expectedFromPct * 100) / 100;
+        }
+
+        if (amount > 0 && expectedFromPct > 0) {
+          const ratio = amount / expectedFromPct;
+          if (ratio < 0.2 || ratio > 5) {
+            parseIntegrityIssues.push(`${label}:amount_pct_mismatch`);
+            return Math.round(expectedFromPct * 100) / 100;
+          }
+        }
+
+        return amount;
+      };
+
+      finalOverhead = normalizeMarkupAmount(
+        'overhead',
+        finalOverhead,
+        finalOverheadPct,
+        finalDirectAndInsurableSubtotal,
+      );
+      finalContingency = normalizeMarkupAmount(
+        'contingency',
+        finalContingency,
+        finalContingencyPct,
+        finalDirectAndInsurableSubtotal,
+      );
+
+      // Escalation often has no explicit pct column; protect against tiny literal
+      // values leaking through (e.g. "5" from "5%").
+      if (finalEscalation > 0 && finalEscalation < 1000 && finalDirectAndInsurableSubtotal >= 100000) {
+        const inferredEscalation = Math.round(finalDirectAndInsurableSubtotal * 0.05 * 100) / 100;
+        parseIntegrityIssues.push('escalation:rebuilt_default_5pct');
+        finalEscalation = inferredEscalation;
+      }
       const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
       let finalSuggestedMarketBid =
         phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;
       const finalPreTaxSubtotal =
         phase26PreTaxSubtotal > 0
           ? phase26PreTaxSubtotal
-          : finalDirectSubtotal + finalOverhead + finalContingency + escalation;
+          : finalDirectSubtotal + finalOverhead + finalContingency + finalEscalation;
       const finalCostPerSqFt =
         phase26CostPerSqFt > 0 ? phase26CostPerSqFt : costPerSqFt;
 
@@ -2017,7 +2090,7 @@ export class ReportService {
         (finalDirectSubtotal +
           finalOverhead +
           finalContingency +
-          escalation +
+          finalEscalation +
           finalTaxes);
 
       // Sensible fallback range if low/high are absent in the source report.
@@ -2051,7 +2124,7 @@ export class ReportService {
         overheadPct: finalOverheadPct,
         contingency: finalContingency,
         contingencyPct: finalContingencyPct,
-        escalation,
+        escalation: finalEscalation,
         preTaxSubtotal: finalPreTaxSubtotal,
         taxes: finalTaxes,
         salesTaxPct: finalSalesTaxPct,
@@ -2081,6 +2154,7 @@ export class ReportService {
           finalGeneralConditions: Number(finalGeneralConditions || 0),
           finalPermitsAdminFees: Number(finalPermitsAdminFees || 0),
           finalInsuranceBonds: Number(finalInsuranceBonds || 0),
+          parseIntegrityIssues,
         },
       };
     } catch (err) {

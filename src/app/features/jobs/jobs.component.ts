@@ -774,6 +774,18 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (recomputed > 0) return recomputed;
 
     const summary: any = this.scopeCostSummary || null;
+    const reportBase = Number(summary?.reportTotalDirectIndirectCosts || 0);
+    if (reportBase > 0) {
+      const reportTaxes = Number(summary?.reportVatAmount || summary?.taxes || 0);
+      return reportBase + Math.max(0, reportTaxes);
+    }
+
+    const reportPreTax = Number(summary?.reportPreTaxProjectCost || 0);
+    if (reportPreTax > 0) {
+      const reportTaxes = Number(summary?.reportVatAmount || summary?.taxes || 0);
+      return reportPreTax + Math.max(0, reportTaxes);
+    }
+
     const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
     if (reportGrandTotal > 0) return reportGrandTotal;
 
@@ -843,14 +855,21 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           ? reportEscalation
           : this.escalationAllowance;
 
+    // Prefer explicit report tax values when present; also derive taxes from
+    // grand-total minus pre-tax when a report omits the VAT row.
+    const derivedReportTaxes =
+      reportBid > 0 && reportPreTax > 0 ? Math.max(0, reportBid - reportPreTax) : 0;
+    const effectiveReportTaxes = reportTaxes > 0 ? reportTaxes : derivedReportTaxes;
     const taxesFromReportLooksReasonable =
-      reportTaxes > 0 && this.materialsCost > 0
-        ? (reportTaxes / this.materialsCost) * 100 <= 35
-        : false;
+      effectiveReportTaxes > 0 &&
+      (
+        (reportPreTax > 0 && (effectiveReportTaxes / reportPreTax) * 100 <= 35) ||
+        (this.materialsCost > 0 && (effectiveReportTaxes / this.materialsCost) * 100 <= 35)
+      );
     const taxes = summaryTaxes > 0
       ? summaryTaxes
       : taxesFromReportLooksReasonable
-        ? reportTaxes
+        ? effectiveReportTaxes
         : this.taxesAllowance;
 
     // Some scope-review payloads carry valid percentage drivers but zero absolute
@@ -875,12 +894,39 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const normalizedEscalation =
       escalation > 0 ? escalation : fallbackEscalationFromRate;
 
+    const useReportWhenTiny = (
+      value: number,
+      reportValue: number,
+      base: number,
+    ): number => {
+      if (value > 0 && value < 1000 && base >= 100000 && reportValue > 0) {
+        return reportValue;
+      }
+      return value;
+    };
+
+    const reconciledOverhead = useReportWhenTiny(
+      normalizedOverheadProfit,
+      reportOverheadProfit,
+      baseCosts,
+    );
+    const reconciledContingency = useReportWhenTiny(
+      normalizedContingency,
+      reportContingency,
+      baseCosts,
+    );
+    const reconciledEscalation = useReportWhenTiny(
+      normalizedEscalation,
+      reportEscalation,
+      baseCosts,
+    );
+
     return {
       bidToClient,
       baseCosts,
-      overheadProfit: normalizedOverheadProfit,
-      contingency: normalizedContingency,
-      escalation: normalizedEscalation,
+      overheadProfit: reconciledOverhead,
+      contingency: reconciledContingency,
+      escalation: reconciledEscalation,
       taxes,
     };
   }
