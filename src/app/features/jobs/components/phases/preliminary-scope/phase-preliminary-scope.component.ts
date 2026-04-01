@@ -29,6 +29,10 @@ import { JobTeamComponent } from '../../job-team/job-team.component';
 import { JobUser } from '../../../job-assignment/job-assignment.model';
 import { firstValueFrom } from 'rxjs';
 import { MoneyPipe, MoneyInTextPipe, formatMoney } from '../../../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  resolveDisplayedProjectAreaSqFt,
+} from '../../../utils/building-area-normalize.util';
 
 type ScopeTab = 'overview' | 'timeline' | 'blueprints';
 
@@ -675,10 +679,18 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   }
 
   get projectTotalArea(): number {
-    const intelligenceArea = Number(this.loadedBlueprintIntelligence?.underRoofArea || 0);
-    if (intelligenceArea > 0) return intelligenceArea;
-    const parsed = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return resolveDisplayedProjectAreaSqFt(
+      this.projectDetails?.buildingSize,
+      this.projectDetails?.projectSize,
+      this.loadedBlueprintIntelligence?.underRoofArea,
+    );
+  }
+
+  /** Plain integer for header / labels (no thousands separators). */
+  get projectTotalAreaHeaderText(): string {
+    const n = this.projectTotalArea;
+    if (!n || n <= 0) return 'N/A';
+    return formatWholeNumberNoGrouping(n);
   }
 
   get clientName(): string {

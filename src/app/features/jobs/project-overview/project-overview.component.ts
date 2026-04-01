@@ -48,6 +48,11 @@ import { ArchiveService } from '../../archive/archive-service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MoneyPipe, MoneyInTextPipe } from '../../../shared/pipes/money.pipe';
 import { formatMoney } from '../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  parseAreaWithUnit,
+  resolveDisplayedProjectAreaSqFt,
+} from '../utils/building-area-normalize.util';
 @Component({
   selector: 'app-project-overview',
   standalone: true,
@@ -360,12 +365,12 @@ export class ProjectOverviewComponent {
       this.blueprintSheetCount = data.sheetCount;
       this.blueprintRoomCount = data.roomCount;
       this.blueprintRooms = data.rooms;
-      const normalizedUnderRoofSqFt = this.normalizeUnderRoofAreaToSqFt(
+      const areaSqFt = resolveDisplayedProjectAreaSqFt(
+        this.projectDetails?.buildingSize,
+        this.projectDetails?.projectSize,
         data.underRoofArea,
       );
-      this.projectTotalArea = normalizedUnderRoofSqFt && normalizedUnderRoofSqFt > 0
-        ? normalizedUnderRoofSqFt
-        : null;
+      this.projectTotalArea = areaSqFt > 0 ? areaSqFt : null;
 
       this.dimensionalAccuracy = data.dimensionalAccuracy || 0;
       this.completeness = data.completeness || 0;
@@ -1740,7 +1745,7 @@ export class ProjectOverviewComponent {
   }
 
   getAreaInSqM(areaStr: any): string {
-    const parsed = this.parseAreaWithUnit(areaStr);
+    const parsed = parseAreaWithUnit(areaStr);
     if (!parsed || parsed.value <= 0) return '0';
 
     let sqFt = parsed.value;
@@ -1752,6 +1757,13 @@ export class ProjectOverviewComponent {
     }
 
     return (sqFt * 0.092903).toFixed(1);
+  }
+
+  get projectTotalAreaDisplay(): string {
+    if (this.projectTotalArea == null || this.projectTotalArea <= 0) {
+      return 'N/A';
+    }
+    return formatWholeNumberNoGrouping(this.projectTotalArea);
   }
 
   private formatMoneyInText(text: string): string {
@@ -1770,69 +1782,11 @@ export class ProjectOverviewComponent {
     );
   }
 
-  private normalizeNumericText(raw: string): string {
-    const compact = raw.replace(/\s/g, '');
-    const hasComma = compact.includes(',');
-    const hasDot = compact.includes('.');
-
-    if (hasComma && hasDot) {
-      // Assume commas are thousands separators.
-      return compact.replace(/,/g, '');
-    }
-
-    if (hasComma && !hasDot) {
-      // If comma is likely decimal separator, convert to dot.
-      if (/,(\d{1,2})$/.test(compact)) {
-        return compact.replace(',', '.');
-      }
-      // Otherwise treat as thousands separator.
-      return compact.replace(/,/g, '');
-    }
-
-    return compact;
-  }
-
-  private parseAreaWithUnit(input: any): { value: number; unit: 'sqft' | 'sqm' | 'unknown' } | null {
-    if (input == null) return null;
-    const raw = String(input).trim();
-    if (!raw) return null;
-
-    const lower = raw.toLowerCase();
-    const unit: 'sqft' | 'sqm' | 'unknown' = /\bm²\b|\bm2\b|\bsqm\b|\bsq m\b/.test(lower)
-      ? 'sqm'
-      : /\bsq\s*ft\b|\bsqft\b|\bft²\b|\bft2\b/.test(lower)
-        ? 'sqft'
-        : 'unknown';
-
-    const numericText = this.normalizeNumericText(raw).replace(/[^0-9.-]/g, '');
-    const value = Number.parseFloat(numericText);
-    if (!Number.isFinite(value)) return null;
-
-    return { value, unit };
-  }
-
-  private normalizeUnderRoofAreaToSqFt(rawArea: any): number | null {
-    const parsed = this.parseAreaWithUnit(rawArea);
-    if (!parsed || parsed.value <= 0) return null;
-
-    if (parsed.unit === 'sqm') {
-      return parsed.value * 10.7639;
-    }
-
-    if (parsed.unit === 'sqft') {
-      return parsed.value;
-    }
-
-    // Heuristic for unlabeled numeric values from report extraction:
-    // <= 500 is very likely m², otherwise sq ft.
-    return parsed.value <= 500 ? parsed.value * 10.7639 : parsed.value;
-  }
-
   private computeRoomsTotalSqFt(
     rooms: Array<{ name: string; area: string }>,
   ): number {
     return (rooms || []).reduce((sum, room) => {
-      const parsed = this.parseAreaWithUnit(room?.area);
+      const parsed = parseAreaWithUnit(room?.area);
       if (!parsed || parsed.value <= 0) return sum;
 
       let sqFt = parsed.value;

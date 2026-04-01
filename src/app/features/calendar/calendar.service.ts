@@ -18,7 +18,7 @@ export class CalendarService {
   ) {}
 
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
+    const token = this.authService.getAccessTokenFast();
     return new HttpHeaders({
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

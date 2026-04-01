@@ -1,7 +1,8 @@
 import { Project } from '../../models/project';
-
-/** Building size from API is stored in square feet. */
-const SQ_FT_PER_SQ_M = 10.76391041671;
+import {
+  formatWholeNumberNoGrouping,
+  resolveDisplayedProjectAreaSqFt,
+} from '../jobs/utils/building-area-normalize.util';
 
 const MONTHS = [
   'Jan',
@@ -81,109 +82,27 @@ export function parseProjectStartDate(project: unknown): Date | null {
   return parsed;
 }
 
+/**
+ * Same square-foot basis as Preliminary Scope Review: prefer job building/project
+ * size, then normalize blueprint under-roof (unlabeled m² vs sq ft heuristics).
+ */
 export function parseProjectBuildingSizeSqFt(project: unknown): number | null {
   const p = project as Record<string, unknown>;
-  const rawSize =
-    p?.['buildingSize'] ??
-    p?.['projectSize'] ??
-    p?.['underRoofArea'] ??
-    p?.['BuildingSize'] ??
-    null;
-
-  const n = parseNumericValue(rawSize);
+  const n = resolveDisplayedProjectAreaSqFt(
+    p?.['buildingSize'] ?? p?.['BuildingSize'],
+    p?.['projectSize'] ?? p?.['ProjectSize'],
+    p?.['underRoofArea'] ?? p?.['UnderRoofArea'],
+  );
   return n > 0 ? n : null;
 }
 
-function parseNumericValue(value: unknown): number {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : 0;
-  }
-  const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '');
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function normalizeCountry(c: string | undefined | null): string {
-  return (c ?? '').trim().toLowerCase();
-}
-
-function inferMetricFromAddress(address: string | undefined): boolean | null {
-  if (!address) {
-    return null;
-  }
-  const a = address.toLowerCase();
-  if (/,?\s*usa\s*$/i.test(a) || /,?\s*united states\s*$/i.test(a)) {
-    return false;
-  }
-  const metricHints = [
-    'south africa',
-    'united kingdom',
-    'australia',
-    'new zealand',
-    'ireland',
-    'germany',
-    'france',
-    'spain',
-    'italy',
-    'netherlands',
-    'belgium',
-    'sweden',
-    'norway',
-    'denmark',
-    'finland',
-    'austria',
-    'switzerland',
-    'portugal',
-    'poland',
-    'india',
-    'japan',
-    'china',
-    'brazil',
-    'mexico',
-    'argentina',
-    'canada',
-  ];
-  for (const h of metricHints) {
-    if (a.includes(h)) {
-      return true;
-    }
-  }
-  return null;
-}
-
-/** True = show sq ft; false = show sq m (converted from stored sq ft). */
-export function useImperialAreaDisplay(project: Project | unknown): boolean {
-  const p = project as Record<string, unknown>;
-  const c = normalizeCountry(p?.['country'] as string | undefined);
-  if (
-    c === 'us' ||
-    c === 'usa' ||
-    c === 'united states' ||
-    c === 'united states of america'
-  ) {
-    return true;
-  }
-  if (c.length > 0) {
-    return false;
-  }
-  const inferred = inferMetricFromAddress(p?.['address'] as string | undefined);
-  if (inferred !== null) {
-    return !inferred;
-  }
-  return true;
-}
-
+/** Always sq ft — matches Scope Review header (not country-based sq m). */
 export function formatProjectBuildingAreaDisplay(project: Project | unknown): string {
   const sqFt = parseProjectBuildingSizeSqFt(project);
   if (sqFt == null) {
     return 'TBD';
   }
-  const imperial = useImperialAreaDisplay(project);
-  if (imperial) {
-    return `${sqFt.toLocaleString('en-US', { maximumFractionDigits: 0 })} sq ft`;
-  }
-  const sqM = sqFt / SQ_FT_PER_SQ_M;
-  return `${sqM.toLocaleString('en-US', { maximumFractionDigits: 0 })} sq m`;
+  return `${formatWholeNumberNoGrouping(sqFt)} sq ft`;
 }
 
 export function getProjectStatusLabel(status: string | undefined): string {
