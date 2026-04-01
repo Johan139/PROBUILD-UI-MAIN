@@ -114,8 +114,8 @@
             </div>
             @if (permit.documentId) {
               <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="viewPermitDocument(permit)">
-                <lucide-icon name="eye" class="btn-icon"></lucide-icon>
-                <span>{{ permit.document?.fileName || 'View document' }}</span>
+                <lucide-icon [name]="getPermitDocumentActionIcon(permit)" class="btn-icon"></lucide-icon>
+                <span>{{ getPermitDocumentActionLabel(permit) }}</span>
               </button>
               <button type="button" class="btn btn-outline" [disabled]="isPermitBusy(permit)" (click)="permitFileInput.click()">
                 Replace
@@ -211,8 +211,8 @@
             </button>
           </header>
           <div class="compliance-modal-body">
-            @if (!loadingPermitPreview && viewingPermitUrl) {
-              <iframe [src]="viewingPermitUrl" title="Permit preview"></iframe>
+            @if (!loadingPermitPreview && viewingPermitPreviewUrl) {
+              <iframe [src]="viewingPermitPreviewUrl" title="Permit preview"></iframe>
             } @else {
               <div class="preview-loading">
                 <lucide-icon name="loader-circle"></lucide-icon>
