@@ -31,7 +31,8 @@ export class SignalrService {
   public analysisProgress = new Subject<AnalysisProgressUpdate>();
   public analysisData = new Subject<any>();
   public analysisEmailSent = new Subject<number>();
-  private pingInterval: any;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private pingFailureLogged = false;
   private readonly analysisStateCacheTtlMs = 4000;
   private analysisStateCache = new Map<
     number,
@@ -71,6 +72,8 @@ export class SignalrService {
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
     const hubUrl = `${baseUrl}/hubs/progressHub`;
 
+    this.pingFailureLogged = false;
+
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
         accessTokenFactory: async () => {
@@ -81,7 +84,9 @@ export class SignalrService {
         },
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
-      .configureLogging(LogLevel.Debug)
+      .configureLogging(
+        environment.production ? LogLevel.Warning : LogLevel.Information,
+      )
       .build();
 
     this.hubConnection.onreconnecting((error) =>
@@ -94,7 +99,13 @@ export class SignalrService {
         this.pingInterval = setInterval(() => {
           if (this.hubConnection.state === 'Connected') {
             this.hubConnection.invoke('Ping').catch((err) => {
-              console.warn('SignalR Ping failed:', err);
+              if (!this.pingFailureLogged) {
+                this.pingFailureLogged = true;
+                console.warn(
+                  'SignalR Ping failed (further Ping errors suppressed for this session):',
+                  err,
+                );
+              }
             });
           }
         }, 60000);

@@ -444,7 +444,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       let newItems: BudgetLineItem[] = [];
-      for (let attempt = 0; attempt < 5; attempt++) {
+      const budgetImportMaxAttempts = 4;
+      for (let attempt = 0; attempt < budgetImportMaxAttempts; attempt++) {
         const results = await firstValueFrom(
           this.bomService.getBillOfMaterials(String(jobId), true),
         );
@@ -461,7 +462,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         // Analysis output can lag briefly even when the stage has just advanced.
-        await this.sleep(1000 + attempt * 300);
+        if (attempt < budgetImportMaxAttempts - 1) {
+          await this.sleep(Math.min(10_000, 800 * Math.pow(2, attempt)));
+        }
       }
 
       if (!newItems.length) {
@@ -2396,20 +2399,26 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private scopeRefreshDelayMs(attempt: number): number {
+    return Math.min(12_000, 600 * Math.pow(2, attempt));
+  }
+
   private async refreshScopeInsightDataWithRetries(jobId: number): Promise<void> {
     const jobIdStr = String(jobId);
     const beforeSummary = this.fingerprintScopeCostSummary(this.scopeCostSummary);
     const beforeBom = this.fingerprintScopeBomTotals(this.scopeBomTotals);
+    const maxAttempts = 5;
 
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const [summary, executiveSummary, bomResults, permitWeeks, materialWeeks] = await Promise.all([
-          this.reportService.getDetailedCostSummary(jobIdStr),
-          this.reportService.getExecutiveSummaryData(jobIdStr),
-          firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
-          this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
-          this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
-        ]);
+        const [summary, executiveSummary, bomResults, permitWeeks, materialWeeks] =
+          await Promise.all([
+            this.reportService.getDetailedCostSummary(jobIdStr),
+            this.reportService.getExecutiveSummaryData(jobIdStr),
+            firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
+            this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
+            this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
+          ]);
 
         const bomTotals = this.extractScopeBomTotals(bomResults);
         const afterSummary = this.fingerprintScopeCostSummary(summary);
@@ -2440,10 +2449,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
       } catch {
-        // ignore; retry
+        // Transient errors; retry with backoff (avoid tight loops on failures).
       }
 
-      await this.sleep(900 + attempt * 250);
+      if (attempt < maxAttempts - 1) {
+        await this.sleep(this.scopeRefreshDelayMs(attempt));
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component, effect } from '@angular/core';
+import { Component, effect, OnDestroy } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -22,6 +22,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ThemeService } from '../../theme.service'; // adjust path as needed
 declare const google: any;
 
+const PB_GSI_ID_INIT_KEY = '__pbGsiIdInitialized';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -40,8 +42,9 @@ declare const google: any;
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnDestroy {
   private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
+  private gsiPollHandle: ReturnType<typeof setInterval> | null = null;
   loginForm: FormGroup;
   environment = environment;
   showAlert: boolean = false;
@@ -106,28 +109,42 @@ export class LoginComponent {
   }
 
   ngAfterViewInit() {
-    const checkGsiLoaded = setInterval(() => {
+    this.gsiPollHandle = setInterval(() => {
       const googleLibLoaded =
         typeof window !== 'undefined' && (window as any).google?.accounts?.id;
 
       const divExists = document.getElementById('googleSignInDiv');
 
       if (googleLibLoaded && divExists) {
-        clearInterval(checkGsiLoaded);
+        if (this.gsiPollHandle) {
+          clearInterval(this.gsiPollHandle);
+          this.gsiPollHandle = null;
+        }
 
-        google.accounts.id.initialize({
-          client_id:
-            '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
-          callback: (response: any) => this.handleGoogleCredential(response),
-          cancel_on_tap_outside: true,
-          auto_select: false,
-          use_fedcm_for_prompt: false,
-        });
+        const w = window as any;
+        if (!w[PB_GSI_ID_INIT_KEY]) {
+          google.accounts.id.initialize({
+            client_id:
+              '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
+            callback: (response: any) => this.handleGoogleCredential(response),
+            cancel_on_tap_outside: true,
+            auto_select: false,
+            use_fedcm_for_prompt: false,
+          });
+          w[PB_GSI_ID_INIT_KEY] = true;
+        }
         google.accounts.id.disableAutoSelect();
 
         this.rerenderGoogleButton(this.themeService.isDarkMode());
       }
     }, 250);
+  }
+
+  ngOnDestroy(): void {
+    if (this.gsiPollHandle) {
+      clearInterval(this.gsiPollHandle);
+      this.gsiPollHandle = null;
+    }
   }
 
   private rerenderGoogleButton(isDark: boolean) {
