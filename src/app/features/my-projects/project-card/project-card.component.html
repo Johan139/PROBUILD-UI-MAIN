@@ -57,17 +57,19 @@
       </div>
 
       <div class="project-stats">
-        <div class="stat-item">
-          <mat-icon matTooltip="Start Date" matTooltipShowDelay="500">schedule</mat-icon>
-          @if (resolvedStartDate) {
-            <span>{{ formatProjectDate(resolvedStartDate) }}</span>
-          } @else {
-            <span>TBD</span>
-          }
-        </div>
-        <div class="stat-item">
-          <mat-icon matTooltip="Building size" matTooltipShowDelay="500">square_foot</mat-icon>
-          <span>{{ formatProjectArea(project) }}</span>
+        <div class="project-stats-split">
+          <div class="stat-item stat-item--schedule">
+            <mat-icon matTooltip="Start Date" matTooltipShowDelay="500">schedule</mat-icon>
+            @if (resolvedStartDate) {
+              <span>{{ formatProjectDate(resolvedStartDate) }}</span>
+            } @else {
+              <span>TBD</span>
+            }
+          </div>
+          <div class="stat-item stat-item--area">
+            <mat-icon matTooltip="Building size" matTooltipShowDelay="500">square_foot</mat-icon>
+            <span class="stat-area-value">{{ formatProjectArea(project) }}</span>
+          </div>
         </div>
         <div class="stat-item">
           <mat-icon matTooltip="Team Members" matTooltipShowDelay="500">people</mat-icon>

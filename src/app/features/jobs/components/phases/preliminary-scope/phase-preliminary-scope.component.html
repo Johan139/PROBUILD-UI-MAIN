@@ -8,7 +8,7 @@
     [projectName]="projectDetails?.projectName || 'N/A'"
     [clientName]="clientName || 'N/A'"
     [projectAddress]="projectDetails?.address || projectDetails?.jobAddress?.formatted_address || 'N/A'"
-    [projectSizeSqFt]="projectTotalArea ? ((projectTotalArea | number: '1.0-0') || 'N/A') : 'N/A'"
+    [projectSizeSqFt]="projectTotalAreaHeaderText"
     [isReportLoading]="isReportLoading"
     [showEnvironmentalReport]="showEnvironmentalReport"
     (back)="backToSetup.emit()"
@@ -179,7 +179,7 @@
               </div>
               <div class="detail-item">
                 <span class="detail-label">Total Area</span>
-                <span class="detail-value">{{ projectTotalArea ? (projectTotalArea | number: '1.0-0') : 'N/A' }} sq ft</span>
+                <span class="detail-value">{{ projectTotalAreaHeaderText === 'N/A' ? 'N/A' : projectTotalAreaHeaderText + ' sq ft' }}</span>
               </div>
             </div>
           }

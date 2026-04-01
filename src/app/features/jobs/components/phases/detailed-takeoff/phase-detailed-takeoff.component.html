@@ -341,7 +341,9 @@
       <section class="progress-card">
         <div class="progress-row">
           <span>Confirmed Phases</span>
-          <strong>{{ confirmedBomSections.size }} / {{ bomKeys.length }}</strong>
+          <strong
+            >{{ confirmedVisiblePhaseCount }} / {{ bomKeys.length }}</strong
+            >
         </div>
         <div class="progress-track">
           <div
@@ -494,8 +496,8 @@
                 </p>
               } @else {
                 <p>
-                  {{ bomKeys.length - confirmedBomSections.size }} phase{{
-                  bomKeys.length - confirmedBomSections.size === 1 ? "" : "s"
+                  {{ bomKeys.length - confirmedVisiblePhaseCount }} phase{{
+                  bomKeys.length - confirmedVisiblePhaseCount === 1 ? "" : "s"
                   }}
                   remaining.
                 </p>
@@ -789,14 +791,11 @@
                         </div>
                         <div class="detail-item">
                           <span class="detail-label">Total Area</span>
-                          <span class="detail-value"
-                            >{{
-                            projectTotalArea
-                            ? (projectTotalArea | number: "1.0-0")
-                            : "N/A"
-                            }}
-                            sq ft</span
-                            >
+                          <span class="detail-value">{{
+                            projectTotalAreaHeaderText === "N/A"
+                              ? "N/A"
+                              : projectTotalAreaHeaderText + " sq ft"
+                          }}</span>
                           </div>
                         </div>
                       }

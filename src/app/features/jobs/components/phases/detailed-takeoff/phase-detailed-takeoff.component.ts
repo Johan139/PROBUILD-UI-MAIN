@@ -43,6 +43,10 @@ import { ProjectBlueprintViewerComponent } from '../../../../../components/proje
 import { UploadedFileInfo } from '../../../../../services/file-upload.service';
 import { MoneyPipe, MoneyInTextPipe } from '../../../../../shared/pipes/money.pipe';
 import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  resolveDisplayedProjectAreaSqFt,
+} from '../../../utils/building-area-normalize.util';
 
 interface BomMaterialRow {
   item: string;
@@ -225,11 +229,19 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get projectSizeSqFt(): string {
-    return (
-      this.projectDetails?.buildingSize ||
-      this.projectDetails?.projectSize ||
-      '2,450'
-    );
+    const unified = this.projectTotalArea;
+    if (unified > 0) {
+      return formatWholeNumberNoGrouping(unified);
+    }
+    const fallback =
+      this.projectDetails?.buildingSize || this.projectDetails?.projectSize;
+    if (fallback != null && String(fallback).trim() !== '') {
+      const n = Number(String(fallback).replace(/[^0-9.-]/g, ''));
+      if (Number.isFinite(n) && n > 0) {
+        return formatWholeNumberNoGrouping(n);
+      }
+    }
+    return '2450';
   }
 
   get projectSizeSqM(): string {
@@ -293,8 +305,17 @@ export class PhaseDetailedTakeoffComponent
   get allPhasesConfirmed(): boolean {
     return (
       this.bomKeys.length > 0 &&
-      this.confirmedBomSections.size === this.bomKeys.length
+      this.bomKeys.every((key) => this.confirmedBomSections.has(key))
     );
+  }
+
+  /** Confirmed count among currently visible BOM phases only (ignores stale keys in the set). */
+  get confirmedVisiblePhaseCount(): number {
+    if (!this.bomKeys.length) {
+      return 0;
+    }
+    return this.bomKeys.filter((key) => this.confirmedBomSections.has(key))
+      .length;
   }
 
   get directCosts(): number {
@@ -356,7 +377,7 @@ export class PhaseDetailedTakeoffComponent
     if (this.bomKeys.length === 0) {
       return 0;
     }
-    return (this.confirmedBomSections.size / this.bomKeys.length) * 100;
+    return (this.confirmedVisiblePhaseCount / this.bomKeys.length) * 100;
   }
 
   get canProceed(): boolean {
@@ -870,16 +891,17 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get projectTotalArea(): number {
-    const intelligenceArea = Number(
-      this.loadedBlueprintIntelligence?.underRoofArea || 0,
+    return resolveDisplayedProjectAreaSqFt(
+      this.projectDetails?.buildingSize,
+      this.projectDetails?.projectSize,
+      this.loadedBlueprintIntelligence?.underRoofArea,
     );
-    if (intelligenceArea > 0) return intelligenceArea;
-    const parsed = Number(
-      this.projectDetails?.buildingSize ||
-        this.projectDetails?.projectSize ||
-        0,
-    );
-    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  get projectTotalAreaHeaderText(): string {
+    const n = this.projectTotalArea;
+    if (!n || n <= 0) return 'N/A';
+    return formatWholeNumberNoGrouping(n);
   }
 
   get clientName(): string {
@@ -1042,7 +1064,7 @@ export class PhaseDetailedTakeoffComponent
       this.reportService.getValueEngineeringReport(jobId),
       firstValueFrom(this.budgetService.getBudget(Number(jobId))),
     ])
-      .then(([boms, costSummary, veReport, budgetItems]) => {
+      .then(async ([boms, costSummary, veReport, budgetItems]) => {
         const persistedBudgetItems = Array.isArray(budgetItems)
           ? budgetItems
           : [];
@@ -1053,7 +1075,20 @@ export class PhaseDetailedTakeoffComponent
         if (Array.isArray(boms) && boms.length > 0 && boms[0].parsedReport) {
           this.processBoms(boms[0].parsedReport);
           this.hydratePersistedBomEdits(persistedBudgetItems);
-          this.hydratePersistedBomConfirmations(persistedBudgetItems);
+          // BudgetService caches GET /budget for 15s. Parallel fetch can complete before
+          // BOM_CONFIRM rows exist or return a stale snapshot — re-fetch so confirmations
+          // survive navigating away and back to this phase.
+          try {
+            const freshBudget = await firstValueFrom(
+              this.budgetService.getBudget(Number(jobId), true),
+            );
+            this.hydratePersistedBomConfirmations(
+              Array.isArray(freshBudget) ? freshBudget : [],
+            );
+          } catch (e) {
+            console.error('Failed to refresh budget for BOM confirmations', e);
+            this.hydratePersistedBomConfirmations(persistedBudgetItems);
+          }
         }
       })
       .finally(() => {
@@ -1313,10 +1348,63 @@ export class PhaseDetailedTakeoffComponent
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.confirmedBomSections = new Set(this.bomKeys);
-        this.bomKeys.forEach((key) => this.persistBomConfirmation(key));
+      if (!confirmed) {
+        return;
       }
+      this.confirmedBomSections = new Set(this.bomKeys);
+      const jobId = Number(this.projectDetails?.jobId);
+      const toCreate = this.bomKeys.filter(
+        (key) => !this.persistedBomConfirmationItemIds.has(key),
+      );
+      if (toCreate.length === 0) {
+        return;
+      }
+      if (Number.isNaN(jobId)) {
+        toCreate.forEach((key) => this.persistBomConfirmation(key));
+        return;
+      }
+      const items: BudgetLineItem[] = toCreate.map((key) => {
+        const section = this.billsOfMaterials[key];
+        return {
+          id: 0,
+          jobId,
+          category: 'BOM Confirmation',
+          item: `${section.name} - Confirmed`,
+          phase: section.name,
+          trade: section.name,
+          quantity: 1,
+          unit: 'ea',
+          unitCost: 0,
+          estimatedCost: 0,
+          actualCost: 0,
+          percentComplete: 100,
+          status: 'Confirmed',
+          notes: 'Phase confirmation acknowledged by user',
+          source: 'BOM_CONFIRM',
+          sourceId: `BOM_CONFIRM:${key}`,
+          forecastToComplete: 0,
+        };
+      });
+      this.budgetService.addBudgetItemsBatch(items).subscribe({
+        next: (saved) => {
+          for (const row of saved || []) {
+            const sid = String(row.sourceId || '');
+            if (!sid.startsWith('BOM_CONFIRM:')) {
+              continue;
+            }
+            const raw = sid.slice('BOM_CONFIRM:'.length);
+            const k =
+              this.resolveBomSectionKeyForConfirmation(raw) ?? raw;
+            if (this.billsOfMaterials[k] && row.id) {
+              this.persistedBomConfirmationItemIds.set(k, row.id);
+            }
+          }
+        },
+        error: (err) => {
+          console.error('Batch BOM confirmation failed; falling back per phase', err);
+          toCreate.forEach((key) => this.persistBomConfirmation(key));
+        },
+      });
     });
   }
 
@@ -1628,10 +1716,38 @@ export class PhaseDetailedTakeoffComponent
     });
   }
 
+  /** Map persisted BOM_CONFIRM sourceId segment to current `billsOfMaterials` key. */
+  private resolveBomSectionKeyForConfirmation(rawKey: string): string | null {
+    const trimmed = String(rawKey || '').trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (this.billsOfMaterials[trimmed]) {
+      return trimmed;
+    }
+    const lower = trimmed.toLowerCase();
+    for (const k of Object.keys(this.billsOfMaterials)) {
+      if (k.toLowerCase() === lower) {
+        return k;
+      }
+    }
+    const compact = lower.replace(/\s+/g, '');
+    for (const k of Object.keys(this.billsOfMaterials)) {
+      if (k.replace(/\s+/g, '').toLowerCase() === compact) {
+        return k;
+      }
+    }
+    return null;
+  }
+
   private hydratePersistedBomConfirmations(items: BudgetLineItem[]): void {
-    const confirmations = items.filter(
-      (item) => String(item.source || '').toUpperCase() === 'BOM_CONFIRM',
-    );
+    const confirmations = items.filter((item) => {
+      const src = String(item.source || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_');
+      return src === 'BOM_CONFIRM';
+    });
 
     this.persistedBomConfirmationItemIds = new Map();
     const confirmedKeys = new Set<string>();
@@ -1642,8 +1758,9 @@ export class PhaseDetailedTakeoffComponent
         return;
       }
 
-      const key = sourceId.replace('BOM_CONFIRM:', '');
-      if (!key || !this.billsOfMaterials[key]) {
+      const rawKey = sourceId.slice('BOM_CONFIRM:'.length);
+      const key = this.resolveBomSectionKeyForConfirmation(rawKey);
+      if (!key) {
         return;
       }
 

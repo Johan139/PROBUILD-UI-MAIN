@@ -76,6 +76,8 @@ export const authInterceptor: HttpInterceptorFn = (
                 return next(retryReq);
               }),
               catchError((refreshErr) => {
+                // Avoid infinite 401 → refresh → fail loops with a dead session.
+                authService.logout('refresh_invalid');
                 return throwError(() => refreshErr);
               }),
             );
