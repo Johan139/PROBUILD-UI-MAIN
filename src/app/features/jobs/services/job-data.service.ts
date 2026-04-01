@@ -18,7 +18,10 @@ import { JobSubtaskService } from './jobs/job-subtask.service';
 import { JobParserService } from './jobs/job-parser.service';
 import { JobCacheService } from './jobs/job-cache.service';
 import { JobWeatherService } from './jobs/job-weather.service';
-import { JobLoadResult } from '../../../types/jobs/job-data.types';
+import {
+  BomLoadResult,
+  JobLoadResult,
+} from '../../../types/jobs/job-data.types';
 import { GroupedSubtask, RawSubtask } from '../../../models/job-domain.models';
 
 @Injectable({
@@ -73,6 +76,19 @@ export class JobDataService {
         return throwError(() => err);
       }),
     );
+  }
+
+  private hasMeaningfulSubtasks(data: RawSubtask[]): boolean {
+    if (!Array.isArray(data) || data.length === 0) {
+      return false;
+    }
+    return data.some((st) => {
+      const hasTitle = String(st.groupTitle ?? '').trim().length > 0;
+      const hasTask = String(st.task ?? st.taskName ?? '').trim().length > 0;
+      const hasStart = String(st.startDate ?? '').trim().length > 0;
+      const hasEnd = String(st.endDate ?? '').trim().length > 0;
+      return hasTitle && hasTask && hasStart && hasEnd;
+    });
   }
 
   private isCorruptSubtasksPayload(data: RawSubtask[]): boolean {
@@ -257,14 +273,60 @@ export class JobDataService {
   private loadSubtasksOrBom(jobId: number): Observable<JobLoadResult> {
     return this.jobsService.getJobSubtasks(jobId).pipe(
       switchMap((data: RawSubtask[]) => {
-        if (!data || data.length === 0 || this.isCorruptSubtasksPayload(data)) {
-          return this.fetchBom(jobId.toString());
-        }
+        return this.fetchBom(jobId.toString()).pipe(
+          map((bomResult) => {
+            const markdown = bomResult.markdown ?? '';
+            const parsedFromReport = this.jobParser.parseTimelineToTaskGroups(
+              markdown,
+            );
+            const bomTimelineTaskCount = parsedFromReport.reduce(
+              (n, g) => n + (Array.isArray(g?.subtasks) ? g.subtasks.length : 0),
+              0,
+            );
+            const hasBomTimeline = bomTimelineTaskCount > 0;
 
-        return of<JobLoadResult>({
-          source: 'subtasks',
-          data,
-        });
+            const apiUsable =
+              Array.isArray(data) &&
+              data.length > 0 &&
+              !this.isCorruptSubtasksPayload(data) &&
+              this.hasMeaningfulSubtasks(data);
+
+            let apiTaskCount = 0;
+            if (apiUsable) {
+              const grouped = this.jobSubtasks.groupSubtasksByTitle(data);
+              apiTaskCount = grouped.reduce(
+                (n, g) =>
+                  n + (Array.isArray(g?.subtasks) ? g.subtasks.length : 0),
+                0,
+              );
+            }
+
+            if (markdown && hasBomTimeline && bomTimelineTaskCount >= apiTaskCount) {
+              return { source: 'bom', markdown } as JobLoadResult;
+            }
+
+            if (apiUsable) {
+              return { source: 'subtasks', data } as JobLoadResult;
+            }
+
+            if (markdown) {
+              return { source: 'bom', markdown } as JobLoadResult;
+            }
+
+            return { source: 'subtasks', data: data ?? [] } as JobLoadResult;
+          }),
+          catchError(() => {
+            if (
+              data &&
+              data.length > 0 &&
+              !this.isCorruptSubtasksPayload(data) &&
+              this.hasMeaningfulSubtasks(data)
+            ) {
+              return of({ source: 'subtasks', data } as JobLoadResult);
+            }
+            return of({ source: 'subtasks', data: data ?? [] } as JobLoadResult);
+          }),
+        );
       }),
       catchError((err: any) => {
         if (err.status === 404) {
@@ -276,10 +338,10 @@ export class JobDataService {
     );
   }
 
-  private fetchBom(jobId: string): Observable<JobLoadResult> {
+  private fetchBom(jobId: string): Observable<BomLoadResult> {
     return this.jobsService.GetBillOfMaterials(jobId).pipe(
       map((results: any) => ({
-        source: 'bom',
+        source: 'bom' as const,
         markdown: results[0]?.fullResponse ?? '',
       })),
     );

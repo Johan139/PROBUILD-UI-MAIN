@@ -242,7 +242,52 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bomKeys(): string[] {
-    return Object.keys(this.billsOfMaterials);
+    return Object.keys(this.billsOfMaterials).filter((key) =>
+      this.phaseHasVisibleBomRows(key),
+    );
+  }
+
+  /** Rows with total > 0 for estimation display; indices match persistence (BOM:…:rowIndex). */
+  visibleMaterialRows(
+    key: string,
+  ): { row: BomMaterialRow; index: number }[] {
+    const section = this.billsOfMaterials[key];
+    if (!section?.materials?.length) {
+      return [];
+    }
+    return section.materials
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => this.asNumber(row.total) > 0);
+  }
+
+  visibleLaborRows(key: string): { row: BomLaborRow; index: number }[] {
+    const section = this.billsOfMaterials[key];
+    if (!section?.labor?.length) {
+      return [];
+    }
+    return section.labor
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => this.asNumber(row.total) > 0);
+  }
+
+  visiblePhaseTotal(key: string): number {
+    const section = this.billsOfMaterials[key];
+    if (!section) {
+      return 0;
+    }
+    const mat = this.visibleMaterialRows(key).reduce(
+      (s, { row }) => s + this.asNumber(row.total),
+      0,
+    );
+    const lab = this.visibleLaborRows(key).reduce(
+      (s, { row }) => s + this.asNumber(row.total),
+      0,
+    );
+    return mat + lab;
+  }
+
+  private phaseHasVisibleBomRows(key: string): boolean {
+    return this.visiblePhaseTotal(key) > 0;
   }
 
   get allPhasesConfirmed(): boolean {

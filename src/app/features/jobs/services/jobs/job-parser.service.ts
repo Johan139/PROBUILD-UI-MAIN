@@ -14,7 +14,11 @@ export class JobParserService {
     if (!report) return [];
 
     const dailyPlan: any[] = [];
-    const startMarker = '### Phase 25: Daily Construction & Logistics Plan';
+    const startMarker = report.includes(
+      '### Phase 25: Daily Construction & Logistics Plan',
+    )
+      ? '### Phase 25: Daily Construction & Logistics Plan'
+      : '### Phase 25: Daily Construction Plan';
     const tableHeaderRegex =
       /\|\s*Project Day\s*\|\s*Date\s*\|\s*Phase\s*\|\s*Daily Tasks & Instructions\s*\|\s*Materials Required On-Site\s*\|\s*Equipment Required On-Site\s*\|\s*Personnel Required On-Site\s*\|\s*Key Milestones\/Inspections\s*\|/;
 
@@ -323,10 +327,9 @@ export class JobParserService {
         if (!taskName) continue;
 
         const formatDateString = (dateStr: string) => {
-          if (!dateStr) return '';
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return '';
-          return date.toISOString().split('T')[0];
+          const date = this.parseDate(dateStr);
+          if (!date) return '';
+          return this.formatDateToYYYYMMDD(date);
         };
 
         const parsedDuration = this.parseDurationDays(duration);
@@ -357,22 +360,24 @@ export class JobParserService {
       return [];
     }
 
-    const groups = Array.from(taskGroupMap.entries()).map(([title, subtasks]) => {
-      const completedCount = subtasks.filter(
-        (s) => s.status && s.status.toLowerCase() === 'completed',
-      ).length;
+    const groups = Array.from(taskGroupMap.entries()).map(
+      ([title, subtasks]) => {
+        const completedCount = subtasks.filter(
+          (s) => s.status && s.status.toLowerCase() === 'completed',
+        ).length;
 
-      const progress =
-        subtasks.length > 0
-          ? Math.round((completedCount / subtasks.length) * 100)
-          : 0;
+        const progress =
+          subtasks.length > 0
+            ? Math.round((completedCount / subtasks.length) * 100)
+            : 0;
 
-      return {
-        title: this.cleanTaskName(title),
-        subtasks,
-        progress,
-      };
-    });
+        return {
+          title: this.cleanTaskName(title),
+          subtasks,
+          progress,
+        };
+      },
+    );
 
     return this.enrichConstructionPhaseSubtasks(groups);
   }
@@ -385,11 +390,13 @@ export class JobParserService {
     if (!markdown) return [];
 
     const quotationSection = markdown.match(
-      /###\s*\*\*Output 1: Quotation Data[\s\S]*?```json\s*([\s\S]*?)\s*```/,
+      /###\s*\*\*Output 1: Quotation Data[\s\S]*?```(?:json)?\s*([\s\S]*?)\s*```/,
     );
 
     if (!quotationSection || !quotationSection[1]) {
-      const allJsonBlocks = markdown.matchAll(/```json\s*([\s\S]*?)\s*```/g);
+      const allJsonBlocks = markdown.matchAll(
+        /```(?:json)?\s*([\s\S]*?)\s*```/g,
+      );
 
       for (const match of allJsonBlocks) {
         if (match[1].includes('Categorized_Materials')) {
@@ -464,15 +471,54 @@ export class JobParserService {
       return null;
     }
 
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? null : date;
+    const trimmed = dateStr.trim();
+    let date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+
+    const m = trimmed.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    if (m) {
+      const day = parseInt(m[1], 10);
+      const monStr = m[2].toLowerCase().slice(0, 3);
+      const y = m[3];
+      const year = y.length === 2 ? 2000 + parseInt(y, 10) : parseInt(y, 10);
+      const months: Record<string, number> = {
+        jan: 0,
+        feb: 1,
+        mar: 2,
+        apr: 3,
+        may: 4,
+        jun: 5,
+        jul: 6,
+        aug: 7,
+        sep: 8,
+        oct: 9,
+        nov: 10,
+        dec: 11,
+      };
+      const month = months[monStr];
+      if (month !== undefined && year >= 1900 && year < 2100) {
+        date = new Date(year, month, day);
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+
+    return null;
   }
 
   private formatDateToYYYYMMDD(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
-  private enrichConstructionPhaseSubtasks(groups: GroupedSubtask[]): GroupedSubtask[] {
+  private enrichConstructionPhaseSubtasks(
+    groups: GroupedSubtask[],
+  ): GroupedSubtask[] {
     if (!Array.isArray(groups) || groups.length === 0) {
       return groups;
     }
@@ -503,7 +549,9 @@ export class JobParserService {
     return groups.filter((g) => !isInvalidGroupTitle(g?.title));
   }
 
-  private parseDurationDays(durationStr: string | undefined | null): number | null {
+  private parseDurationDays(
+    durationStr: string | undefined | null,
+  ): number | null {
     const raw = String(durationStr ?? '').trim();
     if (!raw) {
       return null;

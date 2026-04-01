@@ -1541,38 +1541,40 @@ export class ReportService {
 
       const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n([\s\S]*?)(?:\n\s*\n|$)/i);
       if (quotationDataMatch && quotationDataMatch[1]) {
-        try {
-          const rawQuotationData = String(quotationDataMatch[1]).trim();
-          const withoutCodeFence = rawQuotationData
-            .replace(/^```(?:json)?\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .trim();
-          const jsonBlockMatch = withoutCodeFence.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-          const jsonPayload = jsonBlockMatch ? jsonBlockMatch[1] : withoutCodeFence;
-          const quotationData = JSON.parse(jsonPayload);
-          const materialCost = quotationData.materialCost || 0;
-          const laborCost = quotationData.laborCost || 0;
-          const generalConditions = quotationData.generalConditions || 0;
-          const permitsAdminFees = quotationData.permitsAdminFees || 0;
-          const insuranceBonds = quotationData.insuranceBonds || 0;
-          const taxes = quotationData.taxes || 0;
-          const suggestedBid = quotationData.suggestedBid || 0;
-          const suggestedMarketBid = quotationData.suggestedMarketBid || 0;
-          const costPerSqFt = quotationData.costPerSqFt || 0;
+        const rawQuotationData = String(quotationDataMatch[1]).trim();
+        const withoutCodeFence = rawQuotationData
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim();
+        const jsonBlockMatch = withoutCodeFence.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        const jsonPayload = jsonBlockMatch?.[1];
+        if (jsonPayload) {
+          try {
+            const quotationData = JSON.parse(jsonPayload);
+            const materialCost = quotationData.materialCost || 0;
+            const laborCost = quotationData.laborCost || 0;
+            const generalConditions = quotationData.generalConditions || 0;
+            const permitsAdminFees = quotationData.permitsAdminFees || 0;
+            const insuranceBonds = quotationData.insuranceBonds || 0;
+            const taxes = quotationData.taxes || 0;
+            const suggestedBid = quotationData.suggestedBid || 0;
+            const suggestedMarketBid = quotationData.suggestedMarketBid || 0;
+            const costPerSqFt = quotationData.costPerSqFt || 0;
 
-          return {
-            materialCost,
-            laborCost,
-            generalConditions,
-            permitsAdminFees,
-            insuranceBonds,
-            taxes,
-            suggestedBid,
-            suggestedMarketBid,
-            costPerSqFt,
-          };
-        } catch (error) {
-          console.error('Failed to parse Quotation Data JSON:', error);
+            return {
+              materialCost,
+              laborCost,
+              generalConditions,
+              permitsAdminFees,
+              insuranceBonds,
+              taxes,
+              suggestedBid,
+              suggestedMarketBid,
+              costPerSqFt,
+            };
+          } catch (error) {
+            console.error('Failed to parse Quotation Data JSON:', error);
+          }
         }
       }
 
