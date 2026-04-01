@@ -24,6 +24,7 @@ import { UserAddressStoreService } from '../services/UserAddressStoreService';
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`;
@@ -89,7 +90,9 @@ export class AuthService {
     return payload?.exp ?? null;
   }
 
-  private async refreshWithTimeout(timeoutMs: number = this.REFRESH_TIMEOUT_MS): Promise<void> {
+  private async refreshWithTimeout(
+    timeoutMs: number = this.REFRESH_TIMEOUT_MS,
+  ): Promise<void> {
     await Promise.race([
       firstValueFrom(this.refreshToken()),
       new Promise((_, reject) =>
@@ -109,7 +112,8 @@ export class AuthService {
       if (newToken) this.loadUserFromToken(newToken);
     } catch (err) {
       const isTimeout =
-        err instanceof Error && String(err.message).includes('Refresh token timeout');
+        err instanceof Error &&
+        String(err.message).includes('Refresh token timeout');
 
       if (isTimeout) {
         try {
@@ -120,8 +124,12 @@ export class AuthService {
             return;
           }
         } catch (retryErr) {
-          console.error('Session expired. Logging out.', retryErr);
-          this.logout();
+          // Startup timeout/retry timeout should not force logout.
+          // Keep session state and let normal request flow attempt refresh again.
+          console.warn(
+            'Cold-start refresh retry timed out; keeping session and continuing startup.',
+            retryErr,
+          );
           return;
         }
       }
@@ -135,13 +143,19 @@ export class AuthService {
       }
 
       console.error('Session expired. Logging out.', err);
-      this.logout();
+      this.logoutWithReason('refresh_invalid');
     }
   }
 
   private shouldForceLogoutOnRefreshFailure(error: unknown): boolean {
     if (!(error instanceof HttpErrorResponse)) return false;
     return error.status === 400 || error.status === 401 || error.status === 403;
+  }
+
+  private logoutWithReason(
+    reason: 'manual' | 'inactivity' | 'refresh_invalid' | 'token_invalid',
+  ): void {
+    this.logout(reason);
   }
 
   public startInactivityTimer(): void {
@@ -153,7 +167,7 @@ export class AuthService {
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
       if (this.isLoggedIn()) {
-        this.logout();
+        this.logoutWithReason('inactivity');
       }
     }, this.INACTIVITY_LIMIT);
   }
@@ -205,7 +219,7 @@ export class AuthService {
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');
-      this.logout();
+      this.logoutWithReason('token_invalid');
       return;
     }
 
@@ -372,9 +386,16 @@ export class AuthService {
     localStorage.setItem('userType', userType);
   }
 
-  logout(): void {
+  logout(
+    reason:
+      | 'manual'
+      | 'inactivity'
+      | 'refresh_invalid'
+      | 'token_invalid' = 'manual',
+  ): void {
     this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.LOGOUT_REASON_KEY, reason);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userType');
@@ -406,7 +427,7 @@ export class AuthService {
 
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
-      this.logout();
+      this.logoutWithReason('refresh_invalid');
       return throwError(() => new Error('No refresh token available.'));
     }
 
@@ -420,13 +441,13 @@ export class AuthService {
             this.loadUserFromToken(response.token);
             this.refreshTokenSubject.next(response);
           } else {
-            this.logout();
+            this.logoutWithReason('refresh_invalid');
             throw new Error('Invalid refresh token response');
           }
         }),
         catchError((err) => {
           if (this.shouldForceLogoutOnRefreshFailure(err)) {
-            this.logout();
+            this.logoutWithReason('refresh_invalid');
           }
           return throwError(() => err);
         }),

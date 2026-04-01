@@ -8,6 +8,7 @@ import { Subject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../authentication/auth.service';
 import { environment } from '../../../../environments/environment';
+import { shareReplay } from 'rxjs/operators';
 
 export interface AnalysisProgressUpdate {
   jobId: number;
@@ -30,12 +31,28 @@ export class SignalrService {
   public analysisData = new Subject<any>();
   public analysisEmailSent = new Subject<number>();
   private pingInterval: any;
+  private readonly analysisStateCacheTtlMs = 4000;
+  private analysisStateCache = new Map<
+    number,
+    { cachedAt: number; request$: Observable<any> }
+  >();
 
   constructor(private authService: AuthService, private http: HttpClient) {}
 
   public getAnalysisState(jobId: number): Observable<any> {
+    const key = Number(jobId);
+    const now = Date.now();
+    const cached = this.analysisStateCache.get(key);
+    if (cached && now - cached.cachedAt < this.analysisStateCacheTtlMs) {
+      return cached.request$;
+    }
+
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
-    return this.http.get<any>(`${baseUrl}/api/Jobs/${jobId}/analysis-state`);
+    const request$ = this.http
+      .get<any>(`${baseUrl}/api/Jobs/${jobId}/analysis-state`)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.analysisStateCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   public startConnection(): void {

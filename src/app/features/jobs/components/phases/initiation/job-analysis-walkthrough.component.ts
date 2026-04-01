@@ -29,6 +29,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
   private didAutoContinue = false;
   private analysisFinished = false;
+  private completionPollTicksWithoutEmail = 0;
+  private readonly maxCompletionPollTicksWithoutEmail = 6;
 
   private signalRSubscription: Subscription | null = null;
   private analysisDataSubscription: Subscription | null = null;
@@ -138,9 +140,20 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     });
 
     // Poll persisted state as a fallback when SignalR events are missed/reconnected
-    this.analysisStatePollingSubscription = interval(4000)
+    this.analysisStatePollingSubscription = interval(8000)
       .pipe(startWith(0))
       .subscribe(() => {
+        if (this.analysisFinished && !this.emailSent) {
+          this.completionPollTicksWithoutEmail += 1;
+          if (
+            this.completionPollTicksWithoutEmail >=
+            this.maxCompletionPollTicksWithoutEmail
+          ) {
+            this.analysisStatePollingSubscription?.unsubscribe();
+            this.analysisStatePollingSubscription = null;
+            return;
+          }
+        }
         this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
           if (!state) {
             return;
@@ -152,6 +165,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
               const data = JSON.parse(extractedDataJson);
               if (data?.emailSent === true) {
                 this.emailSent = true;
+                this.completionPollTicksWithoutEmail = 0;
               }
             } catch {
               // ignore parse errors; keep polling

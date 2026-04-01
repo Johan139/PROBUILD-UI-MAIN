@@ -10,7 +10,10 @@
       ></app-project-stage-stepper>
     }
     <!-- Stages Container -->
-    <div class="stage-content-wrapper">
+    <div
+      class="stage-content-wrapper stage-phase-shell"
+      [@jobPhaseTransition]="projectStage"
+      >
       @switch (projectStage) {
         <!-- 1. INITIATION -->
         @case ('INITIATION') {
@@ -86,7 +89,6 @@
           <app-phase-construction-live
             [projectDetails]="projectDetails"
             [liveStageTemplate]="liveStageView"
-            (back)="navigateTo('MOBILIZATION')"
             (discard)="confirmDiscardProject()"
             (proceed)="navigateTo('CLOSEOUT')"
             (documentsRequested)="openDocumentsDialog()"

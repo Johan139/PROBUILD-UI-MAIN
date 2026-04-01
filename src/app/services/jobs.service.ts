@@ -25,6 +25,12 @@ export class JobsService {
     { cachedAt: number; request$: Observable<any> }
   >();
 
+  private readonly jobDetailsCacheTtlMs = 30 * 1000;
+  private jobDetailsCache = new Map<
+    string,
+    { cachedAt: number; request$: Observable<any> }
+  >();
+
   constructor(private httpClient: HttpClient) {}
 
   createJob(jobForm: any, addressModel: any) {
@@ -108,7 +114,18 @@ export class JobsService {
   }
 
   getSpecificJob(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + '/Id/' + jobId);
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.jobDetailsCache.get(key);
+    if (cached && now - cached.cachedAt < this.jobDetailsCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/Id/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.jobDetailsCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   GetBillOfMaterials(jobId: any): Observable<any> {

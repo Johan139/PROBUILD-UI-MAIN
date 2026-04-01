@@ -41,6 +41,7 @@ declare const google: any;
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {
+  private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
   loginForm: FormGroup;
   environment = environment;
   showAlert: boolean = false;
@@ -87,6 +88,21 @@ export class LoginComponent {
         );
       }
     });
+
+    const logoutReason = localStorage.getItem(this.LOGOUT_REASON_KEY);
+    if (logoutReason === 'inactivity') {
+      this.showAlert = true;
+      this.showResendLink = false;
+      this.alertMessage = 'Your session expired due to inactivity. Please sign in again.';
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    } else if (logoutReason === 'refresh_invalid' || logoutReason === 'token_invalid') {
+      this.showAlert = true;
+      this.showResendLink = false;
+      this.alertMessage = 'Your session has expired. Please sign in again.';
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    } else if (logoutReason === 'manual') {
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    }
   }
 
   ngAfterViewInit() {

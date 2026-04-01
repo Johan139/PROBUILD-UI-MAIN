@@ -41,6 +41,7 @@ export class RecentProjectsWidgetComponent implements OnDestroy {
 
   private analysisProgressSubscription?: Subscription;
   private analysisStatePollingSubscription?: Subscription;
+  private projectsSubscription?: Subscription;
 
   constructor(
     private projectService: ProjectService,
@@ -51,18 +52,8 @@ export class RecentProjectsWidgetComponent implements OnDestroy {
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
   ) {
-    this.projectService.projects$.subscribe((projects) => {
+    this.projectsSubscription = this.projectService.projects$.subscribe((projects) => {
       this.projects = projects;
-
-      // Immediately fetch analysis state for any analyzing projects
-      const analyzingProjects = projects.filter(
-        (project) =>
-          project.status === 'ANALYZING' &&
-          (project.progress === undefined || project.progress === 0),
-      );
-      analyzingProjects.forEach((project) => {
-        this.fetchAnalysisState(project.jobId);
-      });
     });
 
     // SignalR Integration for Auto-Updates
@@ -79,17 +70,24 @@ export class RecentProjectsWidgetComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.projectsSubscription?.unsubscribe();
     this.analysisProgressSubscription?.unsubscribe();
     this.analysisStatePollingSubscription?.unsubscribe();
   }
 
   private startAnalysisStatePolling(): void {
-    this.analysisStatePollingSubscription = interval(5000)
+    this.analysisStatePollingSubscription = interval(15000)
       .pipe(startWith(0))
       .subscribe(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          return;
+        }
         const analyzingProjects = this.projects.filter(
           (project) => project.status === 'ANALYZING',
         );
+        if (analyzingProjects.length === 0) {
+          return;
+        }
 
         analyzingProjects.forEach((project) => {
           this.fetchAnalysisState(project.jobId);

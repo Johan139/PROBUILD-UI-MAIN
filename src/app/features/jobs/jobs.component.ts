@@ -12,6 +12,7 @@ import {
   inject,
   DestroyRef,
 } from '@angular/core';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { MatButton } from '@angular/material/button';
@@ -206,6 +207,17 @@ interface JobUiStateCache {
 ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
+  animations: [
+    trigger('jobPhaseTransition', [
+      transition('* => *', [
+        style({ opacity: 0, transform: 'translateY(8px)' }),
+        animate(
+          '260ms cubic-bezier(0.22, 1, 0.36, 1)',
+          style({ opacity: 1, transform: 'none' }),
+        ),
+      ]),
+    ]),
+  ],
 })
 export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -220,7 +232,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   projectDetails: any;
   projectStage: ProjectPhase = 'CONSTRUCTION_LIVE';
   private manualProjectStageOverride: ProjectPhase | null = null;
+  /** Rank of construction-live in lifecycle; blocks retrograde API updates once job is live. */
+  private readonly constructionLivePhaseRank = 8;
   isStageResolved: boolean = false;
+  /** Avoid re-running determineProjectStage on every store tick when status/job did not change (reduces jumpy phase swaps). */
+  private lastSyncedStageJobId: number | null = null;
+  private lastSyncedStageStatusKey = '';
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
   selectedPlace: google.maps.places.PlaceResult | null = null;
@@ -1423,7 +1440,25 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         const resolvedStatus =
           (this.projectDetails as any)?.status ?? (this.projectDetails as any)?.Status ?? '';
-        this.determineProjectStage(String(resolvedStatus));
+        const statusKey = String(resolvedStatus).trim().toUpperCase();
+
+        if (!Number.isFinite(currentJobId)) {
+          this.lastSyncedStageJobId = null;
+          this.lastSyncedStageStatusKey = '';
+        } else {
+          const jobChanged = this.lastSyncedStageJobId !== currentJobId;
+          const statusChanged = this.lastSyncedStageStatusKey !== statusKey;
+          if (jobChanged || statusChanged) {
+            this.lastSyncedStageJobId = currentJobId;
+            this.lastSyncedStageStatusKey = statusKey;
+            const raw = String(resolvedStatus || '').trim();
+            const statusForStage = raw || (jobChanged ? 'ANALYZING' : '');
+            if (statusForStage) {
+              this.determineProjectStage(statusForStage);
+            }
+          }
+        }
+
         this.hydrateJobUiStateFromCache(this.projectDetails?.jobId);
         this.syncScopeReviewDrafts();
         this.isStageResolved = true;
@@ -2788,6 +2823,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onBackToPreliminary() {
+      if (this.isPersistedConstructionLive()) {
+        this.snackBar.open(
+          'This project is live in construction. Earlier phases cannot be reopened.',
+          'Close',
+          { duration: 5000 },
+        );
+        return;
+      }
       this.manualProjectStageOverride = 'PRELIMINARY_SCOPE';
       this.projectStage = 'PRELIMINARY_SCOPE';
       this.stageDisplayMode = 'stage';
@@ -2805,8 +2848,105 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateJobStatus('LIVE');
   }
 
+  private getPersistedJobStatus(): string {
+    return String(this.projectDetails?.status ?? this.projectDetails?.Status ?? '').toUpperCase();
+  }
+
+  private isPersistedConstructionLive(): boolean {
+    const s = this.getPersistedJobStatus().replace(/-/g, '_');
+    return s === 'LIVE' || s === 'ACTIVE' || s === 'CONSTRUCTION_LIVE';
+  }
+
+  private statusToPhaseRank(status: string): number | null {
+    if (!status) return null;
+    const s = status.toUpperCase().replace(/-/g, '_');
+    const ranks: Record<string, number> = {
+      ANALYZING: 0,
+      INITIATION: 0,
+      NEW: 1,
+      DRAFT: 1,
+      PRELIMINARY: 1,
+      PRELIMINARY_SCOPE: 1,
+      DETAILED_TAKEOFF: 2,
+      CONTRACT_AWARD: 3,
+      PRE_CONSTRUCTION: 4,
+      BIDDING: 5,
+      INBOUND_BIDDING: 5,
+      BID_SOLICITATION: 5,
+      TRADE_AWARD: 6,
+      MOBILIZATION: 7,
+      LIVE: 8,
+      ACTIVE: 8,
+      CONSTRUCTION_LIVE: 8,
+      CLOSEOUT: 9,
+      CLOSURE: 9,
+      ARCHIVED: 9,
+      COMPLETED: 9,
+    };
+    return ranks[s] ?? null;
+  }
+
+  private isRetrogradeFromConstructionLive(targetStatus: string): boolean {
+    const rank = this.statusToPhaseRank(targetStatus);
+    if (rank === null) return false;
+    return rank < this.constructionLivePhaseRank;
+  }
+
+  /**
+   * After PATCH, GET /job can briefly return an older Status than we just saved.
+   * Merging that into the store makes `determineProjectStage` run again and jumps
+   * the UI backward (e.g. LIVE → Mobilization). Keep the optimistic status when
+   * it is strictly ahead of the payload we received.
+   */
+  private mergeJobDetailsTrustingForwardStatus(
+    optimisticStatus: string,
+    jobDetails: Record<string, unknown> | null | undefined,
+  ): void {
+    let merged: Record<string, unknown> = {
+      ...(this.projectDetails || {}),
+      ...(jobDetails || {}),
+    };
+    const optimisticRank = this.statusToPhaseRank(optimisticStatus);
+    const serverRank = this.statusToPhaseRank(
+      String(merged['status'] ?? merged['Status'] ?? ''),
+    );
+    if (
+      optimisticRank !== null &&
+      serverRank !== null &&
+      optimisticRank > serverRank
+    ) {
+      merged = {
+        ...merged,
+        status: optimisticStatus,
+        Status: optimisticStatus,
+      };
+    }
+    this.projectDetails = merged;
+    const finalStatus = String(merged['status'] ?? merged['Status'] ?? '');
+    this.syncStageTrackingFromStoreStatus(finalStatus);
+    this.store.setState({ projectDetails: this.projectDetails } as any);
+  }
+
+  private syncStageTrackingFromStoreStatus(status: string): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+    this.lastSyncedStageJobId = jobId;
+    this.lastSyncedStageStatusKey = String(status || '').trim().toUpperCase();
+  }
+
   private updateJobStatus(status: string) {
     if (!this.projectDetails?.jobId) return;
+
+    if (this.isPersistedConstructionLive() && this.isRetrogradeFromConstructionLive(status)) {
+      this.snackBar.open(
+        'This project is live in construction. Earlier phases cannot be reopened.',
+        'Close',
+        { duration: 5000 },
+      );
+      return;
+    }
 
     this.manualProjectStageOverride = null;
 
@@ -2821,16 +2961,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
             status,
             Status: status,
           };
+          this.syncStageTrackingFromStoreStatus(status);
           this.store.setState({ projectDetails: this.projectDetails } as any);
           this.determineProjectStage(status);
           this.prefetchPhaseData(status, String(jobId));
 
           this.jobsService.getSpecificJob(jobId).subscribe({
             next: (jobDetails) => {
-              this.projectDetails = { ...(this.projectDetails || {}), ...(jobDetails || {}) };
-              this.store.setState({ projectDetails: this.projectDetails } as any);
-              // Don't re-determine stage here - backend may return stale status
-              // The initial determineProjectStage(status) call already set correct stage
+              this.mergeJobDetailsTrustingForwardStatus(status, jobDetails);
             },
             error: (err) => {
               console.error('Failed to refresh job details after status update', err);
