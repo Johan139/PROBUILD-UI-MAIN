@@ -42,7 +42,6 @@ import {
 export class ProjectsTableComponent implements AfterViewInit, OnChanges {
   @Input() projects: Project[] = [];
   @Output() onView = new EventEmitter<number>();
-  @Output() onEdit = new EventEmitter<number>();
   @Output() onArchive = new EventEmitter<number>();
 
   displayedColumns: string[] = [
