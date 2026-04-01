@@ -55,7 +55,7 @@
   <div class="steps-list">
     @for (step of analysisSteps; track step) {
       <div class="step-card">
-        <button class="step-header" (click)="toggleSection(step.id)">
+        <div class="step-header">
           <div class="step-info-wrapper">
             <div
               class="step-status-icon"
@@ -103,14 +103,11 @@
             @if (isStepComplete(step.id)) {
               <span class="badge-done">Done</span>
             }
-            <lucide-angular
-              [img]="expandedSections.includes(step.id) ? ChevronUp : ChevronDown"
-              class="chevron"
-            ></lucide-angular>
           </div>
-        </button>
+        </div>
         <!-- Expanded Content -->
-        @if (expandedSections.includes(step.id)) {
+        <!-- Sections intentionally remain permanently closed until data is available -->
+        @if (false) {
           <div class="step-content">
             <!-- Metadata Content -->
             @if (step.id === 'metadata') {
@@ -123,8 +120,8 @@
                       }}</label>
                       <p class="detail-value">{{ metadata[key] }}</p>
                     </div>
-                  }
-                </div>
+        }
+      </div>
               </div>
             }
             <!-- Rooms Content -->

@@ -1,4 +1,3 @@
-
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { JobAnalysisWalkthroughComponent } from './job-analysis-walkthrough.component';
 
