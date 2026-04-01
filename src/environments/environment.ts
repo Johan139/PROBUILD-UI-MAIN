@@ -1,4 +1,6 @@
 export const environment = {
+  /** Max wait for POST /Account/refresh-token (RxJS timeout). */
+  refreshTokenRequestTimeoutMs: 10_000,
   BACKEND_URL:
     'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/api',
   SIGNALR_URL:

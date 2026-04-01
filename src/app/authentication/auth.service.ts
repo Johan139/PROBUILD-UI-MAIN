@@ -40,7 +40,9 @@ export class AuthService {
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private inactivityPauseSources = new Set<string>();
   /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
-  private readonly REFRESH_TIMEOUT_MS = 10000;
+  private readonly refreshTimeoutMs =
+    environment.refreshTokenRequestTimeoutMs ?? 10_000;
+  private lastGetTokenRefreshFailureLogAt = 0;
   private readonly REFRESH_RETRY_COOLDOWN_MS = 30000;
   private readonly REFRESH_FAILURE_WINDOW_MS = 60000;
   private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 3;
@@ -100,7 +102,7 @@ export class AuthService {
   }
 
   private async refreshWithTimeout(
-    timeoutMs: number = this.REFRESH_TIMEOUT_MS,
+    timeoutMs: number = this.refreshTimeoutMs,
   ): Promise<void> {
     await Promise.race([
       firstValueFrom(this.refreshToken()),
@@ -497,7 +499,7 @@ export class AuthService {
     return this.http
       .post(`${this.apiUrl}/refresh-token`, { refreshToken })
       .pipe(
-        timeout(this.REFRESH_TIMEOUT_MS),
+        timeout(this.refreshTimeoutMs),
         tap((response: any) => {
           if (response && response.token && response.refreshToken) {
             localStorage.setItem('accessToken', response.token);
@@ -553,7 +555,22 @@ export class AuthService {
         this.refreshRetryCooldownUntil = 0;
         return localStorage.getItem('accessToken');
       } catch (e) {
-        console.error('Refresh failed in getToken()', e);
+        const now = Date.now();
+        if (now - this.lastGetTokenRefreshFailureLogAt > 2500) {
+          this.lastGetTokenRefreshFailureLogAt = now;
+          const isTimeout =
+            e &&
+            typeof e === 'object' &&
+            (e as { name?: string }).name === 'TimeoutError';
+          if (isTimeout) {
+            console.warn(
+              'Token refresh timed out in getToken(); using previous access token until cooldown. If this persists, check API / refresh-token speed or environment.refreshTokenRequestTimeoutMs.',
+              e,
+            );
+          } else {
+            console.error('Refresh failed in getToken()', e);
+          }
+        }
         this.refreshRetryCooldownUntil =
           Date.now() + this.REFRESH_RETRY_COOLDOWN_MS;
         // Best effort fallback: keep using current token temporarily to avoid

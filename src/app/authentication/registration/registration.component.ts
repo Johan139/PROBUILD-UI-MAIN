@@ -460,7 +460,7 @@ export class RegistrationComponent implements OnInit {
         return;
       }
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
