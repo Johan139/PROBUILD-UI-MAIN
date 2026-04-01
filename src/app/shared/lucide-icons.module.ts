@@ -72,6 +72,8 @@ import {
   AlertTriangle,
   Rocket,
   CalendarDays,
+  RefreshCcw,
+  RefreshCw,
 } from 'lucide-angular';
 
 @NgModule({
@@ -148,6 +150,8 @@ import {
       Rocket,
       AlertTriangle,
       CalendarDays,
+      RefreshCcw,
+      RefreshCw,
     }),
   ],
   exports: [LucideAngularModule],
