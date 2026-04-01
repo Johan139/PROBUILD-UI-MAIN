@@ -1569,9 +1569,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.projectDetails = projectDetails;
         const currentJobId = Number(this.projectDetails?.jobId);
         if (Number.isFinite(currentJobId) && this.lastCurrencySeededJobId !== currentJobId) {
-          // Seed a neutral default once per job switch to avoid stale symbol carry-over.
-          // The report parser result will replace this as soon as summary data loads.
-          setDefaultCurrencySymbol('$');
+          // Seed from project/location context first so non-USD jobs render correctly
+          // even before the cost summary parser hydrates.
+          setDefaultCurrencySymbol(
+            this.resolveCurrencySymbolFromProjectDetails(this.projectDetails),
+          );
           this.lastCurrencySeededJobId = currentJobId;
         }
         const resolvedStatus =
@@ -1771,6 +1773,61 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       CLOSEOUT: 'CLOSEOUT',
     };
     return map[stage];
+  }
+
+  private resolveCurrencySymbolFromProjectDetails(details: any): string {
+    const parts = [
+      details?.currency,
+      details?.currencyCode,
+      details?.CurrencyCode,
+      details?.country,
+      details?.Country,
+      details?.countryCode,
+      details?.CountryCode,
+      details?.address,
+      details?.Address,
+      details?.formattedAddress,
+      details?.FormattedAddress,
+      details?.city,
+      details?.City,
+      details?.state,
+      details?.State,
+    ]
+      .filter((value) => value != null && String(value).trim().length > 0)
+      .map((value) => String(value).trim())
+      .join(' | ')
+      .toLowerCase();
+
+    if (!parts) return '$';
+
+    if (/\bzar\b|\brand\b/.test(parts)) return 'R';
+    if (/\bbwp\b|\bpula\b/.test(parts)) return 'P';
+    if (/\busd\b|\bdollar\b/.test(parts)) return '$';
+    if (/\beur\b|\beuro\b/.test(parts)) return '€';
+    if (/\bgbp\b|\bpound\b/.test(parts)) return '£';
+
+    if (
+      /\bsouth africa\b|\bjohannesburg\b|\bsandton\b|\bpretoria\b|\bcape town\b|\bdurban\b/.test(
+        parts,
+      )
+    ) {
+      return 'R';
+    }
+    if (/\bbotswana\b|\bgaborone\b/.test(parts)) {
+      return 'P';
+    }
+    if (/\bunited kingdom\b|\buk\b|\bengland\b|\blondon\b/.test(parts)) {
+      return '£';
+    }
+    if (
+      /\beurozone\b|\bgermany\b|\bfrance\b|\bspain\b|\bitaly\b|\bnetherlands\b|\bportugal\b|\bbelgium\b|\baustria\b/.test(
+        parts,
+      )
+    ) {
+      return '€';
+    }
+
+    return '$';
   }
 
   private nextProjectPhase(current: ProjectPhase): ProjectPhase | null {

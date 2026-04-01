@@ -1275,7 +1275,9 @@ export class ReportService {
 
       const parseCurrency = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
-        const match = cleaned.match(/-?(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)/i);
+        const match = cleaned.match(
+          /-?(?:\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\s*([\d,\s]+(?:\.\d+)?)/i,
+        );
         return match ? parseFloat(match[1].replace(/[\s,]/g, '')) : 0;
       };
 
@@ -1283,6 +1285,17 @@ export class ReportService {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
         const match = cleaned.match(/(\d+(?:\.\d+)?)\s*%/);
         return match ? parseFloat(match[1]) : 0;
+      };
+
+      const parseMoneyLikeCell = (raw: string): number => {
+        const cleaned = String(raw || '').replace(/\*\*/g, '').trim();
+        if (!cleaned) return 0;
+        const match = cleaned.match(
+          /-?(?:\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\s*([\d][\d,\s]*(?:\.\d+)?)/i,
+        );
+        if (!match) return 0;
+        const numeric = parseFloat(String(match[1]).replace(/[\s,]/g, ''));
+        return Number.isFinite(numeric) ? numeric : 0;
       };
 
       const extractPhaseItemTotalsFromAnyJsonBlock = (
@@ -1682,9 +1695,14 @@ export class ReportService {
           // Some report variants swap amount/% columns. Resolve by semantic token.
           // IMPORTANT: Only treat a cell as money if it actually contains a `$`.
           // This prevents CSI codes like `23 00 00` from becoming `$23.00`.
-          const moneyToken = valueCols.find((v) => /\$/.test(v)) || '';
+          const moneyToken =
+            valueCols.find((v) =>
+              /(?:\$|£|€|\bZAR\b|\bR\b|\bUSD\b|\bGBP\b|\bEUR\b|\bBWP\b|\bP\b)/i.test(v),
+            ) || '';
           const percentToken = valueCols.find((v) => /%/.test(v)) || '';
-          const amount = moneyToken ? parseCurrency(moneyToken) : 0;
+          const amount = moneyToken
+            ? parseCurrency(moneyToken)
+            : parseMoneyLikeCell(amountCol);
           const pctFromCols = parsePercentage(percentToken);
           const pctFromLabel = parsePercentage(rawLabel);
           const pct = pctFromCols > 0 ? pctFromCols : pctFromLabel;
