@@ -480,7 +480,6 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   get hasResolvedFinancialSummary(): boolean {
     return (
       !!this.scopeTotalsReady &&
-      !!this.moneyCurrencySymbol &&
       this.overallBudgetValue > 0
     );
   }

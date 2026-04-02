@@ -603,7 +603,6 @@ export class PhaseDetailedTakeoffComponent
   get hasResolvedFinancialSummary(): boolean {
     return (
       !!this.scopeTotalsReady &&
-      !!this.moneyCurrencySymbol &&
       this.overallBudgetValue > 0
     );
   }

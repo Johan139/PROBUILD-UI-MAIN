@@ -25,13 +25,27 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return token$.pipe(
     switchMap((token) => {
-      const authedReq = token
-        ? req.clone({
-            setHeaders: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        : req;
+      const getCorrelationId = (): string => {
+        const maybeCrypto = (globalThis as any)?.crypto;
+        if (maybeCrypto?.randomUUID) {
+          return maybeCrypto.randomUUID();
+        }
+        return `pb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      };
+
+      const correlationId =
+        req.headers.get('X-Correlation-Id') || getCorrelationId();
+
+      const headers: Record<string, string> = {
+        'X-Correlation-Id': correlationId,
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const authedReq = req.clone({
+        setHeaders: headers,
+      });
 
       return next(authedReq).pipe(
         catchError((error: any) => {

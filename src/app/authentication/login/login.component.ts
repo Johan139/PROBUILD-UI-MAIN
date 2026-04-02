@@ -109,6 +109,12 @@ export class LoginComponent implements OnDestroy {
   }
 
   ngAfterViewInit() {
+    const googleClientId = (environment as any).GOOGLE_CLIENT_ID;
+    if (!this.isValidGoogleClientId(googleClientId)) {
+      console.warn('Google Sign-In disabled: invalid GOOGLE_CLIENT_ID.');
+      return;
+    }
+
     this.gsiPollHandle = setInterval(() => {
       const googleLibLoaded =
         typeof window !== 'undefined' && (window as any).google?.accounts?.id;
@@ -124,8 +130,7 @@ export class LoginComponent implements OnDestroy {
         const w = window as any;
         if (!w[PB_GSI_ID_INIT_KEY]) {
           google.accounts.id.initialize({
-            client_id:
-              '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
+            client_id: googleClientId,
             callback: (response: any) => this.handleGoogleCredential(response),
             cancel_on_tap_outside: true,
             auto_select: false,
@@ -138,6 +143,13 @@ export class LoginComponent implements OnDestroy {
         this.rerenderGoogleButton(this.themeService.isDarkMode());
       }
     }, 250);
+  }
+
+  private isValidGoogleClientId(clientId: string | undefined | null): boolean {
+    const value = String(clientId || '').trim();
+    if (!value) return false;
+    if (value.includes('YOUR_GOOGLE_CLIENT_ID')) return false;
+    return value.endsWith('.apps.googleusercontent.com');
   }
 
   ngOnDestroy(): void {
