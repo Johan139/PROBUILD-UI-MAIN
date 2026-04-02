@@ -18,7 +18,11 @@ import {
   LevelFormat,
   Packer,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
+  WidthType,
 } from 'docx';
 import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
 import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
@@ -721,7 +725,8 @@ export class PhaseContractAwardComponent implements OnInit, OnChanges {
   }
 
   private async buildContractHtml(markdown: string): Promise<string> {
-    const parsed = await Promise.resolve(marked.parse(markdown) as string);
+    const normalizedMarkdown = this.prettifyContractMarkdown(markdown);
+    const parsed = await Promise.resolve(marked.parse(normalizedMarkdown) as string);
     const title = `${this.projectDetails?.projectName || 'Project'} Client Contract`;
 
     return `<!DOCTYPE html>
@@ -755,13 +760,21 @@ ${parsed}
   private async buildDocxBlobFromMarkdown(markdown: string): Promise<Blob> {
     const safeMarkdown = this.sanitizeForOpenXml(markdown);
     const lines = safeMarkdown.replace(/\r\n/g, '\n').split('\n');
-    const children: Paragraph[] = [];
+    const children: Array<Paragraph | Table> = [];
 
-    for (const rawLine of lines) {
+    for (let index = 0; index < lines.length; index += 1) {
+      const rawLine = lines[index];
       const line = rawLine.trim();
 
       if (!line) {
         children.push(new Paragraph({ text: '' }));
+        continue;
+      }
+
+      const contractTable = this.extractContractDataTable(lines, index);
+      if (contractTable) {
+        children.push(...contractTable.nodes);
+        index = contractTable.nextIndex - 1;
         continue;
       }
 
@@ -853,11 +866,264 @@ ${parsed}
         .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
         .replace(/`([^`]+)`/g, '$1')
         .replace(/\*\*([^*]+)\*\*/g, '$1')
-        .replace(/__([^_]+)__/g, '$1')
         .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
         .replace(/_([^_]+)_/g, '$1')
         .replace(/~~([^~]+)~~/g, '$1'),
     );
+  }
+
+  private extractContractDataTable(
+    lines: string[],
+    startIndex: number,
+  ): { nodes: Array<Paragraph | Table>; nextIndex: number } | null {
+    const headingLine = lines[startIndex]?.trim();
+    const isContractDataHeading =
+      /^#{1,6}\s*CONTRACT DATA TABLE\s*$/i.test(headingLine) ||
+      /^CONTRACT DATA TABLE\s*$/i.test(headingLine) ||
+      /^\*\*CONTRACT DATA TABLE\*\*\s*$/i.test(headingLine);
+
+    if (!isContractDataHeading) {
+      return null;
+    }
+
+    let tableStartIndex = startIndex + 1;
+    while (tableStartIndex < lines.length && !lines[tableStartIndex].trim()) {
+      tableStartIndex += 1;
+    }
+
+    const bulletRows = this.extractContractDataBulletRows(lines, tableStartIndex);
+    if (bulletRows.rows.length) {
+      return {
+        nodes: [
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun(this.stripMarkdownInline(headingLine.replace(/^#{1,6}\s*/, ''))),
+            ],
+          }),
+          this.buildContractDataDocxTable(bulletRows.rows),
+        ],
+        nextIndex: bulletRows.nextIndex,
+      };
+    }
+
+    const tableLines: string[] = [];
+    let cursor = tableStartIndex;
+    while (cursor < lines.length && /^\s*\|.*\|\s*$/.test(lines[cursor])) {
+      tableLines.push(lines[cursor]);
+      cursor += 1;
+    }
+
+    const rows = this.parseMarkdownTableRows(tableLines);
+    if (!rows.length) {
+      return null;
+    }
+
+    return {
+      nodes: [
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [
+            new TextRun(this.stripMarkdownInline(headingLine.replace(/^#{1,6}\s*/, ''))),
+          ],
+        }),
+        this.buildContractDataDocxTable(rows),
+      ],
+      nextIndex: cursor,
+    };
+  }
+
+  private parseMarkdownTableRows(tableLines: string[]): string[][] {
+    if (tableLines.length < 3) {
+      return [];
+    }
+
+    const rows = tableLines
+      .map((line) => this.parseMarkdownTableRow(line))
+      .filter((row) => row.length >= 2);
+
+    if (rows.length < 3) {
+      return [];
+    }
+
+    const separatorRowIndex = rows.findIndex(
+      (row) =>
+        row.length >= 2 &&
+        row.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, ''))),
+    );
+
+    if (separatorRowIndex !== 1) {
+      return [];
+    }
+
+    return rows.filter((_, index) => index !== separatorRowIndex);
+  }
+
+  private extractContractDataBulletRows(
+    lines: string[],
+    startIndex: number,
+  ): { rows: string[][]; nextIndex: number } {
+    const rows: string[][] = [];
+    let cursor = startIndex;
+
+    while (cursor < lines.length) {
+      const line = lines[cursor]?.trim();
+      if (!line) {
+        break;
+      }
+
+      const bulletMatch = line.match(/^[•●◦▪■\-*+]\s+(.+)$/);
+      if (!bulletMatch) {
+        break;
+      }
+
+      const content = bulletMatch[1].trim();
+      const keyValueMatch = content.match(
+        /^\*\*(.+?)\*\*\s*:\s*(.+)$|^\*(.+?)\*\s*:\s*(.+)$|^(.+?)\s*:\s*(.+)$/,
+      );
+
+      if (!keyValueMatch) {
+        break;
+      }
+
+      const label = (keyValueMatch[1] || keyValueMatch[3] || keyValueMatch[5] || '')
+        .trim();
+      const value = (keyValueMatch[2] || keyValueMatch[4] || keyValueMatch[6] || '')
+        .trim();
+
+      if (!label && !value) {
+        break;
+      }
+
+      rows.push([label, value]);
+      cursor += 1;
+    }
+
+    return { rows, nextIndex: cursor };
+  }
+
+  private buildContractDataDocxTable(rows: string[][]): Table {
+    return new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      rows: rows.map((row, index) =>
+        new TableRow({
+          children: [
+            new TableCell({
+              width: {
+                size: 35,
+                type: WidthType.PERCENTAGE,
+              },
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: this.stripMarkdownInline(row[0] || ''),
+                      bold: true,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: {
+                size: 65,
+                type: WidthType.PERCENTAGE,
+              },
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: this.stripMarkdownInline(row[1] || ''),
+                      bold: index === 0,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    });
+  }
+
+  private prettifyContractMarkdown(markdown: string): string {
+    if (!markdown?.trim()) {
+      return markdown;
+    }
+
+    const normalized = markdown.replace(/\r\n/g, '\n');
+    const lines = normalized.split('\n');
+    const output: string[] = [];
+
+    let index = 0;
+    while (index < lines.length) {
+      const currentLine = lines[index];
+      const trimmedLine = currentLine.trim();
+
+      const isContractDataHeading =
+        /^#{0,6}\s*CONTRACT DATA TABLE\s*$/i.test(trimmedLine) ||
+        /^\*\*CONTRACT DATA TABLE\*\*\s*$/i.test(trimmedLine);
+
+      if (!isContractDataHeading) {
+        output.push(currentLine);
+        index += 1;
+        continue;
+      }
+
+      output.push(currentLine);
+      index += 1;
+
+      while (index < lines.length && !lines[index].trim()) {
+        output.push(lines[index]);
+        index += 1;
+      }
+
+      const tableLines: string[] = [];
+      while (index < lines.length && /^\s*\|.*\|\s*$/.test(lines[index])) {
+        tableLines.push(lines[index]);
+        index += 1;
+      }
+
+      const converted = this.convertMarkdownTableToDefinitionList(tableLines);
+      if (converted.length) {
+        output.push(...converted);
+      } else {
+        output.push(...tableLines);
+      }
+    }
+
+    return output.join('\n');
+  }
+
+  private convertMarkdownTableToDefinitionList(tableLines: string[]): string[] {
+    const rows = this.parseMarkdownTableRows(tableLines);
+    const dataRows = rows.slice(1).filter((row) => row[0] || row[1]);
+    if (!dataRows.length) {
+      return [];
+    }
+
+    return dataRows.flatMap((row) => {
+      const label = row[0].replace(/\s+/g, ' ').trim();
+      const value = row[1].replace(/\s+/g, ' ').trim();
+      if (!label && !value) {
+        return [];
+      }
+
+      return [`- **${label}:** ${value}`];
+    });
+  }
+
+  private parseMarkdownTableRow(line: string): string[] {
+    return line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
   }
 
   private ensureExtension(
