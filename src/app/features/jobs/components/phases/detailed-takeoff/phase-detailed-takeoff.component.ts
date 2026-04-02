@@ -101,6 +101,7 @@ export class PhaseDetailedTakeoffComponent
   @Input() scopeCostSummary: any = null;
   @Input() scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   @Input() scopeTotalProjectCost: number | null = null;
+  @Input() scopeTotalsReady = false;
   @Input() bidNetProfitMarginPercent: number | null = null;
   @Input() bidTotalPrice: number | null = null;
   @Input() liveStageTemplate: TemplateRef<any> | null = null;
@@ -600,7 +601,17 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get hasResolvedFinancialSummary(): boolean {
-    return !!this.loadedCostSummary;
+    return (
+      !!this.scopeTotalsReady &&
+      !!this.moneyCurrencySymbol &&
+      this.overallBudgetValue > 0
+    );
+  }
+
+  get moneyCurrencySymbol(): string | undefined {
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const sym = (summary as any)?.currencySymbol;
+    return sym ? String(sym) : undefined;
   }
 
   private normalizeHighlightLabel(label: string): string {

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { marked } from 'marked';
@@ -29,6 +30,26 @@ export class ReportService {
       return;
     }
     this.bomResultsCache.clear();
+  }
+
+  /**
+   * Single HTTP fetch of processing results, then populate the BOM cache used by
+   * getDetailedCostSummary / getExecutiveSummaryData so they do not each trigger another GET.
+   */
+  async primeBomResultsFromNetwork(jobId: string): Promise<any[] | null> {
+    const key = String(jobId || '').trim();
+    if (!key) {
+      return null;
+    }
+    this.bomResultsCache.delete(key);
+    const results = await firstValueFrom(
+      this.jobsService.GetBillOfMaterials(jobId, true),
+    );
+    const normalized = Array.isArray(results)
+      ? this.sortBomResultsNewestFirst(results)
+      : null;
+    this.bomResultsCache.set(key, { cachedAt: Date.now(), results: normalized });
+    return normalized;
   }
 
   private sortBomResultsNewestFirst(results: any[]): any[] {
@@ -1003,9 +1024,17 @@ export class ReportService {
         if (/\bGBP\b/i.test(raw)) return '£';
         if (/\bEUR\b/i.test(raw)) return '€';
 
-        // If ISO markers are absent, infer from extracted report location.
-        // We intentionally check for location before symbol fallback so
-        // location-driven reports still get the correct display currency.
+        // If ISO markers are absent, prefer seeing explicit amount/symbol markers first.
+        // This avoids incorrectly returning Rand just because the report text contains
+        // South Africa keywords somewhere.
+        if (/€\s*\d/.test(raw) || /\d\s*€/.test(raw)) return '€';
+        if (/£\s*\d/.test(raw) || /\d\s*£/.test(raw)) return '£';
+        if (/\$\s*\d/.test(raw) || /\d\s*\$/.test(raw)) return '$';
+
+        // South African Rand reports often include "R 12,345" and VAT references.
+        if (/\bR\s*\d{1,3}(?:[\s,]\d{3})*(?:\.\d+)?\b/.test(raw)) return 'R';
+
+        // If no symbol markers were found, infer from extracted report location.
         const southAfricaLocationHints = [
           'south africa',
           'johannesburg',
@@ -1014,14 +1043,10 @@ export class ReportService {
           'cape town',
           'durban',
         ];
-        if (southAfricaLocationHints.some((hint) => normalized.includes(hint))) {
-          return 'R';
-        }
+        if (southAfricaLocationHints.some((hint) => normalized.includes(hint))) return 'R';
 
         const ukLocationHints = ['united kingdom', ' uk ', ' england', ' london'];
-        if (ukLocationHints.some((hint) => normalized.includes(hint))) {
-          return '£';
-        }
+        if (ukLocationHints.some((hint) => normalized.includes(hint))) return '£';
 
         const euroLocationHints = [
           'eurozone',
@@ -1034,16 +1059,7 @@ export class ReportService {
           'belgium',
           'austria',
         ];
-        if (euroLocationHints.some((hint) => normalized.includes(hint))) {
-          return '€';
-        }
-
-        // Fall back to symbol detection.
-        if (/€\s*\d/.test(raw) || /\d\s*€/.test(raw)) return '€';
-        if (/£\s*\d/.test(raw) || /\d\s*£/.test(raw)) return '£';
-
-        // South African Rand reports often include "R 12,345" and VAT references.
-        if (/\bR\s*\d{1,3}(?:[\s,]\d{3})*(?:\.\d+)?\b/.test(raw)) return 'R';
+        if (euroLocationHints.some((hint) => normalized.includes(hint))) return '€';
 
         // Default to USD symbol (also used in several existing reports).
         return '$';

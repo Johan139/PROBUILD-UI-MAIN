@@ -26,6 +26,7 @@ import { UserAddressStoreService } from '../services/UserAddressStoreService';
 })
 export class AuthService {
   private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
+  private isLogoutInProgress = false;
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`;
@@ -462,6 +463,9 @@ export class AuthService {
       | 'refresh_invalid'
       | 'token_invalid' = 'manual',
   ): void {
+    if (this.isLogoutInProgress) return;
+    this.isLogoutInProgress = true;
+    this.inactivityPauseSources.clear();
     this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(this.LOGOUT_REASON_KEY, reason);
@@ -481,7 +485,21 @@ export class AuthService {
     this.currentUserSubject.next(null);
     this.resetRefreshAuthFailureState();
 
-    this.router.navigate(['/login']);
+    const shouldHardReload =
+      reason === 'inactivity' ||
+      reason === 'refresh_invalid' ||
+      reason === 'token_invalid';
+
+    // Hard reload prevents any in-flight UI loaders/spinners from getting
+    // stuck in an authenticated state after session expiry.
+    if (isPlatformBrowser(this.platformId) && shouldHardReload) {
+      window.location.replace('/login');
+      return;
+    }
+
+    void this.router.navigate(['/login']).finally(() => {
+      this.isLogoutInProgress = false;
+    });
   }
 
   refreshToken(timeoutOverrideMs?: number): Observable<any> {

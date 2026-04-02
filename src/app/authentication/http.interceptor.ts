@@ -8,7 +8,7 @@ import {
 } from '@angular/common/http';
 import { PLATFORM_ID, inject } from '@angular/core';
 import { from, Observable, of, throwError } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (
@@ -25,11 +25,6 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return token$.pipe(
     switchMap((token) => {
-      if (isBrowser && authService.isLoggedIn()) {
-        // Treat active API traffic as user activity to avoid false inactivity logouts.
-        authService.resetInactivityTimer();
-      }
-
       const authedReq = token
         ? req.clone({
             setHeaders: {
@@ -39,11 +34,6 @@ export const authInterceptor: HttpInterceptorFn = (
         : req;
 
       return next(authedReq).pipe(
-        tap(() => {
-          if (isBrowser && authService.isLoggedIn()) {
-            authService.resetInactivityTimer();
-          }
-        }),
         catchError((error: any) => {
           const isAuthEndpoint =
             authedReq.url.includes('/login') ||
@@ -57,6 +47,20 @@ export const authInterceptor: HttpInterceptorFn = (
             !isAuthEndpoint &&
             !hasRetried
           ) {
+            // Prevent refresh attempts after logout.
+            // When inactivity/logout fires, in-flight requests can still return 401.
+            // Without this guard the interceptor keeps trying refresh, which can
+            // leave the app in a half-logged-out / hung state.
+            const hasRefreshToken =
+              isBrowser && !!localStorage.getItem('refreshToken');
+            if (!authService.isLoggedIn() || !hasRefreshToken) {
+              // Session is already effectively dead; force a clean logout so
+              // the app doesn't keep failing requests and "hang" in an
+              // authenticated UI state.
+              authService.logout('token_invalid');
+              return throwError(() => error);
+            }
+
             return authService.refreshToken().pipe(
               switchMap((tokenResponse: any) => {
                 if (!tokenResponse || !tokenResponse.token) {

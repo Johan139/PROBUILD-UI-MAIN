@@ -63,6 +63,7 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   @Input() scopeCostSummary: any = null;
   @Input() scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   @Input() scopeTotalProjectCost: number | null = null;
+  @Input() scopeTotalsReady = false;
   @Input() bidNetProfitMarginPercent: number | null = null;
   @Input() bidTotalPrice: number | null = null;
   @Input() timelineGroups: TimelineGroup[] = [];
@@ -107,6 +108,12 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     private readonly reportService: ReportService,
     private readonly jobsService: JobsService,
   ) {}
+
+  get moneyCurrencySymbol(): string | undefined {
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const sym = (summary as any)?.currencySymbol;
+    return sym ? String(sym) : undefined;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['projectDetails']) {
@@ -471,7 +478,11 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   }
 
   get hasResolvedFinancialSummary(): boolean {
-    return !!(this.scopeCostSummary || this.loadedCostSummary);
+    return (
+      !!this.scopeTotalsReady &&
+      !!this.moneyCurrencySymbol &&
+      this.overallBudgetValue > 0
+    );
   }
 
   get spentToDate(): number {
