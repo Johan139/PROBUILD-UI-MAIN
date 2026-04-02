@@ -10,7 +10,10 @@
       ></app-project-stage-stepper>
     }
     <!-- Stages Container -->
-    <div class="stage-content-wrapper">
+    <div
+      class="stage-content-wrapper stage-phase-shell"
+      [@jobPhaseTransition]="projectStage"
+      >
       @switch (projectStage) {
         <!-- 1. INITIATION -->
         @case ('INITIATION') {
@@ -28,7 +31,7 @@
             [liveStageTemplate]="liveStageView"
             [scopeCostSummary]="scopeCostSummary"
             [scopeBomTotals]="scopeBomTotals"
-            [scopeTotalProjectCost]="totalProjectCost"
+            [scopeTotalProjectCost]="scopeReviewOverallBudgetValue"
             [bidNetProfitMarginPercent]="bidNetProfitMarginPercent"
             [bidTotalPrice]="clientBidPrice"
             [timelineGroups]="timelineGroups"
@@ -86,7 +89,6 @@
           <app-phase-construction-live
             [projectDetails]="projectDetails"
             [liveStageTemplate]="liveStageView"
-            (back)="navigateTo('MOBILIZATION')"
             (discard)="confirmDiscardProject()"
             (proceed)="navigateTo('CLOSEOUT')"
             (documentsRequested)="openDocumentsDialog()"
@@ -109,7 +111,7 @@
             [isProjectOwner]="isProjectOwner"
             [scopeCostSummary]="scopeCostSummary"
             [scopeBomTotals]="scopeBomTotals"
-            [scopeTotalProjectCost]="totalProjectCost"
+            [scopeTotalProjectCost]="scopeReviewOverallBudgetValue"
             [bidNetProfitMarginPercent]="bidNetProfitMarginPercent"
             [bidTotalPrice]="clientBidPrice"
             (overallBudgetClick)="openOverallBudgetDialog()"
@@ -406,6 +408,11 @@ More Actions
       [liveProjectsCount]="liveProjectsCount"
       [biddingProjectsCount]="biddingProjectsCount"
       [projectDetails]="projectDetails"
+      [scopeCostSummary]="scopeCostSummary"
+      [scopeBomTotals]="scopeBomTotals"
+      [scopeTotalProjectCost]="scopeReviewOverallBudgetValue"
+      [bidNetProfitMarginPercent]="bidNetProfitMarginPercent"
+      [bidTotalPrice]="clientBidPrice"
       [isLoading]="isLoading"
       [startDateDisplay]="startDateDisplay"
       [forecast]="store.getState().forecast"

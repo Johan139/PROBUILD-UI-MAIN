@@ -49,13 +49,6 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   filteredProjects: Project[] = [];
   projectFilter: 'all' | 'BIDDING' | 'LIVE' | 'DRAFT' | 'FAILED' = 'all';
   projectView: 'grid' | 'list' = 'grid';
-  jobDisplayedColumns: string[] = [
-    'project',
-    'created',
-    'progress',
-    'status',
-    'actions',
-  ];
 
   biddingProjectsCount = 0;
   liveProjectsCount = 0;
@@ -64,6 +57,8 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
 
   private analysisProgressSubscription?: Subscription;
   private analysisStatePollingSubscription?: Subscription;
+  private projectsSubscription?: Subscription;
+  private loadingSubscription?: Subscription;
 
   constructor(
     private router: Router,
@@ -76,22 +71,12 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.projectService.projects$.subscribe((projects) => {
+    this.projectsSubscription = this.projectService.projects$.subscribe((projects) => {
       this.projects = projects;
       this.updateCounts();
       this.setProjectFilter(this.projectFilter);
-
-      // Immediately fetch analysis state for any analyzing projects
-      const analyzingProjects = projects.filter(
-        (project) =>
-          project.status === 'ANALYZING' &&
-          (project.progress === undefined || project.progress === 0),
-      );
-      analyzingProjects.forEach((project) => {
-        this.fetchAnalysisState(project.jobId);
-      });
     });
-    this.projectService.isLoading.subscribe(
+    this.loadingSubscription = this.projectService.isLoading.subscribe(
       (isLoading) => (this.isLoading = isLoading),
     );
     this.projectService.loadProjects();
@@ -110,6 +95,8 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.projectsSubscription?.unsubscribe();
+    this.loadingSubscription?.unsubscribe();
     this.analysisProgressSubscription?.unsubscribe();
     this.analysisStatePollingSubscription?.unsubscribe();
   }
@@ -137,12 +124,18 @@ export class MyProjectsComponent implements OnInit, OnDestroy {
   }
 
   private startAnalysisStatePolling(): void {
-    this.analysisStatePollingSubscription = interval(5000)
+    this.analysisStatePollingSubscription = interval(15000)
       .pipe(startWith(0))
       .subscribe(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          return;
+        }
         const analyzingProjects = this.projects.filter(
           (project) => project.status === 'ANALYZING',
         );
+        if (analyzingProjects.length === 0) {
+          return;
+        }
 
         analyzingProjects.forEach((project) => {
           this.signalrService

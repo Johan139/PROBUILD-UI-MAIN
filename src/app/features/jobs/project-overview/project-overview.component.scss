@@ -81,7 +81,7 @@
   margin-bottom: var(--space-6);
 
   @media (min-width: 768px) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 }
 
@@ -89,6 +89,7 @@
   @include u.card-style;
   padding: var(--space-6);
   background: var(--color-surface);
+  min-width: 0;
 }
 
 .detail-header {
@@ -132,8 +133,9 @@
 
 .detail-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-3);
   background-color: var(--color-surface-subtle);
   border-radius: var(--radius-lg);
@@ -149,6 +151,8 @@
   font-weight: var(--fw-medium);
   color: var(--color-text);
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
 
   &.truncate {
     @include u.clamp-lines(1);

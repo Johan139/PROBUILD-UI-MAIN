@@ -1,7 +1,11 @@
 import { Injectable, signal } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../authentication/auth.service';
 import { TourStep, NEW_PROJECT_TOUR } from './tour-steps';
+
+/** Persisted preference: do not clear on logout (see app logout). */
+export const ONBOARDING_STATUS_STORAGE_KEY = 'onboardingStatus';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +20,10 @@ export class OnboardingService {
   // Highlight Rect State
   highlightRect = signal<{ top: number; left: number; width: number; height: number } | null>(null);
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+  ) {
     // Listen for route changes to re-position or advance tour
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
@@ -24,6 +31,7 @@ export class OnboardingService {
       if (this.isActive()) {
         setTimeout(() => this.updateHighlight(), 500); // Wait for DOM render
       }
+      this.applyPromptVisibilityFromStorage();
     });
 
     // Resize listener to update highlight
@@ -37,19 +45,51 @@ export class OnboardingService {
     }
   }
 
-  // --- Initial Check ---
-  checkOnboardingStatus() {
-    if (typeof localStorage !== 'undefined') {
-      const status = localStorage.getItem('onboardingStatus');
-      if (!status) {
-        this.showPrompt.set(true);
-      }
+  /**
+   * Keeps the welcome prompt in sync with localStorage and auth.
+   * Only shows for logged-in users who have not skipped or completed onboarding.
+   */
+  applyPromptVisibilityFromStorage(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
     }
+
+    if (!this.authService.isLoggedIn()) {
+      this.showPrompt.set(false);
+      return;
+    }
+
+    const status = localStorage.getItem(ONBOARDING_STATUS_STORAGE_KEY);
+    if (status === 'skipped' || status === 'completed') {
+      this.showPrompt.set(false);
+      return;
+    }
+
+    if (!status) {
+      this.showPrompt.set(true);
+      return;
+    }
+
+    this.showPrompt.set(false);
+  }
+
+  /** @deprecated Use applyPromptVisibilityFromStorage — kept for any external callers */
+  checkOnboardingStatus(): void {
+    this.applyPromptVisibilityFromStorage();
+  }
+
+  /** Clear saved choice and show the welcome prompt again (Help → Reset Onboarding). */
+  resetOnboarding(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(ONBOARDING_STATUS_STORAGE_KEY);
+    }
+    this.stopTour();
+    this.showPrompt.set(true);
   }
 
   skipOnboarding() {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('onboardingStatus', 'skipped');
+      localStorage.setItem(ONBOARDING_STATUS_STORAGE_KEY, 'skipped');
     }
     this.showPrompt.set(false);
     // Could trigger "Help" icon highlight logic in UI component
@@ -57,7 +97,7 @@ export class OnboardingService {
 
   startTour(tourId: string = 'new-project') {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('onboardingStatus', 'completed');
+      localStorage.setItem(ONBOARDING_STATUS_STORAGE_KEY, 'completed');
     }
     this.showPrompt.set(false);
 

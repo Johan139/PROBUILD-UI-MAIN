@@ -29,6 +29,10 @@ import { JobTeamComponent } from '../../job-team/job-team.component';
 import { JobUser } from '../../../job-assignment/job-assignment.model';
 import { firstValueFrom } from 'rxjs';
 import { MoneyPipe, MoneyInTextPipe, formatMoney } from '../../../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  resolveDisplayedProjectAreaSqFt,
+} from '../../../utils/building-area-normalize.util';
 
 type ScopeTab = 'overview' | 'timeline' | 'blueprints';
 
@@ -299,7 +303,7 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
 
     // Only match comma-grouped currency to avoid re-formatting already formatted values.
     // Examples: $1,234.56 | $12,345 | $1,234,567.89
-    return text.replace(/\$((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/g, (match, amountStr) => {
+    return text.replace(/(?:\$|\bZAR\b|\bR\b)\s*((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/gi, (match, amountStr) => {
       const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
       if (!isNaN(numericValue) && numericValue > 0) {
         return formatMoney(numericValue, true, 2);
@@ -322,7 +326,7 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     const source = String(text || '');
     if (!source) return source;
     const replacement = this.formatCurrency(amount);
-    const currencyPattern = /\$\s*\d[\d,\s]*(?:\.\d{1,2})?/;
+    const currencyPattern = /(?:\$|\bZAR\b|\bR\b)\s*\d[\d,\s]*(?:\.\d{1,2})?/i;
     return currencyPattern.test(source)
       ? source.replace(currencyPattern, replacement)
       : source;
@@ -330,8 +334,18 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
 
   private formatCompactThousands(amount: number): string {
     const safe = Number(amount || 0);
-    if (safe <= 0) return '$0';
-    return `$${Math.round(safe / 1000)}k`;
+    if (safe <= 0) return formatMoney(0, true, 0);
+
+    if (safe >= 1_000_000) {
+      const millions = Math.round((safe / 1_000_000) * 100) / 100;
+      return `${formatMoney(millions, true, 2)}M`;
+    }
+
+    if (safe >= 1_000) {
+      return `${formatMoney(Math.round(safe / 1000), true, 0)}k`;
+    }
+
+    return formatMoney(safe, true, 0);
   }
 
   private get reconciledTotalProjectCost(): number {
@@ -430,10 +444,15 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
     const fromParent = Number(this.scopeTotalProjectCost || 0);
     if (fromParent > 0) return fromParent;
 
-    const totalProjectCost = Number(
-      this.scopeCostSummary?.suggestedBid || this.loadedCostSummary?.suggestedBid || 0,
-    );
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
+    if (reportGrandTotal > 0) return reportGrandTotal;
+
+    const totalProjectCost = Number(summary?.suggestedBid || 0);
     if (totalProjectCost > 0) return totalProjectCost;
+
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return marketBid;
 
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
@@ -449,6 +468,10 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
         0,
     );
     return fromProjectDetails > 0 ? fromProjectDetails : 0;
+  }
+
+  get hasResolvedFinancialSummary(): boolean {
+    return !!(this.scopeCostSummary || this.loadedCostSummary);
   }
 
   get spentToDate(): number {
@@ -470,13 +493,24 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
 
     const summary = this.scopeCostSummary || this.loadedCostSummary || null;
     const direct = Number(this.projectDetails?.bidPrice || 0);
+    const reportGrandTotalBidPrice = Number(summary?.reportGrandTotalBidPrice || 0);
     const marketBid = Number(summary?.suggestedMarketBid || 0);
     const projectCost = Number(summary?.suggestedBid || 0);
+    const fullyLoadedCost =
+      this.bidCostToBuild +
+      Number(summary?.overhead || 0) +
+      Number(summary?.contingency || 0) +
+      Number(summary?.escalation || 0) +
+      Number(summary?.taxes || 0);
+
+    // Prefer explicit client-facing bid totals over internal project-cost totals.
+    if (reportGrandTotalBidPrice > 0) return reportGrandTotalBidPrice;
+    if (marketBid > 0) return marketBid;
 
     // In some flows `projectDetails.bidPrice` is a per-sq-ft value (e.g. $215.50),
     // while the cards and popup expect total project dollars.
     // Only trust `projectDetails.bidPrice` if it looks consistent with the totals.
-    const comparisonBase = Math.max(projectCost, marketBid);
+    const comparisonBase = Math.max(projectCost, marketBid, fullyLoadedCost);
     if (direct > 0) {
       if (comparisonBase > 0) {
         if (direct >= comparisonBase * 0.5) return direct;
@@ -485,9 +519,15 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
       }
     }
 
-    if (projectCost > 0 || marketBid > 0) {
-      return Math.max(projectCost, marketBid);
+    // If we only have project cost and components, derive a client bid estimate.
+    if (fullyLoadedCost > 0 && projectCost > 0) {
+      const target = Math.max(fullyLoadedCost, projectCost * 1.1);
+      return Math.round(target * 100) / 100;
     }
+    if (fullyLoadedCost > 0) {
+      return Math.round(fullyLoadedCost * 100) / 100;
+    }
+
     const suggested = Number(
       summary?.suggestedBid ||
         summary?.suggestedMarketBid ||
@@ -639,10 +679,18 @@ export class PhasePreliminaryScopeComponent implements OnChanges {
   }
 
   get projectTotalArea(): number {
-    const intelligenceArea = Number(this.loadedBlueprintIntelligence?.underRoofArea || 0);
-    if (intelligenceArea > 0) return intelligenceArea;
-    const parsed = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return resolveDisplayedProjectAreaSqFt(
+      this.projectDetails?.buildingSize,
+      this.projectDetails?.projectSize,
+      this.loadedBlueprintIntelligence?.underRoofArea,
+    );
+  }
+
+  /** Plain integer for header / labels (no thousands separators). */
+  get projectTotalAreaHeaderText(): string {
+    const n = this.projectTotalArea;
+    if (!n || n <= 0) return 'N/A';
+    return formatWholeNumberNoGrouping(n);
   }
 
   get clientName(): string {

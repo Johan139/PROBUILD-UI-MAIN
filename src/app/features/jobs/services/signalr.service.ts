@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import {
   HubConnection,
   HubConnectionBuilder,
+  HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr';
 import { Subject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../authentication/auth.service';
 import { environment } from '../../../../environments/environment';
+import { shareReplay } from 'rxjs/operators';
 
 export interface AnalysisProgressUpdate {
   jobId: number;
@@ -29,32 +31,62 @@ export class SignalrService {
   public analysisProgress = new Subject<AnalysisProgressUpdate>();
   public analysisData = new Subject<any>();
   public analysisEmailSent = new Subject<number>();
-  private pingInterval: any;
+  private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private pingFailureLogged = false;
+  private readonly analysisStateCacheTtlMs = 4000;
+  private analysisStateCache = new Map<
+    number,
+    { cachedAt: number; request$: Observable<any> }
+  >();
 
   constructor(private authService: AuthService, private http: HttpClient) {}
 
   public getAnalysisState(jobId: number): Observable<any> {
+    const key = Number(jobId);
+    const now = Date.now();
+    const cached = this.analysisStateCache.get(key);
+    if (cached && now - cached.cachedAt < this.analysisStateCacheTtlMs) {
+      return cached.request$;
+    }
+
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
-    return this.http.get<any>(`${baseUrl}/api/Jobs/${jobId}/analysis-state`);
+    const request$ = this.http
+      .get<any>(`${baseUrl}/api/Jobs/${jobId}/analysis-state`)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.analysisStateCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   public startConnection(): void {
-    if (this.hubConnection && this.hubConnection.state === 'Connected') {
-      return;
+    if (this.hubConnection) {
+      const state = this.hubConnection.state;
+      if (
+        state === HubConnectionState.Connected ||
+        state === HubConnectionState.Connecting ||
+        state === HubConnectionState.Reconnecting
+      ) {
+        return;
+      }
     }
 
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
     const hubUrl = `${baseUrl}/hubs/progressHub`;
 
+    this.pingFailureLogged = false;
+
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
         accessTokenFactory: async () => {
-          const token = await this.authService.getToken();
+          // SignalR handshake should not block on token refresh retries/timeouts.
+          // Use currently stored token and let normal HTTP flow refresh in background.
+          const token = this.authService.getAccessTokenFast();
           return token || '';
         },
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
-      .configureLogging(LogLevel.Debug)
+      .configureLogging(
+        environment.production ? LogLevel.Warning : LogLevel.Information,
+      )
       .build();
 
     this.hubConnection.onreconnecting((error) =>
@@ -67,7 +99,13 @@ export class SignalrService {
         this.pingInterval = setInterval(() => {
           if (this.hubConnection.state === 'Connected') {
             this.hubConnection.invoke('Ping').catch((err) => {
-              console.warn('SignalR Ping failed:', err);
+              if (!this.pingFailureLogged) {
+                this.pingFailureLogged = true;
+                console.warn(
+                  'SignalR Ping failed (further Ping errors suppressed for this session):',
+                  err,
+                );
+              }
             });
           }
         }, 60000);

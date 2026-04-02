@@ -33,15 +33,54 @@ const preventColonBreaks = (text: string): string => {
 
 // Helper function to clean Unicode characters that cause issues in jsPDF
 const cleanTextForPDF = (text: string): string => {
-  return text
-    .replace(/CO₂/g, 'CO2') // Replace CO₂ with CO2
-    .replace(/₂/g, '2') // Replace any other subscript 2
-    .replace(/₁/g, '1') // Replace subscript 1
-    .replace(/₃/g, '3') // Replace subscript 3
-    .replace(/₄/g, '4') // Replace subscript 4
-    .replace(/₀/g, '0') // Replace subscript 0
-    .replace(/[^\x00-\x7F]/g, '?') // Replace any other non-ASCII chars with ?
-    .replace(/\?+/g, '?'); // Clean up multiple ?s
+  const source = String(text ?? '');
+
+  // 1) Replace common symbols with ASCII-friendly equivalents
+  // Currency symbols
+  const currencyNormalized = source
+    .replace(/£/g, 'GBP ')
+    .replace(/€/g, 'EUR ')
+    .replace(/¥/g, 'JPY ')
+    .replace(/₩/g, 'KRW ')
+    .replace(/₹/g, 'INR ')
+    .replace(/₽/g, 'RUB ')
+    .replace(/₺/g, 'TRY ')
+    .replace(/₫/g, 'VND ')
+    .replace(/₦/g, 'NGN ')
+    .replace(/₪/g, 'ILS ')
+    .replace(/฿/g, 'THB ')
+    .replace(/₴/g, 'UAH ')
+    .replace(/₱/g, 'PHP ')
+    .replace(/₲/g, 'PYG ')
+    .replace(/₡/g, 'CRC ');
+
+  // Units and superscripts/subscripts
+  const unitsNormalized = currencyNormalized
+    .replace(/m²/g, 'm2')
+    .replace(/m³/g, 'm3')
+    .replace(/²/g, '2')
+    .replace(/³/g, '3')
+    .replace(/CO₂/g, 'CO2')
+    .replace(/₀/g, '0')
+    .replace(/₁/g, '1')
+    .replace(/₂/g, '2')
+    .replace(/₃/g, '3')
+    .replace(/₄/g, '4')
+    .replace(/₅/g, '5')
+    .replace(/₆/g, '6')
+    .replace(/₇/g, '7')
+    .replace(/₈/g, '8')
+    .replace(/₉/g, '9');
+
+  // 2) Normalize diacritics (e.g. “é” -> “e”) so names/places don't become '?'
+  const diacriticsRemoved = unitsNormalized
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  // 3) Replace any remaining non-ASCII chars with '?'
+  return diacriticsRemoved
+    .replace(/[^ -]/g, '?')
+    .replace(/\?+/g, '?');
 };
 
 // Function to recursively clean table data

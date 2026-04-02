@@ -398,6 +398,11 @@ $line-item-columns: 1.8fr 0.5fr 0.6fr 0.7fr 0.7fr 40px;
     background: var(--color-surface);
   }
 
+  &.ng-dirty:not(:focus):not([readonly]) {
+    border-color: rgba(74, 144, 226, 0.4);
+    background: rgba(74, 144, 226, 0.08);
+  }
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -633,6 +638,36 @@ mat-form-field {
   &:disabled {
     background: var(--action-disabled-bg) !important;
     color: var(--action-disabled-text) !important;
+    cursor: not-allowed;
+  }
+}
+
+.btn-danger {
+  background: color-mix(in oklab, #dc3545 10%, transparent) !important;
+  color: #dc3545 !important;
+  border: 1px solid #dc3545 !important;
+  border-radius: var(--radius-md); // Make it slightly more rounded
+  font-weight: 600;
+  transition: all 0.15s ease;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+  }
+
+  &:hover {
+    background: color-mix(in oklab, #dc3545 20%, transparent) !important;
+  }
+
+  &:disabled {
+    background: var(--action-disabled-bg) !important;
+    color: var(--action-disabled-text) !important;
+    border-color: transparent !important;
     cursor: not-allowed;
   }
 }

@@ -7,6 +7,7 @@ import {
   ViewChild,
   DestroyRef,
   inject,
+  SimpleChanges,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -47,6 +48,11 @@ import { ArchiveService } from '../../archive/archive-service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MoneyPipe, MoneyInTextPipe } from '../../../shared/pipes/money.pipe';
 import { formatMoney } from '../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  parseAreaWithUnit,
+  resolveDisplayedProjectAreaSqFt,
+} from '../utils/building-area-normalize.util';
 @Component({
   selector: 'app-project-overview',
   standalone: true,
@@ -77,6 +83,15 @@ export class ProjectOverviewComponent {
   @Input() teamMemberCount: number = 0;
   @Input() timelineData: TimelineGroup[] = [];
   @Input() assignedTeamMembers: any[] = [];
+  @Input() scopeCostSummary: any = null;
+  @Input() scopeBomTotals: {
+    materialCost: number;
+    laborCost: number;
+    directSubtotal: number;
+  } | null = null;
+  @Input() scopeTotalProjectCost: number | null = null;
+  @Input() bidNetProfitMarginPercent: number | null = null;
+  @Input() bidTotalPrice: number | null = null;
 
   // Job Details & Weather Inputs
   @Input() projectDetails: any;
@@ -89,6 +104,7 @@ export class ProjectOverviewComponent {
   executiveSummaryExpanded = false;
   isSummaryLoading = false;
   private loadedExecutiveSummary: any = null;
+  private loadedCostSummary: any = null;
 
   @Output() jobArchived = new EventEmitter<number>();
 
@@ -131,6 +147,7 @@ export class ProjectOverviewComponent {
   bidPrice: number = 0;
   totalProjectCost: number = 0;
   costToBuild: number = 0;
+  isFinancialLoading: boolean = false;
   grossProfit: number = 0;
   profitMargin: number = 0;
   profitAtRisk: number = 0;
@@ -206,6 +223,7 @@ export class ProjectOverviewComponent {
 
   private localStorageKey = '';
   private projectStartDate: Date | null = null;
+  private lastProjectJobId: string | null = null;
 
   constructor(
     public measurementService: MeasurementService,
@@ -232,7 +250,17 @@ export class ProjectOverviewComponent {
     localStorage.setItem('tempUnit', unit);
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    const nextJobId = this.projectDetails?.jobId
+      ? String(this.projectDetails.jobId)
+      : null;
+    const projectChanged = !!nextJobId && nextJobId !== this.lastProjectJobId;
+
+    if (projectChanged) {
+      this.resetTransientOverviewState();
+      this.lastProjectJobId = nextJobId;
+    }
+
     if (this.projectDetails?.jobId) {
       this.localStorageKey = `project_overview_${this.projectDetails.jobId}`;
       this.loadProjectData();
@@ -240,9 +268,38 @@ export class ProjectOverviewComponent {
       // Initialize temp objects for editing
       this.tempProjectDetails = { ...this.projectDetails };
     }
-    if (this.timelineData) {
+    if (changes['timelineData'] || changes['projectDetails']) {
       this.processTimelineData();
     }
+  }
+
+  private resetTransientOverviewState(): void {
+    this.isFinancialLoading = true;
+    this.loadedCostSummary = null;
+    this.loadedExecutiveSummary = null;
+
+    this.activeValue = 0;
+    this.spentToDate = 0;
+    this.remainingBudget = 0;
+    this.bidPrice = 0;
+    this.totalProjectCost = 0;
+    this.costToBuild = 0;
+    this.grossProfit = 0;
+    this.profitMargin = 0;
+    this.profitAtRisk = 0;
+    this.baselineCost = 0;
+    this.overheadAndProfit = 0;
+    this.contingency = 0;
+    this.escalation = 0;
+    this.taxes = 0;
+
+    this.totalDuration = 0;
+    this.currentWeek = 0;
+    this.displayWeek = 1;
+    this.projectStartDate = null;
+    this.estimatedCompletionDate = null;
+    this.outlookTasks = [];
+    this.behindScheduleCount = 0;
   }
 
   private loadFromCache(): void {
@@ -284,11 +341,16 @@ export class ProjectOverviewComponent {
 
     const jobId = this.projectDetails.jobId;
 
+    // Prevent cached financial values from flashing while fresh totals load.
+    this.isFinancialLoading = true;
+
     this.isSummaryLoading = true;
     this.reportService
       .getExecutiveSummaryData(jobId)
       .then((summary) => {
         this.loadedExecutiveSummary = summary;
+        // Recompute timeline cards once summary timeline becomes available.
+        this.processTimelineData();
       })
       .catch(() => {
         this.loadedExecutiveSummary = null;
@@ -303,16 +365,17 @@ export class ProjectOverviewComponent {
       this.blueprintSheetCount = data.sheetCount;
       this.blueprintRoomCount = data.roomCount;
       this.blueprintRooms = data.rooms;
-      this.projectTotalArea =
-        data.underRoofArea && data.underRoofArea > 0 ? data.underRoofArea : null;
+      const areaSqFt = resolveDisplayedProjectAreaSqFt(
+        this.projectDetails?.buildingSize,
+        this.projectDetails?.projectSize,
+        data.underRoofArea,
+      );
+      this.projectTotalArea = areaSqFt > 0 ? areaSqFt : null;
 
       this.dimensionalAccuracy = data.dimensionalAccuracy || 0;
       this.completeness = data.completeness || 0;
       this.readability = data.readability || 0;
-      this.totalArea = this.blueprintRooms.reduce((sum, room) => {
-        const areaNum = parseFloat(room.area.replace(/[^0-9.]/g, ''));
-        return sum + (isNaN(areaNum) ? 0 : areaNum);
-      }, 0);
+      this.totalArea = this.computeRoomsTotalSqFt(this.blueprintRooms);
 
       this.saveToCache();
     });
@@ -495,15 +558,18 @@ export class ProjectOverviewComponent {
       error: (err) => console.error('Failed to load budget', err),
     });
 
-    this.reportService.getDetailedCostSummary(jobId).then((summary) => {
-      if (summary) {
-        this.costToBuild = Number(summary.directSubtotal || 0);
-        if (this.costToBuild <= 0) {
-          this.costToBuild =
-            Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
-        }
-        this.totalProjectCost = Number(summary.suggestedBid || 0);
-        const marketBid = Number(summary.suggestedMarketBid || 0);
+    this.reportService
+      .getDetailedCostSummary(jobId)
+      .then((summary) => {
+        this.loadedCostSummary = summary;
+        if (summary) {
+          this.costToBuild = Number(summary.directSubtotal || 0);
+          if (this.costToBuild <= 0) {
+            this.costToBuild =
+              Number(summary.materialCost || 0) + Number(summary.laborCost || 0);
+          }
+          this.totalProjectCost = Number(summary.suggestedBid || 0);
+          const marketBid = Number(summary.suggestedMarketBid || 0);
 
         // Align with preliminary semantics:
         // - Total Project Cost = suggestedBid
@@ -545,9 +611,16 @@ export class ProjectOverviewComponent {
         this.escalation = Number(summary.escalation || 0);
         this.taxes = Number(summary.taxes || 0);
 
-        this.calculateProfitMetrics();
-      }
-    });
+          this.calculateProfitMetrics();
+        }
+      })
+      .catch(() => {
+        this.loadedCostSummary = null;
+        // keep cached values; just stop loading state
+      })
+      .finally(() => {
+        this.isFinancialLoading = false;
+      });
 
     this.bidsService.getBidsForJob(jobId).subscribe({
       next: (bids) => {
@@ -603,11 +676,22 @@ export class ProjectOverviewComponent {
       },
       keyHighlights: Array.isArray(summary?.keyHighlights)
         ? summary.keyHighlights
-            .map((item: any) => ({
-              label: String(item?.label || ''),
-              value: String(item?.value || ''),
-              note: String(item?.note || ''),
-            }))
+            .map((item: any) => {
+              const label = String(item?.label || '');
+              const rawValue = String(item?.value || '');
+              const rawNote = String(item?.note || '');
+              const normalizedLabel = label
+                .toLowerCase()
+                .replace(/[*_`]/g, '')
+                .replace(/[^a-z0-9]+/g, '')
+                .trim();
+
+              return {
+                label,
+                value: this.formatMoneyInText(rawValue),
+                note: this.formatMoneyInText(rawNote),
+              };
+            })
             .filter((item: any) => item.label || item.value || item.note)
         : [],
       riskFactors: Array.isArray(summary?.riskFactors)
@@ -753,41 +837,101 @@ export class ProjectOverviewComponent {
   }
 
   get overallBudgetValue(): number {
-    const directTotal = Number(this.totalProjectCost || 0);
+    const fromScopeTotal = Number(this.scopeTotalProjectCost || 0);
+    if (fromScopeTotal > 0) return fromScopeTotal;
 
-    const fromActive = Number(this.activeValue || 0);
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fromSummary = Number(summary?.suggestedBid || 0);
+    if (fromSummary > 0) return fromSummary;
+
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
       details?.budget ||
         details?.projectBudget ||
         details?.totalProjectCost ||
+        details?.totalBudget ||
+        details?.estimatedBudget ||
         details?.suggestedBid ||
         details?.suggestedMarketBid ||
         details?.costAnalysis?.suggestedBid ||
         details?.costAnalysis?.suggestedMarketBid ||
         0,
     );
-
-    const comparisonBase = Math.max(fromActive, fromProjectDetails);
-    if (directTotal > 0) {
-      // Guard: if directTotal looks like a per-sq-ft number (e.g. $215.50) while we have
-      // a much larger active/project total, ignore directTotal.
-      if (comparisonBase <= 0 || directTotal >= comparisonBase * 0.1) {
-        return directTotal;
-      }
-    }
-
-    if (fromActive > 0) return fromActive;
-
     if (fromProjectDetails > 0) return fromProjectDetails;
 
-    // As a last resort, use the bid price if we have it.
+    const fromActive = Number(this.activeValue || 0);
+    if (fromActive > 0) return fromActive;
+
     const fromBid = Number(this.bidPrice || 0);
     return fromBid > 0 ? fromBid : 0;
   }
 
   get overallRemainingBudget(): number {
     return this.overallBudgetValue - this.spentToDate;
+  }
+
+  get syncedSpentToDate(): number {
+    // Keep this in sync with Scope Review behavior (currently pre-spend by default).
+    return Number(this.projectDetails?.actualCost || this.projectDetails?.spentToDate || 0);
+  }
+
+  get syncedRemainingBudget(): number {
+    return Math.max(0, this.overallBudgetValue - this.syncedSpentToDate);
+  }
+
+  get syncedBidPrice(): number {
+    const override = Number(this.bidTotalPrice || 0);
+    if (override > 0) return override;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    const projectCost = Number(summary?.suggestedBid || 0);
+    if (projectCost > 0 || marketBid > 0) {
+      return Math.max(projectCost, marketBid);
+    }
+
+    const direct = Number(this.bidPrice || 0);
+    return direct > 0 ? direct : this.overallBudgetValue;
+  }
+
+  get syncedCostToBuild(): number {
+    const fromBom = Number(this.scopeBomTotals?.directSubtotal || 0);
+    if (fromBom > 0) return fromBom;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const directSubtotal = Number(summary?.directSubtotal || 0);
+    if (directSubtotal > 0) return directSubtotal;
+
+    const material = Number(summary?.materialCost || 0);
+    const labor = Number(summary?.laborCost || 0);
+    const computed = material + labor;
+    return computed > 0 ? computed : Number(this.costToBuild || 0);
+  }
+
+  get syncedGrossProfit(): number {
+    return this.syncedBidPrice - this.syncedCostToBuild;
+  }
+
+  get syncedProfitMarginPercent(): number {
+    const override = Number(this.bidNetProfitMarginPercent || 0);
+    if (override > 0) return override;
+    if (this.syncedBidPrice <= 0) return 0;
+
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const fullyLoadedCost =
+      this.syncedCostToBuild +
+      Number(summary?.overhead || 0) +
+      Number(summary?.contingency || 0) +
+      Number(summary?.escalation || 0) +
+      Number(summary?.taxes || 0);
+    const netProfit = this.syncedBidPrice - fullyLoadedCost;
+    return (netProfit / this.syncedBidPrice) * 100;
+  }
+
+  get syncedExposureValue(): number {
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const contingency = Number(summary?.contingency || 0);
+    return contingency > 0 ? contingency : Math.max(0, this.overallBudgetValue * 0.08);
   }
 
   get profitBreakdownTooltip(): string {
@@ -819,6 +963,13 @@ export class ProjectOverviewComponent {
   }
 
   processTimelineData(): void {
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.workingDays && summaryTimeline.workingDays > 0) {
+      this.totalDuration = Math.max(1, Math.round(summaryTimeline.workingDays / 5));
+    } else if (summaryTimeline?.weeks && summaryTimeline.weeks > 0) {
+      this.totalDuration = Math.max(1, Math.round(summaryTimeline.weeks));
+    }
+
     if (!this.timelineData || this.timelineData.length === 0) return;
 
     const allTasks = this.timelineData.flatMap((g) => g.subtasks);
@@ -836,12 +987,14 @@ export class ProjectOverviewComponent {
       this.projectStartDate = new Date(minStart);
       const maxEnd = Math.max(...endDates);
 
-      // Total Duration in weeks
+      // Total duration falls back to timeline only when summary duration is missing.
       const durationMs = maxEnd - minStart;
-      this.totalDuration = Math.max(
-        1,
-        Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)),
-      );
+      if (!(summaryTimeline && (summaryTimeline.workingDays > 0 || summaryTimeline.weeks > 0))) {
+        this.totalDuration = Math.max(
+          1,
+          Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7)),
+        );
+      }
 
       // Current Week
       const now = new Date().getTime();
@@ -935,6 +1088,102 @@ export class ProjectOverviewComponent {
 
     // Check Weather Impact (Next 10 Days)
     this.checkWeatherRisk(allTasks);
+  }
+
+  private extractExecutiveSummaryTimeline(): {
+    workingDays: number;
+    weeks: number;
+    months: number;
+  } | null {
+    const summary =
+      this.loadedExecutiveSummary ||
+      this.projectDetails?.executiveSummary ||
+      this.projectDetails?.scopeExecutiveSummary ||
+      this.projectDetails?.preliminaryScope?.executiveSummary ||
+      null;
+    const keyHighlights = Array.isArray(summary?.keyHighlights) ? summary.keyHighlights : [];
+    const durationHighlight = keyHighlights.find((item: any) => {
+      const label = String(item?.label || '')
+        .toLowerCase()
+        .replace(/[*_`]/g, '')
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+      return (
+        label.includes('projectduration') ||
+        label.includes('projectedtimeline') ||
+        label.includes('projecttimeline')
+      );
+    });
+    const timelineHighlightText = keyHighlights
+      .map((item: any) => ({
+        label: String(item?.label || '')
+          .toLowerCase()
+          .replace(/[*_`]/g, '')
+          .replace(/[^a-z0-9]+/g, '')
+          .trim(),
+        text: `${String(item?.value || '')} ${String(item?.note || '')}`.trim(),
+      }))
+      .filter(
+        (item: any) =>
+          item.label.includes('projectduration') ||
+          item.label.includes('projectedtimeline') ||
+          item.label.includes('projecttimeline') ||
+          /working\s*days?|months?|weeks?/i.test(item.text),
+      )
+      .map((item: any) => item.text)
+      .join(' ');
+
+    const combinedText = [
+      `${String(durationHighlight?.value || '')} ${String(durationHighlight?.note || '')}`.trim(),
+      timelineHighlightText,
+      String(summary?.overview || ''),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!combinedText) return null;
+
+    const workingDaysMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*working\s*days?\b/i);
+    const weeksMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*weeks?\b/i);
+    const monthsMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*months?\b/i);
+
+    const workingDays = Number(workingDaysMatch?.[1] || 0);
+    const weeks = Number(weeksMatch?.[1] || 0);
+    const months = Number(monthsMatch?.[1] || 0);
+
+    if (workingDays > 0 || weeks > 0 || months > 0) {
+      const resolvedWeeks =
+        workingDays > 0
+          ? workingDays / 5
+          : months > 0
+            ? months * 4.33
+            : weeks > 0
+              ? weeks
+              : 0;
+      const resolvedWorkingDays =
+        workingDays > 0
+          ? workingDays
+          : resolvedWeeks > 0
+            ? resolvedWeeks * 5
+            : months > 0
+              ? months * 21.65
+              : 0;
+      const resolvedMonths =
+        months > 0
+          ? months
+          : resolvedWeeks > 0
+            ? resolvedWeeks / 4.33
+            : resolvedWorkingDays > 0
+              ? resolvedWorkingDays / 21.65
+              : 0;
+
+      return {
+        workingDays: Math.round(resolvedWorkingDays),
+        weeks: Math.round(resolvedWeeks * 10) / 10,
+        months: Math.round(resolvedMonths * 10) / 10,
+      };
+    }
+
+    return null;
   }
 
   checkWeatherRisk(tasks: any[]): void {
@@ -1496,10 +1745,59 @@ export class ProjectOverviewComponent {
   }
 
   getAreaInSqM(areaStr: any): string {
-    if (areaStr === null || areaStr === undefined) return '0';
-    const str = String(areaStr);
-    const areaNum = parseFloat(str.replace(/[^0-9.]/g, ''));
-    if (isNaN(areaNum)) return '0';
-    return (areaNum * 0.092903).toFixed(1);
+    const parsed = parseAreaWithUnit(areaStr);
+    if (!parsed || parsed.value <= 0) return '0';
+
+    let sqFt = parsed.value;
+    if (parsed.unit === 'sqm') {
+      sqFt = parsed.value * 10.7639;
+    } else if (parsed.unit === 'unknown' && parsed.value <= 80) {
+      // Typical room-size heuristic: small unlabeled values are usually m² in reports.
+      sqFt = parsed.value * 10.7639;
+    }
+
+    return (sqFt * 0.092903).toFixed(1);
+  }
+
+  get projectTotalAreaDisplay(): string {
+    if (this.projectTotalArea == null || this.projectTotalArea <= 0) {
+      return 'N/A';
+    }
+    return formatWholeNumberNoGrouping(this.projectTotalArea);
+  }
+
+  private formatMoneyInText(text: string): string {
+    if (!text) return text;
+
+    // Convert comma-grouped currency values to space-grouped style.
+    return text.replace(
+      /(?:\$|\bZAR\b|\bR\b)\s*((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/gi,
+      (match, amountStr) => {
+        const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
+        if (!isNaN(numericValue) && numericValue > 0) {
+          return formatMoney(numericValue, true, 2);
+        }
+        return match;
+      },
+    );
+  }
+
+  private computeRoomsTotalSqFt(
+    rooms: Array<{ name: string; area: string }>,
+  ): number {
+    return (rooms || []).reduce((sum, room) => {
+      const parsed = parseAreaWithUnit(room?.area);
+      if (!parsed || parsed.value <= 0) return sum;
+
+      let sqFt = parsed.value;
+      if (parsed.unit === 'sqm') {
+        sqFt = parsed.value * 10.7639;
+      } else if (parsed.unit === 'unknown' && parsed.value <= 80) {
+        // Typical room-area values in m² are small (e.g. 12, 27.5, 40).
+        sqFt = parsed.value * 10.7639;
+      }
+
+      return sum + sqFt;
+    }, 0);
   }
 }

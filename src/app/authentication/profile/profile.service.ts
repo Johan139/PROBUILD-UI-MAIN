@@ -76,7 +76,7 @@ export class ProfileService {
   }
 
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
+    const token = this.authService.getAccessTokenFast();
     return new HttpHeaders({
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -206,7 +206,7 @@ export class ProfileService {
         return;
       }
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => {

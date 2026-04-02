@@ -43,6 +43,10 @@ import { ProjectBlueprintViewerComponent } from '../../../../../components/proje
 import { UploadedFileInfo } from '../../../../../services/file-upload.service';
 import { MoneyPipe, MoneyInTextPipe } from '../../../../../shared/pipes/money.pipe';
 import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+import {
+  formatWholeNumberNoGrouping,
+  resolveDisplayedProjectAreaSqFt,
+} from '../../../utils/building-area-normalize.util';
 
 interface BomMaterialRow {
   item: string;
@@ -164,11 +168,13 @@ export class PhaseDetailedTakeoffComponent
 
   private lastLoadedJobId: string | null = null;
   private lastLoadedOverviewJobId: string | null = null;
+  private activeOverviewLoadJobId: string | null = null;
   private loadedExecutiveSummary: any = null;
   private loadedCostSummary: any = null;
   private loadedBlueprintIntelligence: any = null;
   private loadedJob: any = null;
   private loadedClient: any = null;
+  isOverviewCardsLoading = true;
 
   costAnalysis: any = null;
   editingCell: {
@@ -217,16 +223,25 @@ export class PhaseDetailedTakeoffComponent
       return;
     }
 
+    this.resetOverviewCardsState();
     this.loadData(jobId);
     this.loadOverviewData();
   }
 
   get projectSizeSqFt(): string {
-    return (
-      this.projectDetails?.buildingSize ||
-      this.projectDetails?.projectSize ||
-      '2,450'
-    );
+    const unified = this.projectTotalArea;
+    if (unified > 0) {
+      return formatWholeNumberNoGrouping(unified);
+    }
+    const fallback =
+      this.projectDetails?.buildingSize || this.projectDetails?.projectSize;
+    if (fallback != null && String(fallback).trim() !== '') {
+      const n = Number(String(fallback).replace(/[^0-9.-]/g, ''));
+      if (Number.isFinite(n) && n > 0) {
+        return formatWholeNumberNoGrouping(n);
+      }
+    }
+    return '2450';
   }
 
   get projectSizeSqM(): string {
@@ -239,14 +254,68 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get bomKeys(): string[] {
-    return Object.keys(this.billsOfMaterials);
+    return Object.keys(this.billsOfMaterials).filter((key) =>
+      this.phaseHasVisibleBomRows(key),
+    );
+  }
+
+  /** Rows with total > 0 for estimation display; indices match persistence (BOM:…:rowIndex). */
+  visibleMaterialRows(
+    key: string,
+  ): { row: BomMaterialRow; index: number }[] {
+    const section = this.billsOfMaterials[key];
+    if (!section?.materials?.length) {
+      return [];
+    }
+    return section.materials
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => this.asNumber(row.total) > 0);
+  }
+
+  visibleLaborRows(key: string): { row: BomLaborRow; index: number }[] {
+    const section = this.billsOfMaterials[key];
+    if (!section?.labor?.length) {
+      return [];
+    }
+    return section.labor
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => this.asNumber(row.total) > 0);
+  }
+
+  visiblePhaseTotal(key: string): number {
+    const section = this.billsOfMaterials[key];
+    if (!section) {
+      return 0;
+    }
+    const mat = this.visibleMaterialRows(key).reduce(
+      (s, { row }) => s + this.asNumber(row.total),
+      0,
+    );
+    const lab = this.visibleLaborRows(key).reduce(
+      (s, { row }) => s + this.asNumber(row.total),
+      0,
+    );
+    return mat + lab;
+  }
+
+  private phaseHasVisibleBomRows(key: string): boolean {
+    return this.visiblePhaseTotal(key) > 0;
   }
 
   get allPhasesConfirmed(): boolean {
     return (
       this.bomKeys.length > 0 &&
-      this.confirmedBomSections.size === this.bomKeys.length
+      this.bomKeys.every((key) => this.confirmedBomSections.has(key))
     );
+  }
+
+  /** Confirmed count among currently visible BOM phases only (ignores stale keys in the set). */
+  get confirmedVisiblePhaseCount(): number {
+    if (!this.bomKeys.length) {
+      return 0;
+    }
+    return this.bomKeys.filter((key) => this.confirmedBomSections.has(key))
+      .length;
   }
 
   get directCosts(): number {
@@ -308,7 +377,7 @@ export class PhaseDetailedTakeoffComponent
     if (this.bomKeys.length === 0) {
       return 0;
     }
-    return (this.confirmedBomSections.size / this.bomKeys.length) * 100;
+    return (this.confirmedVisiblePhaseCount / this.bomKeys.length) * 100;
   }
 
   get canProceed(): boolean {
@@ -504,12 +573,15 @@ export class PhaseDetailedTakeoffComponent
     const fromParent = Number(this.scopeTotalProjectCost || 0);
     if (fromParent > 0) return fromParent;
 
-    const totalProjectCost = Number(
-      this.scopeCostSummary?.suggestedBid ||
-        this.loadedCostSummary?.suggestedBid ||
-        0,
-    );
+    const summary = this.scopeCostSummary || this.loadedCostSummary || null;
+    const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
+    if (reportGrandTotal > 0) return reportGrandTotal;
+
+    const totalProjectCost = Number(summary?.suggestedBid || 0);
     if (totalProjectCost > 0) return totalProjectCost;
+
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return marketBid;
 
     const details: any = this.projectDetails as any;
     const fromProjectDetails = Number(
@@ -527,6 +599,10 @@ export class PhaseDetailedTakeoffComponent
     return fromProjectDetails > 0 ? fromProjectDetails : 0;
   }
 
+  get hasResolvedFinancialSummary(): boolean {
+    return !!this.loadedCostSummary;
+  }
+
   private normalizeHighlightLabel(label: string): string {
     return String(label || '')
       .toLowerCase()
@@ -541,7 +617,7 @@ export class PhaseDetailedTakeoffComponent
     const source = String(text || '');
     if (!source) return source;
     const replacement = this.formatCurrency(amount);
-    const currencyPattern = /\$\s*\d[\d,\s]*(?:\.\d{1,2})?/;
+    const currencyPattern = /(?:\$|\bZAR\b|\bR\b)\s*\d[\d,\s]*(?:\.\d{1,2})?/i;
     return currencyPattern.test(source)
       ? source.replace(currencyPattern, replacement)
       : source;
@@ -549,13 +625,23 @@ export class PhaseDetailedTakeoffComponent
 
   private formatCompactThousands(amount: number): string {
     const safe = Number(amount || 0);
-    if (safe <= 0) return '$0';
-    return `$${Math.round(safe / 1000)}k`;
+    if (safe <= 0) return formatMoney(0, true, 0);
+
+    if (safe >= 1_000_000) {
+      const millions = Math.round((safe / 1_000_000) * 100) / 100;
+      return `${formatMoney(millions, true, 2)}M`;
+    }
+
+    if (safe >= 1_000) {
+      return `${formatMoney(Math.round(safe / 1000), true, 0)}k`;
+    }
+
+    return formatMoney(safe, true, 0);
   }
 
   private formatMoneyInText(text: string): string {
     if (!text) return text;
-    return text.replace(/\$((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/g, (match, amountStr) => {
+    return text.replace(/(?:\$|\bZAR\b|\bR\b)\s*((?:\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?)/gi, (match, amountStr) => {
       const numericValue = parseFloat(String(amountStr).replace(/,/g, ''));
       if (!isNaN(numericValue) && numericValue > 0) {
         return formatMoney(numericValue, true, 2);
@@ -805,16 +891,17 @@ export class PhaseDetailedTakeoffComponent
   }
 
   get projectTotalArea(): number {
-    const intelligenceArea = Number(
-      this.loadedBlueprintIntelligence?.underRoofArea || 0,
+    return resolveDisplayedProjectAreaSqFt(
+      this.projectDetails?.buildingSize,
+      this.projectDetails?.projectSize,
+      this.loadedBlueprintIntelligence?.underRoofArea,
     );
-    if (intelligenceArea > 0) return intelligenceArea;
-    const parsed = Number(
-      this.projectDetails?.buildingSize ||
-        this.projectDetails?.projectSize ||
-        0,
-    );
-    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  get projectTotalAreaHeaderText(): string {
+    const n = this.projectTotalArea;
+    if (!n || n <= 0) return 'N/A';
+    return formatWholeNumberNoGrouping(n);
   }
 
   get clientName(): string {
@@ -901,9 +988,11 @@ export class PhaseDetailedTakeoffComponent
     const jobId = String(
       this.projectDetails?.jobId || this.projectDetails?.id || '',
     ).trim();
-    if (!jobId || jobId === this.lastLoadedJobId) return;
+    if (!jobId || jobId === this.lastLoadedOverviewJobId) return;
 
     this.isSummaryLoading = true;
+    this.isOverviewCardsLoading = true;
+    this.activeOverviewLoadJobId = jobId;
 
     try {
       const [summary, cost, blueprint, job, client] = await Promise.all([
@@ -914,22 +1003,42 @@ export class PhaseDetailedTakeoffComponent
         firstValueFrom(this.jobsService.getClientDetails(Number(jobId))),
       ]);
 
+      if (this.activeOverviewLoadJobId !== jobId) return;
+
       this.loadedExecutiveSummary = summary;
       this.loadedCostSummary = cost;
       this.loadedBlueprintIntelligence = blueprint;
       this.loadedJob = job;
       this.loadedClient = client;
-      this.lastLoadedJobId = jobId;
+      this.lastLoadedOverviewJobId = jobId;
     } catch {
+      if (this.activeOverviewLoadJobId !== jobId) return;
+
       this.loadedExecutiveSummary = null;
       this.loadedCostSummary = null;
       this.loadedBlueprintIntelligence = null;
       this.loadedJob = null;
       this.loadedClient = null;
-      this.lastLoadedJobId = null;
+      this.lastLoadedOverviewJobId = null;
     } finally {
-      this.isSummaryLoading = false;
+      if (this.activeOverviewLoadJobId === jobId) {
+        this.isSummaryLoading = false;
+        this.isOverviewCardsLoading = false;
+        this.activeOverviewLoadJobId = null;
+      }
     }
+  }
+
+  private resetOverviewCardsState(): void {
+    this.loadedExecutiveSummary = null;
+    this.loadedCostSummary = null;
+    this.loadedBlueprintIntelligence = null;
+    this.loadedJob = null;
+    this.loadedClient = null;
+    this.lastLoadedOverviewJobId = null;
+    this.isSummaryLoading = true;
+    this.isOverviewCardsLoading = true;
+    this.activeOverviewLoadJobId = null;
   }
 
   onBlueprintSelected(file: UploadedFileInfo): void {
@@ -955,7 +1064,7 @@ export class PhaseDetailedTakeoffComponent
       this.reportService.getValueEngineeringReport(jobId),
       firstValueFrom(this.budgetService.getBudget(Number(jobId))),
     ])
-      .then(([boms, costSummary, veReport, budgetItems]) => {
+      .then(async ([boms, costSummary, veReport, budgetItems]) => {
         const persistedBudgetItems = Array.isArray(budgetItems)
           ? budgetItems
           : [];
@@ -966,7 +1075,20 @@ export class PhaseDetailedTakeoffComponent
         if (Array.isArray(boms) && boms.length > 0 && boms[0].parsedReport) {
           this.processBoms(boms[0].parsedReport);
           this.hydratePersistedBomEdits(persistedBudgetItems);
-          this.hydratePersistedBomConfirmations(persistedBudgetItems);
+          // BudgetService caches GET /budget for 15s. Parallel fetch can complete before
+          // BOM_CONFIRM rows exist or return a stale snapshot — re-fetch so confirmations
+          // survive navigating away and back to this phase.
+          try {
+            const freshBudget = await firstValueFrom(
+              this.budgetService.getBudget(Number(jobId), true),
+            );
+            this.hydratePersistedBomConfirmations(
+              Array.isArray(freshBudget) ? freshBudget : [],
+            );
+          } catch (e) {
+            console.error('Failed to refresh budget for BOM confirmations', e);
+            this.hydratePersistedBomConfirmations(persistedBudgetItems);
+          }
         }
       })
       .finally(() => {
@@ -1226,10 +1348,63 @@ export class PhaseDetailedTakeoffComponent
     });
 
     dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
-        this.confirmedBomSections = new Set(this.bomKeys);
-        this.bomKeys.forEach((key) => this.persistBomConfirmation(key));
+      if (!confirmed) {
+        return;
       }
+      this.confirmedBomSections = new Set(this.bomKeys);
+      const jobId = Number(this.projectDetails?.jobId);
+      const toCreate = this.bomKeys.filter(
+        (key) => !this.persistedBomConfirmationItemIds.has(key),
+      );
+      if (toCreate.length === 0) {
+        return;
+      }
+      if (Number.isNaN(jobId)) {
+        toCreate.forEach((key) => this.persistBomConfirmation(key));
+        return;
+      }
+      const items: BudgetLineItem[] = toCreate.map((key) => {
+        const section = this.billsOfMaterials[key];
+        return {
+          id: 0,
+          jobId,
+          category: 'BOM Confirmation',
+          item: `${section.name} - Confirmed`,
+          phase: section.name,
+          trade: section.name,
+          quantity: 1,
+          unit: 'ea',
+          unitCost: 0,
+          estimatedCost: 0,
+          actualCost: 0,
+          percentComplete: 100,
+          status: 'Confirmed',
+          notes: 'Phase confirmation acknowledged by user',
+          source: 'BOM_CONFIRM',
+          sourceId: `BOM_CONFIRM:${key}`,
+          forecastToComplete: 0,
+        };
+      });
+      this.budgetService.addBudgetItemsBatch(items).subscribe({
+        next: (saved) => {
+          for (const row of saved || []) {
+            const sid = String(row.sourceId || '');
+            if (!sid.startsWith('BOM_CONFIRM:')) {
+              continue;
+            }
+            const raw = sid.slice('BOM_CONFIRM:'.length);
+            const k =
+              this.resolveBomSectionKeyForConfirmation(raw) ?? raw;
+            if (this.billsOfMaterials[k] && row.id) {
+              this.persistedBomConfirmationItemIds.set(k, row.id);
+            }
+          }
+        },
+        error: (err) => {
+          console.error('Batch BOM confirmation failed; falling back per phase', err);
+          toCreate.forEach((key) => this.persistBomConfirmation(key));
+        },
+      });
     });
   }
 
@@ -1541,10 +1716,38 @@ export class PhaseDetailedTakeoffComponent
     });
   }
 
+  /** Map persisted BOM_CONFIRM sourceId segment to current `billsOfMaterials` key. */
+  private resolveBomSectionKeyForConfirmation(rawKey: string): string | null {
+    const trimmed = String(rawKey || '').trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (this.billsOfMaterials[trimmed]) {
+      return trimmed;
+    }
+    const lower = trimmed.toLowerCase();
+    for (const k of Object.keys(this.billsOfMaterials)) {
+      if (k.toLowerCase() === lower) {
+        return k;
+      }
+    }
+    const compact = lower.replace(/\s+/g, '');
+    for (const k of Object.keys(this.billsOfMaterials)) {
+      if (k.replace(/\s+/g, '').toLowerCase() === compact) {
+        return k;
+      }
+    }
+    return null;
+  }
+
   private hydratePersistedBomConfirmations(items: BudgetLineItem[]): void {
-    const confirmations = items.filter(
-      (item) => String(item.source || '').toUpperCase() === 'BOM_CONFIRM',
-    );
+    const confirmations = items.filter((item) => {
+      const src = String(item.source || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]+/g, '_');
+      return src === 'BOM_CONFIRM';
+    });
 
     this.persistedBomConfirmationItemIds = new Map();
     const confirmedKeys = new Set<string>();
@@ -1555,8 +1758,9 @@ export class PhaseDetailedTakeoffComponent
         return;
       }
 
-      const key = sourceId.replace('BOM_CONFIRM:', '');
-      if (!key || !this.billsOfMaterials[key]) {
+      const rawKey = sourceId.slice('BOM_CONFIRM:'.length);
+      const key = this.resolveBomSectionKeyForConfirmation(rawKey);
+      if (!key) {
         return;
       }
 

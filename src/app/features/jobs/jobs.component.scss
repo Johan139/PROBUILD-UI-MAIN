@@ -47,6 +47,21 @@
   overflow-x: hidden;
 }
 
+/* Stable min height reduces layout jump when swapping phase components */
+.stage-phase-shell {
+  min-height: min(72vh, 720px);
+
+  @media (max-width: 768px) {
+    min-height: min(65vh, 560px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-phase-shell {
+    min-height: 0;
+  }
+}
+
 .stage-view-toggle {
   display: inline-flex;
   gap: var(--space-2);

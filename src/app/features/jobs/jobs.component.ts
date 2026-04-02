@@ -12,6 +12,7 @@ import {
   inject,
   DestroyRef,
 } from '@angular/core';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { MatButton } from '@angular/material/button';
@@ -73,7 +74,7 @@ import { JobAssignmentService } from './job-assignment/job-assignment.service';
 import { AuthService } from '../../authentication/auth.service';
 import { WeatherService } from '../../weather.service';
 import { WeatherImpactService } from './services/weather-impact.service';
-import { formatMoney } from '../../shared/pipes/money.pipe';
+import { formatMoney, setDefaultCurrencySymbol } from '../../shared/pipes/money.pipe';
 import { InitiateBiddingDialogComponent } from './initiate-bidding-dialog/initiate-bidding-dialog.component';
 import {
   MeasurementService,
@@ -131,6 +132,7 @@ import {
 } from './components/scope-insight-dialogs/bid-price-dialog.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { JobCacheService } from './services/jobs/job-cache.service';
+ import { BudgetLineItem } from '../../models/budget-line-item.model';
 
 type ProjectPhase =
   | 'INITIATION'
@@ -205,6 +207,17 @@ interface JobUiStateCache {
 ],
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.scss',
+  animations: [
+    trigger('jobPhaseTransition', [
+      transition('* => *', [
+        style({ opacity: 0, transform: 'translateY(8px)' }),
+        animate(
+          '260ms cubic-bezier(0.22, 1, 0.36, 1)',
+          style({ opacity: 1, transform: 'none' }),
+        ),
+      ]),
+    ]),
+  ],
 })
 export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('documentsDialog') documentsDialog!: TemplateRef<any>;
@@ -219,7 +232,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   projectDetails: any;
   projectStage: ProjectPhase = 'CONSTRUCTION_LIVE';
   private manualProjectStageOverride: ProjectPhase | null = null;
+  /** Rank of construction-live in lifecycle; blocks retrograde API updates once job is live. */
+  private readonly constructionLivePhaseRank = 8;
   isStageResolved: boolean = false;
+  /** Avoid re-running determineProjectStage on every store tick when status/job did not change (reduces jumpy phase swaps). */
+  private lastSyncedStageJobId: number | null = null;
+  private lastSyncedStageStatusKey = '';
   isEditingAddress: boolean = false;
   addressControl = new FormControl<string>('');
   selectedPlace: google.maps.places.PlaceResult | null = null;
@@ -254,8 +272,217 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   public isGeneratingReport = false;
   public isReportLoading = false;
 
+  private analysisAutoAdvanceTriggeredForJobIds = new Set<number>();
+
   get constructionPhaseGroups(): any[] {
     return this.store.getState().subtaskGroups;
+  }
+
+  private buildAiBudgetItemsFromReport(report: any, jobId: number): BudgetLineItem[] {
+    const newItems: BudgetLineItem[] = [];
+    if (!report || !Array.isArray(report.sections)) {
+      return newItems;
+    }
+
+    report.sections.forEach((section: any) => {
+      let category = 'Other';
+      const rawTitle = String(section?.title || '');
+      const lowerTitle = rawTitle.toLowerCase();
+      let phase = rawTitle
+        .replace(
+          / - (Bill of Materials|Subcontractor Cost Breakdown|Cost Breakdown)/i,
+          '',
+        )
+        .trim();
+
+      if (lowerTitle.includes('material')) {
+        category = 'Materials';
+      } else if (lowerTitle.includes('labor') || lowerTitle.includes('subcontractor')) {
+        category = 'Subcontractor';
+      }
+
+      if (
+        (lowerTitle.includes('total') && lowerTitle.includes('breakdown')) ||
+        lowerTitle.includes('project cost breakdown') ||
+        lowerTitle.includes('project cost summary') ||
+        lowerTitle.includes('summary of costs')
+      ) {
+        return;
+      }
+
+      if (section?.type !== 'table' || !Array.isArray(section?.content)) {
+        return;
+      }
+
+      const getIndex = (headers: string[], ...names: string[]) =>
+        headers.findIndex((h) =>
+          names.some((n) => String(h || '').toLowerCase().includes(n.toLowerCase())),
+        );
+
+      const headers = Array.isArray(section?.headers) ? section.headers : [];
+      const itemIdx = getIndex(headers, 'Item', 'Task', 'Description');
+      const tradeIdx = getIndex(headers, 'Trade');
+      const qtyIdx = getIndex(headers, 'Quantity', 'Qty', 'Hours');
+      const unitIdx = getIndex(headers, 'Unit');
+      const specIdx = getIndex(headers, 'Specification', 'Spec', 'Model');
+      const detailIdx = getIndex(headers, 'Size/Detail', 'Detail', 'Size', 'Dimensions');
+      const costIdx = getIndex(headers, 'Total Cost', 'Total Estimated Cost', 'Est. Cost', 'Total Price');
+      const unitCostIdx = getIndex(headers, 'Unit Cost', 'Rate', 'Hourly Rate');
+
+      section.content.forEach((row: any[]) => {
+        if (!Array.isArray(row) || row.length === 0) {
+          return;
+        }
+
+        let item =
+          itemIdx > -1
+            ? row[itemIdx]
+            : tradeIdx > -1
+              ? row[tradeIdx]
+              : 'Unknown Item';
+        item = String(item || '');
+
+        const trade = String((tradeIdx > -1 ? row[tradeIdx] : phase) || '');
+
+        const lowerItem = item.toLowerCase();
+        if (
+          lowerItem.includes('total') ||
+          lowerItem.includes('subtotal') ||
+          lowerItem.includes('overhead') ||
+          lowerItem.includes('contingency') ||
+          lowerItem.includes('escalation') ||
+          lowerItem.includes('calculated gc bid')
+        ) {
+          return;
+        }
+
+        if (specIdx > -1 && row[specIdx]) {
+          item += ` - ${row[specIdx]}`;
+        }
+
+        let notes = 'Imported from AI Analysis';
+        if (detailIdx > -1 && row[detailIdx]) {
+          notes = `${row[detailIdx]}; ${notes}`;
+        }
+
+        let cost = 0;
+        let qty = 0;
+        let unitCost = 0;
+
+        if (qtyIdx > -1) {
+          const qStr = String(row[qtyIdx] ?? '');
+          qty = parseFloat(qStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        if (unitCostIdx > -1) {
+          const ucStr = String(row[unitCostIdx] ?? '');
+          unitCost = parseFloat(ucStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        if (costIdx > -1) {
+          const cStr = String(row[costIdx] ?? '');
+          cost = parseFloat(cStr.replace(/[^0-9.-]+/g, '')) || 0;
+        }
+
+        const calculatedCost = qty * unitCost;
+        if (calculatedCost > 0) {
+          if (cost === 0 || Math.abs(cost - calculatedCost) > calculatedCost * 0.1) {
+            cost = calculatedCost;
+          }
+        } else if (cost === 0 && costIdx === -1) {
+          const lastVal = String(row[row.length - 1] ?? '');
+          if (lastVal.includes('.') || lastVal.includes('$')) {
+            cost = parseFloat(lastVal.replace(/[^0-9.-]+/g, '')) || 0;
+          }
+        }
+
+        const unit =
+          unitIdx > -1
+            ? String(row[unitIdx] ?? '')
+            : category === 'Labor'
+              ? 'Hours'
+              : 'ea';
+
+        if (!item || item === 'Unknown Item') {
+          return;
+        }
+
+        if (cost > 0) {
+          newItems.push({
+            jobId,
+            category,
+            phase,
+            item,
+            trade,
+            estimatedCost: cost,
+            actualCost: 0,
+            percentComplete: 0,
+            quantity: qty > 0 ? qty : undefined,
+            unit: qty > 0 ? unit : undefined,
+            unitCost: unitCost > 0 ? unitCost : undefined,
+            status: 'Pending',
+            notes,
+            source: 'AI',
+            id: 0,
+            forecastToComplete: cost,
+          } as BudgetLineItem);
+        }
+      });
+    });
+
+    return newItems;
+  }
+
+  private async importAiBudgetItemsIfNeeded(jobId: number): Promise<void> {
+    try {
+      const existing = await firstValueFrom(this.budgetService.getBudget(jobId, true));
+      const hasAiItems = (existing || []).some(
+        (item) => String((item as any)?.source || '') === 'AI',
+      );
+      if (hasAiItems) {
+        return;
+      }
+
+      let newItems: BudgetLineItem[] = [];
+      const budgetImportMaxAttempts = 4;
+      for (let attempt = 0; attempt < budgetImportMaxAttempts; attempt++) {
+        const results = await firstValueFrom(
+          this.bomService.getBillOfMaterials(String(jobId), true),
+        );
+        const normalized = Array.isArray(results)
+          ? results
+          : results
+            ? [results]
+            : [];
+        const report = normalized?.[0]?.parsedReport;
+        newItems = this.buildAiBudgetItemsFromReport(report, jobId);
+
+        if (newItems.length > 0) {
+          break;
+        }
+
+        // Analysis output can lag briefly even when the stage has just advanced.
+        if (attempt < budgetImportMaxAttempts - 1) {
+          await this.sleep(Math.min(10_000, 800 * Math.pow(2, attempt)));
+        }
+      }
+
+      if (!newItems.length) {
+        console.warn('[budget-import] No AI budget items parsed from report', {
+          jobId,
+        });
+        return;
+      }
+
+      await firstValueFrom(this.budgetService.addBudgetItemsBatch(newItems));
+      await firstValueFrom(this.budgetService.getBudget(jobId, true));
+    } catch (err) {
+      console.error('[budget-import] Failed to import AI budget items', {
+        jobId,
+        err,
+      });
+      return;
+    }
   }
   public reportHtml: string | null = null;
   public reportTitle: string = 'Full Project Analysis Report';
@@ -265,8 +492,18 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private pollingSubscription: Subscription | null = null;
   private destroyRef = inject(DestroyRef);
   private readonly uiCacheVersion = 1 as const;
+  private readonly uiStateCacheTtlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+  private readonly teamCacheTtlMs = 15 * 60 * 1000; // 15 minutes
+  private readonly phasePrefetchDelayMs = 1200;
 
   private lastAuxLoadedJobId: number | null = null;
+  private lastCurrencySeededJobId: number | null = null;
+  private fetchedDataKeys = new Set<string>();
+  private prefetchedPhaseKeys = new Set<string>();
+  private financialSnapshotRefreshInFlight = false;
+  private lastFinancialSnapshotRefreshAt = 0;
+  private lastFinancialSnapshotRefreshJobId: number | null = null;
+  private isAnalysisInactivityPaused = false;
 
   timelineGroups: TimelineGroup[] = [];
   isSubtaskTimelineActive: boolean = false;
@@ -319,9 +556,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   blueprintPdfSrc: string | Uint8Array | null = null;
   isLoadingBlueprints: boolean = false;
   scopeCostSummary: any = null;
+  scopeExecutiveSummaryData: any = null;
   scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   scopePermitLeadTimeWeeks: number | null = null;
   scopeMaterialLeadTimeWeeks: number | null = null;
+  budgetLineItems: BudgetLineItem[] = [];
 
   // Project Overview Data
   overviewProjects: Project[] = [];
@@ -390,6 +629,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   ): void {
     this.activeTab = tab;
     this.persistJobUiState();
+    this.primeDataForCurrentView();
+    this.prefetchLikelyNextData();
   }
 
   setStageDisplayMode(mode: 'stage' | 'live'): void {
@@ -478,13 +719,34 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return base > 0 && amount > 0 ? amount / base : 0;
   }
 
+  private isReasonableSalesTaxPct(value: number): boolean {
+    return Number.isFinite(value) && value > 0 && value <= 35;
+  }
+
+  private get minimumNetMarginRate(): number {
+    const explicitPct = Number(this.scopeCostSummary?.targetNetMarginPct || 0);
+    if (Number.isFinite(explicitPct) && explicitPct >= 2 && explicitPct <= 30) {
+      return explicitPct / 100;
+    }
+
+    return 0.1;
+  }
+
   private get resolvedSalesTaxRate(): number {
     const explicitPct = Number(this.scopeCostSummary?.salesTaxPct || 0);
-    if (explicitPct > 0) return explicitPct / 100;
+    if (this.isReasonableSalesTaxPct(explicitPct)) return explicitPct / 100;
 
     const summaryMaterial = Number(this.scopeCostSummary?.materialCost || 0);
     const summaryTax = Number(this.scopeCostSummary?.taxes || 0);
-    return summaryMaterial > 0 && summaryTax > 0 ? summaryTax / summaryMaterial : 0;
+    if (summaryMaterial > 0 && summaryTax > 0) {
+      const derivedPct = (summaryTax / summaryMaterial) * 100;
+      if (this.isReasonableSalesTaxPct(derivedPct)) {
+        return derivedPct / 100;
+      }
+    }
+
+    // Conservative fallback to avoid propagating clearly invalid extracted rates.
+    return 0.0825;
   }
 
   get totalProjectCost(): number {
@@ -498,9 +760,46 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.projectDetails?.budget ||
       this.projectDetails?.totalBudget ||
       this.projectDetails?.estimatedBudget ||
-      1451759;
+      0;
     const parsed = Number(String(raw).replace(/[^0-9.-]/g, ''));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1451759;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
+  // Scope Review cards should prefer authoritative summary bid totals
+  // over recomputed transient values that may lag behind during initial load.
+  get scopeReviewOverallBudgetValue(): number {
+    const recomputed =
+      this.materialsCost +
+      this.laborCost +
+      this.generalConditionsSiteServices +
+      this.permitsAdminFees +
+      this.insuranceBonds +
+      this.taxesAllowance;
+    if (recomputed > 0) return recomputed;
+
+    const summary: any = this.scopeCostSummary || null;
+    const reportBase = Number(summary?.reportTotalDirectIndirectCosts || 0);
+    if (reportBase > 0) {
+      const reportTaxes = Number(summary?.reportVatAmount || summary?.taxes || 0);
+      return reportBase + Math.max(0, reportTaxes);
+    }
+
+    const reportPreTax = Number(summary?.reportPreTaxProjectCost || 0);
+    if (reportPreTax > 0) {
+      const reportTaxes = Number(summary?.reportVatAmount || summary?.taxes || 0);
+      return reportPreTax + Math.max(0, reportTaxes);
+    }
+
+    const reportGrandTotal = Number(summary?.reportGrandTotalBidPrice || 0);
+    if (reportGrandTotal > 0) return reportGrandTotal;
+
+    const suggestedBid = Number(summary?.suggestedBid || 0);
+    if (suggestedBid > 0) return suggestedBid;
+
+    const marketBid = Number(summary?.suggestedMarketBid || 0);
+    if (marketBid > 0) return marketBid;
+
+    return this.totalProjectCost;
   }
 
   get suggestedBid(): number {
@@ -529,53 +828,160 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const reportContingencyIncludesEscalation =
       Boolean(summary?.reportContingencyIncludesEscalation);
 
+    const summaryOverhead = Number(summary?.overhead || 0);
+    const summaryContingency = Number(summary?.contingency || 0);
+    const summaryEscalation = Number(summary?.escalation || 0);
+    const summaryTaxes = Number(summary?.taxes || 0);
+
     const computedReportBid = reportPreTax > 0 ? reportPreTax + Math.max(reportTaxes, 0) : 0;
 
-    const bidToClient =
+    const preferredBid =
       reportBid > 0 ? reportBid : computedReportBid > 0 ? computedReportBid : this.suggestedBid;
+    const bidFloor = this.totalProjectCost;
+    const bidToClient = Math.max(preferredBid, bidFloor);
 
-    const baseCosts = reportBase > 0 ? reportBase : this.costToBuild;
-    const overheadProfit = reportOverheadProfit > 0 ? reportOverheadProfit : this.overheadProfit;
-    const contingency = reportContingency > 0 ? reportContingency : this.contingencyAllowance;
+    const baseCosts = this.costToBuild > 0 ? this.costToBuild : reportBase;
+    const overheadProfit = summaryOverhead > 0
+      ? summaryOverhead
+      : reportOverheadProfit > 0 && reportOverheadProfit <= Math.max(baseCosts, bidToClient) * 0.35
+        ? reportOverheadProfit
+        : this.overheadProfit;
+    const contingency = summaryContingency > 0
+      ? summaryContingency
+      : reportContingency > 0 && reportContingency <= Math.max(baseCosts, bidToClient) * 0.2
+        ? reportContingency
+        : this.contingencyAllowance;
     const escalation = reportContingencyIncludesEscalation
       ? 0
-      : reportEscalation > 0
-        ? reportEscalation
-        : this.escalationAllowance;
-    const taxes = reportTaxes > 0 ? reportTaxes : this.taxesAllowance;
+      : summaryEscalation > 0
+        ? summaryEscalation
+        : reportEscalation > 0 && reportEscalation <= Math.max(baseCosts, bidToClient) * 0.15
+          ? reportEscalation
+          : this.escalationAllowance;
+
+    // Prefer explicit report tax values when present; also derive taxes from
+    // grand-total minus pre-tax when a report omits the VAT row.
+    const derivedReportTaxes =
+      reportBid > 0 && reportPreTax > 0 ? Math.max(0, reportBid - reportPreTax) : 0;
+    const effectiveReportTaxes = reportTaxes > 0 ? reportTaxes : derivedReportTaxes;
+    const taxesFromReportLooksReasonable =
+      effectiveReportTaxes > 0 &&
+      (
+        (reportPreTax > 0 && (effectiveReportTaxes / reportPreTax) * 100 <= 35) ||
+        (this.materialsCost > 0 && (effectiveReportTaxes / this.materialsCost) * 100 <= 35)
+      );
+    const taxes = summaryTaxes > 0
+      ? summaryTaxes
+      : taxesFromReportLooksReasonable
+        ? effectiveReportTaxes
+        : this.taxesAllowance;
+
+    // Some scope-review payloads carry valid percentage drivers but zero absolute
+    // markup amounts. Rebuild missing amounts from base costs so bid analysis
+    // doesn't collapse to zeros.
+    const overheadPctForFallback = this.overheadPct > 0 ? this.overheadPct : 10;
+    const contingencyPctForFallback = this.contingencyPct > 0 ? this.contingencyPct : 5;
+    const escalationRateForFallback =
+      this.resolvedEscalationRate > 0 ? this.resolvedEscalationRate : 0.03;
+
+    const fallbackOverheadFromRate =
+      baseCosts > 0 ? baseCosts * (overheadPctForFallback / 100) : 0;
+    const fallbackContingencyFromRate =
+      baseCosts > 0 ? baseCosts * (contingencyPctForFallback / 100) : 0;
+    const fallbackEscalationFromRate =
+      baseCosts > 0 ? baseCosts * escalationRateForFallback : 0;
+
+    const normalizedOverheadProfit =
+      overheadProfit > 0 ? overheadProfit : fallbackOverheadFromRate;
+    const normalizedContingency =
+      contingency > 0 ? contingency : fallbackContingencyFromRate;
+    const normalizedEscalation =
+      escalation > 0 ? escalation : fallbackEscalationFromRate;
+
+    const useReportWhenTiny = (
+      value: number,
+      reportValue: number,
+      base: number,
+    ): number => {
+      if (value > 0 && value < 1000 && base >= 100000 && reportValue > 0) {
+        return reportValue;
+      }
+      return value;
+    };
+
+    const reconciledOverhead = useReportWhenTiny(
+      normalizedOverheadProfit,
+      reportOverheadProfit,
+      baseCosts,
+    );
+    const reconciledContingency = useReportWhenTiny(
+      normalizedContingency,
+      reportContingency,
+      baseCosts,
+    );
+    const reconciledEscalation = useReportWhenTiny(
+      normalizedEscalation,
+      reportEscalation,
+      baseCosts,
+    );
 
     return {
       bidToClient,
       baseCosts,
-      overheadProfit,
-      contingency,
-      escalation,
+      overheadProfit: reconciledOverhead,
+      contingency: reconciledContingency,
+      escalation: reconciledEscalation,
       taxes,
     };
   }
 
+  private recommendedBidFromResolved(resolved: {
+    bidToClient: number;
+    baseCosts: number;
+    overheadProfit: number;
+    contingency: number;
+    escalation: number;
+    taxes: number;
+  }): number {
+    const totalCostBasis =
+      resolved.baseCosts +
+      resolved.overheadProfit +
+      resolved.contingency +
+      resolved.escalation +
+      resolved.taxes;
+
+    const requiredBidForProfit =
+      totalCostBasis > 0 && this.minimumNetMarginRate > 0 && this.minimumNetMarginRate < 1
+        ? totalCostBasis / (1 - this.minimumNetMarginRate)
+        : totalCostBasis;
+
+    return Math.max(resolved.bidToClient, requiredBidForProfit);
+  }
+
   get clientBidPrice(): number {
-    return this.resolveBidPricing().bidToClient;
+    const resolved = this.resolveBidPricing();
+    return this.recommendedBidFromResolved(resolved);
   }
 
   get bidNetProfitMarginPercent(): number {
     const resolved = this.resolveBidPricing();
-    if (resolved.bidToClient > 0 && resolved.overheadProfit > 0) {
-      return (resolved.overheadProfit / resolved.bidToClient) * 100;
-    }
+    const recommendedBid = this.recommendedBidFromResolved(resolved);
+    if (recommendedBid <= 0) return 0;
 
-    if (this.suggestedBid <= 0) return 0;
     const fullyLoadedCost =
-      this.costToBuild +
-      this.overheadProfit +
-      this.contingencyAllowance +
-      this.escalationAllowance +
-      this.taxesAllowance;
-    const netProfit = this.suggestedBid - fullyLoadedCost;
-    return (netProfit / this.suggestedBid) * 100;
+      resolved.baseCosts +
+      resolved.overheadProfit +
+      resolved.contingency +
+      resolved.escalation +
+      resolved.taxes;
+    const netProfit = recommendedBid - fullyLoadedCost;
+    return (netProfit / recommendedBid) * 100;
   }
 
   get costToBuild(): number {
+    const budgetBackedDirect = this.materialsCost + this.laborCost;
+    if (this.budgetLineItems.length > 0) return budgetBackedDirect;
+
     const bomSubtotal = Number(this.scopeBomTotals?.directSubtotal || 0);
     if (bomSubtotal > 0) return bomSubtotal;
 
@@ -586,6 +992,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get materialsCost(): number {
+    const budgetValue = this.categoryTotalFromBudgetItems('materials');
+    if (budgetValue > 0 || this.budgetLineItems.length > 0) return budgetValue;
+
     const bomValue = Number(this.scopeBomTotals?.materialCost || 0);
     if (bomValue > 0) return bomValue;
 
@@ -596,6 +1005,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get laborCost(): number {
+    const budgetValue = this.categoryTotalFromBudgetItems('subcontractor');
+    if (budgetValue > 0 || this.budgetLineItems.length > 0) return budgetValue;
+
     const bomValue = Number(this.scopeBomTotals?.laborCost || 0);
     if (bomValue > 0) return bomValue;
 
@@ -620,15 +1032,61 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get generalConditionsSiteServices(): number {
-    return Number(this.scopeCostSummary?.generalConditions || 0);
+    return this.resolvedIndirectSoftCosts.generalConditions;
   }
 
   get permitsAdminFees(): number {
-    return Number(this.scopeCostSummary?.permitsAdminFees || 0);
+    return this.resolvedIndirectSoftCosts.permitsAdminFees;
   }
 
   get insuranceBonds(): number {
-    return Number(this.scopeCostSummary?.insuranceBonds || 0);
+    return this.resolvedIndirectSoftCosts.insuranceBonds;
+  }
+
+  private get resolvedIndirectSoftCosts(): {
+    generalConditions: number;
+    permitsAdminFees: number;
+    insuranceBonds: number;
+  } {
+    const generalConditions = Number(this.scopeCostSummary?.generalConditions || 0);
+    let permitsAdminFees = Number(this.scopeCostSummary?.permitsAdminFees || 0);
+    let insuranceBonds = Number(this.scopeCostSummary?.insuranceBonds || 0);
+
+    // Keep card values consistent with dialog fallback: if only general conditions
+    // was parsed, infer the missing indirect buckets.
+    if (generalConditions > 0 && permitsAdminFees <= 0 && insuranceBonds <= 0) {
+      const inferredGroupedIndirect = generalConditions / (1 - 0.0882 - 0.0259);
+      permitsAdminFees = Math.round(inferredGroupedIndirect * 0.0882 * 100) / 100;
+      insuranceBonds = Math.round(inferredGroupedIndirect * 0.0259 * 100) / 100;
+    }
+
+    // Pre-click parity fallback: when all indirect buckets are missing on initial
+    // scope payload, infer them from total project cost composition.
+    if (generalConditions <= 0 && permitsAdminFees <= 0 && insuranceBonds <= 0) {
+      const material = Number(
+        this.scopeBomTotals?.materialCost || this.scopeCostSummary?.materialCost || 0,
+      );
+      const labor = Number(
+        this.scopeBomTotals?.laborCost || this.scopeCostSummary?.laborCost || 0,
+      );
+      const taxes = Number(this.scopeCostSummary?.taxes || 0);
+      const suggestedBid = Number(this.scopeCostSummary?.suggestedBid || 0);
+      const impliedIndirect = suggestedBid - taxes - material - labor;
+
+      if (impliedIndirect > 0) {
+        permitsAdminFees = Math.round(impliedIndirect * 0.0882 * 100) / 100;
+        insuranceBonds = Math.round(impliedIndirect * 0.0259 * 100) / 100;
+        const impliedGeneral =
+          impliedIndirect - permitsAdminFees - insuranceBonds;
+        return {
+          generalConditions: Math.max(0, impliedGeneral),
+          permitsAdminFees,
+          insuranceBonds,
+        };
+      }
+    }
+
+    return { generalConditions, permitsAdminFees, insuranceBonds };
   }
 
   get directAndInsurableSubtotal(): number {
@@ -670,10 +1128,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get salesTaxPct(): number {
     const fromSummary = Number(this.scopeCostSummary?.salesTaxPct || 0);
-    if (fromSummary > 0) return fromSummary;
+    if (this.isReasonableSalesTaxPct(fromSummary)) return fromSummary;
 
     const explicit = this.resolvedSalesTaxRate * 100;
-    if (explicit > 0) return explicit;
+    if (this.isReasonableSalesTaxPct(explicit)) return explicit;
 
     const base = Number(this.scopeCostSummary?.preTaxSubtotal || 0) || this.preTaxSubtotal;
     if (base > 0 && this.taxesAllowance > 0) {
@@ -693,6 +1151,13 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (computed > 0) return computed;
     }
     const taxes = Number(this.scopeCostSummary?.taxes || 0);
+    if (taxes > 0 && this.materialsCost > 0) {
+      const derivedPct = (taxes / this.materialsCost) * 100;
+      if (this.isReasonableSalesTaxPct(derivedPct)) {
+        return taxes;
+      }
+      return this.materialsCost * this.resolvedSalesTaxRate;
+    }
     if (taxes > 0) return taxes;
     return 0;
   }
@@ -715,6 +1180,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get totalDurationWeeksForDialog(): number {
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.weeks && summaryTimeline.weeks > 0) {
+      return summaryTimeline.weeks;
+    }
+
     if (!this.timelineGroups?.length) return 0;
 
     const ranges = this.timelineGroups.flatMap((group) => {
@@ -744,17 +1214,125 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get workingDaysForDialog(): number {
-    return this.totalDurationWeeksForDialog > 0 ? this.totalDurationWeeksForDialog * 5 : 0;
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.workingDays && summaryTimeline.workingDays > 0) {
+      return summaryTimeline.workingDays;
+    }
+    return this.totalDurationWeeksForDialog > 0 ? Math.round(this.totalDurationWeeksForDialog * 5) : 0;
   }
 
   get projectStartDate(): Date | null {
+    // Prefer timeline-derived start when available; avoids placeholder DB dates.
+    const timelineStarts = (this.timelineGroups || [])
+      .flatMap((group) =>
+        (group.subtasks || []).map((task) => {
+          const raw = task.start || task.startDate || null;
+          const d = raw ? new Date(raw) : null;
+          return d && !isNaN(d.getTime()) && d.getFullYear() >= 2000 ? d : null;
+        }),
+      )
+      .filter((d): d is Date => !!d);
+    if (timelineStarts.length > 0) {
+      return new Date(
+        Math.min(...timelineStarts.map((d) => d.getTime())),
+      );
+    }
+
     const rawDate =
       this.projectDetails?.desiredStartDate ??
       this.projectDetails?.DesiredStartDate ??
       this.projectDetails?.date ??
       null;
     const d = rawDate ? new Date(rawDate) : null;
-    return d && !isNaN(d.getTime()) ? d : null;
+    if (!d || isNaN(d.getTime())) return null;
+    // Ignore sentinel values like 0001-01-01.
+    return d.getFullYear() >= 2000 ? d : null;
+  }
+
+  private extractExecutiveSummaryTimeline(): {
+    workingDays: number;
+    weeks: number;
+    months: number;
+  } | null {
+    const summary =
+      this.scopeExecutiveSummaryData ??
+      this.projectDetails?.executiveSummary ??
+      this.projectDetails?.scopeExecutiveSummary ??
+      this.projectDetails?.preliminaryScope?.executiveSummary ??
+      null;
+    const keyHighlights = Array.isArray(summary?.keyHighlights) ? summary.keyHighlights : [];
+    const durationHighlight = keyHighlights.find((item: any) => {
+      const label = String(item?.label || '')
+        .toLowerCase()
+        .replace(/[*_`]/g, '')
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+      return (
+        label.includes('projectduration') ||
+        label.includes('projectedtimeline') ||
+        label.includes('projecttimeline')
+      );
+    });
+    const timelineHighlightText = keyHighlights
+      .map((item: any) => ({
+        label: String(item?.label || '')
+          .toLowerCase()
+          .replace(/[*_`]/g, '')
+          .replace(/[^a-z0-9]+/g, '')
+          .trim(),
+        text: `${String(item?.value || '')} ${String(item?.note || '')}`.trim(),
+      }))
+      .filter(
+        (item: any) =>
+          item.label.includes('projectduration') ||
+          item.label.includes('projectedtimeline') ||
+          item.label.includes('projecttimeline') ||
+          /working\s*days?|months?|weeks?/i.test(item.text),
+      )
+      .map((item: any) => item.text)
+      .join(' ');
+    const combinedText = [
+      `${String(durationHighlight?.value || '')} ${String(durationHighlight?.note || '')}`.trim(),
+      timelineHighlightText,
+      String(summary?.overview || ''),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!combinedText) return null;
+
+    const workingDaysMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*working\s*days?\b/i);
+    const weeksMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*weeks?\b/i);
+    const monthsMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*months?\b/i);
+
+    const workingDays = Number(workingDaysMatch?.[1] || 0);
+    const weeks = Number(weeksMatch?.[1] || 0);
+    const months = Number(monthsMatch?.[1] || 0);
+    if (workingDays <= 0 && weeks <= 0 && months <= 0) return null;
+
+    const resolvedWeeks =
+      workingDays > 0 ? workingDays / 5 : months > 0 ? months * 4.33 : weeks > 0 ? weeks : 0;
+    const resolvedWorkingDays =
+      workingDays > 0
+        ? workingDays
+        : resolvedWeeks > 0
+          ? resolvedWeeks * 5
+          : months > 0
+            ? months * 21.65
+            : 0;
+    const resolvedMonths =
+      months > 0
+        ? months
+        : resolvedWeeks > 0
+          ? resolvedWeeks / 4.33
+          : resolvedWorkingDays > 0
+            ? resolvedWorkingDays / 21.65
+            : 0;
+
+    return {
+      workingDays: Math.round(resolvedWorkingDays),
+      weeks: Math.round(resolvedWeeks * 10) / 10,
+      months: Math.round(resolvedMonths * 10) / 10,
+    };
   }
 
   onMobilizationStartDateSaved(isoDate: string): void {
@@ -923,17 +1501,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   loadAssignedTeam(): void {
     if (!this.projectDetails?.jobId) return;
 
-    // Stale-While-Revalidate: Load from Local Storage first
-    const storageKey = `team_${this.projectDetails.jobId}`;
-    if (this.isBrowser) {
-      const cached = localStorage.getItem(storageKey);
-      if (cached) {
-        try {
-          this.assignedTeamMembers = JSON.parse(cached);
-        } catch (e) {
-          // console.error('Error parsing cached team data', e);
-        }
-      }
+    // Stale-While-Revalidate: load cached team first.
+    const storageKey = this.getTeamCacheKey(this.projectDetails.jobId);
+    const cachedTeam = this.jobCache.get<JobUser[]>(storageKey);
+    if (cachedTeam) {
+      this.assignedTeamMembers = cachedTeam;
     }
 
     this.isLoadingTeam = true;
@@ -943,15 +1515,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         const assignment = assignments.find((a) => a.id === jobId);
         if (assignment && assignment.jobUser) {
           this.assignedTeamMembers = assignment.jobUser;
-          // Update Local Storage with fresh data
-          if (this.isBrowser) {
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify(this.assignedTeamMembers),
-            );
-          }
+          this.jobCache.set(storageKey, this.assignedTeamMembers, {
+            ttlMs: this.teamCacheTtlMs,
+          });
         } else {
           this.assignedTeamMembers = [];
+          this.jobCache.remove(storageKey);
         }
         this.isLoadingTeam = false;
         this.cdr.detectChanges();
@@ -1082,6 +1651,50 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signalrService.progress.subscribe((progress) => {
       this.progress = progress;
     });
+
+    this.signalrService.analysisProgress
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((update) => {
+        const currentJobId = Number(this.projectDetails?.jobId);
+        if (!Number.isFinite(currentJobId)) {
+          return;
+        }
+
+        if (Number(update?.jobId) !== currentJobId) {
+          return;
+        }
+
+        if (update?.isComplete || update?.hasFailed) {
+          if (this.isAnalysisInactivityPaused) {
+            this.authService.resumeInactivityTimer('job-analysis');
+            this.isAnalysisInactivityPaused = false;
+          }
+        } else {
+          if (!this.isAnalysisInactivityPaused && this.authService.isLoggedIn()) {
+            this.authService.pauseInactivityTimer('job-analysis');
+            this.isAnalysisInactivityPaused = true;
+          }
+        }
+
+        if (!update?.isComplete || update?.hasFailed) {
+          return;
+        }
+
+        if (!this.authService.isLoggedIn()) {
+          return;
+        }
+
+        if (this.projectStage !== 'INITIATION') {
+          return;
+        }
+
+        if (this.analysisAutoAdvanceTriggeredForJobIds.has(currentJobId)) {
+          return;
+        }
+
+        this.analysisAutoAdvanceTriggeredForJobIds.add(currentJobId);
+        void this.onAnalysisComplete();
+      });
     this.signalrService.uploadComplete.subscribe(() => {
       this.isUploading = false;
       this.resetFileInput();
@@ -1117,9 +1730,36 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       )
       .subscribe((projectDetails) => {
         this.projectDetails = projectDetails;
+        const currentJobId = Number(this.projectDetails?.jobId);
+        if (Number.isFinite(currentJobId) && this.lastCurrencySeededJobId !== currentJobId) {
+          // Seed from project/location context first so non-USD jobs render correctly
+          // even before the cost summary parser hydrates.
+          setDefaultCurrencySymbol(
+            this.resolveCurrencySymbolFromProjectDetails(this.projectDetails),
+          );
+          this.lastCurrencySeededJobId = currentJobId;
+        }
         const resolvedStatus =
           (this.projectDetails as any)?.status ?? (this.projectDetails as any)?.Status ?? '';
-        this.determineProjectStage(String(resolvedStatus));
+        const statusKey = String(resolvedStatus).trim().toUpperCase();
+
+        if (!Number.isFinite(currentJobId)) {
+          this.lastSyncedStageJobId = null;
+          this.lastSyncedStageStatusKey = '';
+        } else {
+          const jobChanged = this.lastSyncedStageJobId !== currentJobId;
+          const statusChanged = this.lastSyncedStageStatusKey !== statusKey;
+          if (jobChanged || statusChanged) {
+            this.lastSyncedStageJobId = currentJobId;
+            this.lastSyncedStageStatusKey = statusKey;
+            const raw = String(resolvedStatus || '').trim();
+            const statusForStage = raw || (jobChanged ? 'ANALYZING' : '');
+            if (statusForStage) {
+              this.determineProjectStage(statusForStage);
+            }
+          }
+        }
+
         this.hydrateJobUiStateFromCache(this.projectDetails?.jobId);
         this.syncScopeReviewDrafts();
         this.isStageResolved = true;
@@ -1144,13 +1784,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
           if (this.lastAuxLoadedJobId !== jobId) {
             this.lastAuxLoadedJobId = jobId;
-
-            this.loadBlueprints();
-            this.loadAssignedTeam();
-
-            if (this.projectStage !== 'INITIATION') {
-              this.loadScopeInsightData(this.projectDetails.jobId);
-            }
+            this.fetchedDataKeys.clear();
+            this.prefetchedPhaseKeys.clear();
+            this.primeDataForCurrentView();
+            this.prefetchLikelyNextData();
 
             this.authService.currentUser$
               .pipe(
@@ -1220,6 +1857,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `job_ui_state_${jobId}`;
   }
 
+  private getTeamCacheKey(jobId: string | number): string {
+    const userId =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('userId') || 'anonymous'
+        : 'anonymous';
+    return `team_${jobId}_${userId}`;
+  }
+
   private hydrateJobUiStateFromCache(jobId: string | number | undefined): void {
     if (!jobId) {
       return;
@@ -1252,19 +1897,540 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       updatedAt: new Date().toISOString(),
     };
 
-    this.jobCache.set(this.getUiStateCacheKey(jobId), payload);
+    this.jobCache.set(this.getUiStateCacheKey(jobId), payload, {
+      ttlMs: this.uiStateCacheTtlMs,
+    });
   }
 
   private loadScopeInsightData(jobId: string): void {
-    Promise.all([
-      this.reportService.getDetailedCostSummary(jobId),
-      firstValueFrom(this.bomService.getBillOfMaterials(jobId)),
-      this.reportService.getPermittingLeadTimeWeeks(jobId),
-      this.reportService.getMaxProcurementLeadTimeWeeks(jobId),
-    ])
-      .then(([summary, bomResults, permitWeeks, materialWeeks]) => {
+    const numericJobId = Number(jobId);
+    if (!Number.isFinite(numericJobId) || numericJobId <= 0) {
+      this.scopeCostSummary = null;
+      this.scopeExecutiveSummaryData = null;
+      this.scopeBomTotals = null;
+      this.scopePermitLeadTimeWeeks = null;
+      this.scopeMaterialLeadTimeWeeks = null;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    void this.refreshFinancialSnapshot(numericJobId, 0).catch(() => {
+      this.scopeCostSummary = null;
+      this.scopeExecutiveSummaryData = null;
+      this.scopeBomTotals = null;
+      this.scopePermitLeadTimeWeeks = null;
+      this.scopeMaterialLeadTimeWeeks = null;
+      this.cdr.detectChanges();
+    });
+  }
+
+  private stageToStatusKey(stage: ProjectPhase): string {
+    const map: Record<ProjectPhase, string> = {
+      INITIATION: 'INITIATION',
+      PRELIMINARY_SCOPE: 'PRELIMINARY_SCOPE',
+      DETAILED_TAKEOFF: 'DETAILED_TAKEOFF',
+      CONTRACT_AWARD: 'CONTRACT_AWARD',
+      PRE_CONSTRUCTION: 'PRE_CONSTRUCTION',
+      BID_SOLICITATION: 'BID_SOLICITATION',
+      TRADE_AWARD: 'TRADE_AWARD',
+      MOBILIZATION: 'MOBILIZATION',
+      CONSTRUCTION_LIVE: 'CONSTRUCTION_LIVE',
+      CLOSEOUT: 'CLOSEOUT',
+    };
+    return map[stage];
+  }
+
+  private resolveCurrencySymbolFromProjectDetails(details: any): string {
+    const parts = [
+      details?.currency,
+      details?.currencyCode,
+      details?.CurrencyCode,
+      details?.country,
+      details?.Country,
+      details?.countryCode,
+      details?.CountryCode,
+      details?.address,
+      details?.Address,
+      details?.formattedAddress,
+      details?.FormattedAddress,
+      details?.city,
+      details?.City,
+      details?.state,
+      details?.State,
+    ]
+      .filter((value) => value != null && String(value).trim().length > 0)
+      .map((value) => String(value).trim())
+      .join(' | ')
+      .toLowerCase();
+
+    if (!parts) return '$';
+
+    if (/\bzar\b|\brand\b/.test(parts)) return 'R';
+    if (/\bbwp\b|\bpula\b/.test(parts)) return 'P';
+    if (/\busd\b|\bdollar\b/.test(parts)) return '$';
+    if (/\beur\b|\beuro\b/.test(parts)) return '€';
+    if (/\bgbp\b|\bpound\b/.test(parts)) return '£';
+
+    if (
+      /\bsouth africa\b|\bjohannesburg\b|\bsandton\b|\bpretoria\b|\bcape town\b|\bdurban\b/.test(
+        parts,
+      )
+    ) {
+      return 'R';
+    }
+    if (/\bbotswana\b|\bgaborone\b/.test(parts)) {
+      return 'P';
+    }
+    if (/\bunited kingdom\b|\buk\b|\bengland\b|\blondon\b/.test(parts)) {
+      return '£';
+    }
+    if (
+      /\beurozone\b|\bgermany\b|\bfrance\b|\bspain\b|\bitaly\b|\bnetherlands\b|\bportugal\b|\bbelgium\b|\baustria\b/.test(
+        parts,
+      )
+    ) {
+      return '€';
+    }
+
+    return '$';
+  }
+
+  private nextProjectPhase(current: ProjectPhase): ProjectPhase | null {
+    const order: ProjectPhase[] = [
+      'INITIATION',
+      'PRELIMINARY_SCOPE',
+      'DETAILED_TAKEOFF',
+      'CONTRACT_AWARD',
+      'PRE_CONSTRUCTION',
+      'BID_SOLICITATION',
+      'TRADE_AWARD',
+      'MOBILIZATION',
+      'CONSTRUCTION_LIVE',
+      'CLOSEOUT',
+    ];
+    const idx = order.indexOf(current);
+    if (idx < 0 || idx >= order.length - 1) {
+      return null;
+    }
+    return order[idx + 1];
+  }
+
+  private markFetched(jobId: number, key: string): void {
+    this.fetchedDataKeys.add(`${jobId}:${key}`);
+  }
+
+  private isFetched(jobId: number, key: string): boolean {
+    return this.fetchedDataKeys.has(`${jobId}:${key}`);
+  }
+
+  private primeDataForCurrentView(): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+
+    const needsScope = this.projectStage !== 'INITIATION' || this.activeTab === 'overview' || this.activeTab === 'budget';
+    if (needsScope && !this.isFetched(jobId, 'scope')) {
+      this.markFetched(jobId, 'scope');
+      this.loadScopeInsightData(String(jobId));
+    }
+
+    const needsBudget = this.activeTab === 'budget' || this.activeTab === 'overview';
+    if (needsBudget && !this.isFetched(jobId, 'budget')) {
+      this.markFetched(jobId, 'budget');
+      this.loadBudgetLineItems(jobId);
+    }
+    if (needsBudget) {
+      void this.refreshFinancialSnapshot(jobId);
+    }
+
+    if (this.activeTab === 'team' && !this.isFetched(jobId, 'team')) {
+      this.markFetched(jobId, 'team');
+      this.loadAssignedTeam();
+    }
+
+    if (this.activeTab === 'blueprints' && !this.isFetched(jobId, 'blueprints')) {
+      this.markFetched(jobId, 'blueprints');
+      this.loadBlueprints();
+    }
+  }
+
+  private prefetchLikelyNextData(): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+
+    const nextStage = this.nextProjectPhase(this.projectStage);
+    if (!nextStage) {
+      return;
+    }
+
+    const nextStatusKey = this.stageToStatusKey(nextStage);
+    const prefetchKey = `${jobId}:${nextStatusKey}`;
+    if (this.prefetchedPhaseKeys.has(prefetchKey)) {
+      return;
+    }
+    this.prefetchedPhaseKeys.add(prefetchKey);
+
+    setTimeout(() => {
+      this.prefetchPhaseData(nextStatusKey, String(jobId));
+    }, this.phasePrefetchDelayMs);
+  }
+
+  private loadBudgetLineItems(jobId: number): void {
+    if (!Number.isFinite(Number(jobId)) || Number(jobId) <= 0) {
+      this.budgetLineItems = [];
+      return;
+    }
+
+    this.budgetService.getBudget(Number(jobId)).subscribe({
+      next: (items) => {
+        this.budgetLineItems = Array.isArray(items) ? items : [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.budgetLineItems = [];
+      },
+    });
+  }
+
+  private async refreshFinancialSnapshot(
+    jobId: number,
+    minIntervalMs: number = 15000,
+  ): Promise<void> {
+    if (!Number.isFinite(Number(jobId)) || Number(jobId) <= 0) return;
+    if (
+      this.financialSnapshotRefreshInFlight &&
+      this.lastFinancialSnapshotRefreshJobId === Number(jobId)
+    ) {
+      return;
+    }
+
+    const now = Date.now();
+    const sameJobAsLastRefresh =
+      this.lastFinancialSnapshotRefreshJobId === Number(jobId);
+    if (
+      sameJobAsLastRefresh &&
+      minIntervalMs > 0 &&
+      now - this.lastFinancialSnapshotRefreshAt < minIntervalMs
+    ) {
+      return;
+    }
+
+    this.financialSnapshotRefreshInFlight = true;
+    this.lastFinancialSnapshotRefreshJobId = Number(jobId);
+    try {
+      const [budgetResult, summaryResult, executiveSummaryResult, bomResult, permitWeeksResult, materialWeeksResult] =
+        await Promise.allSettled([
+        firstValueFrom(this.budgetService.getBudget(Number(jobId), true)),
+        this.reportService.getDetailedCostSummary(String(jobId)),
+        this.reportService.getExecutiveSummaryData(String(jobId)),
+        firstValueFrom(this.bomService.getBillOfMaterials(String(jobId), true)),
+        this.reportService.getPermittingLeadTimeWeeks(String(jobId)),
+        this.reportService.getMaxProcurementLeadTimeWeeks(String(jobId)),
+      ]);
+
+      if (budgetResult.status === 'fulfilled') {
+        this.budgetLineItems = Array.isArray(budgetResult.value)
+          ? budgetResult.value
+          : [];
+      }
+
+      if (summaryResult.status === 'fulfilled' && summaryResult.value) {
+        this.scopeCostSummary = summaryResult.value;
+      }
+      if (executiveSummaryResult.status === 'fulfilled' && executiveSummaryResult.value) {
+        this.scopeExecutiveSummaryData = executiveSummaryResult.value;
+      }
+      if (bomResult.status === 'fulfilled') {
+        this.scopeBomTotals = this.extractScopeBomTotals(bomResult.value);
+      }
+      if (permitWeeksResult.status === 'fulfilled') {
+        this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeksResult.value))
+          ? Number(permitWeeksResult.value)
+          : null;
+      }
+      if (materialWeeksResult.status === 'fulfilled') {
+        this.scopeMaterialLeadTimeWeeks = Number.isFinite(Number(materialWeeksResult.value))
+          ? Number(materialWeeksResult.value)
+          : null;
+      }
+
+      const summary = (this.scopeCostSummary || {}) as any;
+      const generalConditionsCurrent = Number(summary?.generalConditions || 0);
+      const permitsAdminFeesCurrent = Number(summary?.permitsAdminFees || 0);
+      const insuranceBondsCurrent = Number(summary?.insuranceBonds || 0);
+      const missingAnyIndirect =
+        generalConditionsCurrent <= 0 ||
+        permitsAdminFeesCurrent <= 0 ||
+        insuranceBondsCurrent <= 0;
+
+      if (missingAnyIndirect && bomResult.status === 'fulfilled') {
+        const extracted = this.extractIndirectSoftCostsFromBomResults(
+          bomResult.value,
+        );
+        if (extracted) {
+          this.scopeCostSummary = {
+            ...summary,
+            generalConditions:
+              generalConditionsCurrent > 0
+                ? generalConditionsCurrent
+                : extracted.generalConditions,
+            permitsAdminFees:
+              permitsAdminFeesCurrent > 0
+                ? permitsAdminFeesCurrent
+                : extracted.permitsAdminFees,
+            insuranceBonds:
+              insuranceBondsCurrent > 0
+                ? insuranceBondsCurrent
+                : extracted.insuranceBonds,
+          };
+        }
+      }
+
+      this.lastFinancialSnapshotRefreshAt = Date.now();
+      this.cdr.detectChanges();
+    } finally {
+      this.financialSnapshotRefreshInFlight = false;
+    }
+  }
+
+  private categoryTotalFromBudgetItems(category: 'materials' | 'subcontractor'): number {
+    if (!Array.isArray(this.budgetLineItems) || this.budgetLineItems.length === 0) {
+      return 0;
+    }
+
+    const toIsoTime = (item: any): number => {
+      const updated = Date.parse(String(item?.updatedAt || ''));
+      if (Number.isFinite(updated)) return updated;
+      const created = Date.parse(String(item?.createdAt || ''));
+      if (Number.isFinite(created)) return created;
+      return 0;
+    };
+
+    const normalizeItemBase = (itemName: string): string =>
+      String(itemName || '')
+        .split(' - ')[0]
+        .trim()
+        .toLowerCase();
+
+    const categoryFamily = (rawCategory: string): 'materials' | 'subcontractor' | 'other' => {
+      const normalized = String(rawCategory || '').trim().toLowerCase();
+      if (normalized === 'materials' || normalized === 'material') return 'materials';
+      if (
+        normalized === 'subcontractor' ||
+        normalized === 'subcontractors' ||
+        normalized === 'labor'
+      ) {
+        return 'subcontractor';
+      }
+      return 'other';
+    };
+
+    const lineCost = (item: any): number => {
+      const actual = Number(item?.actualCost || 0);
+      if (actual > 0) return actual;
+
+      const qty = Number(item?.quantity || 0);
+      const unit = Number(item?.unitCost || 0);
+      if (qty > 0 && unit > 0) return qty * unit;
+
+      return Number(item?.estimatedCost || 0);
+    };
+
+    const sorted = [...this.budgetLineItems].sort((a: any, b: any) => {
+      const timeDelta = toIsoTime(b) - toIsoTime(a);
+      if (timeDelta !== 0) return timeDelta;
+      return Number(b?.id || 0) - Number(a?.id || 0);
+    });
+
+    const keptByKey = new Map<string, any>();
+
+    const canonicalKey = (item: any, family: 'materials' | 'subcontractor'): string => {
+      const phase = String(item?.phase || '').trim().toLowerCase();
+      const trade = String(item?.trade || '').trim().toLowerCase();
+      const itemBase = normalizeItemBase(item?.item || '');
+      const unit = String(item?.unit || '').trim().toLowerCase();
+      return `${family}|${phase}|${trade}|${itemBase}|${unit}`;
+    };
+
+    sorted.forEach((item: any) => {
+      const family = categoryFamily(String(item?.category || ''));
+      if (family !== category) return;
+
+      // Deduplicate across AI/BOM/manual variants of the same logical line.
+      // We intentionally do NOT use source/sourceId for the primary key so that
+      // "original AI row" and "edited BOM row" collapse into one effective value.
+      const dedupeKey = canonicalKey(item, family);
+
+      if (!keptByKey.has(dedupeKey)) {
+        keptByKey.set(dedupeKey, item);
+      }
+    });
+
+    return Array.from(keptByKey.values()).reduce(
+      (sum, item) => sum + lineCost(item),
+      0,
+    );
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private extractIndirectSoftCostsFromBomResults(bomResults: any): {
+    generalConditions: number;
+    permitsAdminFees: number;
+    insuranceBonds: number;
+  } | null {
+    const list = Array.isArray(bomResults) ? bomResults : [];
+    if (!list.length) return null;
+
+    const ranked = [...list]
+      .filter((r) => typeof r?.fullResponse === 'string' && r.fullResponse.trim().length > 0)
+      .sort((a: any, b: any) => {
+        const hasPhase30A = /###\s*Phase\s*30\s*:/i.test(String(a?.fullResponse || '')) ? 1 : 0;
+        const hasPhase30B = /###\s*Phase\s*30\s*:/i.test(String(b?.fullResponse || '')) ? 1 : 0;
+        if (hasPhase30A !== hasPhase30B) return hasPhase30B - hasPhase30A;
+        return new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime();
+      });
+
+    const fullResponse = String(ranked[0]?.fullResponse || '');
+    if (!fullResponse) return null;
+
+    const parseAmount = (value: any): number => {
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      const raw = String(value ?? '').trim();
+      if (!raw) return 0;
+      const cleaned = raw.replace(/[^0-9.-]/g, '');
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const fenceRegex = /```json\s*([\s\S]*?)\s*```/gi;
+    let match: RegExpExecArray | null;
+    while ((match = fenceRegex.exec(fullResponse)) !== null) {
+      const raw = String(match[1] || '').trim();
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) continue;
+
+        let generalConditions = 0;
+        let permitsAdminFees = 0;
+        let insuranceBonds = 0;
+
+        parsed.forEach((row: any) => {
+          const phaseItem = String(
+            row?.Phase_Item || row?.Category || row?.Item || '',
+          ).toLowerCase();
+          const amount = parseAmount(row?.Amount ?? row?.Total ?? row?.Cost);
+          if (!phaseItem || amount <= 0) return;
+
+          const isGeneral =
+            phaseItem.includes('general') && phaseItem.includes('condition');
+          const isPermits =
+            phaseItem.includes('permit') || phaseItem.includes('admin');
+          const isInsurance =
+            phaseItem.includes('insurance') || phaseItem.includes('bond');
+
+          if (isGeneral) {
+            generalConditions += amount;
+            return;
+          }
+
+          // Handle combined labels such as "Permits/Admin Fees & Insurance/Bonds".
+          if (isPermits && isInsurance) {
+            permitsAdminFees += amount / 2;
+            insuranceBonds += amount / 2;
+            return;
+          }
+
+          if (isPermits) {
+            permitsAdminFees += amount;
+            return;
+          }
+          if (isInsurance) {
+            insuranceBonds += amount;
+          }
+        });
+
+        if (generalConditions > 0 || permitsAdminFees > 0 || insuranceBonds > 0) {
+          return { generalConditions, permitsAdminFees, insuranceBonds };
+        }
+      } catch {
+        // keep trying next block
+      }
+    }
+
+    return null;
+  }
+
+  private fingerprintScopeCostSummary(summary: any): string {
+    if (!summary) return '';
+    const pick = {
+      materialCost: Number(summary?.materialCost || 0),
+      laborCost: Number(summary?.laborCost || 0),
+      directSubtotal: Number(summary?.directSubtotal || 0),
+      generalConditions: Number(summary?.generalConditions || 0),
+      permitsAdminFees: Number(summary?.permitsAdminFees || 0),
+      insuranceBonds: Number(summary?.insuranceBonds || 0),
+      overhead: Number(summary?.overhead || 0),
+      contingency: Number(summary?.contingency || 0),
+      escalation: Number(summary?.escalation || 0),
+      taxes: Number(summary?.taxes || 0),
+      suggestedBid: Number(summary?.suggestedBid || 0),
+      suggestedMarketBid: Number(summary?.suggestedMarketBid || 0),
+      reportGrandTotalBidPrice: Number(summary?.reportGrandTotalBidPrice || 0),
+      reportPreTaxProjectCost: Number(summary?.reportPreTaxProjectCost || 0),
+    };
+    return JSON.stringify(pick);
+  }
+
+  private fingerprintScopeBomTotals(
+    totals: { materialCost: number; laborCost: number; directSubtotal: number } | null,
+  ): string {
+    if (!totals) return '';
+    return JSON.stringify({
+      materialCost: Number(totals.materialCost || 0),
+      laborCost: Number(totals.laborCost || 0),
+      directSubtotal: Number(totals.directSubtotal || 0),
+    });
+  }
+
+  private scopeRefreshDelayMs(attempt: number): number {
+    return Math.min(12_000, 600 * Math.pow(2, attempt));
+  }
+
+  private async refreshScopeInsightDataWithRetries(jobId: number): Promise<void> {
+    const jobIdStr = String(jobId);
+    const beforeSummary = this.fingerprintScopeCostSummary(this.scopeCostSummary);
+    const beforeBom = this.fingerprintScopeBomTotals(this.scopeBomTotals);
+    const maxAttempts = 5;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const [summary, executiveSummary, bomResults, permitWeeks, materialWeeks] =
+          await Promise.all([
+            this.reportService.getDetailedCostSummary(jobIdStr),
+            this.reportService.getExecutiveSummaryData(jobIdStr),
+            firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
+            this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
+            this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
+          ]);
+
+        const bomTotals = this.extractScopeBomTotals(bomResults);
+        const afterSummary = this.fingerprintScopeCostSummary(summary);
+        const afterBom = this.fingerprintScopeBomTotals(bomTotals);
+
         this.scopeCostSummary = summary || null;
-        this.scopeBomTotals = this.extractScopeBomTotals(bomResults);
+        this.scopeExecutiveSummaryData = executiveSummary || null;
+        const currencySymbol = (summary as any)?.currencySymbol;
+        if (currencySymbol) {
+          setDefaultCurrencySymbol(String(currencySymbol));
+        }
+        this.scopeBomTotals = bomTotals;
         this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
           ? Number(permitWeeks)
           : null;
@@ -1272,14 +2438,24 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           ? Number(materialWeeks)
           : null;
         this.cdr.detectChanges();
-      })
-      .catch(() => {
-        this.scopeCostSummary = null;
-        this.scopeBomTotals = null;
-        this.scopePermitLeadTimeWeeks = null;
-        this.scopeMaterialLeadTimeWeeks = null;
-        this.cdr.detectChanges();
-      });
+
+        // If the backend had not yet persisted the new results, we often get the same
+        // cost summary payload again. Keep polling briefly until it changes.
+        const changed =
+          (afterSummary && afterSummary !== beforeSummary) ||
+          (afterBom && afterBom !== beforeBom);
+
+        if (changed) {
+          return;
+        }
+      } catch {
+        // Transient errors; retry with backoff (avoid tight loops on failures).
+      }
+
+      if (attempt < maxAttempts - 1) {
+        await this.sleep(this.scopeRefreshDelayMs(attempt));
+      }
+    }
   }
 
   private extractScopeBomTotals(bomResults: any): {
@@ -1341,6 +2517,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.isAnalysisInactivityPaused) {
+      this.authService.resumeInactivityTimer('job-analysis');
+      this.isAnalysisInactivityPaused = false;
+    }
     this.signalrService.stopConnection();
     if (this.pollingSubscription) {
       this.pollingSubscription.unsubscribe();
@@ -1642,41 +2822,143 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.dialog.closeAll();
   }
 
-  openOverallBudgetDialog(): void {
-    const directCostBase = this.materialsCost + this.laborCost;
-    const materialRatio =
-      directCostBase > 0 ? (this.materialsCost / directCostBase) * 100 : 0;
-    const laborRatio =
-      directCostBase > 0 ? (this.laborCost / directCostBase) * 100 : 0;
+  async openOverallBudgetDialog(): Promise<void> {
+    const buildDialogData = (): OverallBudgetDialogData => {
+      const resolvedGeneralConditions = this.generalConditionsSiteServices;
+      let resolvedPermitsAdminFees = this.permitsAdminFees;
+      let resolvedInsuranceBonds = this.insuranceBonds;
 
-    const data: OverallBudgetDialogData = {
-      materialsCost: this.materialsCost,
-      laborCost: this.laborCost,
-      costToBuild: this.costToBuild,
-      generalConditionsSiteServices: this.generalConditionsSiteServices,
-      permitsAdminFees: this.permitsAdminFees,
-      insuranceBonds: this.insuranceBonds,
-      directAndInsurableSubtotal: this.directAndInsurableSubtotal,
-      taxesAllowance: this.taxesAllowance,
-      salesTaxPct: this.salesTaxPct,
-      totalProjectCost: this.totalProjectCost,
-      costPerSqFt: this.costPerSqFt,
-      materialRatio,
-      laborRatio,
+      if (
+        resolvedGeneralConditions > 0 &&
+        resolvedPermitsAdminFees <= 0 &&
+        resolvedInsuranceBonds <= 0
+      ) {
+        const inferredGroupedIndirect =
+          resolvedGeneralConditions / (1 - 0.0882 - 0.0259);
+        resolvedPermitsAdminFees =
+          Math.round(inferredGroupedIndirect * 0.0882 * 100) / 100;
+        resolvedInsuranceBonds =
+          Math.round(inferredGroupedIndirect * 0.0259 * 100) / 100;
+      }
+
+      const directAndInsurableSubtotalResolved =
+        this.materialsCost +
+        this.laborCost +
+        resolvedGeneralConditions +
+        resolvedPermitsAdminFees +
+        resolvedInsuranceBonds;
+
+      const directCostBase = this.materialsCost + this.laborCost;
+      const materialRatio =
+        directCostBase > 0 ? (this.materialsCost / directCostBase) * 100 : 0;
+      const laborRatio =
+        directCostBase > 0 ? (this.laborCost / directCostBase) * 100 : 0;
+
+      return {
+        materialsCost: this.materialsCost,
+        laborCost: this.laborCost,
+        costToBuild: this.costToBuild,
+        generalConditionsSiteServices: resolvedGeneralConditions,
+        permitsAdminFees: resolvedPermitsAdminFees,
+        insuranceBonds: resolvedInsuranceBonds,
+        directAndInsurableSubtotal: directAndInsurableSubtotalResolved,
+        taxesAllowance: this.taxesAllowance,
+        salesTaxPct: this.salesTaxPct,
+        totalProjectCost: this.totalProjectCost,
+        costPerSqFt: this.costPerSqFt,
+        materialRatio,
+        laborRatio,
+      };
     };
 
-    this.dialog.open(OverallBudgetDialogComponent, {
-      data,
+    const dialogRef = this.dialog.open(OverallBudgetDialogComponent, {
+      data: buildDialogData(),
       width: '100%',
       maxWidth: '460px',
       maxHeight: '85vh',
       autoFocus: true,
       panelClass: 'scope-insight-panel',
     });
+
+    const jobId = String(this.projectDetails?.jobId || '');
+    if (!jobId) return;
+
+    const [budgetResult, summaryResult, executiveSummaryResult, bomResult] = await Promise.allSettled([
+      firstValueFrom(this.budgetService.getBudget(Number(jobId), true)),
+      this.reportService.getDetailedCostSummary(jobId),
+      this.reportService.getExecutiveSummaryData(jobId),
+      firstValueFrom(this.bomService.getBillOfMaterials(jobId, true)),
+    ]);
+
+    if (budgetResult.status === 'fulfilled') {
+      this.budgetLineItems = Array.isArray(budgetResult.value)
+        ? budgetResult.value
+        : [];
+    }
+
+    if (summaryResult.status === 'fulfilled' && summaryResult.value) {
+      this.scopeCostSummary = summaryResult.value;
+    }
+    if (executiveSummaryResult.status === 'fulfilled' && executiveSummaryResult.value) {
+      this.scopeExecutiveSummaryData = executiveSummaryResult.value;
+    }
+
+    const summary = (this.scopeCostSummary || {}) as any;
+    const generalConditionsCurrent = Number(summary?.generalConditions || 0);
+    const permitsAdminFeesCurrent = Number(summary?.permitsAdminFees || 0);
+    const insuranceBondsCurrent = Number(summary?.insuranceBonds || 0);
+    const missingAnyIndirect =
+      generalConditionsCurrent <= 0 ||
+      permitsAdminFeesCurrent <= 0 ||
+      insuranceBondsCurrent <= 0;
+
+    if (missingAnyIndirect && bomResult.status === 'fulfilled') {
+      const extracted = this.extractIndirectSoftCostsFromBomResults(
+        bomResult.value,
+      );
+      if (extracted) {
+        this.scopeCostSummary = {
+          ...summary,
+          generalConditions:
+            generalConditionsCurrent > 0
+              ? generalConditionsCurrent
+              : extracted.generalConditions,
+          permitsAdminFees:
+            permitsAdminFeesCurrent > 0
+              ? permitsAdminFeesCurrent
+              : extracted.permitsAdminFees,
+          insuranceBonds:
+            insuranceBondsCurrent > 0
+              ? insuranceBondsCurrent
+              : extracted.insuranceBonds,
+        };
+      }
+    }
+
+    this.cdr.detectChanges();
+
+    if (dialogRef && dialogRef.componentInstance) {
+      dialogRef.componentInstance.data = buildDialogData();
+      this.cdr.detectChanges();
+    }
   }
 
-  openOverallTimelineDialog(): void {
+  async openOverallTimelineDialog(): Promise<void> {
+    const jobId = String(this.projectDetails?.jobId || '');
+    if (!this.scopeExecutiveSummaryData && jobId) {
+      try {
+        this.scopeExecutiveSummaryData = await this.reportService.getExecutiveSummaryData(jobId);
+      } catch {
+        // keep existing fallback behavior
+      }
+    }
+
     const milestones = this.buildTimelineMilestones();
+    const durationWeeks = this.totalDurationWeeksForDialog;
+    const durationWeeksText =
+      durationWeeks > 0 && Number.isInteger(durationWeeks)
+        ? String(durationWeeks)
+        : durationWeeks.toFixed(1).replace(/\.0$/, '');
 
     const data: OverallTimelineDialogData = {
       noticeToProceed: this.projectStartDate
@@ -1686,8 +2968,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         ? format(this.substantialCompletionDate, 'MMM d, yyyy')
         : 'TBD',
       contractDurationText:
-        this.totalDurationWeeksForDialog > 0
-          ? `${this.totalDurationWeeksForDialog} weeks (${this.totalDurationWeeksForDialog * 7} calendar days)`
+        durationWeeks > 0
+          ? `${durationWeeksText} weeks (${Math.round(durationWeeks * 7)} calendar days)`
           : 'TBD',
       workingDaysText:
         this.workingDaysForDialog > 0 ? `${this.workingDaysForDialog} days` : 'TBD',
@@ -1774,26 +3056,26 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   openBidPriceDialog(): void {
     const resolved = this.resolveBidPricing();
 
-    const recommendedBid = resolved.bidToClient;
+    const bidBeforeMarginFloor = resolved.bidToClient;
     const costToBuild = resolved.baseCosts;
     const overheadProfit = resolved.overheadProfit;
     const contingencyAllowance = resolved.contingency;
     const escalationAllowance = resolved.escalation;
     const taxesAllowance = resolved.taxes;
+    const recommendedBid = this.recommendedBidFromResolved(resolved);
+    const totalCostBasis =
+      costToBuild + overheadProfit + contingencyAllowance + escalationAllowance + taxesAllowance;
 
+    // Keep all profitability metrics on a single coherent basis so every card
+    // moves together when direct cost inputs change.
     const grossMargin = recommendedBid - costToBuild;
     const grossMarginPercent = recommendedBid > 0 ? (grossMargin / recommendedBid) * 100 : 0;
     const markupOnCostPercent = costToBuild > 0 ? ((recommendedBid / costToBuild) - 1) * 100 : 0;
 
-    // Net contractor profit in the full report corresponds to the OH&P line.
-    // Therefore, exclude overheadProfit from the cost basis when computing profit.
-    const totalCostBasis = costToBuild + contingencyAllowance + escalationAllowance + taxesAllowance;
-    const riskExposure = recommendedBid - totalCostBasis;
-    const netContractorProfit = overheadProfit > 0 ? overheadProfit : riskExposure;
-    const netProfitMarginPercent =
-      recommendedBid > 0
-        ? ((overheadProfit > 0 ? overheadProfit : netContractorProfit) / recommendedBid) * 100
-        : 0;
+    const riskExposure =
+      recommendedBid - (costToBuild + overheadProfit + escalationAllowance + taxesAllowance);
+    const netContractorProfit = recommendedBid - totalCostBasis;
+    const netProfitMarginPercent = recommendedBid > 0 ? (netContractorProfit / recommendedBid) * 100 : 0;
     const returnOnCostPercent = costToBuild > 0 ? (netContractorProfit / costToBuild) * 100 : 0;
     const size = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
 
@@ -2205,6 +3487,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
+      this.primeDataForCurrentView();
+      this.prefetchLikelyNextData();
   }
 
   private triggerTradePackageRefreshIfNeeded(): void {
@@ -2239,19 +3523,30 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  onAnalysisComplete() {
-      const jobId = Number(this.projectDetails?.jobId);
-      if (!Number.isFinite(jobId)) {
-        this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
-          duration: 3000,
-        });
-        return;
-      }
+  async onAnalysisComplete() {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
 
-      this.projectStage = 'PRELIMINARY_SCOPE';
-      this.stageDisplayMode = 'stage';
+    // Invalidate report cache for this job so the next summary read reflects
+    // the newest BOM/analysis record from this run.
+    this.reportService.invalidateBomResultsCache(String(jobId));
 
-      this.updateJobStatus('PRELIMINARY_SCOPE');
+    // Refresh persisted analysis outputs before advancing stage.
+    // This prevents stale values that only correct after a full page reload.
+    await this.refreshScopeInsightDataWithRetries(jobId);
+
+    await this.importAiBudgetItemsIfNeeded(jobId);
+    this.loadBudgetLineItems(jobId);
+
+    this.projectStage = 'PRELIMINARY_SCOPE';
+    this.stageDisplayMode = 'stage';
+
+    this.updateJobStatus('PRELIMINARY_SCOPE');
   }
 
   onJobGranted() {
@@ -2260,6 +3555,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onBackToPreliminary() {
+      if (this.isPersistedConstructionLive()) {
+        this.snackBar.open(
+          'This project is live in construction. Earlier phases cannot be reopened.',
+          'Close',
+          { duration: 5000 },
+        );
+        return;
+      }
       this.manualProjectStageOverride = 'PRELIMINARY_SCOPE';
       this.projectStage = 'PRELIMINARY_SCOPE';
       this.stageDisplayMode = 'stage';
@@ -2277,8 +3580,105 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateJobStatus('LIVE');
   }
 
+  private getPersistedJobStatus(): string {
+    return String(this.projectDetails?.status ?? this.projectDetails?.Status ?? '').toUpperCase();
+  }
+
+  private isPersistedConstructionLive(): boolean {
+    const s = this.getPersistedJobStatus().replace(/-/g, '_');
+    return s === 'LIVE' || s === 'ACTIVE' || s === 'CONSTRUCTION_LIVE';
+  }
+
+  private statusToPhaseRank(status: string): number | null {
+    if (!status) return null;
+    const s = status.toUpperCase().replace(/-/g, '_');
+    const ranks: Record<string, number> = {
+      ANALYZING: 0,
+      INITIATION: 0,
+      NEW: 1,
+      DRAFT: 1,
+      PRELIMINARY: 1,
+      PRELIMINARY_SCOPE: 1,
+      DETAILED_TAKEOFF: 2,
+      CONTRACT_AWARD: 3,
+      PRE_CONSTRUCTION: 4,
+      BIDDING: 5,
+      INBOUND_BIDDING: 5,
+      BID_SOLICITATION: 5,
+      TRADE_AWARD: 6,
+      MOBILIZATION: 7,
+      LIVE: 8,
+      ACTIVE: 8,
+      CONSTRUCTION_LIVE: 8,
+      CLOSEOUT: 9,
+      CLOSURE: 9,
+      ARCHIVED: 9,
+      COMPLETED: 9,
+    };
+    return ranks[s] ?? null;
+  }
+
+  private isRetrogradeFromConstructionLive(targetStatus: string): boolean {
+    const rank = this.statusToPhaseRank(targetStatus);
+    if (rank === null) return false;
+    return rank < this.constructionLivePhaseRank;
+  }
+
+  /**
+   * After PATCH, GET /job can briefly return an older Status than we just saved.
+   * Merging that into the store makes `determineProjectStage` run again and jumps
+   * the UI backward (e.g. LIVE → Mobilization). Keep the optimistic status when
+   * it is strictly ahead of the payload we received.
+   */
+  private mergeJobDetailsTrustingForwardStatus(
+    optimisticStatus: string,
+    jobDetails: Record<string, unknown> | null | undefined,
+  ): void {
+    let merged: Record<string, unknown> = {
+      ...(this.projectDetails || {}),
+      ...(jobDetails || {}),
+    };
+    const optimisticRank = this.statusToPhaseRank(optimisticStatus);
+    const serverRank = this.statusToPhaseRank(
+      String(merged['status'] ?? merged['Status'] ?? ''),
+    );
+    if (
+      optimisticRank !== null &&
+      serverRank !== null &&
+      optimisticRank > serverRank
+    ) {
+      merged = {
+        ...merged,
+        status: optimisticStatus,
+        Status: optimisticStatus,
+      };
+    }
+    this.projectDetails = merged;
+    const finalStatus = String(merged['status'] ?? merged['Status'] ?? '');
+    this.syncStageTrackingFromStoreStatus(finalStatus);
+    this.store.setState({ projectDetails: this.projectDetails } as any);
+  }
+
+  private syncStageTrackingFromStoreStatus(status: string): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId)) {
+      return;
+    }
+    this.lastSyncedStageJobId = jobId;
+    this.lastSyncedStageStatusKey = String(status || '').trim().toUpperCase();
+  }
+
   private updateJobStatus(status: string) {
     if (!this.projectDetails?.jobId) return;
+
+    if (this.isPersistedConstructionLive() && this.isRetrogradeFromConstructionLive(status)) {
+      this.snackBar.open(
+        'This project is live in construction. Earlier phases cannot be reopened.',
+        'Close',
+        { duration: 5000 },
+      );
+      return;
+    }
 
     this.manualProjectStageOverride = null;
 
@@ -2293,16 +3693,14 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
             status,
             Status: status,
           };
+          this.syncStageTrackingFromStoreStatus(status);
           this.store.setState({ projectDetails: this.projectDetails } as any);
           this.determineProjectStage(status);
           this.prefetchPhaseData(status, String(jobId));
 
           this.jobsService.getSpecificJob(jobId).subscribe({
             next: (jobDetails) => {
-              this.projectDetails = { ...(this.projectDetails || {}), ...(jobDetails || {}) };
-              this.store.setState({ projectDetails: this.projectDetails } as any);
-              // Don't re-determine stage here - backend may return stale status
-              // The initial determineProjectStage(status) call already set correct stage
+              this.mergeJobDetailsTrustingForwardStatus(status, jobDetails);
             },
             error: (err) => {
               console.error('Failed to refresh job details after status update', err);

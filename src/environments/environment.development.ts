@@ -1,4 +1,8 @@
 export const environment = {
+  /** Local API can be slow on first request (JIT, DB); avoid false timeouts. */
+  refreshTokenRequestTimeoutMs: 45_000,
+  /** Second attempt when cold-start refresh hits TimeoutError (e.g. first .NET request). */
+  coldStartRefreshTimeoutMs: 90_000,
   BACKEND_URL: 'http://localhost:5000/api',
   SIGNALR_URL:
     'https://probuildai-backend.wonderfulgrass-0f331ae8.centralus.azurecontainerapps.io/hubs',

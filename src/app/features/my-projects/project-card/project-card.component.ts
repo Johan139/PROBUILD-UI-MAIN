@@ -15,6 +15,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Project } from '../../../models/project';
+import {
+  formatDateDdMmmYyyy,
+  formatProjectBuildingAreaDisplay,
+  getProjectStatusLabel,
+} from '../project-display.utils';
 
 @Component({
   selector: 'app-project-card',
@@ -33,6 +38,9 @@ import { Project } from '../../../models/project';
   styleUrls: ['./project-card.component.scss'],
 })
 export class ProjectCardComponent {
+  readonly formatProjectDate = formatDateDdMmmYyyy;
+  readonly formatProjectArea = formatProjectBuildingAreaDisplay;
+
   @Input() project!: Project;
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @Output() onView = new EventEmitter<number>();
@@ -46,6 +54,26 @@ export class ProjectCardComponent {
   }>();
 
   constructor(private snackBar: MatSnackBar) {}
+
+  get resolvedStartDate(): Date | null {
+    const project = this.project as any;
+    const rawDate =
+      project?.potentialStartDate ??
+      project?.desiredStartDate ??
+      project?.startDate ??
+      project?.biddingStartDate ??
+      project?.PotentialStartDate ??
+      null;
+
+    if (!rawDate) return null;
+
+    const parsed = new Date(rawDate);
+    if (isNaN(parsed.getTime()) || parsed.getFullYear() <= 1) {
+      return null;
+    }
+
+    return parsed;
+  }
 
   statusColors: Record<string, string> = {
     INITIATION: 'status-initiation',
@@ -71,38 +99,14 @@ export class ProjectCardComponent {
     ANALYZING: 'status-analyzing',
   };
 
-  statusLabels: Record<string, string> = {
-    INITIATION: 'Project Initiation',
-    BIDDING: 'Bidding Phase',
-    BID_SOLICITATION: 'Bid Solicitation',
-    LIVE: 'Live Project',
-    CONSTRUCTION_LIVE: 'Construction Live',
-    DRAFT: 'Preliminary',
-    PRELIMINARY: 'Preliminary Scope Review',
-    PRELIMINARY_SCOPE: 'Preliminary Scope Review',
-    DETAILED_TAKEOFF: 'Detailed Estimating & Takeoff',
-    CONTRACT_AWARD: 'Contract Award & Execution',
-    PRE_CONSTRUCTION: 'Pre-Construction & Compliance',
-    TRADE_AWARD: 'Trade Award & Final Buyout',
-    MOBILIZATION: 'Project Mobilization',
-    CLOSEOUT: 'Project Closeout & Handover',
-    COMPLETED: 'Completed',
-    FAILED: 'Failed',
-    DISCARD: 'Discarded',
-    ARCHIVED: 'Archived',
-    CLOSURE: 'Closed',
-    NEW: 'New',
-    ANALYZING: 'Analyzing',
-  };
-
   getStatusColor(status: string | undefined): string {
     if (!status) return 'status-preliminary-scope';
-    return this.statusColors[status] || 'status-preliminary-scope';
+    const key = status.toUpperCase();
+    return this.statusColors[key] || 'status-preliminary-scope';
   }
 
   getStatusLabel(status: string | undefined): string {
-    if (!status) return 'Unknown';
-    return this.statusLabels[status] || status.replace(/_/g, ' ');
+    return getProjectStatusLabel(status);
   }
 
   isActivationStage(status: string | undefined): boolean {

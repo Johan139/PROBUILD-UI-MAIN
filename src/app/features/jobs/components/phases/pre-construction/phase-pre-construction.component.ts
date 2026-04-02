@@ -10,6 +10,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Permit } from '../../../../../models/permit';
@@ -53,6 +54,7 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
     private readonly permitsService: PermitsService,
     private readonly reportService: ReportService,
     private readonly fileUploadService: FileUploadService,
+    private readonly sanitizer: DomSanitizer,
     private readonly snackBar: MatSnackBar,
   ) {}
 
@@ -74,6 +76,7 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
   addingPermit = false;
   viewingPermit: Permit | null = null;
   viewingPermitUrl: string | null = null;
+  viewingPermitPreviewUrl: SafeResourceUrl | null = null;
   loadingPermitPreview = false;
   newPermitDraft: Pick<Permit, 'name' | 'issuingAgency' | 'requirements'> = {
     name: '',
@@ -389,6 +392,11 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
       return;
     }
 
+    if (!this.canPreviewPermitDocument(permit)) {
+      this.downloadPermitDocument(permit);
+      return;
+    }
+
     this.loadingPermitPreview = true;
     this.viewingPermit = permit;
     this.releasePermitPreviewUrl();
@@ -396,6 +404,7 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
     this.fileUploadService.getFile(permit.document.blobUrl).subscribe({
       next: (blob) => {
         this.viewingPermitUrl = window.URL.createObjectURL(blob);
+        this.viewingPermitPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.viewingPermitUrl);
         this.loadingPermitPreview = false;
       },
       error: () => {
@@ -433,6 +442,58 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
     }
 
     window.open(this.viewingPermitUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  canPreviewPermitDocument(permit: Permit): boolean {
+    const extension = this.getPermitDocumentExtension(permit);
+    return ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(extension);
+  }
+
+  getPermitDocumentActionIcon(permit: Permit): string {
+    return this.canPreviewPermitDocument(permit) ? 'eye' : 'download';
+  }
+
+  getPermitDocumentActionLabel(permit: Permit): string {
+    const fileName = permit.document?.fileName;
+    if (fileName) {
+      return fileName;
+    }
+
+    return this.canPreviewPermitDocument(permit) ? 'View document' : 'Download document';
+  }
+
+  private downloadPermitDocument(permit: Permit): void {
+    if (!permit.document?.blobUrl) {
+      return;
+    }
+
+    this.busyPermitIds.add(permit.id!);
+
+    this.fileUploadService.getFile(permit.document.blobUrl).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = permit.document?.fileName || `${permit.name || 'permit-document'}`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        if (permit.id) {
+          this.busyPermitIds.delete(permit.id);
+        }
+      },
+      error: () => {
+        if (permit.id) {
+          this.busyPermitIds.delete(permit.id);
+        }
+        this.snackBar.open('Failed to download permit document', 'Close', { duration: 2500 });
+      },
+    });
+  }
+
+  private getPermitDocumentExtension(permit: Permit): string {
+    const fileName = permit.document?.fileName || '';
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    return extension || '';
   }
 
   isPermitBusy(permit: Permit): boolean {
@@ -591,11 +652,13 @@ export class PhasePreConstructionComponent implements OnInit, OnChanges, OnDestr
 
   private releasePermitPreviewUrl(): void {
     if (!this.viewingPermitUrl) {
+      this.viewingPermitPreviewUrl = null;
       return;
     }
 
     window.URL.revokeObjectURL(this.viewingPermitUrl);
     this.viewingPermitUrl = null;
+    this.viewingPermitPreviewUrl = null;
   }
 
   toggleAddScheduleTask(): void {

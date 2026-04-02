@@ -8,7 +8,7 @@ import {
 } from '@angular/common/http';
 import { PLATFORM_ID, inject } from '@angular/core';
 import { from, Observable, of, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (
@@ -25,7 +25,8 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return token$.pipe(
     switchMap((token) => {
-      if (token) {
+      if (isBrowser && authService.isLoggedIn()) {
+        // Treat active API traffic as user activity to avoid false inactivity logouts.
         authService.resetInactivityTimer();
       }
 
@@ -38,6 +39,11 @@ export const authInterceptor: HttpInterceptorFn = (
         : req;
 
       return next(authedReq).pipe(
+        tap(() => {
+          if (isBrowser && authService.isLoggedIn()) {
+            authService.resetInactivityTimer();
+          }
+        }),
         catchError((error: any) => {
           const isAuthEndpoint =
             authedReq.url.includes('/login') ||
@@ -54,7 +60,7 @@ export const authInterceptor: HttpInterceptorFn = (
             return authService.refreshToken().pipe(
               switchMap((tokenResponse: any) => {
                 if (!tokenResponse || !tokenResponse.token) {
-                  authService.logout();
+                  authService.logout('refresh_invalid');
                   return throwError(
                     () => new Error('Unable to refresh access token.'),
                   );
@@ -70,7 +76,8 @@ export const authInterceptor: HttpInterceptorFn = (
                 return next(retryReq);
               }),
               catchError((refreshErr) => {
-                authService.logout();
+                // Avoid infinite 401 → refresh → fail loops with a dead session.
+                authService.logout('refresh_invalid');
                 return throwError(() => refreshErr);
               }),
             );

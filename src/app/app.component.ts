@@ -35,7 +35,10 @@ import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.se
 import { MatTooltip } from '@angular/material/tooltip';
 import { NotificationsMenuComponent } from './components/notifications-menu/notifications-menu.component';
 import { ThemeService } from './theme.service';
-import { OnboardingService } from './features/onboarding/onboarding.service';
+import {
+  OnboardingService,
+  ONBOARDING_STATUS_STORAGE_KEY,
+} from './features/onboarding/onboarding.service';
 import { OnboardingPromptComponent } from './features/onboarding/onboarding-prompt.component';
 import { OnboardingOverlayComponent } from './features/onboarding/onboarding-overlay.component';
 
@@ -253,9 +256,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (this.isBrowser) {
-      setTimeout(() => this.onboardingService.checkOnboardingStatus(), 2000);
+      this.onboardingService.applyPromptVisibilityFromStorage();
 
-      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
       for (const event of events) {
         window.addEventListener(event, this.inactivityEventHandler);
       }
@@ -296,7 +307,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.isBrowser) {
-      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
       for (const event of events) {
         window.removeEventListener(event, this.inactivityEventHandler);
       }
@@ -333,7 +352,16 @@ export class AppComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result === true) {
+        const onboardingStatus = localStorage.getItem(
+          ONBOARDING_STATUS_STORAGE_KEY,
+        );
         localStorage.clear();
+        if (onboardingStatus) {
+          localStorage.setItem(
+            ONBOARDING_STATUS_STORAGE_KEY,
+            onboardingStatus,
+          );
+        }
         this.loggedIn = false;
         this.authService.logout();
         if (this.routeURL) {

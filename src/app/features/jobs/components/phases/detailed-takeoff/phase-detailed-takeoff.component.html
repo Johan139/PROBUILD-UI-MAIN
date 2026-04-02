@@ -84,7 +84,7 @@
       </div>
       @if (!isLoading) {
         <div class="phase-list">
-          @for (key of objectKeys(billsOfMaterials); track key) {
+          @for (key of bomKeys; track key) {
             <article
               class="phase-item"
               [attr.data-bom-key]="key"
@@ -108,7 +108,7 @@
                 </div>
                 <div class="phase-right">
                   <span class="phase-total">
-                    {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
+                    {{ visiblePhaseTotal(key) | money }}
                   </span>
                   <span
                     class="state-pill"
@@ -122,6 +122,7 @@
                 <div
                   class="phase-item-body"
                   >
+                  @if (visibleMaterialRows(key).length) {
                   <table class="items-table">
                     <thead>
                       <tr>
@@ -135,26 +136,24 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (
-                        mat of billsOfMaterials[key].materials; track
-                        mat; let i = $index) {
+                      @for (mEntry of visibleMaterialRows(key); track mEntry.index) {
                         <tr
                           >
-                          <td>{{ mat.item }}</td>
-                          <td>{{ mat.spec }}</td>
+                          <td>{{ mEntry.row.item }}</td>
+                          <td>{{ mEntry.row.spec }}</td>
                           <td class="num">
-                            @if (!isEditingCell(key, 'materials', i, 'qty')) {
+                            @if (!isEditingCell(key, 'materials', mEntry.index, 'qty')) {
                               <button
                                 type="button"
                                 class="cell-edit-btn"
                       (click)="
-                        startCellEdit(key, 'materials', i, 'qty', mat.qty)
+                        startCellEdit(key, 'materials', mEntry.index, 'qty', mEntry.row.qty)
                       "
                                 >
-                                {{ mat.qty }}
+                                {{ mEntry.row.qty }}
                               </button>
                             }
-                            @if (isEditingCell(key, 'materials', i, 'qty')) {
+                            @if (isEditingCell(key, 'materials', mEntry.index, 'qty')) {
                               <input
                                 class="cell-edit-input"
                                 type="number"
@@ -165,9 +164,9 @@
                                 />
                             }
                           </td>
-                          <td class="num">{{ mat.unit }}</td>
+                          <td class="num">{{ mEntry.row.unit }}</td>
                           <td class="num">
-                            @if (!isEditingCell(key, 'materials', i, 'unitCost')) {
+                            @if (!isEditingCell(key, 'materials', mEntry.index, 'unitCost')) {
                               <button
                                 type="button"
                                 class="cell-edit-btn"
@@ -175,16 +174,16 @@
                         startCellEdit(
                           key,
                           'materials',
-                          i,
+                          mEntry.index,
                           'unitCost',
-                          mat.unitCost
+                          mEntry.row.unitCost
                         )
                       "
                                 >
-                                {{ mat.unitCost | money }}
+                                {{ mEntry.row.unitCost | money }}
                               </button>
                             }
-                            @if (isEditingCell(key, 'materials', i, 'unitCost')) {
+                            @if (isEditingCell(key, 'materials', mEntry.index, 'unitCost')) {
                               <input
                                 class="cell-edit-input"
                                 type="number"
@@ -195,14 +194,14 @@
                                 />
                             }
                           </td>
-                          <td class="num">{{ mat.total | money }}</td>
+                          <td class="num">{{ mEntry.row.total | money }}</td>
                           <td class="actions-cell">
-                            @if (isBomRowModified(key, 'materials', i)) {
+                            @if (isBomRowModified(key, 'materials', mEntry.index)) {
                               <button
                                 type="button"
                                 class="revert-btn"
                                 title="Revert this item to its original AI-generated values"
-                                (click)="revertBomRow(key, 'materials', i)"
+                                (click)="revertBomRow(key, 'materials', mEntry.index)"
                                 >
                                 Revert
                               </button>
@@ -212,7 +211,8 @@
                       }
                     </tbody>
                   </table>
-                  @if (billsOfMaterials[key].labor.length) {
+                  }
+                  @if (visibleLaborRows(key).length) {
                     <table
                       class="items-table"
                       >
@@ -227,26 +227,24 @@
                         </tr>
                       </thead>
                       <tbody>
-                        @for (
-                          labor of billsOfMaterials[key].labor; track
-                          labor; let i = $index) {
+                        @for (lEntry of visibleLaborRows(key); track lEntry.index) {
                           <tr
                             >
-                            <td>{{ labor.trade }}</td>
-                            <td>{{ labor.scope }}</td>
+                            <td>{{ lEntry.row.trade }}</td>
+                            <td>{{ lEntry.row.scope }}</td>
                             <td class="num">
-                              @if (!isEditingCell(key, 'labor', i, 'hours')) {
+                              @if (!isEditingCell(key, 'labor', lEntry.index, 'hours')) {
                                 <button
                                   type="button"
                                   class="cell-edit-btn"
                       (click)="
-                        startCellEdit(key, 'labor', i, 'hours', labor.hours)
+                        startCellEdit(key, 'labor', lEntry.index, 'hours', lEntry.row.hours)
                       "
                                   >
-                                  {{ labor.hours }}
+                                  {{ lEntry.row.hours }}
                                 </button>
                               }
-                              @if (isEditingCell(key, 'labor', i, 'hours')) {
+                              @if (isEditingCell(key, 'labor', lEntry.index, 'hours')) {
                                 <input
                                   class="cell-edit-input"
                                   type="number"
@@ -258,18 +256,18 @@
                               }
                             </td>
                             <td class="num">
-                              @if (!isEditingCell(key, 'labor', i, 'rate')) {
+                              @if (!isEditingCell(key, 'labor', lEntry.index, 'rate')) {
                                 <button
                                   type="button"
                                   class="cell-edit-btn"
                       (click)="
-                        startCellEdit(key, 'labor', i, 'rate', labor.rate)
+                        startCellEdit(key, 'labor', lEntry.index, 'rate', lEntry.row.rate)
                       "
                                   >
-                                  {{ labor.rate | money }}
+                                  {{ lEntry.row.rate | money }}
                                 </button>
                               }
-                              @if (isEditingCell(key, 'labor', i, 'rate')) {
+                              @if (isEditingCell(key, 'labor', lEntry.index, 'rate')) {
                                 <input
                                   class="cell-edit-input"
                                   type="number"
@@ -280,14 +278,14 @@
                                   />
                               }
                             </td>
-                            <td class="num">{{ labor.total | money }}</td>
+                            <td class="num">{{ lEntry.row.total | money }}</td>
                             <td class="actions-cell">
-                              @if (isBomRowModified(key, 'labor', i)) {
+                              @if (isBomRowModified(key, 'labor', lEntry.index)) {
                                 <button
                                   type="button"
                                   class="revert-btn"
                                   title="Revert this item to its original AI-generated values"
-                                  (click)="revertBomRow(key, 'labor', i)"
+                                  (click)="revertBomRow(key, 'labor', lEntry.index)"
                                   >
                                   Revert
                                 </button>
@@ -301,7 +299,7 @@
                   <div class="phase-footer">
                     <span>Phase Subtotal</span>
                     <strong>
-                      {{ billsOfMaterials[key].totalMaterialCost + billsOfMaterials[key].totalLaborCost | money }}
+                      {{ visiblePhaseTotal(key) | money }}
                     </strong>
                   </div>
                   @if (!confirmedBomSections.has(key)) {
@@ -343,7 +341,9 @@
       <section class="progress-card">
         <div class="progress-row">
           <span>Confirmed Phases</span>
-          <strong>{{ confirmedBomSections.size }} / {{ bomKeys.length }}</strong>
+          <strong
+            >{{ confirmedVisiblePhaseCount }} / {{ bomKeys.length }}</strong
+            >
         </div>
         <div class="progress-track">
           <div
@@ -496,8 +496,8 @@
                 </p>
               } @else {
                 <p>
-                  {{ bomKeys.length - confirmedBomSections.size }} phase{{
-                  bomKeys.length - confirmedBomSections.size === 1 ? "" : "s"
+                  {{ bomKeys.length - confirmedVisiblePhaseCount }} phase{{
+                  bomKeys.length - confirmedVisiblePhaseCount === 1 ? "" : "s"
                   }}
                   remaining.
                 </p>
@@ -595,15 +595,23 @@
                     </div>
                     <p class="card-label">Overall Budget</p>
                     <p class="card-value">
-                      {{ overallBudgetValue | money : true : 2 }}
+                      @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                        --
+                      } @else {
+                        {{ overallBudgetValue | money : true : 2 }}
+                      }
                     </p>
                   </div>
                   <div class="card-bottom">
                     <div class="progress-row">
                       <span>Spent to Date</span>
-                      <strong>{{
-                        spentToDate | money : true : 2
-                      }}</strong>
+                      <strong>
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ spentToDate | money : true : 2 }}
+                        }
+                      </strong>
                     </div>
                     <div class="progress-track" aria-hidden="true">
                       <div
@@ -613,9 +621,13 @@
                     </div>
                     <div class="progress-row">
                       <span>Remaining</span>
-                      <strong>{{
-                        overallRemainingBudget | money : true : 2
-                      }}</strong>
+                      <strong>
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ overallRemainingBudget | money : true : 2 }}
+                        }
+                      </strong>
                     </div>
                   </div>
                 </button>
@@ -629,14 +641,24 @@
                       <lucide-icon name="clock" class="icon-blue"></lucide-icon>
                     </div>
                     <p class="card-label">Overall Timeline</p>
-                    <p class="card-value">{{ totalDurationWeeks }} Weeks</p>
+                    <p class="card-value">
+                      @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                        --
+                      } @else {
+                        {{ totalDurationWeeks }} Weeks
+                      }
+                    </p>
                   </div>
                   <div class="card-bottom">
                     <div class="progress-row">
                       <span>Progress</span>
-                      <strong
-                        >Week {{ currentWeek }} of {{ totalDurationWeeks }}</strong
-                        >
+                      <strong>
+                        @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                          --
+                        } @else {
+                          Week {{ currentWeek }} of {{ totalDurationWeeks }}
+                        }
+                      </strong>
                       </div>
                       <div class="progress-track" aria-hidden="true">
                         <div
@@ -646,7 +668,13 @@
                       </div>
                       <div class="progress-row">
                         <span>Est. Completion</span>
-                        <strong>{{ estimatedCompletionDate | date: "MMM d, y" }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
+                            --
+                          } @else {
+                            {{ estimatedCompletionDate | date: "MMM d, y" }}
+                          }
+                        </strong>
                       </div>
                     </div>
                   </button>
@@ -661,25 +689,43 @@
                       </div>
                       <p class="card-label">Bid Price (Client)</p>
                       <p class="card-value">
-                        {{ bidPriceValue | money : true : 2 }}
+                        @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                          --
+                        } @else {
+                          {{ bidPriceValue | money : true : 2 }}
+                        }
                       </p>
                     </div>
                     <div class="card-bottom">
                       <div class="progress-row">
                         <span>Gross Profit</span>
-                        <strong>{{
-                          bidGrossProfit | money : true : 2
-                        }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidGrossProfit | money : true : 2 }}
+                          }
+                        </strong>
                       </div>
                       <div class="progress-row">
                         <span>Profit Margin</span>
-                        <strong>{{ bidProfitMarginPercent | number: "1.1-1" }}%</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidProfitMarginPercent | number: "1.1-1" }}%
+                          }
+                        </strong>
                       </div>
                       <div class="progress-row">
                         <span>Exposure</span>
-                        <strong>{{
-                          bidExposureValue | money : true : 2
-                        }}</strong>
+                        <strong>
+                          @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
+                            --
+                          } @else {
+                            {{ bidExposureValue | money : true : 2 }}
+                          }
+                        </strong>
                       </div>
                     </div>
                   </button>
@@ -745,14 +791,11 @@
                         </div>
                         <div class="detail-item">
                           <span class="detail-label">Total Area</span>
-                          <span class="detail-value"
-                            >{{
-                            projectTotalArea
-                            ? (projectTotalArea | number: "1.0-0")
-                            : "N/A"
-                            }}
-                            sq ft</span
-                            >
+                          <span class="detail-value">{{
+                            projectTotalAreaHeaderText === "N/A"
+                              ? "N/A"
+                              : projectTotalAreaHeaderText + " sq ft"
+                          }}</span>
                           </div>
                         </div>
                       }

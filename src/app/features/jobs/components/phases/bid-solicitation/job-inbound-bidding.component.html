@@ -154,7 +154,7 @@
                     <div class="budget-block">
                       <p>Labor Estimate</p>
                       <div class="budget-edit-row">
-                        <span class="budget-prefix">$</span>
+                        <span class="budget-prefix">{{ displayCurrencySymbol }}</span>
                         <input
                           type="number"
                           class="budget-inline-input"
@@ -172,7 +172,7 @@
                           >
                           <p>Materials Estimate</p>
                           <div class="budget-edit-row">
-                            <span class="budget-prefix">$</span>
+                            <span class="budget-prefix">{{ displayCurrencySymbol }}</span>
                             <input
                               type="number"
                               class="budget-inline-input"
@@ -191,10 +191,7 @@
                         </div>
                       </div>
                       <div class="budget-input-wrapper">
-                        <lucide-angular
-                          [img]="DollarSign"
-                          class="input-icon"
-                        ></lucide-angular>
+                        <span class="currency-prefix">{{ displayCurrencySymbol }}</span>
                         <input
                           type="number"
                           [value]="pkg.budget"

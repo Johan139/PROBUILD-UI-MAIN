@@ -119,7 +119,7 @@ interface CompanyAddressDTO {
     MatRadioModule,
     MatTooltipModule,
     MatProgressBarModule
-],
+  ],
   templateUrl: './quote.component.html',
   styleUrls: ['./quote.component.scss'],
   providers: [QuoteService],
@@ -932,6 +932,37 @@ export class QuoteComponent implements OnInit, OnDestroy {
       this.quoteRows.removeAt(index);
       this.dataSource.data = this.quoteRows.controls as FormGroup[];
       this.cdr.markForCheck();
+    }
+  }
+
+  focusNextInput(event: Event): void {
+    event.preventDefault();
+    const currentElement = event.target as HTMLElement;
+
+    // Attempt to find the closest form or container
+    const container = currentElement.closest('form') || currentElement.closest('.line-items-section');
+    if (!container) {
+      currentElement.blur();
+      return;
+    }
+
+    // If we're currently on a price input, only query for other price inputs to jump down the column
+    const isPriceInput = currentElement.classList.contains('price-input');
+    const focusableSelectors = isPriceInput
+      ? '.price-input:not([readonly]):not([disabled])'
+      : 'input:not([readonly]):not([disabled]), select:not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled])';
+
+    const focusables = Array.from(
+      container.querySelectorAll(focusableSelectors)
+    ) as HTMLElement[];
+
+    const currentIndex = focusables.indexOf(currentElement);
+    if (currentIndex > -1 && currentIndex < focusables.length - 1) {
+      // Focus the next available input
+      focusables[currentIndex + 1].focus();
+    } else {
+      // If none found or it's the last one, just unfocus
+      currentElement.blur();
     }
   }
 

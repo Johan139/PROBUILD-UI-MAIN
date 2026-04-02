@@ -13,6 +13,7 @@ import {
   filter,
   take,
   finalize,
+  timeout,
 } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
@@ -24,6 +25,7 @@ import { UserAddressStoreService } from '../services/UserAddressStoreService';
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`;
@@ -36,11 +38,24 @@ export class AuthService {
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
+  private inactivityPauseSources = new Set<string>();
+  /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
+  private readonly refreshTimeoutMs =
+    environment.refreshTokenRequestTimeoutMs ?? 10_000;
+  private lastGetTokenRefreshFailureLogAt = 0;
+  /** After a failed refresh while the access token is still valid, brief pause before retry. */
+  private readonly REFRESH_RETRY_COOLDOWN_MS = 15_000;
+  private readonly REFRESH_FAILURE_WINDOW_MS = 60000;
+  private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 3;
   private isRefreshing = false;
-  private refreshTokenSubject = new BehaviorSubject<{
-    token: string;
-    refreshToken: string;
-  } | null>(null);
+  private refreshRetryCooldownUntil = 0;
+  private refreshAuthFailureCount = 0;
+  private refreshAuthFailureWindowStartedAt = 0;
+  private refreshTokenSubject = new BehaviorSubject<
+    | { token: string; refreshToken: string }
+    | { failed: true; error: unknown }
+    | null
+  >(null);
 
   constructor(
     private router: Router,
@@ -87,14 +102,124 @@ export class AuthService {
     return payload?.exp ?? null;
   }
 
+  /** True when access token is past JWT exp (must refresh or re-login). */
+  private accessTokenIsExpired(token: string | null): boolean {
+    if (!token) return true;
+    const exp = this.getExp(token);
+    if (exp == null) return true;
+    return exp * 1000 <= Date.now();
+  }
+
+  /** RxJS timeout uses name TimeoutError; legacy wrapper used message "Refresh token timeout". */
+  private isRefreshTimeoutError(err: unknown): boolean {
+    if (err instanceof Error && err.message.includes('Refresh token timeout')) {
+      return true;
+    }
+    return (
+      !!err &&
+      typeof err === 'object' &&
+      (err as { name?: string }).name === 'TimeoutError'
+    );
+  }
+
+  private coldStartExtendedRefreshTimeoutMs(): number {
+    const extra = (environment as { coldStartRefreshTimeoutMs?: number })
+      .coldStartRefreshTimeoutMs;
+    if (typeof extra === 'number' && extra > 0) {
+      return extra;
+    }
+    return Math.max(this.refreshTimeoutMs * 2, 45_000);
+  }
+
+  /**
+   * Runs after bootstrap when the access token is already expired.
+   * Must not block APP_INITIALIZER — otherwise the whole shell (including /login) waits on refresh timeouts.
+   */
+  private async performColdStartRefresh(): Promise<void> {
+    try {
+      await firstValueFrom(this.refreshToken());
+      const newToken = localStorage.getItem('accessToken');
+      if (newToken) this.loadUserFromToken(newToken);
+    } catch (err) {
+      if (this.isRefreshTimeoutError(err)) {
+        try {
+          await firstValueFrom(
+            this.refreshToken(this.coldStartExtendedRefreshTimeoutMs()),
+          );
+          const newToken = localStorage.getItem('accessToken');
+          if (newToken) {
+            this.loadUserFromToken(newToken);
+            return;
+          }
+        } catch (retryErr) {
+          console.warn(
+            'Cold-start token refresh failed after extended retry; logging in again is required.',
+            retryErr,
+          );
+          this.logoutWithReason('refresh_invalid');
+          return;
+        }
+      }
+
+      if (!this.shouldForceLogoutOnRefreshFailure(err)) {
+        // Cold start only runs when the access token is already expired — do not
+        // leave the user in a state where every request 401s and hammers refresh.
+        console.warn(
+          'Token refresh failed during cold start; logging out.',
+          err,
+        );
+        this.logoutWithReason('refresh_invalid');
+        return;
+      }
+
+      console.error('Session expired. Logging out.', err);
+      this.logoutWithReason('refresh_invalid');
+    }
+  }
+
+  private shouldForceLogoutOnRefreshFailure(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) return false;
+    return error.status === 400 || error.status === 401 || error.status === 403;
+  }
+
+  private shouldLogoutNowForRefreshAuthFailure(): boolean {
+    const now = Date.now();
+    if (
+      !this.refreshAuthFailureWindowStartedAt ||
+      now - this.refreshAuthFailureWindowStartedAt > this.REFRESH_FAILURE_WINDOW_MS
+    ) {
+      this.refreshAuthFailureWindowStartedAt = now;
+      this.refreshAuthFailureCount = 1;
+      return false;
+    }
+
+    this.refreshAuthFailureCount += 1;
+    return this.refreshAuthFailureCount >= this.MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES;
+  }
+
+  private resetRefreshAuthFailureState(): void {
+    this.refreshAuthFailureCount = 0;
+    this.refreshAuthFailureWindowStartedAt = 0;
+  }
+
+  private logoutWithReason(
+    reason: 'manual' | 'inactivity' | 'refresh_invalid' | 'token_invalid',
+  ): void {
+    this.logout(reason);
+  }
+
   public startInactivityTimer(): void {
     this.clearInactivityTimer();
 
     if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
+    if (this.inactivityPauseSources.size > 0) return;
 
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
-      this.logout();
+      if (this.isLoggedIn()) {
+        this.logoutWithReason('inactivity');
+      }
     }, this.INACTIVITY_LIMIT);
   }
 
@@ -106,7 +231,30 @@ export class AuthService {
   }
 
   public resetInactivityTimer(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) {
+      this.clearInactivityTimer();
+      return;
+    }
+    if (this.inactivityPauseSources.size > 0) {
+      this.clearInactivityTimer();
+      return;
+    }
     this.startInactivityTimer();
+  }
+
+  public pauseInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.add(key);
+    this.clearInactivityTimer();
+  }
+
+  public resumeInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.delete(key);
+    if (this.inactivityPauseSources.size === 0) {
+      this.startInactivityTimer();
+    }
   }
 
   public hasPermission(permissionKey: string): Observable<boolean> {
@@ -140,26 +288,14 @@ export class AuthService {
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');
-      this.logout();
+      this.logoutWithReason('token_invalid');
       return;
     }
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // console.log('Access token expired, attempting to refresh...');
-      try {
-        await Promise.race([
-          firstValueFrom(this.refreshToken()),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Refresh token timeout')), 1500),
-          ),
-        ]);
-        const newToken = localStorage.getItem('accessToken');
-        if (newToken) this.loadUserFromToken(newToken);
-      } catch (err) {
-        console.error('Session expired. Logging out.', err);
-        this.logout();
-      }
+      // Do not await: APP_INITIALIZER would block first paint for the full refresh timeout (+ retry).
+      void this.performColdStartRefresh();
     }
   }
   googleLogin(idToken: string): Observable<any> {
@@ -319,9 +455,16 @@ export class AuthService {
     localStorage.setItem('userType', userType);
   }
 
-  logout(): void {
+  logout(
+    reason:
+      | 'manual'
+      | 'inactivity'
+      | 'refresh_invalid'
+      | 'token_invalid' = 'manual',
+  ): void {
     this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.LOGOUT_REASON_KEY, reason);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userType');
@@ -336,43 +479,73 @@ export class AuthService {
       this.addressStore.clear();
     }
     this.currentUserSubject.next(null);
+    this.resetRefreshAuthFailureState();
 
     this.router.navigate(['/login']);
   }
 
-  refreshToken(): Observable<any> {
+  refreshToken(timeoutOverrideMs?: number): Observable<any> {
+    const requestTimeoutMs = timeoutOverrideMs ?? this.refreshTimeoutMs;
+
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
-        filter((tokenResponse) => tokenResponse != null),
+        filter((tokenResponse) => tokenResponse !== null),
         take(1),
+        switchMap((tokenResponse) => {
+          if ((tokenResponse as any)?.failed) {
+            return throwError(
+              () =>
+                ((tokenResponse as { failed: true; error: unknown }).error ??
+                  new Error('Refresh token request failed.')),
+            );
+          }
+          return of(tokenResponse);
+        }),
       );
+    }
+
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      this.refreshTokenSubject.next({
+        failed: true,
+        error: new Error('No refresh token available.'),
+      });
+      this.logoutWithReason('refresh_invalid');
+      return throwError(() => new Error('No refresh token available.'));
     }
 
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      this.logout();
-      return throwError(() => new Error('No refresh token available.'));
-    }
-
     return this.http
       .post(`${this.apiUrl}/refresh-token`, { refreshToken })
       .pipe(
+        timeout(requestTimeoutMs),
         tap((response: any) => {
           if (response && response.token && response.refreshToken) {
             localStorage.setItem('accessToken', response.token);
             localStorage.setItem('refreshToken', response.refreshToken);
             this.loadUserFromToken(response.token);
+            this.resetRefreshAuthFailureState();
             this.refreshTokenSubject.next(response);
           } else {
-            this.logout();
+            this.refreshTokenSubject.next({
+              failed: true,
+              error: new Error('Invalid refresh token response'),
+            });
+            if (this.shouldLogoutNowForRefreshAuthFailure()) {
+              this.logoutWithReason('refresh_invalid');
+            }
             throw new Error('Invalid refresh token response');
           }
         }),
         catchError((err) => {
-          this.logout();
+          this.refreshTokenSubject.next({ failed: true, error: err });
+          if (this.shouldForceLogoutOnRefreshFailure(err)) {
+            if (this.shouldLogoutNowForRefreshAuthFailure()) {
+              this.logoutWithReason('refresh_invalid');
+            }
+          }
           return throwError(() => err);
         }),
         finalize(() => {
@@ -393,18 +566,65 @@ export class AuthService {
       return null;
     }
 
-    // Refresh if expiring within 5 seconds
-    if (exp * 1000 < Date.now() + 5000) {
-      try {
-        await firstValueFrom(this.refreshToken());
-        return localStorage.getItem('accessToken');
-      } catch (e) {
-        console.error('Refresh failed in getToken()', e);
-        return null;
-      }
+    const expiresAtMs = exp * 1000;
+    const now = Date.now();
+    const isExpired = this.accessTokenIsExpired(token);
+    const needsProactiveRefresh = expiresAtMs < now + 5000;
+
+    if (!needsProactiveRefresh) {
+      return this.normalizeToken(token);
     }
 
-    return this.normalizeToken(token);
+    if (now < this.refreshRetryCooldownUntil) {
+      if (isExpired) {
+        console.warn(
+          'Access token expired and refresh is in cooldown; logging out.',
+        );
+        this.logoutWithReason('refresh_invalid');
+        return null;
+      }
+      return this.normalizeToken(token);
+    }
+
+    try {
+      await firstValueFrom(this.refreshToken());
+      this.refreshRetryCooldownUntil = 0;
+      return localStorage.getItem('accessToken');
+    } catch (e) {
+      if (isExpired) {
+        console.warn(
+          'Refresh failed while access token was expired; logging out.',
+          e,
+        );
+        this.logoutWithReason('refresh_invalid');
+        return null;
+      }
+
+      const t = Date.now();
+      if (t - this.lastGetTokenRefreshFailureLogAt > 2500) {
+        this.lastGetTokenRefreshFailureLogAt = t;
+        const isTimeout =
+          e &&
+          typeof e === 'object' &&
+          (e as { name?: string }).name === 'TimeoutError';
+        if (isTimeout) {
+          console.warn(
+            'Token refresh timed out in getToken(); token still valid briefly — retry after cooldown. Check API / refresh-token or environment.refreshTokenRequestTimeoutMs.',
+            e,
+          );
+        } else {
+          console.error('Refresh failed in getToken()', e);
+        }
+      }
+      this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
+      return this.normalizeToken(token);
+    }
+  }
+
+  getAccessTokenFast(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    const token = localStorage.getItem('accessToken');
+    return token ? this.normalizeToken(token) : null;
   }
 
   isLoggedIn(): boolean {
@@ -525,7 +745,10 @@ export class AuthService {
     return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
       tap((memberDetails) => {
         const isAdmin =
-          memberDetails.isAdmin ?? payload?.IsAdmin ?? payload?.isAdmin ?? false;
+          memberDetails.isAdmin ??
+          payload?.IsAdmin ??
+          payload?.isAdmin ??
+          false;
         const user = {
           id: memberDetails.id,
           inviterId: memberDetails.inviterId,

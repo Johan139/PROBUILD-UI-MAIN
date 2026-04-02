@@ -468,6 +468,7 @@
                                 formControlName="description"
                                 placeholder="Item description"
                                 [readonly]="readOnly || lineItemsReadOnly"
+                                (keydown.enter)="focusNextInput($event)"
                                 />
                                 <input
                                   type="number"
@@ -475,6 +476,7 @@
                                   formControlName="quantity"
                                   min="1"
                                   [readonly]="readOnly || lineItemsReadOnly"
+                                  (keydown.enter)="focusNextInput($event)"
                                   />
                                   <select
                                     class="dark-input"
@@ -494,6 +496,7 @@
                                     min="0"
                                     step="any"
                                     [readonly]="readOnly || lineItemsReadOnly"
+                                    (keydown.enter)="focusNextInput($event)"
                                     />
                                     <div class="amount-cell">
                                       ${{ row.get("total")?.value | number: "1.2-2" }}
@@ -502,6 +505,7 @@
                                     @if (quoteRows.length > 1 && !readOnly && !lineItemsReadOnly) {
                                       <button
                                         mat-icon-button
+                                        type="button"
                                         class="delete-btn"
                                         (click)="removeRow(i)"
                                         matTooltip="Remove this line item"
@@ -515,6 +519,7 @@
                                 @if (!readOnly && !lineItemsReadOnly) {
                                   <button
                                     mat-button
+                                    type="button"
                                     class="btn btn-secondary add-line-btn"
                                     (click)="addRow()"
                                     matTooltip="Add a new line item to the quote"
@@ -698,6 +703,7 @@
                                           (click)="rejectQuote()"
                                           [disabled]="isAlreadyActioned"
                                           >
+                                          <mat-icon>cancel</mat-icon>
                                           Reject Quote
                                         </button>
                                         <button
@@ -760,6 +766,7 @@
                                             matTooltip="Permanently delete this draft"
                                             (click)="deleteQuote()"
                                             >
+                                            <mat-icon>delete</mat-icon>
                                             Delete
                                           </button>
                                         }

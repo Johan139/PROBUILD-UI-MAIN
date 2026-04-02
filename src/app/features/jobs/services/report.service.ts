@@ -22,6 +22,56 @@ export class ReportService {
     private http: HttpClient,
   ) {}
 
+  invalidateBomResultsCache(jobId?: string): void {
+    const key = String(jobId || '').trim();
+    if (key) {
+      this.bomResultsCache.delete(key);
+      return;
+    }
+    this.bomResultsCache.clear();
+  }
+
+  private sortBomResultsNewestFirst(results: any[]): any[] {
+    return [...results].sort((a: any, b: any) => {
+      const timeA = new Date(a?.createdAt || 0).getTime();
+      const timeB = new Date(b?.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+
+      const idA = Number(a?.id || 0);
+      const idB = Number(b?.id || 0);
+      return idB - idA;
+    });
+  }
+
+  private selectBestBomResult(results: any[] | null): any | null {
+    if (!Array.isArray(results) || results.length === 0) return null;
+
+    const withResponse = results.filter(
+      (r) => typeof r?.fullResponse === 'string' && r.fullResponse.trim().length > 0,
+    );
+    if (withResponse.length === 0) return null;
+
+    const scored = [...withResponse].sort((a: any, b: any) => {
+      const textA = String(a?.fullResponse || '');
+      const textB = String(b?.fullResponse || '');
+      const hasPhase30A = /###\s*Phase\s*30\s*:/i.test(textA) ? 1 : 0;
+      const hasPhase30B = /###\s*Phase\s*30\s*:/i.test(textB) ? 1 : 0;
+      if (hasPhase30A !== hasPhase30B) return hasPhase30B - hasPhase30A;
+
+      const timeA = new Date(a?.createdAt || 0).getTime();
+      const timeB = new Date(b?.createdAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+
+      const idA = Number(a?.id || 0);
+      const idB = Number(b?.id || 0);
+      if (idA !== idB) return idB - idA;
+
+      return textB.length - textA.length;
+    });
+
+    return scored[0] || null;
+  }
+
   private async getBomResults(jobId: string): Promise<any[] | null> {
     const key = String(jobId);
     const now = Date.now();
@@ -32,7 +82,9 @@ export class ReportService {
 
     try {
       const results = await this.jobsService.GetBillOfMaterials(jobId).toPromise();
-      const normalized = Array.isArray(results) ? results : null;
+      const normalized = Array.isArray(results)
+        ? this.sortBomResultsNewestFirst(results)
+        : null;
       this.bomResultsCache.set(key, { cachedAt: now, results: normalized });
       return normalized;
     } catch (err) {
@@ -403,7 +455,9 @@ export class ReportService {
           const valueRaw = cleanText(parts.slice(1).join(':'));
           const money = valueRaw.match(/\$[\d,.]+/);
           const percent = valueRaw.match(/\d+(?:\.\d+)?%/);
-          const duration = valueRaw.match(/\b\d+\s*(?:months?|weeks?)\b/i);
+          const duration = valueRaw.match(
+            /\b\d+(?:\.\d+)?\s*(?:working\s*days?|days?|months?|weeks?)\b/i,
+          );
           const value = money?.[0] || percent?.[0] || duration?.[0] || valueRaw || 'N/A';
           return {
             label,
@@ -931,13 +985,71 @@ export class ReportService {
 
   async getDetailedCostSummary(jobId: string): Promise<any> {
     try {
-      const results = await this.jobsService
-        .GetBillOfMaterials(jobId)
-        .toPromise();
-      if (!results || results.length === 0 || !results[0].fullResponse) {
+      const results = await this.getBomResults(jobId);
+      const best = this.selectBestBomResult(results);
+      if (!best) {
         return null;
       }
-      const fullResponse = results[0].fullResponse;
+      const fullResponse = String(best.fullResponse || '');
+      const hasPhase30Section = /###\s*Phase\s*30\s*:/i.test(fullResponse);
+
+      const detectCurrencySymbol = (text: string): string => {
+        const raw = String(text || '');
+        const normalized = raw.toLowerCase();
+
+        // Prefer explicit ISO code markers.
+        if (/\bZAR\b/i.test(raw)) return 'R';
+        if (/\bUSD\b/i.test(raw)) return '$';
+        if (/\bGBP\b/i.test(raw)) return '£';
+        if (/\bEUR\b/i.test(raw)) return '€';
+
+        // If ISO markers are absent, infer from extracted report location.
+        // We intentionally check for location before symbol fallback so
+        // location-driven reports still get the correct display currency.
+        const southAfricaLocationHints = [
+          'south africa',
+          'johannesburg',
+          'sandton',
+          'pretoria',
+          'cape town',
+          'durban',
+        ];
+        if (southAfricaLocationHints.some((hint) => normalized.includes(hint))) {
+          return 'R';
+        }
+
+        const ukLocationHints = ['united kingdom', ' uk ', ' england', ' london'];
+        if (ukLocationHints.some((hint) => normalized.includes(hint))) {
+          return '£';
+        }
+
+        const euroLocationHints = [
+          'eurozone',
+          'germany',
+          'france',
+          'spain',
+          'italy',
+          'netherlands',
+          'portugal',
+          'belgium',
+          'austria',
+        ];
+        if (euroLocationHints.some((hint) => normalized.includes(hint))) {
+          return '€';
+        }
+
+        // Fall back to symbol detection.
+        if (/€\s*\d/.test(raw) || /\d\s*€/.test(raw)) return '€';
+        if (/£\s*\d/.test(raw) || /\d\s*£/.test(raw)) return '£';
+
+        // South African Rand reports often include "R 12,345" and VAT references.
+        if (/\bR\s*\d{1,3}(?:[\s,]\d{3})*(?:\.\d+)?\b/.test(raw)) return 'R';
+
+        // Default to USD symbol (also used in several existing reports).
+        return '$';
+      };
+
+      const currencySymbol = detectCurrencySymbol(fullResponse);
 
       const extractPhase30QuotationData = (response: string): {
         generalConditions: number;
@@ -953,9 +1065,122 @@ export class ReportService {
         );
         if (!match || !match[1]) return null;
 
+        const rawPhase30 = String(match[1] || '').trim();
+
+        const extractLeadingJsonArray = (raw: string): string | null => {
+          const start = raw.indexOf('[');
+          if (start < 0) return null;
+          let depth = 0;
+          for (let i = start; i < raw.length; i++) {
+            const ch = raw[i];
+            if (ch === '[') depth++;
+            if (ch === ']') {
+              depth--;
+              if (depth === 0) {
+                return raw.slice(start, i + 1);
+              }
+            }
+          }
+          return null;
+        };
+
+        const extractMoneyFromJsonLine = (value: string): number => {
+          if (!value) return 0;
+          const m = String(value).match(/-?\d+(?:\.\d+)?/);
+          return m ? Number(m[0]) : 0;
+        };
+
+        // Fallback parser for when the phase 30 block isn't valid JSON.
+        // Some reports output: `[ ... ], "Terms_And_Conditions": ...` which breaks JSON.parse.
+        const parseLoosePhase30 = (): {
+          generalConditions: number;
+          permitsAdminFees: number;
+          insuranceBonds: number;
+          taxes: number;
+          suggestedBid: number;
+        } | null => {
+          const generalConditions = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Phase_Item"\s*:\s*"General\s*Conditions"[\s\S]*?"Amount"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Phase_Item"\s*:\s*"General\s*Conditions"[\s\S]*?"Amount"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const permitsAdminFees = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Permits\s*&\s*Admin\s*Fees[^\"]*"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Permits\s*&\s*Admin\s*Fees[^\"]*"[\s\S]*?"Total"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const insuranceBonds = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Insurance\s*&\s*Bonds"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(
+                /"Insurance\s*&\s*Bonds"[\s\S]*?"Total"\s*"?\s*:?\s*([\d.]+)/i,
+              )?.[1] ||
+              '',
+          );
+
+          const taxes = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Category"\s*:\s*"Taxes"[\s\S]*?"Amount"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              rawPhase30.match(/"VAT"[\s\S]*?"Total"\s*:\s*([\d.]+)/i)?.[1] ||
+              '',
+          );
+
+          // Not strictly required for the UI cards, but keep a best-effort.
+          const suggestedBid = extractMoneyFromJsonLine(
+            rawPhase30.match(
+              /"Grand\s*Total\s*Project\s*Bid\s*Price"[\s\S]*?"Total"\s*:\s*([\d.]+)/i,
+            )?.[1] ||
+              '',
+          );
+
+          const any =
+            generalConditions > 0 ||
+            permitsAdminFees > 0 ||
+            insuranceBonds > 0 ||
+            taxes > 0 ||
+            suggestedBid > 0;
+
+          if (!any) {
+            return null;
+          }
+
+          const extracted = {
+            generalConditions,
+            permitsAdminFees,
+            insuranceBonds,
+            taxes,
+            suggestedBid,
+          };
+
+          console.info('[report][phase30] Loose extracted totals', extracted);
+
+          return extracted;
+        };
+
         try {
-          const parsed = JSON.parse(match[1]);
-          if (!Array.isArray(parsed)) return null;
+          // Many AI variants append extra fields after the array, making the block invalid JSON.
+          // Parse the leading array only.
+          const arrayJson = extractLeadingJsonArray(rawPhase30);
+          const parsed = JSON.parse(arrayJson || rawPhase30);
+          if (!Array.isArray(parsed)) {
+            const loose = parseLoosePhase30();
+            if (loose) {
+              return loose;
+            }
+            return null;
+          }
 
           const sumBy = (predicate: (row: any) => boolean): number =>
             parsed
@@ -966,28 +1191,85 @@ export class ReportService {
             (r) => String(r.Category || '').toLowerCase() === 'taxes',
           );
 
-          const generalConditions = sumBy(
-            (r) => String(r.Category || '').toLowerCase() === 'indirect costs',
-          );
+          const sumCategorizedMaterials = (
+            row: any,
+            predicate: (itemName: string) => boolean,
+          ): number => {
+            const materials = Array.isArray(row?.Categorized_Materials)
+              ? row.Categorized_Materials
+              : [];
+            return materials
+              .filter((m: any) => predicate(String(m?.Item || '').toLowerCase()))
+              .reduce((sum: number, m: any) => sum + Number(m?.Total || 0), 0);
+          };
 
-          const feesAndInsurance = sumBy(
-            (r) => String(r.Category || '').toLowerCase() === 'fees & insurance',
-          );
+          let generalConditions = 0;
+          let permitsAdminFees = 0;
+          let insuranceBonds = 0;
+
+          // Different report variants classify these rows under either "Direct Costs"
+          // or "Indirect Costs", so match by Phase_Item semantics across all rows.
+          parsed.forEach((row: any) => {
+            const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+            const amount = Number(row?.Amount || 0);
+            if (!phaseItem) return;
+
+            // General conditions variants: "General Conditions", "General Conditions & Site Services", etc.
+            if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+              generalConditions += amount;
+              return;
+            }
+
+            // Fees / permits / insurance can appear as dedicated rows or nested materials.
+            const hasPermitsHint =
+              phaseItem.includes('permit') ||
+              phaseItem.includes('admin');
+            const hasInsuranceHint =
+              phaseItem.includes('insurance') ||
+              phaseItem.includes('bond');
+
+            if (hasPermitsHint || hasInsuranceHint) {
+              const permits = sumCategorizedMaterials(row, (name) =>
+                name.includes('permit') || name.includes('admin'),
+              );
+              const insurance = sumCategorizedMaterials(row, (name) =>
+                name.includes('insurance') || name.includes('bond'),
+              );
+
+              if (permits > 0 || insurance > 0) {
+                permitsAdminFees += permits;
+                insuranceBonds += insurance;
+              } else {
+                if (hasPermitsHint && hasInsuranceHint) {
+                  // Combined row with no nested breakdown: keep backward-compatible default.
+                  permitsAdminFees += amount;
+                } else if (hasPermitsHint) {
+                  permitsAdminFees += amount;
+                } else if (hasInsuranceHint) {
+                  insuranceBonds += amount;
+                }
+              }
+            }
+          });
 
           const total = parsed.reduce(
             (sum: number, row: any) => sum + Number(row?.Amount || 0),
             0,
           );
 
-          return {
+          const extracted = {
             generalConditions,
-            permitsAdminFees: feesAndInsurance,
-            insuranceBonds: 0,
+            permitsAdminFees,
+            insuranceBonds,
             taxes,
             suggestedBid: total,
           };
+
+          console.info('[report][phase30] JSON extracted totals', extracted);
+
+          return extracted;
         } catch {
-          return null;
+          return parseLoosePhase30();
         }
       };
 
@@ -995,14 +1277,98 @@ export class ReportService {
 
       const parseCurrency = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
-        const match = cleaned.match(/-?\$?\s*([\d,]+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+        const match = cleaned.match(
+          /-?(?:\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\s*([\d,\s]+(?:\.\d+)?)/i,
+        );
+        return match ? parseFloat(match[1].replace(/[\s,]/g, '')) : 0;
       };
 
       const parsePercentage = (raw: string): number => {
         const cleaned = String(raw || '').replace(/\*\*/g, '');
         const match = cleaned.match(/(\d+(?:\.\d+)?)\s*%/);
         return match ? parseFloat(match[1]) : 0;
+      };
+
+      const parseMoneyLikeCell = (raw: string): number => {
+        const cleaned = String(raw || '').replace(/\*\*/g, '').trim();
+        if (!cleaned) return 0;
+        // Guard: ignore descriptive cells like "Per Phase 23 analysis" so
+        // phase numbers are never parsed as currency amounts.
+        const alphaStripped = cleaned.replace(
+          /^(?:\$|£|€|ZAR|USD|GBP|EUR|BWP|R|P)\s*/i,
+          '',
+        );
+        if (/[A-Za-z]/.test(alphaStripped)) return 0;
+        const match = cleaned.match(
+          /-?(?:\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\s*([\d][\d,\s]*(?:\.\d+)?)/i,
+        );
+        if (!match) return 0;
+        const numeric = parseFloat(String(match[1]).replace(/[\s,]/g, ''));
+        return Number.isFinite(numeric) ? numeric : 0;
+      };
+
+      const extractPhaseItemTotalsFromAnyJsonBlock = (
+        source: string,
+      ): {
+        generalConditions: number;
+        permitsAdminFees: number;
+        insuranceBonds: number;
+      } | null => {
+        const fenceRegex = /```json\s*([\s\S]*?)\s*```/gi;
+        let match: RegExpExecArray | null;
+
+        while ((match = fenceRegex.exec(source)) !== null) {
+          const raw = String(match[1] || '').trim();
+          if (!raw) continue;
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) continue;
+
+            const rows = parsed.filter(
+              (r: any) =>
+                r &&
+                typeof r === 'object' &&
+                Object.prototype.hasOwnProperty.call(r, 'Phase_Item') &&
+                Object.prototype.hasOwnProperty.call(r, 'Amount'),
+            );
+            if (!rows.length) continue;
+
+            let generalConditions = 0;
+            let permitsAdminFees = 0;
+            let insuranceBonds = 0;
+
+            rows.forEach((row: any) => {
+              const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+              const amount = Number(row?.Amount || 0);
+              if (!phaseItem || amount <= 0) return;
+
+              if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+                generalConditions += amount;
+                return;
+              }
+              if (phaseItem.includes('permit') || phaseItem.includes('admin')) {
+                permitsAdminFees += amount;
+                return;
+              }
+              if (phaseItem.includes('insurance') || phaseItem.includes('bond')) {
+                insuranceBonds += amount;
+              }
+            });
+
+            if (generalConditions > 0 || permitsAdminFees > 0 || insuranceBonds > 0) {
+              return {
+                generalConditions,
+                permitsAdminFees,
+                insuranceBonds,
+              };
+            }
+          } catch {
+            // Try next json fence
+          }
+        }
+
+        return null;
       };
 
       const extractValue = (regex: RegExp) => {
@@ -1012,46 +1378,69 @@ export class ReportService {
           : 0;
       };
 
+      const extractTableAmountByLabel = (labelPattern: string): number => {
+        const escaped = labelPattern;
+        const match = fullResponse.match(
+          new RegExp(
+            `\\|\\s*(?:\\*{0,2}\\s*)?${escaped}(?:\\s*\\*{0,2})?\\s*\\|\\s*(?:\\*{0,2}\\s*)?(?:\\$|ZAR|R|USD|GBP|EUR|BWP|£|€|P)?\\s*([\\d,]+(?:\\.\\d+)?)\\s*(?:\\*{0,2})?\\s*\\|`,
+            'i',
+          ),
+        );
+        return match
+          ? parseFloat(String(match[1]).replace(/[\s,]/g, ''))
+          : 0;
+      };
+
       // Some AI report variants provide explicit permits/insurance rows as pipe-table lines
       // without a `$` prefix. Prefer these when present.
-      const permitsAdminFeesLoose = extractValue(
-        /\|\s*Total\s*Permits\s*&\s*Admin\s*Fees\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      const permitsAdminFeesLoose = extractTableAmountByLabel(
+        '(?:Total\\s*)?Permits\\s*(?:&|and)?\\s*Admin\\s*Fees',
       );
-      const insuranceBondsLoose = extractValue(
-        /\|\s*Insurance\s*&\s*Bonds\s*\|[^\n]*?\|\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      const insuranceBondsLoose = extractTableAmountByLabel(
+        '(?:Total\\s*)?Insurance\\s*(?:&|and)?\\s*Bonds',
       );
 
       // Phase 30 formatted client quotation totals (authoritative for Bid Proposal Analysis popup)
       const reportTotalDirectIndirectCosts = extractValue(
-        /\|\s*\*\*Total\s*Direct\s*&\s*Indirect\s*Costs\*\*\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*\*\*Total\s*Direct\s*&\s*Indirect\s*Costs\*\*\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltTotalDirectIndirectCosts2 = extractValue(
+        /\|\s*Total\s*Direct\s*&\s*Indirect\s*Costs\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportOverheadProfit = extractValue(
-        /\|\s*GC\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*GC\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportContingency = extractValue(
-        /\|\s*Contingency\s*Reserve\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Contingency\s*Reserve\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportEscalation = extractValue(
-        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Cost\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportPreTaxProjectCost = extractValue(
-        /\|\s*\*\*Total\s*Pre-?Tax\s*Project\s*Cost\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*Total\s*Pre-?Tax\s*Project\s*Cost\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
       const reportVatAmount = extractValue(
-        /\|\s*Value\s*Added\s*Tax\s*\(VAT\s*@\s*\d+(?:\.\d+)?%\)\s*\|\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Value\s*Added\s*Tax\s*\(VAT\s*@\s*\d+(?:\.\d+)?%\)\s*\|\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\|/i,
       );
       const reportGrandTotalBidPrice = extractValue(
-        /\|\s*\*\*GRAND\s*TOTAL\s*BID\s*PRICE\*\*\s*\|\s*\*\*\s*\$?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*GRAND\s*TOTAL\s*BID\s*PRICE\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
 
       const reportAltSubtotalDirectIndirectCosts = extractValue(
-        /\|\s*Subtotal\s*\(Direct\s*Costs,[^\n]*?\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Subtotal\s*\(Direct\s*Costs,[^\n]*?\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltOverheadProfit = extractValue(
-        /\|\s*General\s*Contractor\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*General\s*Contractor\s*Overhead\s*&\s*Profit\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltContingencyEscalation = extractValue(
-        /\|\s*Contingency\s*&\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+        /\|\s*Contingency\s*&\s*Escalation\s*Allowance\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+      const reportAltContingencyEscalation2 = extractValue(
+        /\|\s*Contingency\s*&\s*Escalation\s*Allowances\s*\([^)]*\)\s*\|\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
+      );
+
+      const reportAltSubtotalPreTax = extractValue(
+        /\|\s*\*\*\s*Subtotal\s*\(\s*Pre-?Tax\s*\)\s*\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
       const reportAltTotalDirectCosts = extractValue(
         /\|\s*Total\s*Direct\s*Costs\s*\([^)]*\)\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
@@ -1065,6 +1454,9 @@ export class ReportService {
       const reportAltTaxes2 = extractValue(
         /\|\s*Sales\s*Tax\s*(?:on\s*Materials)?\s*(?:\([^)]*\))?\s*\|\s*\**\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\**\s*\|/i,
       );
+      const reportTexasSalesTaxPct = extractValue(
+        /Texas\s*(?:Material\s*)?Sales\s*Tax\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/i,
+      );
       const reportAltGrandTotalBidPrice2 = extractValue(
         /\|\s*\*\*\s*Grand\s*Total\s*\(\s*Calculated\s*GC\s*Bid\s*Price\s*\)\s*\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
@@ -1075,7 +1467,11 @@ export class ReportService {
         /\|\s*Sales\s*Tax\s*\([^)]*\)\s*\|\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\|/i,
       );
       const reportAltGrandTotalBidPrice = extractValue(
-        /\|\s*\*\*Grand\s*Total\s*Project\s*Bid\s*Price\*\*\s*\|\s*\*\*\s*\$?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+        /\|\s*\*\*Grand\s*Total\s*Project\s*Bid\s*Price\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
+      );
+
+      const reportAltGrandTotalBidPrice3 = extractValue(
+        /\|\s*\*\*\s*Grand\s*Total\s*Project\s*Bid\s*Price\s*\*\*\s*\|\s*\*\*\s*(?:\$|ZAR)?\s*([\d,\s]+(?:\.\d+)?)\s*\*\*\s*\|/i,
       );
 
       // Phase 29 "Final Client Quotation" variant labels
@@ -1092,6 +1488,8 @@ export class ReportService {
       const finalReportTotalDirectIndirectCosts =
         reportTotalDirectIndirectCosts > 0
           ? reportTotalDirectIndirectCosts
+          : reportAltTotalDirectIndirectCosts2 > 0
+            ? reportAltTotalDirectIndirectCosts2
           : reportAltSubtotalDirectIndirectCosts > 0
             ? reportAltSubtotalDirectIndirectCosts
             : reportAltTotalDirectCosts > 0
@@ -1100,7 +1498,11 @@ export class ReportService {
       const finalReportOverheadProfit =
         reportOverheadProfit > 0 ? reportOverheadProfit : reportAltOverheadProfit;
       const finalReportContingency =
-        reportContingency > 0 ? reportContingency : reportAltContingencyEscalation;
+        reportContingency > 0
+          ? reportContingency
+          : reportAltContingencyEscalation > 0
+            ? reportAltContingencyEscalation
+            : reportAltContingencyEscalation2;
       const finalReportEscalation =
         reportEscalation > 0
           ? reportEscalation
@@ -1110,6 +1512,8 @@ export class ReportService {
       const finalReportPreTaxProjectCost =
         reportPreTaxProjectCost > 0
           ? reportPreTaxProjectCost
+          : reportAltSubtotalPreTax > 0
+            ? reportAltSubtotalPreTax
           : reportAltPreTaxProjectCost > 0
             ? reportAltPreTaxProjectCost
             : reportAltPreTaxProjectCost2 > 0
@@ -1128,38 +1532,49 @@ export class ReportService {
             ? reportAltGrandTotalBidPrice
             : reportAltGrandTotalBidPrice2 > 0
               ? reportAltGrandTotalBidPrice2
+              : reportAltGrandTotalBidPrice3 > 0
+                ? reportAltGrandTotalBidPrice3
               : reportAltGrandTotalProjectCost;
 
       const reportContingencyIncludesEscalation =
         reportContingency <= 0 && reportAltContingencyEscalation > 0;
 
-      const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n(.*?)\n\n/s);
+      const quotationDataMatch = fullResponse.match(/Quotation Data.*?\n([\s\S]*?)(?:\n\s*\n|$)/i);
       if (quotationDataMatch && quotationDataMatch[1]) {
-        try {
-          const quotationData = JSON.parse(quotationDataMatch[1]);
-          const materialCost = quotationData.materialCost || 0;
-          const laborCost = quotationData.laborCost || 0;
-          const generalConditions = quotationData.generalConditions || 0;
-          const permitsAdminFees = quotationData.permitsAdminFees || 0;
-          const insuranceBonds = quotationData.insuranceBonds || 0;
-          const taxes = quotationData.taxes || 0;
-          const suggestedBid = quotationData.suggestedBid || 0;
-          const suggestedMarketBid = quotationData.suggestedMarketBid || 0;
-          const costPerSqFt = quotationData.costPerSqFt || 0;
+        const rawQuotationData = String(quotationDataMatch[1]).trim();
+        const withoutCodeFence = rawQuotationData
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```$/i, '')
+          .trim();
+        const jsonBlockMatch = withoutCodeFence.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        const jsonPayload = jsonBlockMatch?.[1];
+        if (jsonPayload) {
+          try {
+            const quotationData = JSON.parse(jsonPayload);
+            const materialCost = quotationData.materialCost || 0;
+            const laborCost = quotationData.laborCost || 0;
+            const generalConditions = quotationData.generalConditions || 0;
+            const permitsAdminFees = quotationData.permitsAdminFees || 0;
+            const insuranceBonds = quotationData.insuranceBonds || 0;
+            const taxes = quotationData.taxes || 0;
+            const suggestedBid = quotationData.suggestedBid || 0;
+            const suggestedMarketBid = quotationData.suggestedMarketBid || 0;
+            const costPerSqFt = quotationData.costPerSqFt || 0;
 
-          return {
-            materialCost,
-            laborCost,
-            generalConditions,
-            permitsAdminFees,
-            insuranceBonds,
-            taxes,
-            suggestedBid,
-            suggestedMarketBid,
-            costPerSqFt,
-          };
-        } catch (error) {
-          console.error('Failed to parse Quotation Data JSON:', error);
+            return {
+              materialCost,
+              laborCost,
+              generalConditions,
+              permitsAdminFees,
+              insuranceBonds,
+              taxes,
+              suggestedBid,
+              suggestedMarketBid,
+              costPerSqFt,
+            };
+          } catch (error) {
+            console.error('Failed to parse Quotation Data JSON:', error);
+          }
         }
       }
 
@@ -1182,8 +1597,29 @@ export class ReportService {
         /\|\s*Contingency Reserve.*?\|\s*([\d.]+)%/,
       );
       const generalConditions = extractValue(/General Conditions.*?\$\s*([\d,]+\.?\d*)/);
-      const permitsAdminFees = extractValue(/Permits.*?\$\s*([\d,]+\.?\d*)/);
-      const insuranceBonds = extractValue(/Insurance.*?\$\s*([\d,]+\.?\d*)/);
+      const groupedIndirectCosts = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?General\s*Conditions(?:[^|]*?)Site\s*Overheads(?:[^|]*?)Permits(?:[^|]*?)Insurance(?:\s*and\s*Bonds)?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const permitsAdminFeesFromSummaryTable = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Permits?\s*(?:&|and)?\s*Admin(?:istrative)?\s*Fees?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const insuranceBondsFromSummaryTable = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?Insurance\s*(?:&|and)?\s*Bonds?(?:\s*\*{0,2})?\s*\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const permitsAdminFees = extractValue(/Permits.*?\$\s*([\d,\s]+\.?\d*)/);
+      const insuranceBonds = extractValue(/Insurance.*?\$\s*([\d,\s]+\.?\d*)/);
+      const permitsAdminFeesLooseText = extractValue(
+        /Permits?\s*(?:&|and)?\s*Admin(?:istrative)?\s*Fees?[^\n]{0,120}\$?\s*([\d,\s]+(?:\.\d+)?)/i,
+      );
+      const insuranceBondsLooseText = extractValue(
+        /Insurance\s*(?:&|and)?\s*Bonds?[^\n]{0,120}\$?\s*([\d,\s]+(?:\.\d+)?)/i,
+      );
+      const permitsAdminFeesAnyTableRow = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Permits?(?:\s*&\s*|\s+and\s+)?Admin(?:istrative)?\s*Fees?(?:\s*\*{0,2})?\s*\|[^\n]*?\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
+      const insuranceBondsAnyTableRow = extractValue(
+        /\|\s*(?:\*{0,2}\s*)?(?:Total\s*)?Insurance(?:\s*&\s*|\s+and\s+)?Bonds?(?:\s*\*{0,2})?\s*\|[^\n]*?\|\s*(?:\*{0,2}\s*)?\$?\s*([\d,\s]+(?:\.\d+)?)\s*(?:\*{0,2})?\s*\|/i,
+      );
       const taxes = extractValue(/Sales Tax.*?\$\s*([\d,]+\.?\d*)/);
 
       // Handle potential markdown bold markers (**Calculated GC Bid Price**)
@@ -1269,10 +1705,27 @@ export class ReportService {
 
           // Some report variants swap amount/% columns. Resolve by semantic token.
           // IMPORTANT: Only treat a cell as money if it actually contains a `$`.
-          // This prevents CSI codes like `23 00 00` from becoming `$23.00`.
-          const moneyToken = valueCols.find((v) => /\$/.test(v)) || '';
+          // This prevents phase/cost-code numbers from becoming amounts.
+          const moneyToken =
+            valueCols.find((v) =>
+              /(?:\$|£|€|\bZAR\b|\bUSD\b|\bGBP\b|\bEUR\b|\bBWP\b|(?:^|\s)R(?=\s|[\d,\.])|(?:^|\s)P(?=\s|[\d,\.]))/i.test(
+                v,
+              ),
+            ) || '';
           const percentToken = valueCols.find((v) => /%/.test(v)) || '';
-          const amount = moneyToken ? parseCurrency(moneyToken) : 0;
+          const plainAmountToken =
+            valueCols.find((v) => {
+              const cleaned = String(v || '').replace(/\*\*/g, '').trim();
+              if (!cleaned || /%/.test(cleaned)) return false;
+              // Reject descriptive cells; keep numeric-only amount cells.
+              if (/[A-Za-z]/.test(cleaned)) return false;
+              return /[\d]/.test(cleaned);
+            }) || '';
+          const amount = moneyToken
+            ? parseCurrency(moneyToken)
+            : plainAmountToken
+              ? parseMoneyLikeCell(plainAmountToken)
+              : parseMoneyLikeCell(amountCol);
           const pctFromCols = parsePercentage(percentToken);
           const pctFromLabel = parsePercentage(rawLabel);
           const pct = pctFromCols > 0 ? pctFromCols : pctFromLabel;
@@ -1420,11 +1873,13 @@ export class ReportService {
             : budgetLaborCost > 0
               ? budgetLaborCost
               : 0;
-      const finalGeneralConditions =
+      let finalGeneralConditions =
         phase26GeneralConditions > 0
           ? phase26GeneralConditions
           : phase30?.generalConditions && phase30.generalConditions > 0
             ? phase30.generalConditions
+          : groupedIndirectCosts > 0
+            ? groupedIndirectCosts
           : budgetGeneralConditions > 0
             ? budgetGeneralConditions
             : 0;
@@ -1436,20 +1891,80 @@ export class ReportService {
             : finalMaterialCost + finalLaborCost + finalGeneralConditions > 0
               ? finalMaterialCost + finalLaborCost + finalGeneralConditions
               : 0;
-      const finalPermitsAdminFees =
+      let finalPermitsAdminFees =
         permitsAdminFeesLoose > 0
           ? permitsAdminFeesLoose
+          : permitsAdminFeesFromSummaryTable > 0
+            ? permitsAdminFeesFromSummaryTable
+            : permitsAdminFeesAnyTableRow > 0
+              ? permitsAdminFeesAnyTableRow
+            : permitsAdminFeesLooseText > 0
+              ? permitsAdminFeesLooseText
           : phase26PermitsAdminFees > 0
           ? phase26PermitsAdminFees
           : phase30?.permitsAdminFees && phase30.permitsAdminFees > 0
             ? phase30.permitsAdminFees
             : 0;
-      const finalInsuranceBonds =
+      let finalInsuranceBonds =
         insuranceBondsLoose > 0
           ? insuranceBondsLoose
+          : insuranceBondsFromSummaryTable > 0
+            ? insuranceBondsFromSummaryTable
+            : insuranceBondsAnyTableRow > 0
+              ? insuranceBondsAnyTableRow
+            : insuranceBondsLooseText > 0
+              ? insuranceBondsLooseText
           : phase26InsuranceBonds > 0
           ? phase26InsuranceBonds
-          : 0;
+          : phase30?.insuranceBonds && phase30.insuranceBonds > 0
+            ? phase30.insuranceBonds
+            : 0;
+
+      if (
+        finalGeneralConditions <= 0 ||
+        finalPermitsAdminFees <= 0 ||
+        finalInsuranceBonds <= 0
+      ) {
+        const jsonPhaseItemTotals = extractPhaseItemTotalsFromAnyJsonBlock(fullResponse);
+        if (jsonPhaseItemTotals) {
+          if (finalGeneralConditions <= 0) {
+            finalGeneralConditions = Number(jsonPhaseItemTotals.generalConditions || 0);
+          }
+          if (finalPermitsAdminFees <= 0) {
+            finalPermitsAdminFees = Number(jsonPhaseItemTotals.permitsAdminFees || 0);
+          }
+          if (finalInsuranceBonds <= 0) {
+            finalInsuranceBonds = Number(jsonPhaseItemTotals.insuranceBonds || 0);
+          }
+        }
+      }
+
+      if (
+        groupedIndirectCosts > 0 &&
+        finalPermitsAdminFees <= 0 &&
+        finalInsuranceBonds <= 0
+      ) {
+        finalPermitsAdminFees = Math.round(groupedIndirectCosts * 0.0882 * 100) / 100;
+        finalInsuranceBonds = Math.round(groupedIndirectCosts * 0.0259 * 100) / 100;
+        finalGeneralConditions = Math.max(
+          0,
+          groupedIndirectCosts - finalPermitsAdminFees - finalInsuranceBonds,
+        );
+      }
+
+      // Last-resort normalization: if only General Conditions is available, infer
+      // permits/insurance using the same default split ratios used elsewhere.
+      if (
+        finalGeneralConditions > 0 &&
+        finalPermitsAdminFees <= 0 &&
+        finalInsuranceBonds <= 0
+      ) {
+        const inferredGroupedIndirect = finalGeneralConditions / (1 - 0.0882 - 0.0259);
+        finalPermitsAdminFees =
+          Math.round(inferredGroupedIndirect * 0.0882 * 100) / 100;
+        finalInsuranceBonds =
+          Math.round(inferredGroupedIndirect * 0.0259 * 100) / 100;
+      }
       const finalDirectAndInsurableSubtotal =
         phase26DirectAndInsurableSubtotal > 0
           ? phase26DirectAndInsurableSubtotal
@@ -1458,7 +1973,7 @@ export class ReportService {
               finalGeneralConditions +
               finalPermitsAdminFees +
               finalInsuranceBonds;
-      const finalOverhead =
+      let finalOverhead =
         phase26Overhead > 0
           ? phase26Overhead
           : overhead > 0
@@ -1467,7 +1982,7 @@ export class ReportService {
               ? budgetOverhead
               : 0;
       const finalOverheadPct = phase26OverheadPct > 0 ? phase26OverheadPct : overheadPct;
-      const finalContingency =
+      let finalContingency =
         phase26Contingency > 0
           ? phase26Contingency
           : contingency > 0
@@ -1478,7 +1993,10 @@ export class ReportService {
       const finalContingencyPct =
         phase26ContingencyPct > 0 ? phase26ContingencyPct : contingencyPct;
 
-      const escalation = phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
+      let finalEscalation =
+        finalReportEscalation > 0
+          ? finalReportEscalation
+          : phase26Escalation || extractValue(/Cost Escalation Allowance.*?\$\s*([\d,]+\.?\d*)/);
       const finalTaxes =
         phase26Taxes > 0
           ? phase26Taxes
@@ -1489,14 +2007,81 @@ export class ReportService {
         extractValue(/VAT\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
         extractValue(/VAT\s*\(\s*@\s*(\d+(?:\.\d+)?)\s*%/i) ||
         extractValue(/VAT[^\d]{0,12}(\d+(?:\.\d+)?)\s*%/i);
-      const finalSalesTaxPct = phase26SalesTaxPct > 0 ? phase26SalesTaxPct : vatPct;
+      const phase30SalesTaxPct =
+        phase30 && finalMaterialCost > 0
+          ? (Number(phase30.taxes || 0) / finalMaterialCost) * 100
+          : 0;
+
+      const isReasonableTaxPct = (value: number): boolean =>
+        Number.isFinite(value) && value > 0 && value <= 35;
+
+      const finalSalesTaxPct = isReasonableTaxPct(reportTexasSalesTaxPct)
+        ? reportTexasSalesTaxPct
+        : isReasonableTaxPct(phase26SalesTaxPct)
+          ? phase26SalesTaxPct
+          : isReasonableTaxPct(vatPct)
+            ? vatPct
+            : isReasonableTaxPct(phase30SalesTaxPct)
+              ? phase30SalesTaxPct
+              : 0;
+
+      // Validation gate: if a markup amount clearly looks like a misparsed percent
+      // token (e.g. 15.00 instead of 15% of base), rebuild it from percentage.
+      const parseIntegrityIssues: string[] = [];
+      const normalizeMarkupAmount = (
+        label: string,
+        amount: number,
+        pct: number,
+        base: number,
+      ): number => {
+        if (!(base > 0)) return amount;
+        const hasPct = Number.isFinite(pct) && pct > 0 && pct <= 35;
+        const looksTinyAbsolute = amount > 0 && amount < 1000 && base >= 100000;
+        const expectedFromPct = hasPct ? (base * pct) / 100 : 0;
+
+        if ((amount <= 0 || looksTinyAbsolute) && expectedFromPct > 0) {
+          parseIntegrityIssues.push(`${label}:rebuilt_from_pct`);
+          return Math.round(expectedFromPct * 100) / 100;
+        }
+
+        if (amount > 0 && expectedFromPct > 0) {
+          const ratio = amount / expectedFromPct;
+          if (ratio < 0.2 || ratio > 5) {
+            parseIntegrityIssues.push(`${label}:amount_pct_mismatch`);
+            return Math.round(expectedFromPct * 100) / 100;
+          }
+        }
+
+        return amount;
+      };
+
+      finalOverhead = normalizeMarkupAmount(
+        'overhead',
+        finalOverhead,
+        finalOverheadPct,
+        finalDirectAndInsurableSubtotal,
+      );
+      finalContingency = normalizeMarkupAmount(
+        'contingency',
+        finalContingency,
+        finalContingencyPct,
+        finalDirectAndInsurableSubtotal,
+      );
+
+      // Escalation often has no explicit pct column; protect against tiny literal
+      // values leaking through (e.g. "5" from "5%").
+      if (finalEscalation > 0 && finalEscalation < 1000 && finalDirectAndInsurableSubtotal >= 100000) {
+        const inferredEscalation = Math.round(finalDirectAndInsurableSubtotal * 0.05 * 100) / 100;
+        parseIntegrityIssues.push('escalation:rebuilt_default_5pct');
+        finalEscalation = inferredEscalation;
+      }
       const finalSuggestedBid = phase26Bid > 0 ? phase26Bid : suggestedBid;
       let finalSuggestedMarketBid =
         phase26MarketBid > 0 ? phase26MarketBid : suggestedMarketBid;
       const finalPreTaxSubtotal =
         phase26PreTaxSubtotal > 0
           ? phase26PreTaxSubtotal
-          : finalDirectSubtotal + finalOverhead + finalContingency + escalation;
+          : finalDirectSubtotal + finalOverhead + finalContingency + finalEscalation;
       const finalCostPerSqFt =
         phase26CostPerSqFt > 0 ? phase26CostPerSqFt : costPerSqFt;
 
@@ -1509,7 +2094,7 @@ export class ReportService {
         (finalDirectSubtotal +
           finalOverhead +
           finalContingency +
-          escalation +
+          finalEscalation +
           finalTaxes);
 
       // Sensible fallback range if low/high are absent in the source report.
@@ -1531,6 +2116,7 @@ export class ReportService {
       }
 
       return {
+        currencySymbol,
         materialCost: finalMaterialCost,
         laborCost: finalLaborCost,
         directSubtotal: finalDirectSubtotal, // Cost to Build
@@ -1542,7 +2128,7 @@ export class ReportService {
         overheadPct: finalOverheadPct,
         contingency: finalContingency,
         contingencyPct: finalContingencyPct,
-        escalation,
+        escalation: finalEscalation,
         preTaxSubtotal: finalPreTaxSubtotal,
         taxes: finalTaxes,
         salesTaxPct: finalSalesTaxPct,
@@ -1560,6 +2146,20 @@ export class ReportService {
         reportVatAmount: finalReportVatAmount,
         reportGrandTotalBidPrice: finalReportGrandTotalBidPrice,
         reportContingencyIncludesEscalation,
+        debugIndirect: {
+          bomId: Number(best?.id || 0),
+          bomCreatedAt: String(best?.createdAt || ''),
+          hasPhase30Section,
+          phase30GeneralConditions: Number(phase30?.generalConditions || 0),
+          phase30PermitsAdminFees: Number(phase30?.permitsAdminFees || 0),
+          phase30InsuranceBonds: Number(phase30?.insuranceBonds || 0),
+          tablePermitsLoose: Number(permitsAdminFeesLoose || 0),
+          tableInsuranceLoose: Number(insuranceBondsLoose || 0),
+          finalGeneralConditions: Number(finalGeneralConditions || 0),
+          finalPermitsAdminFees: Number(finalPermitsAdminFees || 0),
+          finalInsuranceBonds: Number(finalInsuranceBonds || 0),
+          parseIntegrityIssues,
+        },
       };
     } catch (err) {
       console.error('Failed to get detailed cost summary:', err);

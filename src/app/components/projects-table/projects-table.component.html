@@ -14,14 +14,54 @@
         >Created</mat-header-cell
       >
       <mat-cell *matCellDef="let project">{{
-        project.createdAt | date: "shortDate"
+        formatProjectDate(project.createdAt) || "—"
+      }}</mat-cell>
+    </ng-container>
+
+    <!-- Address -->
+    <ng-container matColumnDef="address">
+      <mat-header-cell *matHeaderCellDef mat-sort-header
+        >Address</mat-header-cell
+      >
+      <mat-cell *matCellDef="let project" class="cell-address" [matTooltip]="project.address">{{
+        project.address || "—"
+      }}</mat-cell>
+    </ng-container>
+
+    <!-- Start date -->
+    <ng-container matColumnDef="startDate">
+      <mat-header-cell *matHeaderCellDef mat-sort-header
+        >Start Date</mat-header-cell
+      >
+      <mat-cell *matCellDef="let project">{{
+        startDateDisplay(project)
+      }}</mat-cell>
+    </ng-container>
+
+    <!-- Building size -->
+    <ng-container matColumnDef="buildingSize">
+      <mat-header-cell *matHeaderCellDef mat-sort-header
+        >Size</mat-header-cell
+      >
+      <mat-cell *matCellDef="let project">{{
+        formatProjectArea(project)
+      }}</mat-cell>
+    </ng-container>
+
+    <!-- Members -->
+    <ng-container matColumnDef="team">
+      <mat-header-cell *matHeaderCellDef mat-sort-header
+        >Members</mat-header-cell
+      >
+      <mat-cell *matCellDef="let project">{{
+        project.team !== undefined ? project.team + " members" : "—"
       }}</mat-cell>
     </ng-container>
 
     <!-- Progress Column -->
     <ng-container matColumnDef="progress">
       <mat-header-cell *matHeaderCellDef mat-sort-header
-        >Progress</mat-header-cell
+        >Construction Progress</mat-header-cell
       >
       <mat-cell *matCellDef="let project">
         <!--JUST REMOVING THIS FOR THE MOMENT.-->
@@ -38,7 +78,7 @@
         >Status</mat-header-cell
       >
       <mat-cell *matCellDef="let project">{{
-        project.status | titlecase
+        statusLabel(project.status)
       }}</mat-cell>
     </ng-container>
 
@@ -52,9 +92,6 @@
         <mat-menu #jobMenu="matMenu">
           <button mat-menu-item (click)="onView.emit(project.jobId)">
             View Project
-          </button>
-          <button mat-menu-item (click)="onEdit.emit(project.jobId)">
-            Edit Project
           </button>
           <button mat-menu-item (click)="onArchive.emit(project.jobId)">
             Archive Project
