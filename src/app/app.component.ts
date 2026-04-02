@@ -127,12 +127,12 @@ export class AppComponent implements OnInit, OnDestroy {
     //   route: ['/job-assignment'],
     //   tooltip: 'Assign team members to your projects',
     // },
-    {
-      label: 'Calendar',
-      icon: 'calendar_today',
-      route: ['/calendar'],
-      tooltip: 'Access your schedule and calendar events',
-    },
+    // { // TODO: Reenable once changes made
+    //   label: 'Calendar',
+    //   icon: 'calendar_today',
+    //   route: ['/calendar'],
+    //   tooltip: 'Access your schedule and calendar events',
+    // },
     {
       label: 'Quotes & Invoices',
       icon: 'description',
@@ -151,12 +151,12 @@ export class AppComponent implements OnInit, OnDestroy {
       route: ['/find-work'],
       tooltip: 'Search for new work opportunities(Under Construction)',
     },
-    {
-      label: 'Connections',
-      icon: 'group',
-      route: ['/connections'],
-      tooltip: 'Manage your professional connections',
-    },
+    // { // TODO: Reenable once changes made
+    //   label: 'Connections',
+    //   icon: 'group',
+    //   route: ['/connections'],
+    //   tooltip: 'Manage your professional connections',
+    // },
     {
       label: 'Archive',
       icon: 'inventory_2',
