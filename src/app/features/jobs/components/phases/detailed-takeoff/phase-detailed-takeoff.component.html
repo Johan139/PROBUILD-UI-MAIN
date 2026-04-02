@@ -596,7 +596,7 @@
                     <p class="card-label">Overall Budget</p>
                     <p class="card-value">
                       @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                        --
+                        Loading...
                       } @else {
                         {{
                           overallBudgetValue | money : true : 2 : moneyCurrencySymbol
@@ -609,7 +609,7 @@
                       <span>Spent to Date</span>
                       <strong>
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                          --
+                          Loading...
                         } @else {
                             {{
                               spentToDate | money : true : 2 : moneyCurrencySymbol
@@ -627,7 +627,7 @@
                       <span>Remaining</span>
                       <strong>
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                          --
+                          Loading...
                         } @else {
                           {{
                             overallRemainingBudget | money : true : 2 : moneyCurrencySymbol
@@ -649,7 +649,7 @@
                     <p class="card-label">Overall Timeline</p>
                     <p class="card-value">
                       @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
-                        --
+                        Loading...
                       } @else {
                         {{ totalDurationWeeks }} Weeks
                       }
@@ -660,7 +660,7 @@
                       <span>Progress</span>
                       <strong>
                         @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
-                          --
+                          Loading...
                         } @else {
                           Week {{ currentWeek }} of {{ totalDurationWeeks }}
                         }
@@ -676,7 +676,7 @@
                         <span>Est. Completion</span>
                         <strong>
                           @if (isOverviewCardsLoading || totalDurationWeeks <= 0) {
-                            --
+                            Loading...
                           } @else {
                             {{ estimatedCompletionDate | date: "MMM d, y" }}
                           }
@@ -696,7 +696,7 @@
                       <p class="card-label">Bid Price (Client)</p>
                       <p class="card-value">
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                          --
+                          Loading...
                         } @else {
                         {{
                           bidPriceValue | money : true : 2 : moneyCurrencySymbol
@@ -709,7 +709,7 @@
                         <span>Gross Profit</span>
                         <strong>
                           @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                            --
+                            Loading...
                           } @else {
                             {{
                               bidGrossProfit | money : true : 2 : moneyCurrencySymbol
@@ -721,7 +721,7 @@
                         <span>Profit Margin</span>
                         <strong>
                           @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                            --
+                            Loading...
                           } @else {
                             {{ bidProfitMarginPercent | number: "1.1-1" }}%
                           }
@@ -731,7 +731,7 @@
                         <span>Exposure</span>
                         <strong>
                           @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
-                            --
+                            Loading...
                           } @else {
                             {{
                               bidExposureValue | money : true : 2 : moneyCurrencySymbol

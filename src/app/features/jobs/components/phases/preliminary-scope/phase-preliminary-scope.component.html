@@ -43,7 +43,7 @@
               @if (hasResolvedFinancialSummary) {
                 {{ overallBudgetValue | money : true : 2 : moneyCurrencySymbol }}
               } @else {
-                --
+                Loading...
               }
             </p>
           </div>
@@ -54,7 +54,7 @@
                 @if (hasResolvedFinancialSummary) {
                   {{ spentToDate | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
-                  --
+                  Loading...
                 }
               </strong>
             </div>
@@ -67,7 +67,7 @@
                 @if (hasResolvedFinancialSummary) {
                   {{ overallRemainingBudget | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
-                  --
+                  Loading...
                 }
               </strong>
             </div>
@@ -105,7 +105,7 @@
               @if (hasResolvedFinancialSummary) {
                 {{ bidPriceValue | money : true : 2 : moneyCurrencySymbol }}
               } @else {
-                --
+                Loading...
               }
             </p>
           </div>
@@ -116,7 +116,7 @@
                 @if (hasResolvedFinancialSummary) {
                   {{ bidGrossProfit | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
-                  --
+                  Loading...
                 }
               </strong>
             </div>
@@ -126,7 +126,7 @@
                 @if (hasResolvedFinancialSummary) {
                   {{ bidProfitMarginPercent | number: '1.1-1' }}%
                 } @else {
-                  --
+                  Loading...
                 }
               </strong>
             </div>
@@ -136,7 +136,7 @@
                 @if (hasResolvedFinancialSummary) {
                   {{ bidExposureValue | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
-                  --
+                  Loading...
                 }
               </strong>
             </div>
