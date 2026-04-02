@@ -598,7 +598,9 @@
                       @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                         --
                       } @else {
-                        {{ overallBudgetValue | money : true : 2 }}
+                        {{
+                          overallBudgetValue | money : true : 2 : moneyCurrencySymbol
+                        }}
                       }
                     </p>
                   </div>
@@ -609,7 +611,9 @@
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                           --
                         } @else {
-                          {{ spentToDate | money : true : 2 }}
+                            {{
+                              spentToDate | money : true : 2 : moneyCurrencySymbol
+                            }}
                         }
                       </strong>
                     </div>
@@ -625,7 +629,9 @@
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                           --
                         } @else {
-                          {{ overallRemainingBudget | money : true : 2 }}
+                          {{
+                            overallRemainingBudget | money : true : 2 : moneyCurrencySymbol
+                          }}
                         }
                       </strong>
                     </div>
@@ -692,7 +698,9 @@
                         @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                           --
                         } @else {
-                          {{ bidPriceValue | money : true : 2 }}
+                        {{
+                          bidPriceValue | money : true : 2 : moneyCurrencySymbol
+                        }}
                         }
                       </p>
                     </div>
@@ -703,7 +711,9 @@
                           @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                             --
                           } @else {
-                            {{ bidGrossProfit | money : true : 2 }}
+                            {{
+                              bidGrossProfit | money : true : 2 : moneyCurrencySymbol
+                            }}
                           }
                         </strong>
                       </div>
@@ -723,7 +733,9 @@
                           @if (isOverviewCardsLoading || !hasResolvedFinancialSummary) {
                             --
                           } @else {
-                            {{ bidExposureValue | money : true : 2 }}
+                            {{
+                              bidExposureValue | money : true : 2 : moneyCurrencySymbol
+                            }}
                           }
                         </strong>
                       </div>

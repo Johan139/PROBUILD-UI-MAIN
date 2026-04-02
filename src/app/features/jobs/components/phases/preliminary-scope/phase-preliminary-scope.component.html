@@ -41,7 +41,7 @@
             <p class="card-label">Overall Budget</p>
             <p class="card-value">
               @if (hasResolvedFinancialSummary) {
-                {{ overallBudgetValue | money : true : 2 }}
+                {{ overallBudgetValue | money : true : 2 : moneyCurrencySymbol }}
               } @else {
                 --
               }
@@ -52,7 +52,7 @@
               <span>Spent to Date</span>
               <strong>
                 @if (hasResolvedFinancialSummary) {
-                  {{ spentToDate | money : true : 2 }}
+                  {{ spentToDate | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
                   --
                 }
@@ -65,7 +65,7 @@
               <span>Remaining</span>
               <strong>
                 @if (hasResolvedFinancialSummary) {
-                  {{ overallRemainingBudget | money : true : 2 }}
+                  {{ overallRemainingBudget | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
                   --
                 }
@@ -103,7 +103,7 @@
             <p class="card-label">Bid Price (Client)</p>
             <p class="card-value">
               @if (hasResolvedFinancialSummary) {
-                {{ bidPriceValue | money : true : 2 }}
+                {{ bidPriceValue | money : true : 2 : moneyCurrencySymbol }}
               } @else {
                 --
               }
@@ -114,7 +114,7 @@
               <span>Gross Profit</span>
               <strong>
                 @if (hasResolvedFinancialSummary) {
-                  {{ bidGrossProfit | money : true : 2 }}
+                  {{ bidGrossProfit | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
                   --
                 }
@@ -134,7 +134,7 @@
               <span>Exposure</span>
               <strong>
                 @if (hasResolvedFinancialSummary) {
-                  {{ bidExposureValue | money : true : 2 }}
+                  {{ bidExposureValue | money : true : 2 : moneyCurrencySymbol }}
                 } @else {
                   --
                 }

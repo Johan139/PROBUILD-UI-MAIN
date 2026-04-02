@@ -463,7 +463,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Analysis output can lag briefly even when the stage has just advanced.
         if (attempt < budgetImportMaxAttempts - 1) {
-          await this.sleep(Math.min(10_000, 800 * Math.pow(2, attempt)));
+          await this.sleep(Math.min(5_000, 400 * Math.pow(2, attempt)));
         }
       }
 
@@ -499,6 +499,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastAuxLoadedJobId: number | null = null;
   private lastCurrencySeededJobId: number | null = null;
   private fetchedDataKeys = new Set<string>();
+  /** Avoid concurrent scope hydration for the same job (My Projects + store updates). */
+  private activeScopeHydrationJobs = new Set<number>();
   private prefetchedPhaseKeys = new Set<string>();
   private financialSnapshotRefreshInFlight = false;
   private lastFinancialSnapshotRefreshAt = 0;
@@ -560,6 +562,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   scopeBomTotals: { materialCost: number; laborCost: number; directSubtotal: number } | null = null;
   scopePermitLeadTimeWeeks: number | null = null;
   scopeMaterialLeadTimeWeeks: number | null = null;
+  // Hero cards should only render totals once the parent has finished its
+  // scope/financial hydration passes (prevents 500K -> 700K intermediate jump).
+  scopeTotalsReady = false;
+  private scopeTotalsReadyTimer: any = null;
+  private scopeTotalsReadySeq = 0;
   budgetLineItems: BudgetLineItem[] = [];
 
   // Project Overview Data
@@ -1750,8 +1757,26 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           const jobChanged = this.lastSyncedStageJobId !== currentJobId;
           const statusChanged = this.lastSyncedStageStatusKey !== statusKey;
           if (jobChanged || statusChanged) {
+            const previousStatusKey = this.lastSyncedStageStatusKey;
+            const previousJobId = this.lastSyncedStageJobId;
             this.lastSyncedStageJobId = currentJobId;
             this.lastSyncedStageStatusKey = statusKey;
+
+            // Scope was likely fetched empty during ANALYZING/INITIATION; allow a real load
+            // after the job advances to preliminary / post-analysis statuses.
+            if (
+              !jobChanged &&
+              previousJobId === currentJobId &&
+              previousStatusKey &&
+              statusChanged
+            ) {
+              const prevRank = this.statusToPhaseRank(previousStatusKey);
+              const newRank = this.statusToPhaseRank(statusKey);
+              if (prevRank === 0 && newRank !== null && newRank >= 1) {
+                this.fetchedDataKeys.delete(`${currentJobId}:scope`);
+              }
+            }
+
             const raw = String(resolvedStatus || '').trim();
             const statusForStage = raw || (jobChanged ? 'ANALYZING' : '');
             if (statusForStage) {
@@ -1910,18 +1935,103 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.scopeBomTotals = null;
       this.scopePermitLeadTimeWeeks = null;
       this.scopeMaterialLeadTimeWeeks = null;
+      this.scopeTotalsReady = false;
+      if (this.scopeTotalsReadyTimer) {
+        clearTimeout(this.scopeTotalsReadyTimer);
+        this.scopeTotalsReadyTimer = null;
+      }
       this.cdr.detectChanges();
       return;
     }
 
-    void this.refreshFinancialSnapshot(numericJobId, 0).catch(() => {
-      this.scopeCostSummary = null;
-      this.scopeExecutiveSummaryData = null;
-      this.scopeBomTotals = null;
-      this.scopePermitLeadTimeWeeks = null;
-      this.scopeMaterialLeadTimeWeeks = null;
+    this.scopeTotalsReady = false;
+    void this.hydrateScopeAndFinancialSnapshotWithRetries(numericJobId).catch(
+      () => {
+        this.scopeCostSummary = null;
+        this.scopeExecutiveSummaryData = null;
+        this.scopeBomTotals = null;
+        this.scopePermitLeadTimeWeeks = null;
+        this.scopeMaterialLeadTimeWeeks = null;
+        this.scopeTotalsReady = false;
+        if (this.scopeTotalsReadyTimer) {
+          clearTimeout(this.scopeTotalsReadyTimer);
+          this.scopeTotalsReadyTimer = null;
+        }
+        this.cdr.detectChanges();
+      },
+    );
+  }
+
+  /**
+   * Reveal hero-card totals only after a minimum delay.
+   * This intentionally trades a longer wait for stable values (prevents
+   * intermediate reconciliation jumps like 500K -> 700K).
+   */
+  private scheduleScopeTotalsReady(stabilizeMs: number = 20000): void {
+    this.scopeTotalsReady = false;
+    this.scopeTotalsReadySeq += 1;
+    const seq = this.scopeTotalsReadySeq;
+
+    if (this.scopeTotalsReadyTimer) {
+      clearTimeout(this.scopeTotalsReadyTimer);
+    }
+
+    this.scopeTotalsReadyTimer = setTimeout(() => {
+      // Only set ready if nothing scheduled a newer reveal.
+      if (this.scopeTotalsReadySeq !== seq) return;
+      this.scopeTotalsReady = true;
       this.cdr.detectChanges();
-    });
+    }, stabilizeMs);
+  }
+
+  /**
+   * After analysis, BOM rows may land just before or after the first GET; ReportService also
+   * caches BOM lists briefly. Retry until cost + executive look complete, then one financial
+   * snapshot (budget + summary) with minInterval 0 — no parallel refresh from primeData.
+   */
+  private async hydrateScopeAndFinancialSnapshotWithRetries(
+    jobId: number,
+  ): Promise<void> {
+    if (this.activeScopeHydrationJobs.has(jobId)) {
+      return;
+    }
+    this.activeScopeHydrationJobs.add(jobId);
+    try {
+      const rank = this.statusToPhaseRank(this.getPersistedJobStatus());
+      let insightCompleteAfterRetries = true;
+      if (rank !== null && rank >= 1) {
+        await this.refreshScopeInsightDataWithRetries(jobId);
+        insightCompleteAfterRetries = this.isScopeInsightPayloadComplete(
+          this.scopeCostSummary,
+          this.scopeExecutiveSummaryData,
+        );
+        if (!insightCompleteAfterRetries) {
+          this.reportService.invalidateBomResultsCache(String(jobId));
+        }
+      }
+
+      const bomForceRefreshFirst =
+        rank === null || rank < 1 || !insightCompleteAfterRetries;
+      await this.refreshFinancialSnapshot(jobId, 0, {
+        bomForceRefresh: bomForceRefreshFirst,
+      });
+
+      if (
+        rank !== null &&
+        rank >= 1 &&
+        !this.isScopeInsightPayloadComplete(
+          this.scopeCostSummary,
+          this.scopeExecutiveSummaryData,
+        )
+      ) {
+        await this.sleep(250);
+        this.reportService.invalidateBomResultsCache(String(jobId));
+        await this.refreshFinancialSnapshot(jobId, 0, { bomForceRefresh: true });
+      }
+    } finally {
+      this.activeScopeHydrationJobs.delete(jobId);
+      this.markFetched(jobId, 'scope');
+    }
   }
 
   private stageToStatusKey(stage: ProjectPhase): string {
@@ -1965,34 +2075,54 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (!parts) return '$';
 
-    if (/\bzar\b|\brand\b/.test(parts)) return 'R';
+    // Prefer explicit job / address country signals before report-style geo heuristics.
+    if (/\busa\b|\bu\.s\.a\.?\b|\bunited states\b|\bu\.s\.\b/i.test(parts)) {
+      return '$';
+    }
+
+    if (/\bzar\b|\brand\b|\brand(s)?\b|\bsouth african rand\b/.test(parts)) return 'R';
     if (/\bbwp\b|\bpula\b/.test(parts)) return 'P';
-    if (/\busd\b|\bdollar\b/.test(parts)) return '$';
+    if (/\busd\b|\bdollars?\b|\bdollar\b|\$/.test(parts)) return '$';
     if (/\beur\b|\beuro\b/.test(parts)) return '€';
     if (/\bgbp\b|\bpound\b/.test(parts)) return '£';
 
-    if (
-      /\bsouth africa\b|\bjohannesburg\b|\bsandton\b|\bpretoria\b|\bcape town\b|\bdurban\b/.test(
-        parts,
-      )
-    ) {
+    // IMPORTANT: do not infer currency purely from address/location.
+    // If the project didn't explicitly provide a currency token above, default to USD.
+    return '$';
+  }
+
+  private resolveExplicitCurrencySymbolFromProjectDetails(
+    details: any,
+  ): string | null {
+    const currencyParts = [
+      details?.currency,
+      details?.currencyCode,
+      details?.CurrencyCode,
+    ]
+      .filter((value: any) => value != null && String(value).trim().length > 0)
+      .map((value: any) => String(value).trim().toLowerCase())
+      .join(' | ');
+
+    if (!currencyParts) return null;
+
+    if (/\busd\b/.test(currencyParts) || /\bdollars?\b/.test(currencyParts) || /\$/.test(currencyParts)) {
+      return '$';
+    }
+    if (/\bzar\b/.test(currencyParts) || /\brand\b/.test(currencyParts) || /\bsouth african rand\b/.test(currencyParts) || /rand/.test(currencyParts) || /\bR\b/.test(currencyParts)) {
       return 'R';
     }
-    if (/\bbotswana\b|\bgaborone\b/.test(parts)) {
-      return 'P';
-    }
-    if (/\bunited kingdom\b|\buk\b|\bengland\b|\blondon\b/.test(parts)) {
-      return '£';
-    }
-    if (
-      /\beurozone\b|\bgermany\b|\bfrance\b|\bspain\b|\bitaly\b|\bnetherlands\b|\bportugal\b|\bbelgium\b|\baustria\b/.test(
-        parts,
-      )
-    ) {
-      return '€';
-    }
+    if (/\beur\b/.test(currencyParts) || /\beuros?\b/.test(currencyParts) || /€/.test(currencyParts)) return '€';
+    if (/\bgbp\b/.test(currencyParts) || /\bpounds?\b/.test(currencyParts) || /£/.test(currencyParts)) return '£';
+    if (/\bbwp\b/.test(currencyParts) || /\bpula\b/.test(currencyParts)) return 'P';
 
-    return '$';
+    return null;
+  }
+
+  /** Keep money pipe aligned with project/job context; do not infer from AI report text. */
+  private syncDefaultCurrencyFromProject(): void {
+    const details = this.projectDetails;
+    if (!details || typeof details !== 'object') return;
+    setDefaultCurrencySymbol(this.resolveCurrencySymbolFromProjectDetails(details));
   }
 
   private nextProjectPhase(current: ProjectPhase): ProjectPhase | null {
@@ -2030,8 +2160,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const needsScope = this.projectStage !== 'INITIATION' || this.activeTab === 'overview' || this.activeTab === 'budget';
-    if (needsScope && !this.isFetched(jobId, 'scope')) {
-      this.markFetched(jobId, 'scope');
+    const scopeHydrationStarting =
+      needsScope && !this.isFetched(jobId, 'scope');
+    if (scopeHydrationStarting) {
       this.loadScopeInsightData(String(jobId));
     }
 
@@ -2040,7 +2171,9 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.markFetched(jobId, 'budget');
       this.loadBudgetLineItems(jobId);
     }
-    if (needsBudget) {
+    // Scope hydration ends with refreshFinancialSnapshot(0); a parallel call here
+    // races inFlight / 15s throttle and can apply a stale snapshot over good retries.
+    if (needsBudget && !scopeHydrationStarting) {
       void this.refreshFinancialSnapshot(jobId);
     }
 
@@ -2098,6 +2231,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private async refreshFinancialSnapshot(
     jobId: number,
     minIntervalMs: number = 15000,
+    options?: { bomForceRefresh?: boolean },
   ): Promise<void> {
     if (!Number.isFinite(Number(jobId)) || Number(jobId) <= 0) return;
     if (
@@ -2120,41 +2254,58 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.financialSnapshotRefreshInFlight = true;
     this.lastFinancialSnapshotRefreshJobId = Number(jobId);
+    const bomForceRefresh = options?.bomForceRefresh !== false;
+    // Hide hero-card totals while we are applying a new snapshot, then reveal
+    // only once the latest refresh finishes. This prevents flicker from
+    // intermediate reconciliation passes (e.g. 500K -> 700K).
+    const shouldToggleScopeTotals =
+      this.projectStage === 'PRELIMINARY_SCOPE' ||
+      this.projectStage === 'DETAILED_TAKEOFF';
+    let localScopeTotalsSeq: number | null = null;
+    if (shouldToggleScopeTotals) {
+      this.scopeTotalsReady = false;
+      this.scopeTotalsReadySeq += 1;
+      localScopeTotalsSeq = this.scopeTotalsReadySeq;
+    }
     try {
-      const [budgetResult, summaryResult, executiveSummaryResult, bomResult, permitWeeksResult, materialWeeksResult] =
-        await Promise.allSettled([
-        firstValueFrom(this.budgetService.getBudget(Number(jobId), true)),
-        this.reportService.getDetailedCostSummary(String(jobId)),
-        this.reportService.getExecutiveSummaryData(String(jobId)),
-        firstValueFrom(this.bomService.getBillOfMaterials(String(jobId), true)),
-        this.reportService.getPermittingLeadTimeWeeks(String(jobId)),
-        this.reportService.getMaxProcurementLeadTimeWeeks(String(jobId)),
-      ]);
+      // Start the lead-time requests immediately, but don't block hero totals on them.
+      const permitsPromise = this.reportService.getPermittingLeadTimeWeeks(String(jobId));
+      const materialsPromise = this.reportService.getMaxProcurementLeadTimeWeeks(String(jobId));
 
-      if (budgetResult.status === 'fulfilled') {
-        this.budgetLineItems = Array.isArray(budgetResult.value)
-          ? budgetResult.value
-          : [];
-      }
+      const budgetPromise = firstValueFrom(
+        this.budgetService.getBudget(Number(jobId), true),
+      );
+      const executiveSummaryPromise =
+        this.reportService.getExecutiveSummaryData(String(jobId));
+      const summaryPromise = this.reportService.getDetailedCostSummary(String(jobId));
+      const bomPromise = firstValueFrom(
+        this.bomService.getBillOfMaterials(String(jobId), bomForceRefresh),
+      );
+
+      // Hero totals depend on cost summary + BOM (for indirect soft-cost reconciliation).
+      const [summaryResult, bomResult] = await Promise.allSettled([
+        summaryPromise,
+        bomPromise,
+      ]);
 
       if (summaryResult.status === 'fulfilled' && summaryResult.value) {
         this.scopeCostSummary = summaryResult.value;
-      }
-      if (executiveSummaryResult.status === 'fulfilled' && executiveSummaryResult.value) {
-        this.scopeExecutiveSummaryData = executiveSummaryResult.value;
+        const explicitCurrency =
+          this.resolveExplicitCurrencySymbolFromProjectDetails(
+            this.projectDetails,
+          );
+        // If projectDetails didn't explicitly define a currency, trust the
+        // parsed scope summary currency (and keep our improved $ detector).
+        if (!explicitCurrency) {
+          const detectedCurrencySymbol = (summaryResult.value as any)
+            ?.currencySymbol;
+          if (detectedCurrencySymbol) {
+            setDefaultCurrencySymbol(String(detectedCurrencySymbol));
+          }
+        }
       }
       if (bomResult.status === 'fulfilled') {
         this.scopeBomTotals = this.extractScopeBomTotals(bomResult.value);
-      }
-      if (permitWeeksResult.status === 'fulfilled') {
-        this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeksResult.value))
-          ? Number(permitWeeksResult.value)
-          : null;
-      }
-      if (materialWeeksResult.status === 'fulfilled') {
-        this.scopeMaterialLeadTimeWeeks = Number.isFinite(Number(materialWeeksResult.value))
-          ? Number(materialWeeksResult.value)
-          : null;
       }
 
       const summary = (this.scopeCostSummary || {}) as any;
@@ -2187,6 +2338,47 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
                 : extracted.insuranceBonds,
           };
         }
+      }
+
+      if (
+        shouldToggleScopeTotals &&
+        localScopeTotalsSeq !== null &&
+        this.scopeTotalsReadySeq === localScopeTotalsSeq
+      ) {
+        this.scopeTotalsReady = true;
+      }
+      this.cdr.detectChanges();
+
+      // Now wait for lead-time data and update it without affecting the
+      // already-revealed hero-card totals.
+      const [budgetResult, executiveSummaryResult, permitWeeksResult, materialWeeksResult] =
+        await Promise.allSettled([
+          budgetPromise,
+          executiveSummaryPromise,
+          permitsPromise,
+          materialsPromise,
+        ]);
+
+      if (budgetResult.status === 'fulfilled') {
+        this.budgetLineItems = Array.isArray(budgetResult.value)
+          ? budgetResult.value
+          : [];
+      }
+      if (
+        executiveSummaryResult.status === 'fulfilled' &&
+        executiveSummaryResult.value
+      ) {
+        this.scopeExecutiveSummaryData = executiveSummaryResult.value;
+      }
+      if (permitWeeksResult.status === 'fulfilled') {
+        this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeksResult.value))
+          ? Number(permitWeeksResult.value)
+          : null;
+      }
+      if (materialWeeksResult.status === 'fulfilled') {
+        this.scopeMaterialLeadTimeWeeks = Number.isFinite(Number(materialWeeksResult.value))
+          ? Number(materialWeeksResult.value)
+          : null;
       }
 
       this.lastFinancialSnapshotRefreshAt = Date.now();
@@ -2367,68 +2559,91 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return null;
   }
 
-  private fingerprintScopeCostSummary(summary: any): string {
-    if (!summary) return '';
-    const pick = {
-      materialCost: Number(summary?.materialCost || 0),
-      laborCost: Number(summary?.laborCost || 0),
-      directSubtotal: Number(summary?.directSubtotal || 0),
-      generalConditions: Number(summary?.generalConditions || 0),
-      permitsAdminFees: Number(summary?.permitsAdminFees || 0),
-      insuranceBonds: Number(summary?.insuranceBonds || 0),
-      overhead: Number(summary?.overhead || 0),
-      contingency: Number(summary?.contingency || 0),
-      escalation: Number(summary?.escalation || 0),
-      taxes: Number(summary?.taxes || 0),
-      suggestedBid: Number(summary?.suggestedBid || 0),
-      suggestedMarketBid: Number(summary?.suggestedMarketBid || 0),
-      reportGrandTotalBidPrice: Number(summary?.reportGrandTotalBidPrice || 0),
-      reportPreTaxProjectCost: Number(summary?.reportPreTaxProjectCost || 0),
-    };
-    return JSON.stringify(pick);
-  }
-
-  private fingerprintScopeBomTotals(
-    totals: { materialCost: number; laborCost: number; directSubtotal: number } | null,
-  ): string {
-    if (!totals) return '';
-    return JSON.stringify({
-      materialCost: Number(totals.materialCost || 0),
-      laborCost: Number(totals.laborCost || 0),
-      directSubtotal: Number(totals.directSubtotal || 0),
-    });
-  }
-
   private scopeRefreshDelayMs(attempt: number): number {
-    return Math.min(12_000, 600 * Math.pow(2, attempt));
+    return Math.min(2_000, 120 * Math.pow(2, attempt));
+  }
+
+  /**
+   * True when cost summary has real bid-level numbers and executive summary looks
+   * parsed from a finished report (not the stub after first partial BOM write).
+   */
+  private isScopeInsightPayloadComplete(
+    summary: any,
+    executiveSummary: any,
+  ): boolean {
+    if (!summary || typeof summary !== 'object') {
+      return false;
+    }
+    const bid = Number(
+      summary.suggestedBid ||
+        summary.suggestedMarketBid ||
+        summary.reportGrandTotalBidPrice ||
+        0,
+    );
+    if (!Number.isFinite(bid) || bid <= 0) {
+      return false;
+    }
+
+    if (!executiveSummary || typeof executiveSummary !== 'object') {
+      return false;
+    }
+
+    const conf = Number(
+      executiveSummary.blueprintConfidence?.overallConfidence ?? 0,
+    );
+    const overview = String(executiveSummary.overview || '').trim();
+    const highlights = executiveSummary.keyHighlights;
+    const hasHighlights = Array.isArray(highlights) && highlights.length > 0;
+    const hasExecBody = overview.length >= 100 || hasHighlights;
+    const hasConfidence = conf >= 1;
+    const rec = String(executiveSummary.executiveRecommendation || '').trim();
+    const hasRecommendation = rec.length >= 80;
+
+    return hasConfidence || hasExecBody || hasRecommendation;
   }
 
   private async refreshScopeInsightDataWithRetries(jobId: number): Promise<void> {
     const jobIdStr = String(jobId);
-    const beforeSummary = this.fingerprintScopeCostSummary(this.scopeCostSummary);
-    const beforeBom = this.fingerprintScopeBomTotals(this.scopeBomTotals);
-    const maxAttempts = 5;
+    const maxAttempts = 4;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const [summary, executiveSummary, bomResults, permitWeeks, materialWeeks] =
+        const normalized =
+          await this.reportService.primeBomResultsFromNetwork(jobIdStr);
+
+        const [summary, executiveSummary, permitWeeks, materialWeeks] =
           await Promise.all([
             this.reportService.getDetailedCostSummary(jobIdStr),
             this.reportService.getExecutiveSummaryData(jobIdStr),
-            firstValueFrom(this.bomService.getBillOfMaterials(jobIdStr)),
             this.reportService.getPermittingLeadTimeWeeks(jobIdStr),
             this.reportService.getMaxProcurementLeadTimeWeeks(jobIdStr),
           ]);
 
-        const bomTotals = this.extractScopeBomTotals(bomResults);
-        const afterSummary = this.fingerprintScopeCostSummary(summary);
-        const afterBom = this.fingerprintScopeBomTotals(bomTotals);
+        const bomForTotals =
+          Array.isArray(normalized) && normalized.length > 0
+            ? [
+                {
+                  parsedReport: this.bomService.parseReport(
+                    String(normalized[0]?.fullResponse || ''),
+                  ),
+                },
+              ]
+            : [];
+        const bomTotals = this.extractScopeBomTotals(bomForTotals);
 
         this.scopeCostSummary = summary || null;
         this.scopeExecutiveSummaryData = executiveSummary || null;
-        const currencySymbol = (summary as any)?.currencySymbol;
-        if (currencySymbol) {
-          setDefaultCurrencySymbol(String(currencySymbol));
+        // Currency is seeded from projectDetails once (on job load) and should
+        // not be re-derived during scope refresh retries (it can cause flips).
+        const explicitCurrency =
+          this.resolveExplicitCurrencySymbolFromProjectDetails(
+            this.projectDetails,
+          );
+        if (!explicitCurrency) {
+          const detectedCurrencySymbol = (summary as any)?.currencySymbol;
+          if (detectedCurrencySymbol) {
+            setDefaultCurrencySymbol(String(detectedCurrencySymbol));
+          }
         }
         this.scopeBomTotals = bomTotals;
         this.scopePermitLeadTimeWeeks = Number.isFinite(Number(permitWeeks))
@@ -2439,13 +2654,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           : null;
         this.cdr.detectChanges();
 
-        // If the backend had not yet persisted the new results, we often get the same
-        // cost summary payload again. Keep polling briefly until it changes.
-        const changed =
-          (afterSummary && afterSummary !== beforeSummary) ||
-          (afterBom && afterBom !== beforeBom);
-
-        if (changed) {
+        if (this.isScopeInsightPayloadComplete(summary, executiveSummary)) {
           return;
         }
       } catch {
@@ -2524,6 +2733,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signalrService.stopConnection();
     if (this.pollingSubscription) {
       this.pollingSubscription.unsubscribe();
+    }
+    if (this.scopeTotalsReadyTimer) {
+      clearTimeout(this.scopeTotalsReadyTimer);
+      this.scopeTotalsReadyTimer = null;
     }
   }
 
@@ -3532,21 +3745,38 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Invalidate report cache for this job so the next summary read reflects
-    // the newest BOM/analysis record from this run.
     this.reportService.invalidateBomResultsCache(String(jobId));
 
-    // Refresh persisted analysis outputs before advancing stage.
-    // This prevents stale values that only correct after a full page reload.
-    await this.refreshScopeInsightDataWithRetries(jobId);
-
-    await this.importAiBudgetItemsIfNeeded(jobId);
-    this.loadBudgetLineItems(jobId);
-
+    // Show Scope Review immediately; heavy fetches run in background (awaiting them here
+    // blocked the phase switch for tens of seconds while retries + budget import ran).
+    this.projectDetails = {
+      ...(this.projectDetails || {}),
+      status: 'PRELIMINARY_SCOPE',
+      Status: 'PRELIMINARY_SCOPE',
+    };
+    this.store.setState({ projectDetails: this.projectDetails } as any);
     this.projectStage = 'PRELIMINARY_SCOPE';
     this.stageDisplayMode = 'stage';
+    this.syncStageTrackingFromStoreStatus('PRELIMINARY_SCOPE');
+    this.fetchedDataKeys.delete(`${jobId}:scope`);
+    this.cdr.detectChanges();
 
     this.updateJobStatus('PRELIMINARY_SCOPE');
+
+    void this.runPostAnalysisBackgroundWork(jobId);
+  }
+
+  /** Hydration + AI budget import after advancing to Scope Review (non-blocking for UI). */
+  private async runPostAnalysisBackgroundWork(jobId: number): Promise<void> {
+    try {
+      await this.hydrateScopeAndFinancialSnapshotWithRetries(jobId);
+      await this.importAiBudgetItemsIfNeeded(jobId);
+      this.loadBudgetLineItems(jobId);
+      await this.refreshFinancialSnapshot(jobId, 0);
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.error('[jobs] Post-analysis background work failed', { jobId, err });
+    }
   }
 
   onJobGranted() {
