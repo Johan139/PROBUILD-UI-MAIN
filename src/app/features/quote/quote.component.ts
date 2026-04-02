@@ -146,6 +146,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
   quoteId: string | null = null;
   jobId?: string;
   readOnly: boolean = false;
+  lineItemsReadOnly: boolean = false;
   isOwnQuote: boolean = false;
   isAlreadyActioned = false;
   private destroyRef = inject(DestroyRef);
@@ -432,6 +433,11 @@ export class QuoteComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => {
         this.jobId = params['jobId'] ?? undefined;
+        const detailedTakeoffViewRaw = String(
+          params['detailedTakeoffView'] ?? '',
+        ).toLowerCase();
+        this.lineItemsReadOnly =
+          detailedTakeoffViewRaw === '1' || detailedTakeoffViewRaw === 'true';
 
         const bidModeRaw = String(params['bidMode'] ?? '').toLowerCase();
         this.isBidMode = bidModeRaw === '1' || bidModeRaw === 'true';
@@ -565,6 +571,7 @@ export class QuoteComponent implements OnInit, OnDestroy {
   private initializeNewQuote(): void {
     this.readOnly = false;
     this.jobDetailsLoading = false;
+    this.lineItemsReadOnly = false;
     if (!this.readOnly) {
       this.quoteForm.enable({ emitEvent: false });
       this.quoteForm.get('number')?.disable({ emitEvent: false });
@@ -814,7 +821,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
   updateQuoteRows(items: any[]) {
     this.quoteRows.clear();
 
-    const disabled = this.readOnly || this.isInboundQuote;
+    const disabled =
+      this.readOnly || this.isInboundQuote || this.lineItemsReadOnly;
 
     if (items.length === 0) {
       this.quoteRows.push(this.createQuoteRow());
@@ -861,7 +869,8 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
 
   createQuoteRow(): FormGroup {
-    const disabled = this.readOnly || this.isInboundQuote;
+    const disabled =
+      this.readOnly || this.isInboundQuote || this.lineItemsReadOnly;
 
     const row = this.fb.group({
       description: [{ value: '', disabled }],
@@ -904,6 +913,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
 
   addRow(): void {
+    if (this.readOnly || this.isInboundQuote || this.lineItemsReadOnly) {
+      return;
+    }
+
     const newRow = this.createQuoteRow();
     this.quoteRows.push(newRow);
     this.dataSource.data = this.quoteRows.controls as FormGroup[];
@@ -911,6 +924,10 @@ export class QuoteComponent implements OnInit, OnDestroy {
   }
 
   removeRow(index: number): void {
+    if (this.readOnly || this.isInboundQuote || this.lineItemsReadOnly) {
+      return;
+    }
+
     if (this.quoteRows.length > 1) {
       this.quoteRows.removeAt(index);
       this.dataSource.data = this.quoteRows.controls as FormGroup[];

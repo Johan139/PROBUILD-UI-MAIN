@@ -2144,7 +2144,10 @@ export class PhaseDetailedTakeoffComponent
 
     const url = this.router.serializeUrl(
       this.router.createUrlTree(['/quote'], {
-        queryParams: { quoteId: this.generatedQuoteId },
+        queryParams: {
+          quoteId: this.generatedQuoteId,
+          detailedTakeoffView: true,
+        },
       }),
     );
     window.open(url, '_blank');
