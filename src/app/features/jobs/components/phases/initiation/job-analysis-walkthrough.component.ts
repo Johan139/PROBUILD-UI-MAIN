@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnDestroy, Output, EventEmitter, ChangeDetect
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, FileText, Home, MapPin, ClipboardList, AlertTriangle, Truck, Shield, CheckCircle2, Loader2, ChevronUp, ChevronDown, Info, ArrowRight, Calculator } from 'lucide-angular';
 import { SignalrService, AnalysisProgressUpdate } from '../../../services/signalr.service';
+import { AuthService } from '../../../../../authentication/auth.service';
 import { Subscription } from 'rxjs';
 import { interval } from 'rxjs';
 import { startWith } from 'rxjs/operators';
@@ -26,13 +27,13 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   expandedSections: string[] = ['metadata'];
   statusMessage: string = 'Initializing analysis...';
   emailSent: boolean = false;
+  isProceeding = false;
 
   private didAutoContinue = false;
   private analysisFinished = false;
-  private completionPollTicksWithoutEmail = 0;
-  private readonly maxCompletionPollTicksWithoutEmail = 6;
+  private analysisHasFailed = false;
+  private inactivityPausedByWalkthrough = false;
   private completionReachedAtMs: number | null = null;
-  private readonly emailWaitGraceMs = 15000;
 
   private signalRSubscription: Subscription | null = null;
   private analysisDataSubscription: Subscription | null = null;
@@ -91,8 +92,24 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
   constructor(
     private signalrService: SignalrService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  private syncInactivityPauseForAnalysis(): void {
+    const shouldPause = !this.analysisHasFailed && (!this.analysisFinished || !this.emailSent);
+
+    if (shouldPause && !this.inactivityPausedByWalkthrough && this.authService.isLoggedIn()) {
+      this.authService.pauseInactivityTimer('job-analysis-walkthrough');
+      this.inactivityPausedByWalkthrough = true;
+      return;
+    }
+
+    if (!shouldPause && this.inactivityPausedByWalkthrough) {
+      this.authService.resumeInactivityTimer('job-analysis-walkthrough');
+      this.inactivityPausedByWalkthrough = false;
+    }
+  }
 
   get totalArea(): number {
     return this.rooms.reduce((sum, r) => sum + r.area, 0);
@@ -113,6 +130,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.analysisProgress = this.initialProgress;
+    this.syncInactivityPauseForAnalysis();
 
     this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
       if (state) {
@@ -130,6 +148,10 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     this.analysisEmailSentSubscription = this.signalrService.analysisEmailSent.subscribe((jobId: number) => {
       if (jobId === this.jobId) {
         this.emailSent = true;
+        this.analysisFinished = true;
+        if (!this.completionReachedAtMs) {
+          this.completionReachedAtMs = Date.now();
+        }
         this.applyCompletionGate();
         this.cdr.detectChanges();
       }
@@ -142,20 +164,9 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     });
 
     // Poll persisted state as a fallback when SignalR events are missed/reconnected
-    this.analysisStatePollingSubscription = interval(8000)
+    this.analysisStatePollingSubscription = interval(2000)
       .pipe(startWith(0))
       .subscribe(() => {
-        if (this.analysisFinished && !this.emailSent) {
-          this.completionPollTicksWithoutEmail += 1;
-          if (
-            this.completionPollTicksWithoutEmail >=
-            this.maxCompletionPollTicksWithoutEmail
-          ) {
-            this.analysisStatePollingSubscription?.unsubscribe();
-            this.analysisStatePollingSubscription = null;
-            return;
-          }
-        }
         this.signalrService.getAnalysisState(this.jobId).subscribe((state) => {
           if (!state) {
             return;
@@ -167,7 +178,11 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
               const data = JSON.parse(extractedDataJson);
               if (data?.emailSent === true) {
                 this.emailSent = true;
-                this.completionPollTicksWithoutEmail = 0;
+                this.analysisFinished = true;
+                if (!this.completionReachedAtMs) {
+                  this.completionReachedAtMs = Date.now();
+                }
+                this.applyCompletionGate();
               }
             } catch {
               // ignore parse errors; keep polling
@@ -201,6 +216,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     const currentStep = state.currentStep ?? state.CurrentStep ?? 0;
     const totalSteps = state.totalSteps ?? state.TotalSteps ?? 0;
     const isComplete = !!(state.isComplete ?? state.IsComplete);
+    const hasFailed = !!(state.hasFailed ?? state.HasFailed);
     const extractedDataJson = state.extractedDataJson ?? state.ExtractedDataJson;
 
     const derivedComplete = !isComplete && totalSteps > 0 && currentStep >= totalSteps;
@@ -213,11 +229,15 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       this.mapStatusToStep(statusMessage, currentStep);
     }
 
+    this.analysisHasFailed = hasFailed;
+
     if (isComplete || derivedComplete) {
       this.analysisFinished = true;
       if (!this.completionReachedAtMs) {
         this.completionReachedAtMs = Date.now();
       }
+    } else if (!hasFailed) {
+      this.analysisFinished = false;
     }
 
     if (extractedDataJson) {
@@ -241,6 +261,7 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     }
 
     this.applyCompletionGate();
+    this.syncInactivityPauseForAnalysis();
 
     this.cdr.detectChanges();
   }
@@ -250,27 +271,19 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Email is treated as the final step.
+    // Email is treated as the final step. Do not auto-complete without it.
     if (!this.emailSent) {
-      const waitedLongEnough =
-        this.completionReachedAtMs !== null &&
-        Date.now() - this.completionReachedAtMs >= this.emailWaitGraceMs;
-
-      if (waitedLongEnough) {
-        // Do not block stage progression forever on a missed/delayed email event.
-        this.emailSent = true;
-      } else {
       this.analysisProgress = Math.min(this.analysisProgress || 99, 99);
       this.statusMessage = 'Sending completion email...';
       this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
       return;
-      }
     }
 
     this.currentStep = 'complete';
     this.analysisProgress = 100;
     this.statusMessage = 'Analysis complete - Review results below';
     this.completedSteps = this.analysisSteps.map((s) => s.id as AnalysisStep);
+    this.authService.extendAnalysisProtectionGrace('job-analysis-walkthrough-complete');
 
     if (!this.didAutoContinue) {
       this.didAutoContinue = true;
@@ -307,6 +320,11 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.inactivityPausedByWalkthrough) {
+      this.authService.resumeInactivityTimer('job-analysis-walkthrough');
+      this.inactivityPausedByWalkthrough = false;
+    }
+
     if (this.signalRSubscription) {
       this.signalRSubscription.unsubscribe();
     }
@@ -331,6 +349,8 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
     const derivedComplete =
       !update.isComplete && update.totalSteps > 0 && update.currentStep >= update.totalSteps;
 
+    this.analysisHasFailed = !!update.hasFailed;
+
     if (update.isComplete || derivedComplete) {
       this.analysisFinished = true;
       if (!this.completionReachedAtMs) {
@@ -347,8 +367,11 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
         this.analysisStatePollingSubscription = null;
       }
     } else {
+      this.analysisFinished = false;
       this.mapStatusToStep(update.statusMessage, update.currentStep);
     }
+
+    this.syncInactivityPauseForAnalysis();
 
     this.cdr.detectChanges();
   }
@@ -434,6 +457,20 @@ export class JobAnalysisWalkthroughComponent implements OnInit, OnDestroy {
   }
 
   onContinue() {
+    if (this.isProceeding) {
+      return;
+    }
+    this.isProceeding = true;
+    console.info('[analysis-walkthrough] Proceed button clicked', {
+      jobId: this.jobId,
+      currentStep: this.currentStep,
+      emailSent: this.emailSent,
+      analysisFinished: this.analysisFinished,
+    });
     this.continue.emit();
+    // Safety unlock if parent rejects transition without routing.
+    setTimeout(() => {
+      this.isProceeding = false;
+    }, 15000);
   }
 }

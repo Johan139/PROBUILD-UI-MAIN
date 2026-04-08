@@ -85,6 +85,8 @@ type NavItem = {
   providers: [DatePipe],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private readonly INACTIVITY_EVENT_THROTTLE_MS = 1000;
+  private lastInactivityResetAt = 0;
   showAlert: boolean = false;
   alertMessage: string = '';
   LoggedInName: string = '';
@@ -210,6 +212,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
         // ADD THIS LINE - scroll to top
         window.scrollTo(0, 0);
+
+        const url = event.urlAfterRedirects || '';
+        if (
+          isPlatformBrowser(this.platformId) &&
+          this.authService.isLoggedIn() &&
+          !url.includes('/login') &&
+          !url.includes('/register') &&
+          !url.includes('/trial-registration')
+        ) {
+          this.authService.resetInactivityTimer();
+        }
       });
 
     this.router.events
@@ -251,6 +264,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private inactivityEventHandler = () => {
+    const now = Date.now();
+    if (now - this.lastInactivityResetAt < this.INACTIVITY_EVENT_THROTTLE_MS) {
+      return;
+    }
+    this.lastInactivityResetAt = now;
     this.authService.resetInactivityTimer();
   };
 

@@ -273,8 +273,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   sessionId: string = '';
   public isGeneratingReport = false;
   public isReportLoading = false;
-
-  private analysisAutoAdvanceTriggeredForJobIds = new Set<number>();
+  private analysisCompletionInFlight = false;
+  private analysisCompletionInFlightStartedAtMs: number | null = null;
 
   get constructionPhaseGroups(): any[] {
     return this.store.getState().subtaskGroups;
@@ -437,16 +437,42 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private async importAiBudgetItemsIfNeeded(jobId: number): Promise<void> {
     try {
+      const isSummaryOnlyAiLine = (item: any): boolean => {
+        const itemName = String(item?.item || '').trim().toLowerCase();
+        const phase = String(item?.phase || '').trim().toLowerCase();
+        const notes = String(item?.notes || '').trim().toLowerCase();
+        const source = String(item?.source || '').trim().toLowerCase();
+        const isAiImported = source === 'ai' || notes.includes('imported from ai analysis');
+
+        if (!isAiImported) return false;
+
+        const explicitSummaryLabels = [
+          'suggested market bid price',
+          'calculated gc bid price',
+          'calculated cost per conditioned area',
+          'cost range',
+          'project address',
+        ];
+
+        if (explicitSummaryLabels.some((token) => itemName.includes(token))) {
+          return true;
+        }
+
+        return phase.includes('cost breakdown') || phase.includes('project closeout');
+      };
+
       const existing = await firstValueFrom(this.budgetService.getBudget(jobId, true));
-      const hasAiItems = (existing || []).some(
-        (item) => String((item as any)?.source || '') === 'AI',
+      const hasMeaningfulAiItems = (existing || []).some(
+        (item) =>
+          String((item as any)?.source || '').trim().toLowerCase() === 'ai' &&
+          !isSummaryOnlyAiLine(item),
       );
-      if (hasAiItems) {
+      if (hasMeaningfulAiItems) {
         return;
       }
 
       let newItems: BudgetLineItem[] = [];
-      const budgetImportMaxAttempts = 4;
+      const budgetImportMaxAttempts = 6;
       for (let attempt = 0; attempt < budgetImportMaxAttempts; attempt++) {
         const results = await firstValueFrom(
           this.bomService.getBillOfMaterials(String(jobId), true),
@@ -456,8 +482,17 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           : results
             ? [results]
             : [];
-        const report = normalized?.[0]?.parsedReport;
-        newItems = this.buildAiBudgetItemsFromReport(report, jobId);
+
+        let bestItems: BudgetLineItem[] = [];
+        normalized.forEach((entry: any) => {
+          const parsedReport = entry?.parsedReport;
+          const items = this.buildAiBudgetItemsFromReport(parsedReport, jobId);
+          if (items.length > bestItems.length) {
+            bestItems = items;
+          }
+        });
+
+        newItems = bestItems;
 
         if (newItems.length > 0) {
           break;
@@ -465,7 +500,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Analysis output can lag briefly even when the stage has just advanced.
         if (attempt < budgetImportMaxAttempts - 1) {
-          await this.sleep(Math.min(5_000, 400 * Math.pow(2, attempt)));
+          await this.sleep(Math.min(10_000, 1500 * Math.pow(2, attempt)));
         }
       }
 
@@ -501,10 +536,17 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   private lastAuxLoadedJobId: number | null = null;
   private lastCurrencySeededJobId: number | null = null;
   private fetchedDataKeys = new Set<string>();
-  /** Avoid concurrent scope hydration for the same job (My Projects + store updates). */
-  private activeScopeHydrationJobs = new Set<number>();
+  /**
+   * Deduplicate concurrent scope hydration for the same job. Every caller awaits
+   * the same promise (unlike a guard that returned early and broke `await`).
+   */
+  private scopeHydrationPromises = new Map<number, Promise<void>>();
   private prefetchedPhaseKeys = new Set<string>();
-  private financialSnapshotRefreshInFlight = false;
+  /**
+   * Concurrent callers must await the same refresh; previously an in-flight guard
+   * returned immediately and broke `await refreshFinancialSnapshot()` ordering.
+   */
+  private financialSnapshotPromises = new Map<number, Promise<void>>();
   private lastFinancialSnapshotRefreshAt = 0;
   private lastFinancialSnapshotRefreshJobId: number | null = null;
   private isAnalysisInactivityPaused = false;
@@ -569,6 +611,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   scopeTotalsReady = false;
   private scopeTotalsReadyTimer: any = null;
   private scopeTotalsReadySeq = 0;
+  private suppressScopeTotalsReveal = false;
   private scopePerfByJob = new Map<
     number,
     {
@@ -631,10 +674,25 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
    * a "complete enough" cost summary (currency + indirect soft costs filled).
    */
   private tryRevealScopeTotalsFromExistingData(): void {
+    if (this.suppressScopeTotalsReveal) return;
+
     const stage = this.projectStage;
     const relevantStage =
       stage === 'PRELIMINARY_SCOPE' || stage === 'DETAILED_TAKEOFF';
     if (!relevantStage) return;
+
+    const currentJobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(currentJobId)) return;
+
+    // Guard against showing stale pre-refresh totals right after hard reload.
+    // We only reveal when at least one financial snapshot for this exact job
+    // has already been committed in this runtime.
+    if (
+      this.lastFinancialSnapshotRefreshJobId !== currentJobId ||
+      this.lastFinancialSnapshotRefreshAt <= 0
+    ) {
+      return;
+    }
 
     const summary = this.scopeCostSummary as any;
     if (!summary) return;
@@ -904,6 +962,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     contingency: number;
     escalation: number;
     taxes: number;
+    hasAuthoritativeReportBid: boolean;
   } {
     const summary: any = this.scopeCostSummary || {};
 
@@ -924,10 +983,13 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const computedReportBid = reportPreTax > 0 ? reportPreTax + Math.max(reportTaxes, 0) : 0;
 
+    const hasAuthoritativeReportBid = reportBid > 0 || computedReportBid > 0;
     const preferredBid =
       reportBid > 0 ? reportBid : computedReportBid > 0 ? computedReportBid : this.suggestedBid;
     const bidFloor = this.totalProjectCost;
-    const bidToClient = Math.max(preferredBid, bidFloor);
+    const bidToClient = hasAuthoritativeReportBid
+      ? preferredBid
+      : Math.max(preferredBid, bidFloor);
 
     const baseCosts = this.costToBuild > 0 ? this.costToBuild : reportBase;
     const overheadProfit = summaryOverhead > 0
@@ -1021,6 +1083,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       contingency: reconciledContingency,
       escalation: reconciledEscalation,
       taxes,
+      hasAuthoritativeReportBid,
     };
   }
 
@@ -1031,7 +1094,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     contingency: number;
     escalation: number;
     taxes: number;
+    hasAuthoritativeReportBid: boolean;
   }): number {
+    if (resolved.hasAuthoritativeReportBid && resolved.bidToClient > 0) {
+      return resolved.bidToClient;
+    }
+
     const totalCostBasis =
       resolved.baseCosts +
       resolved.overheadProfit +
@@ -1760,12 +1828,17 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        if (update?.isComplete || update?.hasFailed) {
+        if (update?.hasFailed) {
           if (this.isAnalysisInactivityPaused) {
             this.authService.resumeInactivityTimer('job-analysis');
             this.isAnalysisInactivityPaused = false;
           }
+        } else if (update?.isComplete) {
+          this.authService.extendAnalysisProtectionGrace(
+            'job-analysis-complete-signalr',
+          );
         } else {
+          this.authService.extendAnalysisProtectionGrace('job-analysis-in-progress');
           if (!this.isAnalysisInactivityPaused && this.authService.isLoggedIn()) {
             this.authService.pauseInactivityTimer('job-analysis');
             this.isAnalysisInactivityPaused = true;
@@ -1775,21 +1848,6 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!update?.isComplete || update?.hasFailed) {
           return;
         }
-
-        if (!this.authService.isLoggedIn()) {
-          return;
-        }
-
-        if (this.projectStage !== 'INITIATION') {
-          return;
-        }
-
-        if (this.analysisAutoAdvanceTriggeredForJobIds.has(currentJobId)) {
-          return;
-        }
-
-        this.analysisAutoAdvanceTriggeredForJobIds.add(currentJobId);
-        void this.onAnalysisComplete();
       });
     this.signalrService.uploadComplete
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1851,6 +1909,15 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           (this.projectDetails as any)?.status ?? (this.projectDetails as any)?.Status ?? '';
         const statusKey = String(resolvedStatus).trim().toUpperCase();
 
+        if (
+          statusKey === 'ANALYZING' &&
+          !this.isAnalysisInactivityPaused &&
+          this.authService.isLoggedIn()
+        ) {
+          this.authService.pauseInactivityTimer('job-analysis');
+          this.isAnalysisInactivityPaused = true;
+        }
+
         if (!Number.isFinite(currentJobId)) {
           this.lastSyncedStageJobId = null;
           this.lastSyncedStageStatusKey = '';
@@ -1858,25 +1925,8 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
           const jobChanged = this.lastSyncedStageJobId !== currentJobId;
           const statusChanged = this.lastSyncedStageStatusKey !== statusKey;
           if (jobChanged || statusChanged) {
-            const previousStatusKey = this.lastSyncedStageStatusKey;
-            const previousJobId = this.lastSyncedStageJobId;
             this.lastSyncedStageJobId = currentJobId;
             this.lastSyncedStageStatusKey = statusKey;
-
-            // Scope was likely fetched empty during ANALYZING/INITIATION; allow a real load
-            // after the job advances to preliminary / post-analysis statuses.
-            if (
-              !jobChanged &&
-              previousJobId === currentJobId &&
-              previousStatusKey &&
-              statusChanged
-            ) {
-              const prevRank = this.statusToPhaseRank(previousStatusKey);
-              const newRank = this.statusToPhaseRank(statusKey);
-              if (prevRank === 0 && newRank !== null && newRank >= 1) {
-                this.fetchedDataKeys.delete(`${currentJobId}:scope`);
-              }
-            }
 
             const raw = String(resolvedStatus || '').trim();
             const statusForStage = raw || (jobChanged ? 'ANALYZING' : '');
@@ -2092,36 +2142,82 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
    * caches BOM lists briefly. Retry until cost + executive look complete, then one financial
    * snapshot (budget + summary) with minInterval 0 — no parallel refresh from primeData.
    */
-  private async hydrateScopeAndFinancialSnapshotWithRetries(
+  hydrateScopeAndFinancialSnapshotWithRetries(
     jobId: number,
+    options?: { forceScopeInsightRetries?: boolean },
   ): Promise<void> {
-    if (this.activeScopeHydrationJobs.has(jobId)) {
-      return;
+    const existing = this.scopeHydrationPromises.get(jobId);
+    if (existing) {
+      console.info('[jobs:trace] scope-hydration reuse inflight', {
+        jobId,
+        forceScopeInsightRetries: !!options?.forceScopeInsightRetries,
+      });
+      return existing;
     }
-    this.activeScopeHydrationJobs.add(jobId);
+
+    const run = this.runHydrateScopeAndFinancialSnapshotWithRetries(
+      jobId,
+      options,
+    );
+    this.scopeHydrationPromises.set(jobId, run);
+    console.info('[jobs:trace] scope-hydration start', {
+      jobId,
+      forceScopeInsightRetries: !!options?.forceScopeInsightRetries,
+    });
+    void run.finally(() => {
+      if (this.scopeHydrationPromises.get(jobId) === run) {
+        this.scopeHydrationPromises.delete(jobId);
+        console.info('[jobs:trace] scope-hydration end', { jobId });
+      }
+    });
+    return run;
+  }
+
+  private async runHydrateScopeAndFinancialSnapshotWithRetries(
+    jobId: number,
+    options?: { forceScopeInsightRetries?: boolean },
+  ): Promise<void> {
+    this.suppressScopeTotalsReveal = true;
     try {
-      const rank = this.statusToPhaseRank(this.getPersistedJobStatus());
+      const persistedRank = this.statusToPhaseRank(this.getPersistedJobStatus());
+      const effectiveRank =
+        options?.forceScopeInsightRetries &&
+        (persistedRank == null || persistedRank < 1)
+          ? 1
+          : persistedRank;
+      console.info('[jobs:trace] scope-hydration run', {
+        jobId,
+        persistedRank,
+        effectiveRank,
+        status: this.getPersistedJobStatus(),
+      });
+
       // Speed-first: render initial financial totals immediately, then run
       // scope retries/reconciliation in the background flow below.
-      const bomForceRefreshFirst = rank === null || rank < 1;
+      const bomForceRefreshFirst = effectiveRank === null || effectiveRank < 1;
       await this.refreshFinancialSnapshot(jobId, 0, {
         bomForceRefresh: bomForceRefreshFirst,
       });
 
-      if (rank !== null && rank >= 1) {
+      if (effectiveRank !== null && effectiveRank >= 1) {
         await this.refreshScopeInsightDataWithRetries(jobId);
         const insightCompleteAfterRetries = this.isScopeInsightPayloadComplete(
           this.scopeCostSummary,
           this.scopeExecutiveSummaryData,
         );
         if (!insightCompleteAfterRetries) {
+          console.warn(
+            '[jobs:trace] scope-hydration insight incomplete, forcing bom refresh',
+            { jobId },
+          );
           await this.sleep(250);
           this.reportService.invalidateBomResultsCache(String(jobId));
           await this.refreshFinancialSnapshot(jobId, 0, { bomForceRefresh: true });
         }
       }
     } finally {
-      this.activeScopeHydrationJobs.delete(jobId);
+      this.suppressScopeTotalsReveal = false;
+      this.tryRevealScopeTotalsFromExistingData();
       this.markFetched(jobId, 'scope');
     }
   }
@@ -2245,15 +2341,41 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.fetchedDataKeys.has(`${jobId}:${key}`);
   }
 
+  /**
+   * While initiation analysis is running, skip scope/BOM/report hydration — it
+   * races `onAnalysisComplete` and caused empty Scope Review until refresh.
+   */
+  private shouldDeferScopeHydrationUntilPostAnalysis(): boolean {
+    if (this.projectStage !== 'INITIATION') {
+      return false;
+    }
+    const s = this.getPersistedJobStatus().toUpperCase().replace(/-/g, '_');
+    return s === 'ANALYZING' || s === 'INITIATION' || s === '';
+  }
+
   private primeDataForCurrentView(): void {
     const jobId = Number(this.projectDetails?.jobId);
     if (!Number.isFinite(jobId)) {
       return;
     }
 
-    const needsScope = this.projectStage !== 'INITIATION' || this.activeTab === 'overview' || this.activeTab === 'budget';
+    const needsScopeBase =
+      this.projectStage !== 'INITIATION' ||
+      this.activeTab === 'overview' ||
+      this.activeTab === 'budget';
+    const needsScope =
+      needsScopeBase && !this.shouldDeferScopeHydrationUntilPostAnalysis();
     const scopeHydrationStarting =
       needsScope && !this.isFetched(jobId, 'scope');
+    console.info('[jobs:trace] primeDataForCurrentView', {
+      jobId,
+      stage: this.projectStage,
+      status: this.getPersistedJobStatus(),
+      activeTab: this.activeTab,
+      needsScopeBase,
+      needsScope,
+      scopeHydrationStarting,
+    });
     if (scopeHydrationStarting) {
       this.loadScopeInsightData(String(jobId));
     }
@@ -2320,31 +2442,59 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private async refreshFinancialSnapshot(
+  private refreshFinancialSnapshot(
     jobId: number,
     minIntervalMs: number = 15000,
     options?: { bomForceRefresh?: boolean },
   ): Promise<void> {
-    if (!Number.isFinite(Number(jobId)) || Number(jobId) <= 0) return;
-    if (
-      this.financialSnapshotRefreshInFlight &&
-      this.lastFinancialSnapshotRefreshJobId === Number(jobId)
-    ) {
-      return;
+    const j = Number(jobId);
+    if (!Number.isFinite(j) || j <= 0) {
+      return Promise.resolve();
+    }
+
+    const pending = this.financialSnapshotPromises.get(j);
+    if (pending) {
+      console.info('[jobs:trace] financial-snapshot reuse inflight', {
+        jobId: j,
+      });
+      return pending;
     }
 
     const now = Date.now();
-    const sameJobAsLastRefresh =
-      this.lastFinancialSnapshotRefreshJobId === Number(jobId);
+    const sameJobAsLastRefresh = this.lastFinancialSnapshotRefreshJobId === j;
     if (
       sameJobAsLastRefresh &&
       minIntervalMs > 0 &&
       now - this.lastFinancialSnapshotRefreshAt < minIntervalMs
     ) {
-      return;
+      console.info('[jobs:trace] financial-snapshot throttled', {
+        jobId: j,
+        minIntervalMs,
+        elapsedMs: now - this.lastFinancialSnapshotRefreshAt,
+      });
+      return Promise.resolve();
     }
 
-    this.financialSnapshotRefreshInFlight = true;
+    const run = this.runRefreshFinancialSnapshotImpl(j, options);
+    this.financialSnapshotPromises.set(j, run);
+    console.info('[jobs:trace] financial-snapshot start', {
+      jobId: j,
+      minIntervalMs,
+      bomForceRefresh: options?.bomForceRefresh !== false,
+    });
+    void run.finally(() => {
+      if (this.financialSnapshotPromises.get(j) === run) {
+        this.financialSnapshotPromises.delete(j);
+        console.info('[jobs:trace] financial-snapshot end', { jobId: j });
+      }
+    });
+    return run;
+  }
+
+  private async runRefreshFinancialSnapshotImpl(
+    jobId: number,
+    options?: { bomForceRefresh?: boolean },
+  ): Promise<void> {
     this.lastFinancialSnapshotRefreshJobId = Number(jobId);
     const bomForceRefresh = options?.bomForceRefresh !== false;
     // Hide hero-card totals while we are applying a new snapshot, then reveal
@@ -2367,8 +2517,7 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.scopeTotalsReady) {
       this.scopeTotalsReady = false;
     }
-    try {
-      // Start the lead-time requests immediately, but don't block hero totals on them.
+    // Start the lead-time requests immediately, but don't block hero totals on them.
       const permitsPromise = this.reportService.getPermittingLeadTimeWeeks(String(jobId));
       const materialsPromise = this.reportService.getMaxProcurementLeadTimeWeeks(String(jobId));
 
@@ -2412,6 +2561,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         generalConditionsCurrent <= 0 ||
         permitsAdminFeesCurrent <= 0 ||
         insuranceBondsCurrent <= 0;
+      console.info('[jobs:trace] financial-summary resolved', {
+        jobId,
+        hasSummary:
+          summaryResult.status === 'fulfilled' && !!summaryResult.value,
+        missingAnyIndirect,
+      });
 
       if (missingAnyIndirect) {
         const [bomResult] = await Promise.allSettled([bomPromise]);
@@ -2448,6 +2603,11 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         // cards are allowed to render updated totals.
         this.scopeCostSummary = nextScopeCostSummary;
         this.scopeBomTotals = nextScopeBomTotals;
+
+        // Mark snapshot freshness at commit time so reveal gating can trust that
+        // values belong to the current refresh cycle for this job.
+        this.lastFinancialSnapshotRefreshJobId = Number(jobId);
+        this.lastFinancialSnapshotRefreshAt = Date.now();
 
         // We completed the snapshot reconciliation; reveal if the user is
         // currently in a phase that renders these cards.
@@ -2509,9 +2669,6 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.markScopePerf(Number(jobId), 'stable');
       }
       this.cdr.detectChanges();
-    } finally {
-      this.financialSnapshotRefreshInFlight = false;
-    }
   }
 
   private categoryTotalFromBudgetItems(category: 'materials' | 'subcontractor'): number {
@@ -2519,19 +2676,36 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       return 0;
     }
 
-    const toIsoTime = (item: any): number => {
-      const updated = Date.parse(String(item?.updatedAt || ''));
-      if (Number.isFinite(updated)) return updated;
-      const created = Date.parse(String(item?.createdAt || ''));
-      if (Number.isFinite(created)) return created;
-      return 0;
-    };
+    const shouldExcludeFromDirectCostTotals = (item: any): boolean => {
+      const itemName = String(item?.item || '').trim().toLowerCase();
+      if (!itemName) return false;
 
-    const normalizeItemBase = (itemName: string): string =>
-      String(itemName || '')
-        .split(' - ')[0]
-        .trim()
-        .toLowerCase();
+      const phase = String(item?.phase || '').trim().toLowerCase();
+      const notes = String(item?.notes || '').trim().toLowerCase();
+      const source = String(item?.source || '').trim().toLowerCase();
+      const isAiImported = source === 'ai' || notes.includes('imported from ai analysis');
+
+      const explicitNonCostLabels = [
+        'suggested market bid price',
+        'calculated gc bid price',
+        'calculated cost per conditioned area',
+        'cost range',
+        'project address',
+      ];
+
+      if (explicitNonCostLabels.some((token) => itemName.includes(token))) {
+        return true;
+      }
+
+      if (
+        isAiImported &&
+        (phase.includes('cost breakdown') || phase.includes('project closeout'))
+      ) {
+        return true;
+      }
+
+      return false;
+    };
 
     const categoryFamily = (rawCategory: string): 'materials' | 'subcontractor' | 'other' => {
       const normalized = String(rawCategory || '').trim().toLowerCase();
@@ -2546,51 +2720,13 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       return 'other';
     };
 
-    const lineCost = (item: any): number => {
-      const actual = Number(item?.actualCost || 0);
-      if (actual > 0) return actual;
-
-      const qty = Number(item?.quantity || 0);
-      const unit = Number(item?.unitCost || 0);
-      if (qty > 0 && unit > 0) return qty * unit;
-
-      return Number(item?.estimatedCost || 0);
-    };
-
-    const sorted = [...this.budgetLineItems].sort((a: any, b: any) => {
-      const timeDelta = toIsoTime(b) - toIsoTime(a);
-      if (timeDelta !== 0) return timeDelta;
-      return Number(b?.id || 0) - Number(a?.id || 0);
-    });
-
-    const keptByKey = new Map<string, any>();
-
-    const canonicalKey = (item: any, family: 'materials' | 'subcontractor'): string => {
-      const phase = String(item?.phase || '').trim().toLowerCase();
-      const trade = String(item?.trade || '').trim().toLowerCase();
-      const itemBase = normalizeItemBase(item?.item || '');
-      const unit = String(item?.unit || '').trim().toLowerCase();
-      return `${family}|${phase}|${trade}|${itemBase}|${unit}`;
-    };
-
-    sorted.forEach((item: any) => {
+    return this.budgetLineItems.reduce((sum, item: any) => {
       const family = categoryFamily(String(item?.category || ''));
-      if (family !== category) return;
+      if (family !== category) return sum;
+      if (shouldExcludeFromDirectCostTotals(item)) return sum;
 
-      // Deduplicate across AI/BOM/manual variants of the same logical line.
-      // We intentionally do NOT use source/sourceId for the primary key so that
-      // "original AI row" and "edited BOM row" collapse into one effective value.
-      const dedupeKey = canonicalKey(item, family);
-
-      if (!keptByKey.has(dedupeKey)) {
-        keptByKey.set(dedupeKey, item);
-      }
-    });
-
-    return Array.from(keptByKey.values()).reduce(
-      (sum, item) => sum + lineCost(item),
-      0,
-    );
+      return sum + Number(item?.estimatedCost || 0);
+    }, 0);
   }
 
   private sleep(ms: number): Promise<void> {
@@ -2639,19 +2775,69 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
         let permitsAdminFees = 0;
         let insuranceBonds = 0;
 
+        const sumCategorizedMaterials = (
+          row: any,
+          predicate: (itemName: string) => boolean,
+        ): number => {
+          const materials = Array.isArray(row?.Categorized_Materials)
+            ? row.Categorized_Materials
+            : [];
+          return materials
+            .filter((m: any) => predicate(String(m?.Item || '').toLowerCase()))
+            .reduce(
+              (sum: number, m: any) =>
+                sum + parseAmount(m?.Total ?? m?.Amount ?? m?.Cost),
+              0,
+            );
+        };
+
         parsed.forEach((row: any) => {
-          const phaseItem = String(
-            row?.Phase_Item || row?.Category || row?.Item || '',
-          ).toLowerCase();
+          const phaseItem = String(row?.Phase_Item || '').toLowerCase();
+          const category = String(row?.Category || '').toLowerCase();
+          const combinedLabel = `${phaseItem} ${category}`.trim();
           const amount = parseAmount(row?.Amount ?? row?.Total ?? row?.Cost);
-          if (!phaseItem || amount <= 0) return;
+          if (!combinedLabel && amount <= 0) return;
+
+          const nestedGeneral = sumCategorizedMaterials(row, (name) =>
+            (name.includes('general') && name.includes('condition')) ||
+            (name.includes('site') &&
+              (name.includes('management') ||
+                name.includes('service') ||
+                name.includes('supervision') ||
+                name.includes('support') ||
+                name.includes('security') ||
+                name.includes('waste') ||
+                name.includes('equipment'))),
+          );
+          const nestedPermits = sumCategorizedMaterials(
+            row,
+            (name) => name.includes('permit') || name.includes('admin'),
+          );
+          const nestedInsurance = sumCategorizedMaterials(
+            row,
+            (name) => name.includes('insurance') || name.includes('bond'),
+          );
+
+          if (nestedGeneral > 0 || nestedPermits > 0 || nestedInsurance > 0) {
+            generalConditions += nestedGeneral;
+            permitsAdminFees += nestedPermits;
+            insuranceBonds += nestedInsurance;
+            return;
+          }
+
+          if (!combinedLabel || amount <= 0) return;
 
           const isGeneral =
-            phaseItem.includes('general') && phaseItem.includes('condition');
+            (combinedLabel.includes('general') &&
+              combinedLabel.includes('condition')) ||
+            (combinedLabel.includes('site') &&
+              (combinedLabel.includes('management') ||
+                combinedLabel.includes('service') ||
+                combinedLabel.includes('support')));
           const isPermits =
-            phaseItem.includes('permit') || phaseItem.includes('admin');
+            combinedLabel.includes('permit') || combinedLabel.includes('admin');
           const isInsurance =
-            phaseItem.includes('insurance') || phaseItem.includes('bond');
+            combinedLabel.includes('insurance') || combinedLabel.includes('bond');
 
           if (isGeneral) {
             generalConditions += amount;
@@ -3827,6 +4013,12 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.stageDisplayMode = this.canUseLiveStageView() ? 'stage' : 'live';
+      console.info('[jobs:trace] determineProjectStage', {
+        status,
+        mappedStage: this.projectStage,
+        mode: this.stageDisplayMode,
+        jobId: this.projectDetails?.jobId,
+      });
       this.primeDataForCurrentView();
       // If the cost summary already exists from an earlier refresh pass,
       // reveal hero totals now that the correct stage is active.
@@ -3867,6 +4059,19 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async onAnalysisComplete() {
+    console.info('[jobs] onAnalysisComplete triggered', {
+      inFlight: this.analysisCompletionInFlight,
+      jobId: this.projectDetails?.jobId,
+      stage: this.projectStage,
+    });
+
+    if (this.analysisCompletionInFlight) {
+      console.info('[jobs] onAnalysisComplete coalesced to in-flight run', {
+        jobId: this.projectDetails?.jobId,
+      });
+      return;
+    }
+
     const jobId = Number(this.projectDetails?.jobId);
     if (!Number.isFinite(jobId)) {
       this.snackBar.open('Cannot proceed: Job ID not available yet.', 'Close', {
@@ -3875,11 +4080,42 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.analysisCompletionInFlight = true;
+    this.analysisCompletionInFlightStartedAtMs = Date.now();
+
+    try {
+
+    this.authService.extendAnalysisProtectionGrace('job-analysis-complete-manual');
+
+    // Manual Continue can run without a final SignalR `isComplete`; without this,
+    // `pauseInactivityTimer('job-analysis')` never clears and idle/refresh UX breaks.
+    if (this.isAnalysisInactivityPaused) {
+      this.authService.resumeInactivityTimer('job-analysis');
+      this.isAnalysisInactivityPaused = false;
+    }
+
     this.reportService.invalidateBomResultsCache(String(jobId));
     this.startScopePerf(jobId, 'onAnalysisComplete');
 
-    // Show Scope Review immediately; heavy fetches run in background (awaiting them here
-    // blocked the phase switch for tens of seconds while retries + budget import ran).
+    try {
+      const inFlight = this.scopeHydrationPromises.get(jobId);
+      if (inFlight) {
+        await inFlight.catch(() => undefined);
+      }
+      await this.hydrateScopeAndFinancialSnapshotWithRetries(jobId, {
+        forceScopeInsightRetries: true,
+      });
+    } catch (err) {
+      console.error('[jobs] Blocking pre-navigation hydration failed', { jobId, err });
+      this.snackBar.open(
+        'Still finalizing analysis data. Please wait a moment and try again.',
+        'Close',
+        { duration: 3500 },
+      );
+      return;
+    }
+
+    // Move to Scope Review only after first hydration pass is done.
     this.projectDetails = {
       ...(this.projectDetails || {}),
       status: 'PRELIMINARY_SCOPE',
@@ -3889,7 +4125,6 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.projectStage = 'PRELIMINARY_SCOPE';
     this.stageDisplayMode = 'stage';
     this.syncStageTrackingFromStoreStatus('PRELIMINARY_SCOPE');
-    this.fetchedDataKeys.delete(`${jobId}:scope`);
     this.cdr.detectChanges();
 
     this.updateJobStatus('PRELIMINARY_SCOPE');
@@ -3899,12 +4134,15 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.tryRevealScopeTotalsFromExistingData();
 
     void this.runPostAnalysisBackgroundWork(jobId);
+    } finally {
+      this.analysisCompletionInFlight = false;
+      this.analysisCompletionInFlightStartedAtMs = null;
+    }
   }
 
   /** Hydration + AI budget import after advancing to Scope Review (non-blocking for UI). */
   private async runPostAnalysisBackgroundWork(jobId: number): Promise<void> {
     try {
-      await this.hydrateScopeAndFinancialSnapshotWithRetries(jobId);
       await this.importAiBudgetItemsIfNeeded(jobId);
       this.loadBudgetLineItems(jobId);
       await this.refreshFinancialSnapshot(jobId, 0);

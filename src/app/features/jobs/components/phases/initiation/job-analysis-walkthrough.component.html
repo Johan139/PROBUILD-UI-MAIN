@@ -5,6 +5,7 @@
       <button
         type="button"
         class="continue-btn proceed-top-right"
+        [disabled]="isProceeding"
         (click)="onContinue()"
         >
         Proceed to Scope Review
