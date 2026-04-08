@@ -94,7 +94,7 @@ type FlowState =
   | { step: 'walkthrough'; index: number; notes: Record<string, string> }
   | { step: 'finalizing'; pct: number }
   | { step: 'done' };
-
+const BASE_URL = environment.BACKEND_URL;
 @Component({
   selector: 'app-new-project',
   standalone: true,
@@ -126,7 +126,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   HardHat = HardHat;
   MapPin = MapPin;
   Check = CheckCircle;
-
+  alertMessage: string = '';
   darkMode = true;
   flow: FlowState = { step: 'idle' };
   addressField = '';
@@ -139,13 +139,13 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   isRerunningStep = false;
   isNavigatingNext = false;
   progress = 0;
-
+  subscriptionActive: boolean = false;
   uploadedFiles: UploadedFileInfo[] = [];
   selectedFile: UploadedFileInfo | null = null;
   pdfSrc: string | Uint8Array | null = null;
   availablePrompts$: Observable<Prompt[]>;
   selectedPrompts = new FormControl([]);
-
+  showAlert: boolean = false;
   currentUserEditedContent: string = '';
   currentUserComments: string = '';
   applyCostOptimisation: boolean = false;
@@ -206,6 +206,8 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private newAnalysisService: NewAnalysisService,
     private signalrService: SignalrService,
     private formBuilder: FormBuilder,
+    private router: Router,
+    private httpClient: HttpClient,
     private authService: AuthService,
     private httpClient: HttpClient,
     private snackBar: MatSnackBar,
@@ -292,6 +294,34 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         this.isGoogleMapsLoaded = false;
       }
     }
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+        switchMap((user) =>
+          this.httpClient.get<{ hasActive: boolean }>(
+            `${BASE_URL}/Account/has-active-subscription/${user.id}`,
+            { observe: 'body' },
+          ),
+        ),
+      )
+      .subscribe({
+        next: (res) => {
+          this.subscriptionActive = res.hasActive;
+
+          if (!res.hasActive) {
+            this.alertMessage =
+              'You do not have an active subscription. Please subscribe to create a job quote.';
+            this.showAlert = true;
+          }
+        },
+        error: (err) => {
+          console.error('Subscription check failed', err);
+          this.alertMessage = 'Unable to verify subscription. Try again later.';
+          this.showAlert = true;
+          this.router.navigate(['/dashboard']);
+        },
+      });
 
     this.addressForm
       .get('formattedAddress')!
@@ -926,7 +956,11 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     }
     return null;
   }
-
+  onUpgradeClicked(): void {
+    this.router.navigate(['/profile'], {
+      queryParams: { tab: 'subscriptions' },
+    });
+  }
   removeFile(fileToRemove: UploadedFileInfo): void {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
