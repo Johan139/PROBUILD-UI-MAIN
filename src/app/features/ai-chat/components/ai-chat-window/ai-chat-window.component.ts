@@ -33,6 +33,11 @@ import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
 import { combineLatest } from 'rxjs';
 import { distinctUntilChanged } from 'rxjs/operators';
 
+const HIDDEN_CONVERSATION_TITLE_PREFIXES = [
+  'Analysis started on',
+  'Selected Analysis for',
+];
+
 @Component({
   selector: 'app-ai-chat-window',
   templateUrl: './ai-chat-window.component.html',
@@ -136,7 +141,13 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.messages$ = this.state.messages$;
     this.isLoading$ = this.state.isLoading$;
     this.currentConversation$ = this.state.currentConversation$;
-    this.conversations$ = this.state.conversations$;
+    this.conversations$ = this.state.conversations$.pipe(
+      map((conversations) =>
+        conversations.filter(
+          (conversation) => !this.isBlueprintAnalysisConversation(conversation),
+        ),
+      ),
+    );
     this.selectedPrompts$ = this.state.selectedPrompts$;
 
     this.prompts$ = this.state.prompts$;
@@ -509,6 +520,14 @@ export class AiChatWindowComponent implements OnInit, OnDestroy {
     this.router.navigate(['/ai-chat']);
     this.state.setIsChatOpen(false);
   }
+
+  private isBlueprintAnalysisConversation(conversation: Conversation): boolean {
+    const title = conversation.Title?.trim() ?? '';
+    return HIDDEN_CONVERSATION_TITLE_PREFIXES.some((prefix) =>
+      title.startsWith(prefix),
+    );
+  }
+
   async openPopout() {
     // use active conversation if available; otherwise 'new'
     const convoId = this.state.getCurrentConversationId();

@@ -38,6 +38,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { SelectedPromptsPipe } from '../../pipes/selected-prompts.pipe';
 
+const HIDDEN_CONVERSATION_TITLE_PREFIXES = [
+  'Analysis started on',
+  'Selected Analysis for',
+];
+
 @Component({
   selector: 'app-ai-chat-full-screen',
   templateUrl: './ai-chat-full-screen.component.html',
@@ -141,7 +146,13 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
     private cdRef: ChangeDetectorRef,
     private signalrService: SignalrService,
   ) {
-    this.conversations$ = this.aiChatStateService.conversations$;
+    this.conversations$ = this.aiChatStateService.conversations$.pipe(
+      map((conversations) =>
+        conversations.filter(
+          (conversation) => !this.isBlueprintAnalysisConversation(conversation),
+        ),
+      ),
+    );
 
     this.isLoading$ = this.aiChatStateService.isLoading$;
 
@@ -351,6 +362,18 @@ export class AiChatFullScreenComponent implements OnInit, OnDestroy {
 
     this.router.navigate(['/ai-chat', conversationId]);
     this.selectConversation$.next(conversationId);
+  }
+
+  goToWindowMode(): void {
+    this.aiChatStateService.setIsChatOpen(true);
+    this.router.navigate(['/dashboard']);
+  }
+
+  private isBlueprintAnalysisConversation(conversation: Conversation): boolean {
+    const title = conversation.Title?.trim() ?? '';
+    return HIDDEN_CONVERSATION_TITLE_PREFIXES.some((prefix) =>
+      title.startsWith(prefix),
+    );
   }
 
   private setupConversationSelection(): void {
