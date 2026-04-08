@@ -27,6 +27,33 @@ export const authInterceptor: HttpInterceptorFn = (
   const isBrowser = isPlatformBrowser(platformId);
   const token$ = isBrowser ? from(authService.getToken()) : of(null);
 
+  const shouldAttachProbuildHeaders = (() => {
+    // Avoid attaching custom headers (and auth) to third-party absolute URLs.
+    // This prevents CORS preflight failures for providers that don't allow
+    // X-Correlation-Id.
+    const isAbsoluteUrl = /^https?:\/\//i.test(req.url);
+    if (!isAbsoluteUrl) return true;
+    if (!isBrowser) return true;
+
+    try {
+      const url = new URL(req.url, globalThis.location?.origin);
+      const host = url.hostname.toLowerCase();
+
+      // Allow same-origin requests.
+      const originHost = globalThis.location?.hostname?.toLowerCase();
+      if (originHost && host === originHost) return true;
+
+      // Allow our own domains / local dev.
+      if (host.endsWith('probuildai.com')) return true;
+      if (host === 'localhost' || host === '127.0.0.1') return true;
+
+      return false;
+    } catch {
+      // If URL parsing fails, fall back to prior behavior.
+      return true;
+    }
+  })();
+
   return token$.pipe(
     switchMap((token) => {
       authService.noteAuthTokenObserved(!!token, 'interceptor:token_resolved', {
@@ -45,11 +72,12 @@ export const authInterceptor: HttpInterceptorFn = (
       const correlationId =
         req.headers.get('X-Correlation-Id') || getCorrelationId();
 
-      const headers: Record<string, string> = {
-        'X-Correlation-Id': correlationId,
-      };
-      if (token && !isAuthEndpoint) {
-        headers['Authorization'] = `Bearer ${token}`;
+      const headers: Record<string, string> = {};
+      if (shouldAttachProbuildHeaders) {
+        headers['X-Correlation-Id'] = correlationId;
+        if (token && !isAuthEndpoint) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
       }
 
       const authedReq = req.clone({
