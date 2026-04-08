@@ -5,13 +5,15 @@
       <div class="warning-header">
         <div class="header-left">
           <svg viewBox="0 0 24 24" class="icon-warning">
-            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
           </svg>
           <span class="header-title">WARNING - SUBSCRIPTION REQUIRED</span>
         </div>
-        <button class="close-btn" aria-label="Close">
+        <button class="close-btn" aria-label="Close" (click)="closed.emit()">
           <svg viewBox="0 0 24 24" class="icon-close">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            />
           </svg>
         </button>
       </div>
@@ -21,20 +23,36 @@
         <div class="info-box">
           <div class="info-header">
             <svg viewBox="0 0 24 24" class="icon-info">
-              <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              <path
+                d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+              />
             </svg>
             <span>READ BEFORE USE</span>
           </div>
           <ul class="warning-list">
-            <li>Do not operate advanced features without an active ProBuild AI subscription.</li>
-            <li>Access is limited to <span class="highlight-text">read-only mode</span> until plan is upgraded.</li>
-            <li>Upgrading unlocks: BOM generation, vendor/subcontractor bidding, cost & timeline exports, and full project workflows.</li>
-            <li>Misuse may lead to data loss or incomplete outputs for live jobs.</li>
+            <li>
+              Do not operate advanced features without an active ProBuild AI
+              subscription.
+            </li>
+            <li>
+              Access is limited to
+              <span class="highlight-text">read-only mode</span> until plan is
+              upgraded.
+            </li>
+            <li>
+              Upgrading unlocks: BOM generation, vendor/subcontractor bidding,
+              cost & timeline exports, and full project workflows.
+            </li>
+            <li>
+              Misuse may lead to data loss or incomplete outputs for live jobs.
+            </li>
           </ul>
           <div class="reference-text">
-            Reference: ProBuild AI SOP SEC-12 - Maintain data backups - Use on secured devices only.
+            Reference: ProBuild AI SOP SEC-12 - Maintain data backups - Use on
+            secured devices only.
           </div>
         </div>
+
         <!-- Specs Grid -->
         <div class="specs-grid">
           <div class="spec-row">
@@ -43,17 +61,23 @@
           </div>
           <div class="spec-row">
             <span class="label">REQUIRED</span>
-            <span class="value">Active Subscription (Essential / Advanced / Premium)</span>
+            <span class="value"
+              >Active Subscription (Essential / Advanced / Premium)</span
+            >
           </div>
           <div class="spec-row">
             <span class="label">INCLUDES</span>
-            <span class="value">BOM • Bidding • Costing • Timelines • Exports</span>
+            <span class="value"
+              >BOM • Bidding • Costing • Timelines • Exports</span
+            >
           </div>
         </div>
         <!-- Action Button -->
-        <button class="upgrade-btn">
+        <button class="upgrade-btn" (click)="upgradeClicked.emit()">
           <svg viewBox="0 0 24 24" class="icon-upgrade">
-            <path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <path
+              d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
           </svg>
           Upgrade Now
         </button>

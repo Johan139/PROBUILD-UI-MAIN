@@ -1,5 +1,4 @@
-import { Component, Input } from '@angular/core';
-
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-subscription-warning',
@@ -11,4 +10,7 @@ import { Component, Input } from '@angular/core';
 export class SubscriptionWarningComponent {
   @Input() subscriptionActive: boolean = false;
   @Input() isLoading: boolean = true;
+
+  @Output() upgradeClicked = new EventEmitter<void>();
+  @Output() closed = new EventEmitter<void>();
 }

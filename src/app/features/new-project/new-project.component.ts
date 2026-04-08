@@ -31,7 +31,7 @@ import {
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { filter, map, switchMap, take } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 import { AiChatService } from '../ai-chat/services/ai-chat.service';
 import { AiChatStateService } from '../ai-chat/services/ai-chat-state.service';
@@ -62,6 +62,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../authentication/auth.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { SubscriptionWarningComponent } from '../../shared/dialogs/subscription-warning/subscription-warning.component';
 
 interface WalkthroughStep {
   stepIndex: number;
@@ -115,6 +117,7 @@ type FlowState =
     MatCardModule,
     MatTooltipModule,
     ProjectBlueprintViewerComponent,
+    SubscriptionWarningComponent,
   ],
   templateUrl: './new-project.component.html',
   styleUrls: ['./new-project.component.scss'],
@@ -132,6 +135,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
   budgetLevel: 'high' | 'medium' | 'low' = 'medium';
   isLoading = false;
+  subscriptionActive = false;
   isRerunningStep = false;
   isNavigatingNext = false;
   progress = 0;
@@ -203,6 +207,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private signalrService: SignalrService,
     private formBuilder: FormBuilder,
     private authService: AuthService,
+    private httpClient: HttpClient,
     private snackBar: MatSnackBar,
     private localStorageService: LocalStorageService,
     private router: Router,
@@ -251,6 +256,26 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   private readonly CLIENT_FORM_KEY = 'newProjectClientForm';
   private shouldDeleteTempFiles = true;
   async ngOnInit(): Promise<void> {
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+        switchMap((user) => {
+          return this.httpClient.get<{ hasActive: boolean }>(
+            `${environment.BACKEND_URL}/Account/has-active-subscription/${(user as any).id}`,
+          );
+        }),
+      )
+      .subscribe({
+        next: (res) => {
+          this.subscriptionActive = res.hasActive;
+        },
+        error: (err) => {
+          console.error('Subscription check failed', err);
+          this.subscriptionActive = false;
+        },
+      });
+
     this.sessionId = uuidv4();
     this.loadForm();
     this.updateProgressSteps();
@@ -306,6 +331,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     if (this.shouldDeleteTempFiles) {
       this.deleteTemporaryFiles();
     }
+  }
+
+  onUpgradeClicked(): void {
+    this.router.navigate(['/profile']);
   }
 
   deleteTemporaryFiles(): void {
