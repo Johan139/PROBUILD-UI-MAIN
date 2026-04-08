@@ -33,6 +33,29 @@
   max-width: 90vw;
 }
 
+:host-context(body.theme-dark) {
+  .onboarding-tooltip {
+    background: #111827;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .tooltip-header {
+    h4 {
+      color: rgba(255, 255, 255, 0.92);
+    }
+    .step-count {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  .tooltip-content {
+    p {
+      color: rgba(255, 255, 255, 0.72);
+    }
+  }
+}
+
 .tooltip-header {
   display: flex;
   justify-content: space-between;
