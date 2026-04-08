@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-subscription-warning',
@@ -8,9 +9,13 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   imports: [],
 })
 export class SubscriptionWarningComponent {
-  @Input() subscriptionActive: boolean = false;
-  @Input() isLoading: boolean = true;
 
   @Output() upgradeClicked = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
+  @Input() subscriptionActive: boolean = false;
+  @Input() isLoading: boolean = true;
+
+  onUpgradeClick(): void {
+    this.upgradeClicked.emit();
+  }
 }
