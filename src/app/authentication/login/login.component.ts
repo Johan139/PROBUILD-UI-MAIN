@@ -138,7 +138,9 @@ export class LoginComponent implements OnDestroy {
           });
           w[PB_GSI_ID_INIT_KEY] = true;
         }
-        google.accounts.id.disableAutoSelect();
+        if (typeof google?.accounts?.id?.disableAutoSelect === 'function') {
+          google.accounts.id.disableAutoSelect();
+        }
 
         this.rerenderGoogleButton(this.themeService.isDarkMode());
       }
@@ -161,10 +163,11 @@ export class LoginComponent implements OnDestroy {
 
   private rerenderGoogleButton(isDark: boolean) {
     const divExists = document.getElementById('googleSignInDiv');
-    if (!divExists || typeof google === 'undefined') return;
+    const gsi = (window as any)?.google?.accounts?.id;
+    if (!divExists || !gsi || typeof gsi.renderButton !== 'function') return;
 
     divExists.innerHTML = '';
-    google.accounts.id.renderButton(divExists, {
+    gsi.renderButton(divExists, {
       theme: isDark ? 'filled_black' : 'outline',
       size: 'large',
       text: 'signin_with',

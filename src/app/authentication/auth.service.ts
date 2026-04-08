@@ -26,6 +26,16 @@ import { UserAddressStoreService } from '../services/UserAddressStoreService';
 })
 export class AuthService {
   private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
+  private readonly ANALYSIS_PROTECTION_UNTIL_KEY =
+    'pb_analysis_protection_until_ms';
+  private readonly AUTH_TRACE_BUFFER_KEY = '__pbAuthTrace';
+  private readonly AUTH_TRACE_MAX = 80;
+  private authLimboSinceMs: number | null = null;
+  private authTraceBuffer: Array<{
+    at: string;
+    event: string;
+    details?: Record<string, unknown>;
+  }> = [];
   private isLogoutInProgress = false;
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
@@ -40,14 +50,20 @@ export class AuthService {
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private inactivityPauseSources = new Set<string>();
+  private analysisProtectionGraceUntilMs = 0;
+  private readonly ANALYSIS_PROTECTION_GRACE_MS =
+    (environment as { analysisAuthProtectionGraceMs?: number })
+      .analysisAuthProtectionGraceMs ?? 10 * 60 * 1000;
   /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
   private readonly refreshTimeoutMs =
     environment.refreshTokenRequestTimeoutMs ?? 10_000;
   private lastGetTokenRefreshFailureLogAt = 0;
   /** After a failed refresh while the access token is still valid, brief pause before retry. */
   private readonly REFRESH_RETRY_COOLDOWN_MS = 15_000;
-  private readonly REFRESH_FAILURE_WINDOW_MS = 60000;
-  private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 3;
+  private readonly REFRESH_FAILURE_WINDOW_MS = 120_000;
+  private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 5;
+  /** Refresh access token this long before JWT exp (short server lifetimes need more headroom). */
+  private readonly PROACTIVE_REFRESH_LEEWAY_MS = 120_000;
   private isRefreshing = false;
   private refreshRetryCooldownUntil = 0;
   private refreshAuthFailureCount = 0;
@@ -203,10 +219,117 @@ export class AuthService {
     this.refreshAuthFailureWindowStartedAt = 0;
   }
 
+  private getPersistedAnalysisProtectionUntilMs(): number {
+    if (!isPlatformBrowser(this.platformId)) {
+      return 0;
+    }
+
+    const raw = localStorage.getItem(this.ANALYSIS_PROTECTION_UNTIL_KEY);
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  private setPersistedAnalysisProtectionUntilMs(untilMs: number): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.setItem(this.ANALYSIS_PROTECTION_UNTIL_KEY, String(untilMs));
+  }
+
+  private clearPersistedAnalysisProtection(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.removeItem(this.ANALYSIS_PROTECTION_UNTIL_KEY);
+  }
+
+  private hasActiveAnalysisPauseSource(): boolean {
+    return (
+      this.inactivityPauseSources.has('job-analysis') ||
+      this.inactivityPauseSources.has('job-analysis-walkthrough')
+    );
+  }
+
+  private isAnalysisInactivityProtected(): boolean {
+    const persistedUntilMs = this.getPersistedAnalysisProtectionUntilMs();
+    const effectiveUntilMs = Math.max(
+      this.analysisProtectionGraceUntilMs,
+      persistedUntilMs,
+    );
+    this.analysisProtectionGraceUntilMs = effectiveUntilMs;
+
+    return (
+      this.hasActiveAnalysisPauseSource() || Date.now() < effectiveUntilMs
+    );
+  }
+
+  public extendAnalysisProtectionGrace(source: string, durationMs?: number): void {
+    const requestedMs = Number(durationMs ?? this.ANALYSIS_PROTECTION_GRACE_MS);
+    const safeMs = Number.isFinite(requestedMs) && requestedMs > 0
+      ? requestedMs
+      : this.ANALYSIS_PROTECTION_GRACE_MS;
+    const nextUntil = Date.now() + safeMs;
+    this.analysisProtectionGraceUntilMs = Math.max(
+      this.analysisProtectionGraceUntilMs,
+      nextUntil,
+    );
+    this.setPersistedAnalysisProtectionUntilMs(this.analysisProtectionGraceUntilMs);
+    this.pushAuthTrace('analysis.protection_grace.extend', {
+      source,
+      durationMs: safeMs,
+      untilMs: this.analysisProtectionGraceUntilMs,
+    });
+  }
+
   private logoutWithReason(
     reason: 'manual' | 'inactivity' | 'refresh_invalid' | 'token_invalid',
   ): void {
+    this.pushAuthTrace('logoutWithReason', { reason });
     this.logout(reason);
+  }
+
+  public pushAuthTrace(event: string, details?: Record<string, unknown>): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const entry = {
+      at: new Date().toISOString(),
+      event,
+      details,
+    };
+    this.authTraceBuffer.push(entry);
+    if (this.authTraceBuffer.length > this.AUTH_TRACE_MAX) {
+      this.authTraceBuffer.splice(0, this.authTraceBuffer.length - this.AUTH_TRACE_MAX);
+    }
+    (window as any)[this.AUTH_TRACE_BUFFER_KEY] = [...this.authTraceBuffer];
+  }
+
+  public noteAuthTokenObserved(
+    hasToken: boolean,
+    source: string,
+    details?: Record<string, unknown>,
+  ): void {
+    this.pushAuthTrace('auth.tokenObserved', {
+      source,
+      hasToken,
+      ...(details || {}),
+    });
+
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const hasRefreshToken = !!localStorage.getItem('refreshToken');
+    const path = window.location.pathname || '';
+    const isPublicAuthRoute =
+      path.startsWith('/login') ||
+      path.startsWith('/register') ||
+      path.startsWith('/confirm-email') ||
+      path.startsWith('/trial-registration');
+
+    if (hasToken || !this.isLoggedIn() || !hasRefreshToken || isPublicAuthRoute) {
+      this.authLimboSinceMs = null;
+      return;
+    }
+    // No limbo holding pattern: missing bearer while "logged in" should fail fast
+    // through normal 401/refresh handling, not delay UI in partial-auth state.
+    this.authLimboSinceMs = null;
   }
 
   public startInactivityTimer(): void {
@@ -214,10 +337,14 @@ export class AuthService {
 
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.isLoggedIn()) return;
+    if (this.isAnalysisInactivityProtected()) return;
     if (this.inactivityPauseSources.size > 0) return;
 
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
+      this.pushAuthTrace('inactivity.timeout.logout', {
+        pausedSources: this.inactivityPauseSources.size,
+      });
       if (this.isLoggedIn()) {
         this.logoutWithReason('inactivity');
       }
@@ -237,6 +364,10 @@ export class AuthService {
       this.clearInactivityTimer();
       return;
     }
+    if (this.isAnalysisInactivityProtected()) {
+      this.clearInactivityTimer();
+      return;
+    }
     if (this.inactivityPauseSources.size > 0) {
       this.clearInactivityTimer();
       return;
@@ -247,12 +378,23 @@ export class AuthService {
   public pauseInactivityTimer(source: string): void {
     const key = String(source || '').trim() || 'unknown';
     this.inactivityPauseSources.add(key);
+    if (key === 'job-analysis' || key === 'job-analysis-walkthrough') {
+      this.extendAnalysisProtectionGrace(`pause:${key}`);
+    }
+    this.pushAuthTrace('inactivity.pause', {
+      source: key,
+      pausedSources: this.inactivityPauseSources.size,
+    });
     this.clearInactivityTimer();
   }
 
   public resumeInactivityTimer(source: string): void {
     const key = String(source || '').trim() || 'unknown';
     this.inactivityPauseSources.delete(key);
+    this.pushAuthTrace('inactivity.resume', {
+      source: key,
+      pausedSources: this.inactivityPauseSources.size,
+    });
     if (this.inactivityPauseSources.size === 0) {
       this.startInactivityTimer();
     }
@@ -295,8 +437,10 @@ export class AuthService {
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // Do not await: APP_INITIALIZER would block first paint for the full refresh timeout (+ retry).
-      void this.performColdStartRefresh();
+      // On browser refresh with expired token, fail fast instead of background refresh
+      // loops that leave the app loading in a broken authenticated shell.
+      this.logoutWithReason('refresh_invalid');
+      return;
     }
   }
   googleLogin(idToken: string): Observable<any> {
@@ -464,7 +608,12 @@ export class AuthService {
       | 'token_invalid' = 'manual',
   ): void {
     if (this.isLogoutInProgress) return;
+
+    this.pushAuthTrace('logout.begin', { reason });
     this.isLogoutInProgress = true;
+    this.authLimboSinceMs = null;
+    this.analysisProtectionGraceUntilMs = 0;
+    this.clearPersistedAnalysisProtection();
     this.inactivityPauseSources.clear();
     this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
@@ -494,6 +643,10 @@ export class AuthService {
     // stuck in an authenticated state after session expiry.
     if (isPlatformBrowser(this.platformId) && shouldHardReload) {
       window.location.replace('/login');
+      // If navigation is blocked, release the guard so a retry/manual logout works.
+      setTimeout(() => {
+        this.isLogoutInProgress = false;
+      }, 4000);
       return;
     }
 
@@ -504,6 +657,10 @@ export class AuthService {
 
   refreshToken(timeoutOverrideMs?: number): Observable<any> {
     const requestTimeoutMs = timeoutOverrideMs ?? this.refreshTimeoutMs;
+    this.pushAuthTrace('refresh.start', {
+      timeoutMs: requestTimeoutMs,
+      isRefreshing: this.isRefreshing,
+    });
 
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
@@ -524,6 +681,7 @@ export class AuthService {
 
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) {
+      this.pushAuthTrace('refresh.missing_refresh_token');
       this.refreshTokenSubject.next({
         failed: true,
         error: new Error('No refresh token available.'),
@@ -545,21 +703,30 @@ export class AuthService {
             localStorage.setItem('refreshToken', response.refreshToken);
             this.loadUserFromToken(response.token);
             this.resetRefreshAuthFailureState();
+            this.pushAuthTrace('refresh.success');
             this.refreshTokenSubject.next(response);
           } else {
+            this.pushAuthTrace('refresh.invalid_payload');
             this.refreshTokenSubject.next({
               failed: true,
               error: new Error('Invalid refresh token response'),
             });
-            if (this.shouldLogoutNowForRefreshAuthFailure()) {
-              this.logoutWithReason('refresh_invalid');
-            }
+            // Do not use auth-failure strike counter here (200 + bad shape can be transient).
             throw new Error('Invalid refresh token response');
           }
         }),
         catchError((err) => {
+          this.pushAuthTrace('refresh.error', {
+            status: err instanceof HttpErrorResponse ? err.status : null,
+            name: (err as any)?.name || null,
+          });
           this.refreshTokenSubject.next({ failed: true, error: err });
           if (this.shouldForceLogoutOnRefreshFailure(err)) {
+            this.logoutWithReason('refresh_invalid');
+            return throwError(() => err);
+          }
+
+          if (err instanceof HttpErrorResponse && err.status >= 500) {
             if (this.shouldLogoutNowForRefreshAuthFailure()) {
               this.logoutWithReason('refresh_invalid');
             }
@@ -576,7 +743,10 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return null;
 
     const token = localStorage.getItem('accessToken');
-    if (!token) return null;
+    if (!token) {
+      this.noteAuthTokenObserved(false, 'getToken:no_access_token');
+      return null;
+    }
 
     const exp = this.getExp(token);
     if (exp == null) {
@@ -587,37 +757,50 @@ export class AuthService {
     const expiresAtMs = exp * 1000;
     const now = Date.now();
     const isExpired = this.accessTokenIsExpired(token);
-    const needsProactiveRefresh = expiresAtMs < now + 5000;
+    const needsProactiveRefresh =
+      expiresAtMs < now + this.PROACTIVE_REFRESH_LEEWAY_MS;
 
-    if (!needsProactiveRefresh) {
-      return this.normalizeToken(token);
-    }
-
-    if (now < this.refreshRetryCooldownUntil) {
-      if (isExpired) {
+    // Never keep an expired access token alive. Fail fast to login.
+    if (isExpired) {
+      try {
+        await firstValueFrom(this.refreshToken(8_000));
+        this.refreshRetryCooldownUntil = 0;
+        this.noteAuthTokenObserved(true, 'getToken:expired_refresh_success');
+        return localStorage.getItem('accessToken');
+      } catch (e) {
         console.warn(
-          'Access token expired and refresh is in cooldown; logging out.',
+          'Expired token refresh failed; logging out immediately.',
+          e,
         );
         this.logoutWithReason('refresh_invalid');
         return null;
       }
+    }
+
+    if (!needsProactiveRefresh) {
+      this.noteAuthTokenObserved(true, 'getToken:token_valid_no_refresh');
+      return this.normalizeToken(token);
+    }
+
+    if (!isExpired && this.isAnalysisInactivityProtected()) {
+      this.noteAuthTokenObserved(
+        true,
+        'getToken:analysis_protected_skip_proactive_refresh_keep_token',
+      );
+      return this.normalizeToken(token);
+    }
+
+    if (now < this.refreshRetryCooldownUntil) {
+      this.noteAuthTokenObserved(true, 'getToken:cooldown_keep_token');
       return this.normalizeToken(token);
     }
 
     try {
       await firstValueFrom(this.refreshToken());
       this.refreshRetryCooldownUntil = 0;
+      this.noteAuthTokenObserved(true, 'getToken:refresh_success');
       return localStorage.getItem('accessToken');
     } catch (e) {
-      if (isExpired) {
-        console.warn(
-          'Refresh failed while access token was expired; logging out.',
-          e,
-        );
-        this.logoutWithReason('refresh_invalid');
-        return null;
-      }
-
       const t = Date.now();
       if (t - this.lastGetTokenRefreshFailureLogAt > 2500) {
         this.lastGetTokenRefreshFailureLogAt = t;
@@ -635,6 +818,7 @@ export class AuthService {
         }
       }
       this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
+      this.noteAuthTokenObserved(true, 'getToken:non_expired_refresh_failed_keep_token');
       return this.normalizeToken(token);
     }
   }

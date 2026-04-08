@@ -2,7 +2,7 @@
   <mat-card>
     <mat-card-header>
       <mat-card-title>
-        <mat-icon class="title-icon">folder</mat-icon>
+        <span class="material-symbols-outlined title-icon" aria-hidden="true">folder</span>
         <strong>Recent Projects</strong>
       </mat-card-title>
 
@@ -12,7 +12,7 @@
           (click)="toggleProjectView('grid')"
           [class.active]="projectView === 'grid'"
           >
-          <mat-icon>grid_view</mat-icon>
+          <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
         </button>
 
         <button
@@ -20,7 +20,7 @@
           (click)="toggleProjectView('list')"
           [class.active]="projectView === 'list'"
           >
-          <mat-icon>list</mat-icon>
+          <span class="material-symbols-outlined" aria-hidden="true">list</span>
         </button>
       </div>
     </mat-card-header>
@@ -34,14 +34,14 @@
             (click)="prevProject()"
             [disabled]="currentIndex === 0"
             >
-            <mat-icon>chevron_left</mat-icon>
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
           </button>
           <button
             mat-icon-button
             (click)="nextProject()"
             [disabled]="currentIndex >= projects.length - 5"
             >
-            <mat-icon>chevron_right</mat-icon>
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
           </button>
         </div>
         <div class="projects-carousel">

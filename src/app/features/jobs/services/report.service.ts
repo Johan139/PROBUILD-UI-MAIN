@@ -1216,7 +1216,10 @@ export class ReportService {
               : [];
             return materials
               .filter((m: any) => predicate(String(m?.Item || '').toLowerCase()))
-              .reduce((sum: number, m: any) => sum + Number(m?.Total || 0), 0);
+              .reduce((sum: number, m: any) => {
+                const parsed = Number(String(m?.Total ?? m?.Amount ?? m?.Cost ?? 0).replace(/[^0-9.-]/g, ''));
+                return sum + (Number.isFinite(parsed) ? parsed : 0);
+              }, 0);
           };
 
           let generalConditions = 0;
@@ -1227,22 +1230,60 @@ export class ReportService {
           // or "Indirect Costs", so match by Phase_Item semantics across all rows.
           parsed.forEach((row: any) => {
             const phaseItem = String(row?.Phase_Item || '').toLowerCase();
-            const amount = Number(row?.Amount || 0);
-            if (!phaseItem) return;
+            const category = String(row?.Category || '').toLowerCase();
+            const combinedLabel = `${phaseItem} ${category}`.trim();
+            const amountRaw = Number(String(row?.Amount ?? row?.Total ?? row?.Cost ?? 0).replace(/[^0-9.-]/g, ''));
+            const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
+            if (!combinedLabel && amount <= 0) return;
+
+            const nestedGeneral = sumCategorizedMaterials(row, (name) =>
+              (name.includes('general') && name.includes('condition')) ||
+              (name.includes('site') &&
+                (name.includes('management') ||
+                  name.includes('service') ||
+                  name.includes('supervision') ||
+                  name.includes('support') ||
+                  name.includes('security') ||
+                  name.includes('waste') ||
+                  name.includes('equipment'))),
+            );
+            const nestedPermits = sumCategorizedMaterials(
+              row,
+              (name) => name.includes('permit') || name.includes('admin'),
+            );
+            const nestedInsurance = sumCategorizedMaterials(
+              row,
+              (name) => name.includes('insurance') || name.includes('bond'),
+            );
+
+            if (nestedGeneral > 0 || nestedPermits > 0 || nestedInsurance > 0) {
+              generalConditions += nestedGeneral;
+              permitsAdminFees += nestedPermits;
+              insuranceBonds += nestedInsurance;
+              return;
+            }
+
+            if (!combinedLabel || amount <= 0) return;
 
             // General conditions variants: "General Conditions", "General Conditions & Site Services", etc.
-            if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+            if (
+              (combinedLabel.includes('general') && combinedLabel.includes('condition')) ||
+              (combinedLabel.includes('site') &&
+                (combinedLabel.includes('management') ||
+                  combinedLabel.includes('service') ||
+                  combinedLabel.includes('support')))
+            ) {
               generalConditions += amount;
               return;
             }
 
             // Fees / permits / insurance can appear as dedicated rows or nested materials.
             const hasPermitsHint =
-              phaseItem.includes('permit') ||
-              phaseItem.includes('admin');
+              combinedLabel.includes('permit') ||
+              combinedLabel.includes('admin');
             const hasInsuranceHint =
-              phaseItem.includes('insurance') ||
-              phaseItem.includes('bond');
+              combinedLabel.includes('insurance') ||
+              combinedLabel.includes('bond');
 
             if (hasPermitsHint || hasInsuranceHint) {
               const permits = sumCategorizedMaterials(row, (name) =>
@@ -1356,18 +1397,64 @@ export class ReportService {
 
             rows.forEach((row: any) => {
               const phaseItem = String(row?.Phase_Item || '').toLowerCase();
-              const amount = Number(row?.Amount || 0);
-              if (!phaseItem || amount <= 0) return;
+              const category = String(row?.Category || '').toLowerCase();
+              const combinedLabel = `${phaseItem} ${category}`.trim();
+              const amountRaw = Number(String(row?.Amount ?? row?.Total ?? row?.Cost ?? 0).replace(/[^0-9.-]/g, ''));
+              const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
 
-              if (phaseItem.includes('general') && phaseItem.includes('condition')) {
+              const materials = Array.isArray(row?.Categorized_Materials)
+                ? row.Categorized_Materials
+                : [];
+              const sumNested = (predicate: (name: string) => boolean): number =>
+                materials
+                  .filter((m: any) => predicate(String(m?.Item || '').toLowerCase()))
+                  .reduce((sum: number, m: any) => {
+                    const nested = Number(String(m?.Total ?? m?.Amount ?? m?.Cost ?? 0).replace(/[^0-9.-]/g, ''));
+                    return sum + (Number.isFinite(nested) ? nested : 0);
+                  }, 0);
+
+              const nestedGeneral = sumNested((name) =>
+                (name.includes('general') && name.includes('condition')) ||
+                (name.includes('site') &&
+                  (name.includes('management') ||
+                    name.includes('service') ||
+                    name.includes('supervision') ||
+                    name.includes('support') ||
+                    name.includes('security') ||
+                    name.includes('waste') ||
+                    name.includes('equipment'))),
+              );
+              const nestedPermits = sumNested(
+                (name) => name.includes('permit') || name.includes('admin'),
+              );
+              const nestedInsurance = sumNested(
+                (name) => name.includes('insurance') || name.includes('bond'),
+              );
+
+              if (nestedGeneral > 0 || nestedPermits > 0 || nestedInsurance > 0) {
+                generalConditions += nestedGeneral;
+                permitsAdminFees += nestedPermits;
+                insuranceBonds += nestedInsurance;
+                return;
+              }
+
+              if (!combinedLabel || amount <= 0) return;
+
+              if (
+                (combinedLabel.includes('general') && combinedLabel.includes('condition')) ||
+                (combinedLabel.includes('site') &&
+                  (combinedLabel.includes('management') ||
+                    combinedLabel.includes('service') ||
+                    combinedLabel.includes('support')))
+              ) {
                 generalConditions += amount;
                 return;
               }
-              if (phaseItem.includes('permit') || phaseItem.includes('admin')) {
+              if (combinedLabel.includes('permit') || combinedLabel.includes('admin')) {
                 permitsAdminFees += amount;
                 return;
               }
-              if (phaseItem.includes('insurance') || phaseItem.includes('bond')) {
+              if (combinedLabel.includes('insurance') || combinedLabel.includes('bond')) {
                 insuranceBonds += amount;
               }
             });
@@ -1844,7 +1931,41 @@ export class ReportService {
       try {
         const budgetItems = await this.http.get<any[]>(`${environment.BACKEND_URL}/budget/${jobId}`).toPromise();
         if (budgetItems && budgetItems.length > 0) {
+          const shouldExcludeFromDirectCostTotals = (item: any): boolean => {
+            const itemName = String(item?.item || '').trim().toLowerCase();
+            if (!itemName) return false;
+
+            const phase = String(item?.phase || '').trim().toLowerCase();
+            const notes = String(item?.notes || '').trim().toLowerCase();
+            const source = String(item?.source || '').trim().toLowerCase();
+            const isAiImported = source === 'ai' || notes.includes('imported from ai analysis');
+
+            const explicitNonCostLabels = [
+              'suggested market bid price',
+              'calculated gc bid price',
+              'calculated cost per conditioned area',
+              'cost range',
+              'project address',
+            ];
+
+            if (explicitNonCostLabels.some((token) => itemName.includes(token))) {
+              return true;
+            }
+
+            if (
+              isAiImported &&
+              (phase.includes('cost breakdown') || phase.includes('project closeout'))
+            ) {
+              return true;
+            }
+
+            return false;
+          };
+
           budgetItems.forEach((item: any) => {
+            if (shouldExcludeFromDirectCostTotals(item)) {
+              return;
+            }
             const category = String(item.category || '').toLowerCase();
             const trade = String(item.trade || '').toLowerCase();
             const cost = Number(item.estimatedCost || 0);
