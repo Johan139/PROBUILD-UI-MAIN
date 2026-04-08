@@ -139,6 +139,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   isRerunningStep = false;
   isNavigatingNext = false;
   progress = 0;
+
   uploadedFiles: UploadedFileInfo[] = [];
   selectedFile: UploadedFileInfo | null = null;
   pdfSrc: string | Uint8Array | null = null;
@@ -205,6 +206,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private newAnalysisService: NewAnalysisService,
     private signalrService: SignalrService,
     private formBuilder: FormBuilder,
+
     private authService: AuthService,
     private httpClient: HttpClient,
     private snackBar: MatSnackBar,
