@@ -807,7 +807,75 @@ export class PhaseDetailedTakeoffComponent
       : Math.max(0, this.overallBudgetValue * 0.08);
   }
 
+  private extractExecutiveSummaryTimeline(): {
+    workingDays: number;
+    weeks: number;
+    months: number;
+  } | null {
+    const summary =
+      this.loadedExecutiveSummary ||
+      this.projectDetails?.executiveSummary ||
+      this.projectDetails?.scopeExecutiveSummary ||
+      this.projectDetails?.preliminaryScope?.executiveSummary ||
+      null;
+
+    const keyHighlights = Array.isArray(summary?.keyHighlights)
+      ? summary.keyHighlights
+      : [];
+
+    const timelineHighlightText = keyHighlights
+      .map((item: any) => {
+        const label = String(item?.label || '')
+          .toLowerCase()
+          .replace(/[*_`]/g, '')
+          .replace(/[^a-z0-9]+/g, '')
+          .trim();
+        const text = `${String(item?.value || '')} ${String(item?.note || '')}`.trim();
+        return { label, text };
+      })
+      .filter(
+        (item: any) =>
+          item.label.includes('projectduration') ||
+          item.label.includes('projectedtimeline') ||
+          item.label.includes('projecttimeline') ||
+          item.label.includes('timelinetarget') ||
+          /working\s*days?|months?|weeks?/i.test(item.text),
+      )
+      .map((item: any) => item.text)
+      .join(' ');
+
+    const combinedText = [
+      timelineHighlightText,
+      String(summary?.overview || ''),
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!combinedText) return null;
+
+    const workingDaysMatch = combinedText.match(
+      /\b(\d+(?:\.\d+)?)\s*working\s*days?\b/i,
+    );
+    const weeksMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*weeks?\b/i);
+    const monthsMatch = combinedText.match(/\b(\d+(?:\.\d+)?)\s*months?\b/i);
+
+    const workingDays = Number(workingDaysMatch?.[1] || 0);
+    const weeks = Number(weeksMatch?.[1] || 0);
+    const months = Number(monthsMatch?.[1] || 0);
+
+    if (workingDays <= 0 && weeks <= 0 && months <= 0) return null;
+    return {
+      workingDays: Number.isFinite(workingDays) ? workingDays : 0,
+      weeks: Number.isFinite(weeks) ? weeks : 0,
+      months: Number.isFinite(months) ? months : 0,
+    };
+  }
+
   get totalDurationWeeks(): number {
+    const summaryTimeline = this.extractExecutiveSummaryTimeline();
+    if (summaryTimeline?.weeks && summaryTimeline.weeks > 0) {
+      return summaryTimeline.weeks;
+    }
+
     const range = this.getTimelineDateRange();
     if (!range) {
       const explicit = Number(
