@@ -3,11 +3,13 @@
 <mat-dialog-content>
   <div class="section">
     <form [formGroup]="form">
-      <div *ngIf="data.notice" class="notice-chip">
-        {{ data.notice }}
-      </div>
+      @if (data.notice) {
+        <div class="notice-chip">
+          {{ data.notice }}
+        </div>
+      }
 
-      <!-- TEAM LOGIC COMMENTED OUT 
+      <!-- TEAM LOGIC COMMENTED OUT
       <div class="full-width" style="margin-bottom: 12px">
         <label class="block mb-1">Apply to</label>
         <mat-radio-group formControlName="forWhom">
@@ -26,14 +28,16 @@
       <mat-form-field appearance="fill" class="full-width">
         <mat-label>Subscription Package</mat-label>
         <mat-select formControlName="subscriptionPackage" required>
-          <mat-option *ngFor="let s of packages" [value]="s">
-            {{ s.display }}
-            {{
+          @for (s of packages; track s) {
+            <mat-option [value]="s">
+              {{ s.display }}
+              {{
               form.value.billingCycle === "yearly"
-                ? (s.annualAmount | currency: "USD" : "symbol" : "1.2-2")
-                : (s.amount | currency: "USD" : "symbol" : "1.2-2")
-            }}
-          </mat-option>
+              ? (s.annualAmount | currency: "USD" : "symbol" : "1.2-2")
+              : (s.amount | currency: "USD" : "symbol" : "1.2-2")
+              }}
+            </mat-option>
+          }
         </mat-select>
       </mat-form-field>
 
@@ -49,27 +53,28 @@
           <mat-radio-button value="monthly">Monthly</mat-radio-button>
           <mat-radio-button value="yearly" class="ml-4"
             >Yearly</mat-radio-button
-          >
-        </mat-radio-group>
-      </div>
+            >
+          </mat-radio-group>
+        </div>
 
-      <!-- Active subscription warning (self only) -->
-      <!-- team logic removed -->
-      <mat-hint *ngIf="false" style="color: #c62828"></mat-hint>
+        <!-- Active subscription warning (self only) -->
+        <!-- team logic removed -->
+        @if (false) {
+          <mat-hint style="color: #c62828"></mat-hint>
+        }
 
-      <mat-dialog-actions align="end">
-        <button mat-button (click)="cancel()" class="submit-btn">Cancel</button>
+        <mat-dialog-actions align="end" class="dialog-actions">
+          <button mat-button class="btn btn-secondary" (click)="cancel()">Cancel</button>
 
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="save()"
-          class="submit-btn"
-          [disabled]="form.invalid || hasActiveFor(data.userId)"
-        >
-          Confirm
-        </button>
-      </mat-dialog-actions>
-    </form>
-  </div>
-</mat-dialog-content>
+          <button
+            mat-button
+            class="btn btn-primary"
+            (click)="save()"
+            [disabled]="form.invalid || hasActiveFor(data.userId)"
+            >
+            Confirm
+          </button>
+        </mat-dialog-actions>
+      </form>
+    </div>
+  </mat-dialog-content>

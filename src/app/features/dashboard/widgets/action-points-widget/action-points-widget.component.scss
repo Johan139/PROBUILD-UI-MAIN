@@ -1,0 +1,129 @@
+@use "styles/util/mixins" as u;
+:host {
+  display: block;
+  height: 100%;
+}
+:host {
+  display: block;
+  height: 100%;
+}
+
+.action-points-card {
+  @include u.card-style;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 🔑 MATCHES GRID CELL HEIGHT */
+}
+
+mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .title-icon {
+    color: var(--brand-yellow-primary);
+  }
+}
+mat-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card.dragging {
+  * {
+    pointer-events: none !important;
+  }
+}
+mat-card-content {
+  flex: 1;
+  overflow: hidden; /* prevents card overflow */
+  display: flex;
+  flex-direction: column;
+}
+.action-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--color-border);
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  &.pending {
+    background: var(--color-warning);
+  }
+
+  &.approved {
+    background: var(--color-success);
+  }
+
+  &.rejected {
+    background: var(--color-danger);
+  }
+
+  &.archived {
+    background: var(--color-neutral);
+  }
+}
+
+.action-text {
+  flex: 1;
+  min-width: 0;
+
+  .title {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--color-text);
+  }
+
+  .date {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+}
+.no-item-found {
+  color: var(--color-text-muted);
+}
+.chevron {
+  color: var(--color-text-muted);
+}
+.action-list-scroll {
+  flex: 1; /* 🔑 fills remaining card space */
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 6px;
+  scroll-behavior: smooth;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+  }
+}

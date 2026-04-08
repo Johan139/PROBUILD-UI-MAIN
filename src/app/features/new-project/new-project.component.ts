@@ -28,7 +28,6 @@ import {
   MapPin,
   CheckCircle,
 } from 'lucide-angular';
-import { DragAndDropDirective } from '../../directives/drag-and-drop.directive';
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -62,9 +61,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuthService } from '../../authentication/auth.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { SubscriptionWarningComponent } from '../../shared/dialogs/subscription-warning/subscription-warning.component';
+
 interface WalkthroughStep {
   stepIndex: number;
   promptKey: string;
@@ -103,7 +103,6 @@ const BASE_URL = environment.BACKEND_URL;
     FormsModule,
     ReactiveFormsModule,
     LucideAngularModule,
-    DragAndDropDirective,
     PdfJsViewerModule,
     MatFormFieldModule,
     MatSelectModule,
@@ -136,6 +135,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   analysisType: 'Comprehensive' | 'Selected' | 'Renovation' = 'Comprehensive';
   budgetLevel: 'high' | 'medium' | 'low' = 'medium';
   isLoading = false;
+  subscriptionActive = false;
   isRerunningStep = false;
   isNavigatingNext = false;
   progress = 0;
@@ -209,8 +209,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private router: Router,
     private httpClient: HttpClient,
     private authService: AuthService,
+    private httpClient: HttpClient,
     private snackBar: MatSnackBar,
     private localStorageService: LocalStorageService,
+    private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -222,7 +224,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
       phone: ['', Validators.required],
       companyName: [''],
       position: [''],
-      startDate: ['', Validators.required],
+      startDate: [''],
       budgetLevel: ['medium', Validators.required],
       userContextText: [''],
     });
@@ -256,23 +258,32 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   private readonly CLIENT_FORM_KEY = 'newProjectClientForm';
   private shouldDeleteTempFiles = true;
   async ngOnInit(): Promise<void> {
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1),
+        switchMap((user) => {
+          return this.httpClient.get<{ hasActive: boolean }>(
+            `${environment.BACKEND_URL}/Account/has-active-subscription/${(user as any).id}`,
+          );
+        }),
+      )
+      .subscribe({
+        next: (res) => {
+          this.subscriptionActive = res.hasActive;
+        },
+        error: (err) => {
+          console.error('Subscription check failed', err);
+          this.subscriptionActive = false;
+        },
+      });
+
     this.sessionId = uuidv4();
     this.loadForm();
     this.updateProgressSteps();
     this.aiChatService.getMyPrompts();
 
     this.signalrService.startConnection();
-    this.signalrService.analysisProgress.subscribe((update) => {
-      this.state.next({ ...this.state.getValue(), analysisProgress: update });
-      if (update.isComplete || update.hasFailed) {
-        this.shouldDeleteTempFiles = false;
-        this.isLoading = false;
-        if (!update.hasFailed) {
-          this.setFlow('done');
-        }
-      }
-    });
-
     if (this.isBrowser) {
       try {
         await this.loadGoogleMapsScript();
@@ -350,6 +361,10 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     if (this.shouldDeleteTempFiles) {
       this.deleteTemporaryFiles();
     }
+  }
+
+  onUpgradeClicked(): void {
+    this.router.navigate(['/profile']);
   }
 
   deleteTemporaryFiles(): void {
@@ -523,7 +538,14 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   }
 
   cancel(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent);
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Cancel project creation?',
+        message: 'Your uploaded blueprint and entered details will be cleared.',
+        cancelButtonText: 'No, keep working',
+        confirmButtonText: 'Yes, cancel',
+      },
+    });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
@@ -602,7 +624,9 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('phone', this.clientForm.value.phone);
     formData.append('company', this.clientForm.value.companyName);
     formData.append('position', this.clientForm.value.position);
-    formData.append('startDate', this.clientForm.value.startDate);
+    if (this.clientForm.value.startDate) {
+  formData.append('startDate', this.clientForm.value.startDate);
+}
 
     formData.append('address', this.addressForm.value.formattedAddress);
 
@@ -705,14 +729,22 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
     this.newAnalysisService.startStandardAnalysis(formData).subscribe({
-      next: (response) => {
-        // console.log('Analysis started successfully', response);
+      next: (response: any) => {
         this.snackBar.open('Analysis started successfully!', 'Close', {
           duration: 5000,
         });
         this.clientForm.reset();
         this.localStorageService.removeItem(this.CLIENT_FORM_KEY);
-        // Progress will be handled by the SignalR subscription
+
+        // Redirect to new Jobs view immediately
+        if (response && (response.id || response.JobId || response.jobId)) {
+             const jobId = response.id || response.JobId || response.jobId;
+             this.router.navigate(['/view-quote'], { queryParams: { jobId: jobId, userId: userId } });
+        } else {
+             // Fallback if ID not found, though backend should return it
+             this.snackBar.open('Job created, but could not redirect automatically.', 'Close');
+             this.isLoading = false;
+        }
       },
       error: (error) => {
         // console.error('Analysis failed to start', error);
@@ -879,7 +911,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
         return;
       }
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => {

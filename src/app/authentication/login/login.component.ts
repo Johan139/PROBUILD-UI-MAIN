@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, effect, OnDestroy } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -8,7 +8,7 @@ import {
 import { environment } from '../../../environments/environment';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { NgIf } from '@angular/common';
+
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,14 +18,18 @@ import { AuthService } from '../auth.service';
 import { MatDividerModule } from '@angular/material/divider';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ThemeService } from '../../theme.service'; // adjust path as needed
 declare const google: any;
+
+const PB_GSI_ID_INIT_KEY = '__pbGsiIdInitialized';
+
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     ReactiveFormsModule,
     MatCardModule,
-    NgIf,
     MatFormFieldModule,
     MatInputModule,
     LoaderComponent,
@@ -33,11 +37,14 @@ declare const google: any;
     MatIconModule,
     MatDividerModule,
     RouterLink,
-  ],
+    MatSnackBarModule
+],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnDestroy {
+  private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
+  private gsiPollHandle: ReturnType<typeof setInterval> | null = null;
   loginForm: FormGroup;
   environment = environment;
   showAlert: boolean = false;
@@ -45,12 +52,14 @@ export class LoginComponent {
   isLoading: boolean = false;
   hidePassword: boolean = true;
   showResendLink: boolean = true;
+
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
     private router: Router,
-
+    private snackBar: MatSnackBar,
     private route: ActivatedRoute,
+    private themeService: ThemeService,
   ) {
     this.loginForm = this.formBuilder.group({
       email: ['', Validators.required],
@@ -65,32 +74,108 @@ export class LoginComponent {
         ],
       ],
     });
+
+    effect(() => {
+      const isDark = this.themeService.isDarkMode();
+      this.rerenderGoogleButton(isDark);
+    });
+  }
+
+  ngOnInit() {
+    this.route.queryParams.subscribe((params) => {
+      if (params['confirmed'] === 'true') {
+        this.snackBar.open(
+          'Email successfully confirmed. Please log in.',
+          'Close',
+          { duration: 5000 },
+        );
+      }
+    });
+
+    const logoutReason = localStorage.getItem(this.LOGOUT_REASON_KEY);
+    if (logoutReason === 'inactivity') {
+      this.showAlert = true;
+      this.showResendLink = false;
+      this.alertMessage = 'Your session expired due to inactivity. Please sign in again.';
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    } else if (logoutReason === 'refresh_invalid' || logoutReason === 'token_invalid') {
+      this.showAlert = true;
+      this.showResendLink = false;
+      this.alertMessage = 'Your session has expired. Please sign in again.';
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    } else if (logoutReason === 'manual') {
+      localStorage.removeItem(this.LOGOUT_REASON_KEY);
+    }
   }
 
   ngAfterViewInit() {
-    const checkGsiLoaded = setInterval(() => {
+    const googleClientId = (environment as any).GOOGLE_CLIENT_ID;
+    if (!this.isValidGoogleClientId(googleClientId)) {
+      console.warn('Google Sign-In disabled: invalid GOOGLE_CLIENT_ID.');
+      return;
+    }
+
+    this.gsiPollHandle = setInterval(() => {
       const googleLibLoaded =
         typeof window !== 'undefined' && (window as any).google?.accounts?.id;
+
       const divExists = document.getElementById('googleSignInDiv');
 
       if (googleLibLoaded && divExists) {
-        clearInterval(checkGsiLoaded);
+        if (this.gsiPollHandle) {
+          clearInterval(this.gsiPollHandle);
+          this.gsiPollHandle = null;
+        }
 
-        google.accounts.id.initialize({
-          client_id:
-            '830495328853-9jp3r5b2o53124kpu10ais3pq0lljcoj.apps.googleusercontent.com',
-          callback: (response: any) => this.handleGoogleCredential(response),
-        });
+        const w = window as any;
+        if (!w[PB_GSI_ID_INIT_KEY]) {
+          google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: (response: any) => this.handleGoogleCredential(response),
+            cancel_on_tap_outside: true,
+            auto_select: false,
+            use_fedcm_for_prompt: false,
+          });
+          w[PB_GSI_ID_INIT_KEY] = true;
+        }
+        if (typeof google?.accounts?.id?.disableAutoSelect === 'function') {
+          google.accounts.id.disableAutoSelect();
+        }
 
-        google.accounts.id.renderButton(divExists, {
-          theme: 'outline',
-          size: 'large',
-          text: 'signin_with',
-          shape: 'rectangular',
-          logo_alignment: 'center',
-        });
+        this.rerenderGoogleButton(this.themeService.isDarkMode());
       }
     }, 250);
+  }
+
+  private isValidGoogleClientId(clientId: string | undefined | null): boolean {
+    const value = String(clientId || '').trim();
+    if (!value) return false;
+    if (value.includes('YOUR_GOOGLE_CLIENT_ID')) return false;
+    return value.endsWith('.apps.googleusercontent.com');
+  }
+
+  ngOnDestroy(): void {
+    if (this.gsiPollHandle) {
+      clearInterval(this.gsiPollHandle);
+      this.gsiPollHandle = null;
+    }
+  }
+
+  private rerenderGoogleButton(isDark: boolean) {
+    const divExists = document.getElementById('googleSignInDiv');
+    const gsi = (window as any)?.google?.accounts?.id;
+    if (!divExists || !gsi || typeof gsi.renderButton !== 'function') return;
+
+    divExists.innerHTML = '';
+    gsi.renderButton(divExists, {
+      theme: isDark ? 'filled_black' : 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      logo_alignment: 'center',
+      width: 360,
+      
+    });
   }
 
   handleGoogleCredential(response: any) {
@@ -101,12 +186,10 @@ export class LoginComponent {
       next: (res: any) => {
         this.isLoading = false;
 
-        // Check if backend says registration is required
         if (res.requiresRegistration) {
           sessionStorage.setItem('googleData', JSON.stringify(res));
           this.router.navigate(['/register']);
         } else {
-          // ✅ Normal flow (handleSuccessfulLogin was already called inside the pipe)
           this.router.navigateByUrl('dashboard');
         }
       },
@@ -141,17 +224,14 @@ export class LoginComponent {
 
           let backendError = error.error;
 
-          // If it's a string, try parsing JSON; otherwise keep as-is
           if (typeof backendError === 'string') {
             try {
               backendError = JSON.parse(backendError);
             } catch {
-              // fallback to wrapping string into object
               backendError = { error: backendError };
             }
           }
 
-          // Ensure we always have something
           const backendMessage =
             backendError?.error || backendError?.message || message;
 
@@ -173,7 +253,6 @@ export class LoginComponent {
       });
     } else {
       this.showResendLink = false;
-
       this.showAlert = true;
       this.alertMessage = 'Please ensure your password meets all requirements.';
     }
@@ -182,6 +261,7 @@ export class LoginComponent {
   closeAlert(): void {
     this.showAlert = false;
   }
+
   resendEmail() {
     const credentials = this.loginForm.value;
     this.authService.resendverificationemail(credentials.email).subscribe({

@@ -1,192 +1,346 @@
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
-</div>
+@if (isLoading) {
+  <div>
+    <app-loader></app-loader>
+  </div>
+}
 
 <div class="dashboard-container">
   <div class="welcome-header">
     <h2>Welcome to ProBuild AI</h2>
     <p>Manage your construction projects with AI-powered tools</p>
 
-          <div *ngIf="teams.length > 1" class="team-picker">
-          <mat-form-field appearance="outline">
-            <mat-label>Select Team</mat-label>
-            <mat-select [(ngModel)]="selectedTeam" name="team">
-              <mat-option *ngFor="let team of teams" [value]="team">{{ team.inviterName }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
+    @if (teams.length > 1) {
+      <div class="team-picker">
+        <mat-form-field appearance="outline">
+          <mat-label>Select Team</mat-label>
+          <mat-select [(ngModel)]="selectedTeam" name="team">
+            @for (team of teams; track team) {
+              <mat-option [value]="team">
+                {{ team.inviterName }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    }
   </div>
 
   <div class="quick-actions">
     <h3>Quick Actions</h3>
-    <div class="actions-container">
-      <button mat-flat-button class="btn-primary quick-action-btn" (click)="navigateToJobs()" matTooltip="This will bring you to the New Project page where you can create a new project" [matTooltipShowDelay]="500">
-        <mat-icon>add</mat-icon>
-        Create New Project
-      </button>
-      <button class="btn-outline quick-action-btn" (click)="navigateToProjects()" matTooltip="This will bring you to the My Projects page where you can view all of your projects" [matTooltipShowDelay]="500">
-        <mat-icon>list</mat-icon>
-        View All Projects
-      </button>
-      <button class="btn-outline quick-action-btn" (click)="navigateToCalendar()" matTooltip="This will bring you to the Calendar page where you can view your schedule and events" [matTooltipShowDelay]="500">
-        <mat-icon>calendar_today</mat-icon>
-        View Calendar
-      </button>
-    </div>
-  </div>
 
-  <section class="card action-points-card">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title><strong>Action Points</strong></mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-divider class="section-divider"></mat-divider>
-
-        <p *ngIf="notes.length === 0" class="muted">No notes assigned to you yet.</p>
-
-        <div class="table-wrap" *ngIf="notes.length > 0">
-          <mat-table [dataSource]="notes" class="job-table">
-            <!-- Project Column -->
-            <ng-container matColumnDef="project">
-              <mat-header-cell *matHeaderCellDef>Project</mat-header-cell>
-              <mat-cell *matCellDef="let note" class="wrap">{{ note.projectName }}</mat-cell>
-            </ng-container>
-
-            <!-- Task Column -->
-            <ng-container matColumnDef="task">
-              <mat-header-cell *matHeaderCellDef>Task</mat-header-cell>
-              <mat-cell *matCellDef="let note" class="wrap">{{ note.subtaskName }}</mat-cell>
-            </ng-container>
-
-            <!-- Created Column -->
-            <ng-container matColumnDef="created">
-              <mat-header-cell *matHeaderCellDef>Created</mat-header-cell>
-              <mat-cell *matCellDef="let note">{{ note.createdAt | date:'short' }}</mat-cell>
-            </ng-container>
-
-            <!-- Status Column -->
-            <ng-container matColumnDef="status">
-              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-              <mat-cell *matCellDef="let note">
-                <span class="badge"
-                      [ngClass]="{
-                        'is-archived': note.status === 'Archived',
-                        'is-approved': note.status === 'Approved',
-                        'is-rejected': note.status === 'Rejected',
-                        'is-pending': note.status === 'Pending'
-                      }">{{ note.status }}</span>
-              </mat-cell>
-            </ng-container>
-
-            <!-- Action Column -->
-            <ng-container matColumnDef="action">
-              <mat-header-cell *matHeaderCellDef>Action</mat-header-cell>
-              <mat-cell *matCellDef="let note">
-                <button class="btn-primary" mat-button (click)="openNoteDialog(note)" matTooltip="Open the dialog for this action point to view more details and approve or reject it" [matTooltipShowDelay]="500"
-                        [disabled]="openingNoteId === note.notes[0].id">
-                  {{ openingNoteId === note.notes[0].id ? 'Viewing…' : 'View' }}
-                </button>
-              </mat-cell>
-            </ng-container>
-
-            <mat-header-row *matHeaderRowDef="notesDisplayedColumns"></mat-header-row>
-            <mat-row *matRowDef="let row; columns: notesDisplayedColumns;"></mat-row>
-          </mat-table>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
-
-  <div class="recent-projects">
-    <div class="carousel-header">
-      <h3>Recent Projects</h3>
-      <div class="view-toggle">
-        <button mat-icon-button (click)="toggleProjectView('grid')" [class.active]="projectView === 'grid'"
-                matTooltip="Grid View" [matTooltipShowDelay]="500">
-          <mat-icon>grid_view</mat-icon>
+    <div class="quick-actions-bar">
+      <!-- LEFT SIDE -->
+      <div class="quick-actions-left">
+        <button
+          mat-button
+          class="btn btn-primary quick-action-btn"
+          (click)="navigateToJobs()"
+          matTooltip="This will bring you to the New Project page where you can create a new project"
+          [matTooltipShowDelay]="500"
+          >
+          <mat-icon>add</mat-icon>
+          Create New Project
         </button>
-        <button mat-icon-button (click)="toggleProjectView('list')" [class.active]="projectView === 'list'"
-                matTooltip="List View" [matTooltipShowDelay]="500">
+
+        <button
+          mat-button
+          class="btn btn-secondary quick-action-btn"
+          (click)="navigateToProjects()"
+          matTooltip="This will bring you to the My Projects page where you can view all of your projects"
+          [matTooltipShowDelay]="500"
+          >
           <mat-icon>list</mat-icon>
+          View All Projects
+        </button>
+
+        <button
+          mat-button
+          class="btn btn-secondary quick-action-btn"
+          (click)="navigateToCalendar()"
+          matTooltip="This will bring you to the Calendar page where you can view your schedule and events"
+          [matTooltipShowDelay]="500"
+          >
+          <mat-icon>calendar_today</mat-icon>
+          View Calendar
         </button>
       </div>
-      <div class="carousel-controls" *ngIf="projectView === 'grid'">
-        <button mat-icon-button (click)="prevProject()" [disabled]="currentIndex === 0">
-          <mat-icon>chevron_left</mat-icon>
+
+      <!-- RIGHT SIDE -->
+      <div class="quick-actions-right">
+        <button class="layout-select-btn" [matMenuTriggerFor]="layoutMenu">
+          <mat-icon>dashboard</mat-icon>
+          Layout: {{ currentLayout.label }}
+          <mat-icon>expand_more</mat-icon>
         </button>
-        <button mat-icon-button (click)="nextProject()" [disabled]="currentIndex >= projects.length - 3">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
+
+        @if (isCustomizeMode) {
+          <button
+            class="customize-btn"
+            (click)="toggleCustomizeMode()"
+            >
+            <mat-icon>check</mat-icon>
+            Done
+          </button>
+        }
       </div>
     </div>
-    <div *ngIf="projectView === 'grid'" class="projects-carousel">
-        <app-project-card *ngFor="let project of visibleProjects" [project]="project" (onView)="loadJob($event)" (onArchive)="archiveJob($event)"></app-project-card>
-    </div>
-    <div *ngIf="projectView === 'list'">
-      <app-projects-table
-        [projects]="projects"
-        (onView)="loadJob($event)"
-        (onArchive)="archiveJob($event)">
-      </app-projects-table>
-    </div>
-    <!-- Documents Dialog -->
-<ng-template #documentsDialog>
-  <div class="documents-dialog">
-    <h2 mat-dialog-title>Quote Documents</h2>
-    <mat-dialog-content>
-      <!-- Show loading indicator while fetching documents -->
-      <div *ngIf="isDocumentsLoading" class="loading-documents">
-        <app-loader></app-loader>
-        <p>Loading documents...</p>
-      </div>
-      <!-- Show content only when not loading -->
-      <div *ngIf="!isDocumentsLoading">
-        <div *ngIf="documents.length === 0 && !documentsError" class="no-documents">
-          <p>No documents available for this quote.</p>
-        </div>
-        <div *ngIf="documentsError" class="no-documents">
-          <p>{{documentsError}}</p>
-        </div>
-        <div *ngIf="documents.length > 0" class="documents-list">
-          <div class="document-item" *ngFor="let doc of documents; let i = index">
-            <div class="document-info">
-              <span class="document-name">{{doc.name}}</span>
-              <span class="document-meta">{{doc.type}} - {{doc.size | filesize}}</span>
-            </div>
-            <button class="view-btn" mat-raised-button (click)="viewDocument(doc)">
-              View
-            </button>
+  </div>
+
+  <!-- LAYOUT MENU -->
+  <mat-menu
+    #layoutMenu="matMenu"
+    class="layout-menu"
+    yPosition="below"
+    xPosition="before"
+    >
+    <!-- PRESET LAYOUTS -->
+    @for (layout of layouts; track layout) {
+      <button
+        mat-menu-item
+        (click)="selectLayout(layout)"
+        [class.active]="layout.id === currentLayout.id"
+        >
+        <div class="layout-item">
+          <div class="layout-text">
+            <div class="title">{{ layout.label }}</div>
+            <div class="subtitle">{{ layout.description }}</div>
           </div>
+          @if (layout.id === currentLayout.id) {
+            <mat-icon class="check-icon">
+              check
+            </mat-icon>
+          }
+        </div>
+      </button>
+    }
+
+    <!-- CUSTOM SECTION -->
+    <div class="layout-divider"></div>
+
+    <button
+      mat-menu-item
+      class="layout-custom-item"
+      (click)="toggleCustomizeMode()"
+      >
+      <div class="layout-item">
+        <div class="layout-text">
+          <div class="title">Custom Layout</div>
+          <div class="subtitle">Reorder and resize widgets freely</div>
         </div>
       </div>
-    </mat-dialog-content>
-    <mat-dialog-actions>
-      <button class="submit-btn" mat-raised-button (click)="closeDocumentsDialog()">Close</button>
-    </mat-dialog-actions>
-  </div>
-</ng-template>
+    </button>
+  </mat-menu>
 
-<!-- Approval Reason Dialog -->
-<ng-template #approvalReasonDialog>
-  <div class="note-detail-dialog">
-    <h2 mat-dialog-title>Approval Reason</h2>
-
-    <mat-dialog-content>
-      <div
-        class="note-text-box"
-        contenteditable="true"
-        (input)="onApprovalReasonChanged($event)"
-        placeholder="Enter your approval reason here...">
+  <!-- CUSTOMIZE PANEL -->
+  @if (isCustomizeMode) {
+    <div class="widget-customize-panel">
+      <div class="panel-header">
+        <mat-icon>settings</mat-icon>
+        <span>Dashboard Widgets</span>
+        <div class="panel-hints">
+          <span><mat-icon>drag_indicator</mat-icon> Drag to reorder</span>
+          <span><mat-icon>visibility</mat-icon> Click to toggle</span>
+          <span><mat-icon>aspect_ratio</mat-icon> Click size to resize</span>
+        </div>
       </div>
-    </mat-dialog-content>
+      <div class="widget-list">
+        @for (widget of widgets; track widget) {
+          <button
+            class="widget-pill"
+            [class.active]="widget.enabled"
+            (click)="toggleWidget(widget.id)"
+            >
+            <mat-icon>{{ widget.icon }}</mat-icon>
+            {{ widget.title }}
+            <!-- Eye icon for visibility toggle -->
+            <mat-icon class="visibility-icon">
+              {{ widget.enabled ? "visibility" : "visibility_off" }}
+            </mat-icon>
+            @if (widget.enabled) {
+              <span
+                class="size-badge"
+                (click)="openSizePicker($event, widget.id)"
+                [matMenuTriggerFor]="sizeMenu"
+                #sizeTrigger="matMenuTrigger"
+                >
+                {{ widget.size }}
+                <mat-icon>expand_more</mat-icon>
+              </span>
+            }
+          </button>
+        }
+      </div>
+      <!-- SIZE PICKER MENU -->
+      <mat-menu #sizeMenu="matMenu" class="size-picker-menu">
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'small')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'small'"
+          >
+          <span class="size-label">
+            <mat-icon>view_agenda</mat-icon>
+            Small
+          </span>
+          <span class="size-cols">3 cols</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'medium')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'medium'"
+          >
+          <span class="size-label">
+            <mat-icon>view_module</mat-icon>
+            Medium
+          </span>
+          <span class="size-cols">6 cols</span>
+        </button>
+        <button
+          mat-menu-item
+          (click)="changeWidgetSize(selectedWidgetForResize, 'large')"
+          [class.selected]="getWidgetSize(selectedWidgetForResize) === 'large'"
+          >
+          <span class="size-label">
+            <mat-icon>view_day</mat-icon>
+            Large
+          </span>
+          <span class="size-cols">12 cols</span>
+        </button>
+      </mat-menu>
+    </div>
+  }
 
-    <mat-dialog-actions align="end">
-      <button mat-raised-button color="primary" class="submit-btn delete-btn" (click)="submitApproval()">Submit</button>
-      <button mat-raised-button color="warn" class="submit-btn delete-btn" (click)="cancelApproval()">Cancel</button>
-    </mat-dialog-actions>
+  <!-- DASHBOARD GRID -->
+  <div class="dashboard-grid">
+    @for (widget of widgets; track widget; let i = $index) {
+      <section
+        class="dashboard-widget"
+        [class.span-small]="widget.size === 'small'"
+        [class.span-medium]="widget.size === 'medium'"
+        [class.span-large]="widget.size === 'large'"
+        [attr.data-widget-id]="widget.id"
+        [hidden]="!widget.enabled"
+        [draggable]="currentLayout.id === 'custom' && isCustomizeMode"
+      (dragstart)="
+        currentLayout.id === 'custom' && isCustomizeMode && onDragStart(i)
+      "
+      (dragover)="
+        currentLayout.id === 'custom' && isCustomizeMode && onDragOver($event)
+      "
+        (drop)="currentLayout.id === 'custom' && isCustomizeMode && onDrop(i)"
+        >
+        @switch (widget.id) {
+          @case ('actionPoints') {
+            <app-action-points-widget
+              [notes]="notes"
+            ></app-action-points-widget>
+          }
+          @case ('weather') {
+            <app-weather-widget></app-weather-widget>
+          }
+        }
+      </section>
+    }
   </div>
+  <div class="recent-projects-section">
+    <app-recent-projects-widget></app-recent-projects-widget>
+  </div>
+  <!-- Documents Dialog -->
+  <ng-template #documentsDialog>
+    <div class="documents-dialog">
+      <h2 mat-dialog-title>Quote Documents</h2>
+      <mat-dialog-content>
+        @if (isDocumentsLoading) {
+          <div class="loading-documents">
+            <app-loader></app-loader>
+            <p>Loading documents...</p>
+          </div>
+        }
 
-</ng-template>
-  </div>
+        @if (!isDocumentsLoading) {
+          <div>
+            @if (documents.length === 0 && !documentsError) {
+              <div
+                class="no-documents"
+                >
+                <p>No documents available for this quote.</p>
+              </div>
+            }
+            @if (documentsError) {
+              <div class="no-documents">
+                <p>{{ documentsError }}</p>
+              </div>
+            }
+            @if (documents.length > 0) {
+              <div class="documents-list">
+                @for (doc of documents; track doc) {
+                  <div class="document-item">
+                    <div class="document-info">
+                      <span class="document-name">{{ doc.name }}</span>
+                      <span class="document-meta">
+                        {{ doc.type }} - {{ doc.size | filesize }}
+                      </span>
+                    </div>
+                    <button
+                      mat-button
+                      type="button"
+                      class="btn btn-ghost view-btn"
+                      (click)="viewDocument(doc)"
+                      >
+                      View
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button
+          mat-button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closeDocumentsDialog()"
+          >
+          Close
+        </button>
+      </mat-dialog-actions>
+    </div>
+  </ng-template>
+
+  <!-- Approval Reason Dialog -->
+  <ng-template #approvalReasonDialog>
+    <div class="note-detail-dialog">
+      <h2 mat-dialog-title>Approval Reason</h2>
+
+      <mat-dialog-content>
+        <div
+          class="note-text-box"
+          contenteditable="true"
+          (input)="onApprovalReasonChanged($event)"
+          placeholder="Enter your approval reason here..."
+        ></div>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button
+          mat-button
+          type="button"
+          class="btn btn-primary"
+          (click)="submitApproval()"
+          >
+          Submit
+        </button>
+        <button
+          mat-button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancelApproval()"
+          >
+          Cancel
+        </button>
+      </mat-dialog-actions>
+    </div>
+  </ng-template>
 </div>

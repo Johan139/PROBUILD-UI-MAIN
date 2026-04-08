@@ -2,11 +2,14 @@ import { Injectable } from '@angular/core';
 import {
   HubConnection,
   HubConnectionBuilder,
+  HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../authentication/auth.service';
 import { environment } from '../../../../environments/environment';
+import { shareReplay } from 'rxjs/operators';
 
 export interface AnalysisProgressUpdate {
   jobId: number;
@@ -26,12 +29,42 @@ export class SignalrService {
   public progress = new Subject<number>();
   public uploadComplete = new Subject<number>();
   public analysisProgress = new Subject<AnalysisProgressUpdate>();
+  public analysisData = new Subject<any>();
+  public analysisEmailSent = new Subject<number>();
+  private readonly analysisStateCacheTtlMs = 4000;
+  private analysisStateCache = new Map<
+    number,
+    { cachedAt: number; request$: Observable<any> }
+  >();
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private http: HttpClient) {}
+
+  public getAnalysisState(jobId: number): Observable<any> {
+    const key = Number(jobId);
+    const now = Date.now();
+    const cached = this.analysisStateCache.get(key);
+    if (cached && now - cached.cachedAt < this.analysisStateCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
+    const request$ = this.http
+      .get<any>(`${baseUrl}/api/Jobs/${jobId}/analysis-state`)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.analysisStateCache.set(key, { cachedAt: now, request$ });
+    return request$;
+  }
 
   public startConnection(): void {
-    if (this.hubConnection && this.hubConnection.state === 'Connected') {
-      return;
+    if (this.hubConnection) {
+      const state = this.hubConnection.state;
+      if (
+        state === HubConnectionState.Connected ||
+        state === HubConnectionState.Connecting ||
+        state === HubConnectionState.Reconnecting
+      ) {
+        return;
+      }
     }
 
     const baseUrl = environment.BACKEND_URL.replace(/\/api\/?$/, '');
@@ -40,12 +73,16 @@ export class SignalrService {
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
         accessTokenFactory: async () => {
-          const token = await this.authService.getToken();
+          // SignalR handshake should not block on token refresh retries/timeouts.
+          // Use currently stored token and let normal HTTP flow refresh in background.
+          const token = this.authService.getAccessTokenFast();
           return token || '';
         },
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
-      .configureLogging(LogLevel.Debug)
+      .configureLogging(
+        environment.production ? LogLevel.Warning : LogLevel.Information,
+      )
       .build();
 
     this.hubConnection.onreconnecting((error) =>
@@ -53,7 +90,6 @@ export class SignalrService {
     );
     this.hubConnection
       .start()
-      .then()
       .catch((err) => console.error('SignalR Connection Error:', err));
 
     this.hubConnection.on('ReceiveProgress', (progress: number) => {
@@ -70,6 +106,77 @@ export class SignalrService {
         this.analysisProgress.next(data);
       },
     );
+
+    this.hubConnection.on('AnalysisComplete', (jobId: number, message?: string) => {
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: message || 'Analysis complete.',
+        currentStep: 1,
+        totalSteps: 1,
+        isComplete: true,
+        hasFailed: false,
+        errorMessage: '',
+      });
+    });
+
+    this.hubConnection.on('AnalysisFailed', (jobId: number, message?: string) => {
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: message || 'Analysis failed.',
+        currentStep: 0,
+        totalSteps: 0,
+        isComplete: false,
+        hasFailed: true,
+        errorMessage: message || 'Analysis failed.',
+      });
+    });
+
+    this.hubConnection.on('JobProcessingComplete', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: payload?.message || payload?.Message || 'Document processing complete.',
+        currentStep: 1,
+        totalSteps: 1,
+        isComplete: true,
+        hasFailed: false,
+        errorMessage: '',
+      });
+    });
+
+    this.hubConnection.on('JobProcessingFailed', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+
+      const error = payload?.error || payload?.Error || 'Document processing failed.';
+      this.analysisProgress.next({
+        jobId,
+        statusMessage: 'Document processing failed.',
+        currentStep: 0,
+        totalSteps: 0,
+        isComplete: false,
+        hasFailed: true,
+        errorMessage: String(error),
+      });
+    });
+
+    this.hubConnection.on('ReceiveAnalysisData', (data: any) => {
+      this.analysisData.next(data);
+    });
+
+    this.hubConnection.on('AnalysisEmailSent', (payload: any) => {
+      const jobId = Number(payload?.jobId ?? payload?.JobId);
+      if (!Number.isFinite(jobId)) {
+        return;
+      }
+      this.analysisEmailSent.next(jobId);
+    });
   }
 
   public getConnectionId = (): string | null => {

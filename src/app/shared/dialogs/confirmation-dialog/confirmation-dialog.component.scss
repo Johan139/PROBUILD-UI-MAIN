@@ -49,33 +49,34 @@
 
 /* Buttons */
 .btn {
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--fs-5);
   font-weight: var(--fw-semibold);
-  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
   border: 1px solid transparent;
-  @include u.interactive-states;
+  text-decoration: none;
+  white-space: nowrap;
 
-  &.btn-primary {
-    background: var(--color-primary);
-    color: var(--gray-900);
-  }
-
-  &.btn-danger {
-    background: color-mix(
-      in oklab,
-      var(--color-danger) 85%,
-      var(--color-primary) 0%
-    );
-    color: #fff;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  @include u.interactive-states;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-primary);
+  }
 }
 
 /* Compact on small screens */

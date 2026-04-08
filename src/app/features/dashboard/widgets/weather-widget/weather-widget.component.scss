@@ -1,0 +1,189 @@
+@use "styles/util/mixins" as u;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+/* ===============================
+   WEATHER CARD (SMALL MODE)
+   =============================== */
+
+.weather-card {
+  @include u.card-style;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  color: var(--color-text);
+}
+.spacer {
+  flex: 1;
+}
+.unit-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.unit-btn {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.unit-btn.active {
+  background: var(--brand-yellow-primary);
+  color: #000;
+  opacity: 1;
+}
+
+/* Material card */
+mat-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Content scrolls if needed */
+mat-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+/* ===============================
+   HEADER
+   =============================== */
+
+mat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .title-icon {
+    color: var(--brand-yellow-primary);
+  }
+}
+
+/* ===============================
+   CURRENT WEATHER (COMPACT)
+   =============================== */
+
+.current-weather {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.current-weather .left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.location {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.date {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.icon-condition {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.condition {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* Right side */
+.current-weather .right {
+  text-align: right;
+}
+
+.temp-big {
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ===============================
+   FORECAST ROW (NO SCROLL)
+   =============================== */
+
+.forecast-scroll {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+/* Forecast tile */
+.forecast-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  padding: 8px 6px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border);
+
+  font-size: 11px;
+  text-align: center;
+}
+
+.forecast-tile .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.temps {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+
+  .high {
+    font-weight: 600;
+    color: var(--color-danger);
+  }
+
+  .low {
+    color: var(--color-text-muted);
+  }
+}
+
+/* Optional warning day */
+.forecast-tile.warning {
+  border-color: var(--color-danger);
+  background: rgba(255, 0, 0, 0.08);
+}

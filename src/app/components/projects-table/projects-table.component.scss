@@ -28,6 +28,13 @@
     border-bottom: 1px solid var(--color-border);
     font-size: var(--fs-sm);
   }
+
+  .cell-address {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .progress {

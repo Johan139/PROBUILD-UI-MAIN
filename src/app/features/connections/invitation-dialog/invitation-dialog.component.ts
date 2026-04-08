@@ -15,7 +15,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common';
+
 import { TextFieldModule } from '@angular/cdk/text-field';
 
 @Component({
@@ -24,14 +24,13 @@ import { TextFieldModule } from '@angular/cdk/text-field';
   styleUrls: ['./invitation-dialog.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     MatDialogModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    TextFieldModule,
-  ],
+    TextFieldModule
+],
 })
 export class InvitationDialogComponent {
   invitationForm: FormGroup;

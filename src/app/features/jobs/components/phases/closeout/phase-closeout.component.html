@@ -1,0 +1,136 @@
+<section class="phase-section">
+  <app-phase-navigation-header
+    stageLabel="Project Closeout &amp; Handover"
+    backLabel="Back to Construction Execution"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Archive Project"
+    [projectName]="projectDetails?.projectName || 'N/A'"
+    [clientName]="projectDetails?.clientName || projectDetails?.name || 'N/A'"
+    [projectAddress]="projectDetails?.address || 'N/A'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canArchive"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="archive.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+
+  <section class="closeout-intro-card">
+    <div class="closeout-intro-icon-wrap">
+      <lucide-icon name="folder-open" class="icon-lg"></lucide-icon>
+    </div>
+    <div class="closeout-intro-content">
+      <h3>Project Closeout &amp; Handover</h3>
+      <p>
+        Complete final inspections, punch list items, as-built documentation, warranty handover, and final
+        payment release. Upload the required PDF documentation for each section below.
+      </p>
+    </div>
+  </section>
+
+  <input
+    #closeoutFileInput
+    type="file"
+    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+    class="hidden-file-input"
+    (change)="onFileSelected($event)"
+    />
+
+    @for (item of closeoutItems; track item) {
+      <section
+        class="checklist-item-card"
+        [class.is-complete]="isComplete(item.key)"
+        >
+        <div class="checklist-item-main">
+          <div class="checklist-item-icon" [class.is-complete]="isComplete(item.key)">
+            <lucide-icon [name]="isComplete(item.key) ? 'check' : item.iconName" class="icon-sm"></lucide-icon>
+          </div>
+          <div class="checklist-item-content">
+            <div class="checklist-item-title-row">
+              <p class="checklist-item-title">{{ item.label }}</p>
+              <!-- <lucide-icon
+              *ngIf="getUpload(item.key)"
+              name="check"
+              class="icon-xs upload-confirm-icon"
+            ></lucide-icon> -->
+          </div>
+          <p class="checklist-item-desc">{{ item.desc }}</p>
+          <p class="checklist-item-detail">{{ item.detail }}</p>
+        </div>
+      </div>
+      <div class="checklist-item-actions">
+        @if (getUpload(item.key); as upload) {
+          <div class="upload-meta">
+            <p class="upload-name">{{ upload.name }}</p>
+            <p class="upload-type">{{ upload.type }}</p>
+            <p class="upload-date">Uploaded {{ upload.date }}</p>
+            @if (isUploading(item.key)) {
+              <p class="upload-date">
+                Uploading {{ uploadProgress(item.key) }}%
+              </p>
+            }
+            @if (uploadError(item.key)) {
+              <p class="upload-error">{{ uploadError(item.key) }}</p>
+            }
+          </div>
+          <button
+            type="button"
+            class="btn btn-upload-secondary"
+            (click)="triggerFilePicker(item.key, closeoutFileInput)"
+            >
+            Replace
+          </button>
+          <button type="button" class="btn btn-upload-danger" (click)="removeUpload(item.key)">
+            Remove
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-upload-outline"
+            (click)="triggerFilePicker(item.key, closeoutFileInput)"
+            >
+            <lucide-icon name="upload" class="icon-xs"></lucide-icon>
+            Upload PDF
+          </button>
+          <button
+            type="button"
+            class="btn btn-mark"
+            [class.is-complete]="isComplete(item.key)"
+            (click)="toggleItem(item.key)"
+            >
+            {{ isComplete(item.key) ? 'Done' : 'Mark Done' }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span class="progress-label">Closeout Progress</span>
+      <span class="progress-count">{{ completedCount }} / {{ closeoutItems.length }} Complete</span>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="completionPercent"></div>
+    </div>
+  </section>
+
+  <section class="closure-summary-card">
+    <h3>Project Closure</h3>
+    <p class="hint">Final handover package is complete and ready for archive.</p>
+
+    <div class="closure-grid">
+      @for (stat of closureStats; track stat) {
+        <article>
+          <span class="label">{{ stat.label }}</span>
+          <strong [class.archive-pill]="stat.label === 'Archive State'">{{ stat.label === 'Archive State' ? archiveState : stat.value }}</strong>
+        </article>
+      }
+    </div>
+  </section>
+</section>

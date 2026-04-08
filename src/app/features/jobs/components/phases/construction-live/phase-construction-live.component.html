@@ -1,0 +1,216 @@
+<section class="phase-section">
+  <app-phase-navigation-header
+    stageLabel="Construction Execution"
+    [showBack]="false"
+    backLabel="Back to Mobilization"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Closeout &amp; Handover"
+    [projectName]="projectDetails?.projectName || 'N/A'"
+    [clientName]="projectDetails?.clientName || projectDetails?.name || 'N/A'"
+    [projectAddress]="projectDetails?.address || 'N/A'"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    [proceedDisabled]="!canProceed"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    (proceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+  <!--
+  <section class="summary-strip">
+    <article>
+      <p class="mini-label">Active Crews</p>
+      <strong>{{ liveMetrics.activeCrews }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Open Subtasks</p>
+      <strong>{{ liveMetrics.openSubtasks }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Blocked Items</p>
+      <strong>{{ liveMetrics.blockedItems }}</strong>
+    </article>
+    <article>
+      <p class="mini-label">Schedule Health</p>
+      <strong>{{ liveMetrics.scheduleHealth }}%</strong>
+    </article>
+  </section>
+
+  <section class="progress-card">
+    <div class="progress-row">
+      <span>Construction completion</span>
+      <strong>{{ completionPercent }}%</strong>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="completionPercent"></div>
+    </div>
+    <div class="progress-actions">
+      <button type="button" class="btn btn-outline" [disabled]="canProceed" (click)="markMilestoneComplete()">
+        Mark Milestone Complete
+      </button>
+      <span class="hint" *ngIf="!canProceed">Reach 100% completion before moving to closeout.</span>
+      <span class="hint" *ngIf="canProceed">All execution milestones complete. Closeout is now available.</span>
+    </div>
+  </section>
+
+  <section class="tasks-card">
+    <div class="tasks-header">
+      <div>
+        <h4>Execution Tasks</h4>
+      </div>
+      <div class="tasks-header-actions">
+        <button type="button" class="btn btn-outline" (click)="toggleTasksExpanded()">
+          {{ tasksExpanded ? 'Collapse Tasks' : 'Expand Tasks' }}
+        </button>
+        <button type="button" class="btn btn-outline" (click)="toggleAddTask()" *ngIf="tasksExpanded">
+          {{ addingTask ? 'Close Add Task' : 'Add Task' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="group-tabs" *ngIf="tasksExpanded">
+      <button
+        type="button"
+        class="group-tab"
+        *ngFor="let group of taskGroups"
+        [class.is-active]="group.id === selectedGroupId"
+        (click)="selectGroup(group.id)"
+        >
+        <span>{{ group.title }}</span>
+        <small>
+          {{ getCompletedCount(group) }}/{{ group.subtasks.length }} complete · {{ getTotalDays(group) }}d
+        </small>
+      </button>
+    </div>
+
+    <div class="group-status" *ngIf="selectedGroup && tasksExpanded">
+      <span class="state-pill" [class.is-active]="getPhaseStatus(selectedGroup) !== 'pending'">
+        {{ getPhaseStatus(selectedGroup) | titlecase }}
+      </span>
+      <p>{{ selectedGroup.title }}</p>
+    </div>
+
+    <div class="add-task-form" *ngIf="addingTask && tasksExpanded">
+      <div class="task-grid">
+        <label>
+          <span>Task name</span>
+          <input type="text" [(ngModel)]="newTask.name" />
+        </label>
+        <label>
+          <span>Start date</span>
+          <input
+            type="date"
+            [(ngModel)]="newTask.startDate"
+            (ngModelChange)="updateNewTaskDate('startDate', $event)"
+            />
+          </label>
+          <label>
+            <span>Days</span>
+            <input
+              type="number"
+              min="0"
+              [(ngModel)]="newTask.days"
+              (ngModelChange)="updateNewTaskDate('days', $event)"
+              />
+            </label>
+            <label>
+              <span>End date</span>
+              <input
+                type="date"
+                [(ngModel)]="newTask.endDate"
+                (ngModelChange)="updateNewTaskDate('endDate', $event)"
+                />
+              </label>
+            </div>
+            <div class="tasks-header-actions">
+              <button type="button" class="btn btn-primary" (click)="addTask()">Add Task</button>
+              <button type="button" class="btn btn-outline" (click)="cancelAddTask()">Cancel</button>
+            </div>
+          </div>
+
+          <div class="tasks-table-wrap" *ngIf="tasksExpanded">
+            <table class="tasks-table" *ngIf="visibleSubtasks.length > 0; else noTasks">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th class="num">Days</th>
+                  <th>Approved</th>
+                  <th class="num">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let task of visibleSubtasks">
+                  <td>
+                    <input
+                      type="text"
+                      [value]="task.task"
+                      (focus)="startEditing(task, 'task')"
+                      (blur)="stopEditing()"
+                      (change)="updateTaskField(task, 'task', $any($event.target).value)"
+                      />
+                    </td>
+                    <td>
+                      <select [value]="task.status" (change)="updateTaskStatus(task, $any($event.target).value)">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        [value]="task.startDate"
+                        (focus)="startEditing(task, 'startDate')"
+                        (blur)="stopEditing()"
+                        (change)="updateTaskField(task, 'startDate', $any($event.target).value)"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="date"
+                          [value]="task.endDate"
+                          (focus)="startEditing(task, 'endDate')"
+                          (blur)="stopEditing()"
+                          (change)="updateTaskField(task, 'endDate', $any($event.target).value)"
+                          />
+                        </td>
+                        <td class="num">
+                          <input
+                            type="number"
+                            min="0"
+                            [value]="task.days"
+                            (focus)="startEditing(task, 'days')"
+                            (blur)="stopEditing()"
+                            (change)="updateTaskField(task, 'days', $any($event.target).value)"
+                            />
+                          </td>
+                          <td>
+                            <button type="button" class="btn btn-outline" (click)="handleApproval(task)">
+                              {{ task.accepted ? 'Approved' : 'Approve' }}
+                            </button>
+                          </td>
+                          <td class="num">
+                            <button type="button" class="btn btn-danger" (click)="deleteTask(task.id)">Delete</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <ng-template #noTasks>
+                    <p class="hint">No tasks available in this group yet.</p>
+                  </ng-template>
+                </section> -->
+
+                @if (liveStageTemplate) {
+                  <section class="live-view-card">
+                    <ng-container *ngTemplateOutlet="liveStageTemplate"></ng-container>
+                  </section>
+                }
+              </section>

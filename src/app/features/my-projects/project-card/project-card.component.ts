@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +15,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Project } from '../../../models/project';
+import {
+  formatDateDdMmmYyyy,
+  formatProjectBuildingAreaDisplay,
+  getProjectStatusLabel,
+} from '../project-display.utils';
 
 @Component({
   selector: 'app-project-card',
@@ -26,7 +38,11 @@ import { Project } from '../../../models/project';
   styleUrls: ['./project-card.component.scss'],
 })
 export class ProjectCardComponent {
+  readonly formatProjectDate = formatDateDdMmmYyyy;
+  readonly formatProjectArea = formatProjectBuildingAreaDisplay;
+
   @Input() project!: Project;
+  @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
   @Output() onView = new EventEmitter<number>();
   @Output() onEdit = new EventEmitter<number>();
   @Output() onDelete = new EventEmitter<number>();
@@ -39,26 +55,77 @@ export class ProjectCardComponent {
 
   constructor(private snackBar: MatSnackBar) {}
 
-  statusColors = {
-    BIDDING: 'bg-blue-500',
-    LIVE: 'bg-green-500',
-    DRAFT: 'bg-gray-500',
-    FAILED: 'bg-red-500',
-    DISCARD: 'bg-purple-500',
-    NEW: 'bg-yellow-500',
+  get resolvedStartDate(): Date | null {
+    const project = this.project as any;
+    const rawDate =
+      project?.potentialStartDate ??
+      project?.desiredStartDate ??
+      project?.startDate ??
+      project?.biddingStartDate ??
+      project?.PotentialStartDate ??
+      null;
+
+    if (!rawDate) return null;
+
+    const parsed = new Date(rawDate);
+    if (isNaN(parsed.getTime()) || parsed.getFullYear() <= 1) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  statusColors: Record<string, string> = {
+    INITIATION: 'status-initiation',
+    BIDDING: 'status-bid-solicitation',
+    BID_SOLICITATION: 'status-bid-solicitation',
+    LIVE: 'status-construction-live',
+    CONSTRUCTION_LIVE: 'status-construction-live',
+    DRAFT: 'status-preliminary-scope',
+    PRELIMINARY: 'status-preliminary-scope',
+    PRELIMINARY_SCOPE: 'status-preliminary-scope',
+    DETAILED_TAKEOFF: 'status-detailed-takeoff',
+    CONTRACT_AWARD: 'status-contract-award',
+    PRE_CONSTRUCTION: 'status-pre-construction',
+    TRADE_AWARD: 'status-trade-award',
+    MOBILIZATION: 'status-mobilization',
+    CLOSEOUT: 'status-closeout',
+    COMPLETED: 'status-closeout',
+    FAILED: 'status-failed',
+    DISCARD: 'status-discard',
+    ARCHIVED: 'status-archived',
+    CLOSURE: 'status-archived',
+    NEW: 'status-new',
+    ANALYZING: 'status-analyzing',
   };
 
-  statusLabels = {
-    BIDDING: 'Bidding Phase',
-    LIVE: 'Live Project',
-    DRAFT: 'Preliminary',
-    FAILED: 'Failed',
-    DISCARD: 'Discarded',
-    NEW: 'New',
-  };
+  getStatusColor(status: string | undefined): string {
+    if (!status) return 'status-preliminary-scope';
+    const key = status.toUpperCase();
+    return this.statusColors[key] || 'status-preliminary-scope';
+  }
+
+  getStatusLabel(status: string | undefined): string {
+    return getProjectStatusLabel(status);
+  }
+
+  isActivationStage(status: string | undefined): boolean {
+    return (
+      status === 'DRAFT' ||
+      status === 'NEW'
+    );
+  }
+
+  openThumbnailPicker(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.fileInputRef?.nativeElement.click();
+  }
 
   onFileSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
     if (file) {
       const allowedTypes = ['image/png', 'image/jpeg'];
       if (allowedTypes.includes(file.type)) {
@@ -72,6 +139,8 @@ export class ProjectCardComponent {
           },
         );
       }
+
+      input.value = '';
     }
   }
 }

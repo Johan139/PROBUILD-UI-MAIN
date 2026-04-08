@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-unsubscribe',
@@ -14,12 +14,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./unsubscribe.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
-  ],
+    MatButtonModule
+],
 })
 export class UnsubscribeComponent implements OnInit {
   message: string = '';

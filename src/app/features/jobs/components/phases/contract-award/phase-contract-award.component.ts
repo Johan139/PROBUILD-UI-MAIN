@@ -1,0 +1,1204 @@
+
+import { FormsModule } from '@angular/forms';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  TemplateRef,
+} from '@angular/core';
+import { marked } from 'marked';
+import {
+  AlignmentType,
+  Document as DocxDocument,
+  HeadingLevel,
+  LevelFormat,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from 'docx';
+import { PhaseNavigationHeaderComponent } from '../shared/phase-navigation-header.component';
+import { LucideIconsModule } from '../../../../../shared/lucide-icons.module';
+import {
+  ContractRecord,
+  ContractService,
+  GenerateGeneralClientContractRequest,
+} from '../../../../../services/contract.service';
+import { ReportService } from '../../../services/report.service';
+import { DragAndDropDirective } from '../../../../../directives/drag-and-drop.directive';
+import { PhaseReportRequestType } from '../shared/phase-navigation-header.component';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { formatMoney } from '../../../../../shared/pipes/money.pipe';
+
+@Component({
+  selector: 'app-phase-contract-award',
+  standalone: true,
+  imports: [
+    FormsModule,
+    PhaseNavigationHeaderComponent,
+    LucideIconsModule,
+    DragAndDropDirective,
+    MatSnackBarModule
+],
+  templateUrl: './phase-contract-award.component.html',
+  styleUrl: './phase-contract-award.component.scss',
+})
+export class PhaseContractAwardComponent implements OnInit, OnChanges {
+  constructor(
+    private contractService: ContractService,
+    private reportService: ReportService,
+    private snackBar: MatSnackBar,
+  ) {}
+
+  @Input() projectDetails: any;
+  @Input() liveStageTemplate: TemplateRef<any> | null = null;
+  @Input() isReportLoading = false;
+  @Input() showEnvironmentalReport = true;
+
+  @Output() back = new EventEmitter<void>();
+  @Output() discard = new EventEmitter<void>();
+  @Output() proceed = new EventEmitter<void>();
+
+  @Output() documentsRequested = new EventEmitter<void>();
+  @Output() reportRequested = new EventEmitter<PhaseReportRequestType>();
+
+  contractMethod: 'ai' | 'upload' | null = null;
+  contractGenerating = false;
+  contractGenerated = false;
+  uploadedContractName = '';
+  generatedContractFileName = '';
+  generatedContractMarkdown = '';
+  activeContractId: string | null = null;
+  isUploading = false;
+  isDownloading = false;
+  private lastLoadedJobId: number | null = null;
+
+  projectType: 'residential' | 'commercial' = 'residential';
+  consequentialDamagesWaiverEnabled = true;
+  liabilityCapEnabled = false;
+  liabilityCapType: 'contract_sum' | 'fixed_amount' = 'contract_sum';
+  liabilityCapFixedAmount: number | null = null;
+  liabilityCapCurrency = 'USD';
+  disputeResolutionMode: 'arbitration' | 'litigation' = 'arbitration';
+  insuranceLimits = '';
+  markups = '';
+  curePeriods = '';
+  ldCap = '';
+  rightToRepairReviewRequired = true;
+  depositLimitReviewRequired = true;
+  antiIndemnityReviewRequired = true;
+
+  ngOnInit(): void {
+    this.syncContractDefaultsFromProject();
+
+    const jobId = this.jobId;
+    if (!jobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = jobId;
+    this.resetContractState();
+    this.loadExistingContract(jobId);
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['projectDetails']) {
+      return;
+    }
+
+    this.syncContractDefaultsFromProject();
+
+    const jobId = this.jobId;
+    if (!jobId || this.lastLoadedJobId === jobId) {
+      return;
+    }
+
+    this.lastLoadedJobId = jobId;
+    this.resetContractState();
+    this.loadExistingContract(jobId);
+  }
+
+  get projectSizeSqFt(): string {
+    return (
+      this.projectDetails?.buildingSize ||
+      this.projectDetails?.projectSize ||
+      '2,450'
+    );
+  }
+
+  get clientName(): string {
+    if (this.projectDetails?.clientName) {
+      return this.projectDetails.clientName;
+    }
+
+    const first = this.projectDetails?.clientFirstName || '';
+    const last = this.projectDetails?.clientLastName || '';
+    const joined = `${first} ${last}`.trim();
+    return joined || 'Jacques Barnard';
+  }
+
+  get projectAddress(): string {
+    return (
+      this.projectDetails?.address ||
+      this.projectDetails?.projectAddress ||
+      'Belicia Ln, Round Rock, TX'
+    );
+  }
+
+  get projectSizeSqM(): string {
+    const numeric = Number(String(this.projectSizeSqFt).replace(/,/g, ''));
+    if (Number.isNaN(numeric) || numeric <= 0) {
+      return '228';
+    }
+
+    return formatMoney(Math.round(numeric * 0.0929), false, 0);
+  }
+
+  get generatedContractName(): string {
+    if (this.contractMethod === 'ai') {
+      const projectName = this.projectDetails?.projectName || 'Project';
+      const normalized =
+        this.generatedContractFileName ||
+        `${projectName}_GC_Client_Contract.docx`;
+      return normalized.toLowerCase().endsWith('.pdf')
+        ? normalized.replace(/\.pdf$/i, '.docx')
+        : normalized;
+    }
+
+    if (this.generatedContractFileName) {
+      return this.generatedContractFileName;
+    }
+
+    const projectName = this.projectDetails?.projectName || 'Project';
+    return `${projectName}_Contract_v1.pdf`;
+  }
+
+  private get jobId(): number | null {
+    const id = Number(this.projectDetails?.jobId);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  get completedItems(): number {
+    const method = this.contractMethod ? 1 : 0;
+    const completed =
+      this.contractMethod === 'ai'
+        ? this.contractGenerated
+          ? 1
+          : 0
+        : this.contractMethod === 'upload'
+          ? this.uploadedContractName
+            ? 1
+            : 0
+          : 0;
+
+    return method + completed;
+  }
+
+  get canProceed(): boolean {
+    return this.isStepCompleteForProceed;
+  }
+
+  private get isStepCompleteForProceed(): boolean {
+    return this.completedItems >= 2;
+  }
+
+  onProceedRequested(): void {
+    if (this.isStepCompleteForProceed) {
+      this.proceed.emit();
+      return;
+    }
+
+    const message = this.contractMethod
+      ? 'Finish the contract step before proceeding to Pre-Construction.'
+      : 'Select a contract method before proceeding to Pre-Construction.';
+
+    this.snackBar.open(message, 'OK', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+    });
+  }
+
+  onSkipRequested(): void {
+    this.proceed.emit();
+  }
+
+  selectMethod(method: 'ai' | 'upload'): void {
+    this.contractMethod = method;
+    if (method === 'ai') {
+      this.uploadedContractName = '';
+    }
+    if (method === 'upload') {
+      this.contractGenerating = false;
+      this.contractGenerated = false;
+    }
+  }
+
+  generateContract(): void {
+    if (this.contractMethod !== 'ai' || this.contractGenerating) {
+      return;
+    }
+
+    if (!this.validateContractOptions()) {
+      return;
+    }
+
+    const jobId = this.jobId;
+    if (!jobId) {
+      console.error('Missing job id for contract generation.');
+      return;
+    }
+
+    if (this.activeContractId) {
+      const shouldOverwrite = window.confirm(
+        'A GC/client contract already exists for this job. Generating a new one will overwrite it. Continue?',
+      );
+
+      if (!shouldOverwrite) {
+        return;
+      }
+    }
+
+    this.contractGenerating = true;
+
+    this.getExecutiveSummaryContext(jobId)
+      .then((executiveSummaryContext) => {
+        const request = this.buildGenerateContractRequest(
+          executiveSummaryContext,
+        );
+        this.contractService
+          .generateGeneralClientContract(jobId, request)
+          .subscribe({
+            next: (contract) => {
+              this.hydrateContractState(contract);
+              this.contractMethod = 'ai';
+              this.contractGenerated = true;
+              this.contractGenerating = false;
+            },
+            error: (err) => {
+              console.error('Failed to generate client contract', err);
+              this.contractGenerating = false;
+            },
+          });
+      })
+      .catch((summaryErr) => {
+        console.warn(
+          'Failed to fetch executive summary context; continuing without it',
+          summaryErr,
+        );
+        const request = this.buildGenerateContractRequest('');
+        this.contractService
+          .generateGeneralClientContract(jobId, request)
+          .subscribe({
+            next: (contract) => {
+              this.hydrateContractState(contract);
+              this.contractMethod = 'ai';
+              this.contractGenerated = true;
+              this.contractGenerating = false;
+            },
+            error: (err) => {
+              console.error('Failed to generate client contract', err);
+              this.contractGenerating = false;
+            },
+          });
+      });
+  }
+
+  private async getExecutiveSummaryContext(jobId: number): Promise<string> {
+    const summaryHtml = await this.reportService.getExecutiveSummary(
+      String(jobId),
+    );
+    if (!summaryHtml) {
+      return '';
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(summaryHtml, 'text/html');
+    const plain = (doc.body?.textContent || '').replace(/\s+/g, ' ').trim();
+    return plain;
+  }
+
+  onProjectTypeChanged(value: string): void {
+    this.projectType = value === 'commercial' ? 'commercial' : 'residential';
+    this.liabilityCapEnabled = this.projectType === 'commercial';
+
+    if (!this.liabilityCapEnabled) {
+      this.liabilityCapType = 'contract_sum';
+      this.liabilityCapFixedAmount = null;
+    }
+  }
+
+  onLiabilityCapTypeChanged(value: string): void {
+    this.liabilityCapType =
+      value === 'fixed_amount' ? 'fixed_amount' : 'contract_sum';
+
+    if (this.liabilityCapType !== 'fixed_amount') {
+      this.liabilityCapFixedAmount = null;
+    }
+  }
+
+  onContractFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.uploadExistingContract(file);
+    input.value = '';
+  }
+
+  onContractFilesDropped(files: FileList): void {
+    const file = files?.item(0);
+    if (!file) {
+      return;
+    }
+
+    this.uploadExistingContract(file);
+  }
+
+  viewContract(): void {
+    this.downloadContract(true);
+  }
+
+  downloadContract(openInNewTab = false): void {
+    if (this.isDownloading) {
+      return;
+    }
+
+    if (
+      this.contractMethod === 'ai' &&
+      this.generatedContractMarkdown.trim().length > 0
+    ) {
+      this.isDownloading = true;
+      const markdown = this.generatedContractMarkdown;
+
+      (openInNewTab
+        ? this.buildContractHtml(markdown).then((html) => {
+            const previewBlob = new Blob([html], {
+              type: 'text/html;charset=utf-8',
+            });
+            const previewUrl = URL.createObjectURL(previewBlob);
+            window.open(previewUrl, '_blank', 'noopener');
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 12000);
+          })
+        : this.downloadAsDocx(markdown)
+      )
+        .catch((err) => {
+          console.error(
+            'Failed to generate client contract word document on client',
+            err,
+          );
+        })
+        .finally(() => {
+          this.isDownloading = false;
+        });
+      return;
+    }
+
+    if (!this.activeContractId) {
+      return;
+    }
+
+    this.isDownloading = true;
+    this.contractService
+      .downloadClientContractPdf(this.activeContractId)
+      .subscribe({
+        next: (blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+
+          if (openInNewTab) {
+            window.open(blobUrl, '_blank', 'noopener');
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 12000);
+          } else {
+            const anchor = document.createElement('a');
+            anchor.href = blobUrl;
+            anchor.download = this.generatedContractName;
+            anchor.click();
+            URL.revokeObjectURL(blobUrl);
+          }
+
+          this.isDownloading = false;
+        },
+        error: (err) => {
+          console.error('Failed to download contract pdf', err);
+          this.isDownloading = false;
+        },
+      });
+  }
+
+  private uploadExistingContract(file: File): void {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      console.error('Only PDF contracts are supported.');
+      return;
+    }
+
+    const jobId = this.jobId;
+    if (!jobId || this.isUploading) {
+      return;
+    }
+
+    this.isUploading = true;
+    this.contractMethod = 'upload';
+
+    const runUpload = (contractId: string) => {
+      this.snackBar.open('Uploading contract PDF...', undefined, {
+        duration: 2000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      });
+      this.contractService.uploadClientContractPdf(contractId, file).subscribe({
+        next: (updated) => {
+          this.hydrateContractState(updated);
+          this.uploadedContractName = file.name;
+          this.generatedContractMarkdown = '';
+          this.contractGenerated = true;
+          this.isUploading = false;
+          this.snackBar.open('Contract uploaded successfully!', undefined, {
+            duration: 3000,
+            horizontalPosition: 'center',
+            verticalPosition: 'bottom',
+          });
+        },
+        error: (err) => {
+          console.error('Failed to upload client contract pdf', err);
+          this.snackBar.open('Failed to upload contract. Please try again.', 'OK', {
+            duration: 5000,
+            horizontalPosition: 'center',
+            verticalPosition: 'top',
+          });
+          this.isUploading = false;
+        },
+      });
+    };
+
+    if (this.activeContractId) {
+      runUpload(this.activeContractId);
+      return;
+    }
+
+    if (!this.activeContractId) {
+      // Show initialization message since we need to create contract record first
+      this.snackBar.open('Initializing contract record...', undefined, {
+        duration: 3000,
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      });
+
+      const request = this.buildGenerateContractRequest('');
+      this.contractService
+        .generateGeneralClientContract(jobId, request)
+        .subscribe({
+          next: (contract) => {
+            this.hydrateContractState(contract);
+            if (!this.activeContractId) {
+              this.isUploading = false;
+              return;
+            }
+            runUpload(this.activeContractId);
+          },
+          error: (err) => {
+            console.error('Failed to initialize contract before upload', err);
+            this.snackBar.open('Failed to initialize contract. Please try again.', 'OK', {
+              duration: 5000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+            });
+            this.isUploading = false;
+          },
+        });
+      return;
+    }
+  }
+
+  private hydrateContractState(contract: ContractRecord): void {
+    this.activeContractId = contract.id || this.activeContractId;
+    this.generatedContractFileName =
+      contract.fileName || this.generatedContractFileName;
+    this.generatedContractMarkdown =
+      contract.contractText || this.generatedContractMarkdown;
+
+    if (contract.status === 'UPLOADED') {
+      this.contractMethod = 'upload';
+      this.uploadedContractName =
+        contract.fileName || this.uploadedContractName;
+    } else {
+      this.contractMethod = 'ai';
+      this.uploadedContractName = '';
+    }
+  }
+
+  private loadExistingContract(jobId: number): void {
+    this.contractService.getContractsByJobId(jobId).subscribe({
+      next: (contracts) => {
+        const existing = this.resolveExistingGeneralClientContract(
+          contracts || [],
+        );
+        if (!existing) {
+          return;
+        }
+
+        this.hydrateContractState(existing);
+        this.contractGenerated = true;
+      },
+      error: (err) => {
+        console.error('Failed to load existing client contract for job', err);
+      },
+    });
+  }
+
+  private resolveExistingGeneralClientContract(
+    contracts: ContractRecord[],
+  ): ContractRecord | null {
+    const matches = contracts.filter(
+      (c) =>
+        c.contractType === 'GC_CLIENT' ||
+        (!c.contractType && c.gcId && c.scVendorId && c.gcId === c.scVendorId),
+    );
+
+    if (!matches.length) {
+      return null;
+    }
+
+    return matches.sort((a, b) => {
+      const left = Date.parse(a.updatedAt || a.createdAt || '') || 0;
+      const right = Date.parse(b.updatedAt || b.createdAt || '') || 0;
+      return right - left;
+    })[0];
+  }
+
+  private resetContractState(): void {
+    this.contractMethod = null;
+    this.contractGenerating = false;
+    this.contractGenerated = false;
+    this.uploadedContractName = '';
+    this.generatedContractFileName = '';
+    this.generatedContractMarkdown = '';
+    this.activeContractId = null;
+    this.isUploading = false;
+    this.isDownloading = false;
+  }
+
+  private syncContractDefaultsFromProject(): void {
+    const candidate = String(
+      this.projectDetails?.jobType || this.projectDetails?.projectType || '',
+    ).toLowerCase();
+    if (candidate.includes('commercial')) {
+      this.projectType = 'commercial';
+      this.liabilityCapEnabled = true;
+      return;
+    }
+
+    if (candidate.includes('residential')) {
+      this.projectType = 'residential';
+      this.liabilityCapEnabled = false;
+    }
+  }
+
+  private buildGenerateContractRequest(
+    executiveSummaryContext: string,
+  ): GenerateGeneralClientContractRequest {
+    const normalize = (value: string): string | undefined => {
+      const trimmed = value.trim();
+      return trimmed.length ? trimmed : undefined;
+    };
+
+    const normalizedCurrency = (this.liabilityCapCurrency || 'USD')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 3);
+
+    const fixedAmount =
+      this.liabilityCapType === 'fixed_amount'
+        ? this.parsePositiveNumber(this.liabilityCapFixedAmount)
+        : undefined;
+
+    return {
+      executiveSummaryContext: executiveSummaryContext.trim() || undefined,
+      projectType: this.projectType,
+      consequentialDamagesWaiverEnabled: this.consequentialDamagesWaiverEnabled,
+      liabilityCapEnabled: this.liabilityCapEnabled,
+      liabilityCapBasis:
+        this.liabilityCapType === 'contract_sum'
+          ? 'Contract Sum'
+          : normalize(
+              `${normalizedCurrency || 'USD'} ${
+                fixedAmount != null
+                  ? formatMoney(fixedAmount, false, 2)
+                  : ''
+              }`.trim(),
+            ),
+      liabilityCapType: this.liabilityCapType,
+      liabilityCapFixedAmount: fixedAmount,
+      liabilityCapCurrency: normalize(normalizedCurrency || 'USD'),
+      disputeResolutionMode: this.disputeResolutionMode,
+      insuranceLimits: normalize(this.insuranceLimits),
+      markups: normalize(this.markups),
+      curePeriods: normalize(this.curePeriods),
+      ldCap: normalize(this.ldCap),
+      rightToRepairReviewRequired: this.rightToRepairReviewRequired,
+      depositLimitReviewRequired: this.depositLimitReviewRequired,
+      antiIndemnityReviewRequired: this.antiIndemnityReviewRequired,
+    };
+  }
+
+  private validateContractOptions(): boolean {
+    if (this.contractMethod !== 'ai') {
+      return true;
+    }
+
+    const missingRequired: string[] = [];
+
+    if (!this.insuranceLimits.trim()) {
+      missingRequired.push('Insurance Limits');
+    }
+
+    if (!this.markups.trim()) {
+      missingRequired.push('Markups');
+    }
+
+    if (!this.curePeriods.trim()) {
+      missingRequired.push('Cure Periods');
+    }
+
+    if (!this.ldCap.trim()) {
+      missingRequired.push('LD Cap');
+    }
+
+    if (missingRequired.length > 0) {
+      this.snackBar.open(
+        `Please complete all required contract fields before continuing: ${missingRequired.join(', ')}.`,
+        'OK',
+        {
+          duration: 6000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        },
+      );
+      return false;
+    }
+
+    if (!this.liabilityCapEnabled) {
+      return true;
+    }
+
+    if (this.liabilityCapType !== 'fixed_amount') {
+      return true;
+    }
+
+    const amount = this.parsePositiveNumber(this.liabilityCapFixedAmount);
+    if (amount == null) {
+      window.alert(
+        'Please enter a valid fixed liability cap amount greater than 0.',
+      );
+      return false;
+    }
+
+    const currency = (this.liabilityCapCurrency || '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      window.alert(
+        'Please enter a valid 3-letter ISO currency code for the fixed liability cap (for example USD, GBP, EUR).',
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  private parsePositiveNumber(value: unknown): number | undefined {
+    const parsed =
+      typeof value === 'number' ? value : Number(String(value ?? '').trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return undefined;
+    }
+
+    return Math.round(parsed * 100) / 100;
+  }
+
+  private async buildContractHtml(markdown: string): Promise<string> {
+    const normalizedMarkdown = this.prettifyContractMarkdown(markdown);
+    const parsed = await Promise.resolve(marked.parse(normalizedMarkdown) as string);
+    const title = `${this.projectDetails?.projectName || 'Project'} Client Contract`;
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${this.escapeHtml(title)}</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 12pt; line-height: 1.45; margin: 24px; color: #111; }
+    h1,h2,h3,h4 { margin: 16px 0 8px; }
+    p { margin: 8px 0; }
+    ul,ol { margin: 8px 0 8px 22px; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th,td { border: 1px solid #bbb; padding: 6px; text-align: left; }
+    blockquote { border-left: 3px solid #ccc; margin: 8px 0; padding-left: 10px; color: #555; }
+    code { font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+${parsed}
+</body>
+</html>`;
+  }
+
+  private async downloadAsDocx(markdown: string): Promise<void> {
+    const fileName = this.ensureExtension(this.generatedContractName, '.docx');
+    const docxBlob = await this.buildDocxBlobFromMarkdown(markdown);
+    this.triggerFileDownload(docxBlob, fileName);
+  }
+
+  private async buildDocxBlobFromMarkdown(markdown: string): Promise<Blob> {
+    const safeMarkdown = this.sanitizeForOpenXml(markdown);
+    const lines = safeMarkdown.replace(/\r\n/g, '\n').split('\n');
+    const children: Array<Paragraph | Table> = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const rawLine = lines[index];
+      const line = rawLine.trim();
+
+      if (!line) {
+        children.push(new Paragraph({ text: '' }));
+        continue;
+      }
+
+      const contractTable = this.extractContractDataTable(lines, index);
+      if (contractTable) {
+        children.push(...contractTable.nodes);
+        index = contractTable.nextIndex - 1;
+        continue;
+      }
+
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        children.push(
+          new Paragraph({
+            heading: this.mapHeadingLevel(headingMatch[1].length),
+            children: [new TextRun(this.stripMarkdownInline(headingMatch[2]))],
+          }),
+        );
+        continue;
+      }
+
+      const bulletMatch = line.match(/^[-*+]\s+(.+)$/);
+      if (bulletMatch) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun(this.stripMarkdownInline(bulletMatch[1]))],
+            bullet: { level: 0 },
+          }),
+        );
+        continue;
+      }
+
+      const numberMatch = line.match(/^\d+\.\s+(.+)$/);
+      if (numberMatch) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun(this.stripMarkdownInline(line))],
+          }),
+        );
+        continue;
+      }
+
+      children.push(
+        new Paragraph({
+          children: [new TextRun(this.stripMarkdownInline(line))],
+        }),
+      );
+    }
+
+    const doc = new DocxDocument({
+      numbering: {
+        config: [
+          {
+            reference: 'contract-numbering',
+            levels: [
+              {
+                level: 0,
+                format: LevelFormat.DECIMAL,
+                text: '%1.',
+                alignment: AlignmentType.LEFT,
+              },
+            ],
+          },
+        ],
+      },
+      sections: [
+        {
+          children: children.length ? children : [new Paragraph({ text: '' })],
+        },
+      ],
+    });
+
+    return Packer.toBlob(doc);
+  }
+
+  private mapHeadingLevel(level: number) {
+    switch (level) {
+      case 1:
+        return HeadingLevel.HEADING_1;
+      case 2:
+        return HeadingLevel.HEADING_2;
+      case 3:
+        return HeadingLevel.HEADING_3;
+      case 4:
+        return HeadingLevel.HEADING_4;
+      case 5:
+        return HeadingLevel.HEADING_5;
+      default:
+        return HeadingLevel.HEADING_6;
+    }
+  }
+
+  private stripMarkdownInline(value: string): string {
+    return this.sanitizeForOpenXml(
+      value
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        .replace(/~~([^~]+)~~/g, '$1'),
+    );
+  }
+
+  private extractContractDataTable(
+    lines: string[],
+    startIndex: number,
+  ): { nodes: Array<Paragraph | Table>; nextIndex: number } | null {
+    const headingLine = lines[startIndex]?.trim();
+    const isContractDataHeading =
+      /^#{1,6}\s*CONTRACT DATA TABLE\s*$/i.test(headingLine) ||
+      /^CONTRACT DATA TABLE\s*$/i.test(headingLine) ||
+      /^\*\*CONTRACT DATA TABLE\*\*\s*$/i.test(headingLine);
+
+    if (!isContractDataHeading) {
+      return null;
+    }
+
+    let tableStartIndex = startIndex + 1;
+    while (tableStartIndex < lines.length && !lines[tableStartIndex].trim()) {
+      tableStartIndex += 1;
+    }
+
+    const bulletRows = this.extractContractDataBulletRows(lines, tableStartIndex);
+    if (bulletRows.rows.length) {
+      return {
+        nodes: [
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [
+              new TextRun(this.stripMarkdownInline(headingLine.replace(/^#{1,6}\s*/, ''))),
+            ],
+          }),
+          this.buildContractDataDocxTable(bulletRows.rows),
+        ],
+        nextIndex: bulletRows.nextIndex,
+      };
+    }
+
+    const tableLines: string[] = [];
+    let cursor = tableStartIndex;
+    while (cursor < lines.length && /^\s*\|.*\|\s*$/.test(lines[cursor])) {
+      tableLines.push(lines[cursor]);
+      cursor += 1;
+    }
+
+    const rows = this.parseMarkdownTableRows(tableLines);
+    if (!rows.length) {
+      return null;
+    }
+
+    return {
+      nodes: [
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [
+            new TextRun(this.stripMarkdownInline(headingLine.replace(/^#{1,6}\s*/, ''))),
+          ],
+        }),
+        this.buildContractDataDocxTable(rows),
+      ],
+      nextIndex: cursor,
+    };
+  }
+
+  private parseMarkdownTableRows(tableLines: string[]): string[][] {
+    if (tableLines.length < 3) {
+      return [];
+    }
+
+    const rows = tableLines
+      .map((line) => this.parseMarkdownTableRow(line))
+      .filter((row) => row.length >= 2);
+
+    if (rows.length < 3) {
+      return [];
+    }
+
+    const separatorRowIndex = rows.findIndex(
+      (row) =>
+        row.length >= 2 &&
+        row.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, ''))),
+    );
+
+    if (separatorRowIndex !== 1) {
+      return [];
+    }
+
+    return rows.filter((_, index) => index !== separatorRowIndex);
+  }
+
+  private extractContractDataBulletRows(
+    lines: string[],
+    startIndex: number,
+  ): { rows: string[][]; nextIndex: number } {
+    const rows: string[][] = [];
+    let cursor = startIndex;
+
+    while (cursor < lines.length) {
+      const line = lines[cursor]?.trim();
+      if (!line) {
+        break;
+      }
+
+      const bulletMatch = line.match(/^[•●◦▪■\-*+]\s+(.+)$/);
+      if (!bulletMatch) {
+        break;
+      }
+
+      const content = bulletMatch[1].trim();
+      const keyValueMatch = content.match(
+        /^\*\*(.+?)\*\*\s*:\s*(.+)$|^\*(.+?)\*\s*:\s*(.+)$|^(.+?)\s*:\s*(.+)$/,
+      );
+
+      if (!keyValueMatch) {
+        break;
+      }
+
+      const label = (keyValueMatch[1] || keyValueMatch[3] || keyValueMatch[5] || '')
+        .trim();
+      const value = (keyValueMatch[2] || keyValueMatch[4] || keyValueMatch[6] || '')
+        .trim();
+
+      if (!label && !value) {
+        break;
+      }
+
+      rows.push([label, value]);
+      cursor += 1;
+    }
+
+    return { rows, nextIndex: cursor };
+  }
+
+  private buildContractDataDocxTable(rows: string[][]): Table {
+    return new Table({
+      width: {
+        size: 100,
+        type: WidthType.PERCENTAGE,
+      },
+      rows: rows.map((row, index) =>
+        new TableRow({
+          children: [
+            new TableCell({
+              width: {
+                size: 35,
+                type: WidthType.PERCENTAGE,
+              },
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: this.stripMarkdownInline(row[0] || ''),
+                      bold: true,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            new TableCell({
+              width: {
+                size: 65,
+                type: WidthType.PERCENTAGE,
+              },
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: this.stripMarkdownInline(row[1] || ''),
+                      bold: index === 0,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ),
+    });
+  }
+
+  private prettifyContractMarkdown(markdown: string): string {
+    if (!markdown?.trim()) {
+      return markdown;
+    }
+
+    const normalized = markdown.replace(/\r\n/g, '\n');
+    const lines = normalized.split('\n');
+    const output: string[] = [];
+
+    let index = 0;
+    while (index < lines.length) {
+      const currentLine = lines[index];
+      const trimmedLine = currentLine.trim();
+
+      const isContractDataHeading =
+        /^#{0,6}\s*CONTRACT DATA TABLE\s*$/i.test(trimmedLine) ||
+        /^\*\*CONTRACT DATA TABLE\*\*\s*$/i.test(trimmedLine);
+
+      if (!isContractDataHeading) {
+        output.push(currentLine);
+        index += 1;
+        continue;
+      }
+
+      output.push(currentLine);
+      index += 1;
+
+      while (index < lines.length && !lines[index].trim()) {
+        output.push(lines[index]);
+        index += 1;
+      }
+
+      const tableLines: string[] = [];
+      while (index < lines.length && /^\s*\|.*\|\s*$/.test(lines[index])) {
+        tableLines.push(lines[index]);
+        index += 1;
+      }
+
+      const converted = this.convertMarkdownTableToDefinitionList(tableLines);
+      if (converted.length) {
+        output.push(...converted);
+      } else {
+        output.push(...tableLines);
+      }
+    }
+
+    return output.join('\n');
+  }
+
+  private convertMarkdownTableToDefinitionList(tableLines: string[]): string[] {
+    const rows = this.parseMarkdownTableRows(tableLines);
+    const dataRows = rows.slice(1).filter((row) => row[0] || row[1]);
+    if (!dataRows.length) {
+      return [];
+    }
+
+    return dataRows.flatMap((row) => {
+      const label = row[0].replace(/\s+/g, ' ').trim();
+      const value = row[1].replace(/\s+/g, ' ').trim();
+      if (!label && !value) {
+        return [];
+      }
+
+      return [`- **${label}:** ${value}`];
+    });
+  }
+
+  private parseMarkdownTableRow(line: string): string[] {
+    return line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
+  }
+
+  private ensureExtension(
+    fileName: string,
+    extension: '.docx' | '.doc',
+  ): string {
+    if (fileName.toLowerCase().endsWith(extension)) {
+      return fileName;
+    }
+
+    return fileName.replace(/\.(pdf|docx|doc)$/i, '') + extension;
+  }
+
+  private triggerFileDownload(blob: Blob, fileName: string): void {
+    const blobUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = blobUrl;
+    anchor.download = fileName;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+  }
+
+  private sanitizeForOpenXml(value: string): string {
+    // Remove control characters not allowed in XML 1.0; keep tab/newline/carriage return.
+    return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  get proceedValidationCompleted(): string[] {
+    if (!this.isStepCompleteForProceed) {
+      return [];
+    }
+
+    const items: string[] = [
+      `Contract method selected: ${this.contractMethod === 'ai' ? 'Generate with AI' : 'Upload signed contract'}`,
+    ];
+
+    if (this.contractMethod === 'ai' && this.contractGenerated) {
+      items.push('Contract generated successfully');
+    }
+
+    if (this.contractMethod === 'upload' && this.uploadedContractName) {
+      items.push(`Contract uploaded: ${this.uploadedContractName}`);
+    }
+
+    return items;
+  }
+
+  get proceedValidationMissing(): string[] {
+    if (this.isStepCompleteForProceed) {
+      return [];
+    }
+
+    const items: string[] = [];
+
+    if (!this.contractMethod) {
+      items.push('Select a contract method (Generate with AI or Upload signed contract)');
+    } else if (this.contractMethod === 'ai' && !this.contractGenerated) {
+      items.push('Generate the contract using AI before proceeding');
+    } else if (this.contractMethod === 'upload' && !this.uploadedContractName) {
+      items.push('Upload a signed contract PDF before proceeding');
+    }
+
+    items.push('Or use Skip This Step to proceed without a contract');
+
+    return items;
+  }
+}

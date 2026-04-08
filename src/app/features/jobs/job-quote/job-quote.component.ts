@@ -22,7 +22,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCardModule } from '@angular/material/card';
 import { MatDivider, MatDividerModule } from '@angular/material/divider';
-import { NgIf, NgFor, CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -68,8 +68,8 @@ import { JobDocument } from '../../../models/JobDocument';
 import { JOB_TYPES } from '../../../data/job-types';
 import { BlueprintDocument } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { OverlayStateService } from '../../../services/overlay-state.service';
-import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 const BASE_URL = environment.BACKEND_URL;
 const Google_API = environment.Google_API;
@@ -87,9 +87,6 @@ const Google_API = environment.Google_API;
     MatCardModule,
     MatDivider,
     FormsModule,
-    NgIf,
-    NgFor,
-    // Angular Material Modules
     MatFormFieldModule,
     MatSelectModule,
     MatDatepickerModule,
@@ -106,12 +103,11 @@ const Google_API = environment.Google_API;
     MatIconModule,
     MatCheckboxModule,
     MatRadioModule,
-    // Custom Components and Pipes
     LoaderComponent,
     SubscriptionWarningComponent,
-    PdfViewerComponent,
     MatToolbarModule,
-  ],
+    MoneyPipe
+],
   providers: [provideNativeDateAdapter(), DatePipe],
   templateUrl: './job-quote.component.html',
   styleUrls: ['./job-quote.component.scss'],
@@ -447,7 +443,7 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -533,16 +529,16 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadActiveBids(): void {
-    const userId: string | null = localStorage.getItem('userId');
-    this.quoteService.getQuotesByUser(userId ?? '').subscribe({
-      next: (quotes) => {
-        this.activeBidsDataSource.data = quotes;
-      },
-      error: (err) => {
-        console.error('Failed to load active bids', err);
-        this.activeBidsDataSource.data = [];
-      },
-    });
+    // const userId: string | null = localStorage.getItem('userId');
+    // this.quoteService.getQuotesByUser(userId ?? '').subscribe({
+    //   next: (quotes) => {
+    //     this.activeBidsDataSource.data = quotes;
+    //   },
+    //   error: (err) => {
+    //     console.error('Failed to load active bids', err);
+    //     this.activeBidsDataSource.data = [];
+    //   },
+    // });
   }
 
   displayFn(option: any): string {
@@ -825,22 +821,11 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
               if (callback) {
                 callback(res);
               } else {
-                const responseParams = {
-                  jobId: res.id,
-                  operatingArea: res.operatingArea,
-                  address: res.address,
-                  documents: res.documents,
-                  latitude: res.latitude,
-                  longitude: res.longitude,
-                  ...this.jobCardForm.value,
-                };
                 this.alertMessage = 'Job Quote Creation Successful';
                 this.showAlert = true;
                 this.uploadedFileInfos = [];
                 this.dialog.closeAll();
-                this.router.navigate(['view-quote'], {
-                  queryParams: responseParams,
-                });
+                this.router.navigate(['view-quote'], { queryParams: { jobId: res.id } });
               }
             }
           }
@@ -850,37 +835,14 @@ export class JobQuoteComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isUploading = false;
           console.error('Upload error:', error);
           this.progress = 0;
-          //this.deleteTemporaryFiles();
         },
-        complete: () => console.log('Client-to-API upload complete'),
+        complete: () => {},
       });
   }
 
   loadJob(id: any): void {
     this.jobService.getSpecificJob(id).subscribe((res) => {
-      const parsedDate = new Date(res.desiredStartDate);
-      const formattedDate = this.datePipe.transform(parsedDate, 'MM/dd/yyyy');
-      
-      const responseParams = {
-        jobId: res.jobId,
-        operatingArea: res.operatingArea,
-        address: res.address,
-        projectName: res.projectName,
-        jobType: res.jobType,
-        buildingSize: res.buildingSize,
-        wallStructure: res.wallStructure,
-        wallInsulation: res.wallInsulation,
-        roofStructure: res.roofStructure,
-        roofInsulation: res.roofInsulation,
-        electricalSupply: res.electricalSupply,
-        finishes: res.finishes,
-        foundation: res.foundation,
-        date: formattedDate,
-        documents: res.documents,
-        latitude: res.latitude,
-        longitude: res.longitude,
-      };
-      this.router.navigate(['view-quote'], { queryParams: responseParams });
+      this.router.navigate(['view-quote'], { queryParams: { jobId: res.jobId } });
     });
   }
 

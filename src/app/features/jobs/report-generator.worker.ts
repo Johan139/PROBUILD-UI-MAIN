@@ -1,8 +1,5 @@
 /// <reference lib="webworker" />
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 // Helper function to format project information
 const formatProjectInfo = (text: string): string => {
   // Handle the concatenated project info
@@ -36,15 +33,54 @@ const preventColonBreaks = (text: string): string => {
 
 // Helper function to clean Unicode characters that cause issues in jsPDF
 const cleanTextForPDF = (text: string): string => {
-  return text
-    .replace(/CO₂/g, 'CO2') // Replace CO₂ with CO2
-    .replace(/₂/g, '2') // Replace any other subscript 2
-    .replace(/₁/g, '1') // Replace subscript 1
-    .replace(/₃/g, '3') // Replace subscript 3
-    .replace(/₄/g, '4') // Replace subscript 4
-    .replace(/₀/g, '0') // Replace subscript 0
-    .replace(/[^\x00-\x7F]/g, '?') // Replace any other non-ASCII chars with ?
-    .replace(/\?+/g, '?'); // Clean up multiple ?s
+  const source = String(text ?? '');
+
+  // 1) Replace common symbols with ASCII-friendly equivalents
+  // Currency symbols
+  const currencyNormalized = source
+    .replace(/£/g, 'GBP ')
+    .replace(/€/g, 'EUR ')
+    .replace(/¥/g, 'JPY ')
+    .replace(/₩/g, 'KRW ')
+    .replace(/₹/g, 'INR ')
+    .replace(/₽/g, 'RUB ')
+    .replace(/₺/g, 'TRY ')
+    .replace(/₫/g, 'VND ')
+    .replace(/₦/g, 'NGN ')
+    .replace(/₪/g, 'ILS ')
+    .replace(/฿/g, 'THB ')
+    .replace(/₴/g, 'UAH ')
+    .replace(/₱/g, 'PHP ')
+    .replace(/₲/g, 'PYG ')
+    .replace(/₡/g, 'CRC ');
+
+  // Units and superscripts/subscripts
+  const unitsNormalized = currencyNormalized
+    .replace(/m²/g, 'm2')
+    .replace(/m³/g, 'm3')
+    .replace(/²/g, '2')
+    .replace(/³/g, '3')
+    .replace(/CO₂/g, 'CO2')
+    .replace(/₀/g, '0')
+    .replace(/₁/g, '1')
+    .replace(/₂/g, '2')
+    .replace(/₃/g, '3')
+    .replace(/₄/g, '4')
+    .replace(/₅/g, '5')
+    .replace(/₆/g, '6')
+    .replace(/₇/g, '7')
+    .replace(/₈/g, '8')
+    .replace(/₉/g, '9');
+
+  // 2) Normalize diacritics (e.g. “é” -> “e”) so names/places don't become '?'
+  const diacriticsRemoved = unitsNormalized
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  // 3) Replace any remaining non-ASCII chars with '?'
+  return diacriticsRemoved
+    .replace(/[^ -]/g, '?')
+    .replace(/\?+/g, '?');
 };
 
 // Function to recursively clean table data
@@ -63,11 +99,65 @@ const cleanTableData = (data: any): any => {
   return data;
 };
 
+const buildColumnStyles = (head: any, body: any, usableWidth: number) => {
+  const headRow = Array.isArray(head) && Array.isArray(head[0]) ? head[0] : [];
+  const colCount = headRow.length;
+  if (!colCount) return undefined;
+
+  const maxLens = new Array<number>(colCount).fill(0);
+
+  for (let c = 0; c < colCount; c++) {
+    const headerText = headRow[c] == null ? '' : String(headRow[c]);
+    maxLens[c] = Math.max(maxLens[c], headerText.length);
+  }
+
+  const bodyRows = Array.isArray(body) ? body.slice(0, 15) : [];
+  for (const row of bodyRows) {
+    if (!Array.isArray(row)) continue;
+    for (let c = 0; c < colCount; c++) {
+      const cell = row[c];
+      const cellText = cell == null ? '' : String(cell);
+      maxLens[c] = Math.max(maxLens[c], cellText.length);
+    }
+  }
+
+  // Convert text lengths to width weights (clamped) so no column gets starved.
+  const weights = maxLens.map((len) => Math.min(30, Math.max(6, len)));
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+
+  const columnStyles: Record<number, any> = {};
+  for (let c = 0; c < colCount; c++) {
+    // Slight bias to keep the first column readable (often "Item")
+    const bias = c === 0 ? 1.15 : 1;
+    const width = (usableWidth * (weights[c] * bias)) / sum;
+    columnStyles[c] = {
+      cellWidth: Math.max(10, Math.floor(width)),
+    };
+  }
+
+  return columnStyles;
+};
+
 addEventListener('message', async ({ data }) => {
   const { reportContent, logoDataUrl, title } = data;
 
   try {
-    const doc = new jsPDF('p', 'mm', 'a4');
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+
+    const maxTableColumns = Array.isArray(reportContent)
+      ? reportContent.reduce((max: number, el: any) => {
+          if (el?.type !== 'table') return max;
+          const headRow = Array.isArray(el?.head) ? el.head[0] : null;
+          const colCount = Array.isArray(headRow) ? headRow.length : 0;
+          return Math.max(max, colCount);
+        }, 0)
+      : 0;
+
+    const orientation = maxTableColumns >= 9 ? 'l' : 'p';
+    const doc = new jsPDF(orientation, 'mm', 'a4');
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -237,15 +327,33 @@ addEventListener('message', async ({ data }) => {
           // Clean the table data of problematic Unicode characters
           const cleanElement = cleanTableData(element);
 
+          const columnStyles = buildColumnStyles(
+            cleanElement.head,
+            cleanElement.body,
+            usableWidth,
+          );
+
           autoTable(doc, {
             head: cleanElement.head,
             body: cleanElement.body,
             startY: currentY,
             theme: 'grid',
             margin: { left: margin, right: margin },
+            tableWidth: usableWidth,
+            columnStyles,
+            styles: {
+              font: 'helvetica',
+              fontSize: 7,
+              cellPadding: 2,
+              overflow: 'linebreak',
+              valign: 'middle',
+            },
             headStyles: {
               fillColor: '#FFC107',
               textColor: '#000000',
+              fontStyle: 'bold',
+              halign: 'center',
+              valign: 'middle',
             },
             didDrawPage: (data) => {
               currentY = data.cursor?.y ?? currentY;

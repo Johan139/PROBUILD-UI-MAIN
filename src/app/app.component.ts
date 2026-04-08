@@ -16,13 +16,7 @@ import {
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
-import {
-  NgIf,
-  NgOptimizedImage,
-  isPlatformBrowser,
-  NgFor,
-  DatePipe,
-} from '@angular/common';
+import { NgOptimizedImage, isPlatformBrowser, DatePipe } from '@angular/common';
 import { MatListModule, MatNavList } from '@angular/material/list';
 import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,6 +35,12 @@ import { AiChatStateService } from './features/ai-chat/services/ai-chat-state.se
 import { MatTooltip } from '@angular/material/tooltip';
 import { NotificationsMenuComponent } from './components/notifications-menu/notifications-menu.component';
 import { ThemeService } from './theme.service';
+import {
+  OnboardingService,
+  ONBOARDING_STATUS_STORAGE_KEY,
+} from './features/onboarding/onboarding.service';
+import { OnboardingPromptComponent } from './features/onboarding/onboarding-prompt.component';
+import { OnboardingOverlayComponent } from './features/onboarding/onboarding-overlay.component';
 
 type NavItem = {
   label: string;
@@ -59,7 +59,6 @@ type NavItem = {
     MatToolbarModule,
     MatCardModule,
     MatSidenavModule,
-    NgIf,
     MatNavList,
     LoaderComponent,
     MatIconModule,
@@ -70,7 +69,6 @@ type NavItem = {
     NgOptimizedImage,
     RouterModule,
     MatIconModule,
-    NgFor,
     MatDividerModule,
     FooterComponent,
     AiChatIconComponent,
@@ -79,12 +77,16 @@ type NavItem = {
     MatListModule,
     MatIconModule,
     NotificationsMenuComponent,
-  ],
+    OnboardingPromptComponent,
+    OnboardingOverlayComponent
+],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
   providers: [DatePipe],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private readonly INACTIVITY_EVENT_THROTTLE_MS = 1000;
+  private lastInactivityResetAt = 0;
   showAlert: boolean = false;
   alertMessage: string = '';
   LoggedInName: string = '';
@@ -121,42 +123,42 @@ export class AppComponent implements OnInit, OnDestroy {
       route: ['/my-projects'],
       tooltip: 'View and manage your ongoing projects',
     },
+    // {
+    //   label: 'Project Assignment',
+    //   icon: 'assignment_ind',
+    //   route: ['/job-assignment'],
+    //   tooltip: 'Assign team members to your projects',
+    // },
+    // { // TODO: Reenable once changes made
+    //   label: 'Calendar',
+    //   icon: 'calendar_today',
+    //   route: ['/calendar'],
+    //   tooltip: 'Access your schedule and calendar events',
+    // },
     {
-      label: 'Project Assignment',
-      icon: 'assignment_ind',
-      route: ['/job-assignment'],
-      tooltip: 'Assign team members to your projects',
-    },
-    {
-      label: 'Calendar',
-      icon: 'calendar_today',
-      route: ['/calendar'],
-      tooltip: 'Access your schedule and calendar events',
-    },
-    {
-      label: 'My Quotes',
+      label: 'Quotes & Invoices',
       icon: 'description',
       route: ['/quotes'],
-      tooltip: 'Review your existing quotes',
+      tooltip: 'Review your existing quotes & invoices',
     },
+    // {
+    //   label: 'New Quote',
+    //   icon: 'note_add',
+    //   route: ['/quote'],
+    //   tooltip: 'Create a new quote',
+    // },
     {
-      label: 'New Quote',
-      icon: 'note_add',
-      route: ['/quote'],
-      tooltip: 'Create a new quote',
-    },
-    {
-      label: 'Find Work',
+      label: 'Marketplace',
       icon: 'travel_explore',
       route: ['/find-work'],
-      tooltip: 'Search for new work opportunities',
+      tooltip: 'Search for new work opportunities(Under Construction)',
     },
-    {
-      label: 'Connections',
-      icon: 'group',
-      route: ['/connections'],
-      tooltip: 'Manage your professional connections',
-    },
+    // { // TODO: Reenable once changes made
+    //   label: 'Connections',
+    //   icon: 'group',
+    //   route: ['/connections'],
+    //   tooltip: 'Manage your professional connections',
+    // },
     {
       label: 'Archive',
       icon: 'inventory_2',
@@ -186,13 +188,10 @@ export class AppComponent implements OnInit, OnDestroy {
     domSanitizer: DomSanitizer,
     private aiChatStateService: AiChatStateService,
     public themeService: ThemeService,
+    public onboardingService: OnboardingService,
   ) {
     effect(() => {
       this.themeService.isDarkMode();
-      if (this.isBrowser) {
-        this.isRouterOutletVisible = false;
-        setTimeout(() => (this.isRouterOutletVisible = true), 0);
-      }
     });
 
     this.router.events
@@ -206,10 +205,24 @@ export class AppComponent implements OnInit, OnDestroy {
         this.showHeader = !minimalLayout;
         this.showSidenav = !minimalLayout;
         this.showFooter =
-          !event.urlAfterRedirects.includes('/login') && !minimalLayout;
+          !event.urlAfterRedirects.includes('/login') &&
+          !event.urlAfterRedirects.includes('/register') &&
+          !event.urlAfterRedirects.includes('/trial-registration') &&
+          !minimalLayout;
 
         // ADD THIS LINE - scroll to top
         window.scrollTo(0, 0);
+
+        const url = event.urlAfterRedirects || '';
+        if (
+          isPlatformBrowser(this.platformId) &&
+          this.authService.isLoggedIn() &&
+          !url.includes('/login') &&
+          !url.includes('/register') &&
+          !url.includes('/trial-registration')
+        ) {
+          this.authService.resetInactivityTimer();
+        }
       });
 
     this.router.events
@@ -250,17 +263,50 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  private inactivityEventHandler = () => {
+    const now = Date.now();
+    if (now - this.lastInactivityResetAt < this.INACTIVITY_EVENT_THROTTLE_MS) {
+      return;
+    }
+    this.lastInactivityResetAt = now;
+    this.authService.resetInactivityTimer();
+  };
+
   ngOnInit() {
     if (this.isBrowser) {
-      const events = ['mousemove', 'keydown', 'scroll', 'touchstart'];
+      this.onboardingService.applyPromptVisibilityFromStorage();
+
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
       for (const event of events) {
-        window.addEventListener(event, () => {
-          this.authService.resetInactivityTimer();
-        });
+        window.addEventListener(event, this.inactivityEventHandler);
       }
 
       this.authService.currentUser$.subscribe((user) => {
         this.loggedIn = !!user;
+
+        const isAdmin = user && this.authService.isAdmin();
+
+        // Remove CRM if it exists
+        this.navItems = this.navItems.filter((n) => n.label !== 'CRM');
+
+        // Add CRM if admin
+        if (isAdmin) {
+          this.navItems.push({
+            label: 'CRM',
+            icon: 'support_agent',
+            route: ['/crm'],
+            tooltip: 'Manage email templates and CRM tools',
+          });
+        }
+
         if (user) {
           const firstName =
             user.firstName || localStorage.getItem('firstName') || '';
@@ -279,7 +325,18 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.isBrowser) {
-      window.removeEventListener('beforeunload', this.onBrowserClose);
+      const events = [
+        'mousemove',
+        'keydown',
+        'scroll',
+        'touchstart',
+        'click',
+        'mousedown',
+        'pointerdown',
+      ];
+      for (const event of events) {
+        window.removeEventListener(event, this.inactivityEventHandler);
+      }
     }
   }
 
@@ -313,7 +370,16 @@ export class AppComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result === true) {
+        const onboardingStatus = localStorage.getItem(
+          ONBOARDING_STATUS_STORAGE_KEY,
+        );
         localStorage.clear();
+        if (onboardingStatus) {
+          localStorage.setItem(
+            ONBOARDING_STATUS_STORAGE_KEY,
+            onboardingStatus,
+          );
+        }
         this.loggedIn = false;
         this.authService.logout();
         if (this.routeURL) {

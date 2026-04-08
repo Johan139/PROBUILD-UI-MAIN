@@ -1,0 +1,69 @@
+<section class="card recent-projects-card">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <span class="material-symbols-outlined title-icon" aria-hidden="true">folder</span>
+        <strong>Recent Projects</strong>
+      </mat-card-title>
+
+      <div class="view-toggle">
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('grid')"
+          [class.active]="projectView === 'grid'"
+          >
+          <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
+        </button>
+
+        <button
+          mat-icon-button
+          (click)="toggleProjectView('list')"
+          [class.active]="projectView === 'list'"
+          >
+          <span class="material-symbols-outlined" aria-hidden="true">list</span>
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- GRID VIEW -->
+      @if (projectView === 'grid') {
+        <div class="carousel-controls">
+          <button
+            mat-icon-button
+            (click)="prevProject()"
+            [disabled]="currentIndex === 0"
+            >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+          </button>
+          <button
+            mat-icon-button
+            (click)="nextProject()"
+            [disabled]="currentIndex >= projects.length - 5"
+            >
+            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+        <div class="projects-carousel">
+          @for (project of visibleProjects; track project) {
+            <app-project-card
+              [project]="project"
+              (onView)="loadJob($event)"
+              (onArchive)="archiveJob($event)"
+              (onUploadThumbnail)="uploadThumbnail($event)"
+            ></app-project-card>
+          }
+        </div>
+      }
+
+      <!-- LIST VIEW -->
+      @if (projectView === 'list') {
+        <app-projects-table
+          [projects]="projects"
+          (onView)="loadJob($event)"
+          (onArchive)="archiveJob($event)"
+        ></app-projects-table>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

@@ -1,202 +1,229 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { MatDialog } from '@angular/material/dialog';
-import { NoteService } from '../jobs/services/note.service';
-import { JobsService } from '../../services/jobs.service';
-import { AuthService } from '../../authentication/auth.service';
-import { NoteDetailDialogComponent } from '../../shared/dialogs/note-detail-dialog/note-detail-dialog.component';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatTabsModule } from '@angular/material/tabs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { combineLatest, of, forkJoin } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
-import { LoaderComponent } from '../../loader/loader.component';
-import { UserService } from '../../services/user.service';
-import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+
 import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { ArchiveSearchPipe } from './archive-search.pipe';
+import { AuthService } from '../../authentication/auth.service';
+import { ArchivedItem } from './archive-items-model';
+import { ArchiveService } from './archive-service';
 
 @Component({
   selector: 'app-archive',
+  standalone: true,
   templateUrl: './archive.component.html',
   styleUrls: ['./archive.component.scss'],
-  standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
-    MatButtonModule,
+    FormsModule,
     MatIconModule,
-    MatMenuModule,
-    DatePipe,
-    LoaderComponent,
-    MatCardModule,
-    MatTabsModule,
+    MatSnackBarModule,
+    ArchiveSearchPipe,
   ],
 })
 export class ArchiveComponent implements OnInit {
-  archivedNotes: any[] = [];
-  archivedJobs: any[] = [];
-  isLoading = true;
-  displayedColumns: string[] = ['project', 'task', 'created', 'status', 'view'];
-  jobDisplayedColumns: string[] = [
-    'projectName',
-    'jobType',
-    'status',
-    'completionDate',
-    'actions',
+  /** All archived items (single source of truth) */
+  archivedItems: ArchivedItem[] = [];
+
+  /** UI state */
+  searchTerm = '';
+  activeFilter: ArchiveFilter = 'projects';
+
+  /** Filter pills */
+  filters: {
+    key: ArchiveFilter;
+    label: string;
+    icon: string;
+    count: number;
+  }[] = [
+    { key: 'projects', label: 'Projects', icon: 'work', count: 0 },
+    { key: 'quotes', label: 'Quotes', icon: 'request_quote', count: 0 },
+    { key: 'invoices', label: 'Invoices', icon: 'receipt', count: 0 },
+    { key: 'documents', label: 'Documents', icon: 'description', count: 0 },
+    { key: 'jobs', label: 'Job Postings', icon: 'business_center', count: 0 },
+    { key: 'tasks', label: 'Tasks', icon: 'check_box', count: 0 },
   ];
-  private userId: string | null = null;
-  openingNoteId: string | null = null;
 
   constructor(
-    private noteService: NoteService,
-    private jobsService: JobsService,
+    private archiveService: ArchiveService,
     private dialog: MatDialog,
     private authService: AuthService,
-    private userService: UserService,
+    private snackBar: MatSnackBar,
   ) {}
 
+  // =====================================================
+  // Lifecycle
+  // =====================================================
   ngOnInit(): void {
-    this.loadArchivedNotes();
-    this.loadArchivedJobs();
+    this.loadArchivedItems();
   }
 
-  loadArchivedJobs(): void {
-    this.isLoading = true;
-    this.jobsService.getArchivedJobs().subscribe({
-      next: (jobs) => {
-        this.archivedJobs = jobs;
-        this.isLoading = false;
-      },
-      error: () => {
-        this.isLoading = false;
-      },
+  // =====================================================
+  // Data loading
+  // =====================================================
+  loadArchivedItems(): void {
+    const userId = this.authService.currentUserSubject.value?.id;
+    if (!userId) return;
+
+    this.archiveService.getArchivedItems(userId).subscribe((items) => {
+      this.archivedItems = items;
+      this.updateCounts();
     });
   }
 
-  unarchiveJob(job: any): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+  // =====================================================
+  // Counts for filter pills
+  // =====================================================
+  updateCounts(): void {
+    this.filters.find((f) => f.key === 'projects')!.count =
+      this.archivedProjects.length;
+
+    this.filters.find((f) => f.key === 'quotes')!.count =
+      this.archivedQuotes.length;
+
+    this.filters.find((f) => f.key === 'invoices')!.count =
+      this.archivedInvoices.length;
+    this.filters.find((f) => f.key === 'documents')!.count =
+      this.archivedDocuments.length;
+    this.filters.find((f) => f.key === 'jobs')!.count =
+      this.archivedJobs.length;
+    // These are placeholders for future expansion
+
+    this.filters.find((f) => f.key === 'tasks')!.count = 0;
+  }
+
+  // =====================================================
+  // Actions
+  // =====================================================
+  unarchive(item: ArchivedItem): void {
+    const ref = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Unarchive Project',
-        message: `Are you sure you want to unarchive "${job.projectName}"? It will be moved back to your projects list.`,
+        title: 'Restore item',
+        message: `Restore "${item.title}"?`,
       },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.jobsService.unarchiveJob(job.jobId).subscribe({
-          next: () => {
-            this.loadArchivedJobs();
-          },
-          error: (err) => console.error('Error unarchiving job', err),
-        });
-      }
+    ref.afterClosed().subscribe((ok) => {
+      if (!ok) return;
+
+      this.archiveService
+        .unarchive(item.id, item.type)
+        .subscribe(() => this.loadArchivedItems());
     });
   }
 
-  deleteJob(job: any): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+  delete(item: ArchivedItem): void {
+    const ref = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        title: 'Permanently Delete Project',
-        message: `Are you sure you want to permanently delete "${job.projectName}"? This action cannot be undone.`,
+        title: 'Delete permanently',
+        message: 'This cannot be undone. Continue?',
       },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.jobsService.deleteJob(job.jobId).subscribe({
+    ref.afterClosed().subscribe((ok) => {
+      if (!ok) return;
+
+      this.archiveService
+        .delete(item.id, item.type)
+        .subscribe({
           next: () => {
-            this.loadArchivedJobs();
+            this.loadArchivedItems();
+            this.snackBar.open('Archived item deleted permanently.', 'Close', {
+              duration: 3000,
+            });
           },
-          error: (err) => console.error('Error deleting job', err),
+          error: () => {
+            this.snackBar.open('Failed to delete archived item.', 'Close', {
+              duration: 3000,
+            });
+          },
         });
-      }
     });
   }
 
-  loadArchivedNotes(): void {
-    this.isLoading = true;
-    combineLatest([
-      this.authService.currentUser$,
-      this.authService.userPermissions$,
-    ])
-      .pipe(
-        switchMap(([user, permissions]) => {
-          if (user) {
-            this.userId = user.id;
-            const isTeamMember = !!user.inviterId;
-            const canManageNotes = permissions.includes('manageSubtaskNotes');
-
-            if (isTeamMember && canManageNotes) {
-              return this.noteService.getArchivedNotesForAssignedJobs(user.id);
-            } else if (!isTeamMember) {
-              return this.noteService.getArchivedNotes(user.id);
-            }
-          }
-          return of([]);
-        }),
-      )
-      .subscribe({
-        next: (notes) => {
-          this.archivedNotes = notes;
-          this.isLoading = false;
-        },
-        error: () => {
-          this.isLoading = false;
-        },
-      });
-  }
-
-  openNoteDetail(note: any): void {
-    this.openingNoteId = note.notes[0].id;
-    const userIds = [
-      ...new Set(note.notes.map((n: any) => n.createdByUserId)),
-    ].filter((id) => !!id) as string[];
-    if (userIds.length === 0) {
-      this.openDialogWithUserNames(note, new Map<string, string>());
+  emptyArchive(): void {
+    if (!this.archivedItems.length) {
       return;
     }
 
-    const userRequests = userIds.map((id) => this.userService.getUserById(id));
+    const ref = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Empty archive',
+        message:
+          'This will permanently delete all archived items. This cannot be undone. Continue?',
+      },
+    });
 
-    forkJoin(userRequests).subscribe((users) => {
-      const userNames = new Map<string, string>();
-      users.forEach((user) => {
-        if (user) {
-          userNames.set(user.id, `${user.firstName} ${user.lastName}`);
-        }
+    ref.afterClosed().subscribe((ok) => {
+      if (!ok) return;
+
+      this.archiveService.emptyArchive().subscribe({
+        next: () => {
+          this.archivedItems = [];
+          this.updateCounts();
+          this.snackBar.open('Archive emptied successfully.', 'Close', {
+            duration: 3000,
+          });
+        },
+        error: () => {
+          this.snackBar.open('Failed to empty archive.', 'Close', {
+            duration: 3000,
+          });
+        },
       });
-      this.openDialogWithUserNames(note, userNames);
     });
   }
 
-  openDialogWithUserNames(note: any, userNames: Map<string, string>) {
-    const dialogRef = this.dialog.open(NoteDetailDialogComponent, {
-      width: '80vw',
-      maxWidth: '900px',
-      data: { ...note, userNames, isArchived: true },
-    });
-
-    dialogRef.afterClosed().subscribe(() => {
-      this.openingNoteId = null;
-    });
+  // =====================================================
+  // Computed views (used by template)
+  // =====================================================
+  get archivedProjects(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'JOB');
   }
 
-  getStatus(note: any): string {
-    if (!note.notes || note.notes.length === 0) {
-      return 'Pending';
+  get archivedQuotes(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'QUOTE');
+  }
+
+  get archivedInvoices(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'INVOICE');
+  }
+  get archivedDocuments(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'DOCUMENT');
+  }
+  get archivedJobs(): ArchivedItem[] {
+    return this.archivedItems.filter((i) => i.type === 'TRADE_PACKAGE');
+  }
+
+  get filteredItems(): ArchivedItem[] {
+    switch (this.activeFilter) {
+      case 'projects':
+        return this.archivedProjects;
+      case 'quotes':
+        return this.archivedQuotes;
+      case 'invoices':
+        return this.archivedInvoices;
+      case 'jobs':
+        return this.archivedJobs;
+      case 'documents':
+        return this.archivedDocuments;
+      default:
+        return [];
     }
-    const lastNote = note.notes[note.notes.length - 1];
-    if (lastNote.archived) {
-      return 'Archived';
-    }
-    if (lastNote.approved) {
-      return 'Approved';
-    }
-    if (lastNote.rejected) {
-      return 'Rejected';
-    }
-    return 'Pending';
   }
 }
+
+// =====================================================
+// Types
+// =====================================================
+export type ArchiveFilter =
+  | 'projects'
+  | 'quotes'
+  | 'invoices'
+  | 'documents'
+  | 'jobs'
+  | 'tasks';

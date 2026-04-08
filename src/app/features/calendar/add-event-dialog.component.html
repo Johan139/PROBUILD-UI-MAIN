@@ -18,9 +18,11 @@
         <mat-label>Title</mat-label>
         <input matInput formControlName="title" placeholder="Board meeting, Launch party…" />
         <mat-hint align="start">Be concise and descriptive</mat-hint>
-        <mat-error *ngIf="eventForm.get('title')?.hasError('required')">
-          Title is required
-        </mat-error>
+        @if (eventForm.get('title')?.hasError('required')) {
+          <mat-error>
+            Title is required
+          </mat-error>
+        }
       </mat-form-field>
 
       <!-- Start & End (side by side) -->
@@ -29,9 +31,11 @@
         <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
         <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
         <mat-datepicker #startPicker></mat-datepicker>
-        <mat-error *ngIf="eventForm.get('startDate')?.hasError('required')">
-          Start date is required
-        </mat-error>
+        @if (eventForm.get('startDate')?.hasError('required')) {
+          <mat-error>
+            Start date is required
+          </mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -77,8 +81,8 @@
   <mat-divider></mat-divider>
 
   <mat-dialog-actions class="dialog-actions" align="end">
-    <button mat-stroked-button color="primary" class="btn btn-ghost" (click)="onCancel()">Cancel</button>
-    <button mat-flat-button color="primary" class="btn btn-primary" [disabled]="eventForm.invalid" (click)="onSave()">
+    <button mat-button class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+    <button mat-button class="btn btn-primary" [disabled]="eventForm.invalid" (click)="onSave()">
       <mat-icon fontIcon="save" class="btn-icon"></mat-icon>
       Save
     </button>

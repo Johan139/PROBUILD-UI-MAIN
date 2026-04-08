@@ -1,62 +1,82 @@
-<button mat-icon-button
-        class="notification-button"
-        (click)="toggleMenu()"
-        aria-label="Open notifications"
-        matTooltip="Open the notifications menu" [matTooltipShowDelay]="500">
+<button
+  mat-icon-button
+  class="notification-button"
+  (click)="toggleMenu()"
+  aria-label="Open notifications"
+  matTooltip="Open the notifications menu"
+  [matTooltipShowDelay]="500"
+  >
   <mat-icon>notifications</mat-icon>
-  <span *ngIf="hasUnreadNotifications$ | async" class="notification-dot"></span>
+  @if (hasUnreadNotifications$ | async) {
+    <span class="notification-dot"></span>
+  }
 </button>
 
-<div class="notif-menu" *ngIf="isOpen" (click)="$event.stopPropagation()">
-  <ng-container *ngIf="(recentNotifications$ | async) as notifications">
-    <!-- Empty state -->
-    <div class="notif-empty" *ngIf="!notifications?.length">
-      <mat-icon>notifications_none</mat-icon>
-      <p>No recent notifications</p>
+@if (isOpen) {
+  <div class="notif-menu" (click)="$event.stopPropagation()">
+    @if (recentNotifications$ | async; as notifications) {
+      <!-- Empty state -->
+      @if (!notifications?.length) {
+        <div class="notif-empty">
+          <mat-icon>notifications_none</mat-icon>
+          <p>No recent notifications</p>
+        </div>
+      }
+      <!-- List -->
+      @if (notifications?.length) {
+        <div class="notif-list">
+          @for (n of notifications | slice: 0 : 8; track trackByNotif($index, n)) {
+            <button
+              class="notif-item"
+              [class.unread]="n.isRead !== true"
+              (click)="navigateFromNotification(n)"
+              >
+              <div class="avatar">
+                <span class="avatar__text">{{ getInitials(n.senderFullName) }}</span>
+              </div>
+              <div class="notif-content">
+                <div class="notif-header">
+                  <span class="sender">{{ n.senderFullName }}</span>
+                  <span class="time">{{ n.timestamp | date: "shortTime" }}</span>
+                </div>
+                <div class="notif-body">
+                  <div class="project">{{ n.projectName }}</div>
+                  <div class="message">{{ n.message }}</div>
+                </div>
+              </div>
+              <!-- RIGHT COLUMN WITH DOT -->
+              <div class="notif-right">
+                @if (n.isRead !== true) {
+                  <span class="notif-unread-dot"></span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    }
+    <div class="notif-divider"></div>
+    <div class="notif-actions">
+      <button
+        class="linklike"
+        (click)="goToAllNotifications()"
+        matTooltip="Open the full notifications page and view all of your notifications"
+        [matTooltipShowDelay]="500"
+        >
+        Show all notifications
+      </button>
+      <button
+        class="linklike"
+        (click)="markAllRead()"
+        matTooltip="Mark all of your notifications as read"
+        [matTooltipShowDelay]="500"
+        >
+        Mark all read
+      </button>
     </div>
-
-    <!-- List -->
-    <div class="notif-list" *ngIf="notifications?.length">
-<button class="notif-item"
-        *ngFor="let n of notifications | slice:0:8; trackBy: trackByNotif"
-        (click)="navigateToJob(n)">
-
-  <div class="avatar">
-    <span class="avatar__text">{{ getInitials(n.senderFullName) }}</span>
   </div>
+}
 
-  <div class="notif-content">
-    <div class="notif-header">
-      <span class="sender">{{ n.senderFullName }}</span>
-      <span class="time">{{ n.timestamp | date:'shortTime' }}</span>
-    </div>
-
-    <div class="notif-body">
-      <div class="project">{{ n.projectName }}</div>
-      <div class="message">{{ n.message }}</div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN WITH DOT -->
-  <div class="notif-right">
-    <span *ngIf="n.isRead === false || n.unread === true"
-          class="notif-unread-dot"></span>
-  </div>
-
-</button>
-    </div>
-  </ng-container>
-
-  <div class="notif-divider"></div>
-
-  <div class="notif-actions">
-    <button class="linklike" (click)="goToAllNotifications()" matTooltip="Open the full notifications page and view all of your notifications" [matTooltipShowDelay]="500">
-      Show all notifications
-    </button>
-    <button class="linklike" (click)="markAllRead()" matTooltip="Mark all of your notifications as read" [matTooltipShowDelay]="500">
-      Mark all read
-    </button>
-  </div>
-</div>
-
-<div class="notif-backdrop" *ngIf="isOpen" (click)="closeMenu()"></div>
+@if (isOpen) {
+  <div class="notif-backdrop" (click)="closeMenu()"></div>
+}

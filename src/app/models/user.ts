@@ -6,6 +6,7 @@ export class User {
   lastName!: string;
   email!: string;
   userType!: string;
+  isAdmin?: boolean;
   isTeamMember?: boolean;
   companyName?: string;
   role?: string;
@@ -21,4 +22,5 @@ export class User {
   productsOffered?: string;
   country?: string;
   city?: string;
+  state?: string;
 }

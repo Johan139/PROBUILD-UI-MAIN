@@ -1,0 +1,83 @@
+<div class="page-wrapper">
+  <mat-card class="page-card">
+    <div class="topbar">
+      <button mat-button routerLink="/crm">
+        <mat-icon>arrow_back</mat-icon>
+        Back
+      </button>
+
+      <div class="title">
+        <h2>Email Logs</h2>
+        <p>Track sent emails and delivery status.</p>
+      </div>
+    </div>
+
+    <div class="filters">
+      <mat-form-field appearance="outline" class="filter">
+        <mat-label>Recipient</mat-label>
+        <input matInput [formControl]="recipient" placeholder="user@example.com" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter">
+        <mat-label>Status</mat-label>
+        <mat-select [formControl]="status">
+          @for (s of statuses; track s) {
+            <mat-option [value]="s.value">
+              {{ s.label }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (logs$ | async; as logs) {
+      @if (logs.length) {
+        <table mat-table [dataSource]="logs" class="logs-table">
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Created</th>
+            <td mat-cell *matCellDef="let row">{{ row.createdAt | date : 'medium' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="toEmail">
+            <th mat-header-cell *matHeaderCellDef>To</th>
+            <td mat-cell *matCellDef="let row">{{ row.toEmail }}</td>
+          </ng-container>
+          <ng-container matColumnDef="subject">
+            <th mat-header-cell *matHeaderCellDef>Subject</th>
+            <td mat-cell *matCellDef="let row">{{ row.subject || '-' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="templateName">
+            <th mat-header-cell *matHeaderCellDef>Template</th>
+            <td mat-cell *matCellDef="let row">{{ row.templateName || (row.templateId || '-') }}</td>
+          </ng-container>
+          <ng-container matColumnDef="lastEventType">
+            <th mat-header-cell *matHeaderCellDef>Last Event</th>
+            <td mat-cell *matCellDef="let row">{{ row.lastEventType || 'unknown' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="lastEventAt">
+            <th mat-header-cell *matHeaderCellDef>Last Seen</th>
+            <td mat-cell *matCellDef="let row">{{ row.lastEventAt ? (row.lastEventAt | date : 'medium') : '-' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let row">
+              <button mat-icon-button (click)="openDetails(row); $event.stopPropagation()">
+                <mat-icon>open_in_new</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns" (click)="openDetails(row)"></tr>
+        </table>
+      } @else {
+        <p>No logs found.</p>
+      }
+    } @else {
+      <div class="loading">
+        <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
+        <span>Loading logs...</span>
+      </div>
+    }
+
+
+  </mat-card>
+</div>

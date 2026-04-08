@@ -14,6 +14,11 @@ export function app(): express.Express {
 
   const commonEngine = new CommonEngine();
 
+  server.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+  });
+
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 

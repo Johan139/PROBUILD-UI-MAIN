@@ -1,45 +1,154 @@
-<h2 mat-dialog-title>Submit a Bid</h2>
+<h2 mat-dialog-title class="dialog-title">Submit a Bid</h2>
 
-<div *ngIf="!selection">
-  <div class="options-container">
-    <p>How would you like to submit your bid?</p>
-    <button mat-raised-button color="primary" (click)="selectOption('create')">Create Quote with Probuild</button>
-    <button mat-raised-button (click)="selectOption('upload')">Upload PDF Quote</button>
+@if (!selection) {
+  <div class="options-shell">
+    <div class="options-container">
+      <p class="options-title">How would you like to submit your bid?</p>
+      <p class="options-subtitle">
+        You can either generate a quote in Probuild or upload your own PDF.
+      </p>
+      <div class="option-buttons">
+        <button
+          mat-button
+          type="button"
+          class="btn btn-primary"
+          (click)="selectOption('create')"
+          >
+          Create Quote with Probuild
+        </button>
+        <button
+          mat-button
+          type="button"
+          class="btn btn-secondary"
+          (click)="selectOption('upload')"
+          >
+          Upload PDF Quote
+        </button>
+      </div>
+    </div>
   </div>
-</div>
+}
 
-<div *ngIf="selection === 'upload'">
-  <mat-stepper [linear]="true" #stepper>
-    <mat-step [completed]="currentStep > 1">
-      <ng-template matStepLabel>Upload Quote</ng-template>
-      <div class="step-container">
-        <p>Please select a PDF file to upload as your quote. The maximum file size is 200MB.</p>
-        <input type="file" (change)="onFileSelected($event)" accept=".pdf" #fileInput>
-        <button mat-raised-button color="primary" (click)="onUpload()" [disabled]="!selectedFile || isUploading">Upload</button>
-        <mat-progress-bar *ngIf="isUploading" [value]="uploadProgress"></mat-progress-bar>
-      </div>
-    </mat-step>
-    <mat-step [completed]="currentStep > 2">
-      <ng-template matStepLabel>Review Quote</ng-template>
-      <div class="step-container">
-        <p>Please review your uploaded quote to ensure it's correct before submitting.</p>
-        <!-- <app-pdf-viewer *ngIf="uploadedFileUrl" [document]="{ url: uploadedFileUrl, name: 'Quote' }"></app-pdf-viewer> TODO: Reenable once complete -->
-      </div>
-    </mat-step>
-    <mat-step>
-      <ng-template matStepLabel>Submit Bid</ng-template>
-      <div class="step-container">
-        <p>You're all set. Click the button below to submit your bid.</p>
-      </div>
-    </mat-step>
-  </mat-stepper>
-  <mat-dialog-actions align="end">
-    <button mat-button (click)="onNoClick()">Cancel</button>
-    <button mat-raised-button color="primary" (click)="stepper.next()" *ngIf="stepper.selectedIndex === 1 && uploadComplete">Next</button>
-    <button mat-raised-button color="primary" (click)="submitBid()" *ngIf="stepper.selectedIndex === 2">Submit Bid</button>
-  </mat-dialog-actions>
-</div>
+@if (selection === 'upload') {
+  <div class="upload-shell">
+    <mat-stepper class="bid-stepper" [linear]="true" #stepper>
+      <mat-step [completed]="uploadComplete">
+        <ng-template matStepLabel>Upload Quote</ng-template>
+        <div class="step-container">
+          <p class="step-title">Upload your quote</p>
+          <p class="step-text">
+            Please select a PDF file to upload as your quote. Maximum file size:
+            <strong>200MB</strong>.
+          </p>
+          <div class="file-row">
+            <input
+              class="file-input"
+              type="file"
+              (change)="onFileSelected($event)"
+              accept=".pdf"
+              #fileInput
+              />
+              <button
+                mat-button
+                type="button"
+                class="btn btn-primary"
+                (click)="onUpload()"
+                [disabled]="!selectedFile || isUploading"
+                >
+                {{ isUploading ? 'Uploading...' : 'Upload' }}
+              </button>
+            </div>
+            @if (selectedFile) {
+              <p class="file-name">Selected: {{ selectedFile.name }}</p>
+            }
+            @if (isUploading) {
+              <mat-progress-bar [value]="uploadProgress"></mat-progress-bar>
+            }
+          </div>
+        </mat-step>
+        <mat-step [completed]="uploadComplete">
+          <ng-template matStepLabel>Review Quote</ng-template>
+          <div class="step-container">
+            <p class="step-title">Review your upload</p>
+            <p class="step-text">
+              Please review your uploaded quote to ensure it is correct before
+              submitting.
+            </p>
+            @if (uploadedFileUrl) {
+              <p class="file-name">File uploaded successfully.</p>
+            }
+            <!-- <app-pdf-viewer *ngIf="uploadedFileUrl" [document]="{ url: uploadedFileUrl, name: 'Quote' }"></app-pdf-viewer> TODO: Reenable once complete -->
+          </div>
+        </mat-step>
+        <mat-step>
+          <ng-template matStepLabel>Submit Bid</ng-template>
+          <div class="step-container">
+            <p class="step-title">Ready to submit</p>
+            <p class="step-text">
+              You are all set. Click submit to send your bid for review.
+            </p>
+            @if (loadingTradePackages) {
+              <div class="step-text">
+                Loading trade packages...
+              </div>
+            }
+            @if (!loadingTradePackages && availableTradePackages.length > 0) {
+              <div>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Trade package</mat-label>
+                  <mat-select [(ngModel)]="selectedTradePackageId" required>
+                    @for (pkg of availableTradePackages; track pkg) {
+                      <mat-option
+                        [value]="pkg.id"
+                        >
+                        {{ pkg.trade }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            }
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Amount</mat-label>
+              <input matInput type="number" min="0" [(ngModel)]="bidAmount" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Inclusions</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="bidInclusions"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Exclusions</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="bidExclusions"></textarea>
+            </mat-form-field>
+          </div>
+        </mat-step>
+      </mat-stepper>
+      <mat-dialog-actions align="end" class="dialog-actions">
+        <button mat-button class="btn btn-secondary" (click)="onNoClick()">Cancel</button>
+        @if (stepper.selectedIndex === 1 && uploadComplete) {
+          <button
+            mat-button
+            class="btn btn-primary"
+            (click)="stepper.next()"
+            >
+            Next
+          </button>
+        }
+        @if (stepper.selectedIndex === 2) {
+          <button
+            mat-button
+            class="btn btn-primary"
+            (click)="submitBid()"
+            >
+            Submit Bid
+          </button>
+        }
+      </mat-dialog-actions>
+    </div>
+  }
 
-<mat-dialog-actions align="end" *ngIf="!selection">
-  <button mat-button (click)="onNoClick()">Cancel</button>
-</mat-dialog-actions>
+  @if (!selection) {
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button class="btn btn-secondary" (click)="onNoClick()">Cancel</button>
+    </mat-dialog-actions>
+  }

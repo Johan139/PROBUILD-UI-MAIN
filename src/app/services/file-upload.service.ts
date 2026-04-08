@@ -197,9 +197,10 @@ export class FileUploadService {
     const uploadSubject = new Subject<number | { url: string }>();
 
     this.httpClient
-      .post<any>(`${BASE_URL}/Quotes/Upload`, formData, {
+      .post<any>(`${BASE_URL}/quotes/upload`, formData, {
         reportProgress: true,
         observe: 'events',
+        headers: new HttpHeaders({ Accept: 'application/json' }),
       })
       .subscribe({
         next: (event) => {
@@ -207,7 +208,8 @@ export class FileUploadService {
             const progress = Math.round((100 * event.loaded) / event.total);
             uploadSubject.next(progress);
           } else if (event.type === HttpEventType.Response) {
-            const fileUrl = event.body?.url;
+            const fileUrl =
+              event.body?.FileUrl || event.body?.fileUrl || event.body?.url;
             if (fileUrl) {
               uploadSubject.next({ url: fileUrl });
               uploadSubject.complete();

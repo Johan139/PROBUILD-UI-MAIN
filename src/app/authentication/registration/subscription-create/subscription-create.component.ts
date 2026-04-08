@@ -86,12 +86,8 @@ export class SubscriptionCreateComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    console.log('Received packages:', this.data.packages);
-
     // Don't filter again - data.packages is already filtered by parent
     this.packages = this.data.packages || [];
-
-    console.log('Using packages:', this.packages);
 
     // Rest of the initialization code...
     let currentPkg: SubscriptionPackage | null = null;

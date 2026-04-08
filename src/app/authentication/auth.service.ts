@@ -12,6 +12,8 @@ import {
   switchMap,
   filter,
   take,
+  finalize,
+  timeout,
 } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
@@ -23,6 +25,18 @@ import { UserAddressStoreService } from '../services/UserAddressStoreService';
   providedIn: 'root',
 })
 export class AuthService {
+  private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
+  private readonly ANALYSIS_PROTECTION_UNTIL_KEY =
+    'pb_analysis_protection_until_ms';
+  private readonly AUTH_TRACE_BUFFER_KEY = '__pbAuthTrace';
+  private readonly AUTH_TRACE_MAX = 80;
+  private authLimboSinceMs: number | null = null;
+  private authTraceBuffer: Array<{
+    at: string;
+    event: string;
+    details?: Record<string, unknown>;
+  }> = [];
+  private isLogoutInProgress = false;
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = `${environment.BACKEND_URL}/Account`;
@@ -35,8 +49,30 @@ export class AuthService {
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
+  private inactivityPauseSources = new Set<string>();
+  private analysisProtectionGraceUntilMs = 0;
+  private readonly ANALYSIS_PROTECTION_GRACE_MS =
+    (environment as { analysisAuthProtectionGraceMs?: number })
+      .analysisAuthProtectionGraceMs ?? 10 * 60 * 1000;
+  /** Used when refresh runs during normal app use (e.g. getToken / interceptor). */
+  private readonly refreshTimeoutMs =
+    environment.refreshTokenRequestTimeoutMs ?? 10_000;
+  private lastGetTokenRefreshFailureLogAt = 0;
+  /** After a failed refresh while the access token is still valid, brief pause before retry. */
+  private readonly REFRESH_RETRY_COOLDOWN_MS = 15_000;
+  private readonly REFRESH_FAILURE_WINDOW_MS = 120_000;
+  private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 5;
+  /** Refresh access token this long before JWT exp (short server lifetimes need more headroom). */
+  private readonly PROACTIVE_REFRESH_LEEWAY_MS = 120_000;
   private isRefreshing = false;
-  private refreshTokenSubject = new BehaviorSubject<any>(null);
+  private refreshRetryCooldownUntil = 0;
+  private refreshAuthFailureCount = 0;
+  private refreshAuthFailureWindowStartedAt = 0;
+  private refreshTokenSubject = new BehaviorSubject<
+    | { token: string; refreshToken: string }
+    | { failed: true; error: unknown }
+    | null
+  >(null);
 
   constructor(
     private router: Router,
@@ -83,14 +119,235 @@ export class AuthService {
     return payload?.exp ?? null;
   }
 
+  /** True when access token is past JWT exp (must refresh or re-login). */
+  private accessTokenIsExpired(token: string | null): boolean {
+    if (!token) return true;
+    const exp = this.getExp(token);
+    if (exp == null) return true;
+    return exp * 1000 <= Date.now();
+  }
+
+  /** RxJS timeout uses name TimeoutError; legacy wrapper used message "Refresh token timeout". */
+  private isRefreshTimeoutError(err: unknown): boolean {
+    if (err instanceof Error && err.message.includes('Refresh token timeout')) {
+      return true;
+    }
+    return (
+      !!err &&
+      typeof err === 'object' &&
+      (err as { name?: string }).name === 'TimeoutError'
+    );
+  }
+
+  private coldStartExtendedRefreshTimeoutMs(): number {
+    const extra = (environment as { coldStartRefreshTimeoutMs?: number })
+      .coldStartRefreshTimeoutMs;
+    if (typeof extra === 'number' && extra > 0) {
+      return extra;
+    }
+    return Math.max(this.refreshTimeoutMs * 2, 45_000);
+  }
+
+  /**
+   * Runs after bootstrap when the access token is already expired.
+   * Must not block APP_INITIALIZER — otherwise the whole shell (including /login) waits on refresh timeouts.
+   */
+  private async performColdStartRefresh(): Promise<void> {
+    try {
+      await firstValueFrom(this.refreshToken());
+      const newToken = localStorage.getItem('accessToken');
+      if (newToken) this.loadUserFromToken(newToken);
+    } catch (err) {
+      if (this.isRefreshTimeoutError(err)) {
+        try {
+          await firstValueFrom(
+            this.refreshToken(this.coldStartExtendedRefreshTimeoutMs()),
+          );
+          const newToken = localStorage.getItem('accessToken');
+          if (newToken) {
+            this.loadUserFromToken(newToken);
+            return;
+          }
+        } catch (retryErr) {
+          console.warn(
+            'Cold-start token refresh failed after extended retry; logging in again is required.',
+            retryErr,
+          );
+          this.logoutWithReason('refresh_invalid');
+          return;
+        }
+      }
+
+      if (!this.shouldForceLogoutOnRefreshFailure(err)) {
+        // Cold start only runs when the access token is already expired — do not
+        // leave the user in a state where every request 401s and hammers refresh.
+        console.warn(
+          'Token refresh failed during cold start; logging out.',
+          err,
+        );
+        this.logoutWithReason('refresh_invalid');
+        return;
+      }
+
+      console.error('Session expired. Logging out.', err);
+      this.logoutWithReason('refresh_invalid');
+    }
+  }
+
+  private shouldForceLogoutOnRefreshFailure(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) return false;
+    return error.status === 400 || error.status === 401 || error.status === 403;
+  }
+
+  private shouldLogoutNowForRefreshAuthFailure(): boolean {
+    const now = Date.now();
+    if (
+      !this.refreshAuthFailureWindowStartedAt ||
+      now - this.refreshAuthFailureWindowStartedAt > this.REFRESH_FAILURE_WINDOW_MS
+    ) {
+      this.refreshAuthFailureWindowStartedAt = now;
+      this.refreshAuthFailureCount = 1;
+      return false;
+    }
+
+    this.refreshAuthFailureCount += 1;
+    return this.refreshAuthFailureCount >= this.MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES;
+  }
+
+  private resetRefreshAuthFailureState(): void {
+    this.refreshAuthFailureCount = 0;
+    this.refreshAuthFailureWindowStartedAt = 0;
+  }
+
+  private getPersistedAnalysisProtectionUntilMs(): number {
+    if (!isPlatformBrowser(this.platformId)) {
+      return 0;
+    }
+
+    const raw = localStorage.getItem(this.ANALYSIS_PROTECTION_UNTIL_KEY);
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  private setPersistedAnalysisProtectionUntilMs(untilMs: number): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.setItem(this.ANALYSIS_PROTECTION_UNTIL_KEY, String(untilMs));
+  }
+
+  private clearPersistedAnalysisProtection(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.removeItem(this.ANALYSIS_PROTECTION_UNTIL_KEY);
+  }
+
+  private hasActiveAnalysisPauseSource(): boolean {
+    return (
+      this.inactivityPauseSources.has('job-analysis') ||
+      this.inactivityPauseSources.has('job-analysis-walkthrough')
+    );
+  }
+
+  private isAnalysisInactivityProtected(): boolean {
+    const persistedUntilMs = this.getPersistedAnalysisProtectionUntilMs();
+    const effectiveUntilMs = Math.max(
+      this.analysisProtectionGraceUntilMs,
+      persistedUntilMs,
+    );
+    this.analysisProtectionGraceUntilMs = effectiveUntilMs;
+
+    return (
+      this.hasActiveAnalysisPauseSource() || Date.now() < effectiveUntilMs
+    );
+  }
+
+  public extendAnalysisProtectionGrace(source: string, durationMs?: number): void {
+    const requestedMs = Number(durationMs ?? this.ANALYSIS_PROTECTION_GRACE_MS);
+    const safeMs = Number.isFinite(requestedMs) && requestedMs > 0
+      ? requestedMs
+      : this.ANALYSIS_PROTECTION_GRACE_MS;
+    const nextUntil = Date.now() + safeMs;
+    this.analysisProtectionGraceUntilMs = Math.max(
+      this.analysisProtectionGraceUntilMs,
+      nextUntil,
+    );
+    this.setPersistedAnalysisProtectionUntilMs(this.analysisProtectionGraceUntilMs);
+    this.pushAuthTrace('analysis.protection_grace.extend', {
+      source,
+      durationMs: safeMs,
+      untilMs: this.analysisProtectionGraceUntilMs,
+    });
+  }
+
+  private logoutWithReason(
+    reason: 'manual' | 'inactivity' | 'refresh_invalid' | 'token_invalid',
+  ): void {
+    this.pushAuthTrace('logoutWithReason', { reason });
+    this.logout(reason);
+  }
+
+  public pushAuthTrace(event: string, details?: Record<string, unknown>): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const entry = {
+      at: new Date().toISOString(),
+      event,
+      details,
+    };
+    this.authTraceBuffer.push(entry);
+    if (this.authTraceBuffer.length > this.AUTH_TRACE_MAX) {
+      this.authTraceBuffer.splice(0, this.authTraceBuffer.length - this.AUTH_TRACE_MAX);
+    }
+    (window as any)[this.AUTH_TRACE_BUFFER_KEY] = [...this.authTraceBuffer];
+  }
+
+  public noteAuthTokenObserved(
+    hasToken: boolean,
+    source: string,
+    details?: Record<string, unknown>,
+  ): void {
+    this.pushAuthTrace('auth.tokenObserved', {
+      source,
+      hasToken,
+      ...(details || {}),
+    });
+
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const hasRefreshToken = !!localStorage.getItem('refreshToken');
+    const path = window.location.pathname || '';
+    const isPublicAuthRoute =
+      path.startsWith('/login') ||
+      path.startsWith('/register') ||
+      path.startsWith('/confirm-email') ||
+      path.startsWith('/trial-registration');
+
+    if (hasToken || !this.isLoggedIn() || !hasRefreshToken || isPublicAuthRoute) {
+      this.authLimboSinceMs = null;
+      return;
+    }
+    // No limbo holding pattern: missing bearer while "logged in" should fail fast
+    // through normal 401/refresh handling, not delay UI in partial-auth state.
+    this.authLimboSinceMs = null;
+  }
+
   public startInactivityTimer(): void {
     this.clearInactivityTimer();
 
     if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
+    if (this.isAnalysisInactivityProtected()) return;
+    if (this.inactivityPauseSources.size > 0) return;
 
     this.inactivityTimeout = setTimeout(() => {
       console.warn('Auto-logout due to inactivity.');
-      this.logout();
+      this.pushAuthTrace('inactivity.timeout.logout', {
+        pausedSources: this.inactivityPauseSources.size,
+      });
+      if (this.isLoggedIn()) {
+        this.logoutWithReason('inactivity');
+      }
     }, this.INACTIVITY_LIMIT);
   }
 
@@ -102,17 +359,61 @@ export class AuthService {
   }
 
   public resetInactivityTimer(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) {
+      this.clearInactivityTimer();
+      return;
+    }
+    if (this.isAnalysisInactivityProtected()) {
+      this.clearInactivityTimer();
+      return;
+    }
+    if (this.inactivityPauseSources.size > 0) {
+      this.clearInactivityTimer();
+      return;
+    }
     this.startInactivityTimer();
   }
 
+  public pauseInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.add(key);
+    if (key === 'job-analysis' || key === 'job-analysis-walkthrough') {
+      this.extendAnalysisProtectionGrace(`pause:${key}`);
+    }
+    this.pushAuthTrace('inactivity.pause', {
+      source: key,
+      pausedSources: this.inactivityPauseSources.size,
+    });
+    this.clearInactivityTimer();
+  }
+
+  public resumeInactivityTimer(source: string): void {
+    const key = String(source || '').trim() || 'unknown';
+    this.inactivityPauseSources.delete(key);
+    this.pushAuthTrace('inactivity.resume', {
+      source: key,
+      pausedSources: this.inactivityPauseSources.size,
+    });
+    if (this.inactivityPauseSources.size === 0) {
+      this.startInactivityTimer();
+    }
+  }
+
   public hasPermission(permissionKey: string): Observable<boolean> {
-    const userRole = this.getUserRole();
-    if (userRole === 'GENERAL_CONTRACTOR') {
+    if (this.isAdmin()) {
       return new BehaviorSubject(true).asObservable();
     }
     return this.userPermissions$.pipe(
       map((permissions) => permissions.includes(permissionKey)),
     );
+  }
+
+  isAdmin(): boolean {
+    const user = this.currentUserSubject.getValue();
+    if (user && typeof user.isAdmin === 'boolean') return user.isAdmin;
+    if (!isPlatformBrowser(this.platformId)) return false;
+    return localStorage.getItem('isAdmin') === 'true';
   }
 
   async initialize(): Promise<void> {
@@ -124,24 +425,22 @@ export class AuthService {
     // Use the token as the source of truth to populate the user
     this.loadUserFromToken(token);
 
+    // Start inactivity timer for already logged-in users
+    this.startInactivityTimer();
+
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');
-      this.logout();
+      this.logoutWithReason('token_invalid');
       return;
     }
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // console.log('Access token expired, attempting to refresh...');
-      try {
-        await firstValueFrom(this.refreshToken());
-        const newToken = localStorage.getItem('accessToken');
-        if (newToken) this.loadUserFromToken(newToken);
-      } catch (err) {
-        console.error('Session expired. Logging out.', err);
-        this.logout();
-      }
+      // On browser refresh with expired token, fail fast instead of background refresh
+      // loops that leave the app loading in a broken authenticated shell.
+      this.logoutWithReason('refresh_invalid');
+      return;
     }
   }
   googleLogin(idToken: string): Observable<any> {
@@ -165,9 +464,9 @@ export class AuthService {
     );
   }
 
-  resendverificationemail(userid: string): Observable<any> {
+  resendverificationemail(email: string): Observable<any> {
     return this.http.get<any>(
-      `${this.apiUrl}/resend-email-verification/${userid}`,
+      `${this.apiUrl}/resend-email-verification/${email}`,
       { headers: { 'Content-Type': 'application/json' } },
     );
   }
@@ -210,17 +509,30 @@ export class AuthService {
     localStorage.setItem('loggedIn', 'true');
 
     if (response.userId) {
-      const { userId, firstName, lastName, userType } = response;
+      const { userId, firstName, lastName, userType, email } = response;
+
       const payload = this.parseJwt<any>(token) ?? {};
       const companyName = payload.CompanyName || '';
+      const isAdmin =
+        response.isAdmin ?? payload.IsAdmin ?? payload.isAdmin ?? false;
 
-      const user = { id: userId, firstName, lastName, userType, companyName };
+      const user = {
+        id: userId,
+        firstName,
+        lastName,
+        userType,
+        companyName,
+        email,
+        isAdmin: !!isAdmin,
+      };
 
       localStorage.setItem('userId', userId);
       localStorage.setItem('firstName', firstName);
       localStorage.setItem('lastName', lastName);
       localStorage.setItem('userType', userType);
       localStorage.setItem('companyName', companyName);
+      localStorage.setItem('email', email);
+      localStorage.setItem('isAdmin', String(!!isAdmin));
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
       this.startInactivityTimer();
@@ -268,19 +580,51 @@ export class AuthService {
   //     );
   // }
 
+  updateCompanyName(companyName: string) {
+    const user = this.currentUserSubject.value;
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      companyName,
+    };
+
+    // Update observable
+    this.currentUserSubject.next(updatedUser);
+
+    // Keep localStorage in sync (important for refresh)
+    localStorage.setItem('companyName', companyName);
+  }
+
   changeUserRole(userType: string): void {
     localStorage.setItem('userType', userType);
   }
 
-  logout(): void {
+  logout(
+    reason:
+      | 'manual'
+      | 'inactivity'
+      | 'refresh_invalid'
+      | 'token_invalid' = 'manual',
+  ): void {
+    if (this.isLogoutInProgress) return;
+
+    this.pushAuthTrace('logout.begin', { reason });
+    this.isLogoutInProgress = true;
+    this.authLimboSinceMs = null;
+    this.analysisProtectionGraceUntilMs = 0;
+    this.clearPersistedAnalysisProtection();
+    this.inactivityPauseSources.clear();
     this.clearInactivityTimer();
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.LOGOUT_REASON_KEY, reason);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userType');
       localStorage.removeItem('firstName');
       localStorage.removeItem('lastName');
       localStorage.removeItem('userId');
+      localStorage.removeItem('isAdmin');
       localStorage.removeItem('loggedIn');
       localStorage.removeItem('currentUser');
       localStorage.removeItem('fw_selectedAddressId');
@@ -288,44 +632,109 @@ export class AuthService {
       this.addressStore.clear();
     }
     this.currentUserSubject.next(null);
+    this.resetRefreshAuthFailureState();
 
-    this.router.navigate(['/login']);
+    const shouldHardReload =
+      reason === 'inactivity' ||
+      reason === 'refresh_invalid' ||
+      reason === 'token_invalid';
+
+    // Hard reload prevents any in-flight UI loaders/spinners from getting
+    // stuck in an authenticated state after session expiry.
+    if (isPlatformBrowser(this.platformId) && shouldHardReload) {
+      window.location.replace('/login');
+      // If navigation is blocked, release the guard so a retry/manual logout works.
+      setTimeout(() => {
+        this.isLogoutInProgress = false;
+      }, 4000);
+      return;
+    }
+
+    void this.router.navigate(['/login']).finally(() => {
+      this.isLogoutInProgress = false;
+    });
   }
 
-  refreshToken(): Observable<any> {
+  refreshToken(timeoutOverrideMs?: number): Observable<any> {
+    const requestTimeoutMs = timeoutOverrideMs ?? this.refreshTimeoutMs;
+    this.pushAuthTrace('refresh.start', {
+      timeoutMs: requestTimeoutMs,
+      isRefreshing: this.isRefreshing,
+    });
+
     if (this.isRefreshing) {
       return this.refreshTokenSubject.pipe(
-        filter((token) => token != null),
+        filter((tokenResponse) => tokenResponse !== null),
         take(1),
+        switchMap((tokenResponse) => {
+          if ((tokenResponse as any)?.failed) {
+            return throwError(
+              () =>
+                ((tokenResponse as { failed: true; error: unknown }).error ??
+                  new Error('Refresh token request failed.')),
+            );
+          }
+          return of(tokenResponse);
+        }),
       );
+    }
+
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      this.pushAuthTrace('refresh.missing_refresh_token');
+      this.refreshTokenSubject.next({
+        failed: true,
+        error: new Error('No refresh token available.'),
+      });
+      this.logoutWithReason('refresh_invalid');
+      return throwError(() => new Error('No refresh token available.'));
     }
 
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      this.logout();
-      return throwError(() => new Error('No refresh token available.'));
-    }
-
     return this.http
       .post(`${this.apiUrl}/refresh-token`, { refreshToken })
       .pipe(
+        timeout(requestTimeoutMs),
         tap((response: any) => {
           if (response && response.token && response.refreshToken) {
             localStorage.setItem('accessToken', response.token);
             localStorage.setItem('refreshToken', response.refreshToken);
             this.loadUserFromToken(response.token);
-            this.refreshTokenSubject.next(response.token);
+            this.resetRefreshAuthFailureState();
+            this.pushAuthTrace('refresh.success');
+            this.refreshTokenSubject.next(response);
           } else {
-            this.logout();
+            this.pushAuthTrace('refresh.invalid_payload');
+            this.refreshTokenSubject.next({
+              failed: true,
+              error: new Error('Invalid refresh token response'),
+            });
+            // Do not use auth-failure strike counter here (200 + bad shape can be transient).
             throw new Error('Invalid refresh token response');
           }
         }),
         catchError((err) => {
-          this.logout();
+          this.pushAuthTrace('refresh.error', {
+            status: err instanceof HttpErrorResponse ? err.status : null,
+            name: (err as any)?.name || null,
+          });
+          this.refreshTokenSubject.next({ failed: true, error: err });
+          if (this.shouldForceLogoutOnRefreshFailure(err)) {
+            this.logoutWithReason('refresh_invalid');
+            return throwError(() => err);
+          }
+
+          if (err instanceof HttpErrorResponse && err.status >= 500) {
+            if (this.shouldLogoutNowForRefreshAuthFailure()) {
+              this.logoutWithReason('refresh_invalid');
+            }
+          }
           return throwError(() => err);
+        }),
+        finalize(() => {
+          this.isRefreshing = false;
         }),
       );
   }
@@ -334,7 +743,10 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return null;
 
     const token = localStorage.getItem('accessToken');
-    if (!token) return null;
+    if (!token) {
+      this.noteAuthTokenObserved(false, 'getToken:no_access_token');
+      return null;
+    }
 
     const exp = this.getExp(token);
     if (exp == null) {
@@ -342,18 +754,79 @@ export class AuthService {
       return null;
     }
 
-    // Refresh if expiring within 5 seconds
-    if (exp * 1000 < Date.now() + 5000) {
+    const expiresAtMs = exp * 1000;
+    const now = Date.now();
+    const isExpired = this.accessTokenIsExpired(token);
+    const needsProactiveRefresh =
+      expiresAtMs < now + this.PROACTIVE_REFRESH_LEEWAY_MS;
+
+    // Never keep an expired access token alive. Fail fast to login.
+    if (isExpired) {
       try {
-        await firstValueFrom(this.refreshToken());
+        await firstValueFrom(this.refreshToken(8_000));
+        this.refreshRetryCooldownUntil = 0;
+        this.noteAuthTokenObserved(true, 'getToken:expired_refresh_success');
         return localStorage.getItem('accessToken');
       } catch (e) {
-        console.error('Refresh failed in getToken()', e);
+        console.warn(
+          'Expired token refresh failed; logging out immediately.',
+          e,
+        );
+        this.logoutWithReason('refresh_invalid');
         return null;
       }
     }
 
-    return this.normalizeToken(token);
+    if (!needsProactiveRefresh) {
+      this.noteAuthTokenObserved(true, 'getToken:token_valid_no_refresh');
+      return this.normalizeToken(token);
+    }
+
+    if (!isExpired && this.isAnalysisInactivityProtected()) {
+      this.noteAuthTokenObserved(
+        true,
+        'getToken:analysis_protected_skip_proactive_refresh_keep_token',
+      );
+      return this.normalizeToken(token);
+    }
+
+    if (now < this.refreshRetryCooldownUntil) {
+      this.noteAuthTokenObserved(true, 'getToken:cooldown_keep_token');
+      return this.normalizeToken(token);
+    }
+
+    try {
+      await firstValueFrom(this.refreshToken());
+      this.refreshRetryCooldownUntil = 0;
+      this.noteAuthTokenObserved(true, 'getToken:refresh_success');
+      return localStorage.getItem('accessToken');
+    } catch (e) {
+      const t = Date.now();
+      if (t - this.lastGetTokenRefreshFailureLogAt > 2500) {
+        this.lastGetTokenRefreshFailureLogAt = t;
+        const isTimeout =
+          e &&
+          typeof e === 'object' &&
+          (e as { name?: string }).name === 'TimeoutError';
+        if (isTimeout) {
+          console.warn(
+            'Token refresh timed out in getToken(); token still valid briefly — retry after cooldown. Check API / refresh-token or environment.refreshTokenRequestTimeoutMs.',
+            e,
+          );
+        } else {
+          console.error('Refresh failed in getToken()', e);
+        }
+      }
+      this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
+      this.noteAuthTokenObserved(true, 'getToken:non_expired_refresh_failed_keep_token');
+      return this.normalizeToken(token);
+    }
+  }
+
+  getAccessTokenFast(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    const token = localStorage.getItem('accessToken');
+    return token ? this.normalizeToken(token) : null;
   }
 
   isLoggedIn(): boolean {
@@ -387,6 +860,7 @@ export class AuthService {
         userType: localStorage.getItem('userType'),
         firstName: localStorage.getItem('firstName'),
         lastName: localStorage.getItem('lastName'),
+        isAdmin: localStorage.getItem('isAdmin') === 'true',
       });
       return;
     }
@@ -415,6 +889,11 @@ export class AuthService {
             email: teamMember.email,
             userType: teamMember.role,
             isTeamMember: true,
+            isAdmin:
+              teamMember.isAdmin ??
+              payload.IsAdmin ??
+              payload.isAdmin ??
+              localStorage.getItem('isAdmin') === 'true',
           };
           if (user.inviterId) {
             this.currentUserSubject.next(user);
@@ -422,6 +901,9 @@ export class AuthService {
             console.warn(
               'Team member data is incomplete. Waiting for inviterId.',
             );
+          }
+          if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('isAdmin', String(!!user.isAdmin));
           }
           this.loadUserPermissions(teamMemberId);
         },
@@ -437,8 +919,20 @@ export class AuthService {
         firstName: payload.FirstName || localStorage.getItem('firstName'),
         lastName: payload.LastName || localStorage.getItem('lastName'),
         companyName: payload.CompanyName || localStorage.getItem('companyName'),
+        email:
+          payload.Email ||
+          payload.email ||
+          payload.unique_name ||
+          localStorage.getItem('email'),
+        isAdmin:
+          payload.IsAdmin ??
+          payload.isAdmin ??
+          localStorage.getItem('isAdmin') === 'true',
       };
       this.currentUserSubject.next(user);
+      if (isPlatformBrowser(this.platformId)) {
+        localStorage.setItem('isAdmin', String(!!user.isAdmin));
+      }
     }
   }
 
@@ -452,17 +946,24 @@ export class AuthService {
 
     return this.teamManagementService.getTeamMemberById(teamMemberId).pipe(
       tap((memberDetails) => {
+        const isAdmin =
+          memberDetails.isAdmin ??
+          payload?.IsAdmin ??
+          payload?.isAdmin ??
+          false;
         const user = {
           id: memberDetails.id,
           inviterId: memberDetails.inviterId,
           firstName: memberDetails.firstName,
           lastName: memberDetails.lastName,
           role: memberDetails.role,
+          isAdmin: !!isAdmin,
         };
         localStorage.setItem('userId', user.id);
         localStorage.setItem('firstName', user.firstName);
         localStorage.setItem('lastName', user.lastName);
         localStorage.setItem('userType', user.role);
+        localStorage.setItem('isAdmin', String(!!isAdmin));
         localStorage.setItem('currentUser', JSON.stringify(user));
         this.currentUserSubject.next(user);
       }),

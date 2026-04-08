@@ -3,49 +3,124 @@ import { JobsService } from '../../../services/jobs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+
+export interface SaveTradePackageBidInviteRow {
+  email: string;
+  contactName?: string | null;
+  companyName?: string | null;
+  externalCompanyId?: number | null;
+  externalContactId?: number | null;
+}
+
+export interface SaveTradePackageBidInvitesRequest {
+  jobId: number;
+  tradePackageId: number;
+  invitees: SaveTradePackageBidInviteRow[];
+}
+
+export interface TradePackageBidInviteCount {
+  tradePackageId: number;
+  invitedCount: number;
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class BomService {
+  private apiUrl = environment.BACKEND_URL + '/tradepackages';
+
+  private readonly bomCacheTtlMs = 2 * 60 * 1000;
+  private bomCache = new Map<string, { cachedAt: number; value: any }>();
+
   constructor(
     private jobsService: JobsService,
+    private http: HttpClient,
     private snackBar: MatSnackBar,
   ) {}
 
-  getBillOfMaterials(jobId: string): Observable<any> {
-    return this.jobsService.GetBillOfMaterials(jobId).pipe(
+  getBillOfMaterials(jobId: string, forceRefresh = false): Observable<any> {
+    const key = String(jobId);
+    if (forceRefresh) {
+      this.bomCache.delete(key);
+    }
+    const cached = this.bomCache.get(key);
+    const now = Date.now();
+    if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {
+      return of(cached.value);
+    }
+
+    return this.jobsService.GetBillOfMaterials(jobId, forceRefresh).pipe(
       map((status: any) => {
-        if (status.length > 0) {
-          return status.map((doc: any) => ({
-            id: doc.id,
-            jobId: doc.jobId,
-            documentId: doc.DocumentId,
-            bomJson: '',
-            materialsEstimateJson: doc.materialsEstimateJson,
-            fullResponse: doc.fullResponse,
-            createdAt: doc.createdAt,
-            parsedReport: this.parseReport(doc.fullResponse),
-          }));
+        const normalized = Array.isArray(status) ? status : [];
+        if (normalized.length > 0) {
+          const mapped = normalized
+            .map((doc: any) => ({
+              id: doc.id,
+              jobId: doc.jobId,
+              documentId: doc.DocumentId,
+              bomJson: '',
+              materialsEstimateJson: doc.materialsEstimateJson,
+              fullResponse: doc.fullResponse,
+              createdAt: doc.createdAt,
+              parsedReport: this.parseReport(doc.fullResponse),
+            }))
+            .sort((a: any, b: any) => {
+              const timeA = new Date(a?.createdAt || 0).getTime();
+              const timeB = new Date(b?.createdAt || 0).getTime();
+              if (timeA !== timeB) return timeB - timeA;
+
+              const idA = Number(a?.id || 0);
+              const idB = Number(b?.id || 0);
+              return idB - idA;
+            });
+
+          this.bomCache.set(key, { cachedAt: now, value: mapped });
+          return mapped;
         }
-        return { message: status.message, isProcessingComplete: false };
+
+        const empty = { message: (status as any)?.message, isProcessingComplete: false };
+        this.bomCache.set(key, { cachedAt: now, value: empty });
+        return empty;
       }),
       catchError((error) => {
+        this.bomCache.delete(key);
         return of({
           error: error.error?.error || 'Failed to check AI processing status.',
         });
       }),
     );
   }
+  archivePackage(tradePackageId: number): Observable<void> {
+    return this.http.put<void>(
+      `${this.apiUrl}/archivepackage/${tradePackageId}`,
+      {},
+    );
+  }
+
+  saveTradePackageBidInvites(
+    tradePackageId: number,
+    payload: SaveTradePackageBidInvitesRequest,
+  ): Observable<any[]> {
+    return this.http.post<any[]>(
+      `${this.apiUrl}/${tradePackageId}/bid-invites`,
+      payload,
+    );
+  }
+
+  getBidInviteCountsForJob(jobId: string | number): Observable<TradePackageBidInviteCount[]> {
+    return this.http.get<TradePackageBidInviteCount[]>(
+      `${this.apiUrl}/job/${jobId}/bid-invites/counts`,
+    );
+  }
 
   parseReport(fullResponse: string): any {
     if (!fullResponse) {
-      return { sections: [] };
+      return { message: 'Full response is empty.' };
     }
 
-    // console.log('Parsing AI Response:', fullResponse);
+    //console.log('Parsing AI Response:', fullResponse);
 
     const sections: any[] = [];
     const promptTitles: { [key: number]: string } = {
@@ -341,82 +416,93 @@ export class BomService {
       return;
     }
 
-    const doc = new jsPDF();
-    const logo = new Image();
-    logo.src = 'assets/logo.png';
+    (async () => {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
 
-    const parsedReport = processingResults[0].parsedReport;
+      const doc = new jsPDF();
+      const logo = new Image();
+      logo.src = 'assets/logo.png';
 
-    const drawContent = (withLogo: boolean) => {
-      const addPageHeader = () => {
-        if (withLogo) {
-          doc.addImage(logo, 'PNG', 10, 10, 50, 15);
-          doc.setFontSize(8);
+      const parsedReport = processingResults[0].parsedReport;
+
+      const drawContent = (withLogo: boolean) => {
+        const addPageHeader = () => {
+          if (withLogo) {
+            doc.addImage(logo, 'PNG', 10, 10, 50, 15);
+            doc.setFontSize(8);
+            doc.text(
+              'This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.',
+              10,
+              28,
+            );
+            doc.text(
+              'Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.',
+              10,
+              32,
+            );
+          }
+          doc.setFontSize(18);
           doc.text(
-            'This is an AI-generated estimate for internal use only. Not reviewed or certified by a licensed professional.',
+            `Bill of Materials for: ${projectName}`,
             10,
-            28,
+            withLogo ? 45 : 15,
           );
-          doc.text(
-            'Do not rely for regulatory, permitting, or construction purposes without independent validation. ProBuild AI disclaims all liability.',
-            10,
-            32,
-          );
-        }
-        doc.setFontSize(18);
-        doc.text(
-          `Bill of Materials for: ${projectName}`,
-          10,
-          withLogo ? 45 : 15,
-        );
+        };
+
+        parsedReport.sections.forEach((section: any, index: number) => {
+          if (index > 0) {
+            doc.addPage();
+          }
+          addPageHeader();
+
+          doc.setFontSize(14);
+          doc.text(section.title, 10, withLogo ? 55 : 25);
+
+          autoTable(doc, {
+            head: [section.headers],
+            body: section.content,
+            startY: withLogo ? 60 : 30,
+            theme: 'grid',
+            headStyles: {
+              fillColor: '#FFC107',
+              textColor: '#000000',
+            },
+          });
+        });
+
+        const date = new Date().toISOString().slice(0, 10);
+        doc.setProperties({
+          title: `${projectName} Bill of Materials`,
+          subject: 'AI-Generated Estimate',
+          author: 'ProBuild AI',
+          keywords: 'BOM, estimate, AI, construction',
+          creator: 'ProBuild AI',
+        });
+        doc.save(`${projectName}_BOM_${date}.pdf`);
       };
 
-      parsedReport.sections.forEach((section: any, index: number) => {
-        if (index > 0) {
-          doc.addPage();
-        }
-        addPageHeader();
+      logo.onload = () => {
+        drawContent(true);
+      };
 
-        doc.setFontSize(14);
-        doc.text(section.title, 10, withLogo ? 55 : 25);
-
-        autoTable(doc, {
-          head: [section.headers],
-          body: section.content,
-          startY: withLogo ? 60 : 30,
-          theme: 'grid',
-          headStyles: {
-            fillColor: '#FFC107',
-            textColor: '#000000',
+      logo.onerror = () => {
+        this.snackBar.open(
+          'Could not load logo, proceeding without it.',
+          'Close',
+          {
+            duration: 3000,
           },
-        });
+        );
+        drawContent(false);
+      };
+    })().catch(() => {
+      this.snackBar.open('Failed to generate PDF.', 'Close', {
+        duration: 3000,
       });
-
-      const date = new Date().toISOString().slice(0, 10);
-      doc.setProperties({
-        title: `${projectName} Bill of Materials`,
-        subject: 'AI-Generated Estimate',
-        author: 'ProBuild AI',
-        keywords: 'BOM, estimate, AI, construction',
-        creator: 'ProBuild AI',
-      });
-      doc.save(`${projectName}_BOM_${date}.pdf`);
-    };
-
-    logo.onload = () => {
-      drawContent(true);
-    };
-
-    logo.onerror = () => {
-      this.snackBar.open(
-        'Could not load logo, proceeding without it.',
-        'Close',
-        {
-          duration: 3000,
-        },
-      );
-      drawContent(false);
-    };
+    });
   }
 
   public extractTotalCost(fullResponse: string): string | null {
@@ -455,5 +541,267 @@ export class BomService {
     }
 
     return null;
+  }
+
+  getValueEngineeringItems(jobId: string): Observable<any[]> {
+    return this.getBillOfMaterials(jobId).pipe(
+      map((results) => {
+        if (!results || results.length === 0 || !results[0].parsedReport) {
+          return [];
+        }
+        const report = results[0].parsedReport;
+        // Look for the "Value Engineering Options Table" or section title "Value Engineering"
+        const veSection = report.sections.find(
+          (s: any) =>
+            s.title &&
+            (s.title.includes('Value Engineering') ||
+              (s.headers && s.headers[0].includes('VE ID'))),
+        );
+
+        if (!veSection || !veSection.content) {
+          return [];
+        }
+
+        return veSection.content.map((row: any[]) => {
+          const parseCost = (val: string) => {
+            if (!val) return 0;
+            const num = parseFloat(val.replace(/[^0-9.-]+/g, ''));
+            return isNaN(num) ? 0 : num;
+          };
+
+          return {
+            id: row[0],
+            category: row[1],
+            original: row[2],
+            proposed: row[3],
+            originalCost: parseCost(row[4]),
+            alternativeCost: parseCost(row[5]),
+            savings: parseCost(row[6]),
+            analysis: row[7],
+            // Helper fields
+            scheduleImpact: row[7]?.includes('Schedule Impact')
+              ? row[7]
+              : 'Unknown',
+            performanceImpact: row[7]?.includes('Performance Impact')
+              ? row[7]
+              : 'Unknown',
+          };
+        });
+      }),
+    );
+  }
+
+  getTradePackages(jobId: string): Observable<any[]> {
+    // Try fetching from API first
+
+    return this.http.get<any[]>(`${this.apiUrl}/${jobId}`).pipe(
+      map((apiPackages) => {
+              console.log("BOM Result first try", apiPackages)
+        if (apiPackages && apiPackages.length > 0) {
+          return apiPackages.map((pkg) => {
+            const parsedDays = this.parseDurationDays(pkg.estimatedDuration);
+            const derivedDays =
+              parsedDays ??
+              this.deriveDurationDaysFromHours(
+                Number(pkg.estimatedManHours || 0),
+              );
+
+            return {
+              id: pkg.id,
+              jobId: pkg.jobId,
+              trade: pkg.tradeName,
+              category: pkg.category?.toLowerCase() || 'trade',
+              scopeOfWork: pkg.scopeOfWork,
+              notes: pkg.notes || '',
+              status: pkg.status,
+              estimatedManHours: pkg.estimatedManHours,
+              hourlyRate: pkg.hourlyRate,
+              estimatedDuration:
+                pkg.estimatedDuration ||
+                (derivedDays ? `${derivedDays} days` : ''),
+              laborBudget: Number(pkg.laborBudget || 0),
+              materialBudget: Number(pkg.materialBudget || 0),
+              totalBudget: Number(pkg.totalBudget || pkg.budget || 0),
+              effectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
+
+              durationDays: derivedDays,
+              startDate: pkg.startDate,
+              laborType: pkg.laborType || 'Labor and Materials',
+              bidDeadline: pkg.bidDeadline,
+              createdAt: pkg.createdAt,
+              budget: Number(pkg.effectiveBudget || pkg.budget || 0),
+              csiCode: pkg.csiCode,
+              bidType: (() => {
+                const normalizedLaborType = String(pkg.laborType || '')
+                  .trim()
+                  .toLowerCase();
+                return normalizedLaborType === 'labor' ||
+                  normalizedLaborType === 'labor only'
+                  ? 'labor-only'
+                  : 'labor-material';
+              })(),
+              linkedTradePackageId: pkg.linkedTradePackageId || null,
+              isAutoGenerated: !!pkg.isAutoGenerated,
+              isInactive: !!pkg.isInactive,
+              isHidden: !!pkg.isHidden,
+              sourceType: pkg.sourceType || null,
+              isInHouse: !!pkg.isInHouse,
+              laborBudgetVisible: pkg.laborBudgetVisible !== false,
+              materialBudgetVisible: pkg.materialBudgetVisible !== false,
+
+              postedToMarketplace: pkg.postedToMarketplace,
+              awardedBidId: Number(pkg.awardedBidId || 0) || null,
+              bids: [], // Bids are loaded separately
+              hasInternalQuote: false,
+            };
+          });
+        }
+        return [];
+      }),
+      catchError((err) => {
+        console.warn(
+          'Failed to fetch trade packages from API, falling back to report parsing',
+          err,
+        );
+        // Fallback to report parsing if API fails or returns empty (e.g. migration not run)
+        return this.getBillOfMaterials(jobId).pipe(
+          map((results) => {
+            console.log("BOM Result" , results)
+            if (!results || results.length === 0 || !results[0].parsedReport) {
+              return [];
+            }
+            const report = results[0].parsedReport;
+            const tradePackages: any[] = [];
+
+            // Iterate through sections to find "Subcontractor Cost Breakdown" tables
+            report.sections.forEach((section: any) => {
+              if (
+                section.title &&
+                (section.title.includes('Subcontractor Cost Breakdown') ||
+                  (section.headers &&
+                    section.headers
+                      .join(' ')
+                      .toLowerCase()
+                      .includes('scope of work')))
+              ) {
+                section.content.forEach((row: any[]) => {
+                  const tradeName = row[0];
+                  const scope = row[1];
+                  const hours = parseInt(row[2]) || 0;
+                  const rate = parseFloat(row[3]?.replace(/[^0-9.]/g, '')) || 0;
+                  const totalCost =
+                    parseFloat(row[4]?.replace(/[^0-9.]/g, '')) || 0;
+                  const csi = row[5];
+
+                  if (tradeName && tradeName !== 'Total Subcontractor Cost') {
+                    tradePackages.push({
+                      id: csi || tradeName.replace(/\s+/g, '-').toLowerCase(),
+                      jobId: Number(jobId),
+                      trade: tradeName,
+                      category: 'trade',
+                      scopeOfWork: scope,
+                      status: 'Draft',
+                      estimatedManHours: hours,
+                      hourlyRate: rate,
+                      estimatedDuration:
+                        hours > 0
+                          ? `${Math.max(1, Math.ceil(hours / 8))} days`
+                          : null,
+                      durationDays:
+                        hours > 0 ? Math.max(1, Math.ceil(hours / 8)) : null,
+                      laborBudget: hours * rate,
+                      materialBudget: Math.max(0, totalCost - hours * rate),
+                      totalBudget: totalCost,
+                      effectiveBudget: totalCost,
+
+                      startDate: null,
+                      laborType: 'Labor and Materials',
+                      bidDeadline: null,
+                      createdAt: new Date().toISOString(),
+                      budget: totalCost,
+                      csiCode: csi,
+                      linkedTradePackageId: null,
+                      isAutoGenerated: false,
+                      isInactive: false,
+                      isHidden: false,
+                      sourceType: 'AI',
+                      isInHouse: false,
+                      notes: '',
+                      laborBudgetVisible: true,
+                      materialBudgetVisible: true,
+                      bidType: 'labor-material',
+                      postedToMarketplace: false,
+                      bids: [],
+                      hasInternalQuote: false,
+                    });
+                  }
+                });
+              }
+            });
+
+            return tradePackages;
+          }),
+        );
+      }),
+    );
+  }
+
+  private parseDurationDays(
+    estimatedDuration: string | null | undefined,
+  ): number | null {
+    if (!estimatedDuration) {
+      return null;
+    }
+
+    const match = String(estimatedDuration).match(/(\d+(?:\.\d+)?)/);
+    if (!match) {
+      return null;
+    }
+
+    const value = Number(match[1]);
+    if (!Number.isFinite(value) || value <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(value));
+  }
+
+  private deriveDurationDaysFromHours(
+    estimatedManHours: number,
+  ): number | null {
+    if (!Number.isFinite(estimatedManHours) || estimatedManHours <= 0) {
+      return null;
+    }
+
+    return Math.max(1, Math.ceil(estimatedManHours / 8));
+  }
+
+  postTradePackage(id: string | number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/post`, {});
+  }
+
+  refreshTradePackages(jobId: string | number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${jobId}/refresh`, {});
+  }
+
+  updateTradePackage(id: number, tradePackage: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, tradePackage);
+  }
+
+  syncLaborTypeAndSupplierLink(
+    id: number,
+    laborType: 'Labor and Materials' | 'Labor',
+    totalBudget?: number,
+    laborBudget?: number,
+  ): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/sync-labor-type`, {
+      laborType,
+      totalBudget: Number(totalBudget || 0),
+      laborBudget: Number(laborBudget || 0),
+    });
+  }
+
+  getMyMarketplacePostings(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/user/${userId}/postings`);
   }
 }

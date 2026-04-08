@@ -1,3 +1,5 @@
+import { GroupedSubtask, JobProjectDetails } from '../models/job-domain.models';
+import { PhaseMaterials } from '../features/quote/quote.model';
 import { ForecastDay } from '../services/weather.service';
 
 export interface Subtask {
@@ -10,6 +12,13 @@ export interface Subtask {
   status: string;
   deleted: boolean;
   accepted?: boolean;
+  description?: string;
+  location?: string;
+  notes?: string;
+  detailsJson?: string;
+  materials?: string[];
+  checklist?: { item: string; done: boolean }[];
+  photos?: { url: string; caption: string; date: string }[];
 }
 
 export interface SubtaskGroup {
@@ -18,9 +27,10 @@ export interface SubtaskGroup {
 }
 
 export interface SubtasksState {
-  subtaskGroups: SubtaskGroup[];
-  projectDetails?: any;
-  forecast?: ForecastDay[];
-  weatherDescription?: string;
-  weatherError?: string | null;
+  projectDetails: JobProjectDetails | null;
+  subtaskGroups: GroupedSubtask[];
+  materialGroups: PhaseMaterials[];
+  forecast: any[];
+  weatherDescription: string;
+  weatherError: string | null;
 }

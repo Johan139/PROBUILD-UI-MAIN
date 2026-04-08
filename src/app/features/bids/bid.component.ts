@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatDividerModule } from '@angular/material/divider';
-import { NgIf } from '@angular/common';
+
 
 @Component({
   selector: 'app-bid',
@@ -21,9 +21,8 @@ import { NgIf } from '@angular/common';
     MatInputModule,
     MatButtonModule,
     MatTableModule,
-    MatDividerModule,
-    NgIf,
-  ],
+    MatDividerModule
+],
   templateUrl: './bid.component.html', // Fixed to point to the correct HTML file
   styleUrls: ['./bid.component.scss'],
   providers: [BidService],

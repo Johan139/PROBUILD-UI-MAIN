@@ -2,8 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 
 const BASE_URL = `${environment.BACKEND_URL}/Jobs`;
+
+export interface UploadThumbnailResponse {
+  thumbnailUrl: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -11,10 +16,25 @@ const BASE_URL = `${environment.BACKEND_URL}/Jobs`;
 export class JobsService {
   private jobQuote: any;
 
+  private readonly bomCacheTtlMs = 15 * 1000;
+  private bomCache = new Map<string, { cachedAt: number; request$: Observable<any> }>();
+
+  private readonly bomStatusCacheTtlMs = 5 * 1000;
+  private bomStatusCache = new Map<
+    string,
+    { cachedAt: number; request$: Observable<any> }
+  >();
+
+  private readonly jobDetailsCacheTtlMs = 30 * 1000;
+  private jobDetailsCache = new Map<
+    string,
+    { cachedAt: number; request$: Observable<any> }
+  >();
+
   constructor(private httpClient: HttpClient) {}
 
   createJob(jobForm: any, addressModel: any) {
-    this.httpClient.post(`${BASE_URL}/Jobs`, {
+    return this.httpClient.post(`${BASE_URL}/Jobs`, {
       job: jobForm,
       address: addressModel,
     });
@@ -26,7 +46,7 @@ export class JobsService {
     delete payload.Blueprint;
     delete payload.UserContextFile;
 
-    console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
+    // console.log('Final payload being sent:', JSON.stringify(payload, null, 2));
     return this.httpClient.post<any>(`${BASE_URL}/${id}`, payload, { headers });
   }
 
@@ -84,6 +104,7 @@ export class JobsService {
       { subtasks: subtaskList, userId: userId },
       {
         headers: { 'Content-Type': 'application/json' },
+        responseType: 'text' as 'json',
       },
     );
   }
@@ -93,15 +114,51 @@ export class JobsService {
   }
 
   getSpecificJob(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + '/Id/' + jobId);
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.jobDetailsCache.get(key);
+    if (cached && now - cached.cachedAt < this.jobDetailsCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/Id/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.jobDetailsCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
-  GetBillOfMaterials(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + '/processing-results/' + jobId);
+  GetBillOfMaterials(jobId: any, forceRefresh = false): Observable<any> {
+    const key = String(jobId);
+    if (forceRefresh) {
+      this.bomCache.delete(key);
+    }
+    const now = Date.now();
+    const cached = this.bomCache.get(key);
+    if (cached && now - cached.cachedAt < this.bomCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/processing-results/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.bomCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   GetBillOfMaterialsStatus(jobId: any): Observable<any> {
-    return this.httpClient.get(BASE_URL + 'processing-results/' + jobId);
+    const key = String(jobId);
+    const now = Date.now();
+    const cached = this.bomStatusCache.get(key);
+    if (cached && now - cached.cachedAt < this.bomStatusCacheTtlMs) {
+      return cached.request$;
+    }
+
+    const request$ = this.httpClient
+      .get(BASE_URL + '/processing-status/' + jobId)
+      .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.bomStatusCache.set(key, { cachedAt: now, request$ });
+    return request$;
   }
 
   setJobCard(jobForm: any) {
@@ -116,10 +173,6 @@ export class JobsService {
     return this.httpClient.put<void>(`${BASE_URL}/${jobId}/archive`, {});
   }
 
-  unarchiveJob(jobId: number): Observable<void> {
-    return this.httpClient.put<void>(`${BASE_URL}/${jobId}/unarchive`, {});
-  }
-
   deleteJob(jobId: number): Observable<void> {
     return this.httpClient.delete<void>(`${BASE_URL}/${jobId}`);
   }
@@ -127,7 +180,9 @@ export class JobsService {
   getArchivedJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/archived`);
   }
-
+  getArchivedJobsByUserId(userId: string): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${BASE_URL}/archivedbyuserid/${userId}`);
+  }
   getDashboardJobs(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${BASE_URL}/dashboard`);
   }
@@ -136,10 +191,16 @@ export class JobsService {
     return this.httpClient.get<any[]>(`${BASE_URL}/user-dashboard/${userId}`);
   }
 
-  uploadJobThumbnail(jobId: number, file: File): Observable<any> {
+  uploadJobThumbnail(
+    jobId: number,
+    file: File,
+  ): Observable<UploadThumbnailResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.httpClient.post(`${BASE_URL}/${jobId}/thumbnail`, formData);
+    return this.httpClient.post<UploadThumbnailResponse>(
+      `${BASE_URL}/${jobId}/thumbnail`,
+      formData,
+    );
   }
 
   getClientDetails(jobId: number): Observable<any> {
@@ -151,5 +212,13 @@ export class JobsService {
       `${BASE_URL}/${jobId}/client-details`,
       details,
     );
+  }
+
+  updateJobStatus(jobId: number, status: string): Observable<any> {
+    return this.httpClient.put<any>(`${BASE_URL}/${jobId}/status`, { status });
+  }
+
+  getPlanningData(jobId: number): Observable<any> {
+    return this.httpClient.get<any>(`${BASE_URL}/${jobId}/planning-data`);
   }
 }

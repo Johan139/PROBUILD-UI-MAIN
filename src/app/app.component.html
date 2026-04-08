@@ -1,12 +1,14 @@
 <!-- PAGE WRAPPER -->
 <div class="page-wrapper">
   <!-- Loader -->
-  <div *ngIf="isLoading" class="loading-container">
-    <app-loader aria-label="Loading content"></app-loader>
-  </div>
+  @if (isLoading) {
+    <div class="loading-container">
+      <app-loader aria-label="Loading content"></app-loader>
+    </div>
+  }
 
   <!-- AUTHENTICATED LAYOUT (only show if showHeader is true) -->
-  <ng-container *ngIf="loggedIn && showHeader; else publicOrMinimalLayout">
+  @if (loggedIn && showHeader) {
     <!-- Header -->
     <mat-toolbar class="header" role="banner">
       <button
@@ -15,158 +17,183 @@
         aria-label="Toggle navigation menu"
         matTooltip="Toggle sidebar visibility"
         [matTooltipShowDelay]="500"
-      >
+        >
         <mat-icon>menu</mat-icon>
       </button>
-
       <a
         routerLink="/dashboard"
         class="logo-link"
         aria-label="ProBuild AI Home"
-      >
+        >
         <img
           ngSrc="assets/logo.png"
           alt="Company Logo"
           height="52"
           width="152.5"
-        />
-      </a>
+          />
+        </a>
+        <span class="spacer"></span>
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="helpMenu"
+          aria-label="Help"
+          matTooltip="Help & Onboarding" [matTooltipShowDelay]="500"
+          >
+          <mat-icon>help_outline</mat-icon>
+        </button>
+        <app-notifications-menu></app-notifications-menu>
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="userMenu"
+          aria-label="Open user menu"
+          matTooltip="Open the user menu"
+          [matTooltipShowDelay]="500"
+          >
+          <mat-icon>settings</mat-icon>
+        </button>
+      </mat-toolbar>
+      <!-- Company Name Bar -->
+      @if (companyName) {
+        <div class="company-bar">
+          <span>{{ companyName }}</span>
+        </div>
+      }
+      <!-- SIDENAV LAYOUT -->
+      <mat-sidenav-container class="nav-container">
+        <mat-sidenav
+          #sidenav
+          mode="side"
+          [opened]="isSidenavOpen"
+          class="sidenav"
+          [class.is-collapsed]="isSidenavOpen"
+          role="navigation"
+          aria-label="Primary"
+          >
+          <mat-nav-list class="nav-list" [disableRipple]="true">
+            @for (item of navItems; track item) {
+              <a
+                mat-list-item
+                [disableRipple]="true"
+                class="nav-item"
+                [routerLink]="item.route"
+                (click)="item.action?.()"
+                routerLinkActive="is-active"
+                [matTooltip]="item.tooltip"
+                matTooltipShowDelay="500"
+                matTooltipPosition="right"
+                >
+                <span class="active-indicator"></span>
+                <mat-icon matListItemIcon class="nav-icon">
+                  {{ item.icon }}
+                </mat-icon>
+                <div matListItemTitle class="nav-label">
+                  {{ item.label }}
+                </div>
+              </a>
+            }
+          </mat-nav-list>
+        </mat-sidenav>
+        <mat-sidenav-content>
+          <div class="content-shell">
+            @if (isRouterOutletVisible) {
+              <router-outlet></router-outlet>
+            }
+            <div class="flex-spacer"></div>
+            @if (showFooter) {
+              <app-footer></app-footer>
+            }
+          </div>
+        </mat-sidenav-content>
+      </mat-sidenav-container>
+    } @else {
+      <!-- Show header only for public pages (not logged in) -->
+      @if (!loggedIn) {
+        <mat-toolbar class="header" role="banner">
+          <a routerLink="/login" class="logo-link" aria-label="ProBuild AI Home">
+            <img
+              ngSrc="assets/logo.png"
+              alt="Company Logo"
+              height="52"
+              width="152.5"
+              />
+            </a>
+            <span class="spacer"></span>
+            <button
+              mat-icon-button
+              [matMenuTriggerFor]="guestMenu"
+              aria-label="Open settings menu"
+              >
+              <mat-icon>settings</mat-icon>
+            </button>
+          </mat-toolbar>
+        }
+        <!-- Direct router outlet for minimal layouts and public pages -->
+        <router-outlet></router-outlet>
+        @if (showFooter) {
+          <app-footer></app-footer>
+        }
+      }
 
-      <span class="spacer"></span>
-
-      <app-notifications-menu></app-notifications-menu>
-
-      <button
-        mat-icon-button
-        [matMenuTriggerFor]="userMenu"
-        aria-label="Open user menu"
-        matTooltip="Open the user menu"
-        [matTooltipShowDelay]="500"
-      >
-        <mat-icon>settings</mat-icon>
-      </button>
-    </mat-toolbar>
-
-    <!-- Company Name Bar -->
-    <div *ngIf="companyName" class="company-bar">
-      <span>{{ companyName }}</span>
+      <!-- PUBLIC OR MINIMAL LAYOUT -->
     </div>
 
-    <!-- SIDENAV LAYOUT -->
-    <mat-sidenav-container class="nav-container">
-      <mat-sidenav
-        #sidenav
-        mode="side"
-        [opened]="isSidenavOpen"
-        class="sidenav"
-        [class.is-collapsed]="isSidenavOpen"
-        role="navigation"
-        aria-label="Primary"
-      >
-        <mat-nav-list class="nav-list" [disableRipple]="true">
-          <a
-            mat-list-item
-            [disableRipple]="true"
-            class="nav-item"
-            *ngFor="let item of navItems"
-            [routerLink]="item.route"
-            (click)="item.action?.()"
-            routerLinkActive="is-active"
-            [matTooltip]="item.tooltip"
-            matTooltipShowDelay="500"
-            matTooltipPosition="right"
-          >
-            <span class="active-indicator"></span>
-            <mat-icon matListItemIcon class="nav-icon">
-              {{ item.icon }}
-            </mat-icon>
-            <div matListItemTitle class="nav-label">
-              {{ item.label }}
-            </div>
-          </a>
-        </mat-nav-list>
-      </mat-sidenav>
-
-      <mat-sidenav-content>
-        <div class="content-shell">
-          <router-outlet *ngIf="isRouterOutletVisible"></router-outlet>
-          <div class="flex-spacer"></div>
-          <app-footer *ngIf="showFooter"></app-footer>
-        </div>
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  </ng-container>
-
-  <!-- PUBLIC OR MINIMAL LAYOUT -->
-  <ng-template #publicOrMinimalLayout>
-    <!-- Show header only for public pages (not logged in) -->
-    <mat-toolbar class="header" role="banner" *ngIf="!loggedIn">
-      <a routerLink="/login" class="logo-link" aria-label="ProBuild AI Home">
-        <img
-          ngSrc="assets/logo.png"
-          alt="Company Logo"
-          height="52"
-          width="152.5"
-        />
-      </a>
-
-      <span class="spacer"></span>
-
+    <!-- MENUS -->
+    <mat-menu #userMenu="matMenu">
       <button
-        mat-icon-button
-        [matMenuTriggerFor]="guestMenu"
-        aria-label="Open settings menu"
-      >
-        <mat-icon>settings</mat-icon>
+        mat-menu-item
+        routerLink="/profile"
+        matTooltip="View your personal and company profile and user settings"
+        [matTooltipShowDelay]="500"
+        >
+        <mat-icon>person</mat-icon>Profile
       </button>
-    </mat-toolbar>
+      <button
+        mat-menu-item
+        (click)="logout()"
+        matTooltip="Logout from ProBuild"
+        [matTooltipShowDelay]="500"
+        >
+        <mat-icon>logout</mat-icon>Logout
+      </button>
+      <mat-divider></mat-divider>
+      <button
+        mat-menu-item
+        (click)="toggleTheme()"
+        matTooltip="Toggle between light and dark mode"
+        [matTooltipShowDelay]="500"
+        >
+        <mat-icon>{{
+          themeService.isDarkMode() ? "light_mode" : "dark_mode"
+        }}</mat-icon>
+        <span>{{ themeService.isDarkMode() ? "Light Mode" : "Dark Mode" }}</span>
+      </button>
+    </mat-menu>
 
-    <!-- Direct router outlet for minimal layouts and public pages -->
-    <router-outlet></router-outlet>
-    <app-footer *ngIf="showFooter"></app-footer>
-  </ng-template>
-</div>
+    <mat-menu #guestMenu="matMenu">
+      <button mat-menu-item (click)="toggleTheme()">
+        <mat-icon>{{
+          themeService.isDarkMode() ? "light_mode" : "dark_mode"
+        }}</mat-icon>
+        <span>{{ themeService.isDarkMode() ? "Light Mode" : "Dark Mode" }}</span>
+      </button>
+    </mat-menu>
 
-<!-- MENUS -->
-<mat-menu #userMenu="matMenu">
-  <button
-    mat-menu-item
-    routerLink="/profile"
-    matTooltip="View your personal and company profile and user settings"
-    [matTooltipShowDelay]="500"
-  >
-    <mat-icon>person</mat-icon>Profile
-  </button>
-  <button
-    mat-menu-item
-    (click)="logout()"
-    matTooltip="Logout from ProBuild"
-    [matTooltipShowDelay]="500"
-  >
-    <mat-icon>logout</mat-icon>Logout
-  </button>
-  <mat-divider></mat-divider>
-  <button
-    mat-menu-item
-    (click)="toggleTheme()"
-    matTooltip="Toggle between light and dark mode"
-    [matTooltipShowDelay]="500"
-  >
-    <mat-icon>{{
-      themeService.isDarkMode() ? "light_mode" : "dark_mode"
-    }}</mat-icon>
-    <span>{{ themeService.isDarkMode() ? "Light Mode" : "Dark Mode" }}</span>
-  </button>
-</mat-menu>
+    <mat-menu #helpMenu="matMenu">
+      <button mat-menu-item (click)="onboardingService.startTour('new-project')">
+        <mat-icon>school</mat-icon>
+        <span>New Project Tour</span>
+      </button>
+      <button mat-menu-item (click)="onboardingService.resetOnboarding()">
+        <mat-icon>refresh</mat-icon>
+        <span>Reset Onboarding</span>
+      </button>
+    </mat-menu>
 
-<mat-menu #guestMenu="matMenu">
-  <button mat-menu-item (click)="toggleTheme()">
-    <mat-icon>{{
-      themeService.isDarkMode() ? "light_mode" : "dark_mode"
-    }}</mat-icon>
-    <span>{{ themeService.isDarkMode() ? "Light Mode" : "Dark Mode" }}</span>
-  </button>
-</mat-menu>
+    @if (showAiChatIcon) {
+      <app-ai-chat-icon></app-ai-chat-icon>
+    }
+    <app-ai-chat-window></app-ai-chat-window>
 
-<app-ai-chat-icon *ngIf="showAiChatIcon"></app-ai-chat-icon>
-<app-ai-chat-window></app-ai-chat-window>
+    <!-- Onboarding Components -->
+    <app-onboarding-prompt></app-onboarding-prompt>
+    <app-onboarding-overlay></app-onboarding-overlay>

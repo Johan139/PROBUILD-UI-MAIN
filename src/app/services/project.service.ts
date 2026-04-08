@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, of, tap, throwError } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { JobsService } from './jobs.service';
+import { JobsService, UploadThumbnailResponse } from './jobs.service';
 import { AuthService } from '../authentication/auth.service';
 import { TeamManagementService } from './team-management.service';
 import { Project } from '../models/project';
+import { ArchiveService } from '../features/archive/archive-service';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +28,32 @@ export class ProjectService {
     private jobsService: JobsService,
     private authService: AuthService,
     private teamManagementService: TeamManagementService,
+    private archiveService: ArchiveService,
   ) {}
+
+  patchProject(jobId: number, patch: Partial<Project>): void {
+    const currentProjects = this.projects.getValue();
+    const projectIndex = currentProjects.findIndex(
+      (p) => Number(p.jobId) === Number(jobId),
+    );
+
+    if (projectIndex === -1) {
+      return;
+    }
+
+    const updatedProjects = [...currentProjects];
+    updatedProjects[projectIndex] = {
+      ...updatedProjects[projectIndex],
+      ...patch,
+    };
+
+    this.projects.next(updatedProjects);
+
+    const userId = this.authService.getUserId();
+    if (userId) {
+      localStorage.setItem(`projects_${userId}`, JSON.stringify(updatedProjects));
+    }
+  }
 
   loadProjects(): void {
     this.isLoading.next(true);
@@ -52,10 +78,47 @@ export class ProjectService {
       )
       .subscribe({
         next: (projects: any[]) => {
-          const mappedProjects = projects.map((p) => ({
-            ...p,
-            thumbnailUrl: p.thumbnailUrl || this.getImageForJob(p.jobId),
-          }));
+          const existingProjects = this.projects.getValue();
+
+          const mappedProjects = projects.map((p) => {
+            const existing = existingProjects.find(
+              (ep) => Number(ep.jobId) === Number(p.jobId),
+            );
+
+            const shouldPreserveExistingProgress =
+              p.status === 'ANALYZING' &&
+              existing?.progress !== undefined &&
+              (p.progress === undefined || p.progress === 0);
+
+            const normalizedStartDate =
+              p.potentialStartDate ??
+              p.desiredStartDate ??
+              p.startDate ??
+              p.PotentialStartDate ??
+              p.DesiredStartDate ??
+              p.StartDate ??
+              existing?.potentialStartDate;
+
+            const normalizedBuildingSize =
+              p.buildingSize ??
+              p.projectSize ??
+              p.BuildingSize ??
+              p.ProjectSize ??
+              existing?.buildingSize;
+
+            return {
+              ...p,
+              // Preserve locally-maintained fields so UI doesn't flicker between refreshes
+              progress: shouldPreserveExistingProgress
+                ? existing?.progress
+                : (p.progress ?? existing?.progress),
+              potentialStartDate: normalizedStartDate,
+              buildingSize: normalizedBuildingSize,
+              country: p.country ?? existing?.country,
+              thumbnailUrl:
+                p.thumbnailUrl || existing?.thumbnailUrl || this.getImageForJob(p.jobId),
+            };
+          });
 
           this.projects.next(mappedProjects);
           // console.log('Loaded projects:', mappedProjects);
@@ -85,25 +148,39 @@ export class ProjectService {
   }
 
   archiveProject(jobId: number): void {
-    this.jobsService.archiveJob(jobId).subscribe(() => {
+    this.archiveService.archiveJob(jobId).subscribe(() => {
       const currentProjects = this.projects.getValue();
       const updatedProjects = currentProjects.filter((p) => p.jobId !== jobId);
       this.projects.next(updatedProjects);
     });
   }
 
-  uploadThumbnail(jobId: number, file: File): void {
-    this.jobsService.uploadJobThumbnail(jobId, file).subscribe((response) => {
-      const currentProjects = this.projects.getValue();
-      const projectIndex = currentProjects.findIndex((p) => p.jobId === jobId);
-      if (projectIndex > -1) {
-        const updatedProjects = [...currentProjects];
-        updatedProjects[projectIndex] = {
-          ...updatedProjects[projectIndex],
-          thumbnailUrl: response.thumbnailUrl,
-        };
-        this.projects.next(updatedProjects);
-      }
-    });
+  uploadThumbnail(
+    jobId: number,
+    file: File,
+  ): Observable<UploadThumbnailResponse> {
+    return this.jobsService.uploadJobThumbnail(jobId, file).pipe(
+      tap((response) => {
+        const currentProjects = this.projects.getValue();
+        const projectIndex = currentProjects.findIndex((p) => p.jobId === jobId);
+        if (projectIndex > -1) {
+          const updatedProjects = [...currentProjects];
+          updatedProjects[projectIndex] = {
+            ...updatedProjects[projectIndex],
+            thumbnailUrl: response.thumbnailUrl,
+          };
+          this.projects.next(updatedProjects);
+
+          const userId = this.authService.getUserId();
+          if (userId) {
+            localStorage.setItem(`projects_${userId}`, JSON.stringify(updatedProjects));
+          }
+        }
+      }),
+      catchError((error) => {
+        console.error('Thumbnail upload failed', error);
+        return throwError(() => error);
+      }),
+    );
   }
 }

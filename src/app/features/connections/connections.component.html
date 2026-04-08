@@ -90,11 +90,11 @@
               <td mat-cell *matCellDef="let user">
                 <div class="action-container" *ngIf="user.id !== currentUserId">
                   <ng-container [ngSwitch]="getConnectionStatus(user.id)">
-                    <button *ngSwitchCase="'Connect'" mat-stroked-button color="primary" class="action-button" (click)="sendConnectionRequest(user.id)" matTooltip="Send a connection request to this user to view their full profile and contact details" [matTooltipShowDelay]="500">
+                    <button *ngSwitchCase="'Connect'" mat-button type="button" class="btn btn-primary action-button" (click)="sendConnectionRequest(user.id)" matTooltip="Send a connection request to this user to view their full profile and contact details" [matTooltipShowDelay]="500">
                       <mat-icon>person_add</mat-icon>
                       Connect
                     </button>
-                    <button *ngSwitchCase="'Request Sent'" mat-flat-button color="primary" class="action-button"
+                    <button *ngSwitchCase="'Request Sent'" mat-button type="button" class="btn btn-secondary action-button"
                             (mouseover)="hoveredUserId = user.id"
                             (mouseout)="hoveredUserId = null"
                             (click)="cancelConnectionRequest(user.id)"
@@ -104,11 +104,11 @@
                       <mat-icon>{{ hoveredUserId === user.id ? 'close' : 'check' }}</mat-icon>
                       {{ hoveredUserId === user.id ? 'Cancel Request' : 'Request Sent' }}
                     </button>
-                    <button *ngSwitchCase="'Request Received'" mat-flat-button color="accent" class="action-button" (click)="acceptConnectionRequest(user.id)" matTooltip="Accept this user's request to connect" [matTooltipShowDelay]="500">
+                    <button *ngSwitchCase="'Request Received'" mat-button type="button" class="btn btn-primary action-button" (click)="acceptConnectionRequest(user.id)" matTooltip="Accept this user's request to connect" [matTooltipShowDelay]="500">
                       <mat-icon>person_add</mat-icon>
                       Accept Request
                     </button>
-                    <button *ngSwitchCase="'ACCEPTED'" mat-flat-button color="primary" class="action-button" disabled matTooltip="You are already connected with this user" [matTooltipShowDelay]="500">
+                    <button *ngSwitchCase="'ACCEPTED'" mat-button type="button" class="btn btn-secondary action-button" disabled matTooltip="You are already connected with this user" [matTooltipShowDelay]="500">
                       <mat-icon>check_circle</mat-icon>
                       Connected
                     </button>
@@ -183,11 +183,11 @@
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let conn">
                 <ng-container *ngIf="conn.status === 'PENDING'">
-                  <button *ngIf="conn.requesterId === currentUserId" mat-stroked-button color="warn" (click)="cancelConnectionRequest(conn.otherUserId)" matTooltip="Withdraw your connection request" [matTooltipShowDelay]="500">Cancel</button>
-                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="primary" (click)="acceptConnectionRequest(conn.id)" matTooltip="Accept connection request" [matTooltipShowDelay]="500">Accept</button>
-                  <button *ngIf="conn.receiverId === currentUserId" mat-stroked-button color="warn" (click)="declineConnectionRequest(conn.id)" matTooltip="Decline connection request" [matTooltipShowDelay]="500">Decline</button>
+                  <button *ngIf="conn.requesterId === currentUserId" mat-button type="button" class="btn btn-danger" (click)="cancelConnectionRequest(conn.otherUserId)" matTooltip="Withdraw your connection request" [matTooltipShowDelay]="500">Cancel</button>
+                  <button *ngIf="conn.receiverId === currentUserId" mat-button type="button" class="btn btn-primary" (click)="acceptConnectionRequest(conn.id)" matTooltip="Accept connection request" [matTooltipShowDelay]="500">Accept</button>
+                  <button *ngIf="conn.receiverId === currentUserId" mat-button type="button" class="btn btn-danger" (click)="declineConnectionRequest(conn.id)" matTooltip="Decline connection request" [matTooltipShowDelay]="500">Decline</button>
                 </ng-container>
-                <button *ngIf="conn.status === 'ACCEPTED'" mat-stroked-button color="warn" (click)="removeConnection(conn.id)" matTooltip="Remove this user from your connections" [matTooltipShowDelay]="500">Remove</button>
+                <button *ngIf="conn.status === 'ACCEPTED'" mat-button type="button" class="btn btn-danger" (click)="removeConnection(conn.id)" matTooltip="Remove this user from your connections" [matTooltipShowDelay]="500">Remove</button>
                 <img [src]="conn.isInSystem ? 'assets/roundedlogo.png' : 'assets/roundedlogogrey.png'" alt="Probuild Logo" class="probuild-logo" [matTooltip]="conn.isInSystem ? 'This user is a registered ProBuild member' : 'This user has been invited but hasn\'t joined yet'" [matTooltipShowDelay]="500">
               </td>
             </ng-container>

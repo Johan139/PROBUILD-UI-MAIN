@@ -1,0 +1,186 @@
+<div class="dialog-container">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="header-left">
+      <div class="status-icon">
+        @if (task.status?.toLowerCase() === 'completed') {
+          <lucide-angular
+            [img]="CheckCircle2"
+            class="icon-success"
+            >
+          </lucide-angular>
+        }
+        @if (task.status?.toLowerCase() === 'in-progress' || task.status?.toLowerCase() === 'active') {
+          <lucide-angular
+            [img]="PlayCircle"
+            class="icon-warning"
+            >
+          </lucide-angular>
+        }
+        @if (task.status?.toLowerCase() === 'pending' || !task.status) {
+          <div class="pending-circle"></div>
+        }
+      </div>
+      <div>
+        @if (!editMode) {
+          <h2 class="task-title">{{ task.task }}</h2>
+        }
+        @if (editMode) {
+          <input [(ngModel)]="task.task" class="edit-input-lg" placeholder="Task Name">
+        }
+
+        <div class="task-meta">
+          <span class="badge">{{ task.status || 'Pending' }}</span>
+          <span class="hours">{{ (task.days || 0) * 8 }} hours</span>
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="close()">
+      <lucide-angular [img]="X" class="icon-close"></lucide-angular>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+
+    <!-- Location -->
+    <div class="location-row">
+      <lucide-angular [img]="MapPin" class="icon-location"></lucide-angular>
+      <span class="label">Location:</span>
+      @if (!editMode) {
+        <span>{{ task.location }}</span>
+      }
+      @if (editMode) {
+        <input [(ngModel)]="task.location" class="edit-input-sm" placeholder="Location">
+      }
+    </div>
+
+    <mat-tab-group>
+      <!-- Details Tab -->
+      <mat-tab label="Details">
+        <div class="tab-body">
+          <!-- Description -->
+          <div class="section">
+            <h4 class="section-title">Work Description</h4>
+            @if (!editMode) {
+              <div class="info-box">
+                {{ task.description }}
+              </div>
+            }
+            @if (editMode) {
+              <textarea [(ngModel)]="task.description" class="edit-textarea" rows="4"></textarea>
+            }
+          </div>
+
+          <!-- Materials -->
+          <div class="section">
+            <h4 class="section-title">Materials Required</h4>
+            @if (!editMode) {
+              <div class="materials-grid">
+                @for (mat of task.materials; track mat) {
+                  <div class="material-item">
+                    <div class="dot"></div>
+                    <span>{{ mat }}</span>
+                  </div>
+                }
+              </div>
+            }
+            @if (editMode) {
+              <div class="materials-edit">
+                @for (mat of task.materials; track trackByIndex(i, mat); let i = $index) {
+                  <div class="material-input-row">
+                    <input [(ngModel)]="task.materials![i]" class="edit-input-sm">
+                    <button mat-icon-button color="warn" (click)="removeMaterial(i)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+                <button mat-button color="primary" (click)="addMaterial()">+ Add Material</button>
+              </div>
+            }
+          </div>
+
+          <!-- Notes -->
+          <div class="section">
+            <h4 class="section-title">Notes</h4>
+            @if (!editMode) {
+              <div class="info-box italic">
+                {{ task.notes || 'No notes added.' }}
+              </div>
+            }
+            @if (editMode) {
+              <textarea [(ngModel)]="task.notes" class="edit-textarea" rows="3" placeholder="Add notes..."></textarea>
+            }
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Checklist Tab -->
+      <mat-tab label="Checklist">
+        <div class="tab-body">
+          <div class="checklist-container">
+            @for (item of task.checklist; track item) {
+              <div class="checklist-item">
+                <mat-checkbox [(ngModel)]="item.done" [disabled]="!editMode && !data.isOwner">
+                  <span [class.done]="item.done">{{ item.item }}</span>
+                </mat-checkbox>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Photos Tab -->
+      <mat-tab label="Photos">
+        <div class="tab-body">
+          <div class="photos-grid">
+            @for (photo of task.photos; track photo) {
+              <div class="photo-card">
+                <div class="photo-placeholder">
+                  <lucide-angular [img]="Camera" class="icon-camera-lg"></lucide-angular>
+                </div>
+                <div class="photo-caption">
+                  <span class="caption">{{ photo.caption }}</span>
+                  <span class="date">{{ photo.date }}</span>
+                </div>
+              </div>
+            }
+            @if (!task.photos?.length) {
+              <div class="no-photos">
+                <lucide-angular [img]="Camera" class="icon-camera-xl"></lucide-angular>
+                <p>No photos uploaded yet.</p>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <div class="footer-left">
+      <span class="status-badge" [ngClass]="getStatusColor(task.status || '')">
+        {{ task.status | titlecase }}
+      </span>
+    </div>
+    <div class="footer-right">
+      @if (data.isOwner) {
+        <button mat-button class="btn btn-secondary" type="button" (click)="toggleEdit()">
+          {{ editMode ? 'Cancel' : 'Edit' }}
+        </button>
+      }
+      @if (editMode) {
+        <button mat-button class="btn btn-primary" type="button" (click)="save()">
+          Save Changes
+        </button>
+      }
+      @if (!editMode) {
+        <button mat-button class="btn btn-secondary" type="button" (click)="close()">
+          Close
+        </button>
+      }
+    </div>
+  </div>
+</div>

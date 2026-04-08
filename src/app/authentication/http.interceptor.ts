@@ -7,7 +7,7 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { PLATFORM_ID, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { from, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
@@ -17,54 +17,132 @@ export const authInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const platformId = inject(PLATFORM_ID);
   const authService = inject(AuthService);
-  let token: string | null = null;
+  const isApolloProxyRequest = req.url.startsWith('/apollo/');
+  const isAuthEndpoint =
+    req.url.includes('/login') ||
+    req.url.includes('/refresh-token') ||
+    req.url.includes('/google-login');
+  if (isApolloProxyRequest) return next(req);
 
-  if (isPlatformBrowser(platformId)) {
-    token = localStorage.getItem('accessToken');
-  }
+  const isBrowser = isPlatformBrowser(platformId);
+  const token$ = isBrowser ? from(authService.getToken()) : of(null);
 
-  if (token) {
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
+  return token$.pipe(
+    switchMap((token) => {
+      authService.noteAuthTokenObserved(!!token, 'interceptor:token_resolved', {
+        url: req.url,
+        isAuthEndpoint,
+      });
 
-  return next(req).pipe(
-    catchError((error: any) => {
-      const isAuthEndpoint =
-        req.url.includes('/login') || req.url.includes('/refresh-token');
+      const getCorrelationId = (): string => {
+        const maybeCrypto = (globalThis as any)?.crypto;
+        if (maybeCrypto?.randomUUID) {
+          return maybeCrypto.randomUUID();
+        }
+        return `pb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      };
 
-      if (
-        error instanceof HttpErrorResponse &&
-        error.status === 401 &&
-        !isAuthEndpoint
-      ) {
-        return authService.refreshToken().pipe(
-          switchMap((tokenResponse: any) => {
-            if (!tokenResponse || !tokenResponse.token) {
-              authService.logout();
-              return throwError(
-                () => new Error('Unable to refresh access token.'),
-              );
-            }
+      const correlationId =
+        req.headers.get('X-Correlation-Id') || getCorrelationId();
 
-            req = req.clone({
-              setHeaders: {
-                Authorization: `Bearer ${tokenResponse.token}`,
-              },
-            });
-            return next(req);
-          }),
-          catchError((refreshErr) => {
-            authService.logout();
-            return throwError(() => refreshErr);
-          }),
-        );
+      const headers: Record<string, string> = {
+        'X-Correlation-Id': correlationId,
+      };
+      if (token && !isAuthEndpoint) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
-      return throwError(() => error);
+      const authedReq = req.clone({
+        setHeaders: headers,
+      });
+
+      return next(authedReq).pipe(
+        catchError((error: any) => {
+          const hasRetried = authedReq.headers.has('X-Auth-Retry');
+          authService.pushAuthTrace('interceptor.response.error', {
+            url: req.url,
+            status: error instanceof HttpErrorResponse ? error.status : null,
+            hasRetried,
+            isAuthEndpoint,
+          });
+
+          if (
+            error instanceof HttpErrorResponse &&
+            error.status === 401 &&
+            !isAuthEndpoint &&
+            !hasRetried
+          ) {
+            // Prevent refresh attempts after logout.
+            // When inactivity/logout fires, in-flight requests can still return 401.
+            // Without this guard the interceptor keeps trying refresh, which can
+            // leave the app in a half-logged-out / hung state.
+            const hasRefreshToken =
+              isBrowser && !!localStorage.getItem('refreshToken');
+            if (!authService.isLoggedIn() || !hasRefreshToken) {
+              authService.pushAuthTrace('interceptor.401.no_refresh_token_logout', {
+                url: req.url,
+              });
+              // Session is already effectively dead; force a clean logout so
+              // the app doesn't keep failing requests and "hang" in an
+              // authenticated UI state.
+              authService.logout('token_invalid');
+              return throwError(() => error);
+            }
+
+            authService.pushAuthTrace('interceptor.401.refresh_attempt', {
+              url: req.url,
+            });
+            return authService.refreshToken().pipe(
+              switchMap((tokenResponse: any) => {
+                if (!tokenResponse || !tokenResponse.token) {
+                  authService.pushAuthTrace('interceptor.401.refresh_empty_token', {
+                    url: req.url,
+                  });
+                  authService.logout('refresh_invalid');
+                  return throwError(
+                    () => new Error('Unable to refresh access token.'),
+                  );
+                }
+
+                authService.noteAuthTokenObserved(true, 'interceptor:retry_with_refreshed_token', {
+                  url: req.url,
+                });
+
+                const retryReq = authedReq.clone({
+                  setHeaders: {
+                    Authorization: `Bearer ${tokenResponse.token}`,
+                    'X-Auth-Retry': '1',
+                  },
+                });
+
+                return next(retryReq);
+              }),
+              catchError((refreshErr) => {
+                authService.pushAuthTrace('interceptor.401.refresh_failed', {
+                  url: req.url,
+                  status:
+                    refreshErr instanceof HttpErrorResponse
+                      ? refreshErr.status
+                      : null,
+                  name: (refreshErr as any)?.name || null,
+                });
+                // Let AuthService.refreshToken() decide whether a logout is required
+                // (e.g. repeated auth failures). Avoid forcing immediate logout on
+                // transient refresh errors during heavy redirect/API bursts.
+                return throwError(() => refreshErr);
+              }),
+            );
+          }
+
+          if (error instanceof HttpErrorResponse && error.status === 401 && isAuthEndpoint) {
+            authService.pushAuthTrace('interceptor.auth_endpoint_401', {
+              url: req.url,
+            });
+          }
+
+          return throwError(() => error);
+        }),
+      );
     }),
   );
 };

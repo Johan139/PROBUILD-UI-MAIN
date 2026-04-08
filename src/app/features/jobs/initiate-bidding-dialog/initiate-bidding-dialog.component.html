@@ -7,48 +7,56 @@
     <mat-radio-button value="CONNECTIONS_ONLY" matTooltip="Your job will only be visible to your connections">Connections Only</mat-radio-button>
   </mat-radio-group>
 
-  <div *ngIf="form.get('biddingType')?.value === 'CONNECTIONS_ONLY'" class="warning-message" style="color: orange; margin-bottom: 1rem; font-size: 0.9em;">
-    <mat-icon style="vertical-align: bottom; font-size: 1.2em; height: 1.2em; width: 1.2em;">warning</mat-icon>
-    You will need to manually add your invoices if you use someone outside of the system.
-  </div>
+  @if (form.get('biddingType')?.value === 'CONNECTIONS_ONLY') {
+    <div class="warning-message" style="color: orange; margin-bottom: 1rem; font-size: 0.9em;">
+      <mat-icon style="vertical-align: bottom; font-size: 1.2em; height: 1.2em; width: 1.2em;">warning</mat-icon>
+      You will need to manually add your invoices if you use someone outside of the system.
+    </div>
+  }
 
   <div class="trades-selection-container">
     <div class="trade-input-section">
       <mat-form-field class="full-width" appearance="fill">
         <mat-label>Add Trades</mat-label>
         <input matInput
-               placeholder="Type to search trades..."
-               [formControl]="tradeCtrl"
-               [matAutocomplete]="autoTrade">
-        <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selected($event)">
-          <mat-option *ngFor="let trade of filteredTrades | async" [value]="trade">
-            {{trade.display}}
-          </mat-option>
-        </mat-autocomplete>
-      </mat-form-field>
-    </div>
-    <div class="selected-trades-display" *ngIf="selectedTrades.length > 0">
-      <h4>Selected Trades:</h4>
-      <div class="chips-wrapper">
-        <div class="trades-list">
-          <div *ngFor="let trade of selectedTrades" class="trade-row">
-            <div class="trade-info">
-              <span>{{trade.display}}</span>
-            </div>
-            <div class="trade-budget">
-              <span>Budget: $</span>
-              <input class="table-input" type="number" [(ngModel)]="trade.budget" [ngModelOptions]="{standalone: true}" placeholder="0.00">
-              <button mat-icon-button (click)="remove(trade)" class="remove-btn">
-                <mat-icon>close</mat-icon>
-              </button>
+          placeholder="Type to search trades..."
+          [formControl]="tradeCtrl"
+          [matAutocomplete]="autoTrade">
+          <mat-autocomplete #autoTrade="matAutocomplete" (optionSelected)="selected($event)">
+            @for (trade of filteredTrades | async; track trade) {
+              <mat-option [value]="trade">
+                {{trade.display}}
+              </mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+      @if (selectedTrades.length > 0) {
+        <div class="selected-trades-display">
+          <h4>Selected Trades:</h4>
+          <div class="chips-wrapper">
+            <div class="trades-list">
+              @for (trade of selectedTrades; track trade) {
+                <div class="trade-row">
+                  <div class="trade-info">
+                    <span>{{trade.display}}</span>
+                  </div>
+                  <div class="trade-budget">
+                    <span>Budget: $</span>
+                    <input class="table-input" type="number" [(ngModel)]="trade.budget" [ngModelOptions]="{standalone: true}" placeholder="0.00">
+                    <button mat-icon-button (click)="remove(trade)" class="remove-btn">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   </div>
-</div>
-<div mat-dialog-actions>
-  <button mat-button (click)="onCancel()">Cancel</button>
-  <button mat-button (click)="onConfirm()" [disabled]="!form.valid" [matTooltip]="form.valid ? '' : 'Please select a bidding type and at least one subcontractor type.'">Confirm</button>
-</div>
+  <div mat-dialog-actions>
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button mat-button (click)="onConfirm()" [disabled]="!form.valid" [matTooltip]="form.valid ? '' : 'Please select a bidding type and at least one subcontractor type.'">Confirm</button>
+  </div>

@@ -1,0 +1,40 @@
+<div class="tab-pane">
+  <div class="filter-buttons">
+    <button class="filter-pill" [class.active]="quoteStatusFilter === 'All'" (click)="setFilter('All')">All</button>
+    <button class="filter-pill" [class.active]="quoteStatusFilter === 'Draft'" (click)="setFilter('Draft')">Draft</button>
+    <button class="filter-pill" [class.active]="quoteStatusFilter === 'Submitted'" (click)="setFilter('Submitted')">Submitted</button>
+    <button class="filter-pill" [class.active]="quoteStatusFilter === 'Rejected'" (click)="setFilter('Rejected')">Rejected</button>
+  </div>
+
+  @if (loading) {
+    <div class="loading">Loading your bids...</div>
+  }
+  @if (!loading && dataSource.data.length === 0) {
+    <div class="no-jobs">
+      You haven't placed any bids matching this filter.
+    </div>
+  }
+
+  @if (!loading && dataSource.data.length > 0) {
+    <ul class="job-list">
+      @for (bid of dataSource.connect() | async; track trackByBidId($index, bid)) {
+        <li class="job-item card-style">
+          @if (bid.job) {
+            <app-job-card
+              [job]="bid.job"
+              [quote]="getQuoteForBid(bid)"
+              (viewQuote)="onViewQuote(getQuoteForBid(bid))"
+              (withdrawBid)="onWithdrawBid(bid)"
+              (editBid)="onEditBid(bid)"
+              (viewMoreInfo)="viewMoreInfo.emit(bid.job)"
+              [userTrade]="userTrade"
+              [showBidButton]="false"
+              >
+            </app-job-card>
+          }
+        </li>
+      }
+    </ul>
+  }
+  <mat-paginator [length]="dataSource.data.length" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+</div>

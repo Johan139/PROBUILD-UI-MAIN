@@ -39,4 +39,9 @@ export class RegistrationService {
       data,
     );
   }
+  checkEmailExists(email: string): Observable<boolean> {
+    return this.httpClient.get<boolean>(`${BASE_URL_ACCOUNT}/email-exists`, {
+      params: { email },
+    });
+  }
 }

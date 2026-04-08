@@ -1,47 +1,302 @@
-<div class="container">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>My Quotes</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8">
-          <!-- Quote Number Column -->
-          <ng-container matColumnDef="number">
-            <th mat-header-cell *matHeaderCellDef>Quote Number</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.number || 'N/A' }}</td>
-          </ng-container>
-  
-          <!-- Created By Column -->
-          <ng-container matColumnDef="createdBy">
-            <th mat-header-cell *matHeaderCellDef>Created By</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.createdBy || 'Unknown' }}</td>
-          </ng-container>
-  
-          <!-- Created Date Column -->
-          <ng-container matColumnDef="createdDate">
-            <th mat-header-cell *matHeaderCellDef>Date Created</th>
-            <td mat-cell *matCellDef="let quote">{{ quote.createdDate }}</td>
-          </ng-container>
-  
-          <!-- Total Column -->
-          <ng-container matColumnDef="total">
-            <th mat-header-cell *matHeaderCellDef>Total</th>
-            <td mat-cell *matCellDef="let quote">${{ quote.total.toFixed(2) }}</td>
-          </ng-container>
-  
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let quote">
-              <button mat-icon-button color="primary" (click)="openQuote(quote.id)">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-  
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
+<!-- DIRECTION TABS (Outbound / Inbound) -->
+<div class="page-header">
+  <div>
+    <h1 class="h1-color">
+      {{ isInboundView ? "Received" : "My" }} Quotes & Invoices
+    </h1>
+    <p>
+      {{
+      isInboundView
+      ? "Documents sent to you by others"
+      : "Manage your quotes and invoices"
+      }}
+    </p>
   </div>
+
+  @if (!isInboundView) {
+    <button
+      mat-button
+      class="btn btn-primary"
+      (click)="redirectToQuote()"
+      >
+      <mat-icon>add</mat-icon>
+      Create New
+    </button>
+  }
+</div>
+<mat-tab-group (selectedIndexChange)="onDirectionChange($event)">
+  <!-- OUTBOUND -->
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>outbox</mat-icon>
+      Outbound
+      <span class="tab-count">{{ outboundCount }}</span>
+    </ng-template>
+
+    <ng-template matTabContent>
+      <ng-container *ngTemplateOutlet="quotesContent"></ng-container>
+    </ng-template>
+  </mat-tab>
+
+  <!-- INBOUND -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>inbox</mat-icon>
+      Inbound
+      <span class="tab-count">{{ inboundCount }}</span>
+    </ng-template>
+
+    <ng-template matTabContent>
+      <ng-container *ngTemplateOutlet="quotesContent"></ng-container>
+    </ng-template>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- ================================================= -->
+<!-- =============== SHARED CONTENT ================== -->
+<!-- ================================================= -->
+
+<ng-template #quotesContent>
+  <div class="page">
+    <!-- PAGE HEADER -->
+
+    <!-- DOCUMENT TYPE TABS (All / Quotes / Invoices) -->
+    <div class="doc-type-tabs">
+      <mat-tab-group (selectedIndexChange)="onDocTypeChange($event)">
+        <mat-tab>
+          <ng-template mat-tab-label>
+            All
+            <span class="tab-count">{{ allCount }}</span>
+          </ng-template>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>request_quote</mat-icon>
+            Quotes
+            <span class="tab-count">{{ quotesCount }}</span>
+          </ng-template>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>receipt_long</mat-icon>
+            Invoices
+            <span class="tab-count">{{ invoicesCount }}</span>
+          </ng-template>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h4>Total</h4>
+        <strong>{{ totals.count }}</strong>
+        <span>{{ totals.value | currency: "USD" : "symbol" : "1.0-0" }}</span>
+      </div>
+
+      <div class="stat-card success">
+        <h4>{{ isInvoiceView ? "Paid" : "Accepted" }}</h4>
+        <strong>{{ totals.accepted }}</strong>
+      </div>
+
+      <div class="stat-card warning">
+        <h4>Pending</h4>
+        <strong>{{ totals.pending }}</strong>
+      </div>
+
+      <div class="stat-card danger">
+        <h4>{{ isInvoiceView ? "Rejected" : "Rejected" }}</h4>
+        <strong>{{ totals.declined }}</strong>
+      </div>
+    </div>
+
+    <!-- ACCEPTED / PAID -->
+    @if (accepted.length) {
+      <section>
+        <h3 class="section-title success">
+          {{ acceptedLabel }} ({{ accepted.length }})
+        </h3>
+        @for (q of accepted; track q) {
+          <div
+            class="quote-row accepted"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status ok">{{ getStatusLabel(q) }}</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- PENDING -->
+    @if (pending.length) {
+      <section>
+        <h3 class="section-title warning">
+          {{ pendingLabel }} ({{ pending.length }})
+        </h3>
+        @for (q of pending; track q) {
+          <div
+            class="quote-row pending"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status warn">{{ getStatusLabel(q) }}</span>
+              @if (!isInboundView) {
+                <button
+                  mat-button
+                  class="btn btn-ghost reminder"
+                  (click)="sendReminder(q.id); $event.stopPropagation()"
+                  >
+                  Send Reminder
+                </button>
+              }
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- DECLINED / VOID -->
+    @if (declined.length) {
+      <section>
+        <h3 class="section-title danger">
+          {{ declinedLabel }} ({{ declined.length }})
+        </h3>
+        @for (q of declined; track q) {
+          <div
+            class="quote-row declined"
+            (click)="openQuote(q.id)"
+            >
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ getDocIcon(q) }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              <div class="amount">
+                {{ q.total ?? 0 | currency: "USD" : "symbol" : "1.0-0" }}
+              </div>
+              <div class="date">
+                {{ q.createdDate | date: "yyyy-MM-dd" }}
+              </div>
+              <span class="status err">{{ getStatusLabel(q) }}</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- DRAFTS -->
+    @if (draft.length) {
+      <section>
+        <h3 class="section-title">Drafts ({{ draft.length }})</h3>
+        @for (q of draft; track q) {
+          <div class="quote-row" (click)="openQuote(q.id)">
+            <div class="row-left">
+              <div class="icon" [class.invoice-icon]="isInvoice(q)">
+                <mat-icon>{{ isInvoice(q) ? "receipt_long" : "edit" }}</mat-icon>
+              </div>
+              <div class="meta">
+                <div class="number">{{ q.number }}</div>
+                <div class="subtitle">{{ q.jobName || "Unnamed job" }}</div>
+              </div>
+            </div>
+            <div class="row-right">
+              @if (q.total) {
+                <div class="amount">
+                  {{ q.total | currency: "USD" : "symbol" : "1.0-0" }}
+                </div>
+              }
+              <span class="status">draft</span>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- EMPTY STATE -->
+    @if (
+      !accepted.length && !pending.length && !declined.length && !draft.length
+      ) {
+      <div
+        class="empty-state"
+        >
+        <mat-icon>{{
+          isInvoiceView ? "receipt_long" : "request_quote"
+        }}</mat-icon>
+        <h3>
+          No
+          {{
+          docTypeFilter === "ALL"
+          ? "documents"
+          : docTypeFilter === "INVOICE"
+          ? "invoices"
+          : "quotes"
+          }}
+          yet
+        </h3>
+        @if (!isInboundView) {
+          <p>
+            Create your first {{ isInvoiceView ? "invoice" : "quote" }} to get
+            started
+          </p>
+        }
+        @if (isInboundView) {
+          <p>No documents have been sent to you yet</p>
+        }
+        @if (!isInboundView) {
+          <button
+            mat-button
+            class="btn btn-primary"
+            (click)="isInvoiceView ? redirectToInvoice() : redirectToQuote()"
+            >
+            <mat-icon>add</mat-icon>
+            Create {{ isInvoiceView ? "Invoice" : "Quote" }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

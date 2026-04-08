@@ -5,16 +5,20 @@
       <mat-form-field appearance="fill">
         <mat-label>First Name</mat-label>
         <input matInput formControlName="firstName" />
-        <mat-error *ngIf="clientForm.get('firstName')?.hasError('required')">
-          First Name is required
-        </mat-error>
+        @if (clientForm.get('firstName')?.hasError('required')) {
+          <mat-error>
+            First Name is required
+          </mat-error>
+        }
       </mat-form-field>
       <mat-form-field appearance="fill">
         <mat-label>Last Name</mat-label>
         <input matInput formControlName="lastName" />
-        <mat-error *ngIf="clientForm.get('lastName')?.hasError('required')">
-          Last Name is required
-        </mat-error>
+        @if (clientForm.get('lastName')?.hasError('required')) {
+          <mat-error>
+            Last Name is required
+          </mat-error>
+        }
       </mat-form-field>
     </div>
 
@@ -22,12 +26,16 @@
       <mat-form-field appearance="fill">
         <mat-label>Email</mat-label>
         <input matInput formControlName="email" />
-        <mat-error *ngIf="clientForm.get('email')?.hasError('required')">
-          Email is required
-        </mat-error>
-        <mat-error *ngIf="clientForm.get('email')?.hasError('email')">
-          Invalid email address
-        </mat-error>
+        @if (clientForm.get('email')?.hasError('required')) {
+          <mat-error>
+            Email is required
+          </mat-error>
+        }
+        @if (clientForm.get('email')?.hasError('email')) {
+          <mat-error>
+            Invalid email address
+          </mat-error>
+        }
       </mat-form-field>
       <mat-form-field appearance="fill">
         <mat-label>Phone</mat-label>
@@ -54,7 +62,7 @@
     color="primary"
     (click)="onSubmit()"
     [disabled]="clientForm.invalid || isLoading"
-  >
+    >
     {{ isLoading ? 'Saving...' : 'Save' }}
   </button>
 </mat-dialog-actions>

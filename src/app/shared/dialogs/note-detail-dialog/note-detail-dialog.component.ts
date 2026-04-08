@@ -31,10 +31,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatInputModule,
     FormsModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
 })
 export class NoteDetailDialogComponent implements OnInit {
+  // Cache user names to prevent repeated lookups
+  private userNameCache: Map<string, string> = new Map();
+
   constructor(
     public dialogRef: MatDialogRef<NoteDetailDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
@@ -44,27 +47,44 @@ export class NoteDetailDialogComponent implements OnInit {
     public authService: AuthService,
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Pre-populate the cache with user names on initialization
+    if (this.data.userNames instanceof Map) {
+      this.userNameCache = new Map(this.data.userNames);
+    } else if (this.data.userNames) {
+      // Handle case where userNames might be a plain object
+      Object.entries(this.data.userNames).forEach(([key, value]) => {
+        this.userNameCache.set(key, value as string);
+      });
+    }
+
+    // Debug log (remove after testing)
+  }
 
   getUserName(userId: string): string {
-    return this.data.userNames.get(userId) || 'Loading...';
+    // Return immediately from cache (no console.log in production)
+    if (!userId) {
+      return 'Unknown User';
+    }
+
+    const cached = this.userNameCache.get(userId);
+    if (cached) {
+      return cached;
+    }
+
+    // Fallback for missing users
+    return 'Unknown User';
   }
 
   getStatus(note: any): string {
-    if (note.archived) {
-      return 'Archived';
-    }
-    if (note.approved) {
-      return 'Approved';
-    }
-    if (note.rejected) {
-      return 'Rejected';
-    }
+    if (!note) return 'Pending';
+    if (note.archived) return 'Archived';
+    if (note.approved) return 'Approved';
+    if (note.rejected) return 'Rejected';
     return 'Pending';
   }
 
   startApproval(note: any): void {
-    // console.log('Note object in startApproval:', note);
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       width: '400px',
       data: {

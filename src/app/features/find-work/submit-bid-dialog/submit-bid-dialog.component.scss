@@ -1,14 +1,124 @@
-.step-container {
-  padding: 20px;
+.dialog-title {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.options-shell,
+.upload-shell {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-1);
+  padding: 0.5rem;
 }
 
 .options-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 20px;
+  gap: 0.75rem;
+  padding: 1rem;
 }
 
-::ng-deep .mat-step-header .mat-step-icon-selected {
-  background-color: #fbd008 !important;
+.options-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.options-subtitle {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+}
+
+.option-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.step-container {
+  padding: 1rem;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-top: 0.75rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+::ng-deep .upload-shell .mat-mdc-form-field {
+  margin-bottom: 0.5rem;
+}
+
+::ng-deep .upload-shell .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.step-title {
+  margin: 0 0 0.4rem 0;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.step-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.file-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.file-input {
+  flex: 1 1 240px;
+  color: var(--color-text);
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  padding: 0.5rem;
+  background: var(--color-surface);
+}
+
+.file-name {
+  margin: 0.75rem 0 0 0;
+  color: var(--color-success);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dialog-actions {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+::ng-deep .bid-stepper .mat-step-header .mat-step-icon-selected,
+::ng-deep .bid-stepper .mat-step-header .mat-step-icon-state-done {
+  background-color: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+::ng-deep .bid-stepper .mat-step-label {
+  color: var(--color-text-muted) !important;
+}
+
+::ng-deep .bid-stepper .mat-step-label.mat-step-label-active {
+  color: var(--color-text) !important;
+  font-weight: 600;
+}
+
+::ng-deep .upload-shell .mat-mdc-progress-bar {
+  margin-top: 0.8rem;
+  border-radius: 999px;
 }

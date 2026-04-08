@@ -6,11 +6,14 @@ import {
   PLATFORM_ID,
   ViewChild,
 } from '@angular/core';
-import { catchError, take, throwError } from 'rxjs';
+import { catchError, forkJoin, take, throwError } from 'rxjs';
 import {
+  AbstractControl,
   FormBuilder,
   FormControl,
   FormGroup,
+  ValidationErrors,
+  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -48,7 +51,7 @@ import {
   PaymentIntentRequest,
   StripeService,
 } from '../../services/StripeService';
-import { isPlatformBrowser, NgForOf, NgIf } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -72,7 +75,13 @@ import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { RegistrationService } from '../../services/registration.service';
 import { AddressDialogComponent } from '../../authentication/profile/address-dialog/address-dialog.component';
 import { UserAddressStoreService } from '../../services/UserAddressStoreService';
-
+import { CompanyService } from '../../services/company.service';
+import { GooglePlacesService } from '../../services/google-places.service';
+import {
+  parsePhoneNumberFromString,
+  AsYouType,
+  CountryCode,
+} from 'libphonenumber-js';
 const BASE_URL = environment.BACKEND_URL;
 
 interface SubscriptionPackage {
@@ -127,23 +136,22 @@ export type ActiveMap = Record<
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
-    NgForOf,
-    NgIf,
-    SharedModule,
-  ],
+    SharedModule
+],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
 })
 export class ProfileComponent implements OnInit {
   @ViewChild('countryAutoTrigger') countryAutoTrigger!: MatAutocompleteTrigger;
   @ViewChild('stateAutoTrigger') stateAutoTrigger!: MatAutocompleteTrigger;
-  @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+
   @ViewChild('profileTabs') profileTabs!: MatTabGroup;
   addressControl = new FormControl<string>('');
   options: { description: string; place_id: string }[] = [];
-  selectedPlace: { description: string; place_id: string } | null = null;
-  autocompleteService: google.maps.places.AutocompleteService | undefined;
-  isGoogleMapsLoaded: boolean = false;
+
+  billingAddressOptions: google.maps.places.AutocompletePrediction[] = [];
+  physicalAddressOptions: google.maps.places.AutocompletePrediction[] = [];
+
   profile: Profile | null = null;
   profileForm: FormGroup;
   teamForm: FormGroup;
@@ -177,6 +185,11 @@ export class ProfileComponent implements OnInit {
   jobCardForm: FormGroup;
   userRole: string | null = null;
   today: Date = new Date();
+
+  selectedCompanyCountryCode: any = null;
+
+  billingAddressPayload: any | null = null;
+  physicalAddressPayload: any | null = null;
 
   isVerified = false;
   countries: any[] = [];
@@ -258,6 +271,7 @@ export class ProfileComponent implements OnInit {
     private matIconRegistry: MatIconRegistry,
     private addressStore: UserAddressStoreService,
     private route: ActivatedRoute,
+    private googlePlaces: GooglePlacesService,
     private registrationService: RegistrationService,
     private router: Router,
     private domSanitizer: DomSanitizer,
@@ -265,6 +279,7 @@ export class ProfileComponent implements OnInit {
     @Inject(PLATFORM_ID) private platformId: Object,
     private snackBar: MatSnackBar,
     private teamManagementService: TeamManagementService,
+    private companyService: CompanyService,
   ) {
     this.jobCardForm = new FormGroup({});
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -273,10 +288,13 @@ export class ProfileComponent implements OnInit {
       email: [null],
       firstName: [null, Validators.required],
       lastName: [null, Validators.required],
-      phoneNumber: [null, Validators.required],
+      phoneNumber: [null, [Validators.required, this.phoneValidator()]],
       userType: [null],
+      companyEmail: [null],
+      companyPhone: [null, [this.phoneValidator()]],
       companyName: [null],
       companyRegNo: [null],
+      companyCountryNumberCode: [''],
       vatNo: [null],
       constructionType: [[]],
       nrEmployees: [null],
@@ -308,6 +326,10 @@ export class ProfileComponent implements OnInit {
       googlePlaceId: [''],
       notificationRadius: [100],
       jobPreferences: [[]],
+      billingAddress: [null],
+      physicalAddress: [null],
+      billingAddressInput: [''],
+      physicalAddressInput: [''],
     });
 
     this.teamForm = this.fb.group({
@@ -343,45 +365,44 @@ export class ProfileComponent implements OnInit {
     this.teamSubscriptionsData.sort = this.teamSort;
     this.inactiveSubscriptionsData.sort = this.inactiveSort;
 
-    this.addressControl.valueChanges.subscribe((value) => {
-      if (typeof value === 'string' && value.trim()) {
-        const request: google.maps.places.AutocompletionRequest = {
-          input: value,
-        };
-
-        if (this.userLatitude && this.userLongitude) {
-          request.location = new google.maps.LatLng(
-            this.userLatitude,
-            this.userLongitude,
-          );
-          request.radius = 50000; // 50 km radius — adjust as needed
-        }
-
-        this.autocompleteService?.getPlacePredictions(
-          request,
-          (predictions, status) => {
-            if (
-              status === google.maps.places.PlacesServiceStatus.OK &&
-              predictions
-            ) {
-              this.options = predictions.map((pred) => ({
-                description: pred.description,
-                place_id: pred.place_id,
-              }));
-            } else {
-              this.options = [];
-            }
-          },
-        );
-      } else {
+    this.addressControl.valueChanges.subscribe(async (value) => {
+      if (!value || typeof value !== 'string') {
         this.options = [];
+        return;
       }
+
+      this.options = (
+        await this.googlePlaces.getPredictions(
+          value,
+          this.userLatitude && this.userLongitude
+            ? { lat: this.userLatitude, lng: this.userLongitude }
+            : undefined,
+        )
+      ).map((p) => ({
+        description: p.description,
+        place_id: p.place_id,
+      }));
     });
   }
 
   ngOnInit(): void {
     this.loadSubscriptionPackages();
+    this.googlePlaces.load();
+    this.profileForm
+      .get('billingAddressInput')
+      ?.valueChanges.subscribe(async (value) => {
+        this.billingAddressOptions = value
+          ? await this.googlePlaces.getPredictions(value)
+          : [];
+      });
 
+    this.profileForm
+      .get('physicalAddressInput')
+      ?.valueChanges.subscribe(async (value) => {
+        this.physicalAddressOptions = value
+          ? await this.googlePlaces.getPredictions(value)
+          : [];
+      });
     this.registrationService.getCountries().subscribe((countries) => {
       this.countries = countries;
     });
@@ -449,7 +470,12 @@ export class ProfileComponent implements OnInit {
       if (user && user.id) {
         this.loadProfile();
         this.loadDocuments();
-
+        combineLatest([
+          this.registrationService.getAllCountryNumberCodes().pipe(take(1)),
+        ]).subscribe(([codes]) => {
+          this.countryNumberCode = codes;
+          this.loadCompanyProfile(user.id);
+        });
         this.checkSubscription();
         this.manageSubscriptions();
         this.GetUserSubscription();
@@ -457,7 +483,6 @@ export class ProfileComponent implements OnInit {
         this.isLoading = false;
       }
     });
-    console.log(this.subscriptionPackages);
     this.route.queryParamMap.pipe(take(1)).subscribe((params) => {
       if (params.get('subSuccess') === '1') {
         this.snackBar.open('Subscription successfully added', 'Dismiss', {
@@ -484,21 +509,7 @@ export class ProfileComponent implements OnInit {
       this.isUploading = false;
       this.loadDocuments(); // reload automatically after upload
       this.resetFileInput();
-      console.log(`Upload complete. Total ${fileCount} file(s) uploaded.`);
     });
-
-    if (this.isBrowser) {
-      this.profileService
-        .loadGoogleMapsScript()
-        .then(() => {
-          this.isGoogleMapsLoaded = true;
-          this.autocompleteService =
-            new google.maps.places.AutocompleteService();
-        })
-        .catch((err) =>
-          console.error('Google Maps script loading error:', err),
-        );
-    }
   }
   private selectTabByName(tabName: string): void {
     if (!this.profileTabs) return;
@@ -641,18 +652,16 @@ export class ProfileComponent implements OnInit {
               this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
               this.countryNumberCode[0];
 
-            // Update phoneNumber so it includes the dial code
-            const currentPhone =
-              this.profileForm.get('phoneNumber')?.value || '';
-            const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
-
-            if (currentPhone && !currentPhone.startsWith(dial)) {
-              const cleaned = currentPhone
-                .replace(/[^\d+]/g, '')
-                .replace(/^0+/, '');
-
+            const savedPhone = this.profileForm.get('phoneNumber')?.value || '';
+            const savedCountryCode = (this.selectedCountryCode?.countryCode ||
+              'ZA') as CountryCode;
+            const savedParsed = parsePhoneNumberFromString(
+              savedPhone,
+              savedCountryCode,
+            );
+            if (savedParsed?.isValid()) {
               this.profileForm.patchValue({
-                phoneNumber: `${dial}${cleaned}`,
+                phoneNumber: savedParsed.formatNational(),
               });
             }
 
@@ -719,58 +728,121 @@ export class ProfileComponent implements OnInit {
       });
   }
 
-  onAddressSelected(event: MatAutocompleteSelectedEvent): void {
-    const selectedAddress = event.option.value;
-    this.selectedPlace = selectedAddress;
+  async onAddressSelected(
+    event: MatAutocompleteSelectedEvent,
+    type: 'billing' | 'physical',
+  ): Promise<void> {
+    const selected = event.option.value;
+    if (!selected?.place_id) return;
 
-    const placesService = new google.maps.places.PlacesService(
-      this.addressInput.nativeElement,
-    );
-    placesService.getDetails(
-      {
-        placeId: selectedAddress.place_id,
-        fields: [
-          'place_id',
-          'geometry',
-          'formatted_address',
-          'address_components',
-        ],
-      },
-      (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          const components = place.address_components || [];
-          const getComponent = (type: string) =>
-            components.find((c) => c.types.includes(type))?.long_name || '';
-          const getShort = (type: string) =>
-            components.find((c) => c.types.includes(type))?.short_name || '';
-          const patchObj = {
-            address: selectedAddress.description,
-            formattedAddress:
-              place.formatted_address || selectedAddress.description,
-            streetNumber: getComponent('street_number'),
-            streetName: getComponent('route'),
-            city: getComponent('locality'),
-            state: getComponent('administrative_area_level_1'),
-            postalCode: getComponent('postal_code'),
-            country: getComponent('country'),
-            countryCode: getShort('country'),
-            latitude: place.geometry?.location?.lat() ?? null,
-            longitude: place.geometry?.location?.lng() ?? null,
-            googlePlaceId: place.place_id || selectedAddress.place_id, // fallback if needed
-          };
+    const place = await this.googlePlaces.getPlaceDetails(selected.place_id);
+    if (!place) return;
 
-          this.profileForm.patchValue(patchObj);
-          this.addressControl.setValue(patchObj.address);
-          console.log('🔄 Google Place data patched:', patchObj);
-        }
-      },
-    );
+    const components = place.address_components || [];
+    const get = (t: string) =>
+      components.find((c) => c.types.includes(t))?.long_name || '';
+
+    const payload = {
+      streetNumber: get('street_number'),
+      streetName: get('route'),
+      city: get('locality'),
+      state: get('administrative_area_level_1'),
+      postalCode: get('postal_code'),
+      country: get('country'),
+      latitude: place.geometry?.location?.lat() ?? null,
+      longitude: place.geometry?.location?.lng() ?? null,
+      formattedAddress: place.formatted_address,
+      googlePlaceId: place.place_id,
+    };
+
+    if (type === 'billing') {
+      this.profileForm.patchValue({
+        billingAddress: payload,
+        billingAddressInput: payload.formattedAddress || '',
+      });
+    }
+
+    if (type === 'physical') {
+      this.profileForm.patchValue({
+        physicalAddress: payload,
+        physicalAddressInput: payload.formattedAddress || '',
+      });
+    }
   }
 
+  private loadCompanyProfile(userId: string): void {
+    this.companyService
+      .getCompanyProfile(userId)
+      .pipe(take(1))
+      .subscribe({
+        next: (company) => {
+          if (!company) return;
+
+          const normalizeArray = (v: any) =>
+            typeof v === 'string'
+              ? v.split(',').map((x) => x.trim())
+              : Array.isArray(v)
+                ? v
+                : [];
+
+          const patch = {
+            companyName: company.name ?? null,
+            companyRegNo: company.companyRegNo ?? null,
+            vatNo: company.vatNo ?? null,
+            constructionType: normalizeArray(company.constructionType),
+            nrEmployees: company.nrEmployees ?? null,
+            yearsOfOperation: company.yearsOfOperation ?? null,
+            certificationStatus: company.certificationStatus ?? null,
+            certificationDocumentPath:
+              company.certificationDocumentPath ?? null,
+            trade: company.trade ?? null,
+            supplierType: company.supplierType ?? null,
+            productsOffered: normalizeArray(company.productsOffered),
+            jobPreferences: normalizeArray(company.jobPreferences),
+            deliveryArea: normalizeArray(company.deliveryArea),
+            deliveryTime: company.deliveryTime ?? null,
+            companyPhone: company.phoneNumber ?? null,
+            companyEmail: company.email ?? null,
+            billingAddress: company.billingAddress ?? null,
+            physicalAddress: company.physicalAddress ?? null,
+
+            billingAddressInput: company.billingAddress?.formattedAddress ?? '',
+            physicalAddressInput:
+              company.physicalAddress?.formattedAddress ?? '',
+          };
+
+          this.profileForm.patchValue(patch);
+
+          if (this.countryNumberCode.length > 0) {
+            const matched = company.countryNumberCode
+              ? this.countryNumberCode.find(
+                  (c) => c.id === company.countryNumberCode,
+                )
+              : null;
+
+            const resolved =
+              matched ||
+              this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
+              this.countryNumberCode[0];
+
+            // setTimeout forces Angular change detection AFTER mat-select options are rendered
+            setTimeout(() => {
+              this.selectedCompanyCountryCode = resolved;
+            });
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load company profile', err);
+        },
+      });
+  }
+  compareCountryCodes(a: any, b: any): boolean {
+    if (!a || !b) return false;
+    return a.id === b.id;
+  }
   private loadSubscriptionPackages(): void {
     this.stripeService.getSubscriptions().subscribe({
       next: (subscriptions) => {
-        console.log(subscriptions);
         this.subscriptionPackages = subscriptions.map((s) => ({
           value: s.subscription,
           display: `${s.subscription}`,
@@ -811,7 +883,6 @@ export class ProfileComponent implements OnInit {
 
     this.stripeService.getStripeSubscriptions(userId).subscribe({
       next: (res) => {
-        console.log(res);
         const raw = Array.isArray(res) ? res : (res ?? []);
 
         const normalized: SubscriptionRow[] = (raw || []).map((x: any) => {
@@ -842,14 +913,6 @@ export class ProfileComponent implements OnInit {
             }
           }
 
-          // Debug logging
-          console.log('Processing subscription:', {
-            pkg,
-            validUntilRaw,
-            validUntil,
-            cancelAtPeriodEnd: x.cancel_at_period_end ?? x.cancelAtPeriodEnd,
-            status: x.status,
-          });
           const amountRaw =
             x.amount ??
             x.amount_total ??
@@ -884,7 +947,6 @@ export class ProfileComponent implements OnInit {
           let status = String(x.status ?? '').toLowerCase();
           if (!status && isTrial) status = 'trialing';
 
-          // ✅ FIX: Map cancel_at_period_end to cancelAtPeriodEnd (camelCase)
           const cancelAtPeriodEnd =
             x.cancel_at_period_end ?? x.cancelAtPeriodEnd ?? false;
 
@@ -896,11 +958,10 @@ export class ProfileComponent implements OnInit {
             assignedUserName,
             status,
             subscriptionId,
-            cancelAtPeriodEnd, // ✅ Now correctly mapped
+            cancelAtPeriodEnd,
           };
         });
 
-        // viewer-aware bucketing
         const meId = (
           this.authService.currentUserSubject.value?.id ??
           String(localStorage.getItem('userId') || '')
@@ -971,20 +1032,6 @@ export class ProfileComponent implements OnInit {
           this.subscriptionsData.data = [...this.subscriptionsData.data];
         });
 
-        // ✅ Debug: Log the first active subscription to verify data structure
-        if (mine.length > 0) {
-          console.log('First active subscription data:', {
-            subscription: mine[0],
-            validUntilType: typeof mine[0].validUntil,
-            validUntilValue: mine[0].validUntil,
-            cancelAtPeriodEnd: mine[0].cancelAtPeriodEnd,
-            status: mine[0].status,
-            isBeforeToday: mine[0].validUntil
-              ? mine[0].validUntil < this.today
-              : 'N/A',
-          });
-        }
-
         this.isLoadingSubscriptions = false;
       },
       error: (err) => {
@@ -1007,7 +1054,6 @@ export class ProfileComponent implements OnInit {
 
         const activeCode = this.subscriptionuserPackages?.[0]?.value ?? null;
         if (activeCode) {
-          // Prefer direct code match in your known packages
           const match = this.subscriptionPackages.find(
             (p) =>
               p.value.toLowerCase() === activeCode.toLowerCase() ||
@@ -1055,6 +1101,24 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
+  archiveDocument(doc: ProfileDocument): void {
+    this.profileService.archiveDocument(doc.id).subscribe({
+      next: () => {
+        this.snackBar.open('Document archived successfully.', 'Close', {
+          duration: 3000,
+        });
+
+        this.loadDocuments();
+      },
+      error: (err) => {
+        console.error('Failed to archive document:', err);
+        this.snackBar.open('Failed to archive document.', 'Close', {
+          duration: 3000,
+          panelClass: ['error-snackbar'],
+        });
+      },
+    });
+  }
 
   loadDocuments(): void {
     const userId = this.authService.currentUserSubject.value?.id;
@@ -1089,7 +1153,7 @@ export class ProfileComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe((result) => {
-      if (!result) return; // user clicked NO
+      if (!result) return;
 
       this.profileService.deleteUserDocument(doc.id).subscribe({
         next: () => {
@@ -1111,7 +1175,6 @@ export class ProfileComponent implements OnInit {
   viewDocument(document: any): void {
     this.profileService.downloadJobDocument(document.id).subscribe({
       next: (response: Blob) => {
-        // Infer MIME type based on extension
         const extension = document.name?.split('.').pop()?.toLowerCase();
         let mimeType = 'application/octet-stream'; // fallback
 
@@ -1133,7 +1196,6 @@ export class ProfileComponent implements OnInit {
           this.showAlert = true;
         }
 
-        // Cleanup after 10 seconds
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       },
       error: (err) => {
@@ -1144,133 +1206,93 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  // ---------- ADDRESS MANAGEMENT ----------
-  // ---------- ADDRESS MANAGEMENT ----------
-
-  openAddressDialog(address?: UserAddress): void {
-    const dialogRef = this.dialog.open(AddressDialogComponent, {
-      width: '600px',
-      data: address ?? null,
-    });
-
-    dialogRef.afterClosed().subscribe((result: UserAddress | null) => {
-      if (!result) return;
-
-      // -----------------------------------
-      // 🔥 CRITICAL FIX:
-      // When editing, force the ID to remain
-      // -----------------------------------
-      if (address) {
-        result.id = address.id; // ensure update always has correct ID
-        this.updateAddress(result);
-      } else {
-        this.saveNewAddress(result);
-      }
-    });
-  }
-
-  editAddress(address: UserAddress): void {
-    this.openAddressDialog(address);
-  }
-
-  deleteAddress(address: UserAddress): void {
-    if (!address?.id) return;
-
-    const confirmed = confirm('Are you sure you want to delete this address?');
-    if (!confirmed) return;
-
-    this.profileService.deleteUserAddress(address.id).subscribe({
-      next: () => {
-        this.snackBar.open('Address deleted successfully.', 'Close', {
-          duration: 3000,
-        });
-        // ✅ use the actual array name
-        this.addresses = this.addresses.filter((a) => a.id !== address.id);
-        this.addressDataSource.data = this.addresses;
-      },
-      error: (err) => {
-        console.error('Error deleting address', err);
-        this.snackBar.open('Failed to delete address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  saveNewAddress(address: UserAddress): void {
-    const payload = {
-      ...address,
-      userId: String(localStorage.getItem('userId') ?? ''), // <-- make sure this is set!
-    };
-
-    this.profileService.addUserAddress(payload).subscribe({
-      next: (saved) => {
-        this.snackBar.open('Address added successfully.', 'Close', {
-          duration: 3000,
-        });
-        this.addresses.push(saved);
-        this.addressDataSource.data = [...this.addresses];
-      },
-      error: (err) => {
-        console.error('Error saving address', err);
-        this.snackBar.open('Failed to save address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
-  updateAddress(address: UserAddress): void {
-    this.profileService.updateUserAddress(address.id!, address).subscribe({
-      next: (updated) => {
-        this.snackBar.open('Address updated successfully.', 'Close', {
-          duration: 3000,
-        });
-        const idx = this.addresses.findIndex((a) => a.id === updated.id);
-        if (idx !== -1) this.addresses[idx] = updated;
-        this.addressDataSource.data = [...this.addresses];
-      },
-      error: (err) => {
-        console.error('Error updating address', err);
-        this.snackBar.open('Failed to update address.', 'Close', {
-          duration: 3000,
-        });
-      },
-    });
-  }
-
   onSubmit(): void {
     if (this.profileForm.valid && !this.isSaving) {
       this.isSaving = true;
+
       this.profileForm.patchValue({
         SessionId: this.sessionId,
       });
+
       const updatedProfile: Profile = this.profileForm.value;
-      console.log(updatedProfile);
       updatedProfile.countryNumberCode = this.selectedCountryCode?.id || null;
-      console.log(updatedProfile);
-      this.profileService.updateProfile(updatedProfile).subscribe({
-        next: (response: Profile) => {
-          this.profile = response;
-          this.profileForm.patchValue(response);
-          this.snackBar.open('Profile updated successfully', 'Close', {
-            duration: 3000,
-          });
+
+      const personalPhone = this.profileForm.get('phoneNumber')?.value || '';
+      const personalParsed = parsePhoneNumberFromString(
+        personalPhone,
+        this.getCountryCode(false),
+      );
+      if (personalParsed) {
+        updatedProfile.phoneNumber = personalParsed.format('E.164');
+      }
+      const companyPhone = this.profileForm.get('companyPhone')?.value || '';
+      const companyParsed = parsePhoneNumberFromString(
+        companyPhone,
+        this.getCountryCode(true),
+      );
+      const e164CompanyPhone = companyParsed
+        ? companyParsed.format('E.164')
+        : companyPhone;
+      const companyPayload = {
+        name: this.profileForm.value.companyName,
+        companyRegNo: this.profileForm.value.companyRegNo,
+        vatNo: this.profileForm.value.vatNo,
+        email: this.profileForm.value.companyEmail,
+        phoneNumber: e164CompanyPhone,
+        countryNumberCode: this.profileForm.value.companyCountryNumberCode,
+        constructionType: this.profileForm.value.constructionType,
+        nrEmployees: this.profileForm.value.nrEmployees,
+        yearsOfOperation: this.profileForm.value.yearsOfOperation,
+        certificationStatus: this.profileForm.value.certificationStatus,
+
+        certificationDocumentPath:
+          this.profileForm.value.certificationDocumentPath,
+        trade: this.profileForm.value.trade,
+        supplierType: this.profileForm.value.supplierType,
+        productsOffered: this.profileForm.value.productsOffered,
+        jobPreferences: this.profileForm.value.jobPreferences,
+        deliveryArea: this.profileForm.value.deliveryArea,
+        deliveryTime: this.profileForm.value.deliveryTime,
+
+        billingAddress: this.profileForm.value.billingAddress,
+        physicalAddress: this.profileForm.value.physicalAddress,
+      };
+      forkJoin({
+        profile: this.profileService.updateProfile(updatedProfile),
+        company: this.companyService.updateCompanyProfile(
+          companyPayload,
+          updatedProfile.id,
+        ),
+      }).subscribe({
+        next: ({ profile }) => {
+          this.profile = profile;
+          this.profileForm.patchValue(profile);
+          this.authService.updateCompanyName(
+            this.profileForm.value.companyName,
+          );
+
           const selectedPackageValue =
             this.profileForm.value.subscriptionPackage;
+
           const selectedPackage = this.subscriptionPackages.find(
             (p) => p.value === selectedPackageValue,
           );
 
+          this.snackBar.open('Profile updated successfully', 'Close', {
+            duration: 3000,
+          });
+
           this.isSaving = false;
         },
         error: (error) => {
-          console.error('Error updating profile:', error);
+          console.error('Error updating profile/company:', error);
+
           this.snackBar.open(
             'Failed to update profile. Please try again.',
             'Close',
             { duration: 3000 },
           );
+
           this.isSaving = false;
         },
       });
@@ -1362,12 +1384,11 @@ export class ProfileComponent implements OnInit {
             email: null,
           });
 
-          // Reset every control state manually
           Object.keys(this.teamForm.controls).forEach((key) => {
             const control = this.teamForm.get(key);
             control?.markAsPristine();
             control?.markAsUntouched();
-            control?.setErrors(null); // <-- THIS IS THE MISSING PIECE
+            control?.setErrors(null);
           });
 
           this.teamForm.updateValueAndValidity();
@@ -1401,11 +1422,10 @@ export class ProfileComponent implements OnInit {
 
   resetFileInput(): void {
     const fileInput = document.getElementById(
-      'file-upload',
+      'fileInput',
     ) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
-      console.log('File input reset');
     }
   }
 
@@ -1442,7 +1462,6 @@ export class ProfileComponent implements OnInit {
       .toLowerCase();
   }
 
-  /** True if this row’s seat is assigned to the current viewer (id or email match) */
   private isAssignedToMe(row: SubscriptionRow): boolean {
     const meId = this.lc(
       this.authService.currentUserSubject.value?.id ??
@@ -1456,11 +1475,9 @@ export class ProfileComponent implements OnInit {
     const a = this.lc(row.assignedUser);
     const an = this.lc((row as any).assignedUserName);
 
-    // assignedUser may carry id or email; assignedUserName often carries email
     return (!!a && (a === meId || a === meEmail)) || (!!an && an === meEmail);
   }
 
-  /** Only allow manage if the seat is NOT assigned to me (i.e., I’m the payer/owner view) */
   canManageRow(row: SubscriptionRow): boolean {
     return !this.isAssignedToMe(row);
   }
@@ -1481,7 +1498,7 @@ export class ProfileComponent implements OnInit {
         this.snackBar.open('Subscription cancelled.', 'Close', {
           duration: 3000,
         });
-        this.manageSubscriptions(); // refresh table
+        this.manageSubscriptions();
       },
       error: (err) => {
         console.error('cancelSubscriptionById failed', err);
@@ -1489,7 +1506,6 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
       },
-      //complete: () => this.rowBusy.delete(id),
     });
   }
   canceltrailSubscription(row: string): void {
@@ -1506,7 +1522,7 @@ export class ProfileComponent implements OnInit {
         this.snackBar.open('Subscription cancelled.', 'Close', {
           duration: 3000,
         });
-        this.manageSubscriptions(); // refresh table
+        this.manageSubscriptions();
       },
       error: (err) => {
         console.error('cancelSubscriptionById failed', err);
@@ -1514,7 +1530,6 @@ export class ProfileComponent implements OnInit {
           duration: 3000,
         });
       },
-      //complete: () => this.rowBusy.delete(id),
     });
   }
   upgradeSubscription(row: SubscriptionRow) {
@@ -1526,8 +1541,6 @@ export class ProfileComponent implements OnInit {
     this.openSubscriptionCreateDialog();
   }
 
-  /** Try to resolve the active plan's *code* (the same value you use in subscriptionPackages[].value). */
-  /** Resolve the active plan *code* (matches subscriptionPackages[].value). */
   private getActivePlanCode(): string | null {
     const normalize = (s: string) =>
       (s || '')
@@ -1538,10 +1551,9 @@ export class ProfileComponent implements OnInit {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // 1) Prefer the row that is Active AND has no assigned user
     const allRows = (this.subscriptionsData?.data ?? []).concat(
       this.activeSubscriptionsData?.data ?? [],
-    ); // safe union
+    );
 
     const selfActive = allRows.find(
       (r) =>
@@ -1555,19 +1567,16 @@ export class ProfileComponent implements OnInit {
         (p) =>
           normalize(p.value) === rowName || normalize(p.display) === rowName,
       );
-      if (match) return match.value; // ✅ the code your mat-options use
+      if (match) return match.value;
     }
 
-    // 2) Fallback: first entry from getUserSubscription() (if you kept that)
     const codeFromUserList = this.subscriptionuserPackages?.[0]?.value ?? null;
     if (codeFromUserList) return codeFromUserList;
 
-    // 3) Last resort: whatever is in the form
     return this.profileForm.get('subscriptionPackage')?.value ?? null;
   }
 
   private getRowPlanCode(row: SubscriptionRow): string | null {
-    // If your row already carries a code, use it directly
     const direct =
       (row as any).packageCode ??
       (row as any).planCode ??
@@ -1626,7 +1635,7 @@ export class ProfileComponent implements OnInit {
           billingCycle === 'yearly'
             ? (pkgMeta.annualAmount ?? pkgMeta.amount)
             : pkgMeta.amount,
-        source: 'profile', // 👈 makes intent explicit on backend
+        source: 'profile',
         assignedUser: assignedUser ?? userId,
         billingCycle,
         SubscriptionId: subscriptionId,
@@ -1634,7 +1643,6 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: (res) => {
           window.location.assign(res.url);
-          //this.canceltrailSubscription(subscriptionId);
         },
         error: (err) => {
           console.error('Checkout session error', err);
@@ -1652,7 +1660,6 @@ export class ProfileComponent implements OnInit {
       (subscription as any)['assignedUser'] ??
       null;
 
-    // Determine current plan code for preselect
     const currentValueFromRow = this.getRowPlanCode(subscription);
     const currentValue =
       currentValueFromRow ??
@@ -1670,12 +1677,11 @@ export class ProfileComponent implements OnInit {
         }),
         currentValue,
         isTeamMember: this.authService.isTeamMember(),
-        subscriptionId, // MAY be null for trial
+        subscriptionId,
         userId: String(localStorage.getItem('userId') || ''),
       },
     });
 
-    // Expect either a string (pkgCode) or an object with pkgCode & billingCycle
     dialogRef.afterClosed().subscribe(
       (
         result?:
@@ -1693,12 +1699,9 @@ export class ProfileComponent implements OnInit {
           typeof result === 'string'
             ? 'monthly'
             : (result.billingCycle ?? 'monthly');
-        console.log(pkgCode);
-        // reflect selection
         this.profileForm.patchValue({ subscriptionPackage: pkgCode });
         this.profileForm.get('subscriptionPackage')?.markAsDirty();
 
-        // 🔀 Branch: trial (no subscription) → Checkout; normal (has subscription) → API upgrade
         if (subscriptionId.includes('trial')) {
           this.startCheckoutForUpgrade(
             pkgCode,
@@ -1751,7 +1754,6 @@ export class ProfileComponent implements OnInit {
       const email = String(r.assignedUserName ?? '')
         .trim()
         .toLowerCase();
-      console.log(email);
       if (email && ACTIVE.has(status)) emails.add(email);
     }
     return emails;
@@ -2027,6 +2029,53 @@ export class ProfileComponent implements OnInit {
       complete: () => this.rowBusy.delete(id),
     });
   }
+  private getDial(isCompany = false): string {
+    return isCompany
+      ? this.selectedCompanyCountryCode?.countryPhoneNumberCode || ''
+      : this.selectedCountryCode?.countryPhoneNumberCode || '';
+  }
+
+  private getPhoneCtrl(isCompany = false) {
+    return isCompany
+      ? this.profileForm.get('companyPhone')
+      : this.profileForm.get('phoneNumber');
+  }
+
+  onPhoneBlur(isCompany = false): void {
+    const ctrl = this.getPhoneCtrl(isCompany);
+    const value = ctrl?.value || '';
+    const countryCode = this.getCountryCode(isCompany);
+    const parsed = parsePhoneNumberFromString(value, countryCode);
+    if (parsed?.isValid()) {
+      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+    }
+    ctrl?.markAsTouched();
+  }
+  onCountryChanged(isCompany = false): void {
+    // Sync the country code ID into the form
+    if (isCompany && this.selectedCompanyCountryCode?.id) {
+      this.profileForm.patchValue({
+        companyCountryNumberCode: this.selectedCompanyCountryCode.id,
+      });
+    }
+    // Re-run validation on the phone field with the new country context
+    this.getPhoneCtrl(isCompany)?.updateValueAndValidity();
+  }
+
+  onPhonePaste(event: ClipboardEvent, isCompany = false): void {
+    event.preventDefault();
+    const pasted = event.clipboardData?.getData('text') || '';
+    const countryCode = this.getCountryCode(isCompany);
+    const parsed = parsePhoneNumberFromString(pasted, countryCode);
+    const ctrl = this.getPhoneCtrl(isCompany);
+    if (parsed) {
+      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+    } else {
+      ctrl?.setValue(new AsYouType(countryCode).input(pasted), {
+        emitEvent: false,
+      });
+    }
+  }
 
   reactivateTeamMember(id: string): void {
     this.teamManagementService.reactivateTeamMember(id).subscribe({
@@ -2065,91 +2114,9 @@ export class ProfileComponent implements OnInit {
       },
     });
   }
-  onCountryCodeChange(selected: any): void {
-    this.selectedCountryCode = selected;
-
-    const phoneCtrl = this.profileForm.get('phoneNumber');
-    if (!phoneCtrl) return;
-
-    let phone = phoneCtrl.value || '';
-    const newDial = selected.countryPhoneNumberCode || '';
-
-    // Remove old dial code if present
-    for (const c of this.countryNumberCode) {
-      const old = c.countryPhoneNumberCode;
-      if (old && phone.startsWith(old)) {
-        phone = phone.slice(old.length);
-        break;
-      }
-    }
-
-    // Clean remaining digits
-    phone = phone.replace(/[^\d+]/g, '').replace(/^0+/, '');
-
-    // Reapply new dial code
-    const newPhone = `${newDial}${phone}`;
-    phoneCtrl.setValue(newPhone);
-
-    // Update GUID reference
-    this.profileForm.patchValue({ countryNumberCode: selected.id });
-
-    console.log(`☎ Updated number: ${newPhone}`);
-  }
 
   ngOnDestroy(): void {
     this.profileService.stopSignalR();
-  }
-  onPhoneInput(event: any) {
-    const inputEl = event.target as HTMLInputElement;
-    let value = inputEl.value || '';
-    const dial = this.selectedCountryCode?.countryPhoneNumberCode || '';
-    const phoneCtrl = this.profileForm.get('phoneNumber');
-
-    // Clean illegal characters but allow + only at start
-    value = value
-      .replace(/[^0-9\s()+-]/g, '') // remove strange chars
-      .replace(/(?!^)\+/g, ''); // remove any '+' that isn’t at the start
-
-    if (dial) {
-      // Remove duplicate dial prefixes like +27+27 or +1+1
-      const duplicatePattern = new RegExp(
-        `^(\\+?${dial.replace('+', '\\+')}\\s*)+`,
-      );
-      value = value.replace(duplicatePattern, dial);
-
-      // Ensure value starts with single '+'
-      if (!value.startsWith('+')) {
-        value = '+' + value.replace(/^\+*/, '');
-      }
-
-      // If cleared → reset to dial
-      if (!value.trim()) {
-        value = dial;
-      }
-      // Backspacing inside dial code → lock it
-      else if (value.length < dial.length && dial.startsWith(value)) {
-        value = dial;
-      }
-      // If just "+" or "+0" → normalize
-      else if (value === '+' || value === '+0') {
-        value = dial;
-      }
-      // If missing dial → prepend it
-      else if (!value.startsWith(dial)) {
-        let digits = value.replace(/^\+?0+/, '');
-        value = dial + digits;
-      }
-      // ✅ Fix “+270...” or “+440...” etc. (leading 0 after dial)
-      else if (value.startsWith(dial + '0') && value.length > dial.length + 1) {
-        value = dial + value.substring(dial.length + 1);
-      }
-    }
-
-    // Final cleanup: remove double '+' anywhere just in case
-    value = value.replace(/\+\++/g, '+');
-
-    inputEl.value = value;
-    phoneCtrl?.setValue(value, { emitEvent: false });
   }
 
   changeUserRole(newRole: string): void {
@@ -2158,13 +2125,6 @@ export class ProfileComponent implements OnInit {
     // this.snackBar.open(`Switched to ${newRole} role`, 'Close', {
     //   duration: 3000,
     // });
-    console.log('Role switched to:', newRole);
-    console.log('Visibility - Personal:', this.canViewPersonalInfo());
-    console.log('Visibility - Company:', this.canViewCompanyDetails());
-    console.log('Visibility - Certification:', this.canViewCertification());
-    console.log('Visibility - Trade:', this.canViewTradeSupplier());
-    console.log('Visibility - Delivery:', this.canViewDeliveryLocation());
-    console.log('Visibility - Subscription:', this.canViewSubscription());
   }
 
   // TODO: Implement these methods based on user roles once development complete
@@ -2199,7 +2159,16 @@ export class ProfileComponent implements OnInit {
       'VENDOR',
     ].includes(this.userRole || '');
   }
-
+  private phoneValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null;
+      const isCompany = control === this.profileForm?.get('companyPhone');
+      const countryCode = this.getCountryCode(isCompany) as CountryCode;
+      const parsed = parsePhoneNumberFromString(value, countryCode);
+      return parsed?.isValid() ? null : { invalidPhone: true };
+    };
+  }
   canViewTradeSupplier(): boolean {
     return [
       'GENERAL_CONTRACTOR',
@@ -2230,6 +2199,26 @@ export class ProfileComponent implements OnInit {
       'SUBCONTRACTOR',
       'VENDOR',
     ].includes(this.userRole || '');
+  }
+  private getCountryCode(isCompany = false): CountryCode {
+    const code = isCompany
+      ? this.selectedCompanyCountryCode?.countryCode
+      : this.selectedCountryCode?.countryCode;
+    return (code || 'US') as CountryCode;
+  }
+  onPhoneInput(event: Event, isCompany = false): void {
+    const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+
+    // Don't reformat on deletion — let the user delete freely
+    if (inputEvent.inputType?.startsWith('delete')) {
+      this.getPhoneCtrl(isCompany)?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
+    const countryCode = this.getCountryCode(isCompany);
+    const formatted = new AsYouType(countryCode).input(input.value);
+    this.getPhoneCtrl(isCompany)?.setValue(formatted, { emitEvent: false });
   }
 }
 // To this:

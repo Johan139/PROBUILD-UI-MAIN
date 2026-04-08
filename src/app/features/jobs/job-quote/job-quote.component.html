@@ -1,6 +1,8 @@
-<div *ngIf="isLoading">
-  <app-loader></app-loader>
-</div>
+@if (isLoading) {
+  <div>
+    <app-loader></app-loader>
+  </div>
+}
 <div class="row job-quote-container">
   <app-subscription-warning [subscriptionActive]="subscriptionActive" [isLoading]="isLoading"></app-subscription-warning>
   <div class="col-md-4-job-quote form-col">
@@ -11,40 +13,46 @@
       </mat-card-header>
       <mat-card-content>
         <mat-divider></mat-divider>
-        <div *ngIf="jobList.length > 0" class="job-list-container">
-          <div class="job-list-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Project</th>
-                  <th>Job Type</th>
-                  <th>Job Status</th>
-                  <th>Start Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let job of jobList" class="data-row"
+        @if (jobList.length > 0) {
+          <div class="job-list-container">
+            <div class="job-list-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Job Type</th>
+                    <th>Job Status</th>
+                    <th>Start Date</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (job of jobList; track job) {
+                    <tr class="data-row"
                     [ngClass]="{
                       'published': job.status === 'PUBLISHED',
                       'discarded': job.status === 'DISCARDED',
                       'draft': job.status === 'NEW'
                     }">
-                  <td>{{ job.projectName }}</td>
-                  <td>{{ job.jobType }}</td>
-                  <td>{{ job.status }}</td>
-                  <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
-                  <td>
-                    <button class="View-btn views-btn" (click)="loadJob(job.id)" mat-raised-button>View</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                      <td>{{ job.projectName }}</td>
+                      <td>{{ job.jobType }}</td>
+                      <td>{{ job.status }}</td>
+                      <td>{{ job.desiredStartDate | date: 'yyyy-MM-dd' }}</td>
+                      <td>
+                        <button mat-button class="btn btn-ghost" type="button" (click)="loadJob(job.id)">View</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div *ngIf="jobList.length == 0" class="no-more-jobs">
-          No more jobs to display.
-        </div>
+        }
+        @if (jobList.length == 0) {
+          <div class="no-more-jobs">
+            No more jobs to display.
+          </div>
+        }
       </mat-card-content>
     </mat-card>
     <mat-card class="project-card-bids mt-3">
@@ -52,8 +60,9 @@
         <mat-card-title>ACTIVE BIDS</mat-card-title>
       </mat-card-header>
 
-        <mat-card-content>
-          <div *ngIf="activeBidsDataSource" class="job-list-container">
+      <mat-card-content>
+        @if (activeBidsDataSource) {
+          <div class="job-list-container">
             <div class="job-list-scroll">
               <table>
                 <thead>
@@ -66,358 +75,405 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let quote of activeBidsDataSource.data" class="data-row">
-                    <td>{{ quote.number || 'N/A' }}</td>
-                    <td>{{ quote.createdBy || 'Unknown' }}</td>
-                    <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
-                    <td>${{ quote.total.toFixed(2) }}</td>
-                    <td>
-                      <button class="View-btn views-btn" (click)="openQuote(quote.id)" mat-raised-button>
-                        View
-                      </button>
-                    </td>
-                  </tr>
+                  @for (quote of activeBidsDataSource.data; track quote) {
+                    <tr class="data-row">
+                      <td>{{ quote.number || 'N/A' }}</td>
+                      <td>{{ quote.createdBy || 'Unknown' }}</td>
+                      <td>{{ quote.createdDate | date: 'yyyy-MM-dd' }}</td>
+                      <td>{{ quote.total | money : true : 2 }}</td>
+                      <td>
+                        <button mat-button class="btn btn-ghost" type="button" (click)="openQuote(quote.id)">
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  }
                 </tbody>
               </table>
             </div>
           </div>
-          <div *ngIf="!activeBidsDataSource || activeBidsDataSource.data.length === 0" class="no-more-jobs">
+        }
+        @if (!activeBidsDataSource || activeBidsDataSource.data.length === 0) {
+          <div class="no-more-jobs">
             No active bids to display
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-
-    <!-- RIGHT COLUMN -->
-    <div class="col-md-8-job-quote">
-      <mat-card class="job-quote-card">
-        <mat-card-header>
-          <mat-card-title>Create New Job</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <mat-divider class="mat-primary"></mat-divider>
-
-        <div class="house-options d-flex justify-content-center">
-          <button mat-raised-button (click)="populateHouse('wood')">Basic Wood House</button>
-          <button mat-raised-button (click)="populateHouse('brick')">Basic Brick House</button>
-        </div>
-        <br>
-        <form [formGroup]="jobCardForm" (ngSubmit)="onSubmit()">
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Project Name</mat-label>
-              <input matInput formControlName="projectName" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('projectName')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-
-<mat-form-field appearance="fill">
-  <mat-label>Address</mat-label>
-
-  <input
-    #addressInput
-    matInput
-    [formControl]="addressControl"
-    [matAutocomplete]="auto"
-    placeholder="Enter an address"
-  />
-  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
-    <mat-option *ngFor="let option of options" [value]="option">
-      {{ option.description }}
-    </mat-option>
-  </mat-autocomplete>
-    <mat-error *ngIf="addressControl.hasError('required') && addressControl.touched">
-    Mandatory Field: Address is required
-  </mat-error>
-</mat-form-field>
-          </div>
-          <div class="panel-wrapper">
-          <mat-accordion multi>
-            <mat-expansion-panel [expanded]="true">
-              <mat-expansion-panel-header>
-                <mat-panel-title>Client Details</mat-panel-title>
-                <mat-panel-description>
-                  Click to expand/collapse
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-
-                  <div class="form-row">
-                    <mat-form-field appearance="fill">
-                      <mat-label>First Name</mat-label>
-                      <input matInput formControlName="firstName" placeholder=" " />
-                      <mat-error *ngIf="jobCardForm.get('firstName')?.hasError('required')">
-                        Mandatory Field: First name is required.
-                      </mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                      <mat-label>Last Name</mat-label>
-                      <input matInput formControlName="lastName" placeholder=" " />
-                      <mat-error *ngIf="jobCardForm.get('lastName')?.hasError('required')">
-                        Mandatory Field: Last name is required.
-                      </mat-error>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                      <mat-label>Email</mat-label>
-                      <input matInput formControlName="email" placeholder=" " />
-                      <mat-error *ngIf="jobCardForm.get('email')?.hasError('email')">
-                        Mandatory Field: Email address is required.
-                      </mat-error>
-                    </mat-form-field>
-                  </div>
-
-                  <div class="form-row">
-                    <mat-form-field appearance="fill">
-                      <mat-label>Phone Number</mat-label>
-                      <input matInput formControlName="phone" placeholder=" " />
-                    </mat-form-field>
-
-                    <mat-form-field appearance="fill">
-                      <mat-label>Company Name</mat-label>
-                      <input matInput formControlName="company" placeholder=" " />
-                    </mat-form-field>
-
-                <mat-form-field appearance="fill">
-                  <mat-label>Position/Title</mat-label>
-                  <input matInput formControlName="position" placeholder=" " />
-                </mat-form-field>
-              </div>
-
-            </mat-expansion-panel>
-          </mat-accordion>
-        </div>
-        <div class="panel-wrapper">
-          <mat-accordion multi>
-            <mat-expansion-panel [expanded]="true" [disabled]="jobCardForm.get('generateDetailsWithAi')?.value">
-              <mat-expansion-panel-header>
-                <mat-panel-title>Job Details</mat-panel-title>
-                <mat-panel-description>
-                  Click to expand/collapse
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-
- <div class="form-row">
-           <mat-checkbox formControlName="generateDetailsWithAi" matTooltip="When selected, the AI will generate the job details based on the provided context. The job detail fields will be disabled.">Generate Job Details with AI</mat-checkbox>
-         </div>
- <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Job Type</mat-label>
-              <mat-select formControlName="jobType">
-                <mat-option *ngFor="let type of jobTypes" [value]="type.value">{{type.viewValue}}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Quantity</mat-label>
-              <input matInput type="number" formControlName="quantity" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('quantity')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>Start Date</mat-label>
-              <input matInput formControlName="date" [matDatepicker]="picker" readonly>
-              <mat-hint>MM/DD/YYYY</mat-hint>
-              <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-              <mat-datepicker #picker></mat-datepicker>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Wall Structure</mat-label>
-              <mat-select formControlName="wallStructure">
-                <mat-option value="BRICK">Bricks</mat-option>
-                <mat-option value="PRECAST">Precast</mat-option>
-                <mat-option value="WOOD">Wood</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Wall Insulation</mat-label>
-              <mat-select formControlName="wallInsulation">
-                <mat-option value="NONE">None</mat-option>
-                <mat-option value="FOAM">Foam</mat-option>
-                <mat-option value="LINING">Lining</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Roof Structure</mat-label>
-              <mat-select formControlName="roofStructure">
-                <mat-option value="SHEET">Sheet Metal</mat-option>
-                <mat-option value="TILES">Tiles</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Roof Insulation</mat-label>
-              <mat-select formControlName="roofInsulation">
-                <mat-option value="FOAM">Foam</mat-option>
-                <mat-option value="LINING">Lining</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Foundation</mat-label>
-              <mat-select formControlName="foundation">
-                <mat-option value="CONCRETE">Concrete</mat-option>
-                <mat-option value="RAISED">Raised</mat-option>
-                <mat-option value="FLOATING">Floating</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Finishes</mat-label>
-              <mat-select formControlName="finishes">
-                <mat-option value="WOOD">Wood</mat-option>
-                <mat-option value="TRIM">Trim</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Electrical Supply</mat-label>
-              <input matInput type="number" formControlName="electricalSupply" placeholder=" " />
-              <span matSuffix> KW</span>
-              <mat-error *ngIf="jobCardForm.get('electricalSupply')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Stories</mat-label>
-              <input matInput type="number" formControlName="stories" placeholder=" " />
-              <mat-error *ngIf="jobCardForm.get('stories')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="fill">
-              <mat-label>Building Size</mat-label>
-              <div style="display: flex; align-items: center;">
-                <input matInput type="number" formControlName="buildingSize" placeholder=" " />
-                <mat-select [(value)]="selectedUnit" (selectionChange)="onUnitChange($event.value)" style="width: 80px; margin-left: 10px;">
-                  <mat-option value="sq ft">sq ft</mat-option>
-                  <mat-option value="sq m">sq m</mat-option>
-                </mat-select>
-              </div>
-              <mat-error *ngIf="jobCardForm.get('buildingSize')?.hasError('required')">
-                Mandatory Field: Input Required.
-              </mat-error>
-            </mat-form-field>
-          </div>
-            </mat-expansion-panel>
-          </mat-accordion>
-        </div>
-        <div class="panel-wrapper">
-          <mat-accordion multi>
-            <mat-expansion-panel>
-              <mat-expansion-panel-header>
-                <mat-panel-title>User Context</mat-panel-title>
-                <mat-panel-description>
-                  Provide additional context for the AI analysis
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-              <div class="form-row">
-                <mat-form-field appearance="fill" class="full-width">
-                  <mat-label>User Context</mat-label>
-                  <textarea matInput formControlName="userContextText" placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."></textarea>
-                </mat-form-field>
-              </div>
-              <div class="form-row">
-                <label for="userContextFile" class="custom-file-upload-label">
-                  <button mat-raised-button type="button" (click)="userContextFileInput.click()" class="submit-btn">
-                    <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                    Upload Context File
-                  </button>
-                </label>
-                <input type="file" #userContextFileInput hidden (change)="onUserContextFileSelected($event)" id="userContextFile">
-                <div *ngIf="userContextFile" class="upload-complete">
-                  <p [matTooltip]="userContextFile.name" matTooltipPosition="above">
-                    {{ userContextFile.name }} uploaded successfully
-                  </p>
-                </div>
-              </div>
-            </mat-expansion-panel>
-          </mat-accordion>
-        </div>
-          <div class="form-row">
-            <mat-radio-group [(ngModel)]="analysisType" [ngModelOptions]="{standalone: true}">
-              <mat-radio-button value="Comprehensive">Full Blueprint Analysis</mat-radio-button>
-              <!-- <mat-radio-button value="Blueprint">Interactive Blueprint Overlay</mat-radio-button> -->
-              <mat-radio-button value="Selected">Selected Blueprint Analysis</mat-radio-button>
-              <mat-radio-button value="Renovation">Renovation Analysis</mat-radio-button>
-            </mat-radio-group>
-          </div>
-
-          <div *ngIf="analysisType === 'Selected'" class="form-row">
-            <mat-form-field appearance="fill">
-              <mat-label>Select Prompts</mat-label>
-              <mat-select [formControl]="selectedPrompts" multiple>
-                <mat-option *ngFor="let prompt of availablePrompts$ | async" [value]="prompt.id">
-                  {{ prompt.promptName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="form-row button-row">
-            <div class="button-group">
-              <span class="button-wrapper"
-                    [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing' : ''"
-                    [class.disabled-wrapper]="jobCardForm.invalid || uploadedFileInfos.length === 0">
-                <button mat-raised-button type="submit"
-                        [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0 || jobCardForm.invalid"
-                        class="submit-btn">
-                  <span *ngIf="!isAnalyzing">Analyze</span>
-                  <span *ngIf="isAnalyzing">Analyzing...</span>
-                </button>
-              </span>
-                <span class="button-wrapper"
-                      [matTooltip]="uploadedFileInfos.length === 0 ? 'Blueprints need to be added before they can be viewed' : ''"
-                      [class.disabled-wrapper]="uploadedFileInfos.length === 0">
-                  <button mat-raised-button type="button" class="submit-btn" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
-                    View Uploaded Files
-                  </button>
-                </span>
-              <button mat-raised-button type="button" class="cancel-btn" (click)="onCancel()">Cancel</button>
-            </div>
-            <div class="upload-container">
-              <div *ngIf="isUploading" class="upload-progress">
-                <p>Upload Progress: {{ progress }}%</p>
-                <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
-              </div>
-              <div class="custom-file-upload">
-                <div *ngIf="!isUploading && uploadedFileInfos.length > 0" class="upload-complete upload-success-message">
-                  <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
-                    {{ uploadedFileInfos.length }} file(s) uploaded successfully
-                  </p>
-                </div>
-                <button type="button" (click)="openUploadDialog()" mat-raised-button class="submit-btn">
-                  <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
-                  Upload Blueprints
-                </button>
-                <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
-                <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
-              </div>
-            </div>
-            <div class="viewer-section" *ngIf="(activeBlueprints && activeBlueprints.length > 0) || activeDocument">
-              <mat-toolbar>
-                <span>Document Viewer</span>
-                <span class="toolbar-spacer"></span>
-                <button *ngIf="activeBlueprints.length > 0" mat-raised-button color="accent" (click)="overlayState.toggleOverlayVisibility()">
-                  Toggle Overlay
-                </button>
-              </mat-toolbar>
-              <!-- <app-pdf-viewer [blueprints]="activeBlueprints" [document]="activeDocument"></app-pdf-viewer> TODO: Reenable once complete -->
-            </div>
-          </div>
-        </form>
+        }
       </mat-card-content>
     </mat-card>
   </div>
-</div>
 
-<div *ngIf="showAlert" class="alert-overlay">
-  <div class="alert-modal">
-    <p>{{ alertMessage }}</p>
-    <button mat-raised-button (click)="closeAlert()">OK</button>
-  </div>
-</div>
+  <!-- RIGHT COLUMN -->
+  <div class="col-md-8-job-quote">
+    <mat-card class="job-quote-card">
+      <mat-card-header>
+        <mat-card-title>Create New Job</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-divider class="mat-primary"></mat-divider>
+
+        <div class="house-options d-flex justify-content-center">
+          <button mat-button class="btn btn-secondary" type="button" (click)="populateHouse('wood')">Basic Wood House</button>
+          <button mat-button class="btn btn-secondary" type="button" (click)="populateHouse('brick')">Basic Brick House</button>
+        </div>
+        <br>
+          <form [formGroup]="jobCardForm" (ngSubmit)="onSubmit()">
+            <div class="form-row">
+              <mat-form-field appearance="fill">
+                <mat-label>Project Name</mat-label>
+                <input matInput formControlName="projectName" placeholder=" " />
+                @if (jobCardForm.get('projectName')?.hasError('required')) {
+                  <mat-error>
+                    Mandatory Field: Input Required.
+                  </mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="fill">
+                <mat-label>Address</mat-label>
+
+                <input
+                  #addressInput
+                  matInput
+                  [formControl]="addressControl"
+                  [matAutocomplete]="auto"
+                  placeholder="Enter an address"
+                  />
+                  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onAddressSelected($event)">
+                    @for (option of options; track option) {
+                      <mat-option [value]="option">
+                        {{ option.description }}
+                      </mat-option>
+                    }
+                  </mat-autocomplete>
+                  @if (addressControl.hasError('required') && addressControl.touched) {
+                    <mat-error>
+                      Mandatory Field: Address is required
+                    </mat-error>
+                  }
+                </mat-form-field>
+              </div>
+              <div class="panel-wrapper">
+                <mat-accordion multi>
+                  <mat-expansion-panel [expanded]="true">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>Client Details</mat-panel-title>
+                      <mat-panel-description>
+                        Click to expand/collapse
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>First Name</mat-label>
+                        <input matInput formControlName="firstName" placeholder=" " />
+                        @if (jobCardForm.get('firstName')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: First name is required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <mat-form-field appearance="fill">
+                        <mat-label>Last Name</mat-label>
+                        <input matInput formControlName="lastName" placeholder=" " />
+                        @if (jobCardForm.get('lastName')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: Last name is required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+
+                      <mat-form-field appearance="fill">
+                        <mat-label>Email</mat-label>
+                        <input matInput formControlName="email" placeholder=" " />
+                        @if (jobCardForm.get('email')?.hasError('email')) {
+                          <mat-error>
+                            Mandatory Field: Email address is required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Phone Number</mat-label>
+                        <input matInput formControlName="phone" placeholder=" " />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="fill">
+                        <mat-label>Company Name</mat-label>
+                        <input matInput formControlName="company" placeholder=" " />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="fill">
+                        <mat-label>Position/Title</mat-label>
+                        <input matInput formControlName="position" placeholder=" " />
+                      </mat-form-field>
+                    </div>
+
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+              <div class="panel-wrapper">
+                <mat-accordion multi>
+                  <mat-expansion-panel [expanded]="true" [disabled]="jobCardForm.get('generateDetailsWithAi')?.value">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>Job Details</mat-panel-title>
+                      <mat-panel-description>
+                        Click to expand/collapse
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div class="form-row">
+                      <mat-checkbox formControlName="generateDetailsWithAi" matTooltip="When selected, the AI will generate the job details based on the provided context. The job detail fields will be disabled.">Generate Job Details with AI</mat-checkbox>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Job Type</mat-label>
+                        <mat-select formControlName="jobType">
+                          @for (type of jobTypes; track type) {
+                            <mat-option [value]="type.value">{{type.viewValue}}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Quantity</mat-label>
+                        <input matInput type="number" formControlName="quantity" placeholder=" " />
+                        @if (jobCardForm.get('quantity')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: Input Required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                      <mat-form-field>
+                        <mat-label>Start Date</mat-label>
+                        <input matInput formControlName="date" [matDatepicker]="picker" readonly>
+                        <mat-hint>MM/DD/YYYY</mat-hint>
+                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Wall Structure</mat-label>
+                        <mat-select formControlName="wallStructure">
+                          <mat-option value="BRICK">Bricks</mat-option>
+                          <mat-option value="PRECAST">Precast</mat-option>
+                          <mat-option value="WOOD">Wood</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Wall Insulation</mat-label>
+                        <mat-select formControlName="wallInsulation">
+                          <mat-option value="NONE">None</mat-option>
+                          <mat-option value="FOAM">Foam</mat-option>
+                          <mat-option value="LINING">Lining</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Roof Structure</mat-label>
+                        <mat-select formControlName="roofStructure">
+                          <mat-option value="SHEET">Sheet Metal</mat-option>
+                          <mat-option value="TILES">Tiles</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Roof Insulation</mat-label>
+                        <mat-select formControlName="roofInsulation">
+                          <mat-option value="FOAM">Foam</mat-option>
+                          <mat-option value="LINING">Lining</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Foundation</mat-label>
+                        <mat-select formControlName="foundation">
+                          <mat-option value="CONCRETE">Concrete</mat-option>
+                          <mat-option value="RAISED">Raised</mat-option>
+                          <mat-option value="FLOATING">Floating</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Finishes</mat-label>
+                        <mat-select formControlName="finishes">
+                          <mat-option value="WOOD">Wood</mat-option>
+                          <mat-option value="TRIM">Trim</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill">
+                        <mat-label>Electrical Supply</mat-label>
+                        <input matInput type="number" formControlName="electricalSupply" placeholder=" " />
+                        <span matSuffix> KW</span>
+                        @if (jobCardForm.get('electricalSupply')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: Input Required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Stories</mat-label>
+                        <input matInput type="number" formControlName="stories" placeholder=" " />
+                        @if (jobCardForm.get('stories')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: Input Required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                      <mat-form-field appearance="fill">
+                        <mat-label>Building Size</mat-label>
+                        <div style="display: flex; align-items: center;">
+                          <input matInput type="number" formControlName="buildingSize" placeholder=" " />
+                          <mat-select [(value)]="selectedUnit" (selectionChange)="onUnitChange($event.value)" style="width: 80px; margin-left: 10px;">
+                            <mat-option value="sq ft">sq ft</mat-option>
+                            <mat-option value="sq m">sq m</mat-option>
+                          </mat-select>
+                        </div>
+                        @if (jobCardForm.get('buildingSize')?.hasError('required')) {
+                          <mat-error>
+                            Mandatory Field: Input Required.
+                          </mat-error>
+                        }
+                      </mat-form-field>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+              <div class="panel-wrapper">
+                <mat-accordion multi>
+                  <mat-expansion-panel>
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>User Context</mat-panel-title>
+                      <mat-panel-description>
+                        Provide additional context for the AI analysis
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    <div class="form-row">
+                      <mat-form-field appearance="fill" class="full-width">
+                        <mat-label>User Context</mat-label>
+                        <textarea matInput formControlName="userContextText" placeholder="Provide any additional details, requirements, or context here. This information will be prioritized by the AI."></textarea>
+                      </mat-form-field>
+                    </div>
+                    <div class="form-row">
+                      <label for="userContextFile" class="custom-file-upload-label">
+                        <button mat-button class="btn btn-secondary" type="button" (click)="userContextFileInput.click()">
+                          <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                          Upload Context File
+                        </button>
+                      </label>
+                      <input type="file" #userContextFileInput hidden (change)="onUserContextFileSelected($event)" id="userContextFile">
+                      @if (userContextFile) {
+                        <div class="upload-complete">
+                          <p [matTooltip]="userContextFile.name" matTooltipPosition="above">
+                            {{ userContextFile.name }} uploaded successfully
+                          </p>
+                        </div>
+                      }
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+              <div class="form-row">
+                <mat-radio-group [(ngModel)]="analysisType" [ngModelOptions]="{standalone: true}">
+                  <mat-radio-button value="Comprehensive">Full Blueprint Analysis</mat-radio-button>
+                  <!-- <mat-radio-button value="Blueprint">Interactive Blueprint Overlay</mat-radio-button> -->
+                  <mat-radio-button value="Selected">Selected Blueprint Analysis</mat-radio-button>
+                  <mat-radio-button value="Renovation">Renovation Analysis</mat-radio-button>
+                </mat-radio-group>
+              </div>
+
+              @if (analysisType === 'Selected') {
+                <div class="form-row">
+                  <mat-form-field appearance="fill">
+                    <mat-label>Select Prompts</mat-label>
+                    <mat-select [formControl]="selectedPrompts" multiple>
+                      @for (prompt of availablePrompts$ | async; track prompt) {
+                        <mat-option [value]="prompt.id">
+                          {{ prompt.promptName }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+              }
+
+              <div class="form-row button-row">
+                <div class="button-group">
+                  <span class="button-wrapper"
+                    [matTooltip]="jobCardForm.invalid || uploadedFileInfos.length === 0 ? 'Please fill in all required fields and upload blueprints before analyzing' : ''"
+                    [class.disabled-wrapper]="jobCardForm.invalid || uploadedFileInfos.length === 0">
+                    <button mat-button type="submit"
+                      [disabled]="!subscriptionActive || isAnalyzing || uploadedFileInfos.length === 0 || jobCardForm.invalid"
+                      class="btn btn-primary">
+                      @if (!isAnalyzing) {
+                        <span>Analyze</span>
+                      }
+                      @if (isAnalyzing) {
+                        <span>Analyzing...</span>
+                      }
+                    </button>
+                  </span>
+                  <span class="button-wrapper"
+                    [matTooltip]="uploadedFileInfos.length === 0 ? 'Blueprints need to be added before they can be viewed' : ''"
+                    [class.disabled-wrapper]="uploadedFileInfos.length === 0">
+                    <button mat-button class="btn btn-secondary" type="button" (click)="viewUploadedFiles()" [disabled]="uploadedFileInfos.length === 0">
+                      View Uploaded Files
+                    </button>
+                  </span>
+                  <button mat-button class="btn btn-ghost" type="button" (click)="onCancel()">Cancel</button>
+                </div>
+                <div class="upload-container">
+                  @if (isUploading) {
+                    <div class="upload-progress">
+                      <p>Upload Progress: {{ progress }}%</p>
+                      <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+                    </div>
+                  }
+                  <div class="custom-file-upload">
+                    @if (!isUploading && uploadedFileInfos.length > 0) {
+                      <div class="upload-complete upload-success-message">
+                        <p [matTooltip]="getUploadedFileNames()" matTooltipPosition="above">
+                          {{ uploadedFileInfos.length }} file(s) uploaded successfully
+                        </p>
+                      </div>
+                    }
+                    <button mat-button class="btn btn-secondary" type="button" (click)="openUploadDialog()">
+                      <img src="assets/custom-svg/upload-folder-svgrepo-com.svg" alt="Upload Icon" class="upload-icon"/>
+                      Upload Blueprints
+                    </button>
+                    <input type="file" #fileInput hidden (change)="onFileSelected($event)" multiple>
+                    <input type="file" #folderInput hidden (change)="onFileSelected($event)" webkitdirectory>
+                  </div>
+                </div>
+                @if ((activeBlueprints && activeBlueprints.length > 0) || activeDocument) {
+                  <div class="viewer-section">
+                    <mat-toolbar>
+                      <span>Document Viewer</span>
+                      <span class="toolbar-spacer"></span>
+                      @if (activeBlueprints.length > 0) {
+                        <button mat-button class="btn btn-secondary" type="button" (click)="overlayState.toggleOverlayVisibility()">
+                          Toggle Overlay
+                        </button>
+                      }
+                    </mat-toolbar>
+                    <!-- <app-pdf-viewer [blueprints]="activeBlueprints" [document]="activeDocument"></app-pdf-viewer> TODO: Reenable once complete -->
+                  </div>
+                }
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    @if (showAlert) {
+      <div class="alert-overlay">
+        <div class="alert-modal">
+          <p>{{ alertMessage }}</p>
+          <button mat-button class="btn btn-primary" type="button" (click)="closeAlert()">OK</button>
+        </div>
+      </div>
+    }
 

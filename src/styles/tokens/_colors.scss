@@ -58,6 +58,57 @@
   --color-failed: #ef4444;
   --color-discard: #f59e0b;
   --color-new: #FCD109;
+  --color-analyzing: #f97316;
+
+  /* Project phase/status badge colors */
+  --color-status-initiation: #f97316;
+  --color-status-bid-solicitation: #3b82f6;
+  --color-status-construction-live: #22c55e;
+  --color-status-preliminary-scope: #6b7280;
+  --color-status-detailed-takeoff: #6366f1;
+  --color-status-contract-award: #8b5cf6;
+  --color-status-pre-construction: #06b6d4;
+  --color-status-trade-award: #0ea5e9;
+  --color-status-mobilization: #14b8a6;
+  --color-status-closeout: #059669;
+  --color-status-archived: #64748b;
+
+  /* Trade award / bid detail UI */
+  --color-trade-select-dot-border: #4a5058;
+  --color-trade-chip-insured-text: #4ade80;
+  --color-trade-chip-license-text: #60a5fa;
+  --color-trade-chip-bondable-bg: #a855f7;
+  --color-trade-chip-bondable-text: #c084fc;
+  --color-trade-text-soft: var(--color-text-muted);
+  --color-trade-dialog-border: var(--color-border);
+  --color-trade-dialog-surface: var(--color-surface);
+  --color-trade-dialog-surface-alt: var(--color-surface-hover);
+  --color-trade-dialog-text: var(--color-text);
+  --color-trade-dialog-label: var(--color-text-muted);
+  --color-overlay-strong: rgb(0 0 0 / 48%);
+
+  /* Mobilization accents */
+  --color-mobilization-cyan: #22c1dc;
+  --color-mobilization-orange: var(--color-warning);
+  --color-mobilization-blue: #60a5fa;
+  --color-mobilization-overlay: var(--color-overlay-strong);
+  --color-mobilization-success: var(--color-success);
+  --color-mobilization-danger: var(--color-danger);
+  --color-mobilization-text-strong: var(--gray-200);
+  --color-mobilization-text-soft: var(--gray-300);
+  --color-mobilization-border-strong: var(--gray-600);
+
+  /* Closeout phase accents */
+  --color-closeout-surface: var(--gray-800);
+  --color-closeout-surface-alt: var(--gray-900);
+  --color-closeout-border: var(--gray-700);
+  --color-closeout-text-strong: #f9fafb;
+  --color-closeout-text-muted: var(--gray-400);
+  --color-closeout-text-soft: var(--gray-500);
+  --color-closeout-accent: var(--color-primary);
+  --color-closeout-success: #4ade80;
+  --color-closeout-danger: #f87171;
+  --color-closeout-track: var(--gray-900);
 
   /* Elevation / shadow (unified names) */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 15% / 0.05);
@@ -88,6 +139,56 @@
   --color-danger: #DC2626;
   --color-warning:#F59E0B;
   --color-success:#16A34A;
+
+  /* Project phase/status badge colors (dark theme semantic parity) */
+  --color-status-initiation: #f97316;
+  --color-status-bid-solicitation: #3b82f6;
+  --color-status-construction-live: #22c55e;
+  --color-status-preliminary-scope: #6b7280;
+  --color-status-detailed-takeoff: #6366f1;
+  --color-status-contract-award: #8b5cf6;
+  --color-status-pre-construction: #06b6d4;
+  --color-status-trade-award: #0ea5e9;
+  --color-status-mobilization: #14b8a6;
+  --color-status-closeout: #059669;
+  --color-status-archived: #64748b;
+
+  /* Trade award / bid detail UI */
+  --color-trade-select-dot-border: #4a5058;
+  --color-trade-chip-insured-text: #4ade80;
+  --color-trade-chip-license-text: #60a5fa;
+  --color-trade-chip-bondable-bg: #a855f7;
+  --color-trade-chip-bondable-text: #c084fc;
+  --color-trade-text-soft: #cbd5e1;
+  --color-trade-dialog-border: var(--gray-700);
+  --color-trade-dialog-surface: var(--gray-800);
+  --color-trade-dialog-surface-alt: var(--gray-900);
+  --color-trade-dialog-text: #f8fafc;
+  --color-trade-dialog-label: #94a3b8;
+  --color-overlay-strong: rgb(0 0 0 / 72%);
+
+  /* Mobilization accents */
+  --color-mobilization-cyan: #22c1dc;
+  --color-mobilization-orange: var(--color-warning);
+  --color-mobilization-blue: #60a5fa;
+  --color-mobilization-overlay: var(--color-overlay-strong);
+  --color-mobilization-success: var(--color-success);
+  --color-mobilization-danger: var(--color-danger);
+  --color-mobilization-text-strong: var(--gray-200);
+  --color-mobilization-text-soft: var(--gray-300);
+  --color-mobilization-border-strong: var(--gray-600);
+
+  /* Closeout phase accents */
+  --color-closeout-surface: var(--gray-800);
+  --color-closeout-surface-alt: var(--gray-900);
+  --color-closeout-border: var(--gray-700);
+  --color-closeout-text-strong: #f9fafb;
+  --color-closeout-text-muted: var(--gray-400);
+  --color-closeout-text-soft: var(--gray-500);
+  --color-closeout-accent: var(--color-primary);
+  --color-closeout-success: #4ade80;
+  --color-closeout-danger: #f87171;
+  --color-closeout-track: var(--gray-900);
 
   /* Dark shadows */
   --shadow-1: 0 1px 2px 0 hsla(220 3% 5% / 0.50);

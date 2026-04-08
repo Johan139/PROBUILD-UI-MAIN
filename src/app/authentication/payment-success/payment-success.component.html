@@ -9,8 +9,9 @@
       <p class="description">Your subscription is now active.</p>
 
       <button
-        mat-flat-button
-        class="submit-btn success-btn"
+        mat-button
+        class="btn btn-primary"
+        type="button"
         (click)="goToDashboard()"
       >
         {{ source === "register" ? "Return to Login" : "Return to Dashboard" }}

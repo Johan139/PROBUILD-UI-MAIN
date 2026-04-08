@@ -6,14 +6,14 @@ import {
   Validators,
 } from '@angular/forms';
 import { SubscriptionService } from '../../app/services/subscription.service';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-subscription-confirmation',
   templateUrl: './subscription-confirmation.component.html',
   styleUrls: ['./subscription-confirmation.component.scss'],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
 })
 export class SubscriptionConfirmationComponent {
   form: FormGroup;

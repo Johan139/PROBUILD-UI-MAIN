@@ -29,6 +29,7 @@ export class Store<T> {
 
   // Update the state
   setState(newState: Partial<T>): void {
+    console.log(newState);
     const currentState = this.state$.getValue();
     this.state$.next({
       ...currentState,

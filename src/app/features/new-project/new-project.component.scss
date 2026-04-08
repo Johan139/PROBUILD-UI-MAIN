@@ -5,7 +5,9 @@
   background: var(--color-canvas);
   color: var(--color-text);
 }
-
+::ng-deep .mat-datepicker-toggle-default-icon {
+  color: #000 !important;
+}
 .new-project-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));

@@ -1,15 +1,46 @@
 :host {
   display: block;
-  background-color: #f0f2f5;
+  background-color: var(--color-canvas);
   padding: 2rem;
   height: 100vh;
   box-sizing: border-box;
 }
 
+.not-found-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+
+  h1 {
+    margin: 0;
+    color: var(--color-text);
+  }
+}
+
+.dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+
+  &:hover {
+    background: var(--color-primary-hover);
+  }
+}
+
 .test-page-container {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  min-height: 100%;
   gap: 1rem;
   position: relative;
 }
@@ -17,15 +48,191 @@
 .content-panel {
   flex: 2;
   padding: 1.5rem;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  color: #333;
+  box-shadow: var(--shadow-1);
+  color: var(--color-text);
   box-sizing: border-box;
   transition: flex-basis 0.3s ease-in-out;
+  overflow-y: auto; // ADD THIS - was clipping content
 
   &.full-width {
     flex-basis: 100%;
+  }
+}
+
+:host ::ng-deep .mat-mdc-tab-body-content {
+  padding: 1rem;
+  overflow: visible !important; // ADD THIS
+}
+
+.apollo-test-wrap {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow: visible; // ADD THIS
+  padding-bottom: 2rem; // ADD THIS - breathing room at bottom
+}
+
+:host ::ng-deep .mat-mdc-tab-group {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+:host ::ng-deep .mat-mdc-tab-body-content {
+  padding: 1rem;
+}
+
+.apollo-test-wrap {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem;
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+    color: var(--color-text);
+  }
+
+  p {
+    margin: 0 0 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+}
+
+.rich-text-test-panel {
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 10px;
+}
+
+.apollo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  input {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.92rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-focus);
+      box-shadow: 0 0 0 2px
+        color-mix(in oklab, var(--color-focus) 22%, transparent);
+    }
+  }
+}
+
+.apollo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+
+  button {
+    border: none;
+    border-radius: 8px;
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    padding: 0.55rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      transform 0.12s ease,
+      opacity 0.12s ease;
+
+    &:hover {
+      background: var(--color-primary-hover);
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    &.secondary {
+      background: var(--color-surface-hover);
+      color: var(--color-text);
+    }
+  }
+}
+
+.apollo-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.apollo-result-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.75rem;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.98rem;
+    color: var(--color-text);
+  }
+
+  .error {
+    background: color-mix(
+      in oklab,
+      var(--color-danger) 10%,
+      var(--color-surface)
+    );
+    border: 1px solid
+      color-mix(in oklab, var(--color-danger) 30%, var(--color-border));
+    color: var(--color-danger);
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.84rem;
+    white-space: pre-wrap;
+  }
+
+  pre {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.7rem;
+    min-height: 220px;
+    max-height: 420px;
+    overflow: auto;
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 }
 
@@ -34,7 +241,7 @@
   border-radius: 8px;
   overflow: hidden;
   display: flex;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-1);
   min-width: 300px;
   &:has(app-pdf-viewer.hidden) {
     flex: 0;

@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   FormBuilder,
   FormGroup,
@@ -152,10 +153,20 @@ export class SubscriptionUpgradeComponent implements OnInit {
         },
         error: (err) => {
           console.error('Preview failed', err);
-          this.previewError = 'Could not fetch proration preview.';
+          this.previewError = this.shouldShowProrationPreviewError(err)
+            ? 'Could not fetch proration preview.'
+            : null;
           this.previewLoading = false;
         },
       });
+  }
+
+  private shouldShowProrationPreviewError(err: unknown): boolean {
+    if (err instanceof HttpErrorResponse) {
+      return false;
+    }
+
+    return false;
   }
 
   private isPreviewable(pkgValue: string): boolean {

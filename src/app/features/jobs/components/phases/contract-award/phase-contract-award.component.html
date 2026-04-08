@@ -1,0 +1,474 @@
+<section class="phase-section contract-award-copy">
+  <app-phase-navigation-header
+    stageLabel="Contract Award &amp; Execution"
+    backLabel="Back to Detailed Estimating"
+    discardLabel="Discard Project"
+    exportLabel="Export Reports"
+    proceedLabel="Proceed to Pre-Construction &amp; Compliance"
+    [projectName]="projectDetails?.projectName"
+    [clientName]="clientName"
+    [projectAddress]="projectAddress"
+    [projectSizeSqFt]="projectSizeSqFt"
+    [isReportLoading]="isReportLoading"
+    [showEnvironmentalReport]="showEnvironmentalReport"
+    (back)="back.emit()"
+    (discard)="discard.emit()"
+    [proceedDisabled]="!canProceed"
+    [proceedValidationTitle]="'Contract Award & Execution'"
+    [proceedValidationCompleted]="proceedValidationCompleted"
+    [proceedValidationMissing]="proceedValidationMissing"
+    (proceed)="proceed.emit()"
+    (devProceed)="proceed.emit()"
+    (documentsRequested)="documentsRequested.emit()"
+    (reportRequested)="reportRequested.emit($event)"
+  ></app-phase-navigation-header>
+
+  <section class="contract-main">
+    <div class="method-grid method-grid-copy">
+      <button
+        type="button"
+        class="method-card ai"
+        [class.active]="contractMethod === 'ai'"
+        (click)="selectMethod('ai')"
+        >
+        <span class="icon-badge"
+          ><lucide-icon name="sparkles"></lucide-icon
+        ></span>
+        <div>
+          <h4>Generate Contract with AI</h4>
+          <p>
+            AI will draft a construction agreement using the approved quotation
+            and project details.
+          </p>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        class="method-card upload"
+        [class.active]="contractMethod === 'upload'"
+        (click)="selectMethod('upload')"
+        >
+        <span class="icon-badge"
+          ><lucide-icon name="upload"></lucide-icon
+        ></span>
+        <div>
+          <h4>Upload Signed Contract</h4>
+          <p>Already have a signed contract? Upload it directly.</p>
+        </div>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="skip-card skip-card-copy"
+      (click)="onSkipRequested()"
+      >
+      <div class="skip-left">
+        <span class="icon-badge"
+          ><lucide-icon name="arrow-right"></lucide-icon
+        ></span>
+        <div>
+          <p class="skip-title">Skip This Step</p>
+          <p class="skip-copy">
+            Contract not required at this stage - proceed to Pre-Construction
+          </p>
+        </div>
+      </div>
+      <lucide-icon name="chevron-right" class="skip-arrow"></lucide-icon>
+    </button>
+
+    @if (contractMethod === 'ai') {
+      <section
+        class="detail-card detail-card-copy"
+        >
+        <div class="contract-options-card">
+          <h4>Contract Risk Settings</h4>
+          <p>
+            Configure clause defaults and required legal input placeholders before
+            generation
+          </p>
+          <div
+            class="contract-badge-legend"
+            aria-label="Field requirement legend"
+            >
+            <span class="option-badge required">Required</span>
+            <span class="option-badge optional">Optional</span>
+            <span class="option-badge conditional">Conditional</span>
+          </div>
+          <div class="contract-options-grid">
+            <label class="contract-option-field">
+              <span
+                >Project Type
+                <em class="option-badge required">Required</em></span
+                >
+                <select
+                  [ngModel]="projectType"
+                  (ngModelChange)="onProjectTypeChanged($event)"
+                  >
+                  <option value="residential">Residential</option>
+                  <option value="commercial">Commercial</option>
+                </select>
+                <small class="contract-field-help"
+                  >Used to set default risk posture. Liability cap defaults ON for
+                  commercial projects and OFF for residential.</small
+                  >
+                </label>
+                <label class="contract-option-field">
+                  <span
+                    >Liability Cap Type
+                    <em class="option-badge conditional">Conditional</em></span
+                    >
+                    <select
+                      [ngModel]="liabilityCapType"
+                      (ngModelChange)="onLiabilityCapTypeChanged($event)"
+                      [disabled]="!liabilityCapEnabled"
+                      >
+                      <option value="contract_sum">Contract Sum</option>
+                      <option value="fixed_amount">Fixed Amount</option>
+                    </select>
+                    <small class="contract-field-help"
+                      >Choose how the cap is calculated when limitation of liability is
+                      enabled.</small
+                      >
+                    </label>
+                    @if (liabilityCapEnabled && liabilityCapType === 'fixed_amount') {
+                      <label
+                        class="contract-option-field"
+                        >
+                        <span
+                          >Liability Cap Amount
+                          <em class="option-badge required">Required</em></span
+                          >
+                          <div class="inline-input-row">
+                            <select
+                              [(ngModel)]="liabilityCapCurrency"
+                              class="inline-currency-select"
+                              >
+                              <option value="USD">USD</option>
+                              <option value="GBP">GBP</option>
+                              <option value="EUR">EUR</option>
+                              <option value="CAD">CAD</option>
+                            </select>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              [(ngModel)]="liabilityCapFixedAmount"
+                              placeholder="e.g. 250000"
+                              />
+                            </div>
+                            <small class="contract-field-help"
+                              >Provide a positive amount for fixed-cap contracts. This is
+                              validated before generation.</small
+                              >
+                            </label>
+                          }
+                          <label class="contract-option-field">
+                            <span
+                              >Dispute Resolution
+                              <em class="option-badge required">Required</em></span
+                              >
+                              <select [(ngModel)]="disputeResolutionMode">
+                                <option value="arbitration">Arbitration</option>
+                                <option value="litigation">Litigation</option>
+                              </select>
+                              <small class="contract-field-help"
+                                >Controls whether the disputes article is drafted for
+                                arbitration-first or court litigation.</small
+                                >
+                              </label>
+                              <label class="contract-option-field">
+                                <span
+                                  >Insurance Limits
+                                  <em class="option-badge required">Required</em></span
+                                  >
+                                  <input
+                                    type="text"
+                                    [(ngModel)]="insuranceLimits"
+                                    placeholder="e.g. CGL $2M / Builder's Risk full replacement"
+                                    />
+                                    <small class="contract-field-help"
+                                      >Required structured input used in the contract data table and
+                                      insurance article.</small
+                                      >
+                                    </label>
+                                    <label class="contract-option-field">
+                                      <span>Markups <em class="option-badge required">Required</em></span>
+                                      <input
+                                        type="text"
+                                        [(ngModel)]="markups"
+                                        placeholder="e.g. OH&amp;P 10%"
+                                        />
+                                        <small class="contract-field-help"
+                                          >Defines agreed overhead/profit or pricing uplift assumptions for
+                                          changes and allowances.</small
+                                          >
+                                        </label>
+                                        <label class="contract-option-field">
+                                          <span
+                                            >Cure Periods
+                                            <em class="option-badge required">Required</em></span
+                                            >
+                                            <input
+                                              type="text"
+                                              [(ngModel)]="curePeriods"
+                                              placeholder="e.g. 7/10 days"
+                                              />
+                                              <small class="contract-field-help"
+                                                >Specifies notice-and-cure timelines before remedies like
+                                                suspension or termination are triggered.</small
+                                                >
+                                              </label>
+                                              <label class="contract-option-field">
+                                                <span>LD Cap <em class="option-badge required">Required</em></span>
+                                                <input
+                                                  type="text"
+                                                  [(ngModel)]="ldCap"
+                                                  placeholder="e.g. 10% of Contract Sum"
+                                                  />
+                                                  <small class="contract-field-help"
+                                                    >Sets the maximum liquidated damages exposure and supports
+                                                    enforceability framing.</small
+                                                    >
+                                                  </label>
+                                                </div>
+                                                <div class="contract-flags-row">
+                                                  <label class="contract-option-check">
+                                                    <input
+                                                      type="checkbox"
+                                                      [(ngModel)]="consequentialDamagesWaiverEnabled"
+                                                      />
+                                                      <span>
+                                                        Consequential damages waiver (default ON)
+                                                        <em class="option-badge optional">Optional</em>
+                                                        <small class="contract-field-help"
+                                                          >Mutual waiver of indirect losses such as lost profits,
+                                                          financing costs, and business interruption.</small
+                                                          >
+                                                        </span>
+                                                      </label>
+                                                      <label class="contract-option-check">
+                                                        <input type="checkbox" [(ngModel)]="liabilityCapEnabled" />
+                                                        <span>
+                                                          Limitation of liability cap
+                                                          <em class="option-badge optional">Optional</em>
+                                                          <small class="contract-field-help"
+                                                            >Limits total liability exposure. If enabled, cap type and (if
+                                                            fixed) amount are enforced.</small
+                                                            >
+                                                          </span>
+                                                        </label>
+                                                        <label class="contract-option-check">
+                                                          <input type="checkbox" [(ngModel)]="rightToRepairReviewRequired" />
+                                                          <span>
+                                                            Flag right-to-repair review
+                                                            <em class="option-badge optional">Optional</em>
+                                                            <small class="contract-field-help"
+                                                              >Prompts jurisdictional review for state right-to-repair
+                                                              requirements without auto-inserting statutes.</small
+                                                              >
+                                                            </span>
+                                                          </label>
+                                                          <label class="contract-option-check">
+                                                            <input type="checkbox" [(ngModel)]="depositLimitReviewRequired" />
+                                                            <span>
+                                                              Flag deposit limitation review
+                                                              <em class="option-badge optional">Optional</em>
+                                                              <small class="contract-field-help"
+                                                                >Prompts review of local deposit caps and payment timing
+                                                                rules.</small
+                                                                >
+                                                              </span>
+                                                            </label>
+                                                            <label class="contract-option-check">
+                                                              <input type="checkbox" [(ngModel)]="antiIndemnityReviewRequired" />
+                                                              <span>
+                                                                Flag anti-indemnity review
+                                                                <em class="option-badge optional">Optional</em>
+                                                                <small class="contract-field-help"
+                                                                  >Prompts legal review of indemnity language for anti-indemnity
+                                                                  law compliance.</small
+                                                                  >
+                                                                </span>
+                                                              </label>
+                                                            </div>
+                                                          </div>
+                                                          @if (contractGenerated) {
+                                                            <div class="generated-head">
+                                                              <span class="success-icon"
+                                                                ><lucide-icon name="check"></lucide-icon
+                                                              ></span>
+                                                              <div>
+                                                                <h4>Contract Generated</h4>
+                                                                <p>AI has drafted your construction agreement</p>
+                                                              </div>
+                                                            </div>
+                                                            <div class="generated-file-row">
+                                                              <div class="file-left">
+                                                                <lucide-icon name="file-text"></lucide-icon>
+                                                                <div>
+                                                                  <p class="file-name">{{ generatedContractName }}</p>
+                                                                  <p class="file-meta">Generated just now</p>
+                                                                </div>
+                                                              </div>
+                                                              <span class="ready-pill">Ready</span>
+                                                            </div>
+                                                            <div class="generated-actions">
+                                                              <button
+                                                                type="button"
+                                                                class="btn btn-outline"
+                                                                [disabled]="contractGenerating || isDownloading"
+                                                                (click)="generateContract()"
+                                                                >
+                                                                <lucide-icon name="refresh-cw"></lucide-icon>
+                                                                {{ contractGenerating ? "Regenerating..." : "Regenerate Contract" }}
+                                                              </button>
+                                                              <button
+                                                                type="button"
+                                                                class="btn btn-outline"
+                                                                [disabled]="isDownloading"
+                                                                (click)="viewContract()"
+                                                                >
+                                                                <lucide-icon name="eye"></lucide-icon>
+                                                                View Contract
+                                                              </button>
+                                                              <button
+                                                                type="button"
+                                                                class="btn btn-primary"
+                                                                [disabled]="isDownloading"
+                                                                (click)="downloadContract()"
+                                                                >
+                                                                <lucide-icon name="download"></lucide-icon>
+                                                                {{ isDownloading ? "Downloading..." : "Download Word (.docx)" }}
+                                                              </button>
+                                                            </div>
+                                                          } @else {
+                                                            <button
+                                                              type="button"
+                                                              class="btn btn-primary full"
+                                                              [disabled]="contractGenerating"
+                                                              (click)="generateContract()"
+                                                              >
+                                                              <lucide-icon name="sparkles"></lucide-icon>
+                                                              {{
+                                                              contractGenerating ? "Generating Contract..." : "Generate Contract"
+                                                              }}
+                                                            </button>
+                                                          }
+                                                        </section>
+                                                      }
+
+                                                      @if (contractMethod === 'upload') {
+                                                        <section
+                                                          class="detail-card upload-drop"
+                                                          >
+                                                          <input
+                                                            #contractInput
+                                                            type="file"
+                                                            accept=".pdf,application/pdf"
+                                                            class="hidden-input"
+                                                            (change)="onContractFileSelected($event)"
+                                                            />
+                                                            <div
+                                                              appDragAndDrop
+                                                              class="drop-target"
+                                                              (fileDropped)="onContractFilesDropped($event)"
+                                                              >
+                                                              <lucide-icon name="upload" class="upload-icon"></lucide-icon>
+                                                              <h4>Drop your signed contract here</h4>
+                                                              <p>PDF up to 25MB</p>
+                                                              <button
+                                                                type="button"
+                                                                class="btn btn-outline"
+                                                                [disabled]="isUploading"
+                                                                (click)="contractInput.click()"
+                                                                >
+                                                                {{ isUploading ? "Uploading..." : "Browse Files" }}
+                                                              </button>
+                                                            </div>
+                                                            @if (uploadedContractName) {
+                                                              <p class="ok">
+                                                                Uploaded: {{ uploadedContractName }}
+                                                              </p>
+                                                            }
+                                                            @if (uploadedContractName && activeContractId) {
+                                                              <div
+                                                                class="generated-actions"
+                                                                >
+                                                                <button
+                                                                  type="button"
+                                                                  class="btn btn-outline"
+                                                                  [disabled]="isDownloading"
+                                                                  (click)="viewContract()"
+                                                                  >
+                                                                  <lucide-icon name="eye"></lucide-icon>
+                                                                  View Uploaded Contract
+                                                                </button>
+                                                                <button
+                                                                  type="button"
+                                                                  class="btn btn-primary"
+                                                                  [disabled]="isDownloading"
+                                                                  (click)="downloadContract()"
+                                                                  >
+                                                                  <lucide-icon name="download"></lucide-icon>
+                                                                  {{ isDownloading ? "Downloading..." : "Download Uploaded PDF" }}
+                                                                </button>
+                                                              </div>
+                                                            }
+                                                          </section>
+                                                        }
+
+                                                        <section class="progress-card progress-card-copy">
+                                                          <div class="progress-row">
+                                                            <span>Items Completed</span>
+                                                            <strong>{{ completedItems }} / 2</strong>
+                                                          </div>
+                                                          <div class="progress-track">
+                                                            <div
+                                                              class="progress-fill"
+                                                              [style.width.%]="(completedItems / 2) * 100"
+                                                            ></div>
+                                                          </div>
+                                                          @if (canProceed) {
+                                                            <p class="progress-copy">
+                                                              Contract flow selected. You may proceed to pre-construction.
+                                                            </p>
+                                                          } @else {
+                                                            <p class="progress-copy">Select a contract method to continue.</p>
+                                                          }
+                                                        </section>
+                                                      </section>
+
+                                                      @if (contractGenerating) {
+                                                        <div class="spinner-overlay">
+                                                          <div class="spinner-backdrop"></div>
+                                                          <section
+                                                            class="spinner-dialog"
+                                                            role="dialog"
+                                                            aria-modal="true"
+                                                            aria-label="Generating contract"
+                                                            >
+                                                            <div class="spinner-dialog-body">
+                                                              <div class="spinner-ring-wrap">
+                                                                <span class="spinner-ring-base"></span>
+                                                                <span class="spinner-ring-top"></span>
+                                                                <span class="spinner-sparkles"
+                                                                  ><lucide-icon name="sparkles"></lucide-icon
+                                                                ></span>
+                                                              </div>
+                                                              <h3>Generating Contract</h3>
+                                                              <p>
+                                                                AI is drafting your construction agreement using the approved
+                                                                quotation and project details. This will only take a moment.
+                                                              </p>
+                                                              <div class="spinner-dots" aria-hidden="true">
+                                                                <span></span>
+                                                                <span></span>
+                                                                <span></span>
+                                                              </div>
+                                                            </div>
+                                                          </section>
+                                                        </div>
+                                                      }
+                                                    </section>

@@ -1,0 +1,242 @@
+<div class="team-tab-container">
+  <div class="team-grid">
+    <!-- Internal Team Section -->
+    <mat-card class="team-card">
+      <div class="card-header">
+        <div class="header-content">
+          <div class="icon-container yellow-bg">
+            <mat-icon class="yellow-text">people</mat-icon>
+          </div>
+          <div>
+            <h3>Internal Team</h3>
+            <p class="subtitle">{{ internalTeam.length }} members assigned</p>
+          </div>
+        </div>
+        <button
+          mat-button
+          type="button"
+          class="btn btn-primary action-btn"
+          (click)="openAddTeamMemberDialog()"
+          >
+          <mat-icon>person_add</mat-icon>
+          Add Team Member
+        </button>
+      </div>
+
+      <div class="member-list">
+        @for (member of internalTeam; track member) {
+          <div class="member-item">
+            <button class="member-btn" (click)="openMemberDetail(member)">
+              <div class="avatar yellow-bg yellow-text">
+                {{ getInitials(member.firstName + " " + member.lastName) }}
+              </div>
+              <div class="member-info">
+                <p class="name">{{ member.firstName }} {{ member.lastName }}</p>
+                <p class="role">
+                  {{ (member.jobRole || "" | roleDisplay) || "Team Member" }}
+                </p>
+              </div>
+              <div class="member-meta desktop-only">
+                <p class="department">
+                  {{ member.userType || "" | roleDisplay }}
+                </p>
+                <!-- <p class="start-date">Since {{ member.startDate }}</p> -->
+              </div>
+            </button>
+            <button
+              mat-icon-button
+              class="remove-btn"
+              (click)="confirmRemove(member, 'team')"
+              matTooltip="Remove member"
+              >
+              <mat-icon>person_remove</mat-icon>
+            </button>
+          </div>
+        }
+
+        @if (internalTeam.length === 0) {
+          <div class="empty-state">
+            <p>No internal team members assigned.</p>
+          </div>
+        }
+      </div>
+    </mat-card>
+
+    <!-- Subcontractors Section -->
+    @if (showSubcontractors) {
+      <mat-card class="team-card">
+        <div class="card-header">
+          <div class="header-content">
+            <div class="icon-container yellow-bg">
+              <mat-icon class="yellow-text">engineering</mat-icon>
+            </div>
+            <div>
+              <h3>Subcontractors</h3>
+              <p class="subtitle">{{ subcontractorPackages.length }} trade packages</p>
+            </div>
+          </div>
+          <button
+            mat-button
+            type="button"
+            class="btn btn-primary action-btn"
+            (click)="openAddSubcontractorDialog()"
+            >
+            <mat-icon>add</mat-icon>
+            Add Subcontractor
+          </button>
+        </div>
+        <div class="member-list">
+          @if (isLoadingTradePackages) {
+            <div class="empty-state">
+              <p>Loading subcontractor packages...</p>
+            </div>
+          }
+          @for (sub of subcontractorPackages; track sub) {
+            <div class="member-item">
+              <button class="member-btn" type="button">
+                <div class="avatar gray-bg">
+                  <mat-icon class="yellow-text">build</mat-icon>
+                </div>
+                <div class="member-info">
+                  <div class="trade-row">
+                    <p class="name">{{ sub.trade }}</p>
+                    <span class="status-pill" [class.confirmed]="sub.status === 'assigned'" [class.pending]="sub.status === 'unassigned'">
+                      {{ sub.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                    </span>
+                    @if (sub.isInHouse) {
+                      <span class="in-house-chip">In House</span>
+                    }
+                  </div>
+                  <p class="company">{{ sub.partnerName }}</p>
+                  @if (sub.csiCode) {
+                    <p class="role">{{ sub.csiCode }}</p>
+                  }
+                </div>
+                <div class="member-meta desktop-only">
+                  <p class="contract-value">{{ sub.totalBudget | money : true : 2 }}</p>
+                </div>
+              </button>
+            </div>
+          }
+          @if (!isLoadingTradePackages && subcontractorPackages.length === 0) {
+            <div class="empty-state">
+              <p>No subcontractor trade packages available.</p>
+            </div>
+          }
+        </div>
+      </mat-card>
+    }
+
+    <!-- Vendors Section -->
+    @if (showSubcontractors) {
+      <mat-card class="team-card">
+        <div class="card-header">
+          <div class="header-content">
+            <div class="icon-container orange-bg">
+              <mat-icon class="orange-text">inventory_2</mat-icon>
+            </div>
+            <div>
+              <h3>Vendors</h3>
+              <p class="subtitle">{{ vendorPackages.length }} vendor packages</p>
+            </div>
+          </div>
+        </div>
+        <div class="member-list">
+          @if (isLoadingTradePackages) {
+            <div class="empty-state">
+              <p>Loading vendor packages...</p>
+            </div>
+          }
+          @for (vendor of vendorPackages; track vendor) {
+            <div class="member-item">
+              <button class="member-btn" type="button">
+                <div class="avatar gray-bg">
+                  <mat-icon class="orange-text">inventory_2</mat-icon>
+                </div>
+                <div class="member-info">
+                  <div class="trade-row">
+                    <p class="name">{{ vendor.trade }}</p>
+                    <span class="status-pill" [class.confirmed]="vendor.status === 'assigned'" [class.pending]="vendor.status === 'unassigned'">
+                      {{ vendor.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                    </span>
+                    @if (vendor.isInHouse) {
+                      <span class="in-house-chip">In House</span>
+                    }
+                  </div>
+                  <p class="company">{{ vendor.partnerName }}</p>
+                  @if (vendor.csiCode) {
+                    <p class="role">{{ vendor.csiCode }}</p>
+                  }
+                </div>
+                <div class="member-meta desktop-only">
+                  <p class="contract-value">{{ vendor.totalBudget | money : true : 2 }}</p>
+                </div>
+              </button>
+            </div>
+          }
+          @if (!isLoadingTradePackages && vendorPackages.length === 0) {
+            <div class="empty-state">
+              <p>No vendor packages available.</p>
+            </div>
+          }
+        </div>
+      </mat-card>
+    }
+
+    <!-- Suppliers Section -->
+    @if (showSubcontractors) {
+      <mat-card class="team-card">
+        <div class="card-header">
+          <div class="header-content">
+            <div class="icon-container blue-bg">
+              <mat-icon class="blue-text">local_shipping</mat-icon>
+            </div>
+            <div>
+              <h3>Suppliers</h3>
+              <p class="subtitle">{{ supplierPackages.length }} supplier packages</p>
+            </div>
+          </div>
+        </div>
+        <div class="member-list">
+          @if (isLoadingTradePackages) {
+            <div class="empty-state">
+              <p>Loading supplier packages...</p>
+            </div>
+          }
+          @for (supplier of supplierPackages; track supplier) {
+            <div class="member-item">
+              <button class="member-btn" type="button">
+                <div class="avatar gray-bg">
+                  <mat-icon class="blue-text">local_shipping</mat-icon>
+                </div>
+                <div class="member-info">
+                  <div class="trade-row">
+                    <p class="name">{{ supplier.trade }}</p>
+                    <span class="status-pill" [class.confirmed]="supplier.status === 'assigned'" [class.pending]="supplier.status === 'unassigned'">
+                      {{ supplier.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+                    </span>
+                    @if (supplier.isInHouse) {
+                      <span class="in-house-chip">In House</span>
+                    }
+                  </div>
+                  <p class="company">{{ supplier.partnerName }}</p>
+                  @if (supplier.csiCode) {
+                    <p class="role">{{ supplier.csiCode }}</p>
+                  }
+                </div>
+                <div class="member-meta desktop-only">
+                  <p class="contract-value">{{ supplier.totalBudget | money : true : 2 }}</p>
+                </div>
+              </button>
+            </div>
+          }
+          @if (!isLoadingTradePackages && supplierPackages.length === 0) {
+            <div class="empty-state">
+              <p>No supplier packages available.</p>
+            </div>
+          }
+        </div>
+      </mat-card>
+    }
+  </div>
+</div>

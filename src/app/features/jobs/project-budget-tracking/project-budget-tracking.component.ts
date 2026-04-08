@@ -8,26 +8,23 @@ import {
   PLATFORM_ID,
   ChangeDetectorRef,
 } from '@angular/core';
-import {
-  CommonModule,
-  NgIf,
-  NgForOf,
-  DecimalPipe,
-  CurrencyPipe,
-  isPlatformBrowser,
-} from '@angular/common';
+import { CommonModule, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { BudgetLineItem } from '../../../models/budget-line-item.model';
 import { BudgetService } from '../services/budget.service';
 import { BomService } from '../services/bom.service';
+import { ReportService } from '../services/report.service';
 import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { QuoteService } from '../../quote/quote.service';
+import { MoneyPipe } from '../../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-project-budget-tracking',
@@ -39,13 +36,13 @@ import { ConfirmationDialogComponent } from '../../../shared/dialogs/confirmatio
     MatCardModule,
     MatIconModule,
     MatTooltipModule,
-    NgIf,
-    NgForOf,
+    MatExpansionModule,
     DecimalPipe,
-    CurrencyPipe,
-  ],
+    MoneyPipe
+],
   templateUrl: './project-budget-tracking.component.html',
   styleUrl: './project-budget-tracking.component.scss',
+  providers: [QuoteService],
 })
 export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   @Input() projectDetails: any;
@@ -53,24 +50,37 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   // Budget Data
   budgetItems: BudgetLineItem[] = [];
   isLoadingBudget: boolean = false;
+  isLoadingSummary: boolean = false;
+  isBudgetViewReady: boolean = false;
   processingResults: any[] = [];
   isBrowser: boolean;
+  totalProjectCost: number = 0;
+  private budgetLoaded = false;
+  private summaryLoaded = false;
+  private currentLoadToken = 0;
+
+  jobInvoices: any[] = [];
+  isLoadingInvoices = false;
 
   // Budget UI State
   isAddingLineItem: boolean = false;
   newBudgetItem: Partial<BudgetLineItem> = {};
   editingItemId: number | null = null;
   editingItem: BudgetLineItem | null = null;
+  private isAutoImporting: boolean = false;
   budgetTableTab:
     | 'all'
     | 'Subcontractor'
     | 'Materials'
     | 'Equipment'
     | 'Other' = 'all';
+  selectedDivision: string | null = 'all';
 
   constructor(
     private budgetService: BudgetService,
     private bomService: BomService,
+    private reportService: ReportService,
+    private quoteService: QuoteService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -80,14 +90,100 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     if (this.projectDetails?.jobId) {
-      this.loadBudget();
+      this.loadBudgetViewData();
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['projectDetails'] && this.projectDetails?.jobId) {
-      this.loadBudget();
+      this.loadBudgetViewData();
     }
+  }
+
+  private loadBudgetViewData(): void {
+    const jobId = this.projectDetails?.jobId;
+    if (!jobId) return;
+
+    const loadToken = ++this.currentLoadToken;
+    this.isBudgetViewReady = false;
+    this.isLoadingBudget = true;
+    this.isLoadingSummary = true;
+    this.budgetLoaded = false;
+    this.summaryLoaded = false;
+
+    this.loadBudget(loadToken);
+    this.loadCostSummary(loadToken);
+    this.loadInvoices(loadToken);
+  }
+
+  private loadInvoices(loadToken: number): void {
+    const jobId = Number(this.projectDetails?.jobId);
+    if (!Number.isFinite(jobId) || jobId <= 0) {
+      this.jobInvoices = [];
+      return;
+    }
+
+    this.isLoadingInvoices = true;
+    this.quoteService.getJobInvoices(jobId).subscribe({
+      next: (invoices) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        this.jobInvoices = Array.isArray(invoices) ? invoices : [];
+        this.isLoadingInvoices = false;
+      },
+      error: (err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        console.error('Failed to load job invoices', err);
+        this.jobInvoices = [];
+        this.isLoadingInvoices = false;
+      },
+    });
+  }
+
+  get pendingInvoices(): any[] {
+    return (this.jobInvoices || []).filter(
+      (inv) => String(inv?.status || '') === 'Approved',
+    );
+  }
+
+  get pendingInvoicesCount(): number {
+    return this.pendingInvoices.length;
+  }
+
+  get pendingInvoicesAmount(): number {
+    return this.pendingInvoices.reduce(
+      (sum, inv) => sum + (Number(inv?.total) || 0),
+      0,
+    );
+  }
+
+  private loadCostSummary(loadToken: number): void {
+    if (!this.projectDetails?.jobId) return;
+
+    this.reportService
+      .getDetailedCostSummary(this.projectDetails.jobId)
+      .then((summary) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        this.totalProjectCost = Number(summary?.suggestedBid || 0);
+        this.summaryLoaded = true;
+        this.isLoadingSummary = false;
+        this.updateBudgetViewReadyState(loadToken);
+      })
+      .catch((err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
+        console.error('Failed to load detailed cost summary for budget tracking', err);
+        this.totalProjectCost = 0;
+        this.summaryLoaded = true;
+        this.isLoadingSummary = false;
+        this.updateBudgetViewReadyState(loadToken);
+      });
   }
 
   // Budget Calculations
@@ -113,6 +209,20 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
   get variancePercent(): string {
     return this.totalEstimated > 0
       ? ((this.variance / this.totalEstimated) * 100).toFixed(1)
+      : '0.0';
+  }
+
+  get displayTotalBudget(): number {
+    return this.totalProjectCost > 0 ? this.totalProjectCost : this.totalEstimated;
+  }
+
+  get budgetVariance(): number {
+    return this.displayTotalBudget - this.totalForecast;
+  }
+
+  get budgetVariancePercent(): string {
+    return this.displayTotalBudget > 0
+      ? ((this.budgetVariance / this.displayTotalBudget) * 100).toFixed(1)
       : '0.0';
   }
 
@@ -150,6 +260,62 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
       .slice(0, 5);
   }
 
+  get costByPhase(): { name: string; value: number }[] {
+    const phaseMap = new Map<string, number>();
+    this.budgetItems.forEach((item) => {
+      const phase = item.phase || 'Unassigned';
+      const current = phaseMap.get(phase) || 0;
+      phaseMap.set(phase, current + (item.estimatedCost || 0));
+    });
+
+    return Array.from(phaseMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }
+
+  get currentDivisionStats() {
+    let items = this.budgetItems;
+    let name = 'All Divisions';
+    let total = this.displayTotalBudget;
+
+    if (this.selectedDivision !== 'all' && this.selectedDivision) {
+      items = this.budgetItems.filter((i) => i.phase === this.selectedDivision);
+      name = this.selectedDivision;
+      total = items.reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    }
+
+    if (total === 0) {
+      return {
+        name,
+        amount: 0,
+        pct: '0%',
+        materials: 0,
+        labor: 0,
+      };
+    }
+
+    const materials = items
+      .filter((i) => i.category === 'Materials')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+    const labor = items
+      .filter((i) => i.category === 'Subcontractor' || i.category === 'Labor')
+      .reduce((sum, i) => sum + (i.estimatedCost || 0), 0);
+
+    return {
+      name,
+      amount: total,
+      pct:
+        this.displayTotalBudget > 0
+          ? Math.round((total / this.displayTotalBudget) * 100) + '%'
+          : '0%',
+      materials: Math.round((materials / total) * 100),
+      labor: Math.round((labor / total) * 100),
+      materialAmount: materials,
+      laborAmount: labor,
+    };
+  }
+
   getVariance(item: BudgetLineItem): number {
     const forecast = item.forecastToComplete ?? item.estimatedCost;
     return item.estimatedCost - forecast;
@@ -184,7 +350,7 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     this.cancelEditLineItem();
   }
 
-  loadBudget(): void {
+  loadBudget(loadToken: number): void {
     if (!this.projectDetails?.jobId) return;
 
     const storageKey = `budget_${this.projectDetails.jobId}`;
@@ -199,18 +365,28 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
       }
     }
 
-    this.isLoadingBudget = true;
     this.budgetService.getBudget(this.projectDetails.jobId).subscribe({
       next: (items) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         this.budgetItems = items;
         if (this.isBrowser) {
           localStorage.setItem(storageKey, JSON.stringify(this.budgetItems));
         }
         this.isLoadingBudget = false;
+        this.budgetLoaded = true;
+        this.updateBudgetViewReadyState(loadToken);
+        this.checkAndAutoImportAiEstimates();
       },
       error: (err) => {
+        if (loadToken !== this.currentLoadToken) {
+          return;
+        }
         console.error('Error loading budget', err);
         this.isLoadingBudget = false;
+        this.budgetLoaded = true;
+        this.updateBudgetViewReadyState(loadToken);
         this.snackBar.open('Failed to load budget.', 'Close', {
           duration: 3000,
         });
@@ -218,22 +394,20 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
     });
   }
 
-  importAiEstimates(): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: 'Import AI Estimates',
-        message:
-          'This will import estimated costs derived from the AI analysis. These are estimates only and should be verified. Do you want to proceed?',
-        confirmButtonText: 'Import',
-        cancelButtonText: 'Cancel',
-      },
-    });
+  private updateBudgetViewReadyState(loadToken: number): void {
+    if (loadToken !== this.currentLoadToken) {
+      return;
+    }
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.processAiImport();
-      }
-    });
+    this.isBudgetViewReady = this.budgetLoaded && this.summaryLoaded;
+  }
+
+  private checkAndAutoImportAiEstimates(): void {
+    const hasAiItems = this.budgetItems.some((item) => item.source === 'AI');
+    if (!hasAiItems) {
+      this.isAutoImporting = true;
+      this.processAiImport();
+    }
   }
 
   private processAiImport(): void {
@@ -418,40 +592,44 @@ export class ProjectBudgetTrackingComponent implements OnInit, OnChanges {
 
     if (newItems.length === 0) {
       this.isLoadingBudget = false;
-      this.snackBar.open('No estimable items found in AI report.', 'Close', {
-        duration: 3000,
-      });
+      if (!this.isAutoImporting) {
+        this.snackBar.open('No estimable items found in AI report.', 'Close', {
+          duration: 3000,
+        });
+      }
+      this.isAutoImporting = false;
       return;
     }
 
     const existingAiItems = this.budgetItems.filter((i) => i.source === 'AI');
     if (existingAiItems.length > 0) {
-      if (
-        !confirm(
-          `You already have ${existingAiItems.length} AI-imported items. This will add duplicates. Continue?`,
-        )
-      ) {
-        this.isLoadingBudget = false;
-        return;
-      }
+      this.isLoadingBudget = false;
+      this.isAutoImporting = false;
+      return;
     }
 
     this.budgetService.addBudgetItemsBatch(newItems).subscribe({
       next: (savedItems) => {
         this.budgetItems = [...this.budgetItems, ...savedItems];
         this.isLoadingBudget = false;
-        this.snackBar.open(
-          `Successfully imported ${savedItems.length} items from AI.`,
-          'Close',
-          { duration: 3000 },
-        );
+        if (!this.isAutoImporting) {
+          this.snackBar.open(
+            `Successfully imported ${savedItems.length} items from AI.`,
+            'Close',
+            { duration: 3000 },
+          );
+        }
+        this.isAutoImporting = false;
       },
       error: (err) => {
         console.error('Batch import failed', err);
         this.isLoadingBudget = false;
-        this.snackBar.open('Failed to import items.', 'Close', {
-          duration: 3000,
-        });
+        if (!this.isAutoImporting) {
+          this.snackBar.open('Failed to import items.', 'Close', {
+            duration: 3000,
+          });
+        }
+        this.isAutoImporting = false;
       },
     });
   }

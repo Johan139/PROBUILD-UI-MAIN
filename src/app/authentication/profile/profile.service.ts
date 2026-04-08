@@ -62,7 +62,7 @@ export class ProfileService {
 
     this.hubConnection
       .start()
-      .then(() => console.log('SignalR connection established successfully'))
+      .then(() => {})
       .catch((err) => console.error('SignalR Connection Error:', err));
   }
 
@@ -70,13 +70,13 @@ export class ProfileService {
     if (this.hubConnection) {
       this.hubConnection
         .stop()
-        .then(() => console.log('SignalR connection stopped'))
+        .then(() => {})
         .catch((err) => console.error('Error stopping SignalR:', err));
     }
   }
 
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
+    const token = this.authService.getAccessTokenFast();
     return new HttpHeaders({
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -206,7 +206,7 @@ export class ProfileService {
         return;
       }
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.Google_API}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -267,7 +267,18 @@ export class ProfileService {
       { headers: this.getHeaders() },
     );
   }
-
+  archiveDocument(docID: number): Observable<void> {
+    return this.http
+      .post<void>(`${this.apiUrl}/ArchiveDocument/` + docID, null, {
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Error updating profile:', error);
+          return throwError(() => new Error('Failed to update profile'));
+        }),
+      );
+  }
   getAddressType(): Observable<AddressType[]> {
     return this.http.get<AddressType[]>(`${this.apiUrl}/AddressTypes/`, {
       headers: this.getHeaders(),
@@ -275,7 +286,6 @@ export class ProfileService {
   }
   addUserAddress(address: UserAddress): Observable<UserAddress> {
     const url = `${this.apiUrl}/AddUserAddress`;
-    console.log(address);
     return this.http
       .post<UserAddress>(url, address, { headers: this.getHeaders() })
       .pipe(

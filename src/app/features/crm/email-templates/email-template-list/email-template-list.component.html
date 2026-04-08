@@ -1,0 +1,71 @@
+<div class="page-wrapper">
+  <mat-card class="page-card">
+    <div class="topbar">
+      <button mat-button routerLink="/crm">
+        <mat-icon>arrow_back</mat-icon>
+        Back
+      </button>
+
+      <h2>Email Templates</h2>
+    </div>
+
+    @if (templates$ | async; as templates) {
+      @if (templates.length) {
+        <div class="template-grid">
+          @for (template of templates; track trackById($index, template)) {
+            <div
+              class="template-card"
+              (click)="openTemplate(template)"
+              >
+              <!-- Top Row -->
+              <div class="card-header">
+                <div class="icon-wrapper">
+                  <mat-icon>mail</mat-icon>
+                </div>
+                <div class="badges">
+                  <span
+                    class="status-badge"
+                    [class.active]="template.isActive"
+                    [class.inactive]="!template.isActive"
+                    >
+                    {{ template.isActive ? "Published" : "Draft" }}
+                  </span>
+                  <span class="env-badge"> production </span>
+                </div>
+              </div>
+              <!-- Title -->
+              <div class="card-title">
+                {{ template.templateName }}
+              </div>
+              <!-- Internal Key / Subject -->
+              <div class="card-key">
+                {{ template.subject }}
+              </div>
+              <!-- Footer -->
+              <div class="card-footer">
+                <div class="meta">
+                  {{
+                  template.modifiedDate || template.createdDate
+                  | date: "mediumDate"
+                  }}
+                </div>
+                <button
+                  mat-icon-button
+                  (click)="editTemplate(template); $event.stopPropagation()"
+                  >
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p>No templates found.</p>
+      }
+    } @else {
+      <p>Loading templates...</p>
+    }
+
+
+  </mat-card>
+</div>

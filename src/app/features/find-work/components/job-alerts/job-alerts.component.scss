@@ -1,0 +1,116 @@
+@use "styles/util/mixins" as u;
+@use '../find-work.shared' as *;
+
+.alerts-pane {
+    .alerts-header-card {
+        @extend .card-style;
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: linear-gradient(to right, rgba($color-yellow, 0.1), transparent);
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+
+             .icon-box {
+                width: 56px;
+                height: 56px;
+                border-radius: 12px;
+                background: rgba($color-yellow, 0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                mat-icon { font-size: 24px; width: 24px; height: 24px; color: $color-yellow; }
+             }
+
+             h3 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+             p { margin: 0; color: $color-text-muted; }
+        }
+    }
+
+    .alerts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+
+        @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+        }
+
+        .config-card {
+             @extend .card-style;
+             padding: 0;
+             display: flex;
+             flex-direction: column;
+
+             &.notifications-card { grid-column: 1 / -1; }
+
+             .card-header {
+                 padding: 16px;
+                 border-bottom: 1px solid $color-border;
+
+                 h4 { margin: 0; font-size: 16px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+                 .yellow-text { color: $color-yellow; }
+                 p { margin: 4px 0 0 0; font-size: 12px; color: $color-text-muted; }
+
+                 &.with-actions {
+                     display: flex;
+                     justify-content: space-between;
+                     .header-actions {
+                         .link-btn { background: none; border: none; color: $color-blue; cursor: pointer; font-size: 12px; &:hover { text-decoration: underline; } }
+                         .divider { margin: 0 4px; color: $color-border; }
+                     }
+                 }
+             }
+
+             .card-content {
+                 padding: 16px; 
+
+                 &.centered { text-align: center; }
+
+                 .location-input-wrapper {
+                     position: relative;
+                     margin-bottom: 16px;
+                     mat-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; width: 16px; height: 16px; color: $color-text-muted; cursor: pointer; &:hover { color: $color-yellow; } }
+                     input { width: 100%; padding: 8px 16px 8px 36px; background: var(--color-surface-subtle); border: 1px solid $color-border; border-radius: var(--radius-md); }
+                 }
+
+                 .distance-presets {
+                     display: flex; justify-content: center; gap: 8px; margin-bottom: 16px;
+                     .preset-chip {
+                         padding: 4px 12px; border-radius: 99px; border: 1px solid $color-border; background: transparent; cursor: pointer; font-size: 12px;
+                         &.active { background: rgba($color-yellow, 0.2); color: $color-yellow; border-color: $color-yellow; font-weight: 600; }
+                     }
+                 }
+
+                 .big-value { font-size: 3rem; font-weight: 700; color: $color-yellow; margin-bottom: 8px; .unit { font-size: 1rem; color: $color-text-muted; font-weight: 400; } }
+
+                 .full-width-range { width: 100%; accent-color: $color-yellow; }
+                 .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: $color-text-muted; }
+
+                 .trade-checkbox-grid {
+                     display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 200px; overflow-y: auto;
+                 }
+
+                 .notification-options-cards {
+                     display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;
+                     .notification-card {
+                         display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid $color-border; border-radius: var(--radius-md); background: var(--color-surface);
+                         &.active { border-color: $color-yellow; background: rgba($color-yellow, 0.05); }
+                         .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: var(--color-surface-subtle); display: flex; align-items: center; justify-content: center; mat-icon { font-size: 16px; width: 16px; height: 16px; } }
+                         .notif-details { flex: 1; .notif-title { font-weight: 600; font-size: 14px; } .notif-desc { font-size: 12px; color: $color-text-muted; } }
+                     }
+                 }
+             }
+        }
+    }
+
+    .save-actions {
+        display: flex; justify-content: flex-end;
+        button { background: $color-yellow; color: #000; padding: 8px 24px; font-weight: 500; }
+    }
+}

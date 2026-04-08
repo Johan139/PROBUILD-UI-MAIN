@@ -1,0 +1,131 @@
+@use "sass:math";
+
+lucide-angular {
+  display: block;
+
+  ::ng-deep svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.stepper-container {
+  // background-color: var(--color-surface);
+  // border-bottom: 1px solid var(--color-border);
+  padding: 1rem 1.5rem;
+}
+
+.stepper-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stage-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.progress-track-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.progress-track-bg {
+  position: absolute;
+  top: 1rem;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  background-color: var(--color-border);
+}
+
+.progress-track-fill {
+  position: absolute;
+  top: 1rem;
+  left: 0;
+  height: 0.25rem;
+  background-color: var(--color-primary);
+  transition: all 0.5s ease-in-out;
+}
+
+.steps-container {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.step-circle {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.3s ease-in-out;
+
+  // Icons inside
+  .step-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  &.completed {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+  }
+
+  &.current {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow:
+      0 0 0 2px var(--color-surface),
+      0 0 0 4px color-mix(in oklab, var(--color-primary) 35%, transparent);
+  }
+
+  &.pending {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+  }
+}
+
+.step-label {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+
+  &.current-text {
+    color: var(--color-primary);
+  }
+
+  &.completed-text {
+    color: var(--color-text);
+  }
+
+  &.pending-text {
+    color: var(--color-text-muted);
+  }
+}
+
+.current-stage-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  white-space: nowrap;
+}

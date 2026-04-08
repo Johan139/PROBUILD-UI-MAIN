@@ -46,7 +46,31 @@
   margin: 0;
   padding: 0;
 }
+/* styles.scss (or global theme file) */
 
+:root {
+  --brand-yellow-primary: #fcd109;
+
+  --action-primary: var(--brand-yellow-primary);
+  --action-primary-hover: color-mix(
+    in oklab,
+    var(--brand-yellow-primary) 85%,
+    black
+  );
+
+  --action-secondary: var(--color-text-muted);
+  --action-secondary-hover: var(--color-text);
+
+  --action-danger: #dc3545;
+  --action-danger-hover: #b52a37;
+
+  --action-disabled-bg: var(--color-border);
+  --action-disabled-text: var(--color-text-muted);
+}
+iframe[id^="gsi_"] {
+  margin: 0 !important;
+  display: block !important;
+}
 html {
   font-size: 100%;
   font-family: var(--font-sans);
@@ -65,35 +89,39 @@ body {
 // 5. THEME DEFINITIONS
 // --------------------------------------------------------------------------
 
-$probuild-light-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: mat.$yellow-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  typography: (
-    brand-family: var(--font-sans),
-    plain-family: var(--font-sans),
-  ),
-  density: (
-    scale: 0,
+$probuild-light-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$yellow-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: (
+      brand-family: var(--font-sans),
+      plain-family: var(--font-sans),
+    ),
+    density: (
+      scale: 0,
+    ),
   )
-));
+);
 
-$probuild-dark-theme: mat.define-theme((
-  color: (
-    theme-type: dark,
-    primary: mat.$yellow-palette,
-    tertiary: mat.$blue-palette,
-  ),
-  typography: (
-    brand-family: var(--font-sans),
-    plain-family: var(--font-sans),
-  ),
-  density: (
-    scale: 0,
+$probuild-dark-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: dark,
+      primary: mat.$yellow-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: (
+      brand-family: var(--font-sans),
+      plain-family: var(--font-sans),
+    ),
+    density: (
+      scale: 0,
+    ),
   )
-));
+);
 
 // --------------------------------------------------------------------------
 // 6. APPLY THEMES
@@ -101,6 +129,10 @@ $probuild-dark-theme: mat.define-theme((
 
 :root {
   @include mat.all-component-themes($probuild-light-theme);
+
+  & {
+    --page-title-color: var(--color-text);
+  }
 
   .mat-mdc-card {
     --mdc-elevated-card-container-color: var(--color-surface);
@@ -114,6 +146,7 @@ $probuild-dark-theme: mat.define-theme((
 
 .theme-dark {
   color-scheme: dark;
+  --page-title-color: var(--action-primary);
   @include mat.all-component-colors($probuild-dark-theme);
 }
 
@@ -126,6 +159,7 @@ $probuild-dark-theme: mat.define-theme((
 }
 
 .mat-mdc-card,
+.mat-menu,
 .mat-expansion-panel,
 .mat-expansion-panel-header,
 .mat-form-field,
@@ -135,6 +169,7 @@ $probuild-dark-theme: mat.define-theme((
 .mat-mdc-text-field-wrapper,
 .mat-mdc-select-value,
 .mat-mdc-select-arrow-wrapper,
+.mat-mdc-menu-content,
 .mat-autocomplete-panel,
 .mat-table,
 .mat-header-cell,
@@ -175,7 +210,36 @@ $probuild-dark-theme: mat.define-theme((
 // --------------------------------------------------------------------------
 // 9. TOOLTIP
 // --------------------------------------------------------------------------
+.validation-dialog-backdrop {
+  background: color-mix(in oklab, var(--color-text) 72%, transparent) !important;
+  backdrop-filter: blur(2px);
+}
 
+.validation-dialog-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible;
+  }
+}
+
+.cdk-overlay-pane.custom-dialog-container,
+.cdk-overlay-pane.custom-modal,
+.cdk-overlay-pane.full-screen-dialog,
+.cdk-overlay-pane.scope-insight-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+}
+
+.cdk-overlay-pane.scope-insight-panel {
+  .mat-mdc-dialog-container .mdc-dialog__surface {
+    padding: 0 !important;
+  }
+}
 .mdc-tooltip {
   .mdc-tooltip__surface {
     background-color: var(--color-accent) !important;

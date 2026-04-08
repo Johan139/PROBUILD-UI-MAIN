@@ -1,0 +1,78 @@
+@use 'styles/util/mixins' as u;
+
+$color-yellow: var(--color-primary);
+
+h2 {
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 500px;
+  padding-top: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+}
+
+.half-width {
+  flex: 1;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.labor-type-section {
+  margin-top: 8px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 12px;
+
+    .type-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--color-text);
+      transition: all 0.2s ease;
+
+      &.active {
+        background: rgba(var(--color-primary), 0.15);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      &:hover:not(.active) {
+        background: var(--color-surface-hover);
+      }
+    }
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-border);
+
+  button[color="primary"] {
+    background-color: var(--color-primary);
+    color: #000;
+  }
+}

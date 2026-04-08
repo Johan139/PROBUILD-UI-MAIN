@@ -10,47 +10,50 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   ViewChildren,
   QueryList,
-  effect,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { JobsService } from '../../services/jobs.service';
 import { Job } from '../../models/job';
-import { GoogleMap, GoogleMapsModule } from '@angular/google-maps';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../authentication/auth.service';
 import { MapLoaderService } from '../../services/map-loader.service';
-import { forkJoin, Observable, Subject, takeUntil } from 'rxjs';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { catchError, finalize, forkJoin, of, Subject, takeUntil, timeout } from 'rxjs';
 import { UserService } from '../../services/user.service';
 import { ProfileService } from '../../authentication/profile/profile.service';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableDataSource } from '@angular/material/table';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { ReactiveFormsModule } from '@angular/forms';
 import { Bid } from '../../models/bid';
 import { BiddingService } from '../../services/bidding.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { JOB_TYPES } from '../../data/job-types';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SubmitBidDialogComponent } from './submit-bid-dialog/submit-bid-dialog.component';
-import { JobCardComponent } from '../../components/job-card/job-card.component';
-import { BlueprintDisplayDialogComponent } from './information-display-dialog/information-display-dialog.component';
-import { ConfirmationDialogComponent } from '../../shared/dialogs/confirmation-dialog/confirmation-dialog.component';
+import { JobDetailsDialogComponent } from './job-details-dialog/job-details-dialog.component';
+import { PostJobDialogComponent } from './post-job-dialog/post-job-dialog.component';
 import { QuoteService } from '../../features/quote/quote.service';
-import { Quote } from '../quote/quote.model';
+import { QuoteListItemDto } from '../quote/quote.model';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
 import { ThemeService } from '../../theme.service';
 import { UserAddressStoreService } from '../../services/UserAddressStoreService';
 import { UserAddress } from '../../authentication/profile/profile.model';
-
-const lightMapId = 'cfb7ea445a870af896b65c20';
-const darkMapId = 'cfb7ea445a870af82d9def4b';
+import { BomService } from '../../features/jobs/services/bom.service';
+import { MyJobPostingsComponent } from './components/my-job-postings/my-job-postings.component';
+import { BrowseJobsComponent } from './components/browse-jobs/browse-jobs.component';
+import { MyBidsComponent } from './components/my-bids/my-bids.component';
+import { SavedJobsComponent } from './components/saved-jobs/saved-jobs.component';
+import { JobAlertsComponent } from './components/job-alerts/job-alerts.component';
+import { FindWorkMapComponent } from './components/find-work-map/find-work-map.component';
 
 interface JobMarker {
   position: google.maps.LatLngLiteral;
@@ -65,134 +68,111 @@ interface JobMarker {
   styleUrls: ['./find-work.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
-    GoogleMapsModule,
     MatDialogModule,
     MatMenuModule,
     MatIconModule,
     MatCheckboxModule,
+    MatSlideToggleModule,
     FormsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    JobCardComponent,
+    MatAutocompleteModule,
+    ReactiveFormsModule,
     MatButtonModule,
     RouterModule,
-  ],
+    MyJobPostingsComponent,
+    BrowseJobsComponent,
+    MyBidsComponent,
+    SavedJobsComponent,
+    JobAlertsComponent,
+    FindWorkMapComponent
+],
   providers: [MapLoaderService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
 })
 export class FindWorkComponent implements OnInit, OnDestroy {
   @ViewChildren(MatPaginator) paginators = new QueryList<MatPaginator>();
-  dataSource = new MatTableDataSource<Job>([]);
-  myBidsDataSource = new MatTableDataSource<Bid>([]);
-  @ViewChild(GoogleMap) mapComponent!: GoogleMap;
+  @ViewChild(FindWorkMapComponent) mapChild!: FindWorkMapComponent;
 
-  @ViewChild('customAddressInput') customAddressInput!: any;
-  autocomplete: google.maps.places.Autocomplete | null = null;
   private destroy$ = new Subject<void>();
-  private markersNeedUpdate = false;
-  private markerClusterer: MarkerClusterer | null = null;
 
   // Data properties
-  map!: google.maps.Map;
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
   myBids: Bid[] = [];
-  myQuotes: Quote[] = [];
+  myQuotes: QuoteListItemDto[] = [];
+  draftQuotes = new Map<number, string>(); // jobId → quoteId
+
   quoteStatusFilter: 'All' | 'Draft' | 'Submitted' | 'Rejected' = 'All';
   selectedJob: Job | null = null;
-  selectedPreferences: { [key: string]: boolean } = {
-    'Short-term': false,
-    'Long-term': false,
-    'Contract-based': false,
-    'On-demand': false,
-  };
+
   userAddresses: UserAddress[] = [];
   locationMode: 'saved' | 'custom' = 'saved';
   selectedAddressId: number | null = null;
   addressListLoaded = false;
   userTrade: string | undefined;
-  searchTerm: string = '';
-  distance: number = 100;
-  allTrades: string[] = [];
-  tradeCounts: { [trade: string]: number } = {};
-  selectedTrades: string[] = [];
-  sortBy: string = 'distance';
-  sortDirection: 'asc' | 'desc' = 'asc';
+
+  allTrades: string[] = [
+    'New Build',
+    'Electrical',
+    'Plumbing',
+    'HVAC',
+    'Roofing',
+    'Concrete',
+    'Framing',
+    'Drywall',
+    'Painting',
+    'Flooring',
+    'Landscaping',
+    'Masonry',
+    'Insulation',
+    'Windows & Doors',
+    'Cabinetry',
+    'Tile & Stone',
+    'Demolition',
+    'Excavation',
+    'Steel & Welding',
+  ];
+  selectedTrades: string[] = []; // For Alerts
   allJobTypes = JOB_TYPES;
-  selectedJobTypes: string[] = [];
+
   customAddressLat: number | null = null;
   customAddressLng: number | null = null;
   selectedAddress: UserAddress | null = null;
 
   // UI state
-  activeTab: 'allJobs' | 'myBids' = 'allJobs';
+  activeTab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite' =
+    'browse';
   distanceUnit: 'km' | 'mi' = 'km';
-  biddedJobIds = new Set<number>();
-  draftQuotes = new Map<string, string>();
+  biddedJobIds: number[] = [];
+  myPostings: Job[] = [];
+  savedJobs: number[] = [];
+  jobNotes: { [jobId: number]: string } = {};
+  showAIAnalysis = false;
+  showQuoteUpload = false;
+
+  notificationPreferences = {
+    email: true,
+    push: true,
+    sms: false,
+  };
 
   // Loading states
   jobsLoading = false;
   bidsLoading = false;
-  isMapLoading = true;
-  isMapVisible = true;
-  mapLoadError = false;
   filtersLoading = true;
 
   // Map properties
-  isApiLoaded$: Observable<boolean>;
   center: google.maps.LatLngLiteral = { lat: 39.8283, lng: -98.5795 }; // Center of USA
   zoom = 4;
-  radiusCircle: google.maps.Circle | null = null;
-  private userMarker: google.maps.marker.AdvancedMarkerElement | null = null;
-
-  applyMapTheme(theme: 'light' | 'dark') {
-    const newMapId = theme === 'dark' ? darkMapId : lightMapId;
-
-    // console.log(`Applying mapId: ${newMapId}`);
-    this.mapOptions = { ...this.mapOptions, mapId: newMapId };
-
-    if (this.map) {
-      // Force map to re-render with new theme
-      const currentCenter = this.map.getCenter();
-      const currentZoom = this.map.getZoom();
-
-      this.map.setOptions({ mapId: newMapId });
-
-      // Sometimes needed to force refresh
-      google.maps.event.trigger(this.map, 'resize');
-      if (currentCenter) {
-        this.map.setCenter(currentCenter);
-        this.map.setZoom(currentZoom || this.zoom);
-      }
-    }
-  }
-
-  mapOptions: google.maps.MapOptions = {
-    zoomControl: true,
-    scrollwheel: true,
-    disableDoubleClickZoom: false,
-    maxZoom: 20,
-    minZoom: 3,
-    streetViewControl: false,
-    fullscreenControl: true,
-    mapTypeControl: false,
-    mapId: lightMapId,
-    disableDefaultUI: false,
-    gestureHandling: 'greedy',
-    styles: [],
-  };
-
-  markerPositions: JobMarker[] = [];
 
   constructor(
     private jobsService: JobsService,
     private authService: AuthService,
     private profileService: ProfileService,
-    private mapLoader: MapLoaderService,
     private userService: UserService,
     public dialog: MatDialog,
     public router: Router,
@@ -200,41 +180,59 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     private biddingService: BiddingService,
     private quoteService: QuoteService,
     private themeService: ThemeService,
-  ) {
-    this.isApiLoaded$ = this.mapLoader.isApiLoaded$;
-    this.setupMapLoadingSubscription();
-
-    effect(() => {
-      const isDark = this.themeService.isDarkMode();
-      this.applyMapTheme(isDark ? 'dark' : 'light');
-
-      if (this.map) {
-        this.applyMapTheme(isDark ? 'dark' : 'light');
-      } else {
-        const mapId = isDark ? darkMapId : lightMapId;
-        this.mapOptions = { ...this.mapOptions, mapId };
-      }
-    });
-  }
+    private cdr: ChangeDetectorRef,
+    private bomService: BomService,
+    private route: ActivatedRoute,
+  ) {}
 
   ngOnInit(): void {
-    // 🔥 Restore selected saved address
     const savedId = localStorage.getItem('fw_selectedAddressId');
     if (savedId) {
       this.selectedAddressId = parseInt(savedId, 10);
     }
     this.loadUserAddresses();
-    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
-    this.loadJobs();
-    if (this.userAddresses.length === 0) {
-      this.centerOnBrowserLocation();
-    }
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
       .subscribe((user) => {
         this.userTrade = user?.trade;
       });
     this.determineDistanceUnit();
+
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const reopenBid = String(params['reopenBid'] || '').toLowerCase();
+      if (reopenBid !== '1' && reopenBid !== 'true') {
+        return;
+      }
+
+      const jobId = Number(params['jobId'] || 0);
+      if (!jobId) {
+        return;
+      }
+
+      const tradePackageIdRaw = Number(params['tradePackageId'] || 0);
+      const tradePackageId = tradePackageIdRaw > 0 ? tradePackageIdRaw : undefined;
+
+      const pdfUrl = params['pdfUrl'] ? String(params['pdfUrl']) : null;
+      if (!pdfUrl) {
+        return;
+      }
+
+      const quoteId = params['quoteId'] ? String(params['quoteId']) : null;
+
+      setTimeout(() => {
+        this.openBidDialog(jobId, tradePackageId, undefined, pdfUrl, quoteId);
+        this.router.navigate([], {
+          queryParams: {
+            reopenBid: null,
+            jobId: null,
+            tradePackageId: null,
+            quoteId: null,
+            pdfUrl: null,
+          },
+          queryParamsHandling: 'merge',
+        });
+      }, 0);
+    });
   }
 
   ngOnDestroy(): void {
@@ -242,32 +240,24 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  onMapInitialized(map: google.maps.Map): void {
-    this.map = map;
-    this.updateUserPin();
-    if (this.jobs.length > 0) {
-      setTimeout(() => this.updateMapMarkers(), 100);
-    }
-    this.updateRadiusCircle();
-  }
   private loadUserAddresses(): void {
-    // Load from global store first
     this.userAddresses = this.addressStore.getAddresses() ?? [];
 
-    // 🔥 If store is empty → fetch directly from API
     if (this.userAddresses.length === 0) {
       const userId = this.authService.getUserId();
       if (userId) {
-        this.profileService.getUserAddresses(userId).subscribe({
-          next: (addresses) => {
-            this.userAddresses = addresses;
-            this.addressStore.setAddresses(addresses);
+        this.profileService
+          .getUserAddresses(userId)
+          .pipe(
+            takeUntil(this.destroy$),
+            timeout(15000),
+            catchError(() => of([] as UserAddress[])),
+          )
+          .subscribe((addresses) => {
+            this.userAddresses = Array.isArray(addresses) ? addresses : [];
+            this.addressStore.setAddresses(this.userAddresses);
             this.afterAddressesLoaded();
-          },
-          error: () => {
-            this.afterAddressesLoaded(); // continue anyway
-          },
-        });
+          });
         return;
       }
     }
@@ -280,18 +270,29 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     if (this.selectedAddressId) {
       this.applySelectedAddress();
+      this.loadJobs();
       return;
     }
 
     if (this.userAddresses.length === 1) {
       this.selectedAddressId = this.userAddresses[0].id;
       this.applySelectedAddress();
+      this.loadJobs();
       return;
     }
 
     if (this.userAddresses.length === 0) {
       this.filteredJobs = [...this.jobs];
+      this.centerOnBrowserLocation();
+      this.loadJobs();
+      return;
     }
+
+    // Multiple addresses but none selected yet: still load jobs so the screen doesn't
+    // get stuck on the spinner. Map will use browser location until the user picks
+    // an address.
+    this.centerOnBrowserLocation();
+    this.loadJobs();
   }
 
   onAddressSelected(): void {
@@ -314,91 +315,22 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     );
     if (!address) return;
 
+    this.selectedAddress = address;
+
     const userLat = address.latitude;
     const userLng = address.longitude;
 
-    if (!userLat || !userLng) return;
+    if (!userLat || !userLng) {
+      this.centerOnBrowserLocation();
+      return;
+    }
 
-    // Update map center
     this.center = { lat: userLat, lng: userLng };
     this.zoom = 10;
-    this.updateRadiusCircle();
-    setTimeout(() => {
-      this.updateRadiusCircle();
-      this.updateUserPin();
-    }, 50);
-    // Recalculate distances
-    this.jobs.forEach((job) => {
-      job.distance = this.calculateDistance(
-        userLat,
-        userLng,
-        job.latitude,
-        job.longitude,
-      );
-    });
 
-    this.sortJobsByDistance();
-
-    this.applyFilters();
-    if (this.map) {
-      this.updateMapMarkers();
-    }
+    this.recalculateDistances(userLat, userLng);
   }
 
-  private setupMapLoadingSubscription(): void {
-    this.isApiLoaded$.pipe(takeUntil(this.destroy$)).subscribe((loaded) => {
-      this.isMapLoading = !loaded;
-      if (loaded && this.customAddressInput) {
-        this.setupAutocomplete();
-      }
-      if (!loaded) {
-        // Add a delay to distinguish between loading and error
-        setTimeout(() => {
-          if (!this.isMapLoading) return;
-          this.mapLoadError = true;
-          this.isMapLoading = false;
-        }, 10000); // 10 second timeout
-      } else {
-        this.mapLoadError = false;
-        // Update marker options with animation once Google Maps is loaded
-      }
-    });
-  }
-  setupAutocomplete() {
-    if (!this.customAddressInput) return;
-
-    this.autocomplete = new google.maps.places.Autocomplete(
-      this.customAddressInput.nativeElement,
-      {
-        fields: ['formatted_address', 'geometry'],
-        // componentRestrictions: { country: 'za' }, // optional: remove to allow global
-      },
-    );
-
-    this.autocomplete.addListener('place_changed', () => {
-      const place = this.autocomplete!.getPlace();
-
-      if (!place.geometry || !place.geometry.location) {
-        console.warn('Place has no geometry');
-        return;
-      }
-
-      this.customAddressLat = place.geometry.location.lat();
-      this.customAddressLng = place.geometry.location.lng();
-
-      // 🔥 Immediately apply new center + filtering + markers
-      this.applyCustomAddress();
-
-      // 🔥 Smooth pan animation
-      if (this.map) {
-        this.map.panTo({
-          lat: this.customAddressLat,
-          lng: this.customAddressLng,
-        });
-        this.map.setZoom(12);
-      }
-    });
-  }
   setLocationMode(mode: 'saved' | 'custom') {
     this.locationMode = mode;
 
@@ -407,14 +339,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       this.customAddressLng = null;
       this.applySelectedAddress();
     } else {
-      // 🔥 Wait a tick so Angular renders the input, then attach autocomplete
-      setTimeout(() => {
-        if (this.customAddressInput) {
-          this.setupAutocomplete();
-        }
-      }, 50);
-
-      // If user already selected before
       if (this.customAddressLat && this.customAddressLng) {
         this.applyCustomAddress();
       }
@@ -425,12 +349,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     if (this.locationMode === 'saved') {
       this.applySelectedAddress();
     } else {
-      // Use custom mode => recenter map only if user typed something
       if (this.customAddressLat && this.customAddressLng) {
         this.applyCustomAddress();
       }
     }
   }
+
   applyCustomAddress() {
     if (!this.customAddressLat || !this.customAddressLng) return;
 
@@ -441,278 +365,189 @@ export class FindWorkComponent implements OnInit, OnDestroy {
 
     this.zoom = 12;
 
-    this.updateRadiusCircle();
-    this.updateUserPin();
+    this.recalculateDistances(this.customAddressLat, this.customAddressLng);
+  }
 
-    // Recalculate distances for every job
+  onCustomLocationChange(event: { lat: number; lng: number }) {
+    this.customAddressLat = event.lat;
+    this.customAddressLng = event.lng;
+    this.applyCustomAddress();
+  }
+
+  private recalculateDistances(lat: number, lng: number) {
     this.jobs.forEach((job) => {
       job.distance = this.calculateDistance(
-        this.customAddressLat!,
-        this.customAddressLng!,
+        lat,
+        lng,
         job.latitude,
         job.longitude,
       );
     });
 
-    this.sortJobsByDistance();
-    this.applyFilters();
-    this.updateMapMarkers();
+    this.jobs = [...this.jobs]; // Trigger change detection for inputs
+    // filteredJobs will be updated by BrowseJobsComponent when it receives new jobs
   }
 
   loadJobs(): void {
-    this.jobsLoading = true;
     const userId = this.authService.getUserId();
+
     if (!userId) {
       this.jobsLoading = false;
+      this.filtersLoading = false;
       return;
     }
 
-    const jobs$ = this.jobsService.getAllJobs();
-    const quotes$ = this.quoteService.getAllQuotes();
-    const bids$ = this.jobsService.getBiddedJobs(userId);
-    forkJoin([jobs$, quotes$, bids$])
-      .pipe(takeUntil(this.destroy$))
+    this.jobsLoading = true;
+
+    forkJoin({
+      jobs: this.jobsService.getAllJobs().pipe(catchError(() => of([]))),
+      myPostings: this.bomService
+        .getMyMarketplacePostings(userId)
+        .pipe(catchError(() => of([]))),
+      quotes: this.quoteService.getUserQuotes(userId).pipe(catchError(() => of([]))),
+    })
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.jobsLoading = false;
+          this.filtersLoading = false;
+        }),
+      )
       .subscribe({
-        next: ([jobs, quotes, bids]) => {
-          if (!jobs || jobs.length === 0) {
-            this.jobs = [];
-            this.filteredJobs = [];
-          } else {
-            this.jobs = jobs.map((job) => {
-              const lat = parseFloat(job.latitude as any);
-              const lng = parseFloat(job.longitude as any);
-              if (isNaN(lat) || isNaN(lng)) {
-              }
+        next: ({ jobs, myPostings, quotes }) => {
+          const parseCoord = (val: any) =>
+            typeof val === 'string'
+              ? parseFloat(val.replace(',', '.'))
+              : Number(val);
+
+          const myPostingTradePackageIds = new Set<number>(
+            (Array.isArray(myPostings) ? myPostings : [])
+              .map((p: any) => Number(p?.id ?? p?.tradePackageId ?? 0))
+              .filter((id: number) => Number.isFinite(id) && id > 0),
+          );
+
+          this.jobs = jobs
+            .filter((job: any) => {
+              const tpId = Number(job?.tradePackageId ?? 0);
+              if (tpId > 0 && myPostingTradePackageIds.has(tpId)) return false;
+
+              const sameTrade = job?.trades?.[0] && (Array.isArray(myPostings) ? myPostings : []).some((p: any) => p?.tradeName === job?.trades?.[0]);
+              const sameJob = (Array.isArray(myPostings) ? myPostings : []).some((p: any) => Number(p?.jobId ?? 0) === Number(job?.jobId ?? 0));
+              return !(sameTrade && sameJob);
+            })
+            .map((job) => ({
+              ...job,
+              latitude: parseCoord(job.latitude),
+              longitude: parseCoord(job.longitude),
+            }));
+
+          if (Array.isArray(myPostings)) {
+            this.myPostings = myPostings
+              .filter((pkg: any) => !pkg.isHidden && !pkg.isInactive)
+              .map((pkg: any) => {
+              const durationInDays = this.parseDurationInDays(
+                pkg.estimatedDuration,
+                Number(pkg.estimatedManHours || 0),
+              );
+              const laborBudget = Number(pkg.laborBudget || 0);
+              const materialBudget = Number(pkg.materialBudget || 0);
+              const laborBudgetVisible = pkg.laborBudgetVisible !== false;
+              const materialBudgetVisible = pkg.materialBudgetVisible !== false;
+              const visibleBudget =
+                (laborBudgetVisible ? laborBudget : 0) +
+                (materialBudgetVisible ? materialBudget : 0);
+
               return {
-                ...job,
-                latitude: lat,
-                longitude: lng,
-              };
+                jobId: pkg.jobId,
+                projectName: pkg.projectName,
+                jobType: pkg.category,
+                status: pkg.status,
+                address: pkg.address,
+                city: pkg.city,
+                state: pkg.state,
+                streetNumber: '',
+                streetName: '',
+                postalCode: '',
+                country: '',
+                latitude: 0,
+                longitude: 0,
+                googlePlaceId: '',
+                description: pkg.scopeOfWork,
+                title: pkg.tradeName,
+                biddingType: pkg.laborType || 'Labor and Materials',
+                jobPreferences: '',
+                trades: [pkg.tradeName],
+                tradeBudgets: [
+                  {
+                    tradeName: pkg.tradeName,
+                    budget: Number(visibleBudget || 0),
+                  },
+                ],
+                potentialStartDate: pkg.startDate
+                  ? new Date(pkg.startDate)
+                  : undefined,
+                durationInDays,
+                numberOfBids: 0,
+                createdAt: pkg.createdAt,
+                biddingStartDate: pkg.bidDeadline || pkg.createdAt,
+                tradePackageId: pkg.id,
+                tradePackageStatus: pkg.status,
+                tradePackageEstimatedManHours: pkg.estimatedManHours,
+                tradePackageHourlyRate: pkg.hourlyRate,
+                tradePackageLaborBudget: laborBudget,
+                tradePackageMaterialBudget: materialBudget,
+                tradePackageLaborBudgetVisible: laborBudgetVisible,
+                tradePackageMaterialBudgetVisible: materialBudgetVisible,
+                tradePackageTotalBudget: Number(pkg.totalBudget || pkg.budget || 0),
+                tradePackageEffectiveBudget: Number(pkg.effectiveBudget || pkg.budget || 0),
+                tradePackageEstimatedDuration: pkg.estimatedDuration,
+                tradePackageStartDate: pkg.startDate,
+                tradePackageBidDeadline: pkg.bidDeadline,
+                tradePackageLaborType: pkg.laborType,
+                tradePackageCsiCode: pkg.csiCode,
+                tradePackageLinkedTradePackageId: pkg.linkedTradePackageId,
+                tradePackageIsAutoGenerated: !!pkg.isAutoGenerated,
+                tradePackageIsInactive: !!pkg.isInactive,
+                tradePackageIsHidden: !!pkg.isHidden,
+                tradePackageSourceType: pkg.sourceType || null,
+                tradePackageIsInHouse: !!pkg.isInHouse,
+                tradePackagePostedToMarketplace: pkg.postedToMarketplace,
+                tradePackageCreatedAt: pkg.createdAt,
+              } as Job;
             });
+          } else {
+            this.myPostings = [];
           }
 
           this.myQuotes = quotes;
           this.draftQuotes.clear();
-          quotes.forEach((quote) => {
-            if (quote.status === 'Draft' && quote.jobID) {
-              this.draftQuotes.set(quote.jobID, quote.id!);
+          this.biddedJobIds = [];
+
+          quotes.forEach((q) => {
+            if (q.status === 'Draft' && q.jobId) {
+              this.draftQuotes.set(q.jobId, q.id);
+            }
+            if (q.status === 'Submitted' && q.jobId) {
+              this.biddedJobIds.push(q.jobId);
             }
           });
 
-          this.myBids = bids;
-          this.biddedJobIds = new Set(bids.map((b) => b.jobId));
-
-          this.allTrades = [
-            ...new Set(this.jobs.flatMap((job) => job.trades)),
-          ].sort();
-          this.selectedTrades = [...this.allTrades];
-          this.loadFiltersFromLocalStorage();
           this.getUserLocationAndCalculateDistances();
-          this.applyQuoteFilter();
+          this.filteredJobs = [...this.jobs];
 
-          this.dataSource.data = this.filteredJobs;
-          this.filtersLoading = false;
-          if (this.paginators.toArray()[0]) {
-            this.dataSource.paginator = this.paginators.toArray()[0];
-          }
-          this.jobsLoading = false;
-
-          if (this.selectedAddressId) {
-            this.applySelectedAddress();
-          }
-          if (this.map) {
-            setTimeout(() => this.updateMapMarkers(), 100);
-          }
         },
-        error: (error) => {
-          this.jobsLoading = false;
+        error: (err) => {
+          console.error('[FindWork] loadJobs: error', err);
         },
       });
   }
 
-  applyQuoteFilter(): void {
-    const combined: Bid[] = [];
-    const processedJobIds = new Set<string>();
-
-    this.myQuotes.forEach((quote) => {
-      if (quote.jobID) {
-        const job = this.jobs.find((j) => j.jobId === parseInt(quote.jobID!));
-        if (job) {
-          combined.push({
-            id: 0, // Placeholder
-            jobId: quote.jobID.toString(),
-            subcontractorId: this.authService.getUserId()!,
-            subcontractorName:
-              this.authService.currentUserSubject.value?.firstName +
-              ' ' +
-              this.authService.currentUserSubject.value?.lastName,
-            amount: quote.total,
-            status: quote.status!,
-            isFinalist: false,
-            quoteId: quote.id ?? undefined,
-            documentUrl: '',
-            job: job,
-          });
-          processedJobIds.add(quote.jobID);
-        }
-      }
-    });
-
-    this.myBids.forEach((bid) => {
-      if (!processedJobIds.has(bid.jobId.toString())) {
-        combined.push(bid);
-      }
-    });
-
-    let filtered = combined;
-    if (this.quoteStatusFilter !== 'All') {
-      filtered = combined.filter(
-        (item) => item.status === this.quoteStatusFilter,
-      );
-    }
-
-    this.myBidsDataSource.data = filtered;
-    const paginator = this.paginators.toArray()[1];
-    if (paginator) {
-      this.myBidsDataSource.paginator = paginator;
-    }
-  }
-
-  setActiveTab(tab: 'allJobs' | 'myBids'): void {
+  setActiveTab(
+    tab: 'postings' | 'browse' | 'bids' | 'saved' | 'alerts' | 'invite',
+  ): void {
     this.activeTab = tab;
     this.selectedJob = null;
-
-    if (tab === 'allJobs' && this.jobs.length === 0) {
-      this.loadJobs();
-    } else if (
-      tab === 'myBids' &&
-      this.myBids.length === 0 &&
-      this.myQuotes.length === 0
-    ) {
-      this.loadJobs();
-    }
   }
-
-  updateMapMarkers(): void {
-    if (!this.map) {
-      return;
-    }
-
-    // Clear existing markers from the clusterer
-    if (this.markerClusterer) {
-      this.markerClusterer.clearMarkers();
-    }
-
-    this.markerPositions.forEach((marker) => {
-      if (marker.marker) {
-        marker.marker.map = null;
-      }
-    });
-    this.markerPositions = [];
-
-    google.maps
-      .importLibrary('marker')
-      .then((markerLibrary) => {
-        const { AdvancedMarkerElement, PinElement } =
-          markerLibrary as google.maps.MarkerLibrary;
-
-        const jobsToMark = this.jobs.filter((job) => {
-          // Use this.jobs to show all markers, use this.filteredJobs to show only filtered markers
-          const lat = job.latitude;
-          const lng = job.longitude;
-          return !isNaN(lat) && !isNaN(lng);
-        });
-
-        const markers = jobsToMark.map((job) => {
-          const position = { lat: job.latitude, lng: job.longitude };
-          const pinElement = new PinElement({
-            background: '#e6bf00',
-            borderColor: '#FFFFFF',
-            glyphColor: '#FFFFFF',
-            scale: 1.2,
-          });
-
-          const marker = new AdvancedMarkerElement({
-            position,
-            title: job.projectName,
-            content: pinElement.element,
-          });
-
-          marker.addListener('click', () => {
-            this.onMarkerClick({
-              jobId: job.jobId,
-              position,
-              title: job.projectName,
-            });
-          });
-
-          this.markerPositions.push({
-            position,
-            title: job.projectName,
-            jobId: job.jobId,
-            marker: marker,
-          });
-
-          return marker;
-        });
-
-        if (!this.markerClusterer) {
-          this.markerClusterer = new MarkerClusterer({
-            map: this.map,
-            markers: [],
-          });
-        }
-
-        this.markerClusterer.addMarkers(markers);
-      })
-      .catch((error) => {
-        console.error('Error loading marker library');
-      });
-  }
-
-  // private centerMapOnJobs(): void {
-  //   if (this.jobs.length === 0) return;
-  //   const validJobs = this.jobs.filter(job =>
-  //     job.latitude && job.longitude
-  //   );
-  //   if (validJobs.length === 0) return;
-  //   if (validJobs.length === 1) {
-  //     // Single job - center on it
-  //     this.center = {
-  //       lat: parseFloat(validJobs[0].latitude),
-  //       lng: parseFloat(validJobs[0].longitude)
-  //     };
-  //     this.zoom = 12;
-  //   } else {
-  //     // Multiple jobs - calculate center
-  //     const avgLat = validJobs.reduce((sum, job) => sum + parseFloat(job.latitude), 0) / validJobs.length;
-  //     const avgLng = validJobs.reduce((sum, job) => sum + parseFloat(job.longitude), 0) / validJobs.length;
-  //     this.center = { lat: avgLat, lng: avgLng };
-  //     this.zoom = 8;
-  //   }
-  // }
-
-  // private centerMapOnUserLocation(): void {
-  //   this.userService.getUserAddress()
-  //     .pipe(takeUntil(this.destroy$))
-  //     .subscribe({
-  //       next: (address) => {
-  //         if (address && address.latitude && address.longitude) {
-  //           this.center = {
-  //             lat: address.latitude,
-  //             lng: address.longitude
-  //           };
-  //           this.zoom = 10;
-  //         } else {
-  //           this.centerOnBrowserLocation();
-  //         }
-  //       },
-  //       error: (error) => {
-  //         console.error('Error fetching user address:', error);
-  //         this.centerOnBrowserLocation();
-  //       }
-  //     });
-  // }
 
   private centerOnBrowserLocation(): void {
     if (navigator.geolocation) {
@@ -724,28 +559,13 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         this.zoom = 10;
       });
     }
-    setTimeout(() => {
-      this.updateRadiusCircle();
-      this.updateUserPin();
-    }, 50);
   }
 
   private getUserLocationAndCalculateDistances(): void {
-    // If user selected an address → calculate based on that, not GPS
     if (this.selectedAddress) {
       const userLat = this.selectedAddress.latitude;
       const userLng = this.selectedAddress.longitude;
-
-      this.jobs.forEach((job) => {
-        job.distance = this.calculateDistance(
-          userLat,
-          userLng,
-          job.latitude,
-          job.longitude,
-        );
-      });
-
-      this.sortJobsByDistance();
+      this.recalculateDistances(userLat, userLng);
       return;
     }
 
@@ -754,29 +574,12 @@ export class FindWorkComponent implements OnInit, OnDestroy {
         (position) => {
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
-
-          this.jobs.forEach((job) => {
-            const jobLat = job.latitude;
-            const jobLng = job.longitude;
-            job.distance = this.calculateDistance(
-              userLat,
-              userLng,
-              jobLat,
-              jobLng,
-            );
-          });
-
-          this.sortJobsByDistance();
+          this.recalculateDistances(userLat, userLng);
         },
         (error) => {
           console.error('Error getting user location:', error);
-          // If location fails, apply filters without distance
-          this.applyFilters();
         },
       );
-    } else {
-      // If geolocation is not supported, apply filters without distance
-      this.applyFilters();
     }
   }
 
@@ -795,7 +598,7 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     lat2: number,
     lon2: number,
   ): number {
-    const R = this.distanceUnit === 'mi' ? 3959 : 6371; // Radius of the Earth in miles or km
+    const R = this.distanceUnit === 'mi' ? 3959 : 6371;
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =
@@ -812,13 +615,6 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     return deg * (Math.PI / 180);
   }
 
-  private sortJobsByDistance(): void {
-    this.jobs.sort(
-      (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity),
-    );
-    this.applyFilters(); // Apply filters AFTER sorting is complete
-  }
-
   onMarkerClick(marker: JobMarker): void {
     this.selectedJob = this.jobs.find((j) => j.jobId === marker.jobId) || null;
   }
@@ -827,18 +623,8 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     this.selectedJob = null;
   }
 
-  retryMapLoad(): void {
-    this.mapLoadError = false;
-    this.isMapLoading = true;
-    window.location.reload();
-  }
-
   trackByJobId(index: number, job: Job): number {
     return job.jobId;
-  }
-
-  trackByMarkerId(index: number, marker: JobMarker): string {
-    return marker.jobId.toString();
   }
 
   trackByBidId(index: number, bid: Bid): number {
@@ -846,157 +632,15 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   highlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find((m) => m.jobId === jobId);
-    if (marker && marker.marker) {
-      google.maps.importLibrary('marker').then((markerLib) => {
-        const { PinElement } = markerLib as any;
-        const pinElement = new PinElement({
-          background: '#fbd008',
-          borderColor: '#000',
-          glyphColor: '#000',
-          scale: 1.3,
-        });
-        marker.marker!.content = pinElement.element;
-      });
+    if (this.mapChild) {
+      this.mapChild.highlightMarker(jobId);
     }
   }
 
   unhighlightMarker(jobId: number): void {
-    const marker = this.markerPositions.find((m) => m.jobId === jobId);
-    if (marker && marker.marker) {
-      google.maps.importLibrary('marker').then((markerLib) => {
-        const { PinElement } = markerLib as any;
-        const pinElement = new PinElement({
-          background: '#e6bf00',
-          borderColor: '#FFFFFF',
-          glyphColor: '#FFFFFF',
-          scale: 1.2,
-        });
-        marker.marker!.content = pinElement.element;
-      });
+    if (this.mapChild) {
+      this.mapChild.unhighlightMarker(jobId);
     }
-  }
-
-  applyFilters(): void {
-    const selectedPrefs = Object.keys(this.selectedPreferences).filter(
-      (key) => this.selectedPreferences[key],
-    );
-
-    let filtered = [...this.jobs];
-
-    if (selectedPrefs.length > 0) {
-      filtered = filtered.filter((job) => {
-        if (!job.jobPreferences) {
-          return true;
-        }
-        return selectedPrefs.some((pref) => job.jobPreferences.includes(pref));
-      });
-    }
-
-    if (this.searchTerm) {
-      const lowercasedTerm = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (job) =>
-          (job.projectName &&
-            job.projectName.toLowerCase().includes(lowercasedTerm)) ||
-          (job.jobType && job.jobType.toLowerCase().includes(lowercasedTerm)) ||
-          (job.description &&
-            job.description.toLowerCase().includes(lowercasedTerm)),
-      );
-    }
-
-    filtered = filtered.filter(
-      (job) => job.distance === undefined || job.distance <= this.distance,
-    );
-
-    // Calculate trade counts based on currently filtered jobs (before applying trade filter itself)
-    this.tradeCounts = this.allTrades.reduce(
-      (acc, trade) => {
-        acc[trade] = filtered.filter((job) =>
-          job.trades?.includes(trade),
-        ).length;
-        return acc;
-      },
-      {} as { [trade: string]: number },
-    );
-
-    if (
-      this.selectedTrades &&
-      this.selectedTrades.length > 0 &&
-      this.selectedTrades.length < this.allTrades.length
-    ) {
-      filtered = filtered.filter((job) =>
-        job.trades?.some((trade) => this.selectedTrades.includes(trade)),
-      );
-    }
-
-    if (
-      this.selectedJobTypes &&
-      this.selectedJobTypes.length > 0 &&
-      this.selectedJobTypes.length < this.allJobTypes.length
-    ) {
-      filtered = filtered.filter(
-        (job) => job.jobType && this.selectedJobTypes.includes(job.jobType),
-      );
-    }
-
-    this.filteredJobs = filtered;
-    this.dataSource.data = this.filteredJobs;
-    if (this.map) {
-      this.updateMapMarkers();
-    }
-    this.saveFiltersToLocalStorage();
-    this.updateRadiusCircle();
-  }
-
-  clearFilters(): void {
-    this.searchTerm = '';
-    this.distance = 100;
-    this.selectedTrades = [...this.allTrades];
-    this.selectedJobTypes = this.allJobTypes.map((t) => t.value);
-    this.sortBy = 'distance';
-    this.sortDirection = 'asc';
-    this.applyFilters();
-  }
-
-  sortJobs(): void {
-    const direction = this.sortDirection === 'asc' ? 1 : -1;
-
-    switch (this.sortBy) {
-      case 'distance':
-        this.filteredJobs.sort(
-          (a, b) =>
-            ((a.distance ?? Infinity) - (b.distance ?? Infinity)) * direction,
-        );
-        break;
-      case 'startDate':
-        this.filteredJobs.sort((a, b) => {
-          const dateA = a.potentialStartDate
-            ? new Date(a.potentialStartDate).getTime()
-            : Infinity;
-          const dateB = b.potentialStartDate
-            ? new Date(b.potentialStartDate).getTime()
-            : Infinity;
-          return (dateA - dateB) * direction;
-        });
-        break;
-      case 'postedDate':
-        this.filteredJobs.sort((a, b) => {
-          const dateA = a.biddingStartDate
-            ? new Date(a.biddingStartDate).getTime()
-            : 0;
-          const dateB = b.biddingStartDate
-            ? new Date(b.biddingStartDate).getTime()
-            : 0;
-          return (dateB - dateA) * direction;
-        });
-        break;
-    }
-  }
-
-  toggleSortDirection(): void {
-    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-    this.sortJobs();
   }
 
   onJobClick(job: Job): void {
@@ -1008,41 +652,87 @@ export class FindWorkComponent implements OnInit, OnDestroy {
       };
       this.zoom = 12;
     }
+    this.onViewMoreInfo(job);
   }
 
-  private saveFiltersToLocalStorage(): void {
-    const filters = {
-      distance: this.distance,
-      selectedTrades: this.selectedTrades,
-      selectedJobTypes: this.selectedJobTypes,
-      sortBy: this.sortBy,
-    };
-    localStorage.setItem('findWorkFilters', JSON.stringify(filters));
+  onFilteredJobsChange(filteredJobs: Job[]) {
+    this.filteredJobs = filteredJobs;
   }
 
   private loadFiltersFromLocalStorage(): void {
-    const savedFilters = localStorage.getItem('findWorkFilters');
-    if (savedFilters) {
-      const filters = JSON.parse(savedFilters);
-      this.distance = filters.distance ?? this.distance;
-      this.selectedTrades = filters.selectedTrades ?? [...this.allTrades];
-      this.selectedJobTypes =
-        filters.selectedJobTypes ?? this.allJobTypes.map((t) => t.value);
-      this.sortBy = filters.sortBy ?? this.sortBy;
+    const savedJobsStr = localStorage.getItem('fw_savedJobs');
+    if (savedJobsStr) {
+      this.savedJobs = JSON.parse(savedJobsStr);
+    }
+
+    const jobNotesStr = localStorage.getItem('fw_jobNotes');
+    if (jobNotesStr) {
+      this.jobNotes = JSON.parse(jobNotesStr);
     }
   }
 
-  openBidDialog(jobId: number, event: MouseEvent): void {
-    event.stopPropagation();
+  saveSavedJobs(): void {
+    localStorage.setItem('fw_savedJobs', JSON.stringify(this.savedJobs));
+  }
+
+  toggleSavedJob(jobId: number, event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+
+    if (this.savedJobs.includes(jobId)) {
+      this.savedJobs = this.savedJobs.filter((id) => id !== jobId);
+    } else {
+      this.savedJobs.push(jobId);
+    }
+    this.saveSavedJobs();
+    if (this.activeTab === 'saved') {
+      this.filteredJobs = this.jobs.filter((job) =>
+        this.savedJobs.includes(job.jobId),
+      );
+    }
+  }
+
+  saveJobNotes(): void {
+    localStorage.setItem('fw_jobNotes', JSON.stringify(this.jobNotes));
+  }
+
+  openPostJobDialog(): void {
+    const dialogRef = this.dialog.open(PostJobDialogComponent, {
+      width: '600px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+      }
+    });
+  }
+
+  openBidDialog(
+    jobId: number,
+    tradePackageId: number | undefined,
+    event?: MouseEvent,
+    preUploadedFileUrl?: string | null,
+    preUploadedQuoteId?: string | null,
+  ): void {
+    if (event) {
+      event.stopPropagation();
+    }
 
     const dialogRef = this.dialog.open(SubmitBidDialogComponent, {
       width: '800px',
-      data: { jobId: jobId },
+      data: { jobId: jobId, tradePackageId, preUploadedFileUrl, preUploadedQuoteId },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result === 'create') {
-        this.router.navigate(['/quote'], { queryParams: { jobId: jobId } });
+        this.router.navigate(['/quote'], {
+          queryParams: {
+            jobId: jobId,
+            tradePackageId: tradePackageId ?? null,
+            bidMode: 1,
+            returnTo: 'find-work',
+          },
+        });
       } else if (result) {
         this.loadJobs();
       }
@@ -1050,18 +740,11 @@ export class FindWorkComponent implements OnInit, OnDestroy {
   }
 
   getDraftQuoteId(jobId: number): string | undefined {
-    return this.draftQuotes.get(jobId.toString());
+    return this.draftQuotes.get(jobId);
   }
 
-  getQuoteForBid(bid: Bid): Quote | null {
-    return this.myQuotes.find((q) => q.id === bid.quoteId) ?? null;
-  }
-
-  getQuoteForJob(jobId: number): Quote | null {
-    const quote =
-      this.myQuotes.find((q) => q.jobID?.toString() === jobId.toString()) ||
-      null;
-    return quote;
+  getQuoteForJob(jobId: number): QuoteListItemDto | null {
+    return this.myQuotes.find((q) => q.jobId === jobId) ?? null;
   }
 
   getBidForJob(jobId: number): Bid | null {
@@ -1070,123 +753,104 @@ export class FindWorkComponent implements OnInit, OnDestroy {
     return bid;
   }
 
-  onViewQuote(item: Bid | Quote): void {
-    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-    if (quoteId) {
-      this.router.navigate(['/quote'], { queryParams: { quoteId: quoteId } });
-    }
-  }
+  onViewMoreInfo(job: Job | null): void {
+    if (!job) return;
 
-  onViewPdf(url: string): void {
-    window.open(url, '_blank');
-  }
+    const canEdit =
+      this.activeTab === 'postings'
+      && this.myPostings.some((posting: any) => {
+        const sameTrade = posting.trades?.[0] === job.trades?.[0];
+        return posting.jobId === job.jobId && sameTrade;
+      });
 
-  onWithdrawBid(item: Bid | Quote): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '400px',
+    const dialogRef = this.dialog.open(JobDetailsDialogComponent, {
+      width: '720px',
+      height: '90vh',
+      maxWidth: '92vw',
+      maxHeight: '100vh',
       data: {
-        title: 'Confirm Withdrawal',
-        message:
-          'Are you sure you want to withdraw this bid? This action cannot be undone.',
+        job: job,
+        saved: this.savedJobs.includes(job.jobId),
+        notes: this.jobNotes[job.jobId],
+        canEdit,
       },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        if ('quoteId' in item) {
-          // It's a Bid
-          this.biddingService.withdrawBid(item.id).subscribe({
-            next: () => this.loadJobs(),
-            error: (err) => console.error('Failed to withdraw bid:', err),
-          });
-        } else {
-          // It's a Quote
-          this.quoteService
-            .changeStatus(item.id?.toString()!, 'Withdrawn')
+        if (result.saved && !this.savedJobs.includes(job.jobId)) {
+          this.savedJobs.push(job.jobId);
+          this.saveSavedJobs();
+        } else if (!result.saved && this.savedJobs.includes(job.jobId)) {
+          this.savedJobs = this.savedJobs.filter((id) => id !== job.jobId);
+          this.saveSavedJobs();
+        }
+
+        if (result.notes !== undefined) {
+          this.jobNotes[job.jobId] = result.notes;
+          this.saveJobNotes();
+        }
+
+        if (result.updatedJob) {
+          const updateLocalJob = (target: Job) => {
+            target.tradeBudgets = result.updatedJob.tradeBudgets;
+            target.potentialStartDate = result.updatedJob.potentialStartDate;
+            target.durationInDays = result.updatedJob.durationInDays;
+            target.biddingType = result.updatedJob.biddingType;
+            target.biddingStartDate = result.updatedJob.biddingStartDate;
+          };
+
+          const posting = this.myPostings.find(
+            (j) => j.jobId === job.jobId && j.trades?.[0] === job.trades?.[0],
+          );
+          if (posting) updateLocalJob(posting);
+
+          const listJob = this.jobs.find((j) => j.jobId === job.jobId);
+          if (listJob) updateLocalJob(listJob);
+        }
+
+        if (result.tradePackageUpdate?.id) {
+          this.bomService
+            .updateTradePackage(
+              result.tradePackageUpdate.id,
+              result.tradePackageUpdate,
+            )
             .subscribe({
-              next: () => this.loadJobs(),
-              error: (err) => console.error('Failed to withdraw quote:', err),
+              next: () => {
+                this.loadJobs();
+              },
+              error: (err) => {
+                console.error('Failed to persist trade package updates', err);
+              },
             });
         }
       }
     });
   }
 
-  onEditBid(item: Bid | Quote): void {
-    const quoteId = 'quoteId' in item ? item.quoteId : item.id;
-    if (quoteId) {
-      this.router.navigate(['/quote'], {
-        queryParams: { quoteId: quoteId, edit: true },
-      });
-    }
-  }
-
-  onViewMoreInfo(job: Job): void {
-    this.dialog.open(BlueprintDisplayDialogComponent, {
-      width: '90vw',
-      height: '90vh',
-      maxWidth: '100vw',
-      maxHeight: '100vh',
-      data: {
-        jobId: job.jobId,
-        projectName: job.projectName,
-      },
-    });
-  }
-
   hasBidded(jobId: number): boolean {
-    return this.biddedJobIds.has(jobId);
+    return this.myQuotes.some(
+      (q) => q.jobId === jobId && q.status === 'Submitted',
+    );
   }
 
-  updateRadiusCircle(): void {
-    if (!this.map) return;
-
-    const radiusInMeters =
-      this.distanceUnit === 'mi'
-        ? this.distance * 1609.34
-        : this.distance * 1000;
-
-    if (this.radiusCircle) {
-      this.radiusCircle.setCenter(this.center);
-      this.radiusCircle.setRadius(radiusInMeters);
-    } else {
-      this.radiusCircle = new google.maps.Circle({
-        strokeColor: '#61A0AF',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#61A0AF',
-        fillOpacity: 0.15,
-        map: this.map,
-        center: this.center,
-        radius: radiusInMeters,
-      });
-    }
-  }
-  private updateUserPin(): void {
-    if (!this.map) return;
-
-    google.maps.importLibrary('marker').then((markerLib) => {
-      const { AdvancedMarkerElement, PinElement } = markerLib as any;
-
-      const pin = new PinElement({
-        background: '#4285F4', // Google blue
-        borderColor: '#FFFFFF',
-        glyphColor: '#FFFFFF',
-        scale: 1.4,
-      });
-
-      // Update existing pin
-      if (this.userMarker) {
-        this.userMarker.position = this.center;
-        return;
+  private parseDurationInDays(
+    estimatedDuration: string | null | undefined,
+    estimatedManHours: number,
+  ): number | undefined {
+    const text = String(estimatedDuration || '').trim();
+    const fromText = text.match(/(\d+(?:\.\d+)?)/);
+    if (fromText) {
+      const parsed = Number(fromText[1]);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return Math.ceil(parsed);
       }
+    }
 
-      // Create new pin
-      this.userMarker = new AdvancedMarkerElement({
-        map: this.map,
-        position: this.center,
-        content: pin.element,
-      });
-    });
+    if (Number.isFinite(estimatedManHours) && estimatedManHours > 0) {
+      return Math.max(1, Math.ceil(estimatedManHours / 8));
+    }
+
+    return undefined;
   }
 }

@@ -1,0 +1,43 @@
+<div class="validation-dialog-shell">
+  <div class="dialog-head">
+    <div class="icon-wrap">
+      <lucide-icon name="alert-triangle" class="alert-icon"></lucide-icon>
+    </div>
+    <h3>Please complete all required fields</h3>
+    <p>
+      You have incomplete items in <span class="title">{{ data.title }}</span
+      >. Please review and complete all selections before continuing to the next
+      step.
+    </p>
+  </div>
+
+  @if (totalCount > 0) {
+    <div class="progress-block">
+      <div class="progress-card">
+        <div class="progress-head">
+          <span>Progress</span>
+          <strong
+            >{{ data.completed.length }} / {{ totalCount }} completed</strong
+            >
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="progressPercent"></div>
+          </div>
+          @if (data.missing.length <= 5) {
+            <div class="missing-list">
+              @for (item of data.missing; track item) {
+                <div class="missing-item">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span class="label">{{ item }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="dialog-actions">
+      <button type="button" class="got-it-btn" (click)="close()">Got It</button>
+    </div>
+  </div>
