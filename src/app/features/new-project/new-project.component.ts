@@ -139,7 +139,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
   isRerunningStep = false;
   isNavigatingNext = false;
   progress = 0;
-  subscriptionActive: boolean = false;
+
   uploadedFiles: UploadedFileInfo[] = [];
   selectedFile: UploadedFileInfo | null = null;
   pdfSrc: string | Uint8Array | null = null;
@@ -206,8 +206,7 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     private newAnalysisService: NewAnalysisService,
     private signalrService: SignalrService,
     private formBuilder: FormBuilder,
-    private router: Router,
-    private httpClient: HttpClient,
+
     private authService: AuthService,
     private httpClient: HttpClient,
     private snackBar: MatSnackBar,
@@ -361,10 +360,6 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     if (this.shouldDeleteTempFiles) {
       this.deleteTemporaryFiles();
     }
-  }
-
-  onUpgradeClicked(): void {
-    this.router.navigate(['/profile']);
   }
 
   deleteTemporaryFiles(): void {
@@ -625,8 +620,8 @@ export class NewProjectComponent implements OnInit, OnDestroy {
     formData.append('company', this.clientForm.value.companyName);
     formData.append('position', this.clientForm.value.position);
     if (this.clientForm.value.startDate) {
-  formData.append('startDate', this.clientForm.value.startDate);
-}
+      formData.append('startDate', this.clientForm.value.startDate);
+    }
 
     formData.append('address', this.addressForm.value.formattedAddress);
 
@@ -738,12 +733,17 @@ export class NewProjectComponent implements OnInit, OnDestroy {
 
         // Redirect to new Jobs view immediately
         if (response && (response.id || response.JobId || response.jobId)) {
-             const jobId = response.id || response.JobId || response.jobId;
-             this.router.navigate(['/view-quote'], { queryParams: { jobId: jobId, userId: userId } });
+          const jobId = response.id || response.JobId || response.jobId;
+          this.router.navigate(['/view-quote'], {
+            queryParams: { jobId: jobId, userId: userId },
+          });
         } else {
-             // Fallback if ID not found, though backend should return it
-             this.snackBar.open('Job created, but could not redirect automatically.', 'Close');
-             this.isLoading = false;
+          // Fallback if ID not found, though backend should return it
+          this.snackBar.open(
+            'Job created, but could not redirect automatically.',
+            'Close',
+          );
+          this.isLoading = false;
         }
       },
       error: (error) => {
