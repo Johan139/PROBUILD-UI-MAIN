@@ -1201,7 +1201,6 @@ export class QuoteComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     this.exportPdf();
-    this.submitManuallyAfterExport();
   }
   private getValidUntilDate(days = 7): string {
     const d = new Date();
@@ -1938,32 +1937,93 @@ export class QuoteComponent implements OnInit, OnDestroy {
       });
     }
   }
-  exportPdf(): void {
+  exportPdf(submitAfterExport = false): void {
     if (!this.quoteId) return;
+
+    if (this.isSaving) return;
 
     this.isSaving = true;
     this.cdr.markForCheck();
 
-    this.quoteService.downloadPdf(this.quoteId).subscribe({
-      next: (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
+    const form = this.quoteForm.getRawValue();
 
-        const a = document.createElement('a');
-        a.href = url;
+    const dto: QuoteDto = {
+      quoteId: this.quoteId ?? null,
+      jobID: this.jobId ? Number(this.jobId) : null,
+      companyId: this.companyId,
+      number: form.number ?? 'DRAFT',
+      documentType: this.documentType,
+      logoId: this.quoteForm.get('logoId')?.value,
 
-        const filename = `${this.quoteForm.get('number')?.value || 'Quote'}.pdf`;
+      from: form.from,
+      to: form.to,
 
-        a.download = filename;
-        a.click();
+      clientAddress: form.clientAddress,
+      clientEmail: form.clientEmail,
+      clientPhone: form.clientPhone,
+      projectAddress: form.projectAddress,
+      projectName: form.projectName,
 
-        window.URL.revokeObjectURL(url);
+      dueDate: form.dueDate,
+      date: form.date,
+      paymentTerms: this.isInvoice ? form.paymentTerms : undefined,
+      notes: form.notes,
+      terms: form.terms,
 
-        this.isSaving = false;
-        this.cdr.markForCheck();
+      total: this.getGrandTotal(),
+
+      createdID: this.authService.currentUserSubject.value!.id,
+      createdBy: this.authService.currentUserSubject.value!.firstName,
+
+      rows: this.quoteRows.controls.map((row) => ({
+        description: row.get('description')!.value,
+        quantity: Number(row.get('quantity')!.value),
+        unit: row.get('unit')!.value,
+        unitPrice: Number(row.get('unitPrice')!.value),
+        total: Number(row.get('total')!.value),
+      })),
+
+      extraCosts: this.buildExtraCosts(),
+    };
+
+    this.quoteService.saveDraft(dto).subscribe({
+      next: (res) => {
+        this.quoteId = res.quoteId;
+
+        this.quoteService.downloadPdf(this.quoteId).subscribe({
+          next: (blob: Blob) => {
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+
+            const filename = `${this.quoteForm.get('number')?.value || 'Quote'}.pdf`;
+
+            a.download = filename;
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+
+            this.isSaving = false;
+            this.cdr.markForCheck();
+
+            if (submitAfterExport) {
+              this.submitManuallyAfterExport();
+            }
+          },
+          error: (err) => {
+            console.error('PDF download failed', err);
+            this.snackBar.open('Failed to download PDF.', 'Close', {
+              duration: 4000,
+            });
+            this.isSaving = false;
+            this.cdr.markForCheck();
+          },
+        });
       },
       error: (err) => {
-        console.error('PDF download failed', err);
-        this.snackBar.open('Failed to download PDF.', 'Close', {
+        console.error('Failed to save quote before PDF export', err);
+        this.snackBar.open('Failed to save quote before PDF export.', 'Close', {
           duration: 4000,
         });
         this.isSaving = false;
