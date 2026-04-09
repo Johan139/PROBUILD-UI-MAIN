@@ -437,10 +437,18 @@ export class AuthService {
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // On browser refresh with expired token, fail fast instead of background refresh
-      // loops that leave the app loading in a broken authenticated shell.
-      this.logoutWithReason('refresh_invalid');
-      return;
+      try {
+        await firstValueFrom(this.refreshToken(8_000));
+        const refreshed = localStorage.getItem('accessToken');
+        if (refreshed) {
+          this.loadUserFromToken(refreshed);
+        }
+        this.startInactivityTimer();
+        return;
+      } catch {
+        this.logoutWithReason('refresh_invalid');
+        return;
+      }
     }
   }
   googleLogin(idToken: string): Observable<any> {
