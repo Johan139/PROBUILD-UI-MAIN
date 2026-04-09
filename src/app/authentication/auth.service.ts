@@ -28,6 +28,7 @@ export class AuthService {
   private readonly LOGOUT_REASON_KEY = 'pb_logout_reason';
   private readonly ANALYSIS_PROTECTION_UNTIL_KEY =
     'pb_analysis_protection_until_ms';
+  private readonly LAST_ACTIVITY_AT_KEY = 'pb_last_activity_at_ms';
   private readonly AUTH_TRACE_BUFFER_KEY = '__pbAuthTrace';
   private readonly AUTH_TRACE_MAX = 80;
   private authLimboSinceMs: number | null = null;
@@ -48,6 +49,7 @@ export class AuthService {
   private _userPermissions = new BehaviorSubject<string[]>([]);
   public userPermissions$ = this._userPermissions.asObservable();
   private inactivityTimeout: any;
+  private inactivityCheckInterval: any;
   private readonly INACTIVITY_LIMIT = 20 * 60 * 1000; // 20 minutes
   private inactivityPauseSources = new Set<string>();
   private analysisProtectionGraceUntilMs = 0;
@@ -64,8 +66,11 @@ export class AuthService {
   private readonly MAX_CONSECUTIVE_REFRESH_AUTH_FAILURES = 5;
   /** Refresh access token this long before JWT exp (short server lifetimes need more headroom). */
   private readonly PROACTIVE_REFRESH_LEEWAY_MS = 120_000;
+  /** Throttle proactive refresh attempts triggered by UI activity to avoid storms. */
+  private readonly PROACTIVE_REFRESH_THROTTLE_MS = 30_000;
   private isRefreshing = false;
   private refreshRetryCooldownUntil = 0;
+  private lastProactiveRefreshAttemptAtMs = 0;
   private refreshAuthFailureCount = 0;
   private refreshAuthFailureWindowStartedAt = 0;
   private refreshTokenSubject = new BehaviorSubject<
@@ -332,23 +337,131 @@ export class AuthService {
     this.authLimboSinceMs = null;
   }
 
-  public startInactivityTimer(): void {
+  private getLastActivityAtMs(): number {
+    if (!isPlatformBrowser(this.platformId)) return Date.now();
+    const raw = localStorage.getItem(this.LAST_ACTIVITY_AT_KEY);
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
+  }
+
+  private setLastActivityAtMs(valueMs: number): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    localStorage.setItem(this.LAST_ACTIVITY_AT_KEY, String(Math.floor(valueMs)));
+  }
+
+  public recordActivity(source: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
+    const now = Date.now();
+    this.setLastActivityAtMs(now);
+    this.pushAuthTrace('inactivity.activity', { source, atMs: now });
+
+    // If the user is actively using the UI but not making HTTP calls, the access
+    // token can silently expire (~30 min) and the next API call becomes a hard
+    // failure. Proactively refresh near expiry on real user activity.
+    this.maybeProactivelyRefreshAccessToken(`activity:${source}`);
+  }
+
+  private maybeProactivelyRefreshAccessToken(source: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
+    if (this.inactivityPauseSources.size > 0) return;
+    if (this.isAnalysisInactivityProtected()) return;
+
+    const now = Date.now();
+    // Only attempt while the user is actually "recently active".
+    const idleForMs = now - this.getLastActivityAtMs();
+    if (idleForMs >= this.INACTIVITY_LIMIT) return;
+
+    if (now - this.lastProactiveRefreshAttemptAtMs < this.PROACTIVE_REFRESH_THROTTLE_MS) {
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    const exp = this.getExp(token);
+    if (exp == null) return;
+
+    const expiresAtMs = exp * 1000;
+    const needsRefreshSoon = expiresAtMs < now + this.PROACTIVE_REFRESH_LEEWAY_MS;
+    if (!needsRefreshSoon) return;
+
+    if (now < this.refreshRetryCooldownUntil) return;
+    if (this.isRefreshing) return;
+
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return;
+
+    this.lastProactiveRefreshAttemptAtMs = now;
+    this.pushAuthTrace('refresh.proactive_attempt', {
+      source,
+      expiresAtMs,
+      inMs: expiresAtMs - now,
+    });
+
+    // Fire-and-forget: do not treat refresh as "activity" and do not force
+    // logout on transient failures here. AuthService.refreshToken() already
+    // applies strict logout rules on true auth failures (400/401/403).
+    void firstValueFrom(this.refreshToken()).catch((err) => {
+      this.pushAuthTrace('refresh.proactive_failed', {
+        source,
+        status: err instanceof HttpErrorResponse ? err.status : null,
+        name: (err as any)?.name || null,
+      });
+    });
+  }
+
+  private checkIdleNow(source: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isLoggedIn()) return;
+    if (this.inactivityPauseSources.size > 0) return;
+    if (this.isAnalysisInactivityProtected()) return;
+
+    const lastAt = this.getLastActivityAtMs();
+    const idleForMs = Date.now() - lastAt;
+    if (idleForMs >= this.INACTIVITY_LIMIT) {
+      this.pushAuthTrace('inactivity.check.logout', {
+        source,
+        idleForMs,
+        lastActivityAtMs: lastAt,
+      });
+      this.logoutWithReason('inactivity');
+    }
+  }
+
+  private stopIdleMonitoring(): void {
     this.clearInactivityTimer();
+    if (this.inactivityCheckInterval) {
+      clearInterval(this.inactivityCheckInterval);
+      this.inactivityCheckInterval = null;
+    }
+  }
+
+  public startInactivityTimer(forceBaselineNow = false): void {
+    this.stopIdleMonitoring();
 
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.isLoggedIn()) return;
-    if (this.isAnalysisInactivityProtected()) return;
-    if (this.inactivityPauseSources.size > 0) return;
 
-    this.inactivityTimeout = setTimeout(() => {
-      console.warn('Auto-logout due to inactivity.');
-      this.pushAuthTrace('inactivity.timeout.logout', {
-        pausedSources: this.inactivityPauseSources.size,
-      });
-      if (this.isLoggedIn()) {
-        this.logoutWithReason('inactivity');
-      }
-    }, this.INACTIVITY_LIMIT);
+    // Establish a baseline activity timestamp for this session.
+    // If we're starting due to app init/reopen, we treat that as fresh activity
+    // so a stale timestamp from a previous browser session can't trigger logout
+    // shortly after reload.
+    if (forceBaselineNow || !localStorage.getItem(this.LAST_ACTIVITY_AT_KEY)) {
+      this.setLastActivityAtMs(Date.now());
+    }
+
+    // Check immediately (e.g. returning to a tab after a long time).
+    this.checkIdleNow('start');
+
+    // Deterministic monitoring to avoid browser setTimeout throttling in background tabs.
+    this.inactivityCheckInterval = setInterval(() => {
+      this.checkIdleNow('interval');
+    }, 10_000);
+
+    // Keep the old field for compatibility; no-op timer.
+    this.inactivityTimeout = null;
   }
 
   public clearInactivityTimer(): void {
@@ -361,18 +474,22 @@ export class AuthService {
   public resetInactivityTimer(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     if (!this.isLoggedIn()) {
-      this.clearInactivityTimer();
+      this.stopIdleMonitoring();
       return;
     }
     if (this.isAnalysisInactivityProtected()) {
-      this.clearInactivityTimer();
+      this.stopIdleMonitoring();
       return;
     }
     if (this.inactivityPauseSources.size > 0) {
-      this.clearInactivityTimer();
+      this.stopIdleMonitoring();
       return;
     }
-    this.startInactivityTimer();
+    this.recordActivity('ui');
+    // Ensure monitoring is running.
+    if (!this.inactivityCheckInterval) {
+      this.startInactivityTimer();
+    }
   }
 
   public pauseInactivityTimer(source: string): void {
@@ -386,6 +503,7 @@ export class AuthService {
       pausedSources: this.inactivityPauseSources.size,
     });
     this.clearInactivityTimer();
+    this.stopIdleMonitoring();
   }
 
   public resumeInactivityTimer(source: string): void {
@@ -420,13 +538,10 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return;
 
     const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    // Use the token as the source of truth to populate the user
-    this.loadUserFromToken(token);
-
-    // Start inactivity timer for already logged-in users
-    this.startInactivityTimer();
+    if (!token) {
+      this.stopIdleMonitoring();
+      return;
+    }
 
     const exp = this.getExp(token);
     if (exp == null) {
@@ -438,17 +553,37 @@ export class AuthService {
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
       try {
-        await firstValueFrom(this.refreshToken(8_000));
+        await firstValueFrom(
+          this.refreshToken(this.coldStartExtendedRefreshTimeoutMs()),
+        );
         const refreshed = localStorage.getItem('accessToken');
-        if (refreshed) {
-          this.loadUserFromToken(refreshed);
+        if (!refreshed) {
+          this.logoutWithReason('refresh_invalid');
+          return;
         }
-        this.startInactivityTimer();
-        return;
+        this.loadUserFromToken(refreshed);
+        // Treat app start/reopen as fresh activity so we don't instantly idle-logout
+        // due to a stale last-activity timestamp from a previous browser session.
+        this.setLastActivityAtMs(Date.now());
+        this.recordActivity('initialize:refreshed');
+        this.startInactivityTimer(true);
       } catch {
         this.logoutWithReason('refresh_invalid');
         return;
       }
+    } else {
+      this.loadUserFromToken(token);
+      // Treat app start/reopen as fresh activity so we don't instantly idle-logout
+      // due to a stale last-activity timestamp from a previous browser session.
+      this.setLastActivityAtMs(Date.now());
+      this.recordActivity('initialize');
+      this.startInactivityTimer(true);
+    }
+
+    // If user is authenticated and ends up on /login (direct URL / refresh), bounce to dashboard.
+    const path = window.location.pathname || '';
+    if (this.isLoggedIn() && path.startsWith('/login')) {
+      void this.router.navigateByUrl('dashboard');
     }
   }
   googleLogin(idToken: string): Observable<any> {
@@ -543,6 +678,7 @@ export class AuthService {
       localStorage.setItem('isAdmin', String(!!isAdmin));
       localStorage.setItem('currentUser', JSON.stringify(user));
       this.currentUserSubject.next(user);
+      this.recordActivity('login');
       this.startInactivityTimer();
       return of(response);
     } else {
@@ -628,6 +764,7 @@ export class AuthService {
       localStorage.setItem(this.LOGOUT_REASON_KEY, reason);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem(this.LAST_ACTIVITY_AT_KEY);
       localStorage.removeItem('userType');
       localStorage.removeItem('firstName');
       localStorage.removeItem('lastName');
@@ -643,6 +780,7 @@ export class AuthService {
     this.resetRefreshAuthFailureState();
 
     const shouldHardReload =
+      reason === 'manual' ||
       reason === 'inactivity' ||
       reason === 'refresh_invalid' ||
       reason === 'token_invalid';
@@ -747,6 +885,43 @@ export class AuthService {
       );
   }
 
+  handleTabBecameVisible(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    // Avoid stampedes when a backgrounded/minimized tab becomes active again.
+    // If the access token is expired or near expiry, refresh once in the
+    // background so API calls don't pile up.
+    const token = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!token || !refreshToken) return;
+    if (this.isRefreshing) return;
+
+    const now = Date.now();
+    if (now < this.refreshRetryCooldownUntil) return;
+
+    const exp = this.getExp(token);
+    if (exp == null) return;
+
+    const expiresAtMs = exp * 1000;
+    const shouldRefresh =
+      this.accessTokenIsExpired(token) ||
+      expiresAtMs < now + this.PROACTIVE_REFRESH_LEEWAY_MS;
+
+    if (!shouldRefresh) return;
+
+    this.recordActivity('tab-visible');
+
+    void firstValueFrom(
+      this.refreshToken(this.coldStartExtendedRefreshTimeoutMs()),
+    ).catch((e) => {
+      const t = Date.now();
+      this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
+      this.pushAuthTrace('refresh.tab_visible_failed', {
+        name: (e as any)?.name || null,
+      });
+    });
+  }
+
   async getToken(): Promise<string | null> {
     if (!isPlatformBrowser(this.platformId)) return null;
 
@@ -771,7 +946,9 @@ export class AuthService {
     // Never keep an expired access token alive. Fail fast to login.
     if (isExpired) {
       try {
-        await firstValueFrom(this.refreshToken(8_000));
+        await firstValueFrom(
+          this.refreshToken(this.coldStartExtendedRefreshTimeoutMs()),
+        );
         this.refreshRetryCooldownUntil = 0;
         this.noteAuthTokenObserved(true, 'getToken:expired_refresh_success');
         return localStorage.getItem('accessToken');
@@ -798,37 +975,46 @@ export class AuthService {
       return this.normalizeToken(token);
     }
 
+    // IMPORTANT: Do not block normal API calls on proactive refresh. If the
+    // token is still valid, return it immediately and refresh in the background.
+    // Otherwise the interceptor will "hang" requests and the UI appears empty.
     if (now < this.refreshRetryCooldownUntil) {
       this.noteAuthTokenObserved(true, 'getToken:cooldown_keep_token');
       return this.normalizeToken(token);
     }
 
-    try {
-      await firstValueFrom(this.refreshToken());
-      this.refreshRetryCooldownUntil = 0;
-      this.noteAuthTokenObserved(true, 'getToken:refresh_success');
-      return localStorage.getItem('accessToken');
-    } catch (e) {
-      const t = Date.now();
-      if (t - this.lastGetTokenRefreshFailureLogAt > 2500) {
-        this.lastGetTokenRefreshFailureLogAt = t;
-        const isTimeout =
-          e &&
-          typeof e === 'object' &&
-          (e as { name?: string }).name === 'TimeoutError';
-        if (isTimeout) {
-          console.warn(
-            'Token refresh timed out in getToken(); token still valid briefly — retry after cooldown. Check API / refresh-token or environment.refreshTokenRequestTimeoutMs.',
-            e,
+    if (!this.isRefreshing) {
+      void firstValueFrom(this.refreshToken())
+        .then(() => {
+          this.refreshRetryCooldownUntil = 0;
+          this.noteAuthTokenObserved(true, 'getToken:background_refresh_success');
+        })
+        .catch((e) => {
+          const t = Date.now();
+          if (t - this.lastGetTokenRefreshFailureLogAt > 2500) {
+            this.lastGetTokenRefreshFailureLogAt = t;
+            const isTimeout =
+              e &&
+              typeof e === 'object' &&
+              (e as { name?: string }).name === 'TimeoutError';
+            if (isTimeout) {
+              console.warn(
+                'Token refresh timed out in getToken(); token still valid briefly — retry after cooldown. Check API / refresh-token or environment.refreshTokenRequestTimeoutMs.',
+                e,
+              );
+            } else {
+              console.error('Refresh failed in getToken()', e);
+            }
+          }
+          this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
+          this.noteAuthTokenObserved(
+            true,
+            'getToken:background_refresh_failed_keep_token',
           );
-        } else {
-          console.error('Refresh failed in getToken()', e);
-        }
-      }
-      this.refreshRetryCooldownUntil = t + this.REFRESH_RETRY_COOLDOWN_MS;
-      this.noteAuthTokenObserved(true, 'getToken:non_expired_refresh_failed_keep_token');
-      return this.normalizeToken(token);
+        });
     }
+
+    return this.normalizeToken(token);
   }
 
   getAccessTokenFast(): string | null {

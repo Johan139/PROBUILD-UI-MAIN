@@ -269,7 +269,16 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.lastInactivityResetAt = now;
+    this.authService.recordActivity('window-event');
     this.authService.resetInactivityTimer();
+  };
+
+  private visibilityChangeHandler = () => {
+    if (!this.isBrowser) return;
+    if (document.visibilityState !== 'visible') return;
+    this.authService.recordActivity('visibilitychange');
+    this.authService.resetInactivityTimer();
+    this.authService.handleTabBecameVisible();
   };
 
   ngOnInit() {
@@ -288,6 +297,8 @@ export class AppComponent implements OnInit, OnDestroy {
       for (const event of events) {
         window.addEventListener(event, this.inactivityEventHandler);
       }
+
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
 
       this.authService.currentUser$.subscribe((user) => {
         this.loggedIn = !!user;
@@ -337,6 +348,11 @@ export class AppComponent implements OnInit, OnDestroy {
       for (const event of events) {
         window.removeEventListener(event, this.inactivityEventHandler);
       }
+
+      document.removeEventListener(
+        'visibilitychange',
+        this.visibilityChangeHandler,
+      );
     }
   }
 
@@ -345,10 +361,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return (
       this.loggedIn && !excludedRoutes.includes(this.router.url.toLowerCase())
     );
-  }
-
-  onBrowserClose(event: BeforeUnloadEvent) {
-    localStorage.setItem('loggedIn', 'false');
   }
 
   cancelalert(): void {

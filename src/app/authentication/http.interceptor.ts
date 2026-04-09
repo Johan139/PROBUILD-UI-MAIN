@@ -26,7 +26,12 @@ export const authInterceptor: HttpInterceptorFn = (
   if (isApolloProxyRequest) return next(req);
 
   const isBrowser = isPlatformBrowser(platformId);
-  const token$ = isBrowser ? from(authService.getToken()) : of(null);
+  // IMPORTANT: Never call getToken() for auth endpoints.
+  // When the access token is expired, getToken() will attempt a refresh.
+  // If this interceptor also intercepts the refresh-token request and calls
+  // getToken(), it can deadlock (refresh request waits for token -> token waits
+  // for refresh -> refresh request never starts).
+  const token$ = isBrowser && !isAuthEndpoint ? from(authService.getToken()) : of(null);
 
   const shouldAttachProbuildHeaders = (() => {
     // Avoid attaching custom headers (and auth) to third-party absolute URLs.
@@ -103,6 +108,14 @@ export const authInterceptor: HttpInterceptorFn = (
       const authedReq = req.clone({
         setHeaders: headers,
       });
+
+      // Count authenticated first-party API traffic as activity. This prevents
+      // "random" idle logouts when the user is actively using the app via
+      // interactions that don't trigger window events reliably (or when the
+      // browser throttles events/timers in background tabs).
+      if (shouldAttachProbuildHeaders && token && !isAuthEndpoint) {
+        authService.recordActivity('http');
+      }
 
       return next(authedReq).pipe(
         catchError((error: any) => {
