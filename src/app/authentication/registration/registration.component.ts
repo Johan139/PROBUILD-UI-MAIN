@@ -319,12 +319,20 @@ export class RegistrationComponent implements OnInit {
       this.countryNumberCode = data;
       this.getUserMetadata().subscribe({
         next: (meta) => {
-          const ipCountryCode = meta?.country_code || meta?.country || 'US';
-          const detected = this.countryNumberCode.find(
-            (c) => c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase(),
-          );
+          const rawCc = meta?.country_code ?? meta?.country;
+          const ipCountryCode =
+            typeof rawCc === 'string' && rawCc.trim().length >= 2
+              ? rawCc.trim()
+              : null;
+          const detected = ipCountryCode
+            ? this.countryNumberCode.find(
+                (c) =>
+                  c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase(),
+              )
+            : undefined;
           this.selectedCountryCode =
             detected ||
+            this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
             this.countryNumberCode.find((c) => c.countryCode === 'US') ||
             this.countryNumberCode[0];
 
@@ -775,7 +783,20 @@ export class RegistrationComponent implements OnInit {
   }
 
   getUserMetadata(): Observable<any> {
-    return this.httpClient.get('https://ipapi.co/json/');
+    return this.httpClient.get(`${BASE_URL}/Account/client-geo-hint`).pipe(
+      catchError(() =>
+        of({
+          ip: null,
+          country_code: null,
+          city: null,
+          region: null,
+          country_name: null,
+          latitude: null,
+          longitude: null,
+          timezone: null,
+        }),
+      ),
+    );
   }
 
   private getOperatingSystem(): string {
@@ -1155,3 +1176,4 @@ export class RegistrationComponent implements OnInit {
     };
   }
 }
+
