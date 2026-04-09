@@ -3,9 +3,14 @@
   <div class="conversations-list">
     <div class="conversation-list-header">
       <button mat-button class="btn btn-primary new-chat-btn" type="button" (click)="startNewConversation()">+ New Chat</button>
-      <button (click)="sortConversations()" class="action-btn" aria-label="Sort conversations">
-        <span class="material-icons">{{ sortIcon }}</span>
-      </button>
+      <div class="header-actions">
+        <button (click)="goToWindowMode()" class="action-btn" aria-label="Window mode">
+          <span class="material-icons">fullscreen_exit</span>
+        </button>
+        <button (click)="sortConversations()" class="action-btn" aria-label="Sort conversations">
+          <span class="material-icons">{{ sortIcon }}</span>
+        </button>
+      </div>
     </div>
     <div class="conversation-items">
       @for (conversation of conversations$ | async; track conversation) {
@@ -16,7 +21,7 @@
           <div class="conversation-title-container">
             @if (editingConversationId !== conversation.Id) {
               <p class="conversation-title">{{ conversation.Title }}</p>
-              <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'short' }}</span>
+              <span class="conversation-timestamp">{{ conversation.CreatedAt | date:'dd-MMM-yyyy' }}</span>
               <mat-icon class="edit-icon" (click)="startEditing(conversation); $event.stopPropagation()">edit</mat-icon>
             } @else {
               <div class="edit-container">
@@ -117,9 +122,9 @@
         </div>
       }
       <form (ngSubmit)="sendMessage()">
-        <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
+        <!-- <button type="button" mat-icon-button class="more-options-btn" (click)="togglePromptsPopup()" matTooltip="More options">
           <mat-icon>tune</mat-icon>
-        </button>
+        </button> -->
         <textarea id="chat-input"
           [(ngModel)]="newMessageContent"
           name="newMessageContent"
@@ -129,9 +134,9 @@
           (keydown)="onKeyDown($event)"
           rows="1"
           [disabled]="isInputDisabled"
-        [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected.' : ''"></textarea>
+        [matTooltip]="isInputDisabled ? 'The input is disabled when a special instruction is selected' : ''"></textarea>
         <span class="button-wrapper"
-          [matTooltip]="isSendDisabled ? 'Please type a message or upload a file and select a prompt.' : ''"
+          [matTooltip]="isSendDisabled ? 'Please type a message' : ''"
           [class.disabled-wrapper]="isSendDisabled">
           <button mat-button
             type="submit"
@@ -140,7 +145,7 @@
             Send
           </button>
         </span>
-        <span class="button-wrapper"
+        <!-- <span class="button-wrapper"
           [matTooltip]="(hasDocuments$ | async) ? 'Blueprints have already been uploaded. Start a new conversation to upload a new set of files.' : 'Attach blueprints'"
           [class.disabled-wrapper]="hasDocuments$ | async">
           <button mat-button type="button" class="btn btn-secondary action-btn icon-button" (click)="onAttachFile()" [disabled]="hasDocuments$ | async">
@@ -153,7 +158,7 @@
           <button mat-button type="button" class="btn btn-secondary action-btn icon-button" (click)="viewUploadedFiles()" [disabled]="!(hasDocuments$ | async)">
             <mat-icon>folder</mat-icon>
           </button>
-        </span>
+        </span> -->
         <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)" multiple />
         <input type="file" #folderInput style="display: none" (change)="onFileSelected($event)" webkitdirectory multiple />
       </form>
