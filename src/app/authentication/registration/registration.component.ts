@@ -23,6 +23,7 @@ import {
   parsePhoneNumberFromString,
   AsYouType,
   CountryCode,
+  isSupportedCountry,
 } from 'libphonenumber-js';
 import { environment } from '../../../environments/environment';
 import {
@@ -230,6 +231,16 @@ export class RegistrationComponent implements OnInit {
     );
   }
 
+  /** Binds the prefix dropdown list; must run even when IP lookup fails (e.g. CORS). */
+  private initFilteredCountryCodes(): void {
+    this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+      startWith(''),
+      debounceTime(100),
+      distinctUntilChanged(),
+      map((value) => this._filterCountryCodes(value ?? '')),
+    );
+  }
+
   ngOnInit() {
     this.loadSubscriptionPackages();
     const plan = this.route.snapshot.queryParamMap.get('plan');
@@ -317,17 +328,13 @@ export class RegistrationComponent implements OnInit {
             this.countryNumberCode.find((c) => c.countryCode === 'US') ||
             this.countryNumberCode[0];
 
-          this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
-            startWith(''),
-            debounceTime(100),
-            distinctUntilChanged(),
-            map((value) => this._filterCountryCodes(value ?? '')),
-          );
+          this.initFilteredCountryCodes();
         },
         error: () => {
           this.selectedCountryCode =
             this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
             this.countryNumberCode[0];
+          this.initFilteredCountryCodes();
         },
       });
     });
@@ -543,6 +550,28 @@ export class RegistrationComponent implements OnInit {
   // phoneNumber field stores digits only, no dial code, no leading zero.
   // Dial code lives in selectedCountryCode and is combined only on submit.
 
+  /** ISO 3166-1 alpha-2 for libphonenumber; must match AsYouType/parse defaults. */
+  private resolvePhoneCountryCode(): CountryCode {
+    const raw = this.selectedCountryCode?.countryCode;
+    if (raw && typeof raw === 'string') {
+      const normalized = raw.trim().toUpperCase() as CountryCode;
+      if (isSupportedCountry(normalized)) {
+        return normalized;
+      }
+    }
+    return 'US';
+  }
+
+  /** When input is international (`+…`), align prefix dropdown with parsed ISO country. */
+  private applyCountryFromIso(iso: CountryCode): void {
+    const found = this.countryNumberCode.find(
+      (c) => c.countryCode?.toUpperCase() === String(iso).toUpperCase(),
+    );
+    if (found) {
+      this.selectedCountryCode = found;
+    }
+  }
+
   onPhoneInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const inputEvent = event as InputEvent;
@@ -554,8 +583,15 @@ export class RegistrationComponent implements OnInit {
       return;
     }
 
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'US') as CountryCode;
+    // Let users type/paste E.164 without AsYouType rewriting it mid-stream.
+    if (input.value.trimStart().startsWith('+')) {
+      this.registrationForm
+        .get('phoneNumber')
+        ?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
+    const countryCode = this.resolvePhoneCountryCode();
     const formatted = new AsYouType(countryCode).input(input.value);
     this.registrationForm
       .get('phoneNumber')
@@ -564,39 +600,55 @@ export class RegistrationComponent implements OnInit {
 
   onPhonePaste(event: ClipboardEvent): void {
     event.preventDefault();
-    const pasted = event.clipboardData?.getData('text') || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
+    const pasted = (event.clipboardData?.getData('text') || '').trim();
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+
+    if (pasted.startsWith('+')) {
+      const intl = parsePhoneNumberFromString(pasted);
+      if (intl?.isValid() && intl.country) {
+        this.applyCountryFromIso(intl.country);
+        phoneCtrl?.setValue(intl.formatNational(), { emitEvent: false });
+        phoneCtrl?.updateValueAndValidity();
+        return;
+      }
+    }
+
+    const countryCode = this.resolvePhoneCountryCode();
 
     // Try to parse the pasted number — handles +27..., 0821234567, +1800..., etc.
     const parsed = parsePhoneNumberFromString(pasted, countryCode);
     if (parsed) {
       // Format it nicely in national format for the field
       const formatted = parsed.formatNational();
-      this.registrationForm
-        .get('phoneNumber')
-        ?.setValue(formatted, { emitEvent: false });
+      phoneCtrl?.setValue(formatted, { emitEvent: false });
     } else {
       // Fallback: run through AsYouType to clean it up best we can
       const formatted = new AsYouType(countryCode).input(pasted);
-      this.registrationForm
-        .get('phoneNumber')
-        ?.setValue(formatted, { emitEvent: false });
+      phoneCtrl?.setValue(formatted, { emitEvent: false });
     }
+    phoneCtrl?.updateValueAndValidity();
   }
 
   onPhoneBlur(event: FocusEvent): void {
     const ctrl = this.registrationForm.get('phoneNumber');
-    const value = ctrl?.value || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
+    const value = (ctrl?.value || '').trim();
 
-    const parsed = parsePhoneNumberFromString(value, countryCode);
-    if (parsed && parsed.isValid()) {
-      // On blur, format as national (e.g. "082 123 4567" for ZA)
-      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+    if (value.startsWith('+')) {
+      const intl = parsePhoneNumberFromString(value);
+      if (intl?.isValid() && intl.country) {
+        this.applyCountryFromIso(intl.country);
+        ctrl?.setValue(intl.formatNational(), { emitEvent: false });
+      }
+    } else {
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = parsePhoneNumberFromString(value, countryCode);
+      if (parsed && parsed.isValid()) {
+        // On blur, format as national (e.g. "082 123 4567" for ZA)
+        ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+      }
     }
     ctrl?.markAsTouched();
+    ctrl?.updateValueAndValidity();
   }
 
   onCountryCodeChange(selected: any): void {
@@ -750,11 +802,12 @@ export class RegistrationComponent implements OnInit {
   }
 
   private buildPhoneForSubmit(formValue: any): void {
-    const value = formValue.phoneNumber || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
+    const value = (formValue.phoneNumber || '').trim();
+    const countryCode = this.resolvePhoneCountryCode();
 
-    const parsed = parsePhoneNumberFromString(value, countryCode);
+    const parsed = value.startsWith('+')
+      ? parsePhoneNumberFromString(value)
+      : parsePhoneNumberFromString(value, countryCode);
     // Always send E.164 format to backend: +27821234567
     formValue.phoneNumber = parsed ? parsed.format('E.164') : value;
     formValue.countryNumberCode = this.selectedCountryCode?.id || null;
@@ -782,12 +835,11 @@ export class RegistrationComponent implements OnInit {
         phoneNumber: this.registrationForm.get('phoneNumber')?.value,
       };
       // Combine dial code for invited user too
-      const countryCode = (this.selectedCountryCode?.countryCode ||
-        'ZA') as CountryCode;
-      const parsed = parsePhoneNumberFromString(
-        data.phoneNumber || '',
-        countryCode,
-      );
+      const raw = (data.phoneNumber || '').trim();
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = raw.startsWith('+')
+        ? parsePhoneNumberFromString(raw)
+        : parsePhoneNumberFromString(raw, countryCode);
       data.phoneNumber = parsed ? parsed.format('E.164') : data.phoneNumber;
 
       this.registrationService.registerInvited(data).subscribe({
@@ -1090,9 +1142,11 @@ export class RegistrationComponent implements OnInit {
       const value = control.value;
       if (!value) return null; // required handles empty
 
-      const countryCode = (this.selectedCountryCode?.countryCode ||
-        'ZA') as CountryCode;
-      const parsed = parsePhoneNumberFromString(value, countryCode);
+      const trimmed = String(value).trim();
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = trimmed.startsWith('+')
+        ? parsePhoneNumberFromString(trimmed)
+        : parsePhoneNumberFromString(trimmed, countryCode);
 
       if (!parsed || !parsed.isValid()) {
         return { invalidPhone: true };
