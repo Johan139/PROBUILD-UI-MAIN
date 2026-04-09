@@ -22,6 +22,7 @@ import {
   parsePhoneNumberFromString,
   AsYouType,
   CountryCode,
+  isSupportedCountry,
 } from 'libphonenumber-js';
 import { environment } from '../../../environments/environment';
 import { catchError, map, startWith } from 'rxjs/operators';
@@ -194,13 +195,36 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
   }
 
   // ─── PHONE VALIDATOR ──────────────────────────────────────────────────────
+  private resolvePhoneCountryCode(): CountryCode {
+    const raw = this.selectedCountryCode?.countryCode;
+    if (raw && typeof raw === 'string') {
+      const normalized = raw.trim().toUpperCase() as CountryCode;
+      if (isSupportedCountry(normalized)) {
+        return normalized;
+      }
+    }
+    return 'ZA';
+  }
+
+  /** When input is international (`+…`), align prefix dropdown with parsed ISO country. */
+  private applyCountryFromIso(iso: CountryCode): void {
+    const found = this.countryNumberCode.find(
+      (c) => c.countryCode?.toUpperCase() === String(iso).toUpperCase(),
+    );
+    if (found) {
+      this.selectedCountryCode = found;
+    }
+  }
+
   private phoneValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const value = control.value;
       if (!value) return null; // required handles empty
-      const countryCode = (this.selectedCountryCode?.countryCode ||
-        'ZA') as CountryCode;
-      const parsed = parsePhoneNumberFromString(value, countryCode);
+      const trimmed = String(value).trim();
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = trimmed.startsWith('+')
+        ? parsePhoneNumberFromString(trimmed)
+        : parsePhoneNumberFromString(trimmed, countryCode);
       return parsed?.isValid() ? null : { invalidPhone: true };
     };
   }
@@ -278,15 +302,13 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
             this.countryNumberCode.find((c) => c.countryCode === 'US') ||
             this.countryNumberCode[0];
 
-          this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
-            startWith(''),
-            map((value) => this._filterCountryCodes(value ?? '')),
-          );
+          this.initFilteredCountryCodes();
         },
         error: () => {
           this.selectedCountryCode =
             this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
             this.countryNumberCode[0];
+          this.initFilteredCountryCodes();
         },
       });
     });
@@ -448,8 +470,14 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
+    if (input.value.trimStart().startsWith('+')) {
+      this.registrationForm
+        .get('phoneNumber')
+        ?.setValue(input.value, { emitEvent: false });
+      return;
+    }
+
+    const countryCode = this.resolvePhoneCountryCode();
     const formatted = new AsYouType(countryCode).input(input.value);
     this.registrationForm
       .get('phoneNumber')
@@ -458,32 +486,49 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
 
   onPhonePaste(event: ClipboardEvent): void {
     event.preventDefault();
-    const pasted = event.clipboardData?.getData('text') || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
+    const pasted = (event.clipboardData?.getData('text') || '').trim();
+    const phoneCtrl = this.registrationForm.get('phoneNumber');
+
+    if (pasted.startsWith('+')) {
+      const intl = parsePhoneNumberFromString(pasted);
+      if (intl?.isValid() && intl.country) {
+        this.applyCountryFromIso(intl.country);
+        phoneCtrl?.setValue(intl.formatNational(), { emitEvent: false });
+        phoneCtrl?.updateValueAndValidity();
+        return;
+      }
+    }
+
+    const countryCode = this.resolvePhoneCountryCode();
     const parsed = parsePhoneNumberFromString(pasted, countryCode);
     if (parsed) {
-      this.registrationForm
-        .get('phoneNumber')
-        ?.setValue(parsed.formatNational(), { emitEvent: false });
+      phoneCtrl?.setValue(parsed.formatNational(), { emitEvent: false });
     } else {
       const formatted = new AsYouType(countryCode).input(pasted);
-      this.registrationForm
-        .get('phoneNumber')
-        ?.setValue(formatted, { emitEvent: false });
+      phoneCtrl?.setValue(formatted, { emitEvent: false });
     }
+    phoneCtrl?.updateValueAndValidity();
   }
 
   onPhoneBlur(event: FocusEvent): void {
     const ctrl = this.registrationForm.get('phoneNumber');
-    const value = ctrl?.value || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
-    const parsed = parsePhoneNumberFromString(value, countryCode);
-    if (parsed?.isValid()) {
-      ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+    const value = (ctrl?.value || '').trim();
+
+    if (value.startsWith('+')) {
+      const intl = parsePhoneNumberFromString(value);
+      if (intl?.isValid() && intl.country) {
+        this.applyCountryFromIso(intl.country);
+        ctrl?.setValue(intl.formatNational(), { emitEvent: false });
+      }
+    } else {
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = parsePhoneNumberFromString(value, countryCode);
+      if (parsed?.isValid()) {
+        ctrl?.setValue(parsed.formatNational(), { emitEvent: false });
+      }
     }
     ctrl?.markAsTouched();
+    ctrl?.updateValueAndValidity();
   }
 
   onCountryCodeChange(selected: any): void {
@@ -493,10 +538,11 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
   }
 
   private buildPhoneForSubmit(formValue: any): void {
-    const value = formValue.phoneNumber || '';
-    const countryCode = (this.selectedCountryCode?.countryCode ||
-      'ZA') as CountryCode;
-    const parsed = parsePhoneNumberFromString(value, countryCode);
+    const value = (formValue.phoneNumber || '').trim();
+    const countryCode = this.resolvePhoneCountryCode();
+    const parsed = value.startsWith('+')
+      ? parsePhoneNumberFromString(value)
+      : parsePhoneNumberFromString(value, countryCode);
     formValue.phoneNumber = parsed ? parsed.format('E.164') : value;
     formValue.countryNumberCode = this.selectedCountryCode?.id || null;
   }
@@ -665,10 +711,13 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       }
       this.isLoading = true;
 
-      const rawPhone = this.registrationForm.get('phoneNumber')?.value || '';
-      const countryCode = (this.selectedCountryCode?.countryCode ||
-        'ZA') as CountryCode;
-      const parsed = parsePhoneNumberFromString(rawPhone, countryCode);
+      const rawPhone = (
+        this.registrationForm.get('phoneNumber')?.value || ''
+      ).trim();
+      const countryCode = this.resolvePhoneCountryCode();
+      const parsed = rawPhone.startsWith('+')
+        ? parsePhoneNumberFromString(rawPhone)
+        : parsePhoneNumberFromString(rawPhone, countryCode);
       const e164Phone = parsed ? parsed.format('E.164') : rawPhone;
 
       const data = {
@@ -871,6 +920,14 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       (x) => x.countryId?.toLowerCase() === selected.id?.toLowerCase(),
     );
     if (match) this.selectedCountryCode = match;
+  }
+
+  /** Binds the prefix dropdown list; must run even when IP lookup fails (e.g. CORS). */
+  private initFilteredCountryCodes(): void {
+    this.filteredCountryCodes = this.countryFilterCtrl.valueChanges.pipe(
+      startWith(''),
+      map((value) => this._filterCountryCodes(value ?? '')),
+    );
   }
 
   private _filterCountryCodes(value: string): any[] {
