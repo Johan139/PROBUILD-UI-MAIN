@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
 import {
@@ -190,6 +190,7 @@ export class RegistrationComponent implements OnInit {
     private route: ActivatedRoute,
     private invitationService: InvitationService,
     private profileService: ProfileService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
     this.registrationForm = this.formBuilder.group({});
@@ -221,13 +222,37 @@ export class RegistrationComponent implements OnInit {
     );
   }
 
+  /** API may return camelCase or PascalCase property names. */
+  private dialRowIso(c: any): string {
+    const v = c?.countryCode ?? c?.CountryCode;
+    return typeof v === 'string' ? v.trim() : '';
+  }
+
+  private dialRowPhonePrefix(c: any): string {
+    const v = c?.countryPhoneNumberCode ?? c?.CountryPhoneNumberCode;
+    return typeof v === 'string' ? v.trim() : '';
+  }
+
+  /** mat-select compares option values by reference; API rows need stable equality by id/iso. */
+  compareDialCountry(a: any, b: any): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    const ida = a?.id ?? a?.Id;
+    const idb = b?.id ?? b?.Id;
+    if (ida != null && idb != null) return String(ida) === String(idb);
+    return (
+      this.dialRowIso(a) === this.dialRowIso(b) &&
+      this.dialRowPhonePrefix(a) === this.dialRowPhonePrefix(b)
+    );
+  }
+
   private _filterCountryCodes(value: string): any[] {
     const search = (value || '').toLowerCase().trim();
     if (!search) return this.countryNumberCode;
     return this.countryNumberCode.filter(
       (c) =>
-        c.countryCode?.toLowerCase().includes(search) ||
-        c.countryPhoneNumberCode?.toLowerCase().includes(search),
+        this.dialRowIso(c).toLowerCase().includes(search) ||
+        this.dialRowPhonePrefix(c).toLowerCase().includes(search),
     );
   }
 
@@ -327,20 +352,21 @@ export class RegistrationComponent implements OnInit {
           const detected = ipCountryCode
             ? this.countryNumberCode.find(
                 (c) =>
-                  c.countryCode?.toLowerCase() === ipCountryCode.toLowerCase(),
+                  this.dialRowIso(c).toLowerCase() ===
+                  ipCountryCode.toLowerCase(),
               )
             : undefined;
           this.selectedCountryCode =
             detected ||
-            this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
-            this.countryNumberCode.find((c) => c.countryCode === 'US') ||
+            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
+            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'US') ||
             this.countryNumberCode[0];
 
           this.initFilteredCountryCodes();
         },
         error: () => {
           this.selectedCountryCode =
-            this.countryNumberCode.find((c) => c.countryCode === 'ZA') ||
+            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
             this.countryNumberCode[0];
           this.initFilteredCountryCodes();
         },
@@ -560,9 +586,9 @@ export class RegistrationComponent implements OnInit {
 
   /** ISO 3166-1 alpha-2 for libphonenumber; must match AsYouType/parse defaults. */
   private resolvePhoneCountryCode(): CountryCode {
-    const raw = this.selectedCountryCode?.countryCode;
-    if (raw && typeof raw === 'string') {
-      const normalized = raw.trim().toUpperCase() as CountryCode;
+    const raw = this.dialRowIso(this.selectedCountryCode);
+    if (raw) {
+      const normalized = raw.toUpperCase() as CountryCode;
       if (isSupportedCountry(normalized)) {
         return normalized;
       }
@@ -572,11 +598,13 @@ export class RegistrationComponent implements OnInit {
 
   /** When input is international (`+…`), align prefix dropdown with parsed ISO country. */
   private applyCountryFromIso(iso: CountryCode): void {
+    const isoUpper = String(iso).toUpperCase();
     const found = this.countryNumberCode.find(
-      (c) => c.countryCode?.toUpperCase() === String(iso).toUpperCase(),
+      (c) => this.dialRowIso(c).toUpperCase() === isoUpper,
     );
     if (found) {
       this.selectedCountryCode = found;
+      this.cdr.markForCheck();
     }
   }
 
@@ -593,9 +621,14 @@ export class RegistrationComponent implements OnInit {
 
     // Let users type/paste E.164 without AsYouType rewriting it mid-stream.
     if (input.value.trimStart().startsWith('+')) {
-      this.registrationForm
-        .get('phoneNumber')
-        ?.setValue(input.value, { emitEvent: false });
+      const phoneCtrl = this.registrationForm.get('phoneNumber');
+      phoneCtrl?.setValue(input.value, { emitEvent: false });
+      const trimmed = input.value.trim();
+      const intl = parsePhoneNumberFromString(trimmed);
+      if (intl?.isValid() && intl.country) {
+        this.applyCountryFromIso(intl.country);
+        phoneCtrl?.updateValueAndValidity({ emitEvent: false });
+      }
       return;
     }
 
@@ -646,6 +679,7 @@ export class RegistrationComponent implements OnInit {
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         ctrl?.setValue(intl.formatNational(), { emitEvent: false });
+        this.cdr.markForCheck();
       }
     } else {
       const countryCode = this.resolvePhoneCountryCode();
