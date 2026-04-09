@@ -10,6 +10,7 @@ import { PLATFORM_ID, inject } from '@angular/core';
 import { from, Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -35,6 +36,22 @@ export const authInterceptor: HttpInterceptorFn = (
     if (!isAbsoluteUrl) return true;
     if (!isBrowser) return true;
 
+    const getHostname = (value: unknown): string | null => {
+      if (!value || typeof value !== 'string') return null;
+      try {
+        return new URL(value, globalThis.location?.origin).hostname.toLowerCase();
+      } catch {
+        return null;
+      }
+    };
+
+    const envAllowedHosts = new Set(
+      [
+        getHostname((environment as any)?.BACKEND_URL),
+        getHostname((environment as any)?.SIGNALR_URL),
+      ].filter((h): h is string => !!h),
+    );
+
     try {
       const url = new URL(req.url, globalThis.location?.origin);
       const host = url.hostname.toLowerCase();
@@ -46,6 +63,9 @@ export const authInterceptor: HttpInterceptorFn = (
       // Allow our own domains / local dev.
       if (host.endsWith('probuildai.com')) return true;
       if (host === 'localhost' || host === '127.0.0.1') return true;
+
+      // Allow configured API hosts (e.g. Azure Container Apps backend).
+      if (envAllowedHosts.has(host)) return true;
 
       return false;
     } catch {
