@@ -95,6 +95,7 @@
                           >
                           <mat-select
                             [(value)]="selectedCountryCode"
+                            [compareWith]="compareDialCountry"
                             (selectionChange)="onCountryCodeChange($event.value)"
                             aria-label="Country code"
                             >
@@ -111,7 +112,8 @@
                                 <mat-option
                                   [value]="c"
                                   >
-                                  {{ c.countryCode }} ({{ c.countryPhoneNumberCode }})
+                                  {{ c.countryCode || c.CountryCode }}
+                                  ({{ c.countryPhoneNumberCode || c.CountryPhoneNumberCode }})
                                 </mat-option>
                               }
                             </mat-select>
