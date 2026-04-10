@@ -82,6 +82,20 @@ export class LoginComponent implements OnDestroy {
   }
 
   ngOnInit() {
+    // If the user already has a valid session, don't show the login page.
+    // This handles the "close tab and reopen later" flow when refresh tokens
+    // are still valid.
+    void this.authService
+      .getToken()
+      .then((token) => {
+        if (token) {
+          void this.router.navigateByUrl('dashboard');
+        }
+      })
+      .catch(() => {
+        // Ignore and continue showing login.
+      });
+
     this.route.queryParams.subscribe((params) => {
       if (params['confirmed'] === 'true') {
         this.snackBar.open(

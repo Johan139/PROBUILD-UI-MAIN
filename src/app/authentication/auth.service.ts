@@ -422,12 +422,6 @@ export class AuthService {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    // Use the token as the source of truth to populate the user
-    this.loadUserFromToken(token);
-
-    // Start inactivity timer for already logged-in users
-    this.startInactivityTimer();
-
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');
@@ -437,11 +431,24 @@ export class AuthService {
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // On browser refresh with expired token, fail fast instead of background refresh
-      // loops that leave the app loading in a broken authenticated shell.
-      this.logoutWithReason('refresh_invalid');
+      // During app bootstrap (APP_INITIALIZER), avoid a forced hard reload.
+      // A hard reload here causes a visible white-screen double-load.
+      this.pushAuthTrace('initialize.expired_token_soft_logout');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('loggedIn');
+      localStorage.removeItem('currentUser');
+      this.currentUserSubject.next(null);
+      this.resetRefreshAuthFailureState();
+      void this.router.navigate(['/login']);
       return;
     }
+
+    // Use the token as the source of truth to populate the user
+    this.loadUserFromToken(token);
+
+    // Start inactivity timer for already logged-in users
+    this.startInactivityTimer();
   }
   googleLogin(idToken: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/google-login`, { idToken }).pipe(
