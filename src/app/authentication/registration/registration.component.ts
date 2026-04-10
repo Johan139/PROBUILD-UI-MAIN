@@ -344,30 +344,17 @@ export class RegistrationComponent implements OnInit {
       this.countryNumberCode = data;
       this.getUserMetadata().subscribe({
         next: (meta) => {
-          const rawCc = meta?.country_code ?? meta?.country;
-          const ipCountryCode =
-            typeof rawCc === 'string' && rawCc.trim().length >= 2
-              ? rawCc.trim()
-              : null;
-          const detected = ipCountryCode
-            ? this.countryNumberCode.find(
-                (c) =>
-                  this.dialRowIso(c).toLowerCase() ===
-                  ipCountryCode.toLowerCase(),
-              )
-            : undefined;
-          this.selectedCountryCode =
-            detected ||
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'US') ||
-            this.countryNumberCode[0];
-
+          if (!this.syncPrefixFromPhoneFieldIfInternational()) {
+            this.applyDefaultCountryFromIpHint(meta);
+          }
           this.initFilteredCountryCodes();
         },
         error: () => {
-          this.selectedCountryCode =
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
-            this.countryNumberCode[0];
+          if (!this.syncPrefixFromPhoneFieldIfInternational()) {
+            this.selectedCountryCode =
+              this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
+              this.countryNumberCode[0];
+          }
           this.initFilteredCountryCodes();
         },
       });
@@ -606,6 +593,40 @@ export class RegistrationComponent implements OnInit {
       this.selectedCountryCode = found;
       this.cdr.markForCheck();
     }
+  }
+
+  /**
+   * If the phone field already has a valid E.164-style value, keep prefix in sync.
+   * Used so a slow geo/IP response cannot overwrite +1 → US with ZA from IP (prod race).
+   */
+  private syncPrefixFromPhoneFieldIfInternational(): boolean {
+    const phoneVal = (
+      this.registrationForm.get('phoneNumber')?.value ?? ''
+    ).trim();
+    if (!phoneVal.startsWith('+')) return false;
+    const intl = parsePhoneNumberFromString(phoneVal);
+    if (!intl?.isValid() || !intl.country) return false;
+    this.applyCountryFromIso(intl.country);
+    return true;
+  }
+
+  private applyDefaultCountryFromIpHint(meta: any): void {
+    const rawCc = meta?.country_code ?? meta?.country;
+    const ipCountryCode =
+      typeof rawCc === 'string' && rawCc.trim().length >= 2
+        ? rawCc.trim()
+        : null;
+    const detected = ipCountryCode
+      ? this.countryNumberCode.find(
+          (c) =>
+            this.dialRowIso(c).toLowerCase() === ipCountryCode.toLowerCase(),
+        )
+      : undefined;
+    this.selectedCountryCode =
+      detected ||
+      this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
+      this.countryNumberCode.find((c) => this.dialRowIso(c) === 'US') ||
+      this.countryNumberCode[0];
   }
 
   onPhoneInput(event: Event): void {
