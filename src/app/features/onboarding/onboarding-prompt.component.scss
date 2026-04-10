@@ -11,6 +11,30 @@
   border: 1px solid rgba(0,0,0,0.05);
 }
 
+:host-context(body.theme-dark) {
+  .prompt-container {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+
+  .prompt-content {
+    .icon-circle {
+      background: rgba(59, 130, 246, 0.18);
+      color: #93c5fd;
+    }
+
+    .text {
+      h3 {
+        color: rgba(255, 255, 255, 0.92);
+      }
+      p {
+        color: rgba(255, 255, 255, 0.72);
+      }
+    }
+  }
+}
+
 .prompt-content {
   display: flex;
   gap: 16px;

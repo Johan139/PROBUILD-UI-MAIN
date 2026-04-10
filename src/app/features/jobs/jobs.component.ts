@@ -1125,14 +1125,10 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
     const recommendedBid = this.recommendedBidFromResolved(resolved);
     if (recommendedBid <= 0) return 0;
 
-    const fullyLoadedCost =
-      resolved.baseCosts +
-      resolved.overheadProfit +
-      resolved.contingency +
-      resolved.escalation +
-      resolved.taxes;
-    const netProfit = recommendedBid - fullyLoadedCost;
-    return (netProfit / recommendedBid) * 100;
+    const netContractorProfit =
+      recommendedBid -
+      (resolved.baseCosts + resolved.contingency + resolved.escalation + resolved.taxes);
+    return (netContractorProfit / recommendedBid) * 100;
   }
 
   get costToBuild(): number {
@@ -3600,10 +3596,33 @@ export class JobsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const riskExposure =
       recommendedBid - (costToBuild + overheadProfit + escalationAllowance + taxesAllowance);
-    const netContractorProfit = recommendedBid - totalCostBasis;
-    const netProfitMarginPercent = recommendedBid > 0 ? (netContractorProfit / recommendedBid) * 100 : 0;
-    const returnOnCostPercent = costToBuild > 0 ? (netContractorProfit / costToBuild) * 100 : 0;
+
+    // Overhead & Profit is already the contractor's margin bucket in our model.
+    // Subtracting it again makes "net profit" go negative even when the bid is healthy.
+    // Define net profit as the remaining amount after covering direct costs + allowances.
+    const netContractorProfit =
+      recommendedBid - (costToBuild + contingencyAllowance + escalationAllowance + taxesAllowance);
+    const netProfitMarginPercent =
+      recommendedBid > 0 ? (netContractorProfit / recommendedBid) * 100 : 0;
+    const returnOnCostPercent =
+      costToBuild > 0 ? (netContractorProfit / costToBuild) * 100 : 0;
     const size = Number(this.projectDetails?.buildingSize || this.projectDetails?.projectSize || 0);
+
+    console.info('[jobs] Bid price dialog computed', {
+      jobId: Number(this.projectDetails?.jobId || 0),
+      recommendedBid,
+      costToBuild,
+      overheadProfit,
+      contingencyAllowance,
+      escalationAllowance,
+      taxesAllowance,
+      grossMargin,
+      grossMarginPercent,
+      riskExposure,
+      netContractorProfit,
+      netProfitMarginPercent,
+      returnOnCostPercent,
+    });
 
     const data: BidPriceDialogData = {
       suggestedBid: recommendedBid,
