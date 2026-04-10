@@ -422,12 +422,6 @@ export class AuthService {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    // Use the token as the source of truth to populate the user
-    this.loadUserFromToken(token);
-
-    // Start inactivity timer for already logged-in users
-    this.startInactivityTimer();
-
     const exp = this.getExp(token);
     if (exp == null) {
       console.error('Invalid token found. Logging out.');
@@ -450,6 +444,12 @@ export class AuthService {
         return;
       }
     }
+
+    // Use the token as the source of truth to populate the user
+    this.loadUserFromToken(token);
+
+    // Start inactivity timer for already logged-in users
+    this.startInactivityTimer();
   }
   googleLogin(idToken: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/google-login`, { idToken }).pipe(

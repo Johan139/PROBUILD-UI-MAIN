@@ -645,7 +645,16 @@ export class RegistrationComponent implements OnInit {
       const phoneCtrl = this.registrationForm.get('phoneNumber');
       phoneCtrl?.setValue(input.value, { emitEvent: false });
       const trimmed = input.value.trim();
-      const intl = parsePhoneNumberFromString(trimmed);
+      const normalized = trimmed
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      if (compact.startsWith('+1')) {
+        this.applyCountryFromIso('US');
+      } else if (compact.startsWith('+27')) {
+        this.applyCountryFromIso('ZA');
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         phoneCtrl?.updateValueAndValidity({ emitEvent: false });
@@ -666,7 +675,16 @@ export class RegistrationComponent implements OnInit {
     const phoneCtrl = this.registrationForm.get('phoneNumber');
 
     if (pasted.startsWith('+')) {
-      const intl = parsePhoneNumberFromString(pasted);
+      const normalized = pasted
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      if (compact.startsWith('+1')) {
+        this.applyCountryFromIso('US');
+      } else if (compact.startsWith('+27')) {
+        this.applyCountryFromIso('ZA');
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         phoneCtrl?.setValue(intl.formatNational(), { emitEvent: false });
@@ -696,7 +714,16 @@ export class RegistrationComponent implements OnInit {
     const value = (ctrl?.value || '').trim();
 
     if (value.startsWith('+')) {
-      const intl = parsePhoneNumberFromString(value);
+      const normalized = value
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      if (compact.startsWith('+1')) {
+        this.applyCountryFromIso('US');
+      } else if (compact.startsWith('+27')) {
+        this.applyCountryFromIso('ZA');
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         ctrl?.setValue(intl.formatNational(), { emitEvent: false });
