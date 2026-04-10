@@ -248,6 +248,37 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
     }
   }
 
+  /** See registration: slow geo response must not overwrite +1 → US with IP-based ZA. */
+  private syncPrefixFromPhoneFieldIfInternational(): boolean {
+    const phoneVal = (
+      this.registrationForm.get('phoneNumber')?.value ?? ''
+    ).trim();
+    if (!phoneVal.startsWith('+')) return false;
+    const intl = parsePhoneNumberFromString(phoneVal);
+    if (!intl?.isValid() || !intl.country) return false;
+    this.applyCountryFromIso(intl.country);
+    return true;
+  }
+
+  private applyDefaultCountryFromIpHint(meta: any): void {
+    const rawCc = meta?.country_code ?? meta?.country;
+    const ipCountryCode =
+      typeof rawCc === 'string' && rawCc.trim().length >= 2
+        ? rawCc.trim()
+        : null;
+    const detected = ipCountryCode
+      ? this.countryNumberCode.find(
+          (c) =>
+            this.dialRowIso(c).toLowerCase() === ipCountryCode.toLowerCase(),
+        )
+      : undefined;
+    this.selectedCountryCode =
+      detected ||
+      this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
+      this.countryNumberCode.find((c) => this.dialRowIso(c) === 'US') ||
+      this.countryNumberCode[0];
+  }
+
   private phoneValidator(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const value = control.value;
@@ -325,30 +356,17 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       this.countryNumberCode = data;
       this.getUserMetadata().subscribe({
         next: (meta) => {
-          const rawCc = meta?.country_code ?? meta?.country;
-          const ipCountryCode =
-            typeof rawCc === 'string' && rawCc.trim().length >= 2
-              ? rawCc.trim()
-              : null;
-          const detected = ipCountryCode
-            ? this.countryNumberCode.find(
-                (c) =>
-                  this.dialRowIso(c).toLowerCase() ===
-                  ipCountryCode.toLowerCase(),
-              )
-            : undefined;
-          this.selectedCountryCode =
-            detected ||
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'US') ||
-            this.countryNumberCode[0];
-
+          if (!this.syncPrefixFromPhoneFieldIfInternational()) {
+            this.applyDefaultCountryFromIpHint(meta);
+          }
           this.initFilteredCountryCodes();
         },
         error: () => {
-          this.selectedCountryCode =
-            this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
-            this.countryNumberCode[0];
+          if (!this.syncPrefixFromPhoneFieldIfInternational()) {
+            this.selectedCountryCode =
+              this.countryNumberCode.find((c) => this.dialRowIso(c) === 'ZA') ||
+              this.countryNumberCode[0];
+          }
           this.initFilteredCountryCodes();
         },
       });
