@@ -431,17 +431,18 @@ export class AuthService {
 
     const expiration = exp * 1000; // exp is in seconds
     if (expiration < Date.now()) {
-      // During app bootstrap (APP_INITIALIZER), avoid a forced hard reload.
-      // A hard reload here causes a visible white-screen double-load.
-      this.pushAuthTrace('initialize.expired_token_soft_logout');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('loggedIn');
-      localStorage.removeItem('currentUser');
-      this.currentUserSubject.next(null);
-      this.resetRefreshAuthFailureState();
-      void this.router.navigate(['/login']);
-      return;
+      try {
+        await firstValueFrom(this.refreshToken(8_000));
+        const refreshed = localStorage.getItem('accessToken');
+        if (refreshed) {
+          this.loadUserFromToken(refreshed);
+        }
+        this.startInactivityTimer();
+        return;
+      } catch {
+        this.logoutWithReason('refresh_invalid');
+        return;
+      }
     }
 
     // Use the token as the source of truth to populate the user

@@ -468,8 +468,8 @@ export class ReportService {
       const keyHighlights = keyHighlightsBlock
         .split('\n')
         .map((line) => line.trim())
-        .filter((line) => /^[-*]\s+/.test(line))
-        .map((line) => line.replace(/^[-*]\s+/, ''))
+        .filter((line) => /^[-*•]\s+/.test(line))
+        .map((line) => line.replace(/^[-*•]\s+/, ''))
         .map((line) => {
           const parts = line.split(':');
           const label = cleanText(parts[0] || 'Highlight');
@@ -491,8 +491,8 @@ export class ReportService {
         block
           .split('\n')
           .map((line) => line.trim())
-          .filter((line) => /^[-*]\s+/.test(line))
-          .map((line) => cleanText(line.replace(/^[-*]\s+/, '')))
+          .filter((line) => /^[-*•]\s+/.test(line))
+          .map((line) => cleanText(line.replace(/^[-*•]\s+/, '')))
           .filter(Boolean);
 
       const opportunities = extractBullets(
@@ -2543,10 +2543,19 @@ export class ReportService {
       const fullResponse = results[0].fullResponse;
 
       const directMatch = fullResponse.match(
-        /\|\s*Pre[-\s]*Construction\s*(?:&|and)\s*Permitting\s*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+        /\|\s*Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)\s*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
       );
       if (directMatch && directMatch[1]) {
         const weeks = Number(directMatch[1]);
+        return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+      }
+
+      const directDaysMatch = fullResponse.match(
+        /\|\s*Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)\s*\|\s*(\d+(?:\.\d+)?)\s*Days?/i,
+      );
+      if (directDaysMatch && directDaysMatch[1]) {
+        const days = Number(directDaysMatch[1]);
+        const weeks = days / 5;
         return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
       }
 
@@ -2555,21 +2564,39 @@ export class ReportService {
       );
       if (timelineSectionMatch && timelineSectionMatch[1]) {
         const fallbackMatch = timelineSectionMatch[1].match(
-          /Pre[-\s]*Construction\s*(?:&|and)\s*Permitting[^\n|]*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+          /Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)[^\n|]*\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
         );
 
         if (fallbackMatch && fallbackMatch[1]) {
           const weeks = Number(fallbackMatch[1]);
           return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
         }
+
+        const fallbackDaysMatch = timelineSectionMatch[1].match(
+          /Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)[^\n|]*\|\s*(\d+(?:\.\d+)?)\s*Days?/i,
+        );
+        if (fallbackDaysMatch && fallbackDaysMatch[1]) {
+          const days = Number(fallbackDaysMatch[1]);
+          const weeks = days / 5;
+          return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+        }
       }
 
       // Last-resort fallback: any permitting row in the full report table text
       const globalFallbackMatch = fullResponse.match(
-        /Pre[-\s]*Construction\s*(?:&|and)\s*Permitting[\s\S]{0,80}?\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
+        /Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)[\s\S]{0,80}?\|\s*(\d+(?:\.\d+)?)\s*Weeks?/i,
       );
       if (globalFallbackMatch && globalFallbackMatch[1]) {
         const weeks = Number(globalFallbackMatch[1]);
+        return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
+      }
+
+      const globalFallbackDaysMatch = fullResponse.match(
+        /Pre[-\s]*Construction\s*(?:&|and|\/)\s*(?:Permitting|Permits?)[\s\S]{0,80}?\|\s*(\d+(?:\.\d+)?)\s*Days?/i,
+      );
+      if (globalFallbackDaysMatch && globalFallbackDaysMatch[1]) {
+        const days = Number(globalFallbackDaysMatch[1]);
+        const weeks = days / 5;
         return Number.isFinite(weeks) && weeks > 0 ? Math.round(weeks) : null;
       }
 
