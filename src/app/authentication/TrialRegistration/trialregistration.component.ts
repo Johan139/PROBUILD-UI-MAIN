@@ -213,6 +213,22 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
     return typeof v === 'string' ? v.trim() : '';
   }
 
+  private normalizeDialPrefixDigits(prefix: string): string {
+    return String(prefix || '').replace(/[^\d]/g, '');
+  }
+
+  private applyCountryFromDialPrefixDigits(prefixDigits: string): void {
+    const want = String(prefixDigits || '').trim();
+    if (!want) return;
+    const found = this.countryNumberCode.find(
+      (c) => this.normalizeDialPrefixDigits(this.dialRowPhonePrefix(c)) === want,
+    );
+    if (found) {
+      this.selectedCountryCode = found;
+      this.cdr.markForCheck();
+    }
+  }
+
   compareDialCountry(a: any, b: any): boolean {
     if (a === b) return true;
     if (!a || !b) return false;
@@ -254,10 +270,21 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       this.registrationForm.get('phoneNumber')?.value ?? ''
     ).trim();
     if (!phoneVal.startsWith('+')) return false;
-    const intl = parsePhoneNumberFromString(phoneVal);
-    if (!intl?.isValid() || !intl.country) return false;
-    this.applyCountryFromIso(intl.country);
-    return true;
+    const normalized = phoneVal
+      .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+      .replace(/\uFF0B/g, '+');
+    const compact = normalized.replace(/[^\d+]/g, '');
+    const aty = new AsYouType();
+    aty.input(compact);
+    const callingCode = aty.getCallingCode();
+    if (callingCode) {
+      this.applyCountryFromDialPrefixDigits(callingCode);
+    }
+    const country = aty.getCountry();
+    if (country) {
+      this.applyCountryFromIso(country);
+    }
+    return Boolean(callingCode || country);
   }
 
   private applyDefaultCountryFromIpHint(meta: any): void {
@@ -533,7 +560,21 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
       const phoneCtrl = this.registrationForm.get('phoneNumber');
       phoneCtrl?.setValue(input.value, { emitEvent: false });
       const trimmed = input.value.trim();
-      const intl = parsePhoneNumberFromString(trimmed);
+      const normalized = trimmed
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      const aty = new AsYouType();
+      aty.input(compact);
+      const callingCode = aty.getCallingCode();
+      if (callingCode) {
+        this.applyCountryFromDialPrefixDigits(callingCode);
+      }
+      const country = aty.getCountry();
+      if (country) {
+        this.applyCountryFromIso(country);
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         phoneCtrl?.updateValueAndValidity({ emitEvent: false });
@@ -554,7 +595,21 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
     const phoneCtrl = this.registrationForm.get('phoneNumber');
 
     if (pasted.startsWith('+')) {
-      const intl = parsePhoneNumberFromString(pasted);
+      const normalized = pasted
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      const aty = new AsYouType();
+      aty.input(compact);
+      const callingCode = aty.getCallingCode();
+      if (callingCode) {
+        this.applyCountryFromDialPrefixDigits(callingCode);
+      }
+      const country = aty.getCountry();
+      if (country) {
+        this.applyCountryFromIso(country);
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         phoneCtrl?.setValue(intl.formatNational(), { emitEvent: false });
@@ -579,7 +634,21 @@ export class TrialRegistrationComponent implements OnInit, AfterViewInit {
     const value = (ctrl?.value || '').trim();
 
     if (value.startsWith('+')) {
-      const intl = parsePhoneNumberFromString(value);
+      const normalized = value
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/\uFF0B/g, '+');
+      const compact = normalized.replace(/[^\d+]/g, '');
+      const aty = new AsYouType();
+      aty.input(compact);
+      const callingCode = aty.getCallingCode();
+      if (callingCode) {
+        this.applyCountryFromDialPrefixDigits(callingCode);
+      }
+      const country = aty.getCountry();
+      if (country) {
+        this.applyCountryFromIso(country);
+      }
+      const intl = parsePhoneNumberFromString(normalized);
       if (intl?.isValid() && intl.country) {
         this.applyCountryFromIso(intl.country);
         ctrl?.setValue(intl.formatNational(), { emitEvent: false });

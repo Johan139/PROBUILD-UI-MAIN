@@ -37,7 +37,7 @@ import { AcceptInviteComponent } from './authentication/accept-invite-team/accep
 import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'unsubscribe', component: UnsubscribeComponent },
   { path: 'archive', component: ArchiveComponent, canActivate: [AuthGuard] },
   { path: 'find-work', component: FindWorkComponent, canActivate: [AuthGuard] },
